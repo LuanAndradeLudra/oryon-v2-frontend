@@ -228,8 +228,12 @@ function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number;
       // O lado da cliente: o WhatsApp dela, com a pergunta e a resposta
       // chegando — um close da tela do aparelho.
       return (
-        <div className="flex h-[210px] items-end justify-center overflow-hidden">
-          <div className="-mb-[18px] [zoom:0.9]"><ConteudoWhatsAppAparelho at={at} cena="conversa" /></div>
+        // A tela do aparelho tem tamanho próprio (390 × 760 a 60 %, como no Hero);
+        // o zoom compensa a redução do cartão (0,66) para o texto do WhatsApp
+        // ficar legível (≈ 0,75 do tamanho real), e o close mostra o fim da
+        // conversa — onde a pergunta e a resposta chegam.
+        <div className="flex h-[330px] items-end justify-center overflow-hidden">
+          <div className="-mb-[24px] [zoom:1.9]" style={{ width: 234, height: 456 }}><ConteudoWhatsAppAparelho at={at} cena="conversa" /></div>
         </div>
       )
     case 'medir-0':
@@ -374,7 +378,9 @@ const COMPOSICAO: Record<string, Arranjo> = {
 /** Largura mínima da coluna de evidências ao lado do palco. */
 const EVIDENCIAS_MIN = 320
 /** Largura mínima de cada evidência quando ficam lado a lado (arranjo vertical). */
-const EVIDENCIA_COLUNA_MIN = 300
+// Três colunas altas só com largura folgada: abaixo disso, os cartões esticados
+// até a altura da tela deixavam o conteúdo boiando em vãos (medido em 1440).
+const EVIDENCIA_COLUNA_MIN = 420
 const VAO = 20
 
 /** Folga horizontal do palco (a mesma conta do CSS: clamp(7px, 1.3vw, 19px)). */
