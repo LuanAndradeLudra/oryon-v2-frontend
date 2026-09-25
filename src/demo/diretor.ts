@@ -158,6 +158,9 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
       w.__demoFecharPainel?.()
       w.__demoNavegar?.(rota === HERO_ROTAS.disparos ? HERO_ROTAS.conversa : HERO_ROTAS.disparos)
       setTimeout(() => w.__demoNavegar?.(rota), 60)
+      // O palco espera este aviso para acender (sem ele, o recomeço do laço
+      // ficava escuro até o teto de 3 s e a cena de Disparos passava apagada).
+      avisarQuandoPintar(rota, cena)
       const alvo = FOCOS_CENA[cena]
       if (alvo) focarAlvo(alvo, 500)
     }
