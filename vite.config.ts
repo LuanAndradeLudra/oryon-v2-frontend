@@ -204,6 +204,10 @@ export default defineConfig({
         // próprio — a entrada fica só com o bootstrap.
         manualChunks(id, { getModuleInfo }) {
           const norm = id.replace(/\\/g, '/')
+          // Gráficos (recharts + d3) num pedaço só deles: o Rollup os juntava a
+          // utilitários comuns e a landing/demo avaliavam ~300 kB de gráfico
+          // em telas sem gráfico nenhum (medido no perfil da demo, 26/09).
+          if (/\/node_modules\/(recharts|victory-vendor|d3-[a-z-]+|internmap|decimal\.js-light|react-smooth|recharts-scale)\//.test(norm)) return 'graficos'
           if (norm.endsWith('/src/main.tsx') || norm.endsWith('/src/App.tsx')) return undefined
           const info = getModuleInfo(id)
           const doBoot = info?.importers.some((i) => {
