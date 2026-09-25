@@ -40,7 +40,7 @@ if (new URLSearchParams(location.search).get('tema') === 'light') {
 type Janela = { __demoRotasNaoMapeadas?: () => string[]; __demoErros?: string[] }
 
 async function subir() {
-  const [{ StrictMode }, { createRoot }] = await Promise.all([
+  const [{ StrictMode, startTransition }, { createRoot }] = await Promise.all([
     import('react'),
     import('react-dom/client'),
   ])
@@ -49,11 +49,17 @@ async function subir() {
 
   const { DemoApp } = await import('./DemoApp')
   const raiz = document.getElementById('root')!
-  createRoot(raiz).render(
-    <StrictMode>
-      <DemoApp inicial={new URLSearchParams(location.search).get('rota') ?? '/conversations'} />
-    </StrictMode>,
-  )
+  // Montagem interrompível: o React fatia a primeira renderização em
+  // pedaços curtos e devolve a thread entre eles (os iframes da demo dividem
+  // a thread da landing — montar tudo de uma vez travava rolagem e animações).
+  const raizReact = createRoot(raiz)
+  startTransition(() => {
+    raizReact.render(
+      <StrictMode>
+        <DemoApp inicial={new URLSearchParams(location.search).get('rota') ?? '/conversations'} />
+      </StrictMode>,
+    )
+  })
 
   // Diagnóstico: o que alguma tela pediu e o backend de demonstração não atende.
   ;(window as unknown as Janela).__demoRotasNaoMapeadas = rotasNaoMapeadas
