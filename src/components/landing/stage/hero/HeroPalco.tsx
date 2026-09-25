@@ -1,12 +1,16 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { motion, useAnimate, useMotionValue, useReducedMotion, useTransform } from 'framer-motion'
 import { Pause, Play } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { useHeroTimeline } from './useHeroTimeline'
-import { HERO_CUES, HERO_ROTAS, HERO_STATIC_CUE, HERO_TAIL_MS, type HeroCena, type HeroState } from './heroStory'
+import {
+  HERO_CAPITULOS, HERO_CUES, HERO_ROTAS, HERO_STATIC_CUE, HERO_TAIL_MS, batidaDe, capituloDe,
+  type HeroCapitulo, type HeroCapituloId, type HeroCena, type HeroState,
+} from './heroStory'
 import { reached } from './heroRealData'
 import { Bandeja, Satelite, SateliteAparelho, TITULOS_SATELITES, type PoseSatelite } from './HeroSatelites'
+import { HeroCapitulos } from './HeroCapitulos'
 
 // O conteúdo das satélites (componentes reais do produto, com dependências
 // pesadas) só é baixado quando a demonstração fica pronta.
@@ -55,15 +59,30 @@ const TELA_APARELHO = { escala: 0.6, w: APP_CELULAR.w * 0.6, h: APP_CELULAR.h * 
 const PALCO = { w: 1480, h: 812 }
 const ANCORA = { x: 158, y: 22 }
 
-type Slot = 'aparelhoEsquerda' | 'janelaDireita' | 'janelaBaixo'
-const POSES: Record<Slot, PoseSatelite> = {
-  // Os aparelhos transbordam ~40 % para dentro da âncora, na altura em que ela
-  // só tem linhas de lista (à esquerda) ou o rodapé do painel (à direita).
-  aparelhoEsquerda: { x: 0, y: 262, w: TELA_APARELHO.w + 24, origem: '100% 50%' },
-  // À direita, sobre o rodapé da âncora: o card do negócio, que acompanha a
-  // história inteira (Qualificação → Proposta → Ganho).
-  janelaDireita: { x: 1100, y: 452, w: 380, origem: '0% 0%' },
-  janelaBaixo: { x: 0, y: 470, w: 372, origem: '100% 0%' },
+/**
+ * DIAGONAIS — decisão do PO (24/09): as duas janelas satélite ficam sempre em
+ * cantos opostos, formando uma diagonal sobre a âncora.
+ *  • A: superior direito + inferior esquerdo (Conversas, passagem para a Ana);
+ *  • B: superior esquerdo + inferior direito (Funis, Agentes IA).
+ * Trocar de cena troca de diagonal — e a janela que continua em cena desliza
+ * para o canto novo, atravessando o palco.
+ */
+const CANTOS = {
+  supEsq: { x: 0, y: 24, w: 372, origem: '100% 100%' },
+  supDir: { x: 1108, y: 24, w: 372, origem: '0% 100%' },
+  infEsq: { x: 0, y: 452, w: 372, origem: '100% 0%' },
+  infDir: { x: 1108, y: 452, w: 372, origem: '0% 0%' },
+} satisfies Record<string, PoseSatelite>
+
+/** O aparelho (WhatsApp da cliente) mora no canto inferior esquerdo. */
+const APARELHO: PoseSatelite = { x: 0, y: 286, w: TELA_APARELHO.w + 24, origem: '100% 50%' }
+
+function diagonal(cena: HeroCena) {
+  const b = cena === 'funil'
+  return {
+    negocio: b ? CANTOS.infDir : CANTOS.supDir,
+    lateral: b ? CANTOS.supEsq : CANTOS.infEsq,
+  }
 }
 
 function visibilidade(estado: HeroState, cena: HeroCena) {
@@ -76,7 +95,7 @@ function visibilidade(estado: HeroState, cena: HeroCena) {
     // o stepper anda junto com a história e termina em Ganho.
     negocio: !disparos && cena !== 'reinicio' && reached(estado, 'confirma'),
     // O que a IA fez — enquanto a âncora não mostra essa linha do tempo inteira.
-    linhaDoTempo: (cena === 'conversa' && reached(estado, 'situacao') && !conversa2) || cena === 'funil' || cena === 'agente',
+    linhaDoTempo: (cena === 'conversa' && reached(estado, 'situacao') && !conversa2) || cena === 'funil',
     // O sino: o alerta que chama a Ana.
     notificacoes: conversa2 && reached(estado, 'assumido'),
   }
@@ -156,9 +175,29 @@ export function HeroPalco({ className }: { className?: string }) {
   const pronta = usePronta(ancoraRef)
 
   // ── Relógio da história ────────────────────────────────────────────────────
-  const { state, composition, paused, canAnimate, togglePause } = useHeroTimeline<HeroState, HeroCena>({
+  const { state, composition, index, paused, canAnimate, running, togglePause, irPara } = useHeroTimeline<HeroState, HeroCena>({
     cues: HERO_CUES, tailMs: HERO_TAIL_MS, hostRef, staticIndex: HERO_STATIC_CUE, enabled: pronta,
   })
+
+  // ── Capítulos (a legenda embaixo do palco) ─────────────────────────────────
+  const duracoes = useMemo(() => {
+    const fim = (HERO_CUES[HERO_CUES.length - 1]?.t ?? 0) + HERO_TAIL_MS
+    const out = {} as Record<HeroCapituloId, number>
+    HERO_CAPITULOS.forEach((c, i) => {
+      const proximo = HERO_CAPITULOS[i + 1]
+      out[c.id] = (proximo ? HERO_CUES[proximo.cue].t : fim) - HERO_CUES[c.cue].t
+    })
+    return out
+  }, [])
+  const capitulo = capituloDe(state, composition, index)
+  const batida = batidaDe(state, composition)
+  /** Conta os pulos por clique — reinicia a barra e força o corte de câmera. */
+  const [saltos, setSaltos] = useState(0)
+  const irParaCapitulo = (c: HeroCapitulo) => {
+    irPara(c.cue)
+    setSaltos((n) => n + 1)
+    if (paused) togglePause()
+  }
 
   const enviar = (ref: React.RefObject<HTMLIFrameElement | null>, msg: object) =>
     ref.current?.contentWindow?.postMessage({ canal: CANAL, ...msg }, location.origin)
@@ -205,9 +244,12 @@ export function HeroPalco({ className }: { className?: string }) {
   const [cenaRef, animarCena] = useAnimate()
   const [cameraRef, animarCamera] = useAnimate()
   const cenaAnterior = useRef<HeroCena | null>(null)
+  const saltoAnterior = useRef(0)
   useEffect(() => {
     if (!pronta || semMovimento) { cenaAnterior.current = composition; return }
-    const mudou = cenaAnterior.current !== composition
+    const pulou = saltoAnterior.current !== saltos
+    saltoAnterior.current = saltos
+    const mudou = cenaAnterior.current !== composition || pulou
     cenaAnterior.current = composition
     if (!mudou) return
     const vazia = composition === 'reinicio'
@@ -224,9 +266,10 @@ export function HeroPalco({ className }: { className?: string }) {
       void animarCamera(cameraRef.current, vazia ? { scale: 1 } : { scale: [1, 1.012] },
         vazia ? { duration: 0.3 } : { duration: 6.5, ease: 'linear' })
     }
-  }, [composition, pronta, semMovimento, animarCena, cenaRef, animarCamera, cameraRef])
+  }, [composition, saltos, pronta, semMovimento, animarCena, cenaRef, animarCamera, cameraRef])
 
   const vis = visibilidade(state, composition)
+  const cantos = diagonal(composition === 'reinicio' ? 'conversa' : composition)
   const app = celular ? APP_CELULAR : APP
 
   return (
@@ -309,19 +352,19 @@ export function HeroPalco({ className }: { className?: string }) {
           {/* ── AS DEMAIS MOLDURAS — só no desktop ────────────────────────────── */}
           {!celular && pronta && (
             <Suspense fallback={null}>
-              <SateliteAparelho pose={POSES.aparelhoEsquerda} visivel={vis.whatsapp} atraso={0.2} y={yAparelhos} lado="esquerda">
+              <SateliteAparelho pose={APARELHO} visivel={vis.whatsapp} atraso={0.2} y={yAparelhos} lado="esquerda">
                 <div style={{ width: TELA_APARELHO.w, height: TELA_APARELHO.h }}>
                   <ConteudoWhatsApp />
                 </div>
               </SateliteAparelho>
 
-              <Satelite pose={POSES.janelaDireita} visivel={vis.negocio} atraso={0.15} titulo={TITULOS_SATELITES.negocio} y={yJanelas}>
+              <Satelite pose={cantos.negocio} visivel={vis.negocio} atraso={0.15} titulo={TITULOS_SATELITES.negocio} y={yJanelas}>
                 <ConteudoNegocio at={state} />
               </Satelite>
-              <Satelite pose={POSES.janelaBaixo} visivel={vis.linhaDoTempo} atraso={0.35} titulo={TITULOS_SATELITES.linhaDoTempo} y={yJanelas}>
+              <Satelite pose={cantos.lateral} visivel={vis.linhaDoTempo} atraso={0.35} titulo={TITULOS_SATELITES.linhaDoTempo} y={yJanelas}>
                 <ConteudoLinhaDoTempo at={state} />
               </Satelite>
-              <Satelite pose={POSES.janelaBaixo} visivel={vis.notificacoes} atraso={0.1} titulo={TITULOS_SATELITES.notificacoes} y={yJanelas}>
+              <Satelite pose={cantos.lateral} visivel={vis.notificacoes} atraso={0.1} titulo={TITULOS_SATELITES.notificacoes} y={yJanelas}>
                 <ConteudoNotificacoes at={state} />
               </Satelite>
             </Suspense>
@@ -329,8 +372,21 @@ export function HeroPalco({ className }: { className?: string }) {
         </div>
       </div>
 
+      {/* A LEGENDA: os capítulos da demonstração, com o valor de cada um e a
+          narração do momento. */}
+      <HeroCapitulos
+        className="mt-6 sm:mt-8 px-1"
+        capitulos={HERO_CAPITULOS}
+        ativo={capitulo}
+        batida={batida}
+        duracoes={duracoes}
+        rodando={running && pronta}
+        chaveProgresso={`${capitulo}-${saltos}`}
+        onIr={irParaCapitulo}
+      />
+
       {/* Rodapé: a divulgação dos dados fictícios, ao lado da pausa. */}
-      <div className="relative mt-3 flex items-center justify-between gap-3 px-1">
+      <div className="relative mt-5 flex items-center justify-between gap-3 px-1">
         <p className="text-[11.5px] text-surface-500">O Oryon de verdade, com dados fictícios.</p>
         {canAnimate && (
           <button

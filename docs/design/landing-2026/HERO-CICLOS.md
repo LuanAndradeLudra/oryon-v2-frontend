@@ -701,3 +701,25 @@ mesmo tempo, mantendo o padrão.
   iframe da demo). Funcionava, mas o PO o achou redundante com a âncora.
 - O diretor fecha o painel global de negócio (`closeDeal`) antes de trocar de
   módulo — é o que o clique no fundo escurecido faria no uso real.
+
+## Rodada seguinte (24/09, noite) — molduras opacas, diagonais e capítulos
+
+- **Molduras 100% opacas** (PO): a bandeja deixou o "vidro" translúcido da
+  referência — fundo sólido `surface-800`, contorno e fio de luz; nada da
+  âncora vaza por baixo de uma satélite.
+- **Diagonais** (PO): as duas janelas ficam sempre em cantos opostos — A =
+  superior direito + inferior esquerdo (Conversas, passagem para a Ana);
+  B = superior esquerdo + inferior direito (Funis). Na troca de diagonal a
+  janela que continua em cena desliza para o canto novo.
+- **Agentes IA fora do roteiro** (PO): a tela ainda vai mudar. A história tem
+  quatro capítulos — Campanhas no WhatsApp · Atendimento com IA · Funil que
+  anda sozinho · A equipe no controle.
+- **Capítulos embaixo do palco** (`HeroCapitulos.tsx`), pedido do PO para o
+  visitante entender o que acontece e o valor de cada exibição. Nota honesta:
+  o Hero da Attio NÃO legenda as cenas (medido no dia); o padrão escolhido é a
+  trilha de capítulos de heros como Stripe/Linear — título + valor em uma
+  frase + barra de progresso do capítulo + uma linha que narra o momento
+  (`batidaDe`, conferida contra a auditoria de capacidades). Clicar num
+  capítulo pula a demonstração (`irPara` no `useHeroTimeline`); voltar no
+  tempo na mesma tela força o app a remontar (diretor passa por outra rota sob
+  o corte de câmera). No celular: só o capítulo ativo, trilha segmentada.

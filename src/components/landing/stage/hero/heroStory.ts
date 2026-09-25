@@ -3,20 +3,23 @@ import type { HeroCue } from './useHeroTimeline'
 /**
  * O ROTEIRO — uma operação real atravessando os módulos do Oryon.
  *
- * Rodada de 24/09 (noite): o palco passou a rodar o PRÓPRIO app em modo
- * demonstração (`src/demo/`). O roteiro não desenha mais nada: cada cue
- * muda o estado do backend de demonstração (`state`) ou navega o app para
- * outro módulo (`cena`), e as telas reagem pelos próprios mecanismos de
- * produção — eventos de tempo real, recarga de dados, rotas.
+ * O palco roda o PRÓPRIO app em modo demonstração (`src/demo/`). O roteiro não
+ * desenha nada: cada cue muda o estado do backend de demonstração (`state`) ou
+ * navega o app para outro módulo (`composition` = cena), e as telas reagem
+ * pelos próprios mecanismos de produção.
  *
- * A história, em uma frase: uma campanha chega no WhatsApp da Marina, ela pede
- * uma proposta, o Agente IA responde com o preço do catálogo, atualiza o
- * contato e avança o negócio no funil; ela pede uma pessoa, a Ana assume e
- * fecha a venda. Cada módulo aparece fazendo a sua parte da mesma operação.
+ * A história, em quatro capítulos:
+ *  1. Disparos — a campanha "Renovação Pro" sai e o relatório mostra o retorno;
+ *  2. Atendimento com IA — a Marina responde, o Agente IA atende com o preço
+ *     do catálogo e atualiza o CRM sozinho;
+ *  3. Funil de vendas — o negócio avança de etapa junto com a conversa;
+ *  4. A equipe no controle — ela pede uma pessoa, a Ana assume e fecha.
  *
- * Regra de direção mantida: a troca de módulo acontece ANTES da mudança que
- * ele existe para mostrar (o visitante já está olhando o funil quando o card
- * anda), e cada mudança tem tempo de leitura antes da próxima.
+ * A tela de Agentes IA saiu do roteiro a pedido do PO (24/09): a interface
+ * ainda vai mudar.
+ *
+ * Regra de direção: a troca de módulo acontece ANTES da mudança que ele existe
+ * para mostrar, e cada mudança tem tempo de leitura antes da próxima.
  */
 
 export type HeroState =
@@ -33,7 +36,7 @@ export type HeroState =
   | 'ganho'      // a Atendente fecha o negócio como ganho
 
 /** O módulo do app em cena. Cada um é uma rota real. */
-export type HeroCena = 'disparos' | 'relatorio' | 'conversa' | 'funil' | 'agente' | 'reinicio'
+export type HeroCena = 'disparos' | 'relatorio' | 'conversa' | 'funil' | 'reinicio'
 
 export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   disparos: '/campaigns',
@@ -41,7 +44,6 @@ export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   relatorio: '/campaigns?report=cp-renovacao',
   conversa: '/conversations?id=demo-conv-0',
   funil: '/pipelines/pl-vendas',
-  agente: '/agents?agent=ag-vendas&tab=capabilities',
 }
 
 type Cue = HeroCue<HeroState, HeroCena>
@@ -49,11 +51,11 @@ const S = (t: number, state: HeroState): Cue => ({ t, state })
 const C = (t: number, composition: HeroCena): Cue => ({ t, composition })
 
 export const HERO_CUES: readonly Cue[] = [
-  // ── Disparos: a campanha sai; o relatório abre com os números dela ────────
+  // ── 1 · Disparos: a campanha sai; o relatório abre com os números dela ────
   { t: 0, state: 'inicio', composition: 'disparos' },
   C(1900, 'relatorio'),
 
-  // ── Conversas: ela responde, o Agente IA atende sozinho ───────────────────
+  // ── 2 · Atendimento com IA ────────────────────────────────────────────────
   C(7200, 'conversa'),
   S(8600, 'demanda'),
   S(11400, 'resposta'),
@@ -62,22 +64,19 @@ export const HERO_CUES: readonly Cue[] = [
   S(17400, 'situacao'),
   S(19600, 'etiqueta'),
 
-  // ── Funis: o negócio anda junto com a conversa ────────────────────────────
+  // ── 3 · Funil: o negócio anda junto com a conversa ────────────────────────
   C(22600, 'funil'),
   S(24200, 'avanco'),
 
-  // ── Agentes IA: o que o agente pode (e não pode) fazer ────────────────────
-  C(28600, 'agente'),
-
-  // ── Conversas: a passagem para a pessoa, e quem fecha é ela ───────────────
-  C(34200, 'conversa'),
-  S(35400, 'pedido'),
-  S(37800, 'assumido'),
-  S(40400, 'humano'),
-  S(43400, 'ganho'),
+  // ── 4 · A equipe no controle: a passagem para a pessoa, que fecha ─────────
+  C(29600, 'conversa'),
+  S(30800, 'pedido'),
+  S(33200, 'assumido'),
+  S(35800, 'humano'),
+  S(38800, 'ganho'),
 
   // ── Reinício: o palco esvazia antes de os dados voltarem ao começo ────────
-  C(47800, 'reinicio'),
+  C(43200, 'reinicio'),
 ] as const
 
 /** Tempo com o palco vazio, antes de recomeçar. */
@@ -90,16 +89,80 @@ export const HERO_TAIL_MS = 900
  */
 export const HERO_STATIC_CUE = HERO_CUES.findIndex((c) => c.state === 'avanco')
 
+// ─── Capítulos: o que o visitante lê embaixo do palco ────────────────────────
+
+export type HeroCapituloId = 'disparos' | 'atendimento' | 'funil' | 'equipe'
+
+export interface HeroCapitulo {
+  id: HeroCapituloId
+  titulo: string
+  /** O valor entregue — o "por que isso importa", em uma frase. */
+  valor: string
+  /** Índice do cue em que o capítulo começa (clicar pula para ele). */
+  cue: number
+}
+
+const idx = (pred: (c: Cue) => boolean) => HERO_CUES.findIndex(pred)
+
+export const HERO_CAPITULOS: readonly HeroCapitulo[] = [
+  {
+    id: 'disparos',
+    titulo: 'Campanhas no WhatsApp',
+    valor: 'Dispare para a base inteira e acompanhe entrega, leitura e resposta em tempo real.',
+    cue: 0,
+  },
+  {
+    id: 'atendimento',
+    titulo: 'Atendimento com IA',
+    valor: 'O Agente IA responde na hora, com o preço do seu catálogo, e atualiza o CRM sozinho.',
+    cue: idx((c) => c.composition === 'conversa'),
+  },
+  {
+    id: 'funil',
+    titulo: 'Funil que anda sozinho',
+    valor: 'Cada conversa move o negócio de etapa — o funil reflete o que está acontecendo agora.',
+    cue: idx((c) => c.composition === 'funil'),
+  },
+  {
+    id: 'equipe',
+    titulo: 'A equipe no controle',
+    valor: 'A IA chama a pessoa certa na hora certa — e quem fecha a venda é sempre a sua equipe.',
+    cue: idx((c) => c.state === 'pedido') - 1,
+  },
+]
+
+/** Em que capítulo a história está. */
+export function capituloDe(estado: HeroState, cena: HeroCena, index: number): HeroCapituloId {
+  if (cena === 'disparos' || cena === 'relatorio') return 'disparos'
+  if (cena === 'funil') return 'funil'
+  if (cena === 'reinicio') return 'equipe'
+  return index >= HERO_CAPITULOS[3].cue ? 'equipe' : 'atendimento'
+}
+
 /**
- * O registro do Agente IA (satélite): o que a IA fez, na voz do produto.
- * Cada frase foi conferida contra a auditoria de capacidades: a IA não
- * define valor, não se pausa e não fecha venda.
+ * A NARRAÇÃO do momento — uma linha curta que diz o que acabou de acontecer
+ * na tela. Cada frase foi conferida contra a auditoria de capacidades: a IA
+ * não define valor, não se pausa e não fecha venda.
  */
-export const HERO_NOTES: Partial<Record<HeroState, string>> = {
-  resposta: 'Respondeu com o preço do catálogo',
-  situacao: 'Atualizou a situação do contato',
-  avanco: 'Avançou o negócio para Proposta',
-  assumido: 'Chamou uma atendente para fechar',
-  humano: 'A Ana entrou na conversa: a IA fica em pausa',
-  ganho: 'Venda fechada pela Ana — a IA não fecha negócio',
+export function batidaDe(estado: HeroState, cena: HeroCena): string {
+  if (cena === 'disparos') return 'A campanha "Renovação Pro" sai para 1.240 clientes'
+  if (cena === 'relatorio') return 'O relatório mostra quem recebeu, leu e respondeu'
+  if (cena === 'funil') {
+    return estado === 'avanco'
+      ? 'O negócio da Marina passa de Qualificação para Proposta'
+      : 'O funil de vendas, com o negócio da Marina em Qualificação'
+  }
+  switch (estado) {
+    case 'inicio': return 'A Marina recebe a campanha no WhatsApp'
+    case 'demanda': return 'A Marina responde pedindo uma proposta'
+    case 'resposta': return 'O Agente IA responde na hora, com o preço do catálogo'
+    case 'confirma': return 'A Marina confirma o interesse'
+    case 'situacao': return 'A IA atualiza a situação do contato no CRM'
+    case 'etiqueta': return 'e etiqueta a conversa como "proposta enviada"'
+    case 'avanco': return 'O negócio já está em Proposta'
+    case 'pedido': return 'A Marina pede para falar com uma pessoa'
+    case 'assumido': return 'A IA chama a Ana e coloca a conversa na fila'
+    case 'humano': return 'A Ana assume — a IA fica em pausa enquanto ela atende'
+    case 'ganho': return 'A Ana fecha a venda: o negócio vai para Ganho'
+  }
 }

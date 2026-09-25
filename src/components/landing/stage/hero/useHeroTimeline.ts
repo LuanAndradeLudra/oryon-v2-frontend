@@ -63,6 +63,8 @@ export interface HeroTimeline<S extends string, C extends string> {
   running: boolean
   togglePause: () => void
   restart: () => void
+  /** Pula para um cue (os capítulos clicáveis embaixo do palco). */
+  irPara: (index: number) => void
 }
 
 function canObserve(): boolean {
@@ -163,6 +165,11 @@ export function useHeroTimeline<S extends string, C extends string>(
 
   const togglePause = useCallback(() => setPaused((p) => !p), [])
   const restart = useCallback(() => { restante.current = null; setIndex(0); setPaused(false); setRunId((n) => n + 1) }, [])
+  const irPara = useCallback((i: number) => {
+    restante.current = null
+    setIndex(Math.max(0, Math.min(cues.length - 1, i)))
+    setRunId((n) => n + 1)
+  }, [cues.length])
 
   const efetivo = canAnimate ? index : staticIndex
 
@@ -191,5 +198,6 @@ export function useHeroTimeline<S extends string, C extends string>(
     running,
     togglePause,
     restart,
+    irPara,
   }
 }

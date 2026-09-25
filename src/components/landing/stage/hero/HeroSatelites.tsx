@@ -5,7 +5,7 @@ import { HERO } from './heroRealData'
 
 /**
  * A BANDEJA — a moldura de todas as janelas do palco (a âncora e as
- * satélites). Referência: a bandeja translúcida da Attio (6 px de respiro nas
+ * satélites). Referência: a bandeja da Attio (6 px de respiro nas
  * laterais e embaixo, 0 no topo, onde ficam os três pontos; 16 px por fora,
  * 12 px por dentro), refeita para os DOIS temas:
  *
@@ -14,7 +14,13 @@ import { HERO } from './heroRealData'
  *    fundo quase preto não aparece);
  *  • claro — as cinco sombras em camadas quase invisíveis da referência.
  *
- * O conteúdo de dentro é SEMPRE do produto; a bandeja é só o "vidro" em volta.
+ * OPACA, por decisão do PO (24/09): nada da tela principal pode aparecer
+ * através de uma moldura que a sobrepõe — o "vidro" translúcido da referência
+ * deixava a âncora vazar por baixo das satélites. Fundo sólido em `surface-800`
+ * (escuro #161E1E, claro #FFFFFF), um degrau acima do conteúdo, para a moldura
+ * se destacar do app que ela emoldura.
+ *
+ * O conteúdo de dentro é SEMPRE do produto; a bandeja é só a moldura em volta.
  */
 export function Bandeja({
   titulo, children, className, style, conteudoClassName,
@@ -28,9 +34,10 @@ export function Bandeja({
   return (
     <div
       className={cn(
-        'hero-bandeja flex flex-col rounded-[16px] p-1.5 pt-0 backdrop-blur-md',
-        'bg-white/[.045] ring-1 ring-white/[.08]',
-        '[[data-theme=light]_&]:bg-[rgba(246,248,248,.82)] [[data-theme=light]_&]:ring-black/[.06]',
+        'hero-bandeja flex flex-col rounded-[16px] p-1.5 pt-0 bg-surface-800',
+        'ring-1 ring-white/[.10] [[data-theme=light]_&]:ring-black/[.08]',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,.07),0_26px_60px_-18px_rgba(0,0,0,.75)]',
+        '[[data-theme=light]_&]:shadow-[0_0_0_1px_rgba(11,13,24,.04),0_1px_2px_rgba(11,13,24,.04),0_3px_6px_rgba(11,13,24,.04),0_8px_14px_rgba(11,13,24,.05),0_16px_28px_rgba(11,13,24,.06)]',
         className,
       )}
       style={style}
@@ -82,22 +89,34 @@ export function Satelite({
 }) {
   const semMovimento = useReducedMotion()
   return (
+    /* Posição: quando a cena troca de diagonal, a janela que continua em cena
+       DESLIZA para o canto novo (mola lenta, sem passar do ponto). Escondida,
+       ela só troca de lugar — não há deslize que ninguém vê. */
     <motion.div
       className="absolute"
-      style={{ left: pose.x, top: pose.y, width: pose.w, transformOrigin: pose.origem, zIndex: 30, y }}
-      // Montada só quando a demonstração fica pronta: nasce escondida para a
-      // primeira entrada também ser animada.
-      initial={{ opacity: 0, scale: 0.94, filter: 'blur(3px)' }}
-      animate={visivel
-        ? { opacity: 1, scale: 1, filter: 'blur(0px)' }
-        : { opacity: 0, scale: 0.94, filter: 'blur(3px)' }}
-      transition={semMovimento
+      style={{ width: pose.w, zIndex: 30, y }}
+      initial={{ left: pose.x, top: pose.y }}
+      animate={{ left: pose.x, top: pose.y }}
+      transition={semMovimento || !visivel
         ? { duration: 0 }
-        : { type: 'spring', stiffness: 210, damping: 30, mass: 0.9, delay: visivel ? atraso : 0 }}
+        : { type: 'spring', stiffness: 70, damping: 18, mass: 1 }}
     >
-      <Bandeja titulo={titulo} conteudoClassName={conteudoClassName} className="hero-satelite">
-        {children}
-      </Bandeja>
+      <motion.div
+        style={{ transformOrigin: pose.origem }}
+        // Montada só quando a demonstração fica pronta: nasce escondida para a
+        // primeira entrada também ser animada.
+        initial={{ opacity: 0, scale: 0.94, filter: 'blur(3px)' }}
+        animate={visivel
+          ? { opacity: 1, scale: 1, filter: 'blur(0px)' }
+          : { opacity: 0, scale: 0.94, filter: 'blur(3px)' }}
+        transition={semMovimento
+          ? { duration: 0 }
+          : { type: 'spring', stiffness: 210, damping: 30, mass: 0.9, delay: visivel ? atraso : 0 }}
+      >
+        <Bandeja titulo={titulo} conteudoClassName={conteudoClassName} className="hero-satelite">
+          {children}
+        </Bandeja>
+      </motion.div>
     </motion.div>
   )
 }

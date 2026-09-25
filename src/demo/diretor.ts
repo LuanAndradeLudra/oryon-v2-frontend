@@ -108,7 +108,7 @@ function emitirTransicao(de: HeroState, para: HeroState) {
  *  • No DESKTOP a demonstração segue o roteiro inteiro.
  *  • No CELULAR (a landing em tela pequena roda o app a 390 px, com a
  *    `AppShellMobile` real) só entra o que faz sentido no bolso: a conversa e o
- *    negócio. Nas cenas de Disparos e Agentes ele fica onde está (`null` = não
+ *    negócio. Na cena de Disparos ele fica onde está (`null` = não
  *    navega). O quadro do funil mostra uma coluna por vez e o card da história
  *    ficaria fora da tela; ali a cena abre o painel do próprio negócio (`?deal=`).
  */
@@ -131,16 +131,27 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
   definirEstado(estado)
   if (!recomeco && de !== estado) emitirTransicao(de, estado)
 
+  const w = window as unknown as Janela
   if (cena !== cenaAtual) {
     cenaAtual = cena
     if (cena !== 'reinicio') {
       const rota = rotaDa(cena)
       if (rota) {
-        const w = window as unknown as Janela
         w.__demoFecharPainel?.()
         w.__demoNavegar?.(rota)
         avisarPai({ canal: CANAL, tipo: 'rota', rota })
       }
+    }
+  } else if (recomeco && cena !== 'reinicio') {
+    // Voltar no tempo NA MESMA tela (clicar num capítulo anterior, ambos em
+    // Conversas): a página já montada guarda as mensagens de depois. Uma
+    // passagem por outra rota — escondida sob o corte de câmera da landing —
+    // faz o app remontar e buscar tudo de novo no estado certo.
+    const rota = rotaDa(cena)
+    if (rota) {
+      w.__demoFecharPainel?.()
+      w.__demoNavegar?.(HERO_ROTAS.disparos)
+      setTimeout(() => w.__demoNavegar?.(rota), 60)
     }
   }
 }
