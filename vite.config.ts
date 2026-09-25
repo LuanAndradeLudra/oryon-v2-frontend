@@ -192,6 +192,27 @@ export default defineConfig({
         main: path.resolve(__dirname, 'index.html'),
         demo: path.resolve(__dirname, 'demo.html'),
       },
+      output: {
+        // O pedaço de ENTRADA do app (main-*.js) roda o bootstrap ao ser
+        // importado: monta o App inteiro no #root. O Rollup içava para ele
+        // módulos que o main.tsx/App.tsx importam direto (lib/emojiText, o
+        // modal do AdminMobileBlock…) — e as páginas preguiçosas (Disparos,
+        // Agentes IA…) passavam a importar main-*.js. No app é inofensivo (já
+        // carregou); na DEMONSTRAÇÃO, abrir Disparos subia o app real por cima
+        // e o Hero mostrava a Home. Medido no build de produção em 26/09.
+        // Regra: o que main.tsx/App.tsx importam direto vai para um pedaço
+        // próprio — a entrada fica só com o bootstrap.
+        manualChunks(id, { getModuleInfo }) {
+          const norm = id.replace(/\\/g, '/')
+          if (norm.endsWith('/src/main.tsx') || norm.endsWith('/src/App.tsx')) return undefined
+          const info = getModuleInfo(id)
+          const doBoot = info?.importers.some((i) => {
+            const n = i.replace(/\\/g, '/')
+            return n.endsWith('/src/main.tsx') || n.endsWith('/src/App.tsx')
+          })
+          return doBoot ? 'app-base' : undefined
+        },
+      },
     },
   },
   server: {

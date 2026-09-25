@@ -23,6 +23,17 @@ const AgentsPage = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ def
 const HomePage = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
 const DashboardPage = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 
+/** Aquece o código das telas do roteiro logo depois da primeira: na primeira
+ *  visita a cada rota, o carregamento tardio segurava a tela anterior ~1,7 s
+ *  (medido no palco do Hero) antes de a nova aparecer. */
+function precarregarTelas() {
+  void import('@/pages/ConversationsPage')
+  void import('@/pages/PipelinePage')
+  void import('@/pages/CampaignsPage')
+  void import('@/pages/AgentsPage')
+  void import('@/pages/DashboardPage')
+}
+
 /** O que `ProtectedRoute` monta para uma sessão já autenticada e com o
  *  workspace pronto: `AppShell` + `PageTransition`. `RequireAuth` e
  *  `OnboardingGate` só redirecionam — com a sessão e a prontidão da
@@ -77,6 +88,10 @@ function PonteDoPainel() {
  * exatamente isso que o registro de rotas não mapeadas existe para mostrar.
  */
 export function DemoApp({ inicial = '/conversations' }: { inicial?: string }) {
+  useEffect(() => {
+    const t = window.setTimeout(precarregarTelas, 1200)
+    return () => clearTimeout(t)
+  }, [])
   return (
     /* O roteador por FORA de tudo, como em `App.tsx`: `DealPanelProvider` usa
        `useNavigate` e quebra fora do Router. */

@@ -289,9 +289,21 @@ export function HeroPalco({ className }: { className?: string }) {
   const enviar = (ref: React.RefObject<HTMLIFrameElement | null>, msg: object) =>
     ref.current?.contentWindow?.postMessage({ canal: CANAL, ...msg }, location.origin)
 
+  // Troca de tela: o corte esmaece PRIMEIRO e só então a demo navega. Montar a
+  // página nova ocupa o processo e para a produção de quadros (medido: a
+  // animação de esmaecer ficava "running" em opacidade 1 por ~1,3 s), então
+  // esmaecer durante a navegação não acontece na tela.
+  const cenaEnviada = useRef<HeroCena | null>(null)
   useEffect(() => {
-    if (pronta) enviar(ancoraRef, { tipo: 'passo', estado: state, cena: composition })
-  }, [pronta, state, composition])
+    if (!pronta) return
+    const mandar = () => {
+      cenaEnviada.current = composition
+      enviar(ancoraRef, { tipo: 'passo', estado: state, cena: composition })
+    }
+    if (semMovimento || cenaEnviada.current === null || cenaEnviada.current === composition) { mandar(); return }
+    const t = window.setTimeout(mandar, 300)
+    return () => clearTimeout(t)
+  }, [pronta, state, composition, semMovimento])
   useEffect(() => {
     if (pronta) enviar(ancoraRef, { tipo: 'tema', tema })
   }, [pronta, tema])
@@ -393,7 +405,7 @@ export function HeroPalco({ className }: { className?: string }) {
     if (!trocou) { teto = window.setTimeout(acender, 250); return () => { vivo = false; clearTimeout(teto) } }
     const registro = { rota: HERO_ROTAS[composition], acender }
     pintura.current = registro
-    teto = window.setTimeout(acender, 1600)
+    teto = window.setTimeout(acender, 3000)
     return () => { vivo = false; clearTimeout(teto); if (pintura.current === registro) pintura.current = null }
   }, [composition, saltos, pronta, semMovimento, animarCena, cenaRef])
 

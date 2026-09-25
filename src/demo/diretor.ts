@@ -219,17 +219,21 @@ function avisarQuandoPintar(rota: string, cena: HeroCena) {
   const w = window as unknown as Janela
   const inicio = performance.now()
   let calmo = 0
+  let textoEm = 0
   const checar = () => {
     if (id !== pinturaPendente) return
     const atual = new URL(w.__demoRota?.() ?? '/', 'http://demo.local').pathname
-    const passou = performance.now() - inicio > 3000
+    const passou = performance.now() - inicio > 3500
     // O roteador troca o caminho antes de a página preguiçosa montar (tela em
     // branco): só conta quando o texto da tela nova já está no documento.
     const naTela = !sinal || (document.body.innerText ?? '').includes(sinal)
     if (!passou && (atual !== alvo || !naTela)) { calmo = 0; setTimeout(checar, 50); return }
-    // E o backend de demonstração quieto por 100 ms: as listas já chegaram.
+    // E o backend de demonstração quieto por 100 ms (as listas já chegaram) —
+    // mas no máximo 300 ms depois de o texto aparecer: telas que consultam o
+    // tempo todo (o quadro do funil) nunca ficam 100% quietas.
+    if (!textoEm) textoEm = performance.now()
     calmo = requisicoesEmVoo() === 0 ? calmo + 1 : 0
-    if (!passou && calmo < 2) { setTimeout(checar, 50); return }
+    if (!passou && calmo < 2 && performance.now() - textoEm < 300) { setTimeout(checar, 50); return }
     requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => {
       if (id === pinturaPendente) avisarPai({ canal: CANAL, tipo: 'pintou', rota })
     }, 150)))
