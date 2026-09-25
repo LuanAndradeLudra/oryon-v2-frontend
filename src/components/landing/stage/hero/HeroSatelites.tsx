@@ -34,8 +34,10 @@ export function Bandeja({
   return (
     <div
       className={cn(
-        'hero-bandeja flex flex-col rounded-[16px] p-1.5 pt-0 bg-surface-800',
-        'ring-1 ring-white/[.10] [[data-theme=light]_&]:ring-black/[.08]',
+        // Cores da moldura em tokens (`--bandeja-*`, index.css): no claro, cinza
+        // muito claro — distinto do app branco e da página quase branca.
+        'hero-bandeja flex flex-col rounded-[16px] p-1.5 pt-0 bg-[var(--bandeja-bg)]',
+        'ring-1 ring-[var(--bandeja-borda)]',
         'shadow-[inset_0_1px_0_rgba(255,255,255,.07),0_26px_60px_-18px_rgba(0,0,0,.75)]',
         '[[data-theme=light]_&]:shadow-[0_0_0_1px_rgba(11,13,24,.04),0_1px_2px_rgba(11,13,24,.04),0_3px_6px_rgba(11,13,24,.04),0_8px_14px_rgba(11,13,24,.05),0_16px_28px_rgba(11,13,24,.06)]',
         className,
@@ -46,12 +48,11 @@ export function Bandeja({
         <span className="w-[9px] h-[9px] rounded-full bg-[#FF5F57]" />
         <span className="w-[9px] h-[9px] rounded-full bg-[#FEBC2E]" />
         <span className="w-[9px] h-[9px] rounded-full bg-[#28C840]" />
-        <span className="ml-2 text-[11.5px] font-medium text-surface-400 truncate">{titulo}</span>
+        <span className="ml-2 text-[11.5px] font-medium text-[var(--bandeja-titulo)] truncate">{titulo}</span>
       </div>
       <div
         className={cn(
-          'relative flex-1 min-h-0 overflow-hidden rounded-[12px] ring-1 ring-black/40 bg-surface-950',
-          '[[data-theme=light]_&]:ring-black/[.06]',
+          'relative flex-1 min-h-0 overflow-hidden rounded-[12px] ring-1 ring-[var(--bandeja-conteudo-borda)] bg-surface-950',
           conteudoClassName,
         )}
       >
@@ -76,8 +77,10 @@ export interface PoseSatelite {
  * perto de 0,94, sem passar do ponto). Sai do mesmo jeito, ao contrário.
  */
 export function Satelite({
-  pose, visivel, atraso = 0, titulo, children, conteudoClassName, y,
+  pose, visivel, atraso = 0, titulo, children, conteudoClassName, y, nome,
 }: {
+  /** Identifica a janela para o foco (`data-satelite`). */
+  nome?: string
   pose: PoseSatelite
   visivel: boolean
   atraso?: number
@@ -94,6 +97,8 @@ export function Satelite({
        ela só troca de lugar — não há deslize que ninguém vê. */
     <motion.div
       className="absolute"
+      data-obstaculo={visivel ? 'sim' : undefined}
+      data-satelite={nome}
       style={{ width: pose.w, zIndex: 30, y }}
       initial={{ left: pose.x, top: pose.y }}
       animate={{ left: pose.x, top: pose.y }}
@@ -172,6 +177,7 @@ export function SateliteAparelho({
   return (
     <div className="absolute" style={{ left: pose.x, top: pose.y, width: pose.w, zIndex: 35, perspective: 1400 }}>
       <motion.div
+        data-obstaculo={visivel ? 'sim' : undefined}
         style={{ y, transformOrigin: '50% 100%' }}
         initial={escondido}
         animate={visivel ? { opacity: 1, y: 0, rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1 } : escondido}

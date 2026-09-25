@@ -120,6 +120,23 @@
   --frame-stroke: rgba(255, 255, 255, .10);
   --frame-shadow: 0 1px 2px rgba(0,0,0,.28), 0 8px 24px rgba(0,0,0,.36), 0 32px 64px rgba(0,0,0,.44);
   --frame-chrome: #0E1414;
+  /* Landing (25/09) — as BANDEJAS do palco: moldura de janela em volta do app
+     real. No escuro, um degrau acima do chão; no claro, cinza muito claro para
+     a moldura se destacar do app branco E da página quase branca. */
+  --bandeja-bg: #161E1E;
+  --bandeja-borda: rgba(255, 255, 255, .10);
+  --bandeja-titulo: #8FA5A5;
+  --bandeja-conteudo-borda: rgba(0, 0, 0, .40);
+  /* O conector anotação → alvo e o contorno do alvo. */
+  --hero-conector: #2DD4BF;
+  /* Borda/divisor de cartões e seções da landing (no claro, os tokens de
+     superfície usados como borda somem: surface-800 é branco). */
+  --landing-borda: rgba(255, 255, 255, .08);
+  /* Texto de destaque da landing (etiquetas de seção, rótulos): no claro, o
+     teal 400 dá 2,4:1 sobre o fundo — o 600 dá 5,4:1. */
+  --landing-destaque: #2DD4BF;
+  /* Cartão da landing: a camada acima do chão (no claro, branco sobre #FAFAFC). */
+  --landing-cartao: #0E1414;
   /* Curva assinatura das transições públicas (Attio usa cubic-bezier(.32,.72,0,1)). */
   --ease-emph: cubic-bezier(.32, .72, 0, 1);
   --ink-fg: #060909;
@@ -991,6 +1008,14 @@ code, pre, kbd, samp {
   --frame-stroke: rgba(15, 23, 42, .10);
   --frame-shadow: 0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.10), 0 32px 64px rgba(15,23,42,.14);
   --frame-chrome: #F5F6F8;
+  --bandeja-bg: #ECEEF2;
+  --bandeja-borda: rgba(15, 23, 42, .14);
+  --bandeja-titulo: #4B5263;
+  --bandeja-conteudo-borda: rgba(15, 23, 42, .10);
+  --hero-conector: #0F766E;
+  --landing-borda: #DCE0E7;
+  --landing-destaque: #0F766E;
+  --landing-cartao: #FFFFFF;
   --ink-fg: #FFFFFF;
   /* No claro, levemente tingido no tom da faixa de cabeçalho das colunas
      (surface-900 = #F5F6F8), destacando-se do branco da lista. */

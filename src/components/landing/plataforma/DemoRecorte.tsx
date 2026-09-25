@@ -3,7 +3,7 @@ import { useReducedMotion } from 'framer-motion'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { Bandeja } from '../stage/hero/HeroSatelites'
-import { HeroAnotacao, type FocoAnotado } from '../stage/hero/HeroAnotacao'
+import { HeroFoco, medirNoIframe, useFocoDaDemo } from '../stage/hero/HeroFoco'
 import { useHeroTimeline, type HeroCue } from '../stage/hero/useHeroTimeline'
 import type { HeroCena, HeroState } from '../stage/hero/heroStory'
 
@@ -12,21 +12,32 @@ import type { HeroCena, HeroState } from '../stage/hero/heroStory'
  *
  * O Hero mostra o app inteiro (plano geral). Cada bloco da seção Plataforma
  * mostra, AMPLIADA, só a região que importa para aquele recurso — o chat, o
- * quadro do funil, a gaveta do relatório —, legível e sem ruído. É o mesmo app
- * em modo demonstração (`/demo.html`), com o mesmo diretor: o bloco dirige a
- * sua própria mini-história e as telas reagem pelos mecanismos de produção.
+ * quadro do funil, a gaveta do relatório. É o mesmo app em modo demonstração
+ * (`/demo.html`), com o mesmo diretor: o bloco dirige a sua própria
+ * mini-história e as telas reagem pelos mecanismos de produção.
+ *
+ * Responsabilidade (25/09): SÓ a moldura e o recorte do app. O componente
+ * ocupa a largura que o pai der e calcula a largura MÁXIMA que a moldura
+ * aguenta — pelo orçamento de altura (a tela menos o cabeçalho, a frase do
+ * recurso e folgas: frase e demonstração precisam caber juntas) e pelo teto de
+ * ampliação (um detalhe pequeno não vira um pôster de 1,9×). Esse limite sai
+ * por `onLimite`; quem compõe a grade do recurso (título, demonstração e
+ * benefícios) é o artigo, em `SecaoPlataforma`.
  *
  * Desempenho: o app só é carregado quando o recorte entra na tela, e é
- * desmontado depois que sai — nunca há mais de um ou dois rodando ao mesmo
- * tempo, por mais longa que a página seja.
- *
- * No celular o recorte não faz sentido (a tela do app a 1280 px não cabe):
- * ali roda o app mobile (390 px) inteiro, com as rotas de celular do diretor.
+ * desmontado depois que sai.
  */
 
 const APP = { w: 1280, h: 720 }
-const APP_CELULAR = { w: 390, h: 760 }
+/** No celular, o app inteiro com a altura da janela: um recorte por cima
+ *  cortaria a mensagem mais nova, que chega embaixo. */
+const APP_CELULAR = { w: 390, h: 600 }
 const CANAL = 'oryon-hero'
+/** Ampliação máxima de uma região (1 = tamanho real do app). */
+const AMPLIACAO_MAX = 1.35
+/** Cabeçalho fixo + frase do bloco + moldura + folgas, fora do recorte. */
+const FORA_DO_RECORTE = 300
+const ALTURA = { min: 300, max: 640 }
 
 export interface Recorte { x: number; y: number; w: number; h: number }
 
@@ -36,7 +47,7 @@ function temaDaPagina(): 'dark' | 'light' {
 }
 
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className,
+  titulo, rota, estado, cues, recorte, className, onLimite,
 }: {
   titulo: string
   /** Rota em que o app nasce. */
@@ -48,9 +59,12 @@ export function DemoRecorte({
   /** A região do app (1280 × 720) que o bloco mostra. */
   recorte: Recorte
   className?: string
+  /** A largura máxima da moldura (px) para este viewport — o pai compõe a grade com ela. */
+  onLimite?: (px: number) => void
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const telaRef = useRef<HTMLDivElement>(null)
   const semMovimento = useReducedMotion()
   const celular = !useMediaQuery('(min-width: 768px)')
 
@@ -79,23 +93,13 @@ export function DemoRecorte({
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== location.origin || !iframeRef.current || e.source !== iframeRef.current.contentWindow) return
-      const d = e.data as { canal?: string; tipo?: string; id?: number; rect?: FocoAnotado['rect']; raio?: number }
-      if (d?.canal !== CANAL) return
-      if (d.tipo === 'pronta') setPronta(true)
-      if (d.tipo === 'foco' && d.rect) {
-        setFoco({ id: d.id ?? Date.now(), rect: d.rect, raio: d.raio ?? 8 })
-      }
+      const d = e.data as { canal?: string; tipo?: string }
+      if (d?.canal === CANAL && d.tipo === 'pronta') setPronta(true)
     }
     window.addEventListener('message', onMsg)
     return () => window.removeEventListener('message', onMsg)
   }, [])
-
-  const [foco, setFoco] = useState<FocoAnotado | null>(null)
-  useEffect(() => {
-    if (!foco) return
-    const id = setTimeout(() => setFoco(null), 3100)
-    return () => clearTimeout(id)
-  }, [foco])
+  const foco = useFocoDaDemo(iframeRef)
 
   // ── A mini-história do bloco ───────────────────────────────────────────────
   const { state, composition } = useHeroTimeline<HeroState, HeroCena>({
@@ -115,65 +119,79 @@ export function DemoRecorte({
     if (pronta) iframeRef.current?.contentWindow?.postMessage({ canal: CANAL, tipo: 'tema', tema }, location.origin)
   }, [pronta, tema])
 
-  // ── Geometria: a região do app ocupa a largura da moldura ─────────────────
-  const regiao = celular ? { x: 0, y: 0, w: APP_CELULAR.w, h: APP_CELULAR.h * 0.78 } : recorte
+  // ── Geometria: largura disponível, orçamento de altura, teto de ampliação ─
+  const regiao = celular ? { x: 0, y: 0, w: APP_CELULAR.w, h: APP_CELULAR.h } : recorte
   const app = celular ? APP_CELULAR : APP
-  const [largura, setLargura] = useState(0)
-  const telaRef = useRef<HTMLDivElement>(null)
+  const avisar = useRef(onLimite)
+  avisar.current = onLimite
+  useLayoutEffect(() => {
+    const medir = () => {
+      const orcamento = Math.min(ALTURA.max, Math.max(ALTURA.min, window.innerHeight - FORA_DO_RECORTE))
+      // A borda da bandeja (12 px) e a barra de título (30 px) ficam fora da região.
+      const porAltura = (orcamento - 36) * (regiao.w / regiao.h) + 12
+      const porAmpliacao = regiao.w * (celular ? 1 : AMPLIACAO_MAX) + 12
+      avisar.current?.(Math.floor(Math.min(porAltura, porAmpliacao)))
+    }
+    medir()
+    window.addEventListener('resize', medir)
+    return () => window.removeEventListener('resize', medir)
+  }, [regiao.w, regiao.h, celular])
+  const [tela, setTela] = useState(0)
   useLayoutEffect(() => {
     const el = telaRef.current
     if (!el) return
-    const medir = () => setLargura(el.clientWidth)
+    const medir = () => setTela(el.clientWidth)
     medir()
-    if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(medir)
-    ro.observe(el)
-    return () => ro.disconnect()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
+    ro?.observe(el)
+    return () => ro?.disconnect()
   }, [])
-  const escala = largura > 0 ? largura / regiao.w : 0.7
+  const escala = tela > 0 ? tela / regiao.w : 0.7
 
   const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}`)
 
   return (
-    <div ref={hostRef} className={cn('relative', className)} aria-hidden>
-      <Bandeja titulo={titulo} className="w-full">
-        <div
-          ref={telaRef}
-          inert
-          className="relative w-full overflow-hidden pointer-events-none select-none"
-          style={{ aspectRatio: `${regiao.w} / ${regiao.h}` }}
-        >
-          {montar && (
-            <iframe
-              ref={iframeRef}
-              src={src}
-              title={`Oryon em demonstração — ${titulo}`}
-              tabIndex={-1}
-              className="absolute left-0 top-0 border-0 origin-top-left transition-opacity duration-500"
-              style={{
-                width: app.w, height: app.h,
-                transform: `translate(${-regiao.x * escala}px, ${-regiao.y * escala}px) scale(${escala})`,
-                opacity: pronta ? 1 : 0,
-                colorScheme: 'normal',
-              }}
-            />
-          )}
-          {!pronta && (
-            <div className="absolute inset-0 flex items-center justify-center bg-surface-950">
-              <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin opacity-60" />
-            </div>
-          )}
-          {/* O anel de foco, nas coordenadas do recorte. */}
-          {foco && !semMovimento && pronta && (
+    <div className={cn('w-full', className)}>
+        <div ref={hostRef} className="relative" aria-hidden>
+          <Bandeja titulo={titulo} className="w-full">
             <div
-              className="absolute left-0 top-0 origin-top-left pointer-events-none"
-              style={{ width: app.w, height: app.h, transform: `translate(${-regiao.x * escala}px, ${-regiao.y * escala}px) scale(${escala})` }}
+              ref={telaRef}
+              inert
+              className="relative w-full overflow-hidden pointer-events-none select-none"
+              style={{ aspectRatio: `${regiao.w} / ${regiao.h}` }}
             >
-              <HeroAnotacao key={foco.id} foco={foco} area={app} origem={{ x: 0, y: 0 }} />
+              {montar && (
+                <iframe
+                  ref={iframeRef}
+                  src={src}
+                  title={`Oryon em demonstração — ${titulo}`}
+                  tabIndex={-1}
+                  className="absolute left-0 top-0 border-0 origin-top-left transition-opacity duration-500"
+                  style={{
+                    width: app.w, height: app.h,
+                    transform: `translate(${-regiao.x * escala}px, ${-regiao.y * escala}px) scale(${escala})`,
+                    opacity: pronta ? 1 : 0,
+                    colorScheme: 'normal',
+                  }}
+                />
+              )}
+              {!pronta && (
+                <div className="absolute inset-0 flex items-center justify-center bg-surface-950">
+                  <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin opacity-60" />
+                </div>
+              )}
+              {/* O contorno do alvo, recortado pela janela (sem conector: aqui a
+                  frase do bloco já está colada ao recorte). */}
+              {!semMovimento && pronta && (
+                <HeroFoco
+                  tomada={foco}
+                  medir={(base) => foco && medirNoIframe(foco, iframeRef.current, null, telaRef.current, base)}
+                  raizRef={telaRef}
+                />
+              )}
             </div>
-          )}
+          </Bandeja>
         </div>
-      </Bandeja>
     </div>
   )
 }

@@ -35,7 +35,11 @@ export function Hero() {
       className={cn(
         // `overflow-x-clip`: a atmosfera do palco sangra para fora da coluna de
         // propósito, mas nunca pode criar rolagem horizontal na página.
-        'relative overflow-x-clip scroll-mt-16 pt-10 sm:pt-12 pb-10 sm:pb-12',
+        'relative overflow-x-clip scroll-mt-16 pb-10 sm:pb-12',
+        // Espaçamento do conjunto título → narração → palco em TOKENS (25/09):
+        // encolhem juntos em telas baixas, para o conjunto caber na altura.
+        'pt-[var(--hero-gap-topo)]',
+        '[--hero-gap-topo:clamp(20px,4.2svh,48px)] [--hero-gap-editorial:clamp(16px,2.8svh,32px)] [--hero-gap-palco:clamp(10px,1.8svh,20px)]',
         // relevo sutil só de token: do degrau 900 ao piso 950
         'bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_480px)]',
       )}
@@ -51,7 +55,7 @@ export function Hero() {
           {hero.title}
         </h1>
         <p
-          className="reveal mx-auto mt-4 max-w-[54ch] text-base sm:text-lg leading-relaxed text-surface-400 text-balance"
+          className="reveal mx-auto mt-[clamp(10px,1.6svh,16px)] max-w-[54ch] text-base sm:text-lg leading-relaxed text-surface-400 text-balance"
           style={{ ['--d' as string]: '90ms' }}
         >
           {hero.lead}
@@ -69,7 +73,7 @@ export function Hero() {
            travado em 1120, sobrava pouco para a conversa justamente quando o
            painel abre. O texto continua em 1120 — linha de leitura não deve
            acompanhar o palco. */
-        className="reveal mx-auto mt-7 sm:mt-8 w-full max-w-[1120px] xl:max-w-[1560px] px-4 sm:px-6 xl:px-3"
+        className="reveal mx-auto mt-[var(--hero-gap-editorial)] w-full max-w-[1120px] xl:max-w-[1560px] px-4 sm:px-6 xl:px-3"
         style={{ ['--d' as string]: '270ms' }}
       >
         <HeroPalco />

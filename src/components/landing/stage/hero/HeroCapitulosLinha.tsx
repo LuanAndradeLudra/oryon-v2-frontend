@@ -44,7 +44,7 @@ export function HeroCapitulosLinha({
                   eAtivo ? 'text-surface-50' : 'text-surface-500 hover:text-surface-300',
                 )}
               >
-                <span className={cn('mr-1.5 tabular-nums text-[11px]', eAtivo ? 'text-brand-400' : 'text-surface-600')}>
+                <span className={cn('mr-1.5 tabular-nums text-[11px]', eAtivo ? 'text-[var(--landing-destaque)]' : 'text-surface-500')}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 {c.titulo}

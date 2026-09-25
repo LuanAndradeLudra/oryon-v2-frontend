@@ -84,8 +84,11 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
   // arrastava a página inteira 470px para baixo, tirando o palco da viewport.
   // Dentro do app a troca é inócua; fora dele, é a diferença entre funcionar e
   // dar um salto de scroll.
+  /** Quando a lista pediu, por último, para ir ao fim (ver re-âncora abaixo). */
+  const pediuFimEmRef = useRef(0)
   const smoothScrollToBottom = useCallback(() => {
     const el = containerRef.current
+    pediuFimEmRef.current = performance.now()
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [])
 
@@ -146,6 +149,11 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
   // resposta do agente — a mensagem que a legenda está anunciando — saía por
   // baixo do contêiner. Só re-ancora quem já estava perto do fim; quem subiu
   // para ler o histórico não é arrastado de volta.
+  //
+  // Também re-ancora se o redimensionamento chega NO MEIO da rolagem suave até
+  // uma mensagem nova (25/09): quando a atendente assume, a mensagem dela e a
+  // área de digitação maior chegam juntas; a rolagem suave terminava no fim
+  // ANTIGO e a mensagem nova ficava escondida atrás da área de digitação.
   useEffect(() => {
     const el = containerRef.current
     if (!el || typeof ResizeObserver === 'undefined') return
@@ -154,7 +162,9 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
       atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     }
     el.addEventListener('scroll', medir, { passive: true })
-    const ro = new ResizeObserver(() => { if (atBottom) el.scrollTop = el.scrollHeight })
+    const ro = new ResizeObserver(() => {
+      if (atBottom || performance.now() - pediuFimEmRef.current < 1200) el.scrollTop = el.scrollHeight
+    })
     ro.observe(el)
     return () => { el.removeEventListener('scroll', medir); ro.disconnect() }
   }, [])
@@ -204,6 +214,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
         return (
           <div
             key={msg.id}
+            data-message-id={msg.id}
             className={isNew ? (msg.direction === 'outbound' ? 'animate-msg-in-right' : 'animate-msg-in-left') : undefined}
           >
             {showDate && <DateSeparator date={msg.sentAt} />}

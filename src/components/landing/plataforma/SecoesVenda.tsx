@@ -47,7 +47,7 @@ function BotaoContato({ className, longo = true }: { className?: string; longo?:
 function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string; cinza: string }) {
   return (
     <Revelar className="max-w-[46rem]">
-      <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-brand-400 ring-1 ring-brand-500/20">{eyebrow}</p>
+      <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{eyebrow}</p>
       <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.75rem,3.4vw,2.75rem)] text-balance">
         <span className="text-surface-50">{titulo}</span>{' '}
         <span className="text-surface-500">{cinza}</span>
@@ -63,7 +63,7 @@ const ICONES_PASSO = [Smartphone, Settings2, Rocket]
 export function SecaoImplantacao() {
   const semMovimento = useReducedMotion()
   return (
-    <section id="implantacao" data-section="implantacao" className="relative border-t border-surface-800 bg-surface-950 py-20 sm:py-28">
+    <section id="implantacao" data-section="implantacao" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
         <Cabecalho eyebrow={implantacao.eyebrow} titulo={implantacao.title} cinza={implantacao.titleCinza} />
 
@@ -84,10 +84,10 @@ export function SecaoImplantacao() {
               return (
                 <Revelar key={p.titulo} atraso={0.25 + i * 0.25}>
                   <li className="list-none">
-                    <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-900 ring-1 ring-surface-700 text-brand-400">
+                    <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-900 ring-1 ring-surface-700 text-[var(--landing-destaque)]">
                       <Icone className="h-6 w-6" strokeWidth={1.8} />
                     </span>
-                    <p className="mt-5 text-[12px] font-semibold uppercase tracking-[.12em] text-brand-400">{p.quem}</p>
+                    <p className="mt-5 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{p.quem}</p>
                     <p className="mt-1.5 font-display text-[20px] font-semibold tracking-[-0.01em] text-surface-50">{p.titulo}</p>
                     <p className="mt-2 max-w-[34ch] text-[15px] leading-relaxed text-surface-400">{p.texto}</p>
                   </li>
@@ -111,7 +111,7 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
   const [aberta, setAberta] = useState(false)
   const semMovimento = useReducedMotion()
   return (
-    <div className="border-b border-surface-800">
+    <div className="border-b border-[var(--landing-borda)]">
       <button
         type="button"
         onClick={() => setAberta((v) => !v)}
@@ -140,7 +140,7 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
 
 export function SecaoPerguntas() {
   return (
-    <section id="perguntas" data-section="perguntas" className="relative border-t border-surface-800 bg-surface-950 py-20 sm:py-28">
+    <section id="perguntas" data-section="perguntas" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
       <div className="mx-auto grid w-full max-w-[1280px] gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
         <div>
           <Cabecalho eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
@@ -149,7 +149,7 @@ export function SecaoPerguntas() {
           </Revelar>
         </div>
         <Revelar atraso={0.1}>
-          <div className="border-t border-surface-800">
+          <div className="border-t border-[var(--landing-borda)]">
             {perguntas.itens.map((q) => <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />)}
           </div>
         </Revelar>
@@ -162,7 +162,7 @@ export function SecaoPerguntas() {
 
 export function SecaoFecho() {
   return (
-    <section id="contato" data-section="cta" className="relative overflow-hidden border-t border-surface-800 bg-surface-950 py-24 sm:py-32">
+    <section id="contato" data-section="cta" className="relative overflow-hidden border-t border-[var(--landing-borda)] bg-surface-950 py-24 sm:py-32">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-70"
@@ -180,7 +180,7 @@ export function SecaoFecho() {
           <LinkButton to={LANDING_ROUTES.login} variant="neutral" size="lg">{fecho.entrar}</LinkButton>
         </Revelar>
         {import.meta.env.DEV && !contato.whatsapp && (
-          <p className="mt-6 text-[12px] text-surface-600">Número de WhatsApp comercial a configurar em <code>landingCopy.ts</code> (<code>contato.whatsapp</code>).</p>
+          <p className="mt-6 text-[12px] text-surface-500">Número de WhatsApp comercial a configurar em <code>landingCopy.ts</code> (<code>contato.whatsapp</code>).</p>
         )}
       </div>
     </section>

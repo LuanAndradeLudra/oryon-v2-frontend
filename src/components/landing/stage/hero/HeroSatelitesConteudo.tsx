@@ -26,7 +26,7 @@ export function ConteudoWhatsAppAparelho({ at, cena }: { at: HeroState; cena: He
 export function ConteudoNotificacoes({ at }: { at: HeroState }) {
   const lista = heroNotifications(at)
   return (
-    <div className="flex flex-col divide-y divide-surface-800 bg-surface-900 py-1">
+    <div className="flex flex-col divide-y divide-[var(--landing-borda)] bg-surface-900 py-1">
       {lista.map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}
     </div>
   )

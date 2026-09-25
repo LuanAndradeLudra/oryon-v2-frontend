@@ -2,11 +2,13 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
 import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { ConversationActivitySection } from '@/components/conversations/ContactPanel/ConversationActivitySection'
 import { DealSummary } from '@/components/deals/DealSummary'
+import type { DealStageHistoryEntry } from '@/types'
 import { MessageBubble } from '@/components/conversations/ChatWindow/MessageBubble'
 import { contato, linkContato, plataforma } from '../landingCopy'
 import { DemoRecorte, type Recorte } from './DemoRecorte'
@@ -39,10 +41,11 @@ const S = (t: number, state: HeroState): Cue => ({ t, state })
 const RECORTES: Record<string, Recorte> = {
   // Conversa + painel do contato.
   conversa: { x: 421, y: 44, w: 859, h: 676 },
-  // Quadro do funil: Qualificação e Proposta, onde o card anda.
-  funil: { x: 318, y: 92, w: 548, h: 340 },
+  // Quadro do funil, panorâmico: Qualificação, Proposta e Negociação — o card
+  // anda entre as duas primeiras, e a terceira mostra que o funil continua.
+  funil: { x: 318, y: 92, w: 790, h: 285 },
   // A gaveta do relatório da campanha.
-  relatorio: { x: 676, y: 0, w: 604, h: 640 },
+  relatorio: { x: 684, y: 0, w: 596, h: 640 },
 }
 
 interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; recorte: Recorte; titulo: string }
@@ -88,6 +91,14 @@ const HISTORIAS: Record<string, Historia> = {
 
 const NOOP = () => {}
 
+/** As passagens de etapa do negócio da história, como o painel do negócio as
+ *  mostra (mesmas linhas do backend de demonstração, `deals/:id/history`). */
+const HISTORICO_GANHO: DealStageHistoryEntry[] = [
+  { id: 'h-3', fromStageId: 'ps-proposta', fromStageLabel: 'Proposta', toStageId: 'ps-ganho', toStageLabel: 'Ganho', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: new Date(Date.now() - 60_000).toISOString() },
+  { id: 'h-2', fromStageId: 'ps-qualificacao', fromStageLabel: 'Qualificação', toStageId: 'ps-proposta', toStageLabel: 'Proposta', movedByKind: 'ai', movedByActorName: 'Agente Vendas', createdAt: new Date(Date.now() - 6 * 60_000).toISOString() },
+  { id: 'h-1', fromStageId: 'ps-entrada', fromStageLabel: 'Entrada', toStageId: 'ps-qualificacao', toStageLabel: 'Qualificação', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: new Date(Date.now() - 2 * 86_400_000).toISOString() },
+] as DealStageHistoryEntry[]
+
 /** O visual real de cada cartão de benefício. */
 function VisualCartao({ bloco, i }: { bloco: string; i: number }) {
   const contatoMarina = { displayName: HERO.person, profilePicUrl: null }
@@ -95,16 +106,20 @@ function VisualCartao({ bloco, i }: { bloco: string; i: number }) {
   const chave = `${bloco}-${i}`
   switch (chave) {
     case 'atender-0':
-      return <div className="px-3"><ConversationActivitySection conversationId="demo-conv-0" entries={heroTimeline('etiqueta')} /></div>
+      // Close na lista: o cabeçalho "Timeline · Hoje" fica fora do quadro.
+      return <div className="overflow-hidden px-3"><div className="-mt-[58px] -mb-3"><ConversationActivitySection conversationId="demo-conv-0" entries={heroTimeline('etiqueta')} /></div></div>
     case 'atender-1':
-      return <div className="px-3 py-3"><MessageBubble message={mensagem('demo-m-6')} contact={contatoMarina} showAvatar /></div>
+      return <div className="px-3 py-1"><MessageBubble message={mensagem('demo-m-6')} contact={contatoMarina} showAvatar /></div>
     case 'equipe-0':
-      return <div className="py-1">{heroNotifications('assumido').filter((n) => n.type === 'agent_handoff').map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}</div>
+      // O sino inteiro: a transferência chega no topo, acima do que já estava lá.
+      return <div className="py-1">{heroNotifications('assumido').map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}</div>
     case 'equipe-1':
       return (
         <div className="p-3">
+          {/* Fechado em Ganho, com as passagens abertas: quem moveu cada etapa —
+              a IA avançou, a Ana fechou. */}
           <DealSummary density="card" closed deal={heroDeal('ganho')} pipeline={HERO_PIPELINE} onReopen={NOOP}
-            history={undefined} onToggleHistory={NOOP} showReopenHistory={false} testIdPrefix="plat" testIdKey="ganho" />
+            history={HISTORICO_GANHO} onToggleHistory={NOOP} testIdPrefix="plat" testIdKey="ganho" />
         </div>
       )
     case 'funil-0':
@@ -115,11 +130,11 @@ function VisualCartao({ bloco, i }: { bloco: string; i: number }) {
         </div>
       )
     case 'funil-1':
-      return <div className="px-3"><ConversationActivitySection conversationId="demo-conv-0" entries={heroTimeline('avanco').slice(-2)} /></div>
+      return <div className="overflow-hidden px-3"><div className="-mt-[58px] -mb-3"><ConversationActivitySection conversationId="demo-conv-0" entries={heroTimeline('avanco').slice(-2)} /></div></div>
     case 'campanhas-0':
       return <div className="pointer-events-none"><TemplatePreview template={HERO_TEMPLATE} variables={HERO_TEMPLATE_VARIAVEIS} variant="frame" compact /></div>
     case 'campanhas-1':
-      return <div className="py-1">{heroNotifications('demanda').filter((n) => n.type === 'campaign_complete').map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}</div>
+      return <div className="py-1">{heroNotifications('demanda').map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}</div>
     default:
       return null
   }
@@ -141,6 +156,97 @@ function Revelar({ children, atraso = 0, className }: { children: ReactNode; atr
   )
 }
 
+/**
+ * COMPOSIÇÃO de cada recurso (25/09) — promessa, operação visível e dois
+ * benefícios lidos como UMA história. O arranjo segue a proporção do recorte,
+ * em vez de uma grade idêntica para todos:
+ *  • `lado`  — a demonstração é a superfície principal e os benefícios formam
+ *    uma coluna ao lado, esticada até a altura da moldura (topo e base
+ *    alinhados). Conversas (recorte ~1,3 : 1) leva a moldura mais larga;
+ *    o relatório de campanhas (vertical) divide o espaço mais por igual.
+ *  • `largo` — recorte panorâmico (o quadro do funil): a moldura ocupa a
+ *    coluna inteira e os benefícios fazem uma fileira logo abaixo.
+ * Duas colunas só a partir de `xl` (a coluna de conteúdo passa de ~1000 px);
+ * abaixo, empilha título → demonstração → benefícios, com folgas curtas.
+ */
+const COMPOSICAO: Record<string, { tipo: 'lado' | 'largo'; demo?: string }> = {
+  atender: { tipo: 'lado', demo: '64%' },
+  equipe: { tipo: 'lado', demo: '64%' },
+  funil: { tipo: 'largo' },
+  campanhas: { tipo: 'lado', demo: '55%' },
+}
+
+type Bloco = (typeof plataforma.blocos)[number]
+
+/** Um benefício: o componente real em cima, a frase embaixo. */
+function Beneficio({ bloco, i, c, esticar }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean }) {
+  return (
+    <Revelar atraso={0.15 + i * 0.08} className={cn('flex', esticar && 'min-h-0 flex-1')}>
+      {/* Altura do visual pelo CONTEÚDO: a caixa fixa de 168 px deixava um item
+          de uma linha solto num vão e cortava o modelo de mensagem. */}
+      <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
+        <div className={cn('flex flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5', esticar ? 'min-h-0' : 'min-h-[112px]')}>
+          <div aria-hidden inert className="pointer-events-none select-none">
+            <VisualCartao bloco={bloco} i={i} />
+          </div>
+        </div>
+        <div className="px-5 pb-4 pt-3.5">
+          <p className="text-[15px] font-semibold text-surface-50">{c.titulo}</p>
+          <p className="mt-1 text-[14px] leading-snug text-surface-400">{c.texto}</p>
+        </div>
+      </div>
+    </Revelar>
+  )
+}
+
+function ArtigoRecurso({ b, registrar }: { b: Bloco; registrar: (el: HTMLElement | null) => void }) {
+  const h = HISTORIAS[b.id]
+  const comp = COMPOSICAO[b.id]
+  const largo = useMediaQuery('(min-width: 1280px)')
+  const lado = largo && comp.tipo === 'lado'
+  // A largura máxima que a moldura aguenta neste viewport (orçamento de
+  // altura + teto de ampliação), medida pelo próprio recorte.
+  const [limite, setLimite] = useState(0)
+  const colunaDemo = limite ? `min(${limite}px, ${comp.demo ?? '100%'})` : comp.demo ?? '100%'
+
+  return (
+    <article id={`plataforma-${b.id}`} data-bloco={b.id} ref={registrar} className="scroll-mt-28">
+      {/* A promessa */}
+      <Revelar className="max-w-[44rem]">
+        <p className="lg:hidden mb-3 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{b.indice}</p>
+        <h3 className="font-display font-semibold tracking-[-0.02em] leading-[1.25] text-[clamp(1.25rem,2.2vw,1.625rem)] text-balance">
+          <span className="text-surface-50">{b.destaque}</span>{' '}
+          <span className="text-surface-400">{b.texto}</span>
+        </h3>
+      </Revelar>
+
+      <div
+        className={cn('mt-6 sm:mt-8 grid gap-4 sm:gap-5', lado && 'items-stretch gap-6')}
+        style={lado ? { gridTemplateColumns: `minmax(0, ${colunaDemo}) minmax(260px, 1fr)` } : undefined}
+      >
+        {/* A operação, na tela */}
+        <Revelar atraso={0.1} className="min-w-0" >
+          <div style={{ maxWidth: limite || undefined }}>
+            <DemoRecorte titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite} />
+          </div>
+        </Revelar>
+
+        {/* Os dois benefícios: coluna ao lado (esticada até a base da
+            moldura) ou fileira embaixo. */}
+        {/* Lado a lado, a MOLDURA define a altura da linha: a coluna tem altura
+            zero no cálculo da grade e estica até 100 % — topo e base alinhados
+            com a demonstração, e só a folga do visual absorve diferenças. */}
+        <div
+          className={lado ? 'flex min-h-full flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}
+          style={lado ? { height: 0 } : undefined}
+        >
+          {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={lado} />)}
+        </div>
+      </div>
+    </article>
+  )
+}
+
 export function SecaoPlataforma() {
   const [ativo, setAtivo] = useState<string>(plataforma.blocos[0].id)
   const blocosRef = useRef<Record<string, HTMLElement | null>>({})
@@ -158,11 +264,11 @@ export function SecaoPlataforma() {
   const irPara = (id: string) => blocosRef.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   return (
-    <section id="plataforma" data-section="plataforma" className="relative border-t border-surface-800 bg-surface-950 py-20 sm:py-28">
+    <section id="plataforma" data-section="plataforma" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
         {/* Cabeçalho da seção */}
         <Revelar className="max-w-[46rem]">
-          <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-brand-400 ring-1 ring-brand-500/20">
+          <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">
             {plataforma.eyebrow}
           </p>
           <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.75rem,3.4vw,2.75rem)] text-balance">
@@ -171,7 +277,7 @@ export function SecaoPlataforma() {
           </h2>
         </Revelar>
 
-        <div className="mt-14 sm:mt-20 grid gap-10 lg:grid-cols-[220px_1fr] lg:gap-16">
+        <div className="mt-14 sm:mt-20 grid gap-10 lg:grid-cols-[180px_1fr] lg:gap-12">
           {/* Índice fixo */}
           <nav aria-label="Recursos da plataforma" className="hidden lg:block">
             <ol className="sticky top-28 flex flex-col gap-1">
@@ -203,54 +309,13 @@ export function SecaoPlataforma() {
 
           {/* Os blocos */}
           <div className="flex min-w-0 flex-col gap-24 sm:gap-36">
-            {plataforma.blocos.map((b) => {
-              const h = HISTORIAS[b.id]
-              return (
-                <article
-                  key={b.id}
-                  id={`plataforma-${b.id}`}
-                  data-bloco={b.id}
-                  ref={(el) => { blocosRef.current[b.id] = el }}
-                  className="scroll-mt-28"
-                >
-                  <Revelar className="max-w-[40rem]">
-                    <p className="lg:hidden mb-3 text-[12px] font-semibold uppercase tracking-[.12em] text-brand-400">{b.indice}</p>
-                    <h3 className="font-display font-semibold tracking-[-0.02em] leading-[1.25] text-[clamp(1.25rem,2.2vw,1.625rem)] text-balance">
-                      <span className="text-surface-50">{b.destaque}</span>{' '}
-                      <span className="text-surface-400">{b.texto}</span>
-                    </h3>
-                  </Revelar>
-
-                  <Revelar atraso={0.1} className="mt-8">
-                    <DemoRecorte titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} />
-                  </Revelar>
-
-                  <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    {b.cartoes.map((c, i) => (
-                      <Revelar key={c.titulo} atraso={0.15 + i * 0.08}>
-                        <div className="h-full overflow-hidden rounded-2xl bg-surface-900 ring-1 ring-surface-800">
-                          <div className="relative h-[168px] overflow-hidden border-b border-surface-800 bg-surface-950">
-                            <div aria-hidden inert className="pointer-events-none select-none">
-                              <VisualCartao bloco={b.id} i={i} />
-                            </div>
-                            {/* Degradê de corte: o componente continua além da moldura. */}
-                            <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface-950 to-transparent" />
-                          </div>
-                          <div className="p-5">
-                            <p className="text-[15px] font-semibold text-surface-50">{c.titulo}</p>
-                            <p className="mt-1 text-[14px] leading-snug text-surface-400">{c.texto}</p>
-                          </div>
-                        </div>
-                      </Revelar>
-                    ))}
-                  </div>
-                </article>
-              )
-            })}
+            {plataforma.blocos.map((b) => (
+              <ArtigoRecurso key={b.id} b={b} registrar={(el) => { blocosRef.current[b.id] = el }} />
+            ))}
 
             {/* Fecho da seção: a ação de conversão. */}
             <Revelar>
-              <div className="flex flex-col items-start gap-4 rounded-2xl bg-surface-900 p-6 ring-1 ring-surface-800 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+              <div className="flex flex-col items-start gap-4 rounded-2xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:flex-row sm:items-center sm:justify-between sm:p-8">
                 <p className="max-w-[34ch] font-display text-[20px] font-semibold leading-snug tracking-[-0.01em] text-surface-50">
                   Veja o Oryon atendendo no seu WhatsApp.
                   <span className="block text-surface-400 text-[15px] font-medium mt-1">Converse com o nosso Agente IA — ele mesmo te mostra.</span>

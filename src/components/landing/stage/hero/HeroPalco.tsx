@@ -11,8 +11,35 @@ import {
 import { reached } from './heroRealData'
 import { Bandeja, Satelite, SateliteAparelho, TITULOS_SATELITES, type PoseSatelite } from './HeroSatelites'
 import { HeroCapitulosLinha } from './HeroCapitulosLinha'
-import { HeroAnotacao, type FocoAnotado } from './HeroAnotacao'
+import { HeroFoco, medirNoElemento, medirNoIframe, useFocoDaDemo, type Tomada } from './HeroFoco'
 import { HeroNarracao } from './HeroNarracao'
+
+/**
+ * Focos que moram numa JANELA da landing, não no app: situação, etiqueta e a
+ * chamada da Ana. O painel do contato não se atualiza ao vivo no produto (só
+ * recarregando) — a mudança visível é a linha do tempo e o sino.
+ */
+const FOCOS_SATELITE: Partial<Record<HeroState, { satelite: string; texto: string }>> = {
+  situacao: { satelite: 'linhaDoTempo', texto: 'Em negociação' },
+  etiqueta: { satelite: 'linhaDoTempo', texto: 'proposta enviada' },
+  assumido: { satelite: 'notificacoes', texto: 'pediu transferência' },
+  ganho: { satelite: 'negocio', texto: 'Ganho' },
+}
+
+/** A LINHA inteira que contém o texto, dentro de uma janela satélite. */
+function acharLinha(janela: HTMLElement, texto: string): HTMLElement | null {
+  const conteudo = janela.querySelector<HTMLElement>('.hero-bandeja > div:last-child') ?? janela
+  // O elemento mais interno com o texto: nenhum filho dele também o contém.
+  const tem = (e: Element) => (e.textContent ?? '').includes(texto)
+  const menor = [...conteudo.querySelectorAll<HTMLElement>('*')].find((e) => tem(e) && ![...e.children].some(tem)) ?? null
+  let linha = menor
+  const largura = conteudo.offsetWidth
+  for (let i = 0; linha && i < 5 && linha.offsetWidth < largura * 0.8 && linha.parentElement !== conteudo; i++) linha = linha.parentElement
+  return linha
+}
+
+/** Quanto a tomada de uma janela fica no ar. */
+const SATELITE_NO_AR_MS = 3400
 
 // O conteúdo das satélites (componentes reais do produto, com dependências
 // pesadas) só é baixado quando a demonstração fica pronta.
@@ -25,86 +52,102 @@ const ConteudoNegocio = lazy(() => carregar().then((m) => ({ default: m.Conteudo
 /**
  * O PALCO DO HERO — o Oryon de verdade, operando, em várias molduras.
  *
- * Arquitetura (24/09, rodada de fidelidade total + rodada de molduras):
+ *  • A ÂNCORA é o próprio app, num iframe (`/demo.html`) com backend de
+ *    demonstração em memória. Plano fixo durante o ciclo.
+ *  • Em volta, satélites com componentes reais: o WhatsApp da cliente (um
+ *    aparelho), o card do negócio, a linha do tempo e o sino — sempre em
+ *    cantos opostos (diagonal, decisão do PO).
+ *  • O RELÓGIO é daqui (`useHeroTimeline`); o diretor, dentro do iframe, vira
+ *    cada passo em eventos do servidor e troca de rota.
  *
- *  • A ÂNCORA é o próprio app, rodando num iframe (`/demo.html`) com um
- *    backend de demonstração em memória, em 1152 × 720 (a menor largura em que
- *    Conversas mostra lista, conversa e painel lado a lado), reduzido junto com
- *    o palco por UM fator. Plano fixo: não muda de lugar nem de tamanho.
- *  • Duas FAMÍLIAS de moldura em volta dela, 2–3 visíveis por cena:
- *      – APARELHO: o WhatsApp da cliente, com a campanha chegando (a
- *        `TemplatePreview` real). Um segundo aparelho com o Oryon mobile foi
- *        testado e retirado a pedido do PO: repetia a âncora;
- *      – JANELAS: o card do negócio (`DealSummary`, à direita, da confirmação
- *        até o Ganho), a linha do tempo da conversa e o sino (embaixo à
- *        esquerda, revezando) — componentes reais do produto.
- *  • O RELÓGIO é daqui (`useHeroTimeline`). A cada passo, a landing manda o
- *    estado e a cena para o iframe; lá dentro o "diretor" vira isso em
- *    eventos do servidor e troca de rota — e as telas reagem sozinhas.
+ * Enquadramento (25/09): o conjunto — título, narração, palco e controles —
+ * cabe na altura útil da tela em desktop comum. A escala respeita a MENOR
+ * restrição entre largura e altura, com um piso de legibilidade; antes de
+ * encolher o texto além do alvo, a tela do app fica mais BAIXA (o Oryon é
+ * responsivo: 1280 × 580 é o mesmo app, com menos linhas à vista). A escala é
+ * uma por viewport — nunca muda durante o ciclo.
  *
- * Movimento, em três camadas:
- *  • dentro das telas — o que o próprio produto anima (mensagens, card
- *    mudando de coluna, gaveta do relatório);
- *  • câmera — um avanço lento sobre a âncora durante cada cena e um "corte"
- *    com desfoque curto na troca de módulo;
- *  • molduras — janelas brotam do canto voltado para a âncora; aparelhos
- *    sobem endireitando de uma inclinação 3D; no scroll, tudo em paralaxe
- *    (aparelhos mais rápido que janelas, janelas mais que a âncora).
+ * Foco (25/09): contorno e conector em `HeroFoco`, acompanhando o alvo real
+ * quadro a quadro; o conector sai da narração e desce por um corredor lateral
+ * reservado fora do palco.
  */
 
 // ─── Geometria do palco (coordenadas de desenho) ─────────────────────────────
 
-// 16:9 (1280 × 720): em 1152 o selo "Agente IA no controle" e os botões do
-// cabeçalho do chat empurravam o nome do contato para fora (medido 24/09).
-const APP = { w: 1280, h: 720 }
-const APP_CELULAR = { w: 390, h: 760 }
+const APP_W = 1280
+const APP_H = { max: 720, min: 560 }
+const APP_CELULAR = { w: 390, h: { max: 760, min: 560 } }
 /** Tela do aparelho satélite: o app mobile a 60 %. */
-const TELA_APARELHO = { escala: 0.6, w: APP_CELULAR.w * 0.6, h: APP_CELULAR.h * 0.6 }
-const PALCO = { w: 1560, h: 812 }
+const TELA_APARELHO = { w: 390 * 0.6, h: 760 * 0.6 }
+const PALCO_W = 1560
+/** O palco é a tela do app + moldura (36) + folga das satélites embaixo (34) + topo (22). */
+const EXTRA_H = 92
 const ANCORA = { x: 134, y: 22 }
+/** Corredores laterais do conector, fora do palco (px de tela, não escalados). */
+const CORREDOR = 40
+
+/** Metas de escala: o texto do app a 14 px vira ~11 px no alvo e ~8 px no piso. */
+const FIT = { alvo: 0.8, piso: 0.58 }
 
 /**
- * DIAGONAIS — decisão do PO (24/09): as duas janelas satélite ficam sempre em
- * cantos opostos, formando uma diagonal sobre a âncora.
- *  • A: superior direito + inferior esquerdo (Conversas, passagem para a Ana);
- *  • B: superior esquerdo + inferior direito (Funis, Agentes IA).
- * Trocar de cena troca de diagonal — e a janela que continua em cena desliza
- * para o canto novo, atravessando o palco.
+ * DIAGONAIS — as duas janelas satélite ficam sempre em cantos opostos.
+ *  • A: superior direito + inferior esquerdo (Disparos, Conversas);
+ *  • B: superior esquerdo + inferior direito (Funis).
+ * Os cantos de baixo acompanham a altura da tela do app (`h`).
  */
-const CANTOS = {
-  supEsq: { x: 0, y: 24, w: 372, origem: '100% 100%' },
-  supDir: { x: 1188, y: 24, w: 372, origem: '0% 100%' },
-  infEsq: { x: 0, y: 452, w: 372, origem: '100% 0%' },
-  // O card do negócio é baixo (~190 px): mais para baixo, para encostar na
-  // quina da âncora e a diagonal ficar nítida.
-  infDir: { x: 1188, y: 556, w: 372, origem: '0% 0%' },
-} satisfies Record<string, PoseSatelite>
-
-/** O aparelho (WhatsApp da cliente) mora no canto inferior esquerdo. */
-const APARELHO: PoseSatelite = { x: 0, y: 286, w: TELA_APARELHO.w + 24, origem: '100% 50%' }
-
-function diagonal(cena: HeroCena) {
-  const b = cena === 'funil'
+function cantos(h: number) {
   return {
-    negocio: b ? CANTOS.infDir : CANTOS.supDir,
-    lateral: b ? CANTOS.supEsq : CANTOS.infEsq,
-  }
+    supEsq: { x: 0, y: 24, w: 372, origem: '100% 100%' },
+    supDir: { x: 1188, y: 24, w: 372, origem: '0% 100%' },
+    infEsq: { x: 0, y: h - 268, w: 372, origem: '100% 0%' },
+    // O card do negócio é baixo (~190 px): encosta na quina da âncora.
+    infDir: { x: 1188, y: h - 164, w: 372, origem: '0% 0%' },
+  } satisfies Record<string, PoseSatelite>
+}
+
+/** O aparelho (WhatsApp da cliente), à esquerda, rente à base da âncora. */
+function aparelho(h: number): PoseSatelite {
+  return { x: 0, y: h - 434, w: TELA_APARELHO.w + 24, origem: '100% 50%' }
+}
+
+function diagonal(cena: HeroCena, h: number) {
+  const c = cantos(h)
+  const b = cena === 'funil'
+  return { negocio: b ? c.infDir : c.supDir, lateral: b ? c.supEsq : c.infEsq }
 }
 
 function visibilidade(estado: HeroState, cena: HeroCena) {
   const disparos = cena === 'disparos' || cena === 'relatorio'
   const conversa2 = cena === 'conversa' && reached(estado, 'pedido')
   return {
-    // A cliente: a campanha chegando, até a IA assumir o atendimento.
     whatsapp: disparos || (cena === 'conversa' && !reached(estado, 'situacao')),
-    // O negócio: entra quando a Marina confirma o interesse e fica até o fim —
-    // o stepper anda junto com a história e termina em Ganho.
     negocio: !disparos && cena !== 'reinicio' && reached(estado, 'confirma'),
-    // O que a IA fez — enquanto a âncora não mostra essa linha do tempo inteira.
     linhaDoTempo: (cena === 'conversa' && reached(estado, 'situacao') && !conversa2) || cena === 'funil',
-    // O sino: o alerta que chama a Ana.
     notificacoes: conversa2 && reached(estado, 'assumido'),
   }
+}
+
+/**
+ * O ENQUADRAMENTO — escala e altura da tela do app para um viewport.
+ * `largura`: a coluna do palco; `altura`: o que sobra da tela abaixo do topo
+ * do palco, já descontados os controles de baixo.
+ */
+export function enquadrar(largura: number, altura: number, celular: boolean, corredor: number) {
+  if (celular) {
+    // No celular manda a leitura: a largura define a escala e só a altura da
+    // tela do app se ajusta (nunca o texto).
+    const fit = Math.min(1, largura / (APP_CELULAR.w + 12))
+    const h = Math.round(Math.min(APP_CELULAR.h.max, Math.max(APP_CELULAR.h.min, altura / fit - 36)))
+    return { fit, h }
+  }
+  const fitW = Math.min(1, (largura - 2 * corredor) / PALCO_W)
+  let fit = Math.min(fitW, FIT.alvo)
+  let h = Math.round(Math.min(APP_H.max, Math.max(APP_H.min, altura / fit - EXTRA_H)))
+  // Tela alta: a tela do app já está inteira — o palco pode crescer até a largura.
+  if (h === APP_H.max) fit = Math.min(fitW, altura / (APP_H.max + EXTRA_H))
+  // Tela baixa: a tela do app já está no mínimo — só então o texto encolhe, até o piso.
+  else if (h === APP_H.min) fit = Math.min(fitW, Math.max(FIT.piso, altura / (APP_H.min + EXTRA_H)))
+  return { fit: Math.round(fit * 1000) / 1000, h }
 }
 
 const CANAL = 'oryon-hero'
@@ -130,7 +173,7 @@ function rolador(el: HTMLElement | null): HTMLElement | Window {
   let e = el?.parentElement ?? null
   while (e) {
     const oy = getComputedStyle(e).overflowY
-    if ((oy === 'auto' || oy === 'scroll') && e.scrollHeight > e.clientHeight) return e
+    if (oy === 'auto' || oy === 'scroll') return e
     e = e.parentElement
   }
   return window
@@ -156,10 +199,16 @@ function srcDemo(rota: string) {
 }
 
 export function HeroPalco({ className }: { className?: string }) {
+  const raizRef = useRef<HTMLDivElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
+  const palcoRef = useRef<HTMLDivElement>(null)
+  const molduraRef = useRef<HTMLDivElement>(null)
+  const pilulaRef = useRef<HTMLDivElement>(null)
+  const barraRef = useRef<HTMLDivElement>(null)
   const ancoraRef = useRef<HTMLIFrameElement>(null)
   const semMovimento = useReducedMotion()
   const celular = !useMediaQuery('(min-width: 768px)')
+  const comConector = useMediaQuery('(min-width: 1024px)') && !semMovimento
   const tema = useTemaDaPagina()
 
   // ── Carregamento tardio: o app só começa a carregar depois da página ──────
@@ -179,31 +228,33 @@ export function HeroPalco({ className }: { className?: string }) {
   // A primeira rota e o tema vão na URL: o app já nasce na cena certa.
   const [srcAncora] = useState(() => srcDemo(semMovimento ? HERO_ROTAS.funil : HERO_ROTAS.disparos))
   const pronta = usePronta(ancoraRef)
-
-  // ── Foco: o anel de luz sobre o que acabou de mudar na tela ───────────────
-  // O diretor (dentro do iframe) mede o elemento e manda o retângulo; aqui só
-  // se desenha um anel por cima — direção do olhar, não interface.
-  const [foco, setFoco] = useState<FocoAnotado | null>(null)
-  useEffect(() => {
-    let limpar: ReturnType<typeof setTimeout> | undefined
-    const onMsg = (e: MessageEvent) => {
-      if (e.origin !== location.origin || !ancoraRef.current || e.source !== ancoraRef.current.contentWindow) return
-      const d = e.data as { canal?: string; tipo?: string; id?: number; rect?: { x: number; y: number; w: number; h: number }; raio?: number }
-      if (d?.canal !== CANAL || d.tipo !== 'foco' || !d.rect) return
-      setFoco({ id: d.id ?? Date.now(), rect: d.rect, raio: d.raio ?? 8 })
-      if (limpar) clearTimeout(limpar)
-      limpar = setTimeout(() => setFoco(null), 3100)
-    }
-    window.addEventListener('message', onMsg)
-    return () => { window.removeEventListener('message', onMsg); if (limpar) clearTimeout(limpar) }
-  }, [])
+  const foco = useFocoDaDemo(ancoraRef)
 
   // ── Relógio da história ────────────────────────────────────────────────────
   const { state, composition, index, paused, canAnimate, running, togglePause, irPara } = useHeroTimeline<HeroState, HeroCena>({
     cues: HERO_CUES, tailMs: HERO_TAIL_MS, hostRef, staticIndex: HERO_STATIC_CUE, enabled: pronta,
   })
 
-  // ── Capítulos (a legenda embaixo do palco) ─────────────────────────────────
+  // ── Foco nas janelas da landing (situação, etiqueta, chamada da Ana) ──────
+  // Mesmo ciclo da tomada do app: entra quando a janela assenta, fica ~3,4 s,
+  // sai antes do passo seguinte — e sai NA HORA se o passo mudar.
+  const [tomadaJanela, setTomadaJanela] = useState<(Tomada & { satelite: string; texto: string }) | null>(null)
+  useEffect(() => {
+    const cfg = FOCOS_SATELITE[state]
+    // Só na cena da conversa: trocar de cena encerra a tomada (a janela
+    // desliza para outro canto e o que ela mostra deixa de ser o assunto).
+    if (!pronta || semMovimento || celular || !cfg || composition !== 'conversa') return
+    const id = Date.now()
+    const t1 = setTimeout(() => setTomadaJanela({ id, saindo: false, ...cfg }), 200)
+    const t2 = setTimeout(() => setTomadaJanela((t) => (t?.id === id ? { ...t, saindo: true } : t)), 200 + SATELITE_NO_AR_MS)
+    return () => {
+      clearTimeout(t1); clearTimeout(t2)
+      setTomadaJanela((t) => (t?.id === id ? { ...t, saindo: true } : t))
+      setTimeout(() => setTomadaJanela((t) => (t?.id === id ? null : t)), 400)
+    }
+  }, [state, composition, pronta, semMovimento, celular])
+
+  // ── Capítulos (a barra de controle embaixo do palco) ───────────────────────
   const duracoes = useMemo(() => {
     const fim = (HERO_CUES[HERO_CUES.length - 1]?.t ?? 0) + HERO_TAIL_MS
     const out = {} as Record<HeroCapituloId, number>
@@ -233,28 +284,38 @@ export function HeroPalco({ className }: { className?: string }) {
     if (pronta) enviar(ancoraRef, { tipo: 'tema', tema })
   }, [pronta, tema])
 
-  // ── Ajuste: um fator só para o palco inteiro ───────────────────────────────
-  const palco = celular ? { w: APP_CELULAR.w + 12, h: APP_CELULAR.h + 36 } : PALCO
-  const [fit, setFit] = useState(0.9)
+  // ── Enquadramento: largura E altura, um valor por viewport ────────────────
+  const [quadro, setQuadro] = useState(() => ({ fit: 0.8, h: APP_H.max }))
   useLayoutEffect(() => {
-    const el = hostRef.current
-    if (!el) return
-    const medir = () => { if (el.clientWidth > 0) setFit(Math.min(1, el.clientWidth / palco.w)) }
+    const host = hostRef.current
+    if (!host) return
+    const medir = () => {
+      const largura = host.clientWidth
+      if (largura <= 0) return
+      const alvo = rolador(host)
+      const alturaTela = alvo instanceof Window ? window.innerHeight : alvo.clientHeight
+      const topoTela = alvo instanceof Window ? 0 : alvo.getBoundingClientRect().top
+      const rolado = alvo instanceof Window ? window.scrollY : alvo.scrollTop
+      // Topo do palco no documento (independe da escala: nada acima dele muda).
+      const topo = host.getBoundingClientRect().top - topoTela + rolado
+      const barra = (barraRef.current?.offsetHeight ?? 0) + 14
+      const disponivel = alturaTela - topo - barra - 14
+      const q = enquadrar(largura, disponivel, celular, comConector ? CORREDOR : 0)
+      setQuadro((a) => (a.fit === q.fit && a.h === q.h ? a : q))
+    }
     medir()
-    if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(medir)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [palco.w])
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
+    ro?.observe(host)
+    window.addEventListener('resize', medir)
+    return () => { ro?.disconnect(); window.removeEventListener('resize', medir) }
+  }, [celular, comConector])
+  const { fit, h: appH } = quadro
+  const app = celular ? { w: APP_CELULAR.w, h: appH } : { w: APP_W, h: appH }
+  const palco = celular ? { w: APP_CELULAR.w + 12, h: appH + 36 } : { w: PALCO_W, h: appH + EXTRA_H }
 
   // ── Scroll em DOIS ESTADOS (como a Attio), nunca ligado pixel a pixel ─────
-  //
-  // Reescalar a tela a cada pixel rolado (e o antigo "avanço de câmera", que
-  // reescalava continuamente durante a cena) fazia o texto do app ser
-  // redesenhado a cada quadro — o conteúdo parecia TREMER (relato do PO,
-  // 24/09). Agora: passou de 40 px, a âncora recua UMA vez para 0,97 e as
-  // molduras sobem, com mola; voltando ao topo, desfaz. Entre um estado e
-  // outro, tudo fica parado e nítido.
+  // Reescalar a cada pixel rolado fazia o texto do app TREMER (PO, 24/09).
+  // Passou de 40 px: a âncora recua uma vez e as molduras sobem, com mola.
   const [rolou, setRolou] = useState(false)
   useEffect(() => {
     if (semMovimento) return
@@ -275,8 +336,6 @@ export function HeroPalco({ className }: { className?: string }) {
   }, [rolou, escalaAncora, yJanelas, yAparelhos])
 
   // ── Corte na troca de módulo ───────────────────────────────────────────────
-  // Um "respiro" curto sobre a tela enquanto a rota troca por baixo: a nova
-  // tela surge de um desfoque leve, sem piscar. Nenhuma escala contínua.
   const [cenaRef, animarCena] = useAnimate()
   const cenaAnterior = useRef<HeroCena | null>(null)
   const saltoAnterior = useRef(0)
@@ -295,13 +354,11 @@ export function HeroPalco({ className }: { className?: string }) {
   }, [composition, saltos, pronta, semMovimento, animarCena, cenaRef])
 
   const vis = visibilidade(state, composition)
-  const cantos = diagonal(composition === 'reinicio' ? 'conversa' : composition)
-  const app = celular ? APP_CELULAR : APP
+  const lados = diagonal(composition === 'reinicio' ? 'conversa' : composition, appH)
 
   return (
-    <div className={cn('relative w-full', className)}>
-      {/* ATMOSFERA: campo teal vindo de baixo + persiana de 1 px a cada 8 px.
-          Sangra para fora da coluna, como o fundo da referência. */}
+    <div ref={raizRef} className={cn('relative w-full', className)}>
+      {/* ATMOSFERA: campo teal vindo de baixo + persiana de 1 px a cada 8 px. */}
       <div aria-hidden className="pointer-events-none absolute -inset-x-[12vw] -top-10 -bottom-24 overflow-hidden">
         <div
           className="absolute inset-0 opacity-70 [[data-theme=light]_&]:opacity-60"
@@ -316,21 +373,9 @@ export function HeroPalco({ className }: { className?: string }) {
         />
       </div>
 
-      {/* OS CAPÍTULOS — uma linha fina acima do palco (o que acontece em cada
-          momento é dito pelas anotações, dentro da cena). */}
-      <HeroCapitulosLinha
-        className="mb-3"
-        capitulos={HERO_CAPITULOS}
-        ativo={capitulo}
-        duracoes={duracoes}
-        rodando={running && pronta}
-        chaveProgresso={`${capitulo}-${saltos}`}
-        onIr={irParaCapitulo}
-      />
-
-      {/* A NARRAÇÃO — o que está acontecendo agora, fora do palco, com as cores
-          invertidas em relação ao tema (decisão do PO, 24/09). */}
-      <HeroNarracao texto={batida} className="mb-5 sm:mb-6 px-1" />
+      {/* A NARRAÇÃO — o que acontece agora, fora do palco, em faixa de altura
+          fixa (a troca de frase nunca move o palco). */}
+      <HeroNarracao texto={batida} pilulaRef={pilulaRef} className="relative mb-[var(--hero-gap-palco,16px)] px-1" />
 
       <div
         ref={hostRef}
@@ -340,6 +385,7 @@ export function HeroPalco({ className }: { className?: string }) {
         style={{ height: palco.h * fit }}
       >
         <div
+          ref={palcoRef}
           inert
           aria-hidden
           className="absolute top-0 pointer-events-none"
@@ -351,6 +397,8 @@ export function HeroPalco({ className }: { className?: string }) {
         >
           {/* A ÂNCORA — plano fixo: não muda de lugar nem de tamanho no ciclo. */}
           <motion.div
+            ref={molduraRef}
+            data-ancora
             className="absolute"
             style={{
               left: celular ? 0 : ANCORA.x, top: celular ? 0 : ANCORA.y,
@@ -381,20 +429,17 @@ export function HeroPalco({ className }: { className?: string }) {
                   )}
                 </div>
               </div>
-              {/* PÔSTER — uma CAPTURA da própria demonstração, na primeira cena
-                  (Disparos), nos dois temas: o visitante vê o produto no
-                  primeiro quadro, e o app vivo assume por cima com um
-                  crossfade — a mesma tela, sem salto. Gerado com o Edge em
-                  modo headless (ver HERO-CICLOS.md). No celular e com
-                  movimento reduzido a primeira tela é outra: ali vale o
-                  indicador de carregamento do próprio app. */}
+              {/* PÔSTER — captura da própria demonstração (1280 × 720) na primeira
+                  cena, nos dois temas; o app vivo assume por cima com um
+                  crossfade. Com a tela mais baixa, o pôster é cortado por baixo
+                  — o topo (cabeçalho e lista) é o mesmo. */}
               {!celular && !semMovimento ? (
                 <img
                   src={tema === 'light' ? '/hero/demo-poster-claro.png' : '/hero/demo-poster-escuro.png'}
                   alt=""
                   aria-hidden
                   decoding="async"
-                  className="absolute left-0 top-0 transition-opacity duration-700"
+                  className="absolute left-0 top-0 object-cover object-top transition-opacity duration-700"
                   style={{ width: app.w, height: app.h, opacity: pronta ? 0 : 1, pointerEvents: 'none' }}
                 />
               ) : !pronta && (
@@ -403,52 +448,83 @@ export function HeroPalco({ className }: { className?: string }) {
                 </div>
               )}
             </Bandeja>
-
-            {/* A ANOTAÇÃO — o anel de luz sobre o que acabou de mudar, com um
-                rótulo preso a ele dizendo o que aconteceu. Some em ~3 s. */}
-            {foco && !semMovimento && foco.rect.y + foco.rect.h > 0 && foco.rect.y < app.h && (
-              <HeroAnotacao key={foco.id} foco={foco} area={{ w: app.w, h: app.h }} origem={{ x: 6, y: 30 }} />
-            )}
           </motion.div>
 
           {/* ── AS DEMAIS MOLDURAS — só no desktop ────────────────────────────── */}
           {!celular && pronta && (
             <Suspense fallback={null}>
-              <SateliteAparelho pose={APARELHO} visivel={vis.whatsapp} atraso={0.2} y={yAparelhos} lado="esquerda">
+              <SateliteAparelho pose={aparelho(appH)} visivel={vis.whatsapp} atraso={0.2} y={yAparelhos} lado="esquerda">
                 <div style={{ width: TELA_APARELHO.w, height: TELA_APARELHO.h }}>
                   <ConteudoWhatsApp at={state} cena={composition} />
                 </div>
               </SateliteAparelho>
 
-              <Satelite pose={cantos.negocio} visivel={vis.negocio} atraso={0.15} titulo={TITULOS_SATELITES.negocio} y={yJanelas}>
+              <Satelite pose={lados.negocio} visivel={vis.negocio} atraso={0.15} titulo={TITULOS_SATELITES.negocio} y={yJanelas} nome="negocio">
                 <ConteudoNegocio at={state} />
               </Satelite>
-              <Satelite pose={cantos.lateral} visivel={vis.linhaDoTempo} atraso={0.35} titulo={TITULOS_SATELITES.linhaDoTempo} y={yJanelas}>
+              <Satelite pose={lados.lateral} visivel={vis.linhaDoTempo} atraso={0.35} titulo={TITULOS_SATELITES.linhaDoTempo} y={yJanelas} nome="linhaDoTempo">
                 <ConteudoLinhaDoTempo at={state} />
               </Satelite>
-              <Satelite pose={cantos.lateral} visivel={vis.notificacoes} atraso={0.1} titulo={TITULOS_SATELITES.notificacoes} y={yJanelas}>
+              <Satelite pose={lados.lateral} visivel={vis.notificacoes} atraso={0.1} titulo={TITULOS_SATELITES.notificacoes} y={yJanelas} nome="notificacoes">
                 <ConteudoNotificacoes at={state} />
               </Satelite>
             </Suspense>
           )}
         </div>
-
       </div>
 
-      {/* Rodapé: a divulgação dos dados fictícios, ao lado da pausa. */}
-      <div className="relative mt-5 flex items-center justify-between gap-3 px-1">
-        <p className="text-[11.5px] text-surface-500">O Oryon de verdade, com dados fictícios.</p>
-        {canAnimate && (
-          <button
-            type="button"
-            onClick={togglePause}
-            aria-label={paused ? 'Retomar a demonstração' : 'Pausar a demonstração'}
-            className="flex-shrink-0 rounded-md p-1 text-surface-500 transition-colors hover:text-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)]"
-          >
-            {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-          </button>
-        )}
+      {/* O FOCO — contorno no alvo real e, no desktop, o conector que o liga à
+          narração pelo corredor lateral. */}
+      {!semMovimento && (
+        <>
+          <HeroFoco
+            tomada={foco}
+            medir={(base) => foco && medirNoIframe(foco, ancoraRef.current, molduraRef.current, null, base)}
+            raizRef={raizRef}
+            anotacaoRef={comConector ? pilulaRef : undefined}
+            palcoRef={comConector ? palcoRef : undefined}
+          />
+          <HeroFoco
+            tomada={tomadaJanela}
+            medir={(base) => {
+              if (!tomadaJanela) return null
+              const janela = palcoRef.current?.querySelector<HTMLElement>(`[data-satelite="${tomadaJanela.satelite}"]`) ?? null
+              return medirNoElemento(janela && acharLinha(janela, tomadaJanela.texto), janela, base)
+            }}
+            raizRef={raizRef}
+            anotacaoRef={comConector ? pilulaRef : undefined}
+            palcoRef={palcoRef}
+          />
+        </>
+      )}
+
+      {/* A BARRA DE CONTROLE — capítulos, a divulgação dos dados e a pausa,
+          como num player: o título, a narração e o palco ficam juntos em cima. */}
+      <div ref={barraRef} className="relative mt-3.5 flex items-center gap-3 px-1 md:grid md:grid-cols-[1fr_auto_1fr]">
+        <p className="hidden md:block text-[11.5px] text-surface-500">O Oryon de verdade, com dados fictícios.</p>
+        <HeroCapitulosLinha
+          className="flex-1 md:col-start-2"
+          capitulos={HERO_CAPITULOS}
+          ativo={capitulo}
+          duracoes={duracoes}
+          rodando={running && pronta}
+          chaveProgresso={`${capitulo}-${saltos}`}
+          onIr={irParaCapitulo}
+        />
+        <div className="md:col-start-3 flex justify-end">
+          {canAnimate && (
+            <button
+              type="button"
+              onClick={togglePause}
+              aria-label={paused ? 'Retomar a demonstração' : 'Pausar a demonstração'}
+              className="flex-shrink-0 rounded-md p-1.5 text-surface-500 transition-colors hover:text-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)]"
+            >
+              {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+            </button>
+          )}
+        </div>
       </div>
+      <p className="md:hidden mt-1 text-center text-[11px] text-surface-500">O Oryon de verdade, com dados fictícios.</p>
     </div>
   )
 }

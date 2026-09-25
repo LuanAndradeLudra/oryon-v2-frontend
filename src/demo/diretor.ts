@@ -19,7 +19,7 @@
 import { definirEstado, estadoAtual } from './backend'
 import { emitirDoServidor } from './preparar'
 import {
-  HERO_USER, heroContact, heroConversation, heroDeal, heroMessages, heroNotifications, reached,
+  HERO, HERO_USER, heroContact, heroConversation, heroDeal, heroMessages, heroNotifications, reached,
 } from '@/components/landing/stage/hero/heroRealData'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '@/components/landing/stage/hero/heroStory'
 
@@ -31,7 +31,10 @@ export type MensagemParaDemo =
 export type MensagemDaDemo =
   | { canal: typeof CANAL; tipo: 'pronta' }
   | { canal: typeof CANAL; tipo: 'rota'; rota: string }
-  | { canal: typeof CANAL; tipo: 'foco'; id: number; rect: { x: number; y: number; w: number; h: number }; raio: number }
+  /** O alvo em foco, a cada quadro em que muda (id = a tomada). `visivel`:
+   *  falso quando o alvo saiu da área rolável ou ficou coberto. */
+  | { canal: typeof CANAL; tipo: 'foco'; id: number; rect: { x: number; y: number; w: number; h: number }; raio: number; visivel: boolean }
+  | { canal: typeof CANAL; tipo: 'foco-fim'; id: number }
 
 type Janela = { __demoNavegar?: (to: string) => void; __demoRota?: () => string; __demoFecharPainel?: () => void }
 
@@ -129,6 +132,9 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
   // inicial em silêncio, com o palco vazio (cena `reinicio`), e cada tela
   // busca de novo quando for montada.
   const recomeco = !reached(estado, de)
+  // Um passo novo encerra a tomada anterior: o destaque nunca descreve um
+  // acontecimento que já passou.
+  encerrarFoco()
   definirEstado(estado)
   if (!recomeco && de !== estado) {
     emitirTransicao(de, estado)
@@ -147,7 +153,7 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
       w.__demoNavegar?.(rota === HERO_ROTAS.disparos ? HERO_ROTAS.conversa : HERO_ROTAS.disparos)
       setTimeout(() => w.__demoNavegar?.(rota), 60)
       const alvo = FOCOS_CENA[cena]
-      if (alvo) focarAlvo(alvo, 900)
+      if (alvo) focarAlvo(alvo, 500)
     }
     return
   }
@@ -162,7 +168,7 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
       }
       const alvo = FOCOS_CENA[cena]
       // A cena precisa montar (e a gaveta do relatório, deslizar) antes da medida.
-      if (alvo) focarAlvo(alvo, 900)
+      if (alvo) focarAlvo(alvo, 500)
     }
   } else if (recomeco && cena !== 'reinicio') {
     // Voltar no tempo NA MESMA tela (clicar num capítulo anterior, ambos em
@@ -203,50 +209,49 @@ export function instalarDiretor() {
 
 /**
  * O que acabou de mudar na tela, por estado — um trecho de texto do produto
- * que identifica o elemento. O diretor só MEDE onde ele está e avisa a
- * landing, que desenha um anel de luz por cima (efeito de câmera, fora do
- * app). Nada aqui altera a interface.
+ * que identifica o elemento (e, nas mensagens, o id dela). O diretor só MEDE
+ * onde ele está e avisa a landing, que desenha contorno e conector por cima
+ * (efeito de câmera, fora do app). Nada aqui altera a interface.
  */
-type Alvo = { texto: string; bolha?: boolean; direita?: boolean }
-
-/**
- * `direita`: o texto das mensagens aparece duas vezes em Conversas — na prévia
- * da lista (à esquerda) e na bolha do chat. A bolha é a ocorrência mais à
- * direita; sem isto o anel ia para a prévia da lista.
- */
-const FOCOS: Partial<Record<HeroState, Alvo>> = {
-  demanda: { texto: 'Preciso de uma proposta pra 12', bolha: true, direita: true },
-  resposta: { texto: 'O Plano Pro anual sai por', bolha: true, direita: true },
-  situacao: { texto: 'Em negociação' },
-  etiqueta: { texto: 'proposta enviada' },
-  avanco: { texto: 'Plano Pro anual · 12', bolha: true },
-  assumido: { texto: 'Ana Prado', direita: true },
-  humano: { texto: 'aqui é a Ana', bolha: true, direita: true },
+type Alvo = {
+  texto: string
+  /** A mensagem, pelo id (`data-message-id` do `MessageList`): o alvo é
+   *  procurado DENTRO dela — o mesmo texto na prévia da lista não confunde. */
+  mensagem?: string
+  bolha?: boolean
 }
 
-/** O elemento visível mais interno cujo texto contém o trecho. */
-function acharTexto(trecho: string, direita = false): HTMLElement | null {
-  const raiz = document.getElementById('main-content') ?? document.body
+// Situação, etiqueta e a chamada da Ana: o painel do contato não se atualiza
+// ao vivo no produto (só recarregando), então a mudança VISÍVEL é na linha do
+// tempo e no sino — janelas da landing, focadas pelo próprio `HeroPalco`.
+const FOCOS: Partial<Record<HeroState, Alvo>> = {
+  demanda: { texto: 'Preciso de uma proposta pra 12', mensagem: 'demo-m-5', bolha: true },
+  resposta: { texto: 'O Plano Pro anual sai por', mensagem: 'demo-m-6', bolha: true },
+  confirma: { texto: HERO.confirm.slice(0, 18), mensagem: 'demo-m-7', bolha: true },
+  pedido: { texto: HERO.ask.slice(0, 18), mensagem: 'demo-m-8', bolha: true },
+  avanco: { texto: 'Plano Pro anual · 12', bolha: true },
+  humano: { texto: 'aqui é a Ana', mensagem: 'demo-m-9', bolha: true },
+}
+
+/** O elemento visível mais interno (o de menor área) cujo texto contém o trecho. */
+function acharTexto(raiz: ParentNode, trecho: string): HTMLElement | null {
   const candidatos = [...raiz.querySelectorAll<HTMLElement>('p, span, div, h4, button')]
     .filter((e) => e.children.length <= 2 && (e.textContent ?? '').includes(trecho))
-  // O MENOR elemento visível com o texto: o chip da etiqueta, não a linha da
-  // linha do tempo que também a menciona.
   let melhor: HTMLElement | null = null
   let menorArea = Infinity
   for (const e of candidatos) {
     const r = e.getBoundingClientRect()
-    if (r.width <= 0 || r.height <= 0 || r.bottom <= 0 || r.top >= window.innerHeight) continue
-    // Com `direita`, vence a ocorrência mais à direita; senão, a menor.
-    const area = direita ? -r.left : r.width * r.height
+    if (r.width <= 0 || r.height <= 0) continue
+    const area = r.width * r.height
     if (area < menorArea) { menorArea = area; melhor = e }
   }
   return melhor
 }
 
 /** Sobe até o "cartão" que contém o texto (bolha de mensagem, card do quadro). */
-function subirAteCartao(e: HTMLElement): HTMLElement {
+function subirAteCartao(e: HTMLElement, limite?: Element | null): HTMLElement {
   let atual: HTMLElement = e
-  for (let i = 0; i < 7 && atual.parentElement; i++) {
+  for (let i = 0; i < 7 && atual.parentElement && atual !== limite; i++) {
     const cs = getComputedStyle(atual)
     const temFundo = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent'
     if (temFundo && parseFloat(cs.borderTopLeftRadius) >= 6 && atual.getBoundingClientRect().width > 120) return atual
@@ -255,39 +260,112 @@ function subirAteCartao(e: HTMLElement): HTMLElement {
   return e
 }
 
+function acharAlvo(alvo: Alvo): HTMLElement | null {
+  const app = document.getElementById('main-content') ?? document.getElementById('root') ?? document.body
+  const escopo = alvo.mensagem ? app.querySelector(`[data-message-id="${CSS.escape(alvo.mensagem)}"]`) : app
+  if (!escopo) return null
+  const achado = acharTexto(escopo, alvo.texto)
+  if (!achado) return null
+  return alvo.bolha ? subirAteCartao(achado, alvo.mensagem ? escopo : null) : achado
+}
+
 /** Foco por CENA — o que a câmera aponta ao chegar num módulo sem ação de estado. */
 const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
   disparos: { texto: 'Renovação Pro · setembro', bolha: true },
   relatorio: { texto: 'Funil de engajamento' },
 }
 
-let focoSeq = 0
-function focar(estado: HeroState) {
-  const alvo = FOCOS[estado]
-  if (alvo) focarAlvo(alvo, 250)
+type Retangulo = { x: number; y: number; w: number; h: number }
+
+/**
+ * A parte do elemento que está de fato à vista: recortada por todo ancestral
+ * que corta o conteúdo (a lista rolável do chat, o painel) e pela janela.
+ * `visivel` cai quando sobra menos da metade ou quando outra camada do app
+ * (um painel, um menu) cobre o centro do alvo.
+ */
+function medir(el: HTMLElement): { rect: Retangulo; visivel: boolean } {
+  const r = el.getBoundingClientRect()
+  let x1 = r.left, y1 = r.top, x2 = r.right, y2 = r.bottom
+  for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+    const cs = getComputedStyle(a)
+    if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue
+    const c = a.getBoundingClientRect()
+    x1 = Math.max(x1, c.left); y1 = Math.max(y1, c.top); x2 = Math.min(x2, c.right); y2 = Math.min(y2, c.bottom)
+  }
+  x1 = Math.max(x1, 0); y1 = Math.max(y1, 0); x2 = Math.min(x2, window.innerWidth); y2 = Math.min(y2, window.innerHeight)
+  const w = Math.max(0, x2 - x1), h = Math.max(0, y2 - y1)
+  let visivel = w > 0 && h > 0 && w * h >= 0.5 * r.width * r.height
+  if (visivel) {
+    const topo = document.elementFromPoint(x1 + w / 2, y1 + h / 2)
+    if (topo && !el.contains(topo) && !topo.contains(el)) visivel = false
+  }
+  return { rect: { x: x1, y: y1, w, h }, visivel }
 }
 
+let focoSeq = 0
+let focoAtivo = 0
+
+function encerrarFoco() {
+  focoSeq++
+  if (focoAtivo) avisarPai({ canal: CANAL, tipo: 'foco-fim', id: focoAtivo })
+  focoAtivo = 0
+}
+
+function focar(estado: HeroState) {
+  const alvo = FOCOS[estado]
+  if (alvo) focarAlvo(alvo, 150)
+}
+
+/** Quanto tempo a tomada fica no ar depois que o alvo assenta. */
+const FOCO_NO_AR_MS = 3400
+/** Espera máxima para o alvo parar de se mexer antes de aparecer. */
+const FOCO_ASSENTAR_MAX_MS = 1400
+
+/**
+ * A TOMADA — acha o alvo, espera ele ASSENTAR (a mensagem entrar, o chat
+ * terminar de rolar, a gaveta deslizar) e então o acompanha quadro a quadro
+ * enquanto estiver no ar: rolagem, painel abrindo, card mudando de coluna,
+ * mudança de tamanho. Cada mudança vai para a landing, que desenha o contorno
+ * e o conector na mesma geometria. Nada aqui altera a interface.
+ */
 function focarAlvo(alvo: Alvo, atrasoMs: number) {
   const seq = ++focoSeq
-  const inicio = Date.now()
-  const tentar = () => {
+  const inicio = performance.now()
+  let el: HTMLElement | null = null
+  let ultimo = ''
+  let parado = 0
+  let noArDesde = 0
+
+  const quadro = () => {
     if (seq !== focoSeq) return
-    const achado = acharTexto(alvo.texto, alvo.direita)
-    if (!achado) {
-      if (Date.now() - inicio < 1800) setTimeout(tentar, 120)
+    const agora = performance.now()
+    // O React pode trocar o nó (a lista recarrega): acha de novo.
+    if (!el || !el.isConnected) el = acharAlvo(alvo)
+    if (!el) {
+      if (agora - inicio < atrasoMs + 2200) { requestAnimationFrame(quadro); return }
+      encerrarFoco()
       return
     }
-    // Espera a mensagem entrar e o chat terminar a rolagem suave até ela —
-    // medir antes deixava o anel acima do elemento.
-    setTimeout(() => {
-      if (seq !== focoSeq) return
-      const el = alvo.bolha ? subirAteCartao(achado) : achado
-      const r = el.getBoundingClientRect()
-      const raio = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 8
-      avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect: { x: r.left, y: r.top, w: r.width, h: r.height }, raio })
-    }, 850)
+    const { rect, visivel } = medir(el)
+    const raio = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 8
+    const chave = [rect.x, rect.y, rect.w, rect.h].map((n) => Math.round(n * 2) / 2).join(',') + visivel
+    if (!noArDesde) {
+      // Assentando: conta quadros sem mudança antes de entrar no ar.
+      parado = chave === ultimo ? parado + 1 : 0
+      ultimo = chave
+      if ((parado >= 8 && visivel) || agora - inicio > atrasoMs + FOCO_ASSENTAR_MAX_MS) {
+        noArDesde = agora
+        focoAtivo = seq
+        avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect, raio, visivel })
+      }
+    } else if (chave !== ultimo) {
+      ultimo = chave
+      avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect, raio, visivel })
+    }
+    if (noArDesde && agora - noArDesde > FOCO_NO_AR_MS) { encerrarFoco(); return }
+    requestAnimationFrame(quadro)
   }
-  setTimeout(tentar, atrasoMs)
+  setTimeout(() => { if (seq === focoSeq) requestAnimationFrame(quadro) }, atrasoMs)
 }
 
 export function avisarQuandoPronta() {
