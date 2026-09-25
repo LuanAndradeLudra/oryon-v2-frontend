@@ -222,11 +222,15 @@ type Alvo = {
    *  procurado DENTRO dela — o mesmo texto na prévia da lista não confunde. */
   mensagem?: string
   bolha?: boolean
+  /** O texto é o TÍTULO de um bloco: o alvo é o bloco inteiro (título e
+   *  conteúdo), não a faixa do título. */
+  bloco?: boolean
 }
 
-// Situação, etiqueta e a chamada da Ana: o painel do contato não se atualiza
-// ao vivo no produto (só recarregando), então a mudança VISÍVEL é na linha do
-// tempo e no sino — janelas da landing, focadas pelo próprio `HeroPalco`.
+// Situação, etiqueta e a chamada da Ana: a mudança que a câmera aponta é na
+// linha do tempo e no sino — janelas da landing, focadas pelo próprio
+// `HeroPalco`. (A ficha passou a reler a situação em `contact:updated`; a
+// etiqueta da CONVERSA ainda não chega ao vivo: o backend não emite evento.)
 const FOCOS: Partial<Record<HeroState, Alvo>> = {
   demanda: { texto: 'Preciso de uma proposta pra 12', mensagem: 'demo-m-5', bolha: true },
   resposta: { texto: 'O Plano Pro anual sai por', mensagem: 'demo-m-6', bolha: true },
@@ -269,13 +273,14 @@ function acharAlvo(alvo: Alvo): HTMLElement | null {
   if (!escopo) return null
   const achado = acharTexto(escopo, alvo.texto)
   if (!achado) return null
+  if (alvo.bloco) return achado.parentElement ?? achado
   return alvo.bolha ? subirAteCartao(achado, alvo.mensagem ? escopo : null) : achado
 }
 
 /** Foco por CENA — o que a câmera aponta ao chegar num módulo sem ação de estado. */
 const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
   disparos: { texto: 'Renovação Pro · setembro', bolha: true },
-  relatorio: { texto: 'Funil de engajamento' },
+  relatorio: { texto: 'Funil de engajamento', bloco: true },
   // O agente: a regra que manda usar só o catálogo; o documento da condição de
   // setembro; o produto que a resposta cita.
   'agente-instrucoes': { texto: 'Use só valores e condições' },

@@ -106,11 +106,13 @@ const HISTORIAS: Record<string, Historia> = {
   },
   campanhas: {
     titulo: 'Oryon · Disparos',
-    rota: HERO_ROTAS.disparos, estado: 'inicio', recorte: RECORTES.relatorio,
+    rota: HERO_ROTAS.disparos, estado: 'ganho', recorte: RECORTES.relatorio,
     // Direto no relatório: começando na lista de Disparos, o recorte (a metade
     // direita da tela) mostrava só faixas vazias até a gaveta abrir.
+    // Campanha CONCLUÍDA (estado 'ganho'): em 'inicio' ela ainda está saindo e
+    // o funil do relatório contradizia os números dos cartões ao lado.
     cues: [
-      { t: 0, state: 'inicio', composition: 'relatorio' },
+      { t: 0, state: 'ganho', composition: 'relatorio' },
       { t: 9600, composition: 'relatorio' },
     ],
   },
