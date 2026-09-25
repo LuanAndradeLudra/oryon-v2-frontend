@@ -678,3 +678,26 @@ idênticos ao original (as costuras `demo`/`dealsSlot`/`stagesOverride`/
   socket no produto — fiel ao real).
 - `prefers-reduced-motion` usa o quadro estático (Funis logo após o avanço);
   não foi possível emular a preferência no navegador de teste.
+
+## Rodada seguinte (24/09, noite) — mais molduras, mais movimento
+
+Pedido do PO: mais animações, mais transições, molduras diferentes, 2–3 ao
+mesmo tempo, mantendo o padrão.
+
+- **Disparos abre o relatório real** (`CampaignReport`, `?report=cp-renovacao`)
+  por cima da lista — a gaveta do produto é a transição da cena. Analytics de
+  demonstração em `src/demo/campanhaDemo.ts`.
+- **Nova família de moldura — o aparelho:** o WhatsApp da Marina (a
+  `TemplatePreview` real sobre o papel de parede amostrado) entra subindo e
+  endireitando de uma inclinação 3D.
+- **Card do negócio** (`DealSummary` real) à direita, da confirmação até o
+  Ganho: o stepper acende Proposta ao vivo quando o agente avança o negócio.
+- **Câmera viva:** avanço de 1,2 % durante cada cena + corte com desfoque na
+  troca de módulo; paralaxe separada por família (aparelhos > janelas > âncora).
+- Composição por cena (sempre 3 molduras): Disparos = âncora + WhatsApp;
+  Conversas = âncora + WhatsApp → linha do tempo + negócio; Funis/Agentes =
+  âncora + linha do tempo + negócio; passagem = âncora + sino + negócio.
+- **Testado e retirado:** um segundo aparelho com o Oryon mobile real (segundo
+  iframe da demo). Funcionava, mas o PO o achou redundante com a âncora.
+- O diretor fecha o painel global de negócio (`closeDeal`) antes de trocar de
+  módulo — é o que o clique no fundo escurecido faria no uso real.
