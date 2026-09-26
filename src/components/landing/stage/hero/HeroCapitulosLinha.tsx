@@ -31,7 +31,7 @@ export function HeroCapitulosLinha({
         {capitulos.map((c, i) => {
           const eAtivo = i === iAtivo
           return (
-            <li key={c.id} className="flex items-center">
+            <li key={c.id} className="flex min-w-0 items-center">
               {i > 0 && <span aria-hidden className="mx-2 hidden h-3 w-px bg-surface-700 sm:block" />}
               <button
                 type="button"
@@ -39,7 +39,7 @@ export function HeroCapitulosLinha({
                 aria-current={eAtivo ? 'step' : undefined}
                 title={c.valor}
                 className={cn(
-                  'relative rounded-md px-1.5 py-1 text-[12.5px] font-medium tracking-[-0.005em] transition-colors duration-300',
+                  'relative rounded-md px-1.5 py-1 text-left text-[12px] font-medium leading-tight tracking-[-0.005em] transition-colors duration-300 sm:text-[12.5px]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)]',
                   eAtivo ? 'text-surface-50' : 'text-surface-500 hover:text-surface-300',
                 )}

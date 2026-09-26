@@ -21,7 +21,7 @@ import { ConteudoWhatsAppAparelho } from '../stage/hero/HeroSatelitesConteudo'
 import { contato, contatoDisponivel, linkContato, plataforma } from '../landingCopy'
 import { DemoRecorte, type Recorte } from './DemoRecorte'
 import {
-  HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroCampaigns, heroDeal, heroHistoricoGanho, reached, heroMessages, heroNotifications, heroTimeline,
+  HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroCampaigns, heroDeal, heroHistoricoGanho, heroMessages, heroNotifications, heroTimeline,
 } from '../stage/hero/heroRealData'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '../stage/hero/heroStory'
 import type { HeroCue } from '../stage/hero/useHeroTimeline'
@@ -175,11 +175,11 @@ function Contador({ para }: { para: number }) {
   const semMovimento = useReducedMotion()
   const [valor, setValor] = useState(semMovimento ? para : 0)
   useEffect(() => {
-    if (semMovimento) { setValor(para); return }
+    if (semMovimento) return
     const c = animate(0, para, { duration: 1.6, ease: [0.16, 1, 0.3, 1], onUpdate: (v) => setValor(Math.round(v)) })
     return () => c.stop()
   }, [para, semMovimento])
-  return <>{valor.toLocaleString('pt-BR')}</>
+  return <>{(semMovimento ? para : valor).toLocaleString('pt-BR')}</>
 }
 
 /**
@@ -406,8 +406,8 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
           </div>
         </div>
         <div className="px-5 pb-4 pt-3.5">
-          <p className="text-[12px] font-semibold text-surface-50">{c.titulo}</p>
-          <p className="mt-1 max-w-[52ch] text-[11.5px] leading-snug text-surface-400">{c.texto}</p>
+          <p className="text-[15px] font-semibold leading-snug text-surface-50">{c.titulo}</p>
+          <p className="mt-1.5 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{c.texto}</p>
         </div>
       </div>
     </Revelar>
@@ -483,7 +483,7 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
         <h3 className="mt-2.5 font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(0.98rem,1.33vw,1.27rem)] text-balance">
           {b.destaque}
         </h3>
-        <p className="mt-2.5 max-w-[62ch] text-[12px] sm:text-[12.5px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
+        <p className="mt-2.5 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
       </Revelar>
 
       <div className="mt-6 grid gap-4 sm:gap-5" style={colunas ? { gridTemplateColumns: colunas, gap: VAO } : undefined}>
