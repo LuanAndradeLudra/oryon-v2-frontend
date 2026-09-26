@@ -201,8 +201,8 @@ const PRONTA_CENA: Partial<Record<HeroCena, string>> = {
   conversa: 'Rafaela Couto',
   funil: 'Migração de base',
   'agente-instrucoes': 'Use só valores e condições',
-  'agente-conhecimento': 'Renovação de setembro',
-  'agente-catalogo': 'Implantação assistida',
+  'agente-conhecimento': 'Convênios aceitos',
+  'agente-catalogo': 'Consulta de retorno',
   'agente-capacidades': 'Capacidades de CRM',
   'agente-capacidades-funil': 'Capacidades de CRM',
   painel: 'Volume de Mensagens',
@@ -294,10 +294,10 @@ type Alvo = {
 // etiqueta da CONVERSA ainda não chega ao vivo: o backend não emite evento.)
 const FOCOS: Partial<Record<HeroState, Alvo>> = {
   demanda: { texto: 'Preciso de uma proposta pra 12', mensagem: 'demo-m-5', bolha: true },
-  resposta: { texto: 'O Plano Pro anual sai por', mensagem: 'demo-m-6', bolha: true },
+  resposta: { texto: 'O retorno com a Dra. Helena', mensagem: 'demo-m-6', bolha: true },
   confirma: { texto: HERO.confirm.slice(0, 18), mensagem: 'demo-m-7', bolha: true },
   pedido: { texto: HERO.ask.slice(0, 18), mensagem: 'demo-m-8', bolha: true },
-  avanco: { texto: 'Plano Pro anual · 12', bolha: true },
+  avanco: { texto: 'Retorno · Dra. Helena', bolha: true },
   humano: { texto: 'aqui é a Ana', mensagem: 'demo-m-9', bolha: true },
 }
 
@@ -340,13 +340,13 @@ function acharAlvo(alvo: Alvo): HTMLElement | null {
 
 /** Foco por CENA — o que a câmera aponta ao chegar num módulo sem ação de estado. */
 const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
-  disparos: { texto: 'Renovação Pro · setembro', bolha: true },
+  disparos: { texto: 'Retorno · setembro', bolha: true },
   relatorio: { texto: 'Funil de engajamento', bloco: true },
   // O agente: a regra que manda usar só o catálogo; o documento da condição de
   // setembro; o produto que a resposta cita.
   'agente-instrucoes': { texto: 'Use só valores e condições' },
-  'agente-conhecimento': { texto: 'Renovação de setembro', bolha: true },
-  'agente-catalogo': { texto: 'Plano Pro', bolha: true },
+  'agente-conhecimento': { texto: 'Convênios aceitos', bolha: true },
+  'agente-catalogo': { texto: 'Consulta de retorno', bolha: true },
   // Limites da IA: chamar uma pessoa (permitido) e mover o negócio — onde a
   // própria tela diz que fechar venda nunca é permitido. O card do funil fica
   // abaixo da dobra do app: a câmera rola até ele.

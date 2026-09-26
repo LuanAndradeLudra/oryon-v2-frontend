@@ -176,7 +176,7 @@ export function WhatsAppIphone({ at, cena }: { at: HeroState; cena: HeroCena }) 
         <span className="flex items-center gap-1 pr-1"><Voltar /></span>
         <span className="flex h-[36px] w-[36px] flex-shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white" style={{ background: '#0F766E' }}>VS</span>
         <span className="flex min-w-0 flex-1 flex-col leading-tight">
-          <span className="truncate text-[16.5px] font-semibold text-black">Vértice Software</span>
+          <span className="truncate text-[16.5px] font-semibold text-black">Clínica Vitalis</span>
           <span className="truncate text-[12.5px]" style={{ color: CINZA_IOS }}>Conta comercial</span>
         </span>
         <span className="flex items-center gap-5 pl-2"><Video /><Telefone /></span>

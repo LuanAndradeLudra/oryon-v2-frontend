@@ -47,26 +47,22 @@ export const hero = {
   // "atende sozinho" (até 26/09) prometia o que o próprio lead desmentia — a
   // equipe entra quando precisa. "na hora" é o que a demonstração mostra.
   title: 'Seu WhatsApp atende na hora.',
-  lead: 'Agentes IA respondem cada conversa com o que você ensinou a eles — e chamam um Atendente, com todo o contexto, quando o cliente precisa de uma pessoa.',
+  lead: 'Um Agente IA treinado no seu negócio responde cada conversa. Quando o cliente precisa de uma pessoa, ele chama a sua equipe com o contexto inteiro.',
   stageLabel: 'Demonstração animada do produto',
 } as const
 
 export const trust = {
-  // Reposicionado (25/09) como o "posso confiar?" da escada de consciência:
-  // vem depois da Implantação e antes das Perguntas, e fala dos LIMITES da IA.
+  // Reposicionado (26/09) logo depois da Plataforma: quem acabou de ver a IA
+  // agir pergunta primeiro "posso confiar?" — e só depois "dá trabalho?".
   eyebrow: 'Limites da IA',
-  // 26/09: sem promessa absoluta ("Nada inventado") e sem repetir o capítulo
-  // "Passar para a equipe"; o que é EXCLUSIVO desta seção: verificação,
-  // permissões por agente, a pausa manual e a conexão oficial.
+  // 26/09 (PO): NENHUMA promessa de que a IA não erra ou não inventa — isso
+  // acontece e não se garante na venda. A seção diz o contrário da concorrência:
+  // nenhuma IA acerta sempre; a Oryon é feita para que o erro custe pouco.
   title: 'A IA trabalha dentro de limites.',
   titleCinza: 'Você define quais são.',
   /** A frase que prepara a tela real (aba Capacidades do agente). */
-  lead: 'Cada Agente IA tem a sua lista de capacidades, uma por uma, na própria configuração. O que estiver desligado, ele não faz — e o que ele faz fica registrado.',
+  lead: 'Nenhuma IA acerta sempre — e a gente não promete o contrário. A Oryon é feita para que um erro custe pouco: a IA só faz o que você liberou, tudo fica registrado, e a sua equipe vê e assume quando quiser.',
   tela: 'Oryon · Agentes IA',
-  // 26/09 (2ª revisão): três itens ao lado da tela, falando do que ela mostra;
-  // três embaixo, do que acontece em volta da conversa. "Fechar venda" corrigido:
-  // o backend RECUSA ganho/perdido de venda pela IA mesmo com o opt-in
-  // (deals.service › aiCloseDeal) — a versão anterior dizia "se você liberar".
   items: [
     {
       key: 'permissoes',
@@ -76,7 +72,7 @@ export const trust = {
     {
       key: 'venda',
       title: 'Ganho ou perdido é de uma pessoa',
-      text: 'A IA avança o negócio entre as etapas; marcar a venda como ganha ou perdida, não. O sistema recusa, mesmo que alguém tente liberar.',
+      text: 'A IA avança o negócio entre as etapas; marcar como ganho ou perdido, não. O sistema recusa, mesmo que alguém tente liberar.',
     },
     {
       key: 'historico',
@@ -84,9 +80,9 @@ export const trust = {
       text: 'Cada ação da IA entra na linha do tempo do contato, com o nome do agente — dá para ver o que ela fez e quando.',
     },
     {
-      key: 'verificacao',
-      title: 'Resposta conferida antes de sair',
-      text: 'Valores, horários, nomes e ações citados pela IA são conferidos com os seus dados; o que não confere fica retido para revisão da equipe.',
+      key: 'chamada',
+      title: 'Quando não sabe, ela chama alguém',
+      text: 'Pedido de encaixe, urgência, assunto fora do que você ensinou: a regra do agente é chamar uma pessoa da equipe em vez de improvisar — e a regra é sua, você escreve.',
     },
     {
       key: 'controle',
@@ -149,9 +145,20 @@ export const plataforma = {
   eyebrow: 'Plataforma',
   title: 'Do primeiro "oi" ao resultado medido.',
   titleCinza: 'Cada etapa acontecendo na própria Oryon.',
-  // Ordem (26/09): de onde vem o que a IA sabe → como ela atende → quando a
-  // equipe assume → como o negócio avança → como a base é reativada → como a
-  // operação mede o resultado.
+  /**
+   * Os três ATOS (26/09): seis capítulos com a mesma anatomia cansavam no
+   * terceiro; agrupados em três ideias, o visitante percebe blocos. Cada ato
+   * abre com uma frase e agrupa os capítulos pelo id.
+   */
+  atos: [
+    { id: 'ia',     numero: 'I',   titulo: 'A IA atende',        frase: 'Antes de responder, ela precisa conhecer o seu negócio.', blocos: ['conhecer', 'atender'] },
+    { id: 'venda',  numero: 'II',  titulo: 'A venda acontece',   frase: 'O negócio anda com a conversa. Quem fecha é a sua equipe.', blocos: ['funil', 'equipe'] },
+    { id: 'escala', numero: 'III', titulo: 'A operação cresce',  frase: 'Reative quem já comprou e veja tudo numa tela.', blocos: ['campanhas', 'medir'] },
+  ],
+  // Ordem (26/09, aprovada pelo PO): conhecer → atender → funil → equipe →
+  // reativar → medir. O funil vem ANTES da equipe porque o clímax da história
+  // (a pessoa confirma, e o negócio vai para a etapa final) pertence ao
+  // capítulo da equipe — e ele precisa vir depois de o funil andar sozinho.
   blocos: [
     {
       id: 'conhecer',
@@ -159,28 +166,18 @@ export const plataforma = {
       destaque: 'Ela responde com o que você ensinou.',
       texto: 'As instruções, a base de conhecimento e o catálogo liberado ficam na configuração de cada agente — é disso que sai cada resposta.',
       cartoes: [
-        { titulo: 'A resposta sai daqui.', texto: 'O valor da proposta vem do catálogo; a condição de setembro, de um documento da base de conhecimento.' },
-        { titulo: 'Mudou? Atualize e pronto.', texto: 'Edite um documento ou libere outro produto — as próximas respostas passam a seguir a versão nova.' },
+        { titulo: 'A resposta sai daqui.', texto: 'O valor vem do catálogo; a regra do convênio, de um documento da base de conhecimento.' },
+        { titulo: 'Mudou? Atualize e pronto.', texto: 'Edite um documento ou libere outro item do catálogo — as próximas respostas passam a seguir a versão nova.' },
       ],
     },
     {
       id: 'atender',
       indice: 'Atender com IA',
-      destaque: 'Resposta na hora, a qualquer hora.',
-      texto: 'A cliente pede uma proposta e recebe a resposta na hora, de dia ou de madrugada — enquanto o contato é atualizado no CRM.',
+      destaque: 'Responde fora do expediente. E anota tudo.',
+      texto: 'O cliente pede um horário à noite e recebe a resposta na hora — enquanto a situação e as etiquetas do contato mudam no CRM.',
       cartoes: [
-        { titulo: 'Situação e etiquetas em dia.', texto: 'O Agente IA atualiza a situação do contato e as etiquetas durante a conversa — cada mudança fica registrada com quem fez.' },
-        { titulo: 'No WhatsApp de sempre.', texto: 'A cliente conversa pelo WhatsApp que já usa — sem aplicativo novo, link ou formulário.' },
-      ],
-    },
-    {
-      id: 'equipe',
-      indice: 'Passar para a equipe',
-      destaque: 'A pessoa certa, no momento certo.',
-      texto: 'Quando a cliente pede para falar com alguém, a IA chama a pessoa certa, com o histórico completo, e sai de cena enquanto ela atende.',
-      cartoes: [
-        { titulo: 'Avisada na hora.', texto: 'A atendente recebe a notificação e abre a conversa inteira — sem perguntar de novo ao cliente.' },
-        { titulo: 'A venda fica com a sua equipe.', texto: 'A IA prepara e avança o negócio; marcar ganho ou perdido é sempre de uma pessoa.' },
+        { titulo: 'Situação e etiquetas em dia.', texto: 'A IA atualiza a situação do contato e as etiquetas durante a conversa — cada mudança fica registrada com quem fez.' },
+        { titulo: 'No WhatsApp de sempre.', texto: 'O cliente conversa pelo WhatsApp que já usa — sem aplicativo novo, link ou formulário.' },
       ],
     },
     {
@@ -194,10 +191,20 @@ export const plataforma = {
       ],
     },
     {
+      id: 'equipe',
+      indice: 'Passar para a equipe',
+      destaque: 'Quem confirma é uma pessoa.',
+      texto: 'Quando o cliente quer falar com alguém, a IA chama a pessoa certa, com o histórico completo — e é ela quem marca o negócio como ganho.',
+      cartoes: [
+        { titulo: 'Avisada na hora.', texto: 'A atendente recebe a notificação e abre a conversa inteira — sem perguntar de novo ao cliente.' },
+        { titulo: 'O fechamento fica com a sua equipe.', texto: 'A IA prepara e avança o negócio; marcar ganho ou perdido é sempre de uma pessoa.' },
+      ],
+    },
+    {
       id: 'campanhas',
       indice: 'Reativar a base',
       destaque: 'Campanhas que viram conversas.',
-      texto: 'Dispare um modelo aprovado pela Meta para a base inteira e veja quem recebeu, leu e respondeu. Cada resposta cai no atendimento com IA.',
+      texto: 'Dispare um modelo aprovado pela Meta para a sua base e veja quem recebeu, leu e respondeu. Cada resposta cai no atendimento com IA.',
       cartoes: [
         { titulo: 'Do jeito que o cliente vê.', texto: 'O modelo chega com o nome dele e botões de resposta — um toque e a conversa começa.' },
         { titulo: 'Leituras e respostas contadas.', texto: 'Entregues, lidas, respostas e conversões de cada campanha, num relatório só.' },
@@ -237,7 +244,7 @@ export const implantacao = {
       texto: 'Toda a configuração é feita pela nossa equipe, a partir do jeito que a sua empresa já vende e atende.',
       entregas: [
         'Agentes IA com instruções, conhecimento e catálogo',
-        'Funis com as etapas do seu processo de venda',
+        'Funis com as etapas do seu atendimento',
         'Equipe, setores e regras de transferência',
       ],
     },
@@ -264,7 +271,7 @@ export const implantacao = {
       {
         key: 'crescer',
         titulo: 'Mais de um número, mais de um agente.',
-        texto: 'Cada número de WhatsApp tem o seu Agente IA; vendas, suporte e pós-venda podem ter o seu, cada um com a sua equipe.',
+        texto: 'Cada número de WhatsApp tem o seu Agente IA; atendimento, comercial e pós-venda podem ter o seu, cada um com a sua equipe.',
       },
       {
         key: 'acompanhar',
@@ -307,7 +314,7 @@ export const perguntas = {
         },
         {
           pergunta: 'Posso conectar mais de um número?',
-          resposta: 'Sim. Cada número conectado tem o seu Agente IA — vendas, suporte e pós-venda podem ter números e agentes diferentes.',
+          resposta: 'Sim. Cada número conectado tem o seu Agente IA — atendimento, comercial e pós-venda podem ter números e agentes diferentes.',
         },
       ],
     },
@@ -316,15 +323,19 @@ export const perguntas = {
       itens: [
         {
           pergunta: 'De onde a IA tira as respostas?',
-          resposta: 'Das instruções, da base de conhecimento e do catálogo configurados em cada agente — e valores citados são conferidos antes de a resposta sair.',
+          resposta: 'Das instruções, da base de conhecimento e do catálogo configurados em cada agente. O que não está lá, ela não deveria afirmar — e a regra do agente é chamar uma pessoa quando o assunto sai disso.',
         },
         {
           pergunta: 'E quando a IA não souber responder?',
-          resposta: 'Ela chama uma pessoa da equipe, com a conversa inteira à vista. O que ela não consegue conferir com os seus dados fica retido para revisão, em vez de ir para o cliente.',
+          resposta: 'Ela chama uma pessoa da equipe, com a conversa inteira à vista, em vez de improvisar. E a equipe pode assumir qualquer conversa a qualquer momento, com um clique.',
         },
         {
           pergunta: 'A IA pode fechar vendas sozinha?',
           resposta: 'Não. A IA avança o negócio entre as etapas do funil, mas marcar uma venda como ganha ou perdida é sempre decisão de uma pessoa — o sistema recusa, mesmo que alguém tente liberar.',
+        },
+        {
+          pergunta: 'A IA pode errar?',
+          resposta: 'Pode, como qualquer IA — e a gente não promete o contrário. A Oryon é construída para que um erro apareça e custe pouco: cada ação fica registrada com o nome do agente, a equipe acompanha em tempo real e assume quando quiser, e a IA nunca marca ganho ou perdido. Seguimos desenvolvendo, aos poucos, mecanismos para reduzir isso.',
         },
         {
           pergunta: 'A IA responde fora do horário da equipe?',
@@ -362,7 +373,4 @@ export const fecho = {
   /** Sem canal comercial configurado: nada de prometer conversa. */
   leadSemContato: 'Já usa a Oryon? Entre e continue de onde parou.',
   entrar: 'Já sou cliente',
-  /** O caminho da conversa, recapitulado: um atalho de volta para cada capítulo. */
-  recapEyebrow: 'Recapitulando',
-  recapTitulo: 'Do que a IA sabe ao resultado medido, numa plataforma só.',
 } as const

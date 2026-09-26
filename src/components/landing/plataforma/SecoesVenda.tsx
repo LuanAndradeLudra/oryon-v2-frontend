@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, MessageCircle, Smartphone, Settings2, Rocket, Check, PencilLine, Layers, LayoutDashboard, BookOpen, MessagesSquare, Users, KanbanSquare, Megaphone, BarChart3, ArrowUpRight } from 'lucide-react'
+import { ChevronDown, MessageCircle, Smartphone, Settings2, Rocket, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LinkButton } from '@/components/ui/LinkButton'
-import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho, plataforma, LANDING_ROUTES } from '../landingCopy'
+import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho, LANDING_ROUTES } from '../landingCopy'
 
 /**
  * As seções de CONVERSÃO depois da Plataforma (25/09). Cada uma derruba uma
@@ -62,7 +62,6 @@ function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string
 
 const ICONES_PASSO = [Smartphone, Settings2, Rocket]
 const ICONES_DEPOIS = { ajuste: PencilLine, crescer: Layers, acompanhar: LayoutDashboard } as const
-const ICONES_CAPITULO = { conhecer: BookOpen, atender: MessagesSquare, equipe: Users, funil: KanbanSquare, campanhas: Megaphone, medir: BarChart3 } as const
 
 export function SecaoImplantacao() {
   const semMovimento = useReducedMotion()
@@ -220,39 +219,6 @@ export function SecaoFecho() {
           <BotaoContato />
           <LinkButton to={LANDING_ROUTES.login} variant={contatoDisponivel ? 'neutral' : 'primary'} size="lg">{fecho.entrar}</LinkButton>
         </Revelar>
-      </div>
-
-      {/* Recapitulando: os seis capítulos da Plataforma, cada um um atalho de
-          volta para a sua cena — quem chegou até aqui revê o que quiser. */}
-      <div className="landing-container relative mt-20">
-        <Revelar className="text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{fecho.recapEyebrow}</p>
-          <p className="mx-auto mt-2 max-w-[40ch] font-display text-[13px] font-semibold tracking-[-0.01em] text-surface-50 text-balance">{fecho.recapTitulo}</p>
-        </Revelar>
-        <ol className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {plataforma.blocos.map((b, i) => {
-            const Icone = ICONES_CAPITULO[b.id as keyof typeof ICONES_CAPITULO] ?? BookOpen
-            return (
-              <Revelar key={b.id} atraso={0.1 + i * 0.07} className="list-none">
-                <a
-                  href={`#plataforma-${b.id}`}
-                  className="group flex h-full items-start gap-3 rounded-2xl bg-[var(--landing-cartao)] p-4 text-left ring-1 ring-[var(--landing-borda)] transition-colors hover:ring-brand-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)]"
-                >
-                  <span className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-xl bg-surface-900 text-[var(--landing-destaque)] ring-1 ring-surface-700">
-                    <Icone className="h-[13px] w-[13px]" strokeWidth={1.8} aria-hidden />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-semibold text-surface-500">
-                      {String(i + 1).padStart(2, '0')} · {b.indice}
-                    </span>
-                    <span className="mt-1 block text-[12px] font-semibold leading-snug text-surface-50">{b.destaque}</span>
-                  </span>
-                  <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-surface-500 transition-colors group-hover:text-[var(--landing-destaque)]" aria-hidden />
-                </a>
-              </Revelar>
-            )
-          })}
-        </ol>
       </div>
     </section>
   )

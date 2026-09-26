@@ -2,10 +2,10 @@ import { rota } from './guards'
 import {
   HERO_CONTACT_STAGES, HERO_LINE, HERO_PIPELINE, HERO_PIPELINE_STAGES, HERO_PRODUCTS, HERO_TAGS, HERO_USER,
   heroCampaigns, heroContact, heroConversation, heroConversations, heroDeal, heroDealsByStage, heroMessages,
-  heroNotifications, heroTimeline,
+  heroNotifications, heroTimeline, heroHistoricoGanho, HERO_STAGE_QUALIFICACAO,
 } from '../components/landing/stage/hero/heroRealData'
 import type { HeroState } from '../components/landing/stage/hero/heroStory'
-import { AGENTES_DEMO, CATALOGO_VENDAS, CONHECIMENTO_VENDAS, agenteComFerramentas } from './agentesDemo'
+import { AGENTES_DEMO, CATALOGO_RECEPCAO, CONHECIMENTO_RECEPCAO, agenteComFerramentas } from './agentesDemo'
 import { heroActivityFeed, heroHomeSnapshot, heroHomeStats, heroPipelineOverview } from './dashboardDemo'
 import { ANALYTICS_RENOVACAO, CONVERSAS_RENOVACAO } from './campanhaDemo'
 
@@ -40,7 +40,7 @@ export function estadoAtual(): HeroState { return estado }
  * usá-la aqui fazia a Marina conversar com a própria empresa. Nome provisório,
  * trocar só aqui.
  */
-const TENANT = { id: 'demo-tenant', nome: 'Vértice Software' }
+const TENANT = { id: 'demo-tenant', nome: 'Clínica Vitalis' }
 
 function daysAgoIso(d: number) {
   return new Date(Date.now() - d * 86_400_000).toISOString()
@@ -202,7 +202,7 @@ export function instalarBackendDemo() {
           actions: itens.map((e) => e.kind === 'agent' && ({
             id: e.id, toolName: e.toolName, humanSummary: e.summary, success: e.success,
             targetEntityType: null, targetEntityId: null, contactId: 'demo-c-0', durationMs: 420,
-            errorMessage: e.errorMessage, agentId: 'ag-vendas', agentName: e.agentName, createdAt: e.createdAt,
+            errorMessage: e.errorMessage, agentId: 'ag-recepcao', agentName: e.agentName, createdAt: e.createdAt,
           })),
         },
       },
@@ -261,14 +261,14 @@ export function instalarBackendDemo() {
   }))
   // A base de conhecimento (aba Conhecimento) — só o agente da história tem.
   rota('agents/builder/configs/:id/knowledge', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/knowledge$/.test(u), ({ url }) => ({
-    data: { data: url.includes('/ag-vendas/') ? CONHECIMENTO_VENDAS.map(({ content: _c, ...d }) => d) : [] },
+    data: { data: url.includes('/ag-recepcao/') ? CONHECIMENTO_RECEPCAO.map(({ content: _c, ...d }) => d) : [] },
   }))
   rota('agents/builder/configs/:id/knowledge/:doc', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/knowledge\/[^/]+$/.test(u), ({ url }) => ({
-    data: { data: CONHECIMENTO_VENDAS.find((d) => d.id === url.split('/').pop()) ?? null },
+    data: { data: CONHECIMENTO_RECEPCAO.find((d) => d.id === url.split('/').pop()) ?? null },
   }))
   // O que do catálogo o agente pode citar (aba Catálogo).
   rota('agent-catalog/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agent-catalog\/[^/]+$/.test(u), ({ url }) => ({
-    data: url.endsWith('/ag-vendas') ? HERO_PRODUCTS.filter((p) => CATALOGO_VENDAS.includes(p.id)) : [],
+    data: url.endsWith('/ag-recepcao') ? HERO_PRODUCTS.filter((p) => CATALOGO_RECEPCAO.includes(p.id)) : [],
   }))
 
   // ── Linhas de WhatsApp ────────────────────────────────────────────────────
@@ -293,18 +293,10 @@ export function instalarBackendDemo() {
   rota('deals/:id/history', (m, u) => m.toLowerCase() === 'get' && /^\/deals\/[^/]+\/history$/.test(u), ({ url }) => {
     if (!url.includes('demo-deal-0')) return { data: [] }
     const deal = heroDeal(estado)
-    const linhas = [{
-      id: 'h-1', fromStageId: 'ps-entrada', fromStageLabel: 'Entrada', toStageId: 'ps-qualificacao',
-      toStageLabel: 'Qualificação', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: daysAgoIso(2),
-    }]
-    if (deal.stageId !== 'ps-qualificacao') linhas.unshift({
-      id: 'h-2', fromStageId: 'ps-qualificacao', fromStageLabel: 'Qualificação', toStageId: 'ps-proposta',
-      toStageLabel: 'Proposta', movedByKind: 'ai', movedByActorName: 'Agente Vendas', createdAt: new Date().toISOString(),
-    })
-    if (deal.status === 'won') linhas.unshift({
-      id: 'h-3', fromStageId: 'ps-proposta', fromStageLabel: 'Proposta', toStageId: 'ps-ganho',
-      toStageLabel: 'Ganho', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: new Date().toISOString(),
-    })
+    // As mesmas linhas de `heroHistoricoGanho` (fonte única), cortadas no ponto
+    // em que a história está: só o que já aconteceu.
+    const linhas = heroHistoricoGanho().filter((h) =>
+      h.id === 'h-1' || (h.id === 'h-2' && deal.stageId !== HERO_STAGE_QUALIFICACAO) || (h.id === 'h-3' && deal.status === 'won'))
     return { data: linhas }
   })
 

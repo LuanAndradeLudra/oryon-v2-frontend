@@ -81,13 +81,13 @@ describe('WelcomePage', () => {
     expect(screen.getByText(copy.hero.lead)).toBeInTheDocument()
   })
 
-  it('tem as seções na escada de consciência: nav · hero · plataforma · implantação · limites da IA · perguntas · cta · footer', async () => {
+  it('tem as seções na escada de consciência: nav · hero · plataforma · limites da IA · implantação · perguntas · cta · footer', async () => {
     const { container } = renderPage()
     // As seções abaixo do Hero chegam por lazy import.
     await screen.findByText(copy.fecho.title, undefined, { timeout: 8000 })
     const seções = Array.from(container.querySelectorAll('[data-section]')).map((el) => el.getAttribute('data-section'))
-    expect(seções).toEqual(['nav', 'hero', 'plataforma', 'implantacao', 'confianca', 'perguntas', 'cta', 'footer'])
-  })
+    expect(seções).toEqual(['nav', 'hero', 'plataforma', 'confianca', 'implantacao', 'perguntas', 'cta', 'footer'])
+  }, 15_000) // a página inteira, com as seções que chegam por import tardio
 
   it('o contêiner rola (h-screen overflow-y-auto) — o root do App é overflow hidden', () => {
     const { container } = renderPage()

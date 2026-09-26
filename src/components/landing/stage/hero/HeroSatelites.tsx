@@ -195,5 +195,5 @@ export const TITULOS_SATELITES = {
   celular: `WhatsApp · ${HERO.person}`,
   notificacoes: 'Notificações',
   linhaDoTempo: `${HERO.person} · atividade`,
-  negocio: 'Negócio · Vendas',
+  negocio: 'Negócio · Consultas',
 }

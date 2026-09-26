@@ -238,7 +238,7 @@ export function HeroPalco({ className }: { className?: string }) {
   }, [])
 
   // A primeira rota e o tema vão na URL: o app já nasce na cena certa.
-  const [srcAncora] = useState(() => srcDemo(semMovimento ? HERO_ROTAS.funil : HERO_ROTAS.disparos))
+  const [srcAncora] = useState(() => srcDemo(semMovimento ? HERO_ROTAS.funil : HERO_ROTAS.conversa))
   const pronta = usePronta(ancoraRef)
   const foco = useFocoDaDemo(ancoraRef)
 

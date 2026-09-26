@@ -3,17 +3,18 @@ import { daysAgo, hoursAgo } from '@/components/landing/stage/hero/heroClock'
 import { HERO } from '@/components/landing/stage/hero/heroRealData'
 
 /**
- * Os agentes do tenant de demonstração, no formato do agent-server.
+ * Os agentes do tenant de demonstração (Clínica Vitalis), no formato do
+ * agent-server.
  *
- * As permissões do Agente Vendas são as MESMAS que a história mostra — e só
- * elas: responder, etiquetar, mudar a situação, avançar o negócio para etapa
- * não terminal (`canClose: false`) e chamar uma pessoa. Fechar venda fica
+ * As permissões do Agente Recepção são as MESMAS que a história mostra — e só
+ * elas: responder, etiquetar, mudar a situação, avançar o registro para etapa
+ * não terminal (`canClose: false`) e chamar uma pessoa. Confirmar (ganho) fica
  * desligado, como o backend exige.
  */
 
 const TENANT = 'demo-tenant'
 
-const CRM_VENDAS: AgentCrmCapabilities = {
+const CRM_RECEPCAO: AgentCrmCapabilities = {
   capabilities: [
     { id: 'manage_conversation_status', enabled: true, constraints: { allowedStatuses: ['pending'] } },
     { id: 'assign_conversation_to_user', enabled: true },
@@ -37,7 +38,7 @@ function agente(
     sector: setor,
     objective: objetivo,
     status,
-    system_prompt: id === 'ag-vendas' ? PROMPT_VENDAS : `Você é o ${nome} da Vértice Software. ${objetivo}`,
+    system_prompt: id === 'ag-recepcao' ? PROMPT_RECEPCAO : `Você é o ${nome} da Clínica Vitalis. ${objetivo}`,
     handoff_rules: { rules: [] },
     channels: { whatsapp: { number: '+55 47 3030-1100', enabled: status === 'active' } },
     wizard_config: {},
@@ -53,70 +54,72 @@ function agente(
 }
 
 /**
- * As instruções do agente da história — o que ele é, o que pode oferecer e
- * quando chama uma pessoa. É daqui, da base de conhecimento e do catálogo
- * liberado que sai a resposta à Marina (R$ 375 por licença no anual).
+ * As instruções do agente da história — o que ele é, o que pode informar e
+ * quando chama uma pessoa. É daqui, da base de conhecimento, do catálogo
+ * liberado e da agenda que sai a resposta à Marina (R$ 180 no particular,
+ * Unimed com guia, quinta às 14h30).
  */
-const PROMPT_VENDAS = [
-  'Você é o Agente Vendas da Vértice Software, empresa de software de gestão para equipes comerciais.',
+const PROMPT_RECEPCAO = [
+  'Você é o Agente Recepção da Clínica Vitalis, clínica de dermatologia em Joinville.',
   '',
-  'Seu papel: atender pedidos de proposta pelo WhatsApp, tirar dúvidas sobre os planos e avançar o negócio no funil.',
+  'Seu papel: atender pacientes pelo WhatsApp, informar valores e convênios, oferecer horários e marcar consultas e retornos.',
   '',
   'Como responder:',
   '- Use só valores e condições do catálogo liberado a você e da base de conhecimento.',
-  '- Em setembro, quem renova com a equipe ganha suporte prioritário sem custo extra (ver "Renovação de setembro").',
-  '- Seja direto e cordial; trate o cliente pelo primeiro nome.',
+  '- Ofereça apenas horários que vieram da agenda da clínica; nunca invente um horário.',
+  '- Convênios: só os da lista "Convênios aceitos"; com guia autorizada.',
+  '- Seja direto e cordial; trate o paciente pelo primeiro nome.',
   '',
   'Quando chamar uma pessoa:',
-  '- O cliente pede para falar com alguém ou quer fechar hoje.',
-  '- Pedido de desconto fora da política comercial.',
+  '- O paciente pede para falar com alguém, quer um encaixe ou diz que é urgente.',
+  '- Dúvida clínica, pedido de desconto ou orientação sobre exames.',
 ].join('\n')
 
-/** A base de conhecimento do Agente Vendas (aba Conhecimento). */
-export const CONHECIMENTO_VENDAS: Array<AgentKnowledgeDoc & { content: string }> = [
+/** A base de conhecimento do Agente Recepção (aba Conhecimento). */
+export const CONHECIMENTO_RECEPCAO: Array<AgentKnowledgeDoc & { content: string }> = [
   {
-    id: 'kd-planos', agent_id: 'ag-vendas', tenant_id: TENANT, source_type: 'file', status: 'ready', chunk_count: 6, created_at: daysAgo(40),
-    document_name: 'Planos e condições 2026.pdf',
-    content_preview: 'Plano Pro: licença por usuário, com suporte prioritário. Anual: R$ 375 por licença. Mensal: R$ 39 por licença…',
-    content: 'Plano Pro — licença por usuário, com suporte prioritário.\nAnual: R$ 375 por licença (pagamento único).\nMensal: R$ 39 por licença.\n\nPlano Essencial — suporte em horário comercial. Mensal: R$ 19 por licença.',
+    id: 'kd-tabela', agent_id: 'ag-recepcao', tenant_id: TENANT, source_type: 'file', status: 'ready', chunk_count: 6, created_at: daysAgo(40),
+    document_name: 'Tabela de consultas 2026.pdf',
+    content_preview: 'Consulta dermatológica: R$ 250 (particular). Retorno em até 30 dias: R$ 180. Laser fracionado: R$ 450 por sessão…',
+    content: 'Consulta dermatológica — R$ 250 no particular.\nConsulta de retorno (até 30 dias após a consulta) — R$ 180.\nLaser fracionado — R$ 450 por sessão; pacote de três sessões com desconto.',
   },
   {
-    id: 'kd-renovacao', agent_id: 'ag-vendas', tenant_id: TENANT, source_type: 'text', status: 'ready', chunk_count: 3, created_at: daysAgo(12),
-    document_name: 'Renovação de setembro',
-    content_preview: 'Em setembro, quem leva a equipe para o Plano Pro anual ganha suporte prioritário sem custo extra…',
-    content: 'Campanha de renovação (setembro): quem leva a equipe para o Plano Pro anual ganha suporte prioritário sem custo extra. Válido para contratos a partir de 5 licenças.',
+    id: 'kd-convenios', agent_id: 'ag-recepcao', tenant_id: TENANT, source_type: 'text', status: 'ready', chunk_count: 3, created_at: daysAgo(12),
+    document_name: 'Convênios aceitos',
+    content_preview: 'Atendemos Unimed, Bradesco Saúde e SulAmérica, com guia autorizada. Procedimentos estéticos só no particular…',
+    content: 'Convênios aceitos: Unimed, Bradesco Saúde e SulAmérica, sempre com guia autorizada antes da consulta. Procedimentos estéticos (laser, peeling) são atendidos só no particular.',
   },
   {
-    id: 'kd-implantacao', agent_id: 'ag-vendas', tenant_id: TENANT, source_type: 'text', status: 'ready', chunk_count: 4, created_at: daysAgo(40),
-    document_name: 'Implantação e treinamento',
-    content_preview: 'A implantação assistida inclui configuração e treinamento da equipe, cobrada por loja…',
-    content: 'A implantação assistida inclui configuração e treinamento da equipe, cobrada por loja. Prazo típico: duas semanas.',
+    id: 'kd-preparo', agent_id: 'ag-recepcao', tenant_id: TENANT, source_type: 'text', status: 'ready', chunk_count: 4, created_at: daysAgo(40),
+    document_name: 'Preparo e orientações',
+    content_preview: 'Chegar com 10 minutos de antecedência; trazer documento com foto e a carteirinha do convênio…',
+    content: 'Chegar com 10 minutos de antecedência. Trazer documento com foto e, no convênio, a carteirinha e a guia. Para mapeamento de pintas, vir sem maquiagem e sem esmalte.',
   },
   {
-    id: 'kd-politica', agent_id: 'ag-vendas', tenant_id: TENANT, source_type: 'file', status: 'ready', chunk_count: 5, created_at: daysAgo(64),
-    document_name: 'Política comercial.pdf',
-    content_preview: 'Descontos acima da tabela precisam de aprovação da equipe comercial…',
-    content: 'Descontos acima da tabela precisam de aprovação da equipe comercial. O agente não oferece desconto fora desta política.',
+    id: 'kd-cancelamento', agent_id: 'ag-recepcao', tenant_id: TENANT, source_type: 'file', status: 'ready', chunk_count: 5, created_at: daysAgo(64),
+    document_name: 'Política de cancelamento.pdf',
+    content_preview: 'Cancelamentos e remarcações com até 24 horas de antecedência, sem custo…',
+    content: 'Cancelamentos e remarcações com até 24 horas de antecedência não têm custo. O agente não oferece desconto nem exceção fora desta política.',
   },
 ]
 
-/** O que do catálogo o Agente Vendas pode citar (aba Catálogo). */
-export const CATALOGO_VENDAS = ['pr-pro', 'pr-implantacao']
+/** O que do catálogo o Agente Recepção pode citar (aba Catálogo). */
+export const CATALOGO_RECEPCAO = ['pr-consulta', 'pr-retorno']
 
 export const AGENTES_DEMO: AgentConfig[] = [
   agente(
-    'ag-vendas', HERO.agent, '💼', 'Comercial',
-    'Atende pedidos de proposta, consulta o catálogo, qualifica e avança o negócio no funil. Chama uma pessoa para fechar.',
-    'active', 1_284, CRM_VENDAS,
+    'ag-recepcao', HERO.agent, '🩺', 'Recepção',
+    'Atende pacientes, informa valores e convênios, oferece horários da agenda e marca consultas. Chama uma pessoa para encaixes e urgências.',
+    'active', 1_284, CRM_RECEPCAO,
   ),
   agente(
-    'ag-suporte', 'Agente Suporte', '🛟', 'Suporte',
-    'Responde dúvidas de uso com a base de conhecimento e abre chamado para a equipe quando precisa.',
+    'ag-resultados', 'Agente Resultados', '📄', 'Exames',
+    'Avisa quando o resultado de exame está disponível e orienta a retirada.',
     'active', 3_917,
   ),
   agente(
-    'ag-posvenda', 'Agente Pós-venda', '🤝', 'Sucesso do cliente',
-    'Acompanha renovações e coleta a avaliação do atendimento.',
+    'ag-posconsulta', 'Agente Pós-consulta', '🤝', 'Cuidado continuado',
+    'Acompanha o pós-consulta e lembra o retorno.',
     'paused', 402,
   ),
 ]

@@ -15,7 +15,7 @@ import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { StatusDonut } from '@/components/dashboard/StatusDonut'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import type { ActivityEvent } from '@/types/dashboard'
-import { CONHECIMENTO_VENDAS } from '@/demo/agentesDemo'
+import { CONHECIMENTO_RECEPCAO } from '@/demo/agentesDemo'
 import { heroActivityFeed, heroHomeSnapshot } from '@/demo/dashboardDemo'
 import { ConteudoWhatsAppAparelho } from '../stage/hero/HeroSatelitesConteudo'
 import { contato, contatoDisponivel, linkContato, plataforma } from '../landingCopy'
@@ -96,7 +96,7 @@ const HISTORIAS: Record<string, Historia> = {
     ],
   },
   funil: {
-    titulo: 'Oryon · Funis · Vendas',
+    titulo: 'Oryon · Funis · Consultas',
     rota: HERO_ROTAS.funil, estado: 'etiqueta', recorte: RECORTES.funil,
     cues: [
       { t: 0, state: 'etiqueta', composition: 'funil' },
@@ -219,7 +219,7 @@ function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number;
       )
     case 'conhecer-1': {
       // O documento da base de conhecimento, no componente real de documento.
-      const doc = CONHECIMENTO_VENDAS.find((d) => d.id === 'kd-renovacao')!
+      const doc = CONHECIMENTO_RECEPCAO.find((d) => d.id === 'kd-convenios')!
       return (
         <Surgir chave={`${ciclo}`} className="px-3 py-2">
           <KnowledgeDocArtifact title={doc.document_name} content={doc.content} readOnly />
@@ -558,7 +558,14 @@ export function SecaoPlataforma() {
         {/* Índice fixo — primeira coluna, atravessa o cabeçalho e os artigos. */}
         <nav aria-label="Recursos da plataforma" className="hidden xl:block">
           <ol className="sticky top-[104px] mt-[140px] flex flex-col gap-0.5 pr-[clamp(12px,1vw,18px)]">
-            {plataforma.blocos.map((b, i) => (
+            {plataforma.atos.map((ato) => (
+              <li key={ato.id} className="mt-3 first:mt-0">
+                {/* O ato: rótulo pequeno; os capítulos dele logo abaixo. */}
+                <p className="mb-1 pl-3 text-[10px] font-semibold uppercase tracking-[.12em] text-surface-500">
+                  {ato.numero} · {ato.titulo}
+                </p>
+                <ol className="flex flex-col gap-0.5">
+            {plataforma.blocos.filter((b) => (ato.blocos as readonly string[]).includes(b.id)).map((b) => { const i = plataforma.blocos.findIndex((x) => x.id === b.id); return (
               <li key={b.id}>
                 <button
                   type="button"
@@ -581,6 +588,9 @@ export function SecaoPlataforma() {
                   {b.indice}
                 </button>
               </li>
+            ) })}
+                </ol>
+              </li>
             ))}
           </ol>
         </nav>
@@ -602,11 +612,38 @@ export function SecaoPlataforma() {
           {/* Os recursos: separados por um fio; o fio vertical à esquerda liga o
               índice à coluna (moldura de linhas finas, como a referência). */}
           <div className="min-w-0">
-            {plataforma.blocos.map((b, i) => (
-              <div key={b.id} className={cn(i > 0 && 'mt-16 border-t border-[var(--landing-borda)] pt-16 sm:mt-20 sm:pt-20')}>
-                <ArtigoRecurso b={b} n={i + 1} registrar={(el) => { blocosRef.current[b.id] = el }} />
-              </div>
-            ))}
+            {plataforma.atos.map((ato, ai) => {
+              const blocos = plataforma.blocos.filter((b) => (ato.blocos as readonly string[]).includes(b.id))
+              const tingido = ai % 2 === 1
+              return (
+                <div
+                  key={ato.id}
+                  data-ato={ato.id}
+                  className={cn(
+                    ai > 0 && 'mt-16 sm:mt-20',
+                    // A faixa: sangra 24 px para fora da coluna, para o fundo não
+                    // colar no texto; sem largura para isso (celular), só o fundo.
+                    tingido && 'rounded-3xl bg-[color-mix(in_srgb,var(--landing-palco)_75%,transparent)] px-4 py-10 ring-1 ring-[var(--landing-borda)] sm:-mx-6 sm:px-6 sm:py-14',
+                  )}
+                >
+                  <Revelar className="mb-10 flex items-baseline gap-4 sm:mb-14">
+                    <span aria-hidden className="font-display text-[clamp(1.6rem,2.6vw,2.2rem)] font-bold leading-none tracking-[-0.03em] text-[var(--landing-destaque)] opacity-90">{ato.numero}</span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">Ato {ato.numero} · {ato.titulo}</p>
+                      <p className="mt-1.5 max-w-[48ch] font-display text-[clamp(0.98rem,1.33vw,1.27rem)] font-semibold leading-[1.15] tracking-[-0.022em] text-surface-50 text-balance">{ato.frase}</p>
+                    </div>
+                  </Revelar>
+                  {blocos.map((b, bi) => {
+                    const n = plataforma.blocos.findIndex((x) => x.id === b.id) + 1
+                    return (
+                      <div key={b.id} className={cn(bi > 0 && 'mt-16 border-t border-[var(--landing-borda)] pt-16 sm:mt-20 sm:pt-20')}>
+                        <ArtigoRecurso b={b} n={n} registrar={(el) => { blocosRef.current[b.id] = el }} />
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
 
             {/* Fecho da seção: a ação de conversão — só com o canal configurado. */}
             {contatoDisponivel && (

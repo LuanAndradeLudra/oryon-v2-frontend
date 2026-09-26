@@ -13,7 +13,7 @@
 import type { HomeStats, Deal } from '@/types'
 import type { PipelineOverview } from '@/types/pipelineAnalytics'
 import {
-  HERO_PIPELINE, HERO_PIPELINE_STAGES, HERO_TAGS, HERO_USER, heroConversations, heroDealsByStage, reached,
+  HERO, HERO_PIPELINE, HERO_PIPELINE_STAGES, HERO_TAGS, HERO_USER, heroConversations, heroDealsByStage, reached,
 } from '@/components/landing/stage/hero/heroRealData'
 import type { HeroState } from '@/components/landing/stage/hero/heroStory'
 import { hoursAgo, minutesAgo } from '@/components/landing/stage/hero/heroClock'
@@ -72,7 +72,7 @@ export function heroHomeSnapshot(at: HeroState) {
     statusDistribution: { open: s.conversationsOpen, pending: s.queueCount, resolved: s.conversationsResolvedToday, abandoned: 0 },
     tagVolumes: HERO_TAGS.map((t, i) => ({ tagId: t.id, tagName: t.name, color: t.color, count: [18, 11, 7, 5][i] ?? 3 })),
     agentMetrics: EQUIPE.map((m) => ({
-      userId: m.userId, name: m.name, role: 'agent', departmentName: 'Comercial', isOnline: m.online,
+      userId: m.userId, name: m.name, role: 'agent', departmentName: 'Recepção', isOnline: m.online,
       conversationsToday: m.conversations + (m.userId === HERO_USER.id && reached(at, 'humano') ? 1 : 0),
       resolvedToday: m.resolved + (m.userId === HERO_USER.id && reached(at, 'ganho') ? 1 : 0),
       avgResponseTime: 90, avgResolutionTime: 0, csat: 0, slaCompliance: 0, utilization: 0,
@@ -86,15 +86,15 @@ export function heroHomeSnapshot(at: HeroState) {
 /** Linhas do feed de atividade (últimas horas), no formato de `/activity-feed`. */
 export function heroActivityFeed(at: HeroState) {
   const linhas = [
-    { id: 'af-1', type: 'conversation_resolved', timestamp: hoursAgo(2), actor: 'Bruno Lima', subject: 'Clínica Norte', summary: 'Bruno Lima resolveu a conversa com Clínica Norte' },
-    { id: 'af-2', type: 'conversation_assigned', timestamp: hoursAgo(1), actor: 'Agente Vendas', subject: 'Móveis Aurora', summary: 'Agente Vendas atribuiu a conversa com Móveis Aurora a Carla Mendes' },
+    { id: 'af-1', type: 'conversation_resolved', timestamp: hoursAgo(2), actor: 'Bruno Lima', subject: 'Joana Freitas', summary: 'Bruno Lima resolveu a conversa com Joana Freitas' },
+    { id: 'af-2', type: 'conversation_assigned', timestamp: hoursAgo(1), actor: HERO.agent, subject: 'Beatriz Nunes', summary: `${HERO.agent} atribuiu a conversa com Beatriz Nunes a Carla Mendes` },
   ]
-  if (reached(at, 'assumido')) linhas.push({ id: 'af-3', type: 'conversation_assigned', timestamp: minutesAgo(2), actor: 'Agente Vendas', subject: 'Marina Alves', summary: 'Agente Vendas chamou Ana Prado para a conversa com Marina Alves' })
-  if (reached(at, 'ganho')) linhas.push({ id: 'af-4', type: 'conversation_resolved', timestamp: minutesAgo(0), actor: 'Ana Prado', subject: 'Marina Alves', summary: 'Ana Prado fechou o negócio com Marina Alves' })
+  if (reached(at, 'assumido')) linhas.push({ id: 'af-3', type: 'conversation_assigned', timestamp: minutesAgo(2), actor: HERO.agent, subject: HERO.person, summary: `${HERO.agent} chamou ${HERO.atendente} para a conversa com ${HERO.person}` })
+  if (reached(at, 'ganho')) linhas.push({ id: 'af-4', type: 'conversation_resolved', timestamp: minutesAgo(0), actor: HERO.atendente, subject: HERO.person, summary: `${HERO.atendente} confirmou a consulta de ${HERO.person}` })
   return linhas.reverse().map((l) => ({ ...l, metadata: { actorType: l.actor.startsWith('Agente') ? 'ai' : 'user' } }))
 }
 
-/** O overview do funil Vendas: abertos por etapa e fechados, do mesmo quadro. */
+/** O overview do funil Consultas: abertos por etapa e fechados, do mesmo quadro. */
 export function heroPipelineOverview(at: HeroState): PipelineOverview {
   const porEtapa = heroDealsByStage(at)
   const soma = (l: Deal[]) => l.reduce((n, d) => n + (d.amountCents ?? 0), 0)

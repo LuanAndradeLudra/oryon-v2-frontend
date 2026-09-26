@@ -11,32 +11,33 @@ import type { HeroState } from './heroStory'
  * A FONTE ÚNICA de dados de demonstração do Hero.
  *
  * Tudo que as superfícies mostram — contato, conversa, situação, etiquetas,
- * mensagens, atividades, funil, etapas e negócio — sai daqui, derivado do
- * estado corrente da história. O card do quadro é o MESMO objeto `Deal` que o
- * painel mostra; não existe um segundo conjunto de dados para o funil.
+ * mensagens, atividades, funil, etapas e o registro do atendimento — sai daqui,
+ * derivado do estado corrente da história. O card do quadro é o MESMO objeto
+ * `Deal` que o painel mostra; não existe um segundo conjunto de dados.
+ *
+ * A HISTÓRIA (persona decidida pelo PO em 26/09: clínica — a vertical de hoje;
+ * a copy pública fala "cliente" e "atendimento" para valer para qualquer
+ * segmento): a Clínica Vitalis manda a campanha de retorno de setembro; a
+ * Marina, paciente, responde pedindo horário com a Dra. Helena; o Agente
+ * Recepção responde com o valor do catálogo, o convênio da base de
+ * conhecimento e horários da agenda; muda a situação do contato, etiqueta a
+ * conversa e leva o atendimento de Avaliação para Agendado; a Marina pede
+ * uma pessoa (quer um encaixe); a Ana, da recepção, assume e confirma.
  *
  * ─────────────────────────────────────────────────────────────────────────
  * O QUE A IA PODE FAZER (auditado no código dos três repositórios, 25/09)
  *
- * Esta história só representa capacidade que o produto realmente autoriza. A
- * auditoria derrubou três coisas que a versão anterior insinuava:
- *
- *  1. **A IA não define o valor do negócio.** Nenhuma ferramenta do agente
- *     aceita `amountCents`, e a porta única do funil recusa por identidade:
- *     *"A IA não define o valor do negócio."* Por isso o negócio aqui já
- *     nasce com valor — aberto por uma PESSOA (Ana) dois dias antes.
- *  2. **A IA não se pausa.** Não existe ferramenta de pausa; atribuir a
- *     conversa a um humano NÃO silencia o agente. Quem pausa é a pessoa, ao
- *     intervir. Por isso a faixa de handoff só vira verde no estado `humano`.
- *  3. **A IA não fecha venda.** A recusa é dupla e vale mesmo com todos os
- *     opt-ins ligados: *"A IA só fecha registros de funil de processo.
- *     Ganho/perdido de venda é decisão humana."* O desfecho é da Atendente.
+ *  1. **A IA não define o valor do registro.** Nenhuma ferramenta do agente
+ *     aceita `amountCents`. Por isso o registro aqui já nasce com valor —
+ *     aberto por uma PESSOA (Ana) dois dias antes.
+ *  2. **A IA não se pausa.** Atribuir a conversa a um humano NÃO silencia o
+ *     agente. Quem pausa é a pessoa, ao intervir (estado `humano`).
+ *  3. **A IA não marca ganho/perdido.** A recusa vale mesmo com todos os
+ *     opt-ins ligados. O desfecho (Confirmado) é da Atendente.
  *
  * O que ela PODE, e a história mostra: responder com informação da base de
- * conhecimento, mudar a situação do contato (`update_contact({stage})`),
- * etiquetar a conversa (`add_tag_to_conversation`), avançar o negócio para uma
- * etapa não-terminal (`update_deal_stage`) e chamar uma pessoa
- * (`find_available_user` + `assign_conversation` + `set_conversation_status`).
+ * conhecimento e do catálogo, mudar a situação do contato, etiquetar a
+ * conversa, avançar o registro para uma etapa não-terminal e chamar uma pessoa.
  * ─────────────────────────────────────────────────────────────────────────
  */
 
@@ -55,18 +56,19 @@ export function reached(at: HeroState, key: HeroState): boolean {
 
 export const HERO = {
   person: 'Marina Alves',
-  company: 'Loja Vida Natural',
+  company: 'Clínica Vitalis',
   phone: '+55 47 99900-7010',
-  agent: 'Agente Vendas',
+  agent: 'Agente Recepção',
   atendente: 'Ana Prado',
-  dealTitle: 'Plano Pro anual · 12 licenças',
-  amountCents: 450_000,
-  tag: 'proposta enviada',
-  demand: 'Oi! Preciso de uma proposta pra 12 licenças do plano anual.',
-  answer: 'Oi, Marina! O Plano Pro anual sai por R$ 375 por licença — R$ 4.500 ao ano pelas 12, com suporte prioritário incluso.',
-  confirm: 'Show, é isso mesmo que a gente precisa.',
-  ask: 'Consigo falar com alguém pra fechar hoje ainda?',
-  human: 'Oi Marina, aqui é a Ana! Acabei de reservar as 12 licenças. Te mando o contrato agora.',
+  doctor: 'Dra. Helena',
+  dealTitle: 'Retorno · Dra. Helena',
+  amountCents: 18_000,
+  tag: 'retorno',
+  demand: 'Oi! Quero marcar o retorno com a Dra. Helena. Tem horário à tarde essa semana?',
+  answer: 'Oi, Marina! O retorno com a Dra. Helena é R$ 180 no particular ou pela Unimed com a guia. Na agenda dela tenho quinta às 14h30 e sexta às 15h — qual prefere?',
+  confirm: 'Quinta às 14h30 é perfeito!',
+  ask: 'Consigo falar com alguém? Queria ver se dá um encaixe antes, é meio urgente.',
+  human: 'Oi Marina, aqui é a Ana da recepção! Consegui um encaixe amanhã às 9h com a Dra. Helena. Já deixei reservado pra você.',
 } as const
 
 export const HERO_LINE: WhatsAppNumber = {
@@ -76,27 +78,27 @@ export const HERO_LINE: WhatsAppNumber = {
 } as WhatsAppNumber
 
 export const HERO_TAGS: Tag[] = [
-  { id: 'tg-vip', name: 'VIP', color: '#2DD4BF' },
-  { id: 'tg-atacado', name: 'Atacado', color: '#60A5FA' },
-  { id: 'tg-proposta', name: HERO.tag, color: '#FBBF24' },
+  { id: 'tg-unimed', name: 'Unimed', color: '#2DD4BF' },
+  { id: 'tg-derma', name: 'Dermatologia', color: '#60A5FA' },
+  { id: 'tg-retorno', name: HERO.tag, color: '#FBBF24' },
 ]
 
 export const HERO_USER: User = {
   id: 'demo-user-1',
   tenantId: TENANT,
-  email: 'ana@verticesoftware.com.br',
+  email: 'ana@clinicavitalis.com.br',
   firstName: 'Ana',
   lastName: 'Prado',
   role: 'agent',
   isActive: true,
 } as User
 
-// ─── Situação do contato (≠ etapa do negócio, ≠ etiqueta, ≠ status) ──────────
+// ─── Situação do contato (≠ etapa do registro, ≠ etiqueta, ≠ status) ─────────
 
 export const HERO_CONTACT_STAGES: TenantStage[] = [
-  { id: 'cs-1', tenantId: TENANT, key: 'novo',          label: 'Novo',          color: '#64748B', order: 1, isTerminal: false, createdAt: daysAgo(60) },
-  { id: 'cs-2', tenantId: TENANT, key: 'em-negociacao', label: 'Em negociação', color: '#38BDF8', order: 2, isTerminal: false, createdAt: daysAgo(60) },
-  { id: 'cs-3', tenantId: TENANT, key: 'cliente',       label: 'Cliente',       color: '#22C55E', order: 3, isTerminal: true,  createdAt: daysAgo(60) },
+  { id: 'cs-1', tenantId: TENANT, key: 'novo',           label: 'Novo',           color: '#64748B', order: 1, isTerminal: false, createdAt: daysAgo(60) },
+  { id: 'cs-2', tenantId: TENANT, key: 'em-agendamento', label: 'Em agendamento', color: '#38BDF8', order: 2, isTerminal: false, createdAt: daysAgo(60) },
+  { id: 'cs-3', tenantId: TENANT, key: 'paciente',       label: 'Paciente',       color: '#22C55E', order: 3, isTerminal: true,  createdAt: daysAgo(60) },
 ]
 
 // ─── Contato e conversa ───────────────────────────────────────────────────────
@@ -107,10 +109,11 @@ function contactOf(id: string, name: string, waId: string, extra: Partial<Contac
 
 export function heroContact(at: HeroState): Contact {
   return contactOf('demo-c-0', HERO.person, '5547999007010', {
-    stage: reached(at, 'situacao') ? 'em-negociacao' : 'novo',
+    stage: reached(at, 'situacao') ? 'em-agendamento' : 'novo',
     tags: reached(at, 'etiqueta') ? HERO_TAGS : HERO_TAGS.slice(0, 2),
-    company: HERO.company,
-    email: 'marina@lojavidanatural.com.br',
+    city: 'Joinville',
+    state: 'SC',
+    email: 'marina.alves@gmail.com',
     source: 'whatsapp',
   } as Partial<Contact>)
 }
@@ -126,23 +129,19 @@ export function heroConversation(at: HeroState): Conversation {
     // Status da conversa: ABERTA o tempo todo, menos quando a IA a coloca na
     // fila ao chamar uma pessoa (`set_conversation_status`) e quando a
     // Atendente a resolve no fim. Três conceitos distintos — situação do
-    // contato, status da conversa, etapa do negócio — mudam em momentos
+    // contato, status da conversa, etapa do registro — mudam em momentos
     // diferentes, de propósito.
     status: reached(at, 'ganho') ? 'resolved' : reached(at, 'assumido') ? 'pending' : 'open',
     channel: 'whatsapp',
     lastMessageAt: ultima.sentAt,
     lastMessagePreview: ultima.body,
     // `lastAgentReplyAt` é o que decide o aviso "X sem resposta" na lista
-    // (`getAwaitingReply`). Sem ele, TODAS as linhas da demonstração
-    // estampavam "5h sem resposta" em vermelho enquanto a cena mostrava a IA
-    // respondendo na hora — a contradição que o PO apontou. Aqui ele marca a
-    // última saída: enquanto a IA ainda não respondeu à demanda, o aviso
-    // aparece (e é verdade); assim que ela responde, some.
+    // (`getAwaitingReply`). Marca a última saída: enquanto a IA ainda não
+    // respondeu, o aviso aparece (e é verdade); assim que ela responde, some.
     lastAgentReplyAt: ultima.direction === 'outbound' ? ultima.sentAt : undefined,
     unreadCount: 0,
     createdAt: daysAgo(1),
-    // A IA só para quando a PESSOA intervém. Atribuir não silencia o agente —
-    // é o que o código faz, e é o que a cena mostra.
+    // A IA só para quando a PESSOA intervém. Atribuir não silencia o agente.
     aiActive: !reached(at, 'humano'),
     aiPausedUntil: reached(at, 'humano') ? hoursAgo(-4) : null,
     assignedUser: reached(at, 'assumido') ? HERO_USER : undefined,
@@ -152,11 +151,11 @@ export function heroConversation(at: HeroState): Conversation {
 
 /** As demais linhas do inbox — densidade real, com tempos plausíveis. */
 const OUTRAS = [
-  { nome: 'Rafaela Couto',   previa: 'Perfeito, obrigada!',              min: 12,  naoLidas: 0, ia: false },
-  { nome: 'Bruno Antunes',   previa: 'Consigo receber ainda hoje?',      min: 27,  naoLidas: 2, ia: true },
-  { nome: 'Clínica Norte',   previa: 'Vocês emitem nota no mesmo dia?',  min: 43,  naoLidas: 0, ia: false },
-  { nome: 'Diego Ramos',     previa: 'Fechado, pode enviar o contrato.', min: 96,  naoLidas: 0, ia: false },
-  { nome: 'Studio Bemviver', previa: 'Obrigado pelo retorno!',           min: 150, naoLidas: 0, ia: true },
+  { nome: 'Rafaela Couto',  previa: 'Perfeito, obrigada!',                        min: 12,  naoLidas: 0, ia: false },
+  { nome: 'Bruno Antunes',  previa: 'Consigo remarcar pra semana que vem?',       min: 27,  naoLidas: 2, ia: true },
+  { nome: 'Joana Freitas',  previa: 'Vocês atendem Bradesco Saúde?',              min: 43,  naoLidas: 0, ia: false },
+  { nome: 'Diego Ramos',    previa: 'Confirmado, até quinta!',                    min: 96,  naoLidas: 0, ia: false },
+  { nome: 'Lúcia Martins',  previa: 'Obrigada pelo lembrete!',                    min: 150, naoLidas: 0, ia: true },
 ]
 
 export const HERO_OTHER_CONVERSATIONS: Conversation[] = OUTRAS.map((c, i) => ({
@@ -205,17 +204,15 @@ function msg(
 /**
  * A thread. O histórico de ontem dá continuidade e faz o `MessageList` real
  * desenhar o separador de dia. A partir daí os horários são relativos ao
- * "agora" da demonstração — nunca a um horário fixo, que faria a lista acusar
- * "5h sem resposta" para quem abrisse a página à tarde.
+ * "agora" da demonstração — nunca a um horário fixo.
  */
 export function heroMessages(at: HeroState): Message[] {
   const out: Message[] = [
-    msg(1, 'inbound', 'Bom dia! Vocês têm plano anual pra equipe?', dayAt(1, 9, 12)),
-    msg(2, 'outbound', 'Bom dia, Marina! Temos sim — o Plano Pro tem contratação anual por licença.', dayAt(1, 9, 13), 'ia'),
-    msg(3, 'inbound', 'Perfeito, vou ver com a diretoria e te falo.', dayAt(1, 9, 21)),
-    // O histórico de ontem TERMINA com o agente. Sem isto, o primeiro quadro
-    // abria com a linha da protagonista marcada em vermelho — "23/09 sem
-    // resposta" —, dizendo o contrário do que a cena vai mostrar.
+    msg(1, 'inbound', 'Bom dia! A Dra. Helena tem horário essa semana?', dayAt(1, 9, 12)),
+    msg(2, 'outbound', 'Bom dia, Marina! A Dra. Helena atende de terça a sexta, à tarde. Quer que eu veja um horário pra você?', dayAt(1, 9, 13), 'ia'),
+    msg(3, 'inbound', 'Vou ver com o trabalho e te falo.', dayAt(1, 9, 21)),
+    // O histórico de ontem TERMINA com o agente: sem isto, o primeiro quadro
+    // abria com a linha da protagonista marcada em vermelho ("sem resposta").
     msg(4, 'outbound', 'Combinado! Qualquer coisa é só chamar. 😊', dayAt(1, 9, 22), 'ia'),
   ]
   // O disparo da campanha: é ele que reabre a conversa de ontem.
@@ -233,45 +230,43 @@ function ultimaMensagem(at: HeroState): Message {
   return m[m.length - 1]
 }
 
-// ─── Funil, etapas e o negócio ────────────────────────────────────────────────
+// ─── Funil, etapas e o registro do atendimento ────────────────────────────────
 
-export const HERO_STAGE_QUALIFICACAO = 'ps-qualificacao'
-export const HERO_STAGE_PROPOSTA = 'ps-proposta'
-export const HERO_STAGE_GANHO = 'ps-ganho'
+export const HERO_STAGE_QUALIFICACAO = 'ps-avaliacao'
+export const HERO_STAGE_PROPOSTA = 'ps-agendado'
+export const HERO_STAGE_GANHO = 'ps-confirmado'
 
+/**
+ * O funil "Consultas": Contato → Avaliação → Agendado → Aguardando guia →
+ * Confirmado. A IA leva de Avaliação para Agendado (etapa não terminal);
+ * Confirmado é terminal e só a PESSOA chega lá — a IA é recusada pelo backend.
+ */
 export const HERO_PIPELINE_STAGES: PipelineStage[] = [
-  { id: 'ps-entrada',            tenantId: TENANT, pipelineId: 'pl-vendas', key: 'entrada',      label: 'Entrada',      color: '#64748B', order: 1, isWon: false, isLost: false },
-  { id: HERO_STAGE_QUALIFICACAO, tenantId: TENANT, pipelineId: 'pl-vendas', key: 'qualificacao', label: 'Qualificação', color: '#38BDF8', order: 2, isWon: false, isLost: false, probability: 30 },
-  { id: HERO_STAGE_PROPOSTA,     tenantId: TENANT, pipelineId: 'pl-vendas', key: 'proposta',     label: 'Proposta',     color: '#A78BFA', order: 3, isWon: false, isLost: false, probability: 60 },
-  { id: 'ps-negociacao',         tenantId: TENANT, pipelineId: 'pl-vendas', key: 'negociacao',   label: 'Negociação',   color: '#FBBF24', order: 4, isWon: false, isLost: false, probability: 80 },
-  // Terminal: só a PESSOA chega aqui. A IA é recusada pelo backend.
-  { id: HERO_STAGE_GANHO,        tenantId: TENANT, pipelineId: 'pl-vendas', key: 'ganho',        label: 'Ganho',        color: '#22C55E', order: 5, isWon: true,  isLost: false },
+  { id: 'ps-contato',            tenantId: TENANT, pipelineId: 'pl-consultas', key: 'contato',   label: 'Contato',         color: '#64748B', order: 1, isWon: false, isLost: false },
+  { id: HERO_STAGE_QUALIFICACAO, tenantId: TENANT, pipelineId: 'pl-consultas', key: 'avaliacao', label: 'Avaliação',       color: '#38BDF8', order: 2, isWon: false, isLost: false, probability: 30 },
+  { id: HERO_STAGE_PROPOSTA,     tenantId: TENANT, pipelineId: 'pl-consultas', key: 'agendado',  label: 'Agendado',        color: '#A78BFA', order: 3, isWon: false, isLost: false, probability: 60 },
+  { id: 'ps-guia',               tenantId: TENANT, pipelineId: 'pl-consultas', key: 'guia',      label: 'Aguardando guia', color: '#FBBF24', order: 4, isWon: false, isLost: false, probability: 80 },
+  { id: HERO_STAGE_GANHO,        tenantId: TENANT, pipelineId: 'pl-consultas', key: 'confirmado', label: 'Confirmado',     color: '#22C55E', order: 5, isWon: true,  isLost: false },
 ]
 
 export const HERO_PIPELINE: Pipeline = {
-  id: 'pl-vendas',
+  id: 'pl-consultas',
   tenantId: TENANT,
-  name: 'Vendas',
+  name: 'Consultas',
   color: '#2DD4BF',
   order: 1,
   isDefault: true,
   isArchived: false,
   kind: 'sales',
   stages: HERO_PIPELINE_STAGES,
-  openDealsCount: 7,
+  openDealsCount: 11,
 } as Pipeline
 
 /**
- * O negócio da história.
- *
- * **Já existia**, e quem o abriu foi uma pessoa: a Ana, dois dias antes, com o
- * valor já definido. Isso não é detalhe de enredo — é o que o produto permite.
- * A IA não define valor e não abre negócio sem opt-in; o que ela faz aqui é
- * uma coisa só, e ela pode: **avançar a etapa** (`update_deal_stage`, etapa
- * não terminal, sem retroceder).
- *
- * O desfecho — Ganho — é da Atendente, pelo fluxo real de fechamento, que
- * exige motivo. A IA é recusada nessa etapa por identidade, em duas camadas.
+ * O registro do atendimento da história. **Já existia**, aberto por uma
+ * pessoa (a Ana, dois dias antes, quando a Marina perguntou de horário), com o
+ * valor já definido. O que a IA faz aqui é uma coisa só, e ela pode: avançar a
+ * etapa (Avaliação → Agendado). O desfecho — Confirmado — é da Atendente.
  */
 export function heroDeal(at: HeroState): Deal {
   const ganho = reached(at, 'ganho')
@@ -285,19 +280,17 @@ export function heroDeal(at: HeroState): Deal {
     stageId: ganho ? HERO_STAGE_GANHO : avancou ? HERO_STAGE_PROPOSTA : HERO_STAGE_QUALIFICACAO,
     amountCents: HERO.amountCents,
     currency: 'BRL',
-    description: '12 licenças · suporte prioritário',
-    // O item do catálogo que compõe o valor — sem ele o painel do negócio
-    // mostrava "Total R$ 0,00" num negócio de R$ 4.500.
+    description: 'Dermatologia · retorno em até 30 dias',
+    // O item do catálogo que compõe o valor — sem ele o painel mostrava
+    // "Total R$ 0,00".
     lineItems: [{
-      id: 'li-pro-anual', kind: 'catalog', productId: 'pr-pro', productName: 'Plano Pro',
-      variationLabel: 'Anual · por licença', unitPriceCents: 37_500, quantity: 12, order: 1,
+      id: 'li-retorno', kind: 'catalog', productId: 'pr-retorno', productName: 'Consulta de retorno',
+      variationLabel: 'Particular', unitPriceCents: 18_000, quantity: 1, order: 1,
     }],
     originConversationId: 'demo-conv-0',
     originKind: 'manual',
     createdByKind: 'user',
     ownerUserId: HERO_USER.id,
-    // Quem moveu, e quando. "5h na etapa" num card que acabou de andar era um
-    // dos defeitos apontados: agora o tempo vem do relógio da demonstração.
     stageEnteredAt: avancou ? justNow() : daysAgo(2),
     lastMovedByKind: ganho ? 'user' : avancou ? 'ai' : 'user',
     lastMovedByActorName: ganho ? HERO.atendente : avancou ? HERO.agent : HERO.atendente,
@@ -310,28 +303,24 @@ export function heroDeal(at: HeroState): Deal {
 }
 
 /**
- * Os outros negócios do quadro — o funil de um dia comum. Títulos distintos de
- * propósito: com quatro "Plano Pro anual" iguais, o protagonista sumia no meio
- * dos homônimos (defeito apontado pelo PO).
+ * Os outros registros do quadro — o dia comum de uma clínica. Títulos
+ * distintos de propósito, para o protagonista não sumir entre homônimos.
+ * Nenhum passa de 3 dias na etapa (acima disso o `DealsBoard` real estampa
+ * "parado N d" em vermelho e rouba a atenção do card da história).
+ * Sempre ACRESCENTAR no fim: o `contactId` sai do índice (demo-dc-3/5 são
+ * citados no relatório da campanha).
  */
-// Nenhum passa de 3 dias na etapa: acima disso o `DealsBoard` real estampa
-// "parado N d" em vermelho, e um negócio de terceiro gritando em vermelho
-// rouba a atenção do card que a história está contando.
 const OUTROS = [
-  { id: 'd-1', title: 'Implantação · 4 lojas',  person: 'Clínica Norte',   stageId: 'ps-entrada',            cents: 225_000, dias: 1 },
-  { id: 'd-2', title: 'Plano Essencial mensal', person: 'Bruno Antunes',   stageId: 'ps-entrada',            cents: 90_000,  dias: 3 },
-  { id: 'd-3', title: 'Migração de base',       person: 'Diego Ramos',     stageId: HERO_STAGE_QUALIFICACAO, cents: 337_500, dias: 2 },
-  { id: 'd-4', title: 'Renovação · 8 licenças', person: 'Móveis Aurora',   stageId: HERO_STAGE_QUALIFICACAO, cents: 300_000, dias: 1 },
-  { id: 'd-5', title: 'Treinamento da equipe',  person: 'Studio Bemviver', stageId: HERO_STAGE_PROPOSTA,     cents: 187_500, dias: 3 },
-  { id: 'd-6', title: 'Upgrade de plano',       person: 'Casa Verde',      stageId: 'ps-negociacao',         cents: 562_500, dias: 2 },
-  // Mais um por etapa: com um ou dois cards, o quadro ficava mais da metade
-  // vazio na moldura da Plataforma. Valores no preço da história (R$ 375/licença).
-  // Sempre ACRESCENTAR no fim: o `contactId` sai do índice (demo-dc-3/5 são
-  // citados no relatório da campanha).
-  { id: 'd-7', title: 'Plano Pro · 5 licenças',  person: 'Ótica Lumière',   stageId: HERO_STAGE_QUALIFICACAO, cents: 187_500, dias: 4 },
-  { id: 'd-8', title: 'Renovação · 20 licenças', person: 'Grupo Tavares',   stageId: HERO_STAGE_PROPOSTA,     cents: 750_000, dias: 1 },
-  { id: 'd-9', title: 'Integração com ERP',      person: 'Farmácia Viva',   stageId: 'ps-negociacao',         cents: 412_500, dias: 5 },
-  { id: 'd-10', title: 'Plano Essencial · 3 lojas', person: 'Padaria Estrela', stageId: 'ps-entrada',        cents: 135_000, dias: 1 },
+  { id: 'd-1',  title: 'Consulta · Dr. Paulo',      person: 'Joana Freitas',  stageId: 'ps-contato',            cents: 25_000, dias: 1 },
+  { id: 'd-2',  title: 'Avaliação estética',        person: 'Bruno Antunes',  stageId: 'ps-contato',            cents: 15_000, dias: 3 },
+  { id: 'd-3',  title: 'Check-up · 3 exames',       person: 'Diego Ramos',    stageId: HERO_STAGE_QUALIFICACAO, cents: 42_000, dias: 2 },
+  { id: 'd-4',  title: 'Consulta · Dra. Helena',    person: 'Carla Mendes',   stageId: HERO_STAGE_QUALIFICACAO, cents: 25_000, dias: 1 },
+  { id: 'd-5',  title: 'Laser · 3 sessões',         person: 'Rafaela Couto',  stageId: HERO_STAGE_PROPOSTA,     cents: 135_000, dias: 3 },
+  { id: 'd-6',  title: 'Consulta pediátrica',       person: 'Lúcia Martins',  stageId: 'ps-guia',               cents: 22_000, dias: 2 },
+  { id: 'd-7',  title: 'Retorno · Dr. Paulo',       person: 'Otávio Lima',    stageId: HERO_STAGE_QUALIFICACAO, cents: 18_000, dias: 4 },
+  { id: 'd-8',  title: 'Peeling · 2 sessões',       person: 'Beatriz Nunes',  stageId: HERO_STAGE_PROPOSTA,     cents: 70_000, dias: 1 },
+  { id: 'd-9',  title: 'Consulta · Dra. Helena',    person: 'Sérgio Tavares', stageId: 'ps-guia',               cents: 25_000, dias: 5 },
+  { id: 'd-10', title: 'Mapeamento de pintas',      person: 'Helena Duarte',  stageId: 'ps-contato',            cents: 32_000, dias: 1 },
 ]
 
 const HERO_OTHER_DEALS: Deal[] = OUTROS.map((d, i) => ({
@@ -361,16 +350,9 @@ export function heroDealsByStage(at: HeroState): Record<string, Deal[]> {
 
 /**
  * A Timeline é CONFIRMAÇÃO, nunca a única evidência: cada linha tem um par
- * visível em outro lugar da tela no mesmo instante.
- *
- * O que NÃO entra aqui, por honestidade: a busca na base de conhecimento. O
- * endpoint que alimenta esta seção filtra `kind = 'crm'`, e as buscas na base
- * são gravadas como `kind = 'kb'` — no produto real elas **não aparecem** para
- * o operador. A evidência dessa capacidade é o conteúdo da resposta do agente,
- * que traz preço e condição; inventar uma linha aqui seria inventar tela.
- *
- * Teto de quatro linhas (`COLLAPSED_LIMIT` da seção real): a quinta desabaria
- * a cadeia atrás de um "ver mais".
+ * visível em outro lugar da tela no mesmo instante. A busca na base de
+ * conhecimento NÃO entra (o endpoint filtra `kind = 'crm'`; buscas são `kb` e
+ * não aparecem para o operador). Teto de quatro linhas (`COLLAPSED_LIMIT`).
  */
 function agente(id: string, summary: string, toolName: string, min: number): TimelineEntry {
   return {
@@ -384,17 +366,16 @@ function pessoa(id: string, summary: string, action: string, min: number, metada
 
 export function heroTimeline(at: HeroState): TimelineEntry[] {
   // A história começa com o template da campanha chegando à Marina (hoje, há
-  // 6 min) — o filtro padrão da linha do tempo é "Hoje", e um evento de ontem
-  // deixava o painel em "Nenhum evento no período" por boa parte da cena.
+  // 6 min) — o filtro padrão da linha do tempo é "Hoje".
   const out: TimelineEntry[] = [
-    pessoa('t0', 'Template enviado', 'template_sent', 6, { templateName: 'renovacao_plano_pro' }),
+    pessoa('t0', 'Template enviado', 'template_sent', 6, { templateName: HERO_TEMPLATE.name }),
   ]
-  if (reached(at, 'situacao')) out.push(agente('t1', 'Situação do contato: Novo → Em negociação', 'update_contact', 3))
+  if (reached(at, 'situacao')) out.push(agente('t1', 'Situação do contato: Novo → Em agendamento', 'update_contact', 3))
   if (reached(at, 'etiqueta')) out.push(agente('t2', `Adicionou a etiqueta "${HERO.tag}" à conversa`, 'add_tag_to_conversation', 3))
-  if (reached(at, 'avanco')) out.push(agente('t3', 'Moveu o negócio de Qualificação para Proposta', 'manage_deal_pipeline', 2))
+  if (reached(at, 'avanco')) out.push(agente('t3', 'Moveu o atendimento de Avaliação para Agendado', 'manage_deal_pipeline', 2))
   if (reached(at, 'assumido')) out.push(agente('t4', `Chamou ${HERO.atendente} para a conversa`, 'assign_conversation', 1))
   if (reached(at, 'ganho')) {
-    out.push(pessoa('t5', `Negócio "${HERO.dealTitle}" ganho`, 'deal_won', 0, {
+    out.push(pessoa('t5', `"${HERO.dealTitle}" confirmado`, 'deal_won', 0, {
       dealTitle: HERO.dealTitle, amountCents: HERO.amountCents, pipelineKind: 'sales',
     }))
   }
@@ -404,21 +385,21 @@ export function heroTimeline(at: HeroState): TimelineEntry[] {
 // ─── Disparos ──────────────────────────────────────────────────────────────────
 
 /**
- * O modelo aprovado da campanha "Renovação Pro". É o que chega no WhatsApp da
- * Marina (a satélite do celular desenha com a `TemplatePreview` real) e o que
- * aparece como mensagem de campanha na conversa dela.
+ * O modelo aprovado da campanha "Retorno de setembro". É o que chega no
+ * WhatsApp da Marina (a satélite do celular desenha com a `TemplatePreview`
+ * real) e o que aparece como mensagem de campanha na conversa dela.
  */
 export const HERO_TEMPLATE: WhatsAppTemplate = {
-  id: 'tp-renovacao',
+  id: 'tp-retorno',
   tenantId: TENANT,
-  name: 'renovacao_plano_pro',
+  name: 'retorno_setembro',
   language: 'pt_BR',
   category: 'MARKETING',
   status: 'APPROVED',
-  body: 'Olá, {{1}}! Setembro é mês de renovação na Vértice: quem leva a equipe para o *Plano Pro anual* ganha suporte prioritário sem custo extra. Quer que a gente monte uma proposta?',
-  footer: 'Vértice Software',
+  body: 'Olá, {{1}}! Está na hora do seu retorno na *Clínica Vitalis*. A Dra. Helena abriu novos horários em setembro — quer que a gente reserve o seu?',
+  footer: 'Clínica Vitalis',
   buttons: [
-    { type: 'QUICK_REPLY', text: 'Quero uma proposta' },
+    { type: 'QUICK_REPLY', text: 'Quero marcar' },
     { type: 'QUICK_REPLY', text: 'Agora não' },
   ],
   bodyVariables: ['nome'],
@@ -429,39 +410,42 @@ export const HERO_TEMPLATE: WhatsAppTemplate = {
 export const HERO_TEMPLATE_VARIAVEIS = { '1': 'Marina' }
 const HERO_TEMPLATE_TEXTO = HERO_TEMPLATE.body.replace('{{1}}', HERO_TEMPLATE_VARIAVEIS['1']).replace(/\*/g, '')
 
+/** O nome da campanha da história, usado onde ela é citada por fora. */
+export const HERO_CAMPANHA_NOME = 'Retorno · setembro'
+
 /**
- * As campanhas do tenant. A `Renovação Pro` é a da história: é ela que chega no
+ * As campanhas do tenant. A de retorno é a da história: é ela que chega no
  * WhatsApp da Marina e abre a conversa. Os números sobem enquanto o roteiro
  * está em `inicio` (a campanha está saindo) e assentam depois.
  */
-const BASE_RENOVACAO = 1_240
+const BASE_RETORNO = 1_240
 export function heroCampaigns(at: HeroState): Campaign[] {
   const saindo = at === 'inicio'
   const stats = saindo
-    ? { total: BASE_RENOVACAO, sent: 1_180, delivered: 1_096, read: 612, failed: 9, replied: 74, conversions: 17 }
-    : { total: BASE_RENOVACAO, sent: 1_231, delivered: 1_204, read: 871, failed: 9, replied: 138, conversions: 26 }
+    ? { total: BASE_RETORNO, sent: 1_180, delivered: 1_096, read: 612, failed: 9, replied: 74, conversions: 17 }
+    : { total: BASE_RETORNO, sent: 1_231, delivered: 1_204, read: 871, failed: 9, replied: 138, conversions: 26 }
   const base = { tenantId: TENANT, variableMappings: [], createdByUserId: HERO_USER.id, whatsappNumberId: HERO_LINE.id }
   return [
     {
-      ...base, id: 'cp-renovacao', name: 'Renovação Pro · setembro', templateId: 'tp-renovacao',
-      templateName: 'renovacao_plano_pro', segment: { type: 'tag', tagIds: ['tg-vip'] },
+      ...base, id: 'cp-retorno', name: HERO_CAMPANHA_NOME, templateId: 'tp-retorno',
+      templateName: 'retorno_setembro', segment: { type: 'tag', tagIds: ['tg-derma'] },
       status: saindo ? 'sending' : 'sent', sentAt: hoursAgo(1), createdAt: daysAgo(1), stats,
     },
     {
-      ...base, id: 'cp-webinar', name: 'Convite webinar · gestão de equipes', templateId: 'tp-webinar',
-      templateName: 'convite_webinar', segment: { type: 'all' }, status: 'scheduled',
+      ...base, id: 'cp-checkup', name: 'Check-up de primavera', templateId: 'tp-checkup',
+      templateName: 'checkup_primavera', segment: { type: 'all' }, status: 'scheduled',
       scheduledAt: hoursAgo(-20), createdAt: daysAgo(2),
       stats: { total: 3_420, sent: 0, delivered: 0, read: 0, failed: 0 },
     },
     {
-      ...base, id: 'cp-onboarding', name: 'Boas-vindas · novos clientes', templateId: 'tp-boasvindas',
-      templateName: 'boas_vindas_cliente', segment: { type: 'stage', stages: ['cliente'] }, status: 'sent',
+      ...base, id: 'cp-boasvindas', name: 'Boas-vindas · novos pacientes', templateId: 'tp-boasvindas',
+      templateName: 'boas_vindas_paciente', segment: { type: 'stage', stages: ['paciente'] }, status: 'sent',
       sentAt: daysAgo(3), createdAt: daysAgo(4),
       stats: { total: 186, sent: 186, delivered: 183, read: 151, failed: 3, replied: 42 },
     },
     {
-      ...base, id: 'cp-reativacao', name: 'Reativação · inativos 90 dias', templateId: 'tp-reativacao',
-      templateName: 'reativacao_inativos', segment: { type: 'tag', tagIds: ['tg-atacado'] }, status: 'sent',
+      ...base, id: 'cp-lembrete', name: 'Lembrete · consultas da semana', templateId: 'tp-lembrete',
+      templateName: 'lembrete_consulta', segment: { type: 'tag', tagIds: ['tg-unimed'] }, status: 'sent',
       sentAt: daysAgo(8), createdAt: daysAgo(9),
       stats: { total: 912, sent: 905, delivered: 871, read: 498, failed: 7, replied: 61 },
     },
@@ -470,26 +454,29 @@ export function heroCampaigns(at: HeroState): Campaign[] {
 
 // ─── Catálogo ─────────────────────────────────────────────────────────────────
 
-/** O catálogo do vendedor. O Plano Pro anual a R$ 375/licença é o item que o
- *  Agente Vendas consulta para responder a Marina. */
+/** O catálogo da clínica. A consulta de retorno a R$ 180 é o item que o Agente
+ *  Recepção consulta para responder a Marina. */
 export const HERO_PRODUCTS: Product[] = [
   {
-    id: 'pr-pro', name: 'Plano Pro', sku: 'PRO', category: 'Assinaturas', active: true, order: 1,
-    description: 'Licença por usuário, com suporte prioritário.',
+    id: 'pr-consulta', name: 'Consulta dermatológica', sku: 'CONS', category: 'Consultas', active: true, order: 1,
+    description: 'Primeira consulta, com avaliação completa.',
     priceVariations: [
-      { id: 'pv-pro-anual', label: 'Anual · por licença', amountCents: 37_500, currency: 'BRL', order: 1 },
-      { id: 'pv-pro-mensal', label: 'Mensal · por licença', amountCents: 3_900, currency: 'BRL', order: 2 },
+      { id: 'pv-cons-part', label: 'Particular', amountCents: 25_000, currency: 'BRL', order: 1 },
+      { id: 'pv-cons-conv', label: 'Convênio · com guia', amountCents: 0, currency: 'BRL', order: 2 },
     ],
   },
   {
-    id: 'pr-essencial', name: 'Plano Essencial', sku: 'ESS', category: 'Assinaturas', active: true, order: 2,
-    description: 'Licença por usuário, suporte em horário comercial.',
-    priceVariations: [{ id: 'pv-ess-mensal', label: 'Mensal · por licença', amountCents: 1_900, currency: 'BRL', order: 1 }],
+    id: 'pr-retorno', name: 'Consulta de retorno', sku: 'RET', category: 'Consultas', active: true, order: 2,
+    description: 'Retorno em até 30 dias após a consulta.',
+    priceVariations: [
+      { id: 'pv-ret-part', label: 'Particular', amountCents: 18_000, currency: 'BRL', order: 1 },
+      { id: 'pv-ret-conv', label: 'Convênio · com guia', amountCents: 0, currency: 'BRL', order: 2 },
+    ],
   },
   {
-    id: 'pr-implantacao', name: 'Implantação assistida', sku: 'IMP', category: 'Serviços', active: true, order: 3,
-    description: 'Configuração e treinamento da equipe, por loja.',
-    priceVariations: [{ id: 'pv-imp', label: 'Por loja', amountCents: 56_250, currency: 'BRL', order: 1 }],
+    id: 'pr-laser', name: 'Laser fracionado', sku: 'LAS', category: 'Procedimentos', active: true, order: 3,
+    description: 'Sessão avulsa ou pacote de três.',
+    priceVariations: [{ id: 'pv-laser', label: 'Por sessão', amountCents: 45_000, currency: 'BRL', order: 1 }],
   },
 ]
 
@@ -506,28 +493,27 @@ export function heroNotifications(at: HeroState): AppNotification[] {
   })
   // A campanha termina de sair logo depois da cena de Disparos.
   if (reached(at, 'demanda')) out.push({
-    id: 'nt-campanha', type: 'campaign_complete', title: 'Renovação Pro · setembro concluída',
+    id: 'nt-campanha', type: 'campaign_complete', title: `${HERO_CAMPANHA_NOME} concluída`,
     description: '1.231 enviadas · 1.204 entregues', link: '/campaigns', isRead: true, createdAt: minutesAgo(40),
-    metadata: { campaignName: 'Renovação Pro · setembro', sent: 1_231, failed: 9 },
+    metadata: { campaignName: HERO_CAMPANHA_NOME, sent: 1_231, failed: 9 },
   })
   out.push({
     id: 'nt-atribuida', type: 'conversation_assigned', title: 'Conversa atribuída a você',
-    description: 'Clínica Norte · Implantação · 4 lojas', link: '/conversations', isRead: true, createdAt: hoursAgo(3),
-    metadata: { contactName: 'Clínica Norte' },
+    description: 'Joana Freitas · Consulta · Dr. Paulo', link: '/conversations', isRead: true, createdAt: hoursAgo(3),
+    metadata: { contactName: 'Joana Freitas' },
   })
   return out
 }
 
 /**
- * As passagens de etapa do negócio da história, já em Ganho — as mesmas linhas
- * do backend de demonstração (`deals/:id/history`): a Ana pôs em Qualificação,
- * a IA levou para Proposta, a Ana fechou. Usadas onde o negócio aparece
- * FECHADO fora do app (a janela do Hero, o cartão da seção Plataforma).
+ * As passagens de etapa do registro da história, já Confirmado — as mesmas
+ * linhas do backend de demonstração (`deals/:id/history`): a Ana pôs em
+ * Avaliação, a IA levou para Agendado, a Ana confirmou.
  */
 export function heroHistoricoGanho(): DealStageHistoryEntry[] {
   return [
-    { id: 'h-3', fromStageId: 'ps-proposta', fromStageLabel: 'Proposta', toStageId: 'ps-ganho', toStageLabel: 'Ganho', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: minutesAgo(1) },
-    { id: 'h-2', fromStageId: 'ps-qualificacao', fromStageLabel: 'Qualificação', toStageId: 'ps-proposta', toStageLabel: 'Proposta', movedByKind: 'ai', movedByActorName: 'Agente Vendas', createdAt: minutesAgo(6) },
-    { id: 'h-1', fromStageId: 'ps-entrada', fromStageLabel: 'Entrada', toStageId: 'ps-qualificacao', toStageLabel: 'Qualificação', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: daysAgo(2) },
+    { id: 'h-3', fromStageId: HERO_STAGE_PROPOSTA, fromStageLabel: 'Agendado', toStageId: HERO_STAGE_GANHO, toStageLabel: 'Confirmado', movedByKind: 'user', movedByActorName: HERO.atendente, createdAt: minutesAgo(1) },
+    { id: 'h-2', fromStageId: HERO_STAGE_QUALIFICACAO, fromStageLabel: 'Avaliação', toStageId: HERO_STAGE_PROPOSTA, toStageLabel: 'Agendado', movedByKind: 'ai', movedByActorName: HERO.agent, createdAt: minutesAgo(6) },
+    { id: 'h-1', fromStageId: 'ps-contato', fromStageLabel: 'Contato', toStageId: HERO_STAGE_QUALIFICACAO, toStageLabel: 'Avaliação', movedByKind: 'user', movedByActorName: HERO.atendente, createdAt: daysAgo(2) },
   ] as DealStageHistoryEntry[]
 }

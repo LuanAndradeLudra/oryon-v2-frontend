@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { Plug, SlidersHorizontal, ShieldCheck, Hand, BadgeCheck, History } from 'lucide-react'
+import { Plug, SlidersHorizontal, PhoneForwarded, Hand, BadgeCheck, History } from 'lucide-react'
 import { trust } from '../landingCopy'
 import { DemoRecorte } from '../plataforma/DemoRecorte'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '../stage/hero/heroStory'
@@ -9,7 +9,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 const ICONS = {
   conexao: Plug,
   permissoes: SlidersHorizontal,
-  verificacao: ShieldCheck,
+  chamada: PhoneForwarded,
   controle: Hand,
   venda: BadgeCheck,
   historico: History,

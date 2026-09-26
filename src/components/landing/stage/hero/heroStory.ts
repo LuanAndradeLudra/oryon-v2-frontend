@@ -9,11 +9,11 @@ import type { HeroCue } from './useHeroTimeline'
  * pelos próprios mecanismos de produção.
  *
  * A história, em quatro capítulos:
- *  1. Disparos — a campanha "Renovação Pro" sai e o relatório mostra o retorno;
- *  2. Atendimento com IA — a Marina responde, o Agente IA atende com o valor
- *     do catálogo e atualiza situação e etiqueta no CRM;
- *  3. Funil de vendas — o negócio avança de etapa junto com a conversa;
- *  4. A equipe no controle — ela pede uma pessoa, a Ana assume e fecha.
+ *  1. Atendimento com IA — a campanha de retorno chega no WhatsApp da Marina,
+ *     ela pede horário e o Agente IA responde com valor, convênio e agenda;
+ *  2. Funil — o atendimento avança de etapa junto com a conversa;
+ *  3. A equipe no controle — ela pede um encaixe, a Ana assume e confirma;
+ *  4. De onde veio a conversa — o relatório da campanha de retorno.
  *
  * A tela de Agentes IA saiu do roteiro a pedido do PO (24/09): a interface
  * ainda vai mudar.
@@ -48,14 +48,14 @@ export type HeroCena =
 export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   disparos: '/campaigns',
   // O relatório real da campanha abre por cima da lista (a gaveta do produto).
-  relatorio: '/campaigns?report=cp-renovacao',
+  relatorio: '/campaigns?report=cp-retorno',
   conversa: '/conversations?id=demo-conv-0',
-  funil: '/pipelines/pl-vendas',
-  'agente-instrucoes': '/agents?agent=ag-vendas&tab=prompt',
-  'agente-conhecimento': '/agents?agent=ag-vendas&tab=knowledge',
-  'agente-catalogo': '/agents?agent=ag-vendas&tab=catalog',
-  'agente-capacidades': '/agents?agent=ag-vendas&tab=capabilities',
-  'agente-capacidades-funil': '/agents?agent=ag-vendas&tab=capabilities',
+  funil: '/pipelines/pl-consultas',
+  'agente-instrucoes': '/agents?agent=ag-recepcao&tab=prompt',
+  'agente-conhecimento': '/agents?agent=ag-recepcao&tab=knowledge',
+  'agente-catalogo': '/agents?agent=ag-recepcao&tab=catalog',
+  'agente-capacidades': '/agents?agent=ag-recepcao&tab=capabilities',
+  'agente-capacidades-funil': '/agents?agent=ag-recepcao&tab=capabilities',
   painel: '/dashboard',
   'painel-fila': '/dashboard',
   'painel-indicadores': '/dashboard',
@@ -74,30 +74,32 @@ const C = (t: number, composition: HeroCena): Cue => ({ t, composition })
 export const HERO_RITMO = 1.3
 
 const CUES_BASE: readonly Cue[] = [
-  // ── 1 · Disparos: a campanha sai; o relatório abre com os números dela ────
-  { t: 0, state: 'inicio', composition: 'disparos' },
-  C(1900, 'relatorio'),
+  // ── 1 · Atendimento com IA: a campanha chega no celular, a Marina responde ─
+  // A primeira cena É a promessa do H1 (26/09): o WhatsApp atendendo. Antes o
+  // Hero abria pela lista de Disparos e o relatório — a campanha agora fecha
+  // o laço como "de onde veio a conversa".
+  { t: 0, state: 'inicio', composition: 'conversa' },
+  S(1900, 'demanda'),
+  S(4700, 'resposta'),
+  // Parado: a resposta traz valor, convênio e horários — precisa ser lida.
+  S(9200, 'confirma'),
+  S(11200, 'situacao'),
+  S(13400, 'etiqueta'),
 
-  // ── 2 · Atendimento com IA ────────────────────────────────────────────────
-  C(7200, 'conversa'),
-  S(8600, 'demanda'),
-  S(11400, 'resposta'),
-  // Parado: a resposta traz preço e condição — precisa ser lida.
-  S(15400, 'confirma'),
-  S(17400, 'situacao'),
-  S(19600, 'etiqueta'),
+  // ── 2 · Funil: o atendimento anda junto com a conversa ────────────────────
+  C(16400, 'funil'),
+  S(18000, 'avanco'),
 
-  // ── 3 · Funil: o negócio anda junto com a conversa ────────────────────────
-  C(22600, 'funil'),
-  S(24200, 'avanco'),
+  // ── 3 · A equipe no controle: a Marina quer um encaixe; a Ana confirma ────
+  C(23400, 'conversa'),
+  S(24600, 'pedido'),
+  S(27000, 'assumido'),
+  S(29600, 'humano'),
+  // O desfecho é o clímax: mais tempo em cena para ser lido.
+  S(32600, 'ganho'),
 
-  // ── 4 · A equipe no controle: a passagem para a pessoa, que fecha ─────────
-  C(29600, 'conversa'),
-  S(30800, 'pedido'),
-  S(33200, 'assumido'),
-  S(35800, 'humano'),
-  // O fechamento é o clímax: mais tempo em cena (6,2 s) para ser lido.
-  S(38800, 'ganho'),
+  // ── 4 · De onde veio a conversa: o relatório da campanha de retorno ───────
+  C(38800, 'relatorio'),
 
   // ── Reinício: o palco esvazia antes de os dados voltarem ao começo ────────
   C(45000, 'reinicio'),
@@ -132,37 +134,36 @@ const idx = (pred: (c: Cue) => boolean) => HERO_CUES.findIndex(pred)
 
 export const HERO_CAPITULOS: readonly HeroCapitulo[] = [
   {
-    id: 'disparos',
-    titulo: 'Campanhas no WhatsApp',
-    valor: 'Dispare para a sua base e acompanhe entrega, leitura e resposta.',
-    cue: 0,
-  },
-  {
     id: 'atendimento',
     titulo: 'Atendimento com IA',
-    valor: 'O Agente IA responde na hora com o que você ensinou e deixa situação e etiquetas em dia.',
-    cue: idx((c) => c.composition === 'conversa'),
+    valor: 'A IA responde na hora com o que você ensinou e deixa situação e etiquetas em dia.',
+    cue: 0,
   },
   {
     id: 'funil',
     titulo: 'Funil em dia',
-    valor: 'A conversa avança o negócio de etapa, e o quadro mostra onde cada venda está.',
+    valor: 'A conversa avança o atendimento de etapa, e o quadro mostra onde cada um está.',
     cue: idx((c) => c.composition === 'funil'),
   },
   {
     id: 'equipe',
     titulo: 'A equipe no controle',
-    valor: 'A IA chama uma pessoa quando o cliente pede — e quem fecha a venda é sempre a sua equipe.',
+    valor: 'A IA chama uma pessoa quando o cliente pede — e quem confirma é sempre a sua equipe.',
     cue: idx((c) => c.state === 'pedido') - 1,
+  },
+  {
+    id: 'disparos',
+    titulo: 'De onde veio a conversa',
+    valor: 'Campanhas para a sua base: quem recebeu, leu e respondeu vira atendimento.',
+    cue: idx((c) => c.composition === 'relatorio'),
   },
 ]
 
 /** Em que capítulo a história está. */
 export function capituloDe(estado: HeroState, cena: HeroCena, index: number): HeroCapituloId {
-  if (cena === 'disparos' || cena === 'relatorio') return 'disparos'
+  if (cena === 'disparos' || cena === 'relatorio' || cena === 'reinicio') return 'disparos'
   if (cena === 'funil') return 'funil'
-  if (cena === 'reinicio') return 'equipe'
-  return index >= HERO_CAPITULOS[3].cue ? 'equipe' : 'atendimento'
+  return index >= HERO_CAPITULOS[2].cue ? 'equipe' : 'atendimento'
 }
 
 /**
@@ -171,24 +172,24 @@ export function capituloDe(estado: HeroState, cena: HeroCena, index: number): He
  * não define valor, não se pausa e não fecha venda.
  */
 export function batidaDe(estado: HeroState, cena: HeroCena): string {
-  if (cena === 'disparos') return 'A campanha "Renovação Pro" sai para 1.240 clientes'
-  if (cena === 'relatorio') return 'O relatório mostra quem recebeu, leu e respondeu'
+  if (cena === 'disparos') return 'A campanha de retorno sai para 1.240 pacientes'
+  if (cena === 'relatorio') return 'De onde veio a conversa: a campanha de retorno, e quem mais respondeu'
   if (cena === 'funil') {
     return estado === 'avanco'
-      ? 'O negócio da Marina passa de Qualificação para Proposta'
-      : 'O funil de vendas, com o negócio da Marina em Qualificação'
+      ? 'O atendimento da Marina passa de Avaliação para Agendado'
+      : 'O funil de consultas, com o atendimento da Marina em Avaliação'
   }
   switch (estado) {
-    case 'inicio': return 'A Marina recebe a campanha no WhatsApp'
-    case 'demanda': return 'A Marina responde pedindo uma proposta'
-    case 'resposta': return 'O Agente IA responde na hora, com o valor do catálogo'
-    case 'confirma': return 'A Marina confirma o interesse'
+    case 'inicio': return 'A campanha de retorno chega no WhatsApp da Marina'
+    case 'demanda': return 'A Marina pede um horário com a Dra. Helena'
+    case 'resposta': return 'A IA responde na hora: valor, convênio e horários da agenda'
+    case 'confirma': return 'A Marina escolhe quinta às 14h30'
     case 'situacao': return 'A IA atualiza a situação do contato no CRM'
-    case 'etiqueta': return 'e etiqueta a conversa como "proposta enviada"'
-    case 'avanco': return 'O negócio já está em Proposta'
-    case 'pedido': return 'A Marina pede para falar com uma pessoa'
+    case 'etiqueta': return 'e etiqueta a conversa como "retorno"'
+    case 'avanco': return 'O atendimento já está em Agendado'
+    case 'pedido': return 'A Marina pede uma pessoa: quer um encaixe antes'
     case 'assumido': return 'A IA chama a Ana e coloca a conversa na fila'
     case 'humano': return 'A Ana assume — a IA fica em pausa enquanto ela atende'
-    case 'ganho': return 'A Ana fecha a venda: o negócio vai para Ganho'
+    case 'ganho': return 'A Ana confirma o encaixe: o atendimento vai para Confirmado'
   }
 }

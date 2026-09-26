@@ -31,18 +31,18 @@ beforeEach(() => {
 afterEach(() => cleanup())
 
 const TELAS: { rota: string; aparece: string | RegExp }[] = [
-  { rota: '/conversations?id=demo-conv-0', aparece: /Bom dia! Vocês têm plano anual/ },
+  { rota: '/conversations?id=demo-conv-0', aparece: /A Dra. Helena tem horário essa semana/ },
   // A lista inteira na aba "Todas" (status=all) — não só a conversa aberta.
   { rota: '/conversations', aparece: 'Rafaela Couto' },
-  { rota: '/pipelines', aparece: 'Migração de base' },
-  { rota: '/campaigns', aparece: /Renovação Pro · setembro/ },
-  { rota: '/campaigns?report=cp-renovacao', aparece: /Funil de engajamento/ },
-  { rota: '/pipelines/pl-vendas?deal=demo-deal-0', aparece: /Anual · por licença/ },
-  { rota: '/agents?agent=ag-vendas&tab=capabilities', aparece: 'Capacidades de CRM' },
+  { rota: '/pipelines', aparece: 'Check-up · 3 exames' },
+  { rota: '/campaigns', aparece: /Retorno · setembro/ },
+  { rota: '/campaigns?report=cp-retorno', aparece: /Funil de engajamento/ },
+  { rota: '/pipelines/pl-consultas?deal=demo-deal-0', aparece: /Particular/ },
+  { rota: '/agents?agent=ag-recepcao&tab=capabilities', aparece: 'Capacidades de CRM' },
   // Seção Plataforma (26/09): de onde vem o conhecimento e o Dashboard.
-  { rota: '/agents?agent=ag-vendas&tab=prompt', aparece: /Use só valores e condições/ },
-  { rota: '/agents?agent=ag-vendas&tab=knowledge', aparece: 'Renovação de setembro' },
-  { rota: '/agents?agent=ag-vendas&tab=catalog', aparece: 'Implantação assistida' },
+  { rota: '/agents?agent=ag-recepcao&tab=prompt', aparece: /Use só valores e condições/ },
+  { rota: '/agents?agent=ag-recepcao&tab=knowledge', aparece: 'Convênios aceitos' },
+  { rota: '/agents?agent=ag-recepcao&tab=catalog', aparece: 'Consulta de retorno' },
   { rota: '/dashboard', aparece: 'Volume de Mensagens' },
 ]
 

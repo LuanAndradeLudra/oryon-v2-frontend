@@ -34,8 +34,9 @@ export function WelcomePage() {
             (limites da IA) → dúvidas finais (Perguntas) → conversa (Fecho). */}
         <Suspense fallback={<div className="min-h-[60vh]" />}>
           <SecaoPlataforma />
-          <SecaoImplantacao />
+          {/* "Posso confiar?" vem antes de "dá trabalho?" (26/09). */}
           <Trust />
+          <SecaoImplantacao />
           <SecaoPerguntas />
           <SecaoFecho />
         </Suspense>
