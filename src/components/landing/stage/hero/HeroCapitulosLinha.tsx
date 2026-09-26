@@ -27,12 +27,12 @@ export function HeroCapitulosLinha({
   return (
     <nav aria-label="Capítulos da demonstração" className={cn('flex justify-center', className)}>
       <style>{'@keyframes hero-linha-progresso{from{transform:scaleX(0)}to{transform:scaleX(1)}}'}</style>
-      <ol className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
+      <ol className="grid w-full grid-cols-2 gap-x-2 gap-y-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-1">
         {capitulos.map((c, i) => {
           const eAtivo = i === iAtivo
           return (
             <li key={c.id} className="flex items-center">
-              {i > 0 && <span aria-hidden className="mx-2 h-3 w-px bg-surface-700" />}
+              {i > 0 && <span aria-hidden className="mx-2 hidden h-3 w-px bg-surface-700 sm:block" />}
               <button
                 type="button"
                 onClick={() => onIr(c)}

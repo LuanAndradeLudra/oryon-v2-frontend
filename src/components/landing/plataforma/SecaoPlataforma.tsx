@@ -445,7 +445,11 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
   // Configurar agentes é desktop no próprio produto (no celular ele avisa "use
   // o desktop"): ali o capítulo conta a história só pelas evidências.
   const celular = !useMediaQuery('(min-width: 768px)')
-  const semTela = celular && b.id === 'conhecer'
+  // O funil no celular abria o painel de EDIÇÃO do negócio (campos vazios,
+  // 'Marcar ganho') em vez do quadro: ali a evidência (o card real do
+  // negócio, já em Agendado) conta o capítulo sozinha.
+  const semTela = celular && (b.id === 'conhecer' || b.id === 'funil')
+  const passoSemTela: HeroState = b.id === 'funil' ? 'avanco' : h.estado
   // O passo da mini-história da tela — os cartões ao lado reagem a ele.
   const [passo, setPasso] = useState<HeroState>(h.estado)
   const [ciclo, setCiclo] = useState(0)
@@ -504,10 +508,10 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
         {/* As evidências: ao lado (empilhadas, dividindo a altura do palco), em
             duas colunas altas (vertical) ou embaixo. */}
         {tresColunas
-          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)
+          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)
           : (
             <div className={aoLado ? 'flex min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
-              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)}
+              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)}
             </div>
           )}
       </div>
