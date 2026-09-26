@@ -399,8 +399,8 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
     // Esticada, a evidência divide a altura do palco (flex-1): a folga vai para
     // a área do visual, centrado — nunca um vão entre as duas.
     <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-w-0', esticar && 'flex-1')}>
-      <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
-        <div className="flex min-h-[104px] flex-1 flex-col justify-center border-b border-[var(--landing-borda)] bg-surface-950 py-1.5">
+      <div className={cn('flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]', esticar && 'h-full')}>
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5">
           <div aria-hidden inert data-evidencia className="pointer-events-none select-none [zoom:0.8]">
             <VisualCartao bloco={bloco} i={i} at={at} cena={cena} ciclo={ciclo} />
           </div>
@@ -441,7 +441,10 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
   const sobra = palco ? largura - palco - VAO : 0
   const aoLado = palco > 0 && sobra >= EVIDENCIAS_MIN && arranjo !== 'abaixo'
   const tresColunas = aoLado && arranjo === 'vertical' && sobra >= 2 * EVIDENCIA_COLUNA_MIN + VAO
-  const preencher = aoLado && arranjo === 'panoramico'
+  // Quando há evidências ao lado, a moldura deve ocupar toda a coluna do
+  // palco. Centralizar a tela dentro de uma área maior cria o vazio visível
+  // nas laterais e faz a simulação parecer um cartão solto.
+  const preencher = aoLado
   // Configurar agentes é desktop no próprio produto (no celular ele avisa "use
   // o desktop"): ali o capítulo conta a história só pelas evidências.
   const celular = !useMediaQuery('(min-width: 768px)')
@@ -510,7 +513,7 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
         {tresColunas
           ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)
           : (
-            <div className={aoLado ? 'flex min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
+            <div className={aoLado ? 'flex h-full min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
               {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)}
             </div>
           )}
