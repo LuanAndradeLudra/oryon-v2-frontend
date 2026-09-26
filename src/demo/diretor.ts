@@ -23,6 +23,7 @@ import {
   HERO, HERO_USER, heroContact, heroConversation, heroDeal, heroMessages, heroNotifications, reached,
 } from '@/components/landing/stage/hero/heroRealData'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '@/components/landing/stage/hero/heroStory'
+import { recortarForma, raiosDoElemento, type RaiosFoco } from '@/components/landing/stage/hero/focoGeometry'
 
 export const CANAL = 'oryon-hero'
 
@@ -36,7 +37,7 @@ export type MensagemDaDemo =
   | { canal: typeof CANAL; tipo: 'pintou'; rota: string }
   /** O alvo em foco, a cada quadro em que muda (id = a tomada). `visivel`:
    *  falso quando o alvo saiu da área rolável ou ficou coberto. */
-  | { canal: typeof CANAL; tipo: 'foco'; id: number; rect: { x: number; y: number; w: number; h: number }; raio: number; visivel: boolean }
+  | { canal: typeof CANAL; tipo: 'foco'; id: number; rect: { x: number; y: number; w: number; h: number }; raios: RaiosFoco; visivel: boolean }
   | { canal: typeof CANAL; tipo: 'foco-fim'; id: number }
 
 type Janela = { __demoNavegar?: (to: string) => void; __demoRota?: () => string; __demoFecharPainel?: () => void }
@@ -140,11 +141,15 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
   const recomeco = !reached(estado, de)
   // Um passo novo encerra a tomada anterior: o destaque nunca descreve um
   // acontecimento que já passou.
-  encerrarFoco()
+  // A câmera já está acompanhando o card desde a entrada no Funil. Mantê-la
+  // no mesmo alvo deixa o movimento entre colunas visível, sem apagar o foco
+  // até a animação terminar.
+  const seguirCard = cena === 'funil' && estado === 'avanco' && cenaAtual === 'funil'
+  if (!seguirCard) encerrarFoco()
   definirEstado(estado)
   if (!recomeco && de !== estado) {
     emitirTransicao(de, estado)
-    focar(estado)
+    if (!seguirCard) focar(estado)
   }
 
   const w = window as unknown as Janela
@@ -162,7 +167,7 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
       // ficava escuro até o teto de 3 s e a cena de Disparos passava apagada).
       avisarQuandoPintar(rota, cena)
       const alvo = FOCOS_CENA[cena]
-      if (alvo) focarAlvo(alvo, 500)
+      if (alvo) focarAlvo(alvo, cena === 'funil' ? 0 : 500, cena === 'funil' ? 7500 : FOCO_NO_AR_MS, cena === 'funil')
     }
     return
   }
@@ -178,7 +183,7 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
       }
       const alvo = FOCOS_CENA[cena]
       // A cena precisa montar (e a gaveta do relatório, deslizar) antes da medida.
-      if (alvo) focarAlvo(alvo, 500)
+      if (alvo) focarAlvo(alvo, cena === 'funil' ? 0 : 500, cena === 'funil' ? 7500 : FOCO_NO_AR_MS, cena === 'funil')
     }
   } else if (recomeco && cena !== 'reinicio') {
     // Voltar no tempo NA MESMA tela (clicar num capítulo anterior, ambos em
@@ -284,6 +289,8 @@ type Alvo = {
   /** O texto é o TÍTULO de um bloco: o alvo é o bloco inteiro (título e
    *  conteúdo), não a faixa do título. */
   bloco?: boolean
+  /** Componente exato que contém o texto quando a peça não é um card inteiro. */
+  seletorAncestral?: string
   /** O alvo pode estar fora da área visível da tela: rola até ele antes de medir. */
   rolar?: boolean
 }
@@ -334,6 +341,10 @@ function acharAlvo(alvo: Alvo): HTMLElement | null {
   if (!escopo) return null
   const achado = acharTexto(escopo, alvo.texto)
   if (!achado) return null
+  if (alvo.seletorAncestral) {
+    const componente = achado.closest<HTMLElement>(alvo.seletorAncestral)
+    return componente && app.contains(componente) ? componente : null
+  }
   if (alvo.bloco) return achado.parentElement ?? achado
   return alvo.bolha ? subirAteCartao(achado, alvo.mensagem ? escopo : null) : achado
 }
@@ -342,6 +353,7 @@ function acharAlvo(alvo: Alvo): HTMLElement | null {
 const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
   disparos: { texto: 'Retorno · setembro', bolha: true },
   relatorio: { texto: 'Funil de engajamento', bloco: true },
+  funil: { texto: 'Retorno · Dra. Helena', bolha: true },
   // O agente: a regra que manda usar só o catálogo; o documento da condição de
   // setembro; o produto que a resposta cita.
   'agente-instrucoes': { texto: 'Use só valores e condições' },
@@ -354,7 +366,7 @@ const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
   'agente-capacidades-funil': { texto: 'Mover negócio ou registro no funil', bolha: true, rolar: true },
   // O Dashboard: a fila (a Marina esperando), os indicadores, o volume.
   'painel-fila': { texto: 'Fila agora', bolha: true },
-  'painel-indicadores': { texto: 'Conversas Ativas', bolha: true },
+  'painel-indicadores': { texto: 'Conversas Ativas', seletorAncestral: '[data-spotlight-target="kpi-cell"]' },
   'painel-volume': { texto: 'Volume de Mensagens', bolha: true },
 }
 
@@ -382,7 +394,7 @@ function ancestraisQueRecortam(el: HTMLElement): HTMLElement[] {
   return lista
 }
 
-function medir(el: HTMLElement): { rect: Retangulo; visivel: boolean } {
+function medir(el: HTMLElement): { rect: Retangulo; raios: RaiosFoco; visivel: boolean } {
   const r = el.getBoundingClientRect()
   let x1 = r.left, y1 = r.top, x2 = r.right, y2 = r.bottom
   for (const a of ancestraisQueRecortam(el)) {
@@ -396,7 +408,12 @@ function medir(el: HTMLElement): { rect: Retangulo; visivel: boolean } {
     const topo = document.elementFromPoint(x1 + w / 2, y1 + h / 2)
     if (topo && !el.contains(topo) && !topo.contains(el)) visivel = false
   }
-  return { rect: { x: x1, y: y1, w, h }, visivel }
+  const forma = recortarForma(
+    { x: r.left, y: r.top, w: r.width, h: r.height },
+    { x: x1, y: y1, w, h },
+    raiosDoElemento(el),
+  )
+  return { rect: forma.rect, raios: forma.raios, visivel }
 }
 
 let focoSeq = 0
@@ -444,7 +461,7 @@ function rolarAte(el: HTMLElement) {
   cont.scrollTo({ top: Math.max(0, topo), behavior: 'smooth' })
 }
 
-function focarAlvo(alvo: Alvo, atrasoMs: number) {
+function focarAlvo(alvo: Alvo, atrasoMs: number, noArMs = FOCO_NO_AR_MS, imediato = false) {
   const seq = ++focoSeq
   const inicio = performance.now()
   let el: HTMLElement | null = null
@@ -465,27 +482,27 @@ function focarAlvo(alvo: Alvo, atrasoMs: number) {
       if (el && alvo.rolar) rolarAte(el)
     }
     if (!el) {
-      if (agora - inicio < atrasoMs + 2200) { requestAnimationFrame(quadro); return }
+      if (agora - inicio < (imediato ? 5000 : atrasoMs + 2200)) { requestAnimationFrame(quadro); return }
       encerrarFoco()
       return
     }
-    const { rect, visivel } = medir(el)
-    const raio = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 8
-    const chave = [rect.x, rect.y, rect.w, rect.h].map((n) => Math.round(n * 2) / 2).join(',') + visivel
+    const { rect, raios, visivel } = medir(el)
+    const chave = [rect.x, rect.y, rect.w, rect.h, ...Object.values(raios).flatMap((r) => [r.x, r.y])]
+      .map((n) => Math.round(n * 2) / 2).join(',') + visivel
     if (!noArDesde) {
       // Assentando: conta quadros sem mudança antes de entrar no ar.
       parado = chave === ultimo ? parado + 1 : 0
       ultimo = chave
-      if ((parado >= 8 && visivel) || agora - inicio > atrasoMs + FOCO_ASSENTAR_MAX_MS) {
+      if ((imediato && visivel) || (parado >= 8 && visivel) || agora - inicio > atrasoMs + FOCO_ASSENTAR_MAX_MS) {
         noArDesde = agora
         focoAtivo = seq
-        avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect, raio, visivel })
+        avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect, raios, visivel })
       }
     } else if (chave !== ultimo) {
       ultimo = chave
-      avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect, raio, visivel })
+      avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect, raios, visivel })
     }
-    if (noArDesde && agora - noArDesde > FOCO_NO_AR_MS) { encerrarFoco(); return }
+    if (noArDesde && agora - noArDesde > noArMs) { encerrarFoco(); return }
     // No ar e parado: confere a cada 120 ms em vez de a cada quadro (o
     // alvo só se mexe se a tela rolar ou a lista recarregar — e aí volta ao
     // ritmo de quadro até assentar de novo).

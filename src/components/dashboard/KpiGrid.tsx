@@ -45,7 +45,7 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
   const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
 
   return (
-    <div className="flex flex-col px-3.5 py-3 min-w-0">
+    <div data-spotlight-target="kpi-cell" className="flex flex-col px-3.5 py-3 min-w-0">
       <span className="text-[11px] font-medium text-surface-400 truncate">{metric.label}</span>
       <div className="font-extrabold tabular-nums tracking-[-0.02em] leading-[1.15] font-display text-[26px] text-surface-100">
         {formatKpiValue(metric.value, metric.unit)}

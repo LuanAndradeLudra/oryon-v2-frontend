@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { borderRadiusDoFoco, escalarRaios, raiosDoElemento, recortarForma, SEM_RAIOS, type RaiosFoco } from './focoGeometry'
 
 /**
  * O FOCO — o contorno sobre o elemento real e o conector que o liga à
@@ -28,7 +29,7 @@ export interface FocoDaDemo {
   id: number
   /** Retângulo visível do alvo, em px do app (coordenadas do iframe). */
   rect: { x: number; y: number; w: number; h: number }
-  raio: number
+  raios: RaiosFoco
   visivel: boolean
   /** A tomada terminou: tudo sai de cena. */
   saindo: boolean
@@ -43,12 +44,12 @@ export function useFocoDaDemo(iframeRef: RefObject<HTMLIFrameElement | null>) {
     let limpar: ReturnType<typeof setTimeout> | undefined
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== location.origin || !iframeRef.current || e.source !== iframeRef.current.contentWindow) return
-      const d = e.data as { canal?: string; tipo?: string; id?: number; rect?: FocoDaDemo['rect']; raio?: number; visivel?: boolean }
+      const d = e.data as { canal?: string; tipo?: string; id?: number; rect?: FocoDaDemo['rect']; raios?: RaiosFoco; visivel?: boolean }
       if (d?.canal !== CANAL) return
       if (d.tipo === 'foco' && d.rect && d.id) {
         if (limpar) clearTimeout(limpar)
         const { id, rect } = d
-        setFoco({ id, rect, raio: d.raio ?? 8, visivel: d.visivel !== false, saindo: false })
+        setFoco({ id, rect, raios: d.raios ?? SEM_RAIOS, visivel: d.visivel !== false, saindo: false })
       }
       if (d.tipo === 'foco-fim') {
         setFoco((f) => (f && f.id === d.id ? { ...f, saindo: true } : f))
@@ -101,13 +102,12 @@ type Lado = 'esquerda' | 'direita' | 'topo'
 
 interface Geometria {
   anel: R
-  raio: number
   /** O anel está à vista (não coberto por janela nem fora da tela do app). */
   anelVisivel: boolean
   caminho?: { d: string; fim: P; inicio: P; comprimento: number; lado: Lado; marca: [P, P] }
   /** O HOLOFOTE: a área que escurece (o palco inteiro, ou a tela do recorte)
    *  e o furo em luz plena sobre o alvo — em px da raiz. */
-  veu?: { area: R; furo: R; raio: number; esfumar: boolean }
+  veu?: { area: R; furo: R; raios: RaiosFoco; esfumar: boolean }
 }
 
 function comprimento(pts: P[]) {
@@ -123,7 +123,7 @@ export interface Tomada { id: number; saindo: boolean }
 export interface MedidaDoAlvo {
   /** O retângulo do alvo (sem folga). */
   alvo: R
-  raio: number
+  raios: RaiosFoco
   /** O alvo está à vista dentro da sua tela (não rolado para fora, não coberto dentro do app). */
   visivel: boolean
   /** A moldura em que o alvo mora — onde o conector chega. */
@@ -142,7 +142,7 @@ export function medirNoIframe(
   const tela = relativo(fr, base)
   return {
     alvo: { x: tela.x + foco.rect.x * escala, y: tela.y + foco.rect.y * escala, w: foco.rect.w * escala, h: foco.rect.h * escala },
-    raio: foco.raio * escala,
+    raios: escalarRaios(foco.raios, escala),
     visivel: foco.visivel,
     moldura,
     corte: recorte ? relativo(recorte.getBoundingClientRect(), base) : tela,
@@ -155,10 +155,9 @@ export function medirNoElemento(el: HTMLElement | null, moldura: HTMLElement | n
   const conteudo = moldura.querySelector<HTMLElement>('.hero-bandeja > div:last-child') ?? moldura
   // A opacidade da entrada/saída mora no filho animado da satélite.
   const opacidade = Number(getComputedStyle(moldura.firstElementChild ?? moldura).opacity || '1')
-  const escala = el.getBoundingClientRect().width / (el.offsetWidth || 1)
   return {
     alvo: relativo(el.getBoundingClientRect(), base),
-    raio: (parseFloat(getComputedStyle(el).borderTopLeftRadius) || 8) * escala,
+    raios: raiosDoElemento(el),
     visivel: opacidade > 0.9,
     moldura,
     // Moldura inteira em foco: o recorte é a própria moldura (com folga),
@@ -178,7 +177,7 @@ const ASSENTAR_MAX_MS = 1500
  * `palcoRef`, desenha também o conector; sem eles, só o contorno (recortes da
  * seção Plataforma, celular).
  */
-export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaSecao = false }: {
+export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaSecao = false, funil = false }: {
   tomada: Tomada | null
   /** Mede o alvo a cada quadro (px relativos a `base`, o retângulo da raiz). */
   medir: (base: DOMRect) => MedidaDoAlvo | null
@@ -189,15 +188,17 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
   palcoRef?: RefObject<HTMLElement | null>
   /** O véu do holofote cobre a seção inteira (Hero), não só a tela do alvo. */
   veuNaSecao?: boolean
+  /** No quadro de Funis, toda a tela permanece legível enquanto o card anda. */
+  funil?: boolean
 }) {
   const [geo, setGeo] = useState<Geometria | null>(null)
   const ladoTravado = useRef<{ id: number; lado: Lado } | null>(null)
   const medirRef = useRef(medir)
-  medirRef.current = medir
+  useLayoutEffect(() => { medirRef.current = medir }, [medir])
   const id = tomada?.id ?? 0
 
   useLayoutEffect(() => {
-    if (!id) { setGeo(null); return }
+    if (!id) return
     let quadro = 0
     let ultimo = ''
     let parado = 0
@@ -218,16 +219,16 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
         const quieto = !!a && Math.abs(a.x - b.x) <= 1.5 && Math.abs(a.y - b.y) <= 1.5 && Math.abs(a.w - b.w) <= 1.5 && Math.abs(a.h - b.h) <= 1.5
         parado = quieto && m.visivel ? parado + 1 : 0
         anterior = { ...b }
-        if (parado < QUADROS_PARADO && performance.now() - inicio < ASSENTAR_MAX_MS) return
+        if (!funil && parado < QUADROS_PARADO && performance.now() - inicio < ASSENTAR_MAX_MS) return
         noAr = true
       }
-      let anel: R = { x: m.alvo.x - 5, y: m.alvo.y - 5, w: m.alvo.w + 10, h: m.alvo.h + 10 }
-      // Recorte: o contorno nunca sai da tela em que o alvo mora.
       const corte = m.corte
-      const x1 = Math.max(anel.x, corte.x + 2), y1 = Math.max(anel.y, corte.y + 2)
-      const x2 = Math.min(anel.x + anel.w, corte.x + corte.w - 2), y2 = Math.min(anel.y + anel.h, corte.y + corte.h - 2)
-      const dentro = x2 - x1 > 12 && y2 - y1 > 12
-      anel = { x: x1, y: y1, w: Math.max(0, x2 - x1), h: Math.max(0, y2 - y1) }
+      const forma = recortarForma(m.alvo, corte, m.raios)
+      const anel = forma.rect
+      // Uma faixa que sobrou na borda do recorte não constitui uma tomada:
+      // esperamos a peça aparecer quase inteira antes de acender o holofote.
+      const areaVisivel = anel.w * anel.h / Math.max(1, m.alvo.w * m.alvo.h)
+      const dentro = anel.w > 12 && anel.h > 12 && areaVisivel >= 0.8
 
       // Obstáculos: as molduras visíveis — menos a do próprio alvo.
       const obstaculos: R[] = []
@@ -239,13 +240,12 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
       // Uma janela por cima do alvo esconde a tomada (só vale para alvo que
       // mora na âncora; as satélites ficam por cima dela).
       const naAncora = !m.moldura?.hasAttribute('data-obstaculo')
-      // Coberto = uma janela esconde mais de um terço do alvo (uma quina
-      // encoberta não apaga a tomada).
-      const area = anel.w * anel.h || 1
+      // Outra janela sobre o alvo: escondemos a tomada em vez de iluminar
+      // parte da janela vizinha.
       const coberto = naAncora && obstaculos.some((o) => {
         const w = Math.min(anel.x + anel.w, o.x + o.w) - Math.max(anel.x, o.x)
         const h = Math.min(anel.y + anel.h, o.y + o.h) - Math.max(anel.y, o.y)
-        return w > 0 && h > 0 && (w * h) / area > 0.33
+        return w > 1 && h > 1
       })
       const anelVisivel = m.visivel && dentro && !coberto
 
@@ -310,31 +310,14 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
       // palco, janelas —, e só o alvo fica aceso; a narração e o conector
       // ficam por cima do véu. Sem ela (recortes da Plataforma), só a tela.
       const secao = veuNaSecao ? raiz.closest('section') : null
-      // O FURO não pode revelar outra janela: se uma moldura por cima (o
-      // iPhone, uma satélite) invade o alvo por um lado, o furo recua até a
-      // borda dela — antes o iPhone ficava meio aceso, meio escuro.
-      let furo: R = { x: anel.x - 3, y: anel.y - 3, w: anel.w + 6, h: anel.h + 6 }
-      if (naAncora) {
-        for (const o of obstaculos) {
-          if (!intersecta(furo, o)) continue
-          const ox2 = o.x + o.w, oy2 = o.y + o.h, fx2 = furo.x + furo.w, fy2 = furo.y + furo.h
-          const cobreAltura = o.y <= furo.y + furo.h * 0.25 && oy2 >= fy2 - furo.h * 0.25
-          const cobreLargura = o.x <= furo.x + furo.w * 0.25 && ox2 >= fx2 - furo.w * 0.25
-          if (cobreAltura && o.x <= furo.x + 1) furo = { ...furo, x: ox2 + 4, w: fx2 - (ox2 + 4) }
-          else if (cobreAltura && ox2 >= fx2 - 1) furo = { ...furo, w: o.x - 4 - furo.x }
-          else if (cobreLargura && o.y <= furo.y + 1) furo = { ...furo, y: oy2 + 4, h: fy2 - (oy2 + 4) }
-          else if (cobreLargura && oy2 >= fy2 - 1) furo = { ...furo, h: o.y - 4 - furo.y }
-        }
-        furo = { ...furo, w: Math.max(0, furo.w), h: Math.max(0, furo.h) }
-      }
       const veu: Geometria['veu'] = {
         area: secao ? relativo(secao.getBoundingClientRect(), base) : corte,
-        furo,
-        raio: m.raio + 8,
+        furo: anel,
+        raios: forma.raios,
         esfumar: false,
       }
-      const g: Geometria = { anel, raio: m.raio + 5, anelVisivel, caminho, veu }
-      const chave = JSON.stringify([Math.round(anel.x), Math.round(anel.y), Math.round(anel.w), Math.round(anel.h), anelVisivel, caminho?.d])
+      const g: Geometria = { anel, anelVisivel, caminho, veu }
+      const chave = JSON.stringify([Math.round(anel.x), Math.round(anel.y), Math.round(anel.w), Math.round(anel.h), Math.round(veu.area.x), Math.round(veu.area.y), Math.round(veu.area.w), Math.round(veu.area.h), ...Object.values(veu.raios).flatMap((r) => [Math.round(r.x), Math.round(r.y)]), anelVisivel, caminho?.d])
       if (chave !== ultimo) { ultimo = chave; mudou = true; setGeo(g) }
     }
     // Medir o layout a cada quadro custa caro em máquina fraca (medido: ~4% da
@@ -366,7 +349,7 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
       window.removeEventListener('resize', acordar)
       window.removeEventListener('message', acordar)
     }
-  }, [id, raizRef, anotacaoRef, palcoRef, veuNaSecao])
+  }, [id, raizRef, anotacaoRef, palcoRef, veuNaSecao, funil])
 
   if (!tomada || !geo) return null
   const saindo = tomada.saindo || !geo.anelVisivel
@@ -387,7 +370,20 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
           inteira escurece e só o alvo fica em luz plena. Nada é desenhado por
           cima do alvo: linguagem de câmera, não de interface. As bordas do véu
           se esfumam no fundo da página; o conector vem por cima dele. */}
-      {geo.veu && (
+      {funil && geo.anelVisivel && (
+        <div
+          className="absolute"
+          data-hero-card-foco
+          style={{
+            left: geo.anel.x, top: geo.anel.y, width: geo.anel.w, height: geo.anel.h,
+            borderRadius: borderRadiusDoFoco(geo.veu?.raios ?? SEM_RAIOS),
+            boxShadow: 'inset 0 0 0 2px var(--hero-conector)',
+            backgroundColor: 'rgba(45, 212, 191, .045)',
+            animation: 'hero-foco-veu .3s ease-out both',
+          }}
+        />
+      )}
+      {!funil && geo.veu && (
         <div
           aria-hidden
           data-hero-veu
@@ -407,13 +403,13 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
             style={{
               left: geo.veu.furo.x - geo.veu.area.x, top: geo.veu.furo.y - geo.veu.area.y,
               width: geo.veu.furo.w, height: geo.veu.furo.h,
-              borderRadius: geo.veu.raio,
+              borderRadius: borderRadiusDoFoco(geo.veu.raios),
               // Escuro: o alvo ganha LUZ (brilho sob o furo + halo sutil); o véu
               // em volta não escurece mais. Claro: só o véu (tokens em index.css).
-              boxShadow: 'var(--hero-foco-halo), 0 0 26px 200vmax var(--hero-veu)',
+              boxShadow: '0 0 0 200vmax var(--hero-veu)',
               backdropFilter: 'var(--hero-foco-brilho)',
               WebkitBackdropFilter: 'var(--hero-foco-brilho)',
-              animation: `hero-foco-veu 1.4s ${c ? '.35s' : '0s'} cubic-bezier(.33,1,.68,1) both`,
+              animation: funil ? 'hero-foco-veu .55s ease-out both' : `hero-foco-veu 1.4s ${c ? '.35s' : '0s'} cubic-bezier(.33,1,.68,1) both`,
             }}
           />
         </div>

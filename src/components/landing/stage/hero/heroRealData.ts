@@ -259,7 +259,7 @@ export const HERO_PIPELINE: Pipeline = {
   isArchived: false,
   kind: 'sales',
   stages: HERO_PIPELINE_STAGES,
-  openDealsCount: 19,
+  openDealsCount: 14,
 } as Pipeline
 
 /**
@@ -321,16 +321,11 @@ const OUTROS = [
   { id: 'd-8',  title: 'Peeling · 2 sessões',       person: 'Beatriz Nunes',  stageId: HERO_STAGE_PROPOSTA,     cents: 70_000, dias: 1 },
   { id: 'd-9',  title: 'Consulta · Dra. Helena',    person: 'Sérgio Tavares', stageId: 'ps-guia',               cents: 25_000, dias: 5 },
   { id: 'd-10', title: 'Mapeamento de pintas',      person: 'Helena Duarte',  stageId: 'ps-contato',            cents: 32_000, dias: 1 },
-  // Colunas cheias (26/09): a moldura do funil na Plataforma tem a altura do
-  // palco (pedido do PO) e, com três cards por coluna, metade ficava vazia.
+  // Um quarto card em Avaliação e um terceiro nas etapas seguintes dão
+  // contexto sem empurrar a ficha da Marina para fora da tomada no Hero.
   { id: 'd-11', title: 'Consulta · Dr. Paulo',      person: 'Renata Souza',   stageId: HERO_STAGE_QUALIFICACAO, cents: 25_000, dias: 2 },
-  { id: 'd-12', title: 'Retorno · Dra. Helena',     person: 'Marcos Vieira',  stageId: HERO_STAGE_QUALIFICACAO, cents: 18_000, dias: 1 },
   { id: 'd-13', title: 'Consulta pediátrica',       person: 'Paula Andrade',  stageId: HERO_STAGE_PROPOSTA,     cents: 22_000, dias: 2 },
-  { id: 'd-14', title: 'Laser · sessão avulsa',     person: 'Tiago Ferreira', stageId: HERO_STAGE_PROPOSTA,     cents: 45_000, dias: 1 },
-  { id: 'd-15', title: 'Mapeamento de pintas',      person: 'Camila Rocha',   stageId: HERO_STAGE_PROPOSTA,     cents: 32_000, dias: 3 },
   { id: 'd-16', title: 'Consulta · Dra. Helena',    person: 'Eduardo Pires',  stageId: 'ps-guia',               cents: 25_000, dias: 1 },
-  { id: 'd-17', title: 'Check-up · 2 exames',       person: 'Fernanda Melo',  stageId: 'ps-guia',               cents: 30_000, dias: 2 },
-  { id: 'd-18', title: 'Retorno · Dr. Paulo',       person: 'Gustavo Lopes',  stageId: 'ps-guia',               cents: 18_000, dias: 3 },
 ]
 
 const HERO_OTHER_DEALS: Deal[] = OUTROS.map((d, i) => ({
@@ -349,7 +344,8 @@ const HERO_OTHER_DEALS: Deal[] = OUTROS.map((d, i) => ({
 } as Deal))
 
 export function heroDealsByStage(at: HeroState): Record<string, Deal[]> {
-  const todos = [...HERO_OTHER_DEALS, heroDeal(at)]
+  // A ficha protagonista abre as duas etapas da história e permanece visível.
+  const todos = [heroDeal(at), ...HERO_OTHER_DEALS]
   const out: Record<string, Deal[]> = {}
   for (const stage of HERO_PIPELINE_STAGES) out[stage.id] = []
   for (const d of todos) (out[d.stageId] ??= []).push(d)

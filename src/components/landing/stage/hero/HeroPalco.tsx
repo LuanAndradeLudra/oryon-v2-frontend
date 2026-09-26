@@ -20,8 +20,8 @@ import { HeroNarracao } from './HeroNarracao'
  * recarregando) — a mudança visível é a linha do tempo e o sino.
  */
 const FOCOS_SATELITE: Partial<Record<HeroState, { satelite: string; texto: string; inteira?: boolean; noArMs?: number }>> = {
-  situacao: { satelite: 'linhaDoTempo', texto: 'Em negociação' },
-  etiqueta: { satelite: 'linhaDoTempo', texto: 'proposta enviada' },
+  situacao: { satelite: 'linhaDoTempo', texto: 'Em agendamento' },
+  etiqueta: { satelite: 'linhaDoTempo', texto: 'etiqueta "retorno"' },
   assumido: { satelite: 'notificacoes', texto: 'pediu transferência' },
   // O fechamento ilumina a JANELA inteira do negócio (não só uma linha) e fica
   // no ar até o fim do passo — é o resultado da história toda.
@@ -34,6 +34,8 @@ function acharLinha(janela: HTMLElement, texto: string): HTMLElement | null {
   // O elemento mais interno com o texto: nenhum filho dele também o contém.
   const tem = (e: Element) => (e.textContent ?? '').includes(texto)
   const menor = [...conteudo.querySelectorAll<HTMLElement>('*')].find((e) => tem(e) && ![...e.children].some(tem)) ?? null
+  if (janela.dataset.satelite === 'linhaDoTempo') return menor?.closest<HTMLElement>('li') ?? null
+  if (janela.dataset.satelite === 'notificacoes') return menor?.closest<HTMLElement>('[role="listitem"]') ?? null
   let linha = menor
   const largura = conteudo.offsetWidth
   for (let i = 0; linha && i < 5 && linha.offsetWidth < largura * 0.8 && linha.parentElement !== conteudo; i++) linha = linha.parentElement
@@ -144,7 +146,7 @@ export function enquadrar(largura: number, altura: number, celular: boolean, cor
   }
   const fitW = Math.min(1, (largura - 2 * corredor) / PALCO_W)
   let fit = Math.min(fitW, FIT.alvo)
-  let h = Math.round(Math.min(APP_H.max, Math.max(APP_H.min, altura / fit - EXTRA_H)))
+  const h = Math.round(Math.min(APP_H.max, Math.max(APP_H.min, altura / fit - EXTRA_H)))
   // Tela alta: a tela do app já está inteira — o palco pode crescer até a largura.
   if (h === APP_H.max) fit = Math.min(fitW, altura / (APP_H.max + EXTRA_H))
   // Tela baixa: a tela do app já está no mínimo — só então o texto encolhe, até o piso.
@@ -392,6 +394,12 @@ export function HeroPalco({ className }: { className?: string }) {
       void animarCena(el, { opacity: 0, filter: 'blur(4px)' }, { duration: 0.7, ease: [0.16, 1, 0.3, 1] })
       return
     }
+    // O quadro do Funil precisa estar legível ANTES de o negócio avançar.
+    // O desfoque de troca de rota escondia exatamente essa ação.
+    if (composition === 'funil') {
+      void animarCena(el, { opacity: 1, filter: 'blur(0px)' }, { duration: 0.25, ease: 'easeOut' })
+      return
+    }
     let vivo = true
     let teto = 0
     void animarCena(el, { opacity: 0.35, filter: 'blur(4px)' }, { duration: 0.25, ease: 'easeOut' })
@@ -534,15 +542,16 @@ export function HeroPalco({ className }: { className?: string }) {
       {!semMovimento && (
         <>
           <HeroFoco
-            tomada={foco}
+            tomada={foco?.saindo && composition === 'funil' ? null : foco}
             medir={(base) => foco && medirNoIframe(foco, ancoraRef.current, molduraRef.current, null, base)}
             raizRef={raizRef}
             anotacaoRef={comConector ? pilulaRef : undefined}
             palcoRef={comConector ? palcoRef : undefined}
             veuNaSecao
+            funil={composition === 'funil'}
           />
           <HeroFoco
-            tomada={tomadaJanela}
+            tomada={composition === 'conversa' ? tomadaJanela : null}
             medir={(base) => {
               if (!tomadaJanela) return null
               const janela = palcoRef.current?.querySelector<HTMLElement>(`[data-satelite="${tomadaJanela.satelite}"]`) ?? null

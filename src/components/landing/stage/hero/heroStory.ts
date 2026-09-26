@@ -88,7 +88,8 @@ const CUES_BASE: readonly Cue[] = [
 
   // ── 2 · Funil: o atendimento anda junto com a conversa ────────────────────
   C(16400, 'funil'),
-  S(18000, 'avanco'),
+  // A tela abre inteira e o card recebe o contorno antes de mudar de coluna.
+  S(19600, 'avanco'),
 
   // ── 3 · A equipe no controle: a Marina quer um encaixe; a Ana confirma ────
   C(23400, 'conversa'),
