@@ -26,7 +26,7 @@ export function ConteudoWhatsAppAparelho({ at, cena }: { at: HeroState; cena: He
 export function ConteudoNotificacoes({ at }: { at: HeroState }) {
   const lista = heroNotifications(at)
   return (
-    <div className="flex flex-col divide-y divide-[var(--landing-borda)] bg-surface-900 py-1">
+    <div className="h-full overflow-hidden flex flex-col divide-y divide-[var(--landing-borda)] bg-surface-900 py-1">
       {lista.map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}
     </div>
   )
@@ -35,7 +35,7 @@ export function ConteudoNotificacoes({ at }: { at: HeroState }) {
 /** A linha do tempo da conversa da Marina — o painel real, com os eventos da história. */
 export function ConteudoLinhaDoTempo({ at }: { at: HeroState }) {
   return (
-    <div className="bg-surface-900 px-4 pb-3">
+    <div className="h-full overflow-hidden bg-surface-900 px-4 pb-3">
       <ConversationActivitySection conversationId="demo-conv-0" entries={heroTimeline(at)} />
     </div>
   )
@@ -50,7 +50,7 @@ export function ConteudoLinhaDoTempo({ at }: { at: HeroState }) {
 export function ConteudoNegocio({ at }: { at: HeroState }) {
   const deal = heroDeal(at)
   return (
-    <div className="bg-surface-900 p-3">
+    <div className="h-full overflow-hidden bg-surface-900 p-3">
       {deal.status === 'won' ? (
         <DealSummary
           density="card" closed deal={deal} pipeline={HERO_PIPELINE} onReopen={NOOP}

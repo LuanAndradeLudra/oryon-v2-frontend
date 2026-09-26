@@ -91,6 +91,9 @@ export function Satelite({
   y?: MotionValue<number>
 }) {
   const semMovimento = useReducedMotion()
+  // A moldura tem uma altura contratual por tipo. O conteúdo muda durante a
+  // história, mas a janela não cresce nem reposiciona as outras telas.
+  const altura = nome === 'linhaDoTempo' ? 300 : nome === 'notificacoes' ? 210 : nome === 'negocio' ? 240 : undefined
   return (
     /* Posição: quando a cena troca de diagonal, a janela que continua em cena
        DESLIZA para o canto novo (mola lenta, sem passar do ponto). Escondida,
@@ -99,7 +102,7 @@ export function Satelite({
       className="absolute"
       data-obstaculo={visivel ? 'sim' : undefined}
       data-satelite={nome}
-      style={{ width: pose.w, zIndex: 30, y }}
+      style={{ width: pose.w, ...(altura ? { height: altura } : null), zIndex: 30, y }}
       initial={{ left: pose.x, top: pose.y }}
       animate={{ left: pose.x, top: pose.y }}
       transition={semMovimento || !visivel
@@ -118,7 +121,7 @@ export function Satelite({
           ? { duration: 0 }
           : { type: 'spring', stiffness: 75, damping: 20, mass: 1, delay: visivel ? atraso : 0 }}
       >
-        <Bandeja titulo={titulo} conteudoClassName={conteudoClassName} className="hero-satelite">
+        <Bandeja titulo={titulo} conteudoClassName={cn('h-full', conteudoClassName)} className="hero-satelite">
           {children}
         </Bandeja>
       </motion.div>

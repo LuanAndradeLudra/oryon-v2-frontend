@@ -75,7 +75,7 @@ export function StageFrame({ layout, title, ambient, description, className, con
               falso na tela"); tem de ser legível, não decorativa. */}
           <span className="ml-auto text-[9px] lg:text-[9.5px] font-semibold text-surface-400 whitespace-nowrap">{STAGE_DEMO_LABEL}</span>
         </div>
-        <div className={cn('relative flex overflow-hidden', contentHeightClassName)}>
+        <div className={cn('relative flex h-full overflow-hidden', contentHeightClassName)}>
           {children}
         </div>
       </div>
