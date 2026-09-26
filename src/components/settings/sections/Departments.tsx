@@ -22,7 +22,7 @@ import type { Department, DepartmentPermission, WhatsAppNumber } from '@/types'
 
 // ── Permission definitions ───────────────────────────────────────────────────
 
-const PERMISSION_GROUPS: {
+export const PERMISSION_GROUPS: {
   group: string
   perms: { key: DepartmentPermission; label: string }[]
 }[] = [

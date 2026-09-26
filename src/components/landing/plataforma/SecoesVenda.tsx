@@ -14,7 +14,7 @@ import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho,
  *  • Fecho       — a conversa no WhatsApp com o próprio Agente IA da Oryon.
  */
 
-function Revelar({ children, atraso = 0, className }: { children: ReactNode; atraso?: number; className?: string }) {
+export function Revelar({ children, atraso = 0, className }: { children: ReactNode; atraso?: number; className?: string }) {
   const semMovimento = useReducedMotion()
   return (
     <motion.div
@@ -46,7 +46,7 @@ function BotaoContato({ className, longo = true }: { className?: string; longo?:
   )
 }
 
-function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string; cinza: string }) {
+export function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string; cinza: string }) {
   return (
     <Revelar className="max-w-[64rem]">
       <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{eyebrow}</p>

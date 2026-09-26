@@ -9,6 +9,9 @@ const SecaoPlataforma = lazy(() => import('@/components/landing/plataforma/Secao
 const SecaoImplantacao = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoImplantacao })))
 const SecaoPerguntas = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoPerguntas })))
 const SecaoFecho = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoFecho })))
+const SecaoArea = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoArea })))
+const SecaoEquipe = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoEquipe })))
+const SecaoResposta = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoResposta })))
 
 /**
  * Landing pública (`/`) — SCRUM-1097, fase "porta de entrada". Reescrita
@@ -36,6 +39,10 @@ export function WelcomePage() {
           <SecaoPlataforma />
           {/* "Posso confiar?" vem antes de "dá trabalho?" (26/09). */}
           <Trust />
+          {/* As provas (26/09): serve para mim? perco o controle? e se ninguém responder? */}
+          <SecaoArea />
+          <SecaoEquipe />
+          <SecaoResposta />
           <SecaoImplantacao />
           <SecaoPerguntas />
           <SecaoFecho />

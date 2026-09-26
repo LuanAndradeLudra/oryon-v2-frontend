@@ -223,6 +223,77 @@ export const plataforma = {
   ],
 } as const
 
+// ─── Rodada (b), 26/09: as seções que quebram as objeções que a Plataforma não
+// quebra. Cada afirmação abaixo tem prova no código (ver RETOMADA-LANDING-LOOP.md).
+
+/** "Serve para mim?" — clínicas como caso completo (a vertical de hoje);
+ *  os outros segmentos como cenários, sem prometer o que não foi feito. */
+export const area = {
+  eyebrow: 'Para a sua área',
+  title: 'Começamos por clínicas.',
+  titleCinza: 'A plataforma serve a qualquer negócio que atende pelo WhatsApp.',
+  lead: 'O que muda de uma área para outra é o que você ensina ao agente: instruções, base de conhecimento, catálogo e a agenda ou o sistema que ele consulta. O resto é o mesmo.',
+  caso: {
+    rotulo: 'Caso completo',
+    titulo: 'Clínicas e consultórios',
+    texto: 'A recepção que não para no fim do expediente: valores e convênios, horários da agenda, marcação de consulta, lembrete de retorno — e a equipe para o que precisa de gente.',
+    itens: [
+      'Informa valores e convênios a partir do catálogo e da base de conhecimento',
+      'Consulta a agenda da clínica e oferece só horários que existem',
+      'Marca a consulta e registra o atendimento no funil',
+      'Chama a recepção para encaixes, urgências e dúvidas clínicas',
+      'Lembra o retorno com campanhas para quem já é paciente',
+    ],
+    /** Honesto: a agenda só entra com a integração feita na implantação. */
+    nota: 'A consulta à agenda depende da integração com o sistema da clínica, feita na implantação.',
+  },
+  cenarios: [
+    {
+      titulo: 'Contabilidade',
+      exemplo: '“Qual o prazo pra mandar as notas de agosto?”',
+      texto: 'Prazos, documentos pendentes e status de entregas respondidos com o que o escritório ensinou; o contador entra quando o caso é específico.',
+    },
+    {
+      titulo: 'Jurídico',
+      exemplo: '“Preciso de orientação sobre uma rescisão.”',
+      texto: 'Triagem inicial, documentos necessários e marcação da reunião; o advogado assume a conversa quando o assunto pede.',
+    },
+    {
+      titulo: 'Serviços em geral',
+      exemplo: '“Vocês fazem entrega no sábado?”',
+      texto: 'Orçamentos a partir do catálogo, prazos e acompanhamento do pedido — e uma pessoa da equipe a um clique.',
+    },
+  ],
+} as const
+
+/** "Perco o controle?" — setores, papéis, auditoria e chat interno: fatos do produto. */
+export const equipe = {
+  eyebrow: 'A equipe no comando',
+  title: 'Cada pessoa vê o que precisa.',
+  titleCinza: 'E tudo o que muda fica registrado.',
+  lead: 'Setores, papéis, permissões e auditoria vêm com a plataforma — não é a IA que decide quem faz o quê.',
+  cartoes: [
+    { key: 'setores', titulo: 'Setores com permissões', texto: 'Cada setor tem o seu número de WhatsApp, o seu Agente IA e as suas permissões: ler, responder, atribuir, ver relatórios, mexer na configuração.' },
+    { key: 'papeis', titulo: 'Papéis claros', texto: 'Dono, administrador, supervisor e agente — cada um enxerga e faz o que o papel permite.' },
+    { key: 'auditoria', titulo: 'Auditoria de tudo', texto: 'Cada alteração feita pela equipe entra numa linha do tempo da conta, com quem fez e quando.' },
+    { key: 'chat', titulo: 'A equipe conversa dentro da Oryon', texto: 'Canais e mensagens diretas entre a equipe, com menções — sem sair do atendimento.' },
+  ],
+} as const
+
+/** "E se ninguém responder?" — notificações, aviso de espera, fila, vários números. */
+export const resposta = {
+  eyebrow: 'Nada fica sem resposta',
+  title: 'Quando alguém precisa agir, a Oryon avisa.',
+  titleCinza: 'No app e no celular.',
+  lead: 'A IA chama, a fila mostra, o aviso chega — e, se um cliente ficar esperando uma pessoa, a plataforma avisa antes de virar problema.',
+  cartoes: [
+    { key: 'notificacoes', titulo: 'Avisos por categoria, no app e no celular', texto: 'Transferências da IA, conversas atribuídas, campanhas concluídas, menções da equipe e alertas da conexão — cada tipo com o seu aviso, também no celular.' },
+    { key: 'espera', titulo: 'Cliente esperando? A plataforma avisa.', texto: 'Se uma conversa atribuída a uma pessoa fica sem resposta por tempo demais, quem responde recebe o aviso.' },
+    { key: 'fila', titulo: 'Fila e atribuição', texto: 'O que a IA passou para a equipe entra na fila; quem está online assume, ou a conversa é atribuída e transferida entre setores.' },
+    { key: 'numeros', titulo: 'Vários números, uma caixa', texto: 'Recepção, comercial e pós-atendimento com números diferentes, cada um com o seu agente — tudo na mesma tela de Conversas.' },
+  ],
+} as const
+
 export const implantacao = {
   eyebrow: 'Implantação',
   title: 'No ar em até 7 dias.',
@@ -361,6 +432,18 @@ export const perguntas = {
         {
           pergunta: 'Posso disparar campanhas para a minha base?',
           resposta: 'Sim, com modelos aprovados pela Meta. O relatório de cada campanha mostra entregas, leituras e respostas — e cada resposta cai no atendimento com IA.',
+        },
+        {
+          pergunta: 'Como funcionam os modelos de mensagem da Meta?',
+          resposta: 'Para iniciar uma conversa ou reabrir uma que passou da janela de atendimento, o WhatsApp exige um modelo aprovado pela Meta. Você cria, envia para aprovação e acompanha o status dentro da Oryon.',
+        },
+        {
+          pergunta: 'A IA marca consultas na agenda da clínica?',
+          resposta: 'Sim, quando a agenda da clínica está integrada à Oryon — isso é feito na implantação. Ela consulta os horários livres e só oferece o que existe; se não conseguir confirmar a disponibilidade, chama a recepção.',
+        },
+        {
+          pergunta: 'Minha equipe consegue atender pelo celular?',
+          resposta: 'Sim. A Oryon funciona no navegador do celular e como aplicativo, com os avisos chegando no aparelho.',
         },
       ],
     },
