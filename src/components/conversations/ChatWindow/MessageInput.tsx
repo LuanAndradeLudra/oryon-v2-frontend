@@ -13,13 +13,24 @@ import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
+import { inferMessageType } from '@/lib/inferMessageType'
+import { renderPdfThumbnail } from '@/lib/renderPdfThumbnail'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
 
 /** Um anexo "em espera" no input: fica no preview até o operador clicar em
  *  Enviar (UX estilo Claude/ChatGPT). `id` serve de key de render/remoção;
  *  `previewUrl` é uma objectURL só para imagens, revogada ao remover/desmontar. */
-type StagedAttachment = { id: string; file: File; previewUrl?: string }
+type StagedAttachment = {
+  id: string
+  file: File
+  previewUrl?: string
+  /** Miniatura da 1ª página, renderizada no navegador — só pra PDF, resolve
+   *  de forma assíncrona logo após o anexo entrar em espera (ver stageFiles).
+   *  Pedido do usuário 2026-09-23: bolha otimista não fica sem preview
+   *  enquanto a mensagem está "pendente". */
+  thumbnailUrl?: string
+}
 
 /** Tamanho legível para o preview do anexo (B / KB / MB). */
 function formatFileSize(bytes: number): string {
@@ -41,15 +52,16 @@ const WA_TEXT_LIMIT = 4096
 interface MessageInputProps {
   /**
    * Returns a promise that rejects on send failure (e.g. backend rejected
-   * with 403 because the user has no department configured). The input
-   * preserves the typed text on rejection so the operator can retry or
-   * copy it elsewhere.
+   * with 403 because the user has no department configured). On rejection
+   * the text-only path leaves the typed text gone from the input — the
+   * optimistic bubble it already rendered (see `useMessages.sendMessage`)
+   * flips to `failed` instead, so the attempt stays visible in the thread
+   * rather than dumped back into the composer.
    */
   onSend: (dto: SendMessageDto) => Promise<unknown> | void
   /** Used only by the "Escolher template" flow (24h window closed) to call
    *  contactsApi.sendTemplate — a real WhatsApp template, not a text message. */
   contactId: string
-  sending: boolean
   windowOpen: boolean
   /** Horas restantes da janela de 24h (só pra o aviso do rodapé do composer). */
   windowHoursLeft?: number
@@ -138,7 +150,7 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, contactId, sending, windowOpen, windowHoursLeft, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
+export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const { toast } = useToast()
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
@@ -173,19 +185,6 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
     window.addEventListener('cap:keyboardShow', handleKeyboardShow)
     return () => window.removeEventListener('cap:keyboardShow', handleKeyboardShow)
   }, [])
-
-  // A textarea fica `disabled` enquanto `sending` está em voo (linha do
-  // <textarea> abaixo) — e um elemento desabilitado não pode reter foco, o
-  // navegador o solta sozinho. Sem isto o campo reabilitava mas ficava sem
-  // foco, e o operador precisava clicar de novo pra digitar a próxima
-  // mensagem (padrão WhatsApp é o foco nunca sair). O efeito roda DEPOIS do
-  // commit com `disabled=false`, que é o que falha ao tentar focar logo após
-  // o `await` em `handleSend` — o DOM ainda não re-renderizou.
-  const wasSendingRef = useRef(false)
-  useEffect(() => {
-    if (wasSendingRef.current && !sending) textareaRef.current?.focus()
-    wasSendingRef.current = sending
-  }, [sending])
 
   const buildInputContextMenu = useCallback((): ContextMenuEntry[] => {
     const el = textareaRef.current
@@ -323,10 +322,13 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
 
   const handleSend = async () => {
     const trimmed = text.trim()
-    // Envia com texto E/OU anexos. Só bloqueia quando não há nada dos dois.
-    if ((!trimmed && attachments.length === 0) || sending || disabled) return
+    // Envia com texto E/OU anexos. Só bloqueia quando não há nada dos dois —
+    // NÃO espera o envio anterior terminar: várias mensagens podem estar em
+    // voo ao mesmo tempo (eco otimista trata cada uma como sua própria bolha,
+    // ver useMessages.sendMessage), então o campo não trava entre elas.
+    if ((!trimmed && attachments.length === 0) || disabled) return
 
-    // Snapshot para restaurar em caso de falha total.
+    // Snapshot para restaurar em caso de falha total do caminho com anexos.
     const previousText = text
     const staged = attachments
 
@@ -340,9 +342,10 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
         await onSend({ body: trimmed, replyToWamid: replyTo?.wamid ?? undefined })
         onCancelReply?.()
       } catch {
-        // Falha (ex.: 403 sem setor) — restaura o texto para retry/cópia; o
-        // toast é exibido pelo handler no nível da página.
-        setText(previousText)
+        // Falha (ex.: 403 sem setor) — a bolha otimista já virou `failed` no
+        // hook (useMessages.sendMessage); o texto NÃO volta pro campo, fica
+        // visível na própria bolha da conversa. O toast é exibido pelo
+        // handler no nível da página.
       }
       return
     }
@@ -357,11 +360,19 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
       const item = staged[i]
       setUploadingId(item.id)
       try {
+        // Achado 2026-09-23: mandar o nome do arquivo aqui incondicionalmente
+        // contornava a regra do backend (resolveMediaCaption, SCRUM-1158) —
+        // pra ele, um mediaCaption não-vazio é indistinguível de uma legenda
+        // digitada de verdade, então a imagem/vídeo acabava com o nome do
+        // arquivo como legenda mesmo depois daquele fix. mediaCaption só faz
+        // sentido pra DOCUMENTO (vira o título do card); pra imagem/vídeo, a
+        // decisão de "sem legenda" fica só a cargo do backend.
         await onSend({
           file: item.file,
-          mediaCaption: item.file.name,
+          mediaCaption: inferMessageType(item.file.type) === 'document' ? item.file.name : undefined,
           body: i === 0 ? trimmed || undefined : undefined,
           replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
+          clientThumbnailUrl: item.thumbnailUrl,
         })
         setAttachments((prev) => prev.filter((a) => a.id !== item.id))
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
@@ -464,14 +475,24 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
       )
     }
     if (valid.length === 0) return
-    setAttachments((prev) => [
-      ...prev,
-      ...valid.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-      })),
-    ])
+    const staged = valid.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+    }))
+    setAttachments((prev) => [...prev, ...staged])
+
+    // PDF: renderiza a miniatura da 1ª página no navegador, em paralelo,
+    // sem bloquear o anexo aparecendo na hora. Resolve depois — atualiza só
+    // o anexo certo por id (o operador pode anexar mais arquivos enquanto
+    // isso roda).
+    for (const { id, file } of staged) {
+      if (file.type !== 'application/pdf') continue
+      void renderPdfThumbnail(file).then((thumbnailUrl) => {
+        if (!thumbnailUrl) return
+        setAttachments((prev) => prev.map((a) => (a.id === id ? { ...a, thumbnailUrl } : a)))
+      })
+    }
   }, [toast])
 
   const removeAttachment = useCallback((id: string) => {
@@ -783,7 +804,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
             aria-label="Mensagem"
             rows={1}
             maxLength={WA_TEXT_LIMIT}
-            disabled={disabled || sending}
+            disabled={disabled}
             className={cn(
               'w-full bg-transparent text-sm text-surface-100 placeholder:text-surface-500',
               'resize-none outline-none leading-relaxed',
@@ -869,13 +890,14 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
                 className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
               />
 
-              {/* Send — aparece com texto E/OU anexos em espera */}
+              {/* Send — aparece com texto E/OU anexos em espera. O envio é
+                  otimista (developer, 23/09): o botão não espera o anterior. */}
               {(text.trim() || attachments.length > 0) && (
                 <Button
                   size="sm"
                   variant="primary"
                   onClick={handleSend}
-                  disabled={sending || disabled}
+                  disabled={disabled}
                   aria-label="Enviar mensagem"
                   leftIcon={<Send className="w-3.5 h-3.5" />}
                   className="[@media(pointer:coarse)]:h-11"

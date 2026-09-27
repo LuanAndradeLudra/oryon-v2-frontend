@@ -6,7 +6,7 @@ import {
 } from '../components/landing/stage/hero/heroRealData'
 import type { HeroState } from '../components/landing/stage/hero/heroStory'
 import { hoursAgo } from '../components/landing/stage/hero/heroClock'
-import { AGENTES_DEMO, CATALOGO_RECEPCAO, CONHECIMENTO_RECEPCAO, agenteComFerramentas } from './agentesDemo'
+import { AGENTES_DEMO, CATALOGO_RECEPCAO, CONHECIMENTO_RECEPCAO, PROFISSIONAIS_DEMO, PROFISSIONAIS_RECEPCAO, agenteComFerramentas } from './agentesDemo'
 import { heroActivityFeed, heroHomeSnapshot, heroHomeStats, heroPipelineOverview } from './dashboardDemo'
 import { ANALYTICS_RENOVACAO, CONVERSAS_RENOVACAO } from './campanhaDemo'
 
@@ -339,6 +339,10 @@ export function instalarBackendDemo() {
   // O que do catálogo o agente pode citar (aba Catálogo).
   rota('agent-catalog/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agent-catalog\/[^/]+$/.test(u), ({ url }) => ({
     data: url.endsWith('/ag-recepcao') ? HERO_PRODUCTS.filter((p) => CATALOGO_RECEPCAO.includes(p.id)) : [],
+  }))
+  rota('practitioners', (m, u) => m.toLowerCase() === 'get' && u.startsWith('/practitioners?'), () => ({ data: paginado(PROFISSIONAIS_DEMO) }))
+  rota('agent-practitioner-catalog/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agent-practitioner-catalog\/[^/]+$/.test(u), ({ url }) => ({
+    data: url.endsWith('/ag-recepcao') ? PROFISSIONAIS_DEMO.filter((p) => PROFISSIONAIS_RECEPCAO.includes(p.id)) : [],
   }))
 
   // ── Linhas de WhatsApp ────────────────────────────────────────────────────

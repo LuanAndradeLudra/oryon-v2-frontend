@@ -82,7 +82,10 @@ export type MessageType =
   | 'template'
   | 'unsupported'
 
-export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed'
+/** `sending` nunca vem do backend — é o eco otimista local enquanto a
+ *  requisição está em voo (ver `useMessages.sendMessage`), substituído pela
+ *  mensagem real do servidor (ou por `failed`) assim que ela resolve. */
+export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
 
 export type UserRole = 'super_admin' | 'business_admin' | 'admin' | 'agent' | 'supervisor'
 
@@ -223,6 +226,7 @@ export interface Practitioner {
   category?: string | null // especialidade
   active: boolean
   order: number
+  notes?: string | null // observações — escala de atendimento, particularidades
   createdAt?: string
   updatedAt?: string
 }
@@ -984,6 +988,14 @@ export interface Conversation {
   lastMessagePreview: string
   /** Who sent the last message — drives the sender indicator on the preview. */
   lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
+  /**
+   * SCRUM-1096 — trecho de mensagem que bateu a busca atual, com os
+   * marcadores de `lib/searchHighlight.tsx`. Só vem preenchido quando a
+   * busca em curso casou pelo CONTEÚDO da mensagem (não pelo nome/telefone
+   * do contato) — nesse caso a lista mostra este texto no lugar de
+   * `lastMessagePreview`. Aditivo: ausente/null fora de uma busca por conteúdo.
+   */
+  searchSnippet?: string | null
   unreadCount: number
   /** Minimal shape — only the fields the conversation list/header actually
    *  read (id, firstName, lastName for the assignee pill). The realtime
@@ -1032,6 +1044,13 @@ export interface Message {
   body?: string
   mediaUrl?: string
   mediaCaption?: string
+  /** Preview estilo WhatsApp (documento) — tamanho/tipo já calculados no
+   *  envio/recebimento; nº de páginas só pra PDF; miniatura da 1ª página
+   *  chega depois, de forma assíncrona (evento `message:media-ready`). */
+  mediaSizeBytes?: number | null
+  mediaMimeType?: string | null
+  mediaPageCount?: number | null
+  mediaThumbnailUrl?: string | null
   /** Whisper transcription for inbound WhatsApp voice notes — null when the
    *  feature flag is off, transcription failed, or type !== 'audio'. */
   transcription?: string | null
@@ -1187,6 +1206,15 @@ export interface SendMessageDto {
   mediaCaption?: string
   /** wamid of the message being replied to — sent so the client sees a quoted reply. */
   replyToWamid?: string
+  /**
+   * Miniatura da 1ª página de um PDF, renderizada NO NAVEGADOR (pedido do
+   * usuário 2026-09-23) — só pra bolha otimista não ficar sem preview
+   * enquanto a mensagem está "pendente". NUNCA vai pro backend
+   * (messagesApi.send monta o FormData campo a campo, sem incluir isto) —
+   * é puramente local, descartada assim que a miniatura real (gerada no
+   * servidor) chega.
+   */
+  clientThumbnailUrl?: string
 }
 
 // ─── Billing / Plan Types ─────────────────────────────────────────────────────
@@ -1593,6 +1621,14 @@ export interface SocketMessageStatus {
   messageId: string
   status: MessageStatus
   timestamp: string
+}
+
+/** Miniatura de PDF gerada de forma assíncrona (fila `media-thumbnail`) —
+ *  chega minutos/segundos depois da mensagem já estar na tela. */
+export interface SocketMediaReady {
+  messageId: string
+  conversationId: string
+  mediaThumbnailUrl: string
 }
 
 export interface SocketConversationAssigned {

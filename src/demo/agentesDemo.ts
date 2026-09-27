@@ -1,3 +1,4 @@
+import type { Practitioner } from '@/types'
 import type { AgentConfig, HandoffRule, AgentConfigWithTools, AgentCrmCapabilities, AgentKnowledgeDoc } from '@/services/agentsApi'
 import { daysAgo, hoursAgo } from '@/components/landing/stage/hero/heroClock'
 import { HERO } from '@/components/landing/stage/hero/heroRealData'
@@ -119,6 +120,13 @@ export const CONHECIMENTO_RECEPCAO: Array<AgentKnowledgeDoc & { content: string 
 
 /** O que do catálogo o Agente Recepção pode citar (aba Catálogo). */
 export const CATALOGO_RECEPCAO = ['pr-consulta', 'pr-retorno']
+
+/** Profissionais do registro da empresa; a recepção cita só a Dra. Helena. */
+export const PROFISSIONAIS_DEMO: Practitioner[] = [
+  { id: 'prof-helena', name: 'Dra. Helena', category: 'Clínica geral', active: true, order: 0, notes: 'Atende à tarde' },
+  { id: 'prof-rafael', name: 'Dr. Rafael', category: 'Nutrição', active: true, order: 1 },
+]
+export const PROFISSIONAIS_RECEPCAO = ['prof-helena']
 
 export const AGENTES_DEMO: AgentConfig[] = [
   agente(

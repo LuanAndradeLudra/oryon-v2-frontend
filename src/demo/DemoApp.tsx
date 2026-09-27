@@ -8,6 +8,7 @@ import { TenantVocabProvider } from '@/contexts/TenantVocabContext'
 import { CRMConfigProvider } from '@/contexts/CRMConfigContext'
 import { TagsProvider } from '@/contexts/TagsContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
+import { MediaViewerProvider } from '@/components/ui/MediaViewer'
 import { DealPanelProvider, useDealPanel } from '@/contexts/DealPanelContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
@@ -105,6 +106,7 @@ export function DemoApp({ inicial = '/conversations' }: { inicial?: string }) {
                 <InternalChatProvider>
                   <CopilotProvider>
                     <ContextMenuProvider>
+                      <MediaViewerProvider>
                       <DealPanelProvider>
                         <PonteDoPainel />
                         <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
@@ -122,6 +124,7 @@ export function DemoApp({ inicial = '/conversations' }: { inicial?: string }) {
                           </Suspense>
                         </div>
                       </DealPanelProvider>
+                      </MediaViewerProvider>
                     </ContextMenuProvider>
                   </CopilotProvider>
                 </InternalChatProvider>

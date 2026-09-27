@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/contexts/AuthContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
+import { renderHighlightedSnippet } from '@/lib/searchHighlight'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Conversation } from '@/types'
@@ -78,7 +79,7 @@ interface ConversationItemProps {
 }
 
 export const ConversationItem = memo(function ConversationItem({ conversation, isActive, offFilter = false, onSelect }: ConversationItemProps) {
-  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly, status } =
+  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly, status, searchSnippet } =
     conversation
   const currentUserId = useAuth().user?.id
 
@@ -188,11 +189,22 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             'flex items-center gap-1 min-w-0 text-xs',
             'text-surface-400'
           )}>
-            {lastMessageSenderKind === 'operator' ? null : <SenderIndicator kind={lastMessageSenderKind} />}
-            <span className="truncate">
-              {lastMessageSenderKind === 'operator' && <span className="text-surface-500">Você: </span>}
-              <MessagePreview text={lastMessagePreview || '…'} />
-            </span>
+            {/* SCRUM-1096 — quando o match veio do CONTEÚDO da mensagem (não do
+                nome/telefone do contato), o trecho destacado substitui o
+                preview padrão. O SenderIndicator some junto: ele descreve
+                quem mandou a ÚLTIMA mensagem, e o trecho aqui pode ser de
+                qualquer mensagem antiga que bateu — misturar os dois confundiria. */}
+            {searchSnippet ? (
+              <span className="truncate">{renderHighlightedSnippet(searchSnippet)}</span>
+            ) : (
+              <>
+                {lastMessageSenderKind === 'operator' ? null : <SenderIndicator kind={lastMessageSenderKind} />}
+                <span className="truncate">
+                  {lastMessageSenderKind === 'operator' && <span className="text-surface-500">Você: </span>}
+                  <MessagePreview text={lastMessagePreview || '…'} />
+                </span>
+              </>
+            )}
           </div>
           {hasUnread && (
             <Badge variant="unread" className="flex-shrink-0">

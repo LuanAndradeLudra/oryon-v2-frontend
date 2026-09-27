@@ -145,7 +145,7 @@ export function BancadaDeTeste({
 
   useEffect(() => {
     if (revendo) return
-    fim.current?.scrollIntoView({ behavior: semMovimento ? 'auto' : 'smooth', block: 'end' })
+    fim.current?.scrollIntoView?.({ behavior: semMovimento ? 'auto' : 'smooth', block: 'end' })
   }, [mensagens, pensando, revendo, semMovimento])
 
   const enviar = async (conteudo?: string) => {

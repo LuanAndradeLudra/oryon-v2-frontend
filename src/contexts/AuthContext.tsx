@@ -45,6 +45,11 @@ interface RegisterPayload {
   password: string
 }
 
+interface WaitlistResponse {
+  waitlisted: true
+  message: string
+}
+
 interface AuthContextValue {
   user: User | null
   token: string | null
@@ -55,7 +60,7 @@ interface AuthContextValue {
   featureFlags: string[]
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (payload: RegisterPayload) => Promise<void>
+  register: (payload: RegisterPayload) => Promise<WaitlistResponse>
   /** Invited agent: POST /auth/activate, then same session + cookies as register. */
   activateAccount: (token: string, password: string) => Promise<void>
   logout: () => void
@@ -160,25 +165,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [hydrateFeatureFlags])
 
   const register = useCallback(async (payload: RegisterPayload) => {
-    const res = await axios.post<{
-      user: User; requiresPasswordChange: boolean; organizationConfigured?: boolean;
-    }>(`${API}/auth/register`, payload, { withCredentials: true })
-    const s: AuthSession = {
-      user: res.data.user,
-      requiresPasswordChange: res.data.requiresPasswordChange,
-      organizationConfigured: res.data.organizationConfigured ?? false,
-    }
-    saveSession(s)
-    setSession(s)
-    sessionStorage.removeItem('oryon_dismissed_banners')
-    hydrateFeatureFlags()
-    appLogger.logSessionEvent({
-      tenant_id: s.user.tenantId ?? null,
-      user_id:   s.user.id ?? null,
-      user_role: s.user.role ?? null,
-      event_type: 'login',
-    })
-  }, [hydrateFeatureFlags])
+    const res = await axios.post<WaitlistResponse>(
+      `${API}/auth/register`,
+      payload,
+      { withCredentials: true },
+    )
+    return res.data
+  }, [])
 
   const activateAccount = useCallback(async (token: string, password: string) => {
     disconnectSocket()

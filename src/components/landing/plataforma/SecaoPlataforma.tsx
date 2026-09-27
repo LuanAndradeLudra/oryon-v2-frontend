@@ -10,6 +10,7 @@ import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { ConversationActivitySection } from '@/components/conversations/ContactPanel/ConversationActivitySection'
 import { DealSummary } from '@/components/deals/DealSummary'
 import { MessageBubble } from '@/components/conversations/ChatWindow/MessageBubble'
+import { MediaViewerProvider } from '@/components/ui/MediaViewer'
 import { TypingIndicator } from '@/components/conversations/ChatWindow/TypingIndicator'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { StatusDonut } from '@/components/dashboard/StatusDonut'
@@ -209,7 +210,10 @@ function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number;
       // O agente "digita" enquanto a tela mostra instruções e conhecimento; a
       // resposta à Marina chega quando o catálogo aparece — o valor e a
       // condição que ela cita estão na tela ao lado.
+      // A bolha usa o visualizador de mídia (developer, #206); a landing
+      // não passa pelos provedores do App, então traz o seu.
       return (
+        <MediaViewerProvider>
         <div className="px-3 py-1">
           <MessageBubble message={mensagem('demo-m-5')} contact={contatoMarina} showAvatar />
           <Surgir chave={`${ciclo}-${cena === 'agente-catalogo' ? 'resposta' : 'digitando'}`}>
@@ -218,6 +222,7 @@ function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number;
               : <div className="flex justify-end"><TypingIndicator /></div>}
           </Surgir>
         </div>
+        </MediaViewerProvider>
       )
     case 'conhecer-1': {
       // O documento da base de conhecimento, no componente real de documento.

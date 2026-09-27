@@ -425,11 +425,22 @@ const RENDERERS: Partial<Record<Message['type'], FC<{ message: Message }>>> = {
  *  bubble must NOT additionally render the plain-text body for these (avoids
  *  rendering the synthetic "[…]" body twice). Includes the registry types plus
  *  `location` (rendered inline by MediaContent, but now carries a legible
- *  body that would otherwise duplicate under the map pin). */
+ *  body that would otherwise duplicate under the map pin).
+ *
+ *  SCRUM-1158 — `image`/`video`/`document` join the set for the same reason:
+ *  `body` para esses três tipos é SEMPRE a mesma legenda que `mediaCaption`
+ *  já mostra embaixo da mídia (backend: `inbound-message.extractor.ts` seta
+ *  `body = waMsg.image?.caption` etc., a mesma fonte de `mediaCaption`) —
+ *  sem isto o TextContent desenhava a legenda de novo, num parágrafo à
+ *  parte. Áudio/figurinha não entram: `body` fica sempre null pra eles
+ *  (extractor.ts), então TextContent já não desenhava nada de qualquer forma. */
 export const STRUCTURED_TYPES: ReadonlySet<Message['type']> = new Set<Message['type']>([
   ...(Object.keys(RENDERERS) as Message['type'][]),
   'location',
   'reaction',
+  'image',
+  'video',
+  'document',
 ])
 
 /** Render a registered renderer for the message type, or null if none. */

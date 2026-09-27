@@ -118,7 +118,7 @@ export const SETTINGS_NAV: NavDomain[] = [
           { section: 'custom-fields',     label: 'Campos personalizados', adminOnly: true },
           { section: 'vertical',          label: 'Vocabulário',           adminOnly: true },
           { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
-          { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true, hidden: true },
+          { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true },
           // F11-888: roteamento congelado (Modelo B) — sai do menu; rota mantida oculta até a remoção física.
           { section: 'pipeline-routing',  label: 'Roteamento por canal',  adminOnly: true, multiPipelineOnly: true, hidden: true },
         ],
