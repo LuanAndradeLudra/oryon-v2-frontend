@@ -270,6 +270,10 @@ function AnimatedRoutes() {
           <Route path="/agents" element={
             <ProtectedRoute><AgentsPage /></ProtectedRoute>
           } />
+          {/* Direção D (27/09): cada agente é uma página, a seção na URL. */}
+          <Route path="/agents/:agentId/:secao?" element={
+            <ProtectedRoute><AgentsPage /></ProtectedRoute>
+          } />
 
           {/* ── Admin (Oryon staff) ──────────────────────────────────── */}
           <Route path="/admin/skill-templates" element={

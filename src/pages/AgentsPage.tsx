@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   Bot, Plus,
   ExternalLink, Copy, ToggleRight, Pause, FileText,
@@ -10,18 +10,19 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { loadHub, isAgentStale } from '@/services/companyContextService'
 import { cn } from '@/lib/utils'
-import { listAgents, getAgent, updateAgent } from '@/services/agentsApi'
+import { listAgents, updateAgent } from '@/services/agentsApi'
 import type { AgentConfig, AgentConfigWithTools } from '@/services/agentsApi'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { AgentBuilderWizard } from '@/components/agents/AgentBuilderWizard'
 import { AgentIcon } from '@/components/agents/AgentIcons'
-import { AgentDetail } from '@/components/agents/AgentDetail'
+import { PaginaDoAgente } from '@/components/agents/pagina/PaginaDoAgente'
+import { ehSecao, rotaDoAgente, secaoDaAbaAntiga, SECAO_PADRAO } from '@/components/agents/pagina/secoesDoAgente'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { SkeletonList, SkeletonCard, Skeleton } from '@/components/ui/Skeleton'
+import { SkeletonList } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
@@ -166,24 +167,38 @@ function AgentCard({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+/**
+ * /agents → lista · /agents/:agentId/:secao → página do agente.
+ * O formato antigo (`/agents?agent=X&tab=Y`) — links salvos, notificações, o
+ * Hub e a demonstração da landing — redireciona para a seção equivalente.
+ */
 export function AgentsPage() {
+  const { agentId, secao } = useParams()
+  const [searchParams] = useSearchParams()
+  const legado = searchParams.get('agent')
+
+  if (!agentId && legado) {
+    const destino = rotaDoAgente(legado, secaoDaAbaAntiga(searchParams.get('tab')))
+    return <Navigate to={destino} replace />
+  }
+  if (agentId) {
+    if (!ehSecao(secao)) return <Navigate to={rotaDoAgente(agentId, SECAO_PADRAO)} replace />
+    return <PaginaDoAgente key={agentId} agentId={agentId} secao={secao} />
+  }
+  return <ListaDeAgentesAntiga />
+}
+
+function ListaDeAgentesAntiga() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const hub = user?.tenantId ? loadHub(user.tenantId) : null
   const [agents, setAgents] = useState<AgentConfig[]>([])
-  const [selectedAgent, setSelectedAgent] = useState<AgentConfigWithTools | null>(null)
   const [loadingList, setLoadingList] = useState(true)
-  const [loadingDetail, setLoadingDetail] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
   const banner = useDesktopRecommendedBanner('agents')
   const isMobile = useIsMobile()
   const [statusFilter, setStatusFilter] = useState<'all' | AgentConfig['status']>('all')
-  const [testedAgentIds, setTestedAgentIds] = useState<Set<string>>(new Set())
   const { toast } = useToast()
-  // Agente aberto na URL (`?agent=<id>`): voltar, recarregar ou chegar por um
-  // link reabre o mesmo agente, como `?deal=` em Funis.
-  const [searchParams, setSearchParams] = useSearchParams()
-  const agentParam = searchParams.get('agent')
-  const pedidoRef = useRef<string | null>(null)
 
   useRegisterTopBarActions(
     <Button size="sm" onClick={() => setShowWizard(true)} leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}>
@@ -196,7 +211,6 @@ export function AgentsPage() {
     try {
       const updated = await updateAgent(id, { status })
       setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, ...updated } : a)))
-      setSelectedAgent((prev) => (prev && prev.id === id ? { ...prev, ...updated } : prev))
     } catch (err) {
       // Erro visível em vez de engolido em silêncio (R36) — sem isso o
       // usuário achava que o status mudou quando o backend rejeitou a
@@ -219,32 +233,12 @@ export function AgentsPage() {
 
   useEffect(() => { void load() }, [load])
 
-  const selectAgent = useCallback(async (id: string) => {
-    pedidoRef.current = id
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.set('agent', id)
-      return next
-    }, { replace: true })
-    setLoadingDetail(true)
-    try {
-      const agent = await getAgent(id)
-      setSelectedAgent(agent)
-    } finally {
-      setLoadingDetail(false)
-    }
-  }, [setSearchParams])
-
-  // Abre o agente da URL assim que a lista chega (só se ele existir nela).
-  useEffect(() => {
-    if (!agentParam || selectedAgent?.id === agentParam || pedidoRef.current === agentParam) return
-    if (agents.some((a) => a.id === agentParam)) void selectAgent(agentParam)
-  }, [agentParam, agents, selectedAgent?.id, selectAgent])
+  const selectAgent = useCallback((id: string) => navigate(rotaDoAgente(id)), [navigate])
 
   const handleWizardComplete = (agent: AgentConfigWithTools) => {
     setAgents(prev => [agent, ...prev])
-    setSelectedAgent(agent)
     setShowWizard(false)
+    navigate(rotaDoAgente(agent.id))
   }
 
   const filtered = statusFilter === 'all' ? agents : agents.filter(a => a.status === statusFilter)
@@ -309,7 +303,7 @@ export function AgentsPage() {
                   <AgentCard
                     key={agent.id}
                     agent={agent}
-                    selected={selectedAgent?.id === agent.id}
+                    selected={false}
                     onClick={() => selectAgent(agent.id)}
                     stale={hub ? isAgentStale(agent.updated_at, hub) : false}
                     onStatusChange={handleStatusChange}
@@ -322,34 +316,7 @@ export function AgentsPage() {
 
         {/* ── Right: Detail panel ── */}
         <div className="flex-1 overflow-hidden">
-          {loadingDetail ? (
-            <div className="px-6 pt-6 space-y-4">
-              {/* Skeleton espelha o header + tabs do detail — sem "flash" de spinner */}
-              <div className="flex items-center gap-4">
-                <Skeleton className="w-12 h-12 rounded-lg" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-3 w-32 bg-[var(--sf2)]" />
-                </div>
-              </div>
-              <Skeleton className="h-9 w-full max-w-lg bg-[var(--sf2)]" />
-              <SkeletonCard lines={4} />
-            </div>
-          ) : selectedAgent ? (
-            <AgentDetail
-              key={selectedAgent.id}
-              agent={selectedAgent}
-              // Testado = já tem teste registrado no servidor OU foi testado
-              // nesta sessão. Só a sessão fazia o aviso "ainda não testado"
-              // reaparecer a cada visita, mesmo em agente testado várias vezes.
-              tested={testedAgentIds.has(selectedAgent.id) || (selectedAgent.test_count ?? 0) > 0}
-              onTested={() => setTestedAgentIds(prev => new Set([...prev, selectedAgent.id]))}
-              onDeleted={() => {
-                setSelectedAgent(null)
-                void load()
-              }}
-            />
-          ) : agents.length > 0 ? (
+          {agents.length > 0 ? (
             /* Has agents but none selected */
             <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
               <div className="w-16 h-16 rounded-lg bg-surface-900 ring-1 ring-surface-800 flex items-center justify-center">

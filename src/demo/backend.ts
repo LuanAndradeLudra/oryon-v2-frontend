@@ -259,6 +259,10 @@ export function instalarBackendDemo() {
   rota('agents/builder/configs/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+$/.test(u), ({ url }) => ({
     data: { data: agenteComFerramentas(url.split('/').pop()!) },
   }))
+  // Skills (seção Capacidades, 27/09): a clínica da demo não usa skills n8n.
+  rota('agents/builder/configs/:id/skills', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/skills$/.test(u), () => ({
+    data: { data: [] },
+  }))
   // A base de conhecimento (aba Conhecimento) — só o agente da história tem.
   rota('agents/builder/configs/:id/knowledge', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/knowledge$/.test(u), ({ url }) => ({
     data: { data: url.includes('/ag-recepcao/') ? CONHECIMENTO_RECEPCAO.map(({ content: _c, ...d }) => d) : [] },

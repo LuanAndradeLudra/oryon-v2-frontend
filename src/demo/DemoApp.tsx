@@ -116,6 +116,7 @@ export function DemoApp({ inicial = '/conversations' }: { inicial?: string }) {
                               <Route path="/pipelines/:id" element={<Pagina><PipelinePage /></Pagina>} />
                               <Route path="/campaigns" element={<Pagina><CampaignsPage /></Pagina>} />
                               <Route path="/agents" element={<Pagina><AgentsPage /></Pagina>} />
+                              <Route path="/agents/:agentId/:secao?" element={<Pagina><AgentsPage /></Pagina>} />
                               <Route path="/dashboard" element={<Pagina><DashboardPage /></Pagina>} />
                             </Routes>
                           </Suspense>

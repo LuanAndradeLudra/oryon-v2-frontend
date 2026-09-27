@@ -183,7 +183,7 @@ function SettingsGroup({ title, description, children, last = false }: {
   )
 }
 
-function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
+export function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
   const toStr = (n: number | null | undefined): string => (n == null ? '' : String(n))
   const initialPause = toStr(agent.ai_handoff_pause_minutes)
   const initialDebounce = toStr(agent.ai_inbound_debounce_seconds)
@@ -418,7 +418,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
 
 // ─── Tab: System Prompt ───────────────────────────────────────────────────────
 
-function SystemPromptTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
+export function SystemPromptTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
   const { user } = useAuth()
   const [draft, setDraft] = useState(agent.system_prompt)
   const [saving, setSaving] = useState(false)
@@ -654,7 +654,7 @@ function ToolForm({
 
 // ─── Tab: Tools ───────────────────────────────────────────────────────────────
 
-function ToolsTab({
+export function ToolsTab({
   agent,
   onToolsChange,
 }: {
@@ -1060,7 +1060,7 @@ function KBUploadProgress({ fileName }: { fileName: string }) {
   )
 }
 
-function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
+export function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
   const [docs, setDocs] = useState<AgentKnowledgeDoc[]>([])
   const [loading, setLoading] = useState(true)
   const [uploadingFile, setUploadingFile] = useState<string | null>(null) // file name being uploaded
@@ -1482,9 +1482,9 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
 // panel is active (Handoff needs flex-col for its sticky save bar; FAQ
 // needs overflow-y-auto for a long list of rules).
 
-type RulesSubTab = 'faqs' | 'handoff'
+export type RulesSubTab = 'faqs' | 'handoff'
 
-function RulesTab({
+export function RulesTab({
   agent,
   onUpdate,
   subTab,
@@ -1914,7 +1914,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
 // gracefully when the caller lacks access or the FF_AGENT_AUDIT_LOG flag is
 // off (returns an empty/error state instead of crashing).
 
-function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
+export function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
   const [rows, setRows] = useState<ToolMetricRow[]>([])
   const [windowDays, setWindowDays] = useState(1)
   const [loading, setLoading] = useState(true)
