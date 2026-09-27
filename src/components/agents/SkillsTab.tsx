@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
 import { cn } from '@/lib/utils'
+import { useTamanhoDeToque } from './pagina/useToque'
 
 interface Props {
   agentId: string
@@ -347,6 +348,7 @@ function SkillRow({
   onRemove: () => void
   onTest: () => void
 }) {
+  const tam = useTamanhoDeToque()
   const description = row.llm_description_override?.trim() || row.template_llm_description
   const disabled = toggling || !row.template_enabled
 
@@ -409,17 +411,17 @@ function SkillRow({
         {staff && (
           <div className="flex items-center gap-1">
             <Tooltip content="Testar skill" side="top">
-              <Button variant="ghost" size="sm" iconOnly onClick={onTest} disabled={toggling} aria-label="Testar skill">
+              <Button variant="ghost" size={tam} iconOnly onClick={onTest} disabled={toggling} aria-label="Testar skill">
                 <Beaker className="w-3.5 h-3.5" />
               </Button>
             </Tooltip>
             <Tooltip content="Editar configuração" side="top">
-              <Button variant="ghost" size="sm" iconOnly onClick={onEdit} disabled={toggling} aria-label="Editar configuração">
+              <Button variant="ghost" size={tam} iconOnly onClick={onEdit} disabled={toggling} aria-label="Editar configuração">
                 <Pencil className="w-3.5 h-3.5" />
               </Button>
             </Tooltip>
             <Tooltip content="Remover skill" side="top">
-              <Button variant="ghost" size="sm" iconOnly onClick={onRemove} disabled={toggling} aria-label="Remover skill">
+              <Button variant="ghost" size={tam} iconOnly onClick={onRemove} disabled={toggling} aria-label="Remover skill">
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </Tooltip>

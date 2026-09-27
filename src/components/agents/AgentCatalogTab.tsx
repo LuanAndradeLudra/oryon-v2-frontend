@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { cn } from '@/lib/utils'
+import { useTamanhoDeToque } from './pagina/useToque'
 
 interface Props {
   agentId: string
@@ -69,10 +70,14 @@ function ProductRow({
             </span>
           )}
         </div>
-        {product.category && <span className="text-xs text-surface-500">{product.category}</span>}
+        <span className="block text-xs text-surface-500">
+          {product.category}
+          {/* Celular: o preço desce para baixo do nome, que deixa de ser cortado. */}
+          {price !== null && <span className="sm:hidden">{product.category ? ' · ' : ''}a partir de {formatBRL(price)}</span>}
+        </span>
       </div>
       {price !== null && (
-        <span className="text-xs text-surface-400 flex-shrink-0">a partir de {formatBRL(price)}</span>
+        <span className="hidden text-xs text-surface-400 flex-shrink-0 sm:inline">a partir de {formatBRL(price)}</span>
       )}
       <Switch checked={active} onChange={() => onToggle(product.id)} disabled={!canManage} />
     </motion.div>
@@ -105,6 +110,7 @@ function SectionHeader({ label, count, accent }: { label: string; count: number;
  * Leitura para todos; alternar só admin (espelha o catálogo de produtos).
  */
 export function AgentCatalogTab({ agentId, salvar, onMudou }: Props) {
+  const tam = useTamanhoDeToque()
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdminTier(user?.role)
@@ -213,7 +219,7 @@ export function AgentCatalogTab({ agentId, salvar, onMudou }: Props) {
       <div className="flex flex-col items-center gap-3 py-16 text-center">
         <AlertCircle className="w-6 h-6 text-danger" />
         <p className="text-sm text-surface-400">{loadError}</p>
-        <Button variant="neutral" size="sm" leftIcon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => reload()}>
+        <Button variant="neutral" size={tam} leftIcon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => reload()}>
           Tentar de novo
         </Button>
       </div>
@@ -247,7 +253,7 @@ export function AgentCatalogTab({ agentId, salvar, onMudou }: Props) {
         {canManage && (
           <div className="flex-shrink-0 text-xs">
             {saveState === 'error' ? (
-              <Button variant="ghost" size="sm" className="text-danger hover:text-danger" leftIcon={<AlertCircle className="w-3.5 h-3.5" />} onClick={() => void persist()}>
+              <Button variant="ghost" size={tam} className="text-danger hover:text-danger" leftIcon={<AlertCircle className="w-3.5 h-3.5" />} onClick={() => void persist()}>
                 Não salvou — tentar de novo
               </Button>
             ) : salvar ? null : saveState === 'saving' ? (

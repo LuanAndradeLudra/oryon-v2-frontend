@@ -10,13 +10,18 @@ import type { ResumoDoAgente } from './useResumoDoAgente'
  * continua aberta (o `?teste=1` viaja junto).
  */
 export function NavegacaoDoAgente({
-  agentId, ativa, resumo, testeAberto, className,
+  agentId, ativa, resumo, testeAberto, className, movel = false, aoEscolher,
 }: {
   agentId: string
   ativa: SecaoId
   resumo: ResumoDoAgente
   testeAberto: boolean
   className?: string
+  /** Dentro da folha inferior do celular: alvos de 44 px e sem o link de
+   *  voltar (o cabeçalho móvel já tem a seta). */
+  movel?: boolean
+  /** Chamado ao escolher uma seção (fecha a folha no celular). */
+  aoEscolher?: () => void
 }) {
   const contagem: Partial<Record<SecaoId, string>> = {
     conhecimento: resumo.documentos != null ? String(resumo.documentos) : undefined,
@@ -27,15 +32,15 @@ export function NavegacaoDoAgente({
 
   return (
     <nav aria-label="Seções do agente" className={cn('flex flex-col min-h-0', className)}>
-      <Link
+      {!movel && <Link
         to="/agents"
         className="mx-2 mb-2 inline-flex items-center gap-1 h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         <ChevronLeft className="w-3.5 h-3.5" aria-hidden />
         Todos os agentes
-      </Link>
+      </Link>}
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-3">
+      <div className={cn('flex-1 min-h-0 overflow-y-auto pb-3', movel ? 'px-0' : 'px-2')}>
         {GRUPOS.map((g, gi) => (
           <div key={g.id} className={cn(gi > 0 && 'mt-4')}>
             <p className="px-2.5 mb-1 text-3xs font-bold uppercase tracking-[.14em] text-surface-500">{g.rotulo}</p>
@@ -48,9 +53,11 @@ export function NavegacaoDoAgente({
                     <Link
                       to={rotaDoAgente(agentId, s.id, { teste: testeAberto })}
                       replace
+                      onClick={aoEscolher}
                       aria-current={on ? 'page' : undefined}
                       className={cn(
-                        'flex items-center gap-2.5 h-8 px-2.5 rounded-sm text-sm font-medium transition-colors',
+                        'flex items-center gap-2.5 px-2.5 rounded-sm text-sm font-medium transition-colors',
+                        movel ? 'h-11' : 'h-8',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                         on
                           ? 'bg-[var(--rowhover)] text-surface-50 shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
@@ -71,7 +78,7 @@ export function NavegacaoDoAgente({
         ))}
       </div>
 
-      <FontesDasRespostas resumo={resumo} className="mx-2" />
+      <FontesDasRespostas resumo={resumo} className={movel ? '' : 'mx-2'} />
     </nav>
   )
 }

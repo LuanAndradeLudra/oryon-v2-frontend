@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { AlertCircle, Bot } from 'lucide-react'
+import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getAgent, type AgentConfig, type AgentConfigWithTools } from '@/services/agentsApi'
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -20,7 +20,9 @@ import { SalvamentoDoAgenteProvider } from './SalvamentoDoAgente'
 import { CabecalhoDoAgente } from './CabecalhoDoAgente'
 import { NavegacaoDoAgente } from './NavegacaoDoAgente'
 import { useResumoDoAgente } from './useResumoDoAgente'
-import type { SecaoId } from './secoesDoAgente'
+import { SECOES, rotaDoAgente, type SecaoId } from './secoesDoAgente'
+import { SeletorDeSecaoMovel } from './SeletorDeSecaoMovel'
+import './agenteMovel.css'
 
 /**
  * A PÁGINA DO AGENTE (direção D, 27/09): identidade em cima, navegação vertical
@@ -37,6 +39,9 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
   // A partir de 1280 px a bancada divide a tela; abaixo, abre por cima.
   const bancadaAcoplada = useMediaQuery('(min-width: 1280px)')
   const navigate = useNavigate()
+  // Celular: trocar de seção volta ao topo do rolo (a barra de seção fica presa).
+  const rolo = useRef<HTMLDivElement>(null)
+  useEffect(() => { rolo.current?.scrollTo?.({ top: 0 }) }, [secao])
 
   useEffect(() => {
     // A página é remontada por agente (key={agentId}), então o estado inicial
@@ -80,26 +85,47 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
     )
   }
 
-  if (!agent) return <EsqueletoDaPagina />
-
-  if (isMobile) {
-    return (
-      <div className="flex-1 px-4 pt-6">
-        <EmptyState
-          icon={Bot}
-          title={`${agent.name} se configura no computador`}
-          hint="Instruções longas, regras e o teste lado a lado não cabem numa tela de celular. A lista de agentes e o interruptor de ligar continuam aqui."
-          action={{ label: 'Voltar para a lista', onClick: () => navigate('/agents') }}
-        />
-      </div>
-    )
-  }
+  if (!agent) return <EsqueletoDaPagina movel={isMobile} />
 
   const testado = testadoNaSessao || (agent.test_count ?? 0) > 0
 
+  // CELULAR: um rolo só — o cabeçalho e a barra de seção ficam presos; a faixa
+  // de identidade rola junto com o conteúdo para não roubar altura da tela.
+  // A bancada de teste abre em tela cheia.
+  if (isMobile) {
+    return (
+      <SalvamentoDoAgenteProvider ultimaAlteracao={agent.updated_at}>
+        <div ref={rolo} className="pagina-agente flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <CabecalhoDoAgente
+            agent={agent}
+            onAtualizar={onAtualizar}
+            testado={testado}
+            testeAberto={testeAberto}
+            onAlternarTeste={alternarTeste}
+            movel
+          />
+          <SeletorDeSecaoMovel agentId={agent.id} ativa={secao} resumo={resumo} testeAberto={testeAberto} />
+          <main aria-labelledby="titulo-secao">
+            <ConteudoDaSecao
+              secao={secao}
+              agent={agent}
+              onAtualizar={onAtualizar}
+              onFerramentas={onFerramentas}
+              onFontesMudaram={recarregarResumo}
+              movel
+            />
+          </main>
+        </div>
+        {testeAberto && (
+          <BancadaDeTeste agent={agent} onTestou={() => setTestadoNaSessao(true)} onFechar={alternarTeste} movel />
+        )}
+      </SalvamentoDoAgenteProvider>
+    )
+  }
+
   return (
     <SalvamentoDoAgenteProvider ultimaAlteracao={agent.updated_at}>
-      <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+      <div className="pagina-agente flex flex-1 flex-col min-h-0 overflow-hidden">
         <CabecalhoDoAgente
           agent={agent}
           onAtualizar={onAtualizar}
@@ -141,13 +167,14 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
 }
 
 function ConteudoDaSecao({
-  secao, agent, onAtualizar, onFerramentas, onFontesMudaram,
+  secao, agent, onAtualizar, onFerramentas, onFontesMudaram, movel = false,
 }: {
   secao: SecaoId
   agent: AgentConfigWithTools
   onAtualizar: (a: AgentConfig) => void
   onFerramentas: (t: AgentConfigWithTools['tools']) => void
   onFontesMudaram: () => void
+  movel?: boolean
 }) {
   const semMovimento = useReducedMotion()
 
@@ -171,15 +198,49 @@ function ConteudoDaSecao({
         animate={{ opacity: 1, y: 0 }}
         exit={semMovimento ? undefined : { opacity: 0 }}
         transition={{ duration: 0.14, ease: 'easeOut' }}
-        className="w-full max-w-[900px] px-8 py-6"
+        className={movel ? 'w-full px-4 pt-5 pb-8' : 'w-full max-w-[900px] px-8 py-6'}
       >
         {corpo}
+        {movel && <AnteriorProxima agentId={agent.id} secao={secao} />}
       </motion.div>
     </AnimatePresence>
   )
 }
 
-function EsqueletoDaPagina() {
+/** Celular: percorrer as seções em ordem sem abrir o menu. */
+function AnteriorProxima({ agentId, secao }: { agentId: string; secao: SecaoId }) {
+  const i = SECOES.findIndex((s) => s.id === secao)
+  const antes = SECOES[i - 1]
+  const depois = SECOES[i + 1]
+  const classe = 'flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-md border border-surface-700 bg-[var(--sf2)] px-3 text-sm hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500'
+  return (
+    <nav aria-label="Outras seções" className="mt-10 flex gap-2 border-t border-surface-700 pt-5">
+      {antes ? (
+        <Link to={rotaDoAgente(agentId, antes.id)} replace className={classe}>
+          <ChevronLeft className="h-4 w-4 flex-shrink-0 text-surface-500" aria-hidden />
+          <span className="min-w-0"><span className="block text-3xs uppercase tracking-[.12em] text-surface-500">Anterior</span><span className="block truncate font-semibold text-surface-100">{antes.rotulo}</span></span>
+        </Link>
+      ) : <span className="flex-1" />}
+      {depois ? (
+        <Link to={rotaDoAgente(agentId, depois.id)} replace className={`${classe} justify-end text-right`}>
+          <span className="min-w-0"><span className="block text-3xs uppercase tracking-[.12em] text-surface-500">Próxima</span><span className="block truncate font-semibold text-surface-100">{depois.rotulo}</span></span>
+          <ChevronRight className="h-4 w-4 flex-shrink-0 text-surface-500" aria-hidden />
+        </Link>
+      ) : <span className="flex-1" />}
+    </nav>
+  )
+}
+
+function EsqueletoDaPagina({ movel = false }: { movel?: boolean }) {
+  if (movel) {
+    return (
+      <div className="flex-1 space-y-4 px-4 pt-4" aria-busy="true" aria-label="Carregando agente">
+        <Skeleton className="h-10 w-2/3" />
+        <Skeleton className="h-12 w-full bg-[var(--sf2)]" />
+        <SkeletonCard lines={5} />
+      </div>
+    )
+  }
   return (
     <div className="flex flex-1 flex-col min-h-0" aria-busy="true" aria-label="Carregando agente">
       <div className="flex items-center gap-3.5 px-6 py-4 border-b border-surface-700">

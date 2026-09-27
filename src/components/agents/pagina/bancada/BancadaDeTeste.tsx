@@ -88,14 +88,18 @@ function OQueUsou({ debug }: { debug?: ChatTurnDebug }) {
  * rascunho não entram até serem salvas).
  */
 export function BancadaDeTeste({
-  agent, onTestou, onFechar, flutuante = false,
+  agent, onTestou, onFechar, flutuante = false, movel = false,
 }: {
   agent: AgentConfigWithTools
   onTestou: () => void
   onFechar: () => void
   /** Telas estreitas: a bancada abre por cima do conteúdo. */
   flutuante?: boolean
+  /** Celular: tela cheia, áreas seguras, alvos maiores e Enter quebra linha
+   *  (como no WhatsApp) — envia pelo botão. */
+  movel?: boolean
 }) {
+  const tam = movel ? 'md' as const : 'sm' as const
   const semMovimento = useReducedMotion()
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [texto, setTexto] = useState('')
@@ -206,10 +210,11 @@ export function BancadaDeTeste({
       aria-label="Teste ao vivo"
       className={cn(
         'flex flex-col min-h-0 bg-surface-900 border-l border-surface-700',
-        flutuante ? 'fixed right-0 top-0 bottom-0 z-50 w-[min(400px,100vw)] shadow-[0_18px_55px_rgba(0,0,0,.28)]' : 'w-[372px] flex-shrink-0',
+        movel ? 'fixed inset-0 z-50 w-full h-[100dvh] border-l-0 pt-safe'
+          : flutuante ? 'fixed right-0 top-0 bottom-0 z-50 w-[min(400px,100vw)] shadow-[0_18px_55px_rgba(0,0,0,.28)]' : 'w-[372px] flex-shrink-0',
       )}
     >
-      <div className="flex h-12 flex-shrink-0 items-center gap-2 border-b border-surface-700 pl-4 pr-2">
+      <div className={cn('flex flex-shrink-0 items-center gap-2 border-b border-surface-700 pl-4 pr-2', movel ? 'h-14' : 'h-12')}>
         <Sparkles className="h-4 w-4 text-accent-dark" aria-hidden />
         <h2 className="text-sm font-semibold text-surface-100">Teste ao vivo</h2>
         <span className="inline-flex h-5 items-center rounded-xs border border-status-pending-border bg-status-pending-bg px-[7px] text-2xs font-semibold text-status-pending">
@@ -222,7 +227,7 @@ export function BancadaDeTeste({
             align="right"
             className="w-64"
             anchor={
-              <Button variant="ghost" size="sm" iconOnly aria-label="Conversas de teste anteriores" title="Conversas anteriores" onClick={alternarHistorico}>
+              <Button variant="ghost" size={tam} iconOnly aria-label="Conversas de teste anteriores" title="Conversas anteriores" onClick={alternarHistorico}>
                 <History className="h-4 w-4" />
               </Button>
             }
@@ -238,10 +243,10 @@ export function BancadaDeTeste({
               </DropdownItem>
             ))}
           </Dropdown>
-          <Button variant="ghost" size="sm" iconOnly aria-label="Nova conversa" title="Nova conversa" onClick={novaConversa}>
+          <Button variant="ghost" size={tam} iconOnly aria-label="Nova conversa" title="Nova conversa" onClick={novaConversa}>
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" iconOnly aria-label="Fechar teste" title="Fechar" onClick={onFechar}>
+          <Button variant="ghost" size={tam} iconOnly aria-label="Fechar teste" title="Fechar" onClick={onFechar}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -267,7 +272,7 @@ export function BancadaDeTeste({
             <div className="mt-3 flex flex-col items-start gap-1.5">
               {SUGESTOES.map((s) => (
                 <button key={s} type="button" onClick={() => void enviar(s)}
-                  className="rounded-md border border-[var(--bd2)] px-2.5 py-1.5 text-left text-xs text-surface-200 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                  className={cn('rounded-md border border-[var(--bd2)] text-left text-surface-200 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500', movel ? 'min-h-10 px-3 py-2 text-sm' : 'px-2.5 py-1.5 text-xs')}>
                   {s}
                 </button>
               ))}
@@ -317,7 +322,7 @@ export function BancadaDeTeste({
       </div>
 
       <form
-        className="flex flex-shrink-0 items-end gap-2 border-t border-surface-700 px-3 py-3"
+        className={cn('flex flex-shrink-0 items-end gap-2 border-t border-surface-700 px-3 pt-3', movel ? 'pb-[max(12px,env(safe-area-inset-bottom))]' : 'pb-3')}
         onSubmit={(e) => { e.preventDefault(); void enviar() }}
       >
         <textarea
@@ -325,13 +330,13 @@ export function BancadaDeTeste({
           aria-label="Mensagem do cliente"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar() } }}
+          onKeyDown={(e) => { if (!movel && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar() } }}
           placeholder={revendo ? 'Volte ao teste atual para escrever' : 'Escreva como o cliente…'}
           disabled={!!revendo}
           rows={1}
-          className="max-h-28 min-h-9 flex-1 resize-none rounded-sm border border-[var(--bd2)] bg-surface-800 px-2.5 py-2 text-[13px] text-surface-100 placeholder:text-surface-500 caret-brand-500 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft disabled:opacity-50"
+          className="max-h-28 min-h-10 flex-1 resize-none rounded-sm border border-[var(--bd2)] bg-surface-800 px-2.5 py-2 text-[13px] text-surface-100 placeholder:text-surface-500 caret-brand-500 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft disabled:opacity-50"
         />
-        <Button type="submit" iconOnly aria-label="Enviar" disabled={!texto.trim() || pensando || !!revendo} loading={pensando}>
+        <Button type="submit" size={movel ? 'lg' : 'md'} iconOnly aria-label="Enviar" disabled={!texto.trim() || pensando || !!revendo} loading={pensando}>
           <Send className="h-4 w-4" />
         </Button>
       </form>

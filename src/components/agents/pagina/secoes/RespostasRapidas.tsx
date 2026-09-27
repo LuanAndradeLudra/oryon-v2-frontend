@@ -16,6 +16,7 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { useSalvamento } from '../salvamentoContexto'
+import { useTamanhoDeToque } from '../useToque'
 
 const VAZIO: FaqRuleDraft = {
   name: '', keywords: [], match_mode: 'any_keyword', response_template: '', priority: 0, enabled: true, cooldown_minutes: 0,
@@ -36,6 +37,7 @@ function Formulario({ inicial, onSalvar, onCancelar }: {
   onSalvar: (d: FaqRuleDraft) => Promise<void>
   onCancelar: () => void
 }) {
+  const tam = useTamanhoDeToque()
   const [d, setD] = useState(inicial)
   const [palavras, setPalavras] = useState(inicial.keywords.join(', '))
   const [erro, setErro] = useState<string | null>(null)
@@ -59,7 +61,7 @@ function Formulario({ inicial, onSalvar, onCancelar }: {
 
   return (
     <div className="space-y-4 rounded-lg border border-surface-700 bg-[var(--sf2)] p-4">
-      <div className="grid grid-cols-[1fr_200px] gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_200px]">
         <FormField label="Nome" required>
           <Input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} placeholder="Horário de funcionamento" />
         </FormField>
@@ -76,7 +78,7 @@ function Formulario({ inicial, onSalvar, onCancelar }: {
         <Textarea rows={3} value={d.response_template} onChange={(e) => setD({ ...d, response_template: e.target.value })}
           placeholder="Oi, {{nome}}! Atendemos de segunda a sexta, das 8h às 18h." />
       </FormField>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Prioridade" hint="A maior vence quando duas casam.">
           <Input type="number" value={d.priority} onChange={(e) => setD({ ...d, priority: parseInt(e.target.value, 10) || 0 })} />
         </FormField>
@@ -87,8 +89,8 @@ function Formulario({ inicial, onSalvar, onCancelar }: {
       </div>
       {erro && <p role="alert" className="text-xs text-danger">{erro}</p>}
       <div className="flex justify-end gap-2">
-        <Button variant="neutral" size="sm" onClick={onCancelar} disabled={salvando}>Cancelar</Button>
-        <Button size="sm" onClick={() => void salvar()} loading={salvando}>Salvar resposta</Button>
+        <Button variant="neutral" size={tam} onClick={onCancelar} disabled={salvando}>Cancelar</Button>
+        <Button size={tam} onClick={() => void salvar()} loading={salvando}>Salvar resposta</Button>
       </div>
     </div>
   )
@@ -99,6 +101,7 @@ function Formulario({ inicial, onSalvar, onCancelar }: {
  * A IA continua disponível para o resto da conversa.
  */
 export function RespostasRapidas({ agentId }: { agentId: string }) {
+  const tam = useTamanhoDeToque()
   const { toast } = useToast()
   const { salvar } = useSalvamento()
   const [regras, setRegras] = useState<FaqRule[]>([])
@@ -150,7 +153,7 @@ export function RespostasRapidas({ agentId }: { agentId: string }) {
     <div className="space-y-2">
       {!nova && regras.length > 0 && (
         <div className="flex justify-end">
-          <Button variant="neutral" size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setNova(true)}>Nova resposta</Button>
+          <Button variant="neutral" size={tam} leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setNova(true)}>Nova resposta</Button>
         </div>
       )}
       {nova && <Formulario inicial={VAZIO} onSalvar={criar} onCancelar={() => setNova(false)} />}
@@ -165,8 +168,8 @@ export function RespostasRapidas({ agentId }: { agentId: string }) {
           priority: r.priority, enabled: r.enabled, cooldown_minutes: r.cooldown_minutes,
         }} onSalvar={(d) => editar(r.id, d)} onCancelar={() => setEditando(null)} />
       ) : (
-        <div key={r.id} className={cn('flex items-start gap-3 rounded-lg border border-surface-700 bg-[var(--sf2)] px-3.5 py-3', !r.enabled && 'opacity-70')}>
-          <div className="min-w-0 flex-1">
+        <div key={r.id} className={cn('flex flex-wrap items-start gap-x-3 gap-y-2 rounded-lg border border-surface-700 bg-[var(--sf2)] px-3.5 py-3', !r.enabled && 'opacity-70')}>
+          <div className="min-w-0 flex-1 basis-full sm:basis-auto">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-surface-100">{r.name}</p>
               <span className="text-2xs text-surface-500">{MODO[r.match_mode]}</span>
@@ -177,9 +180,11 @@ export function RespostasRapidas({ agentId }: { agentId: string }) {
             </p>
             <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-surface-300">“{r.response_template}”</p>
           </div>
-          <Switch checked={r.enabled} onChange={() => void alternar(r)} className="mt-0.5" />
-          <Button variant="ghost" size="sm" iconOnly aria-label={`Editar ${r.name}`} onClick={() => setEditando(r.id)}><Pencil className="h-3.5 w-3.5" /></Button>
-          <Button variant="ghost" size="sm" iconOnly aria-label={`Remover ${r.name}`} onClick={() => setExcluir(r.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+          <div className="flex w-full items-center justify-end gap-1 sm:w-auto">
+          <Switch checked={r.enabled} onChange={() => void alternar(r)} className="mr-1 sm:mt-0.5" />
+          <Button variant="ghost" size={tam} iconOnly aria-label={`Editar ${r.name}`} onClick={() => setEditando(r.id)}><Pencil className="h-3.5 w-3.5" /></Button>
+          <Button variant="ghost" size={tam} iconOnly aria-label={`Remover ${r.name}`} onClick={() => setExcluir(r.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+          </div>
         </div>
       ))}
       <ConfirmModal open={!!excluir} onClose={() => setExcluir(null)} onConfirm={() => void confirmarExclusao()}

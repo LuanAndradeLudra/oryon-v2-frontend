@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
 import { useToast } from '@/hooks/useToast'
 import { useRascunhoPendente, useSalvamento } from '../salvamentoContexto'
+import { useTamanhoDeToque } from '../useToque'
 
 // ─── BASE_CRITERIA (espelho) ───────────────────────────────────────────────
 // Em sincronia com agent-server/src/services/decisionCriteria.ts. Aparece
@@ -65,6 +66,7 @@ export function CriteriosDeDecisao({ agent, onAtualizar }: { agent: AgentConfig;
 }
 
 function Criterio({ c, agent, onAtualizar }: { c: Categoria; agent: AgentConfig; onAtualizar: (a: AgentConfig) => void }) {
+  const tam = useTamanhoDeToque()
   const { toast } = useToast()
   const { salvar, lerTexto, guardarTexto } = useSalvamento()
   const chave = `criterio:${c.key}`
@@ -109,7 +111,7 @@ function Criterio({ c, agent, onAtualizar }: { c: Categoria; agent: AgentConfig;
           <span className="block text-xs text-surface-400">{c.resumo}</span>
         </span>
         <span className={cn(
-          'inline-flex h-5 items-center rounded-xs border px-[7px] text-2xs font-semibold',
+          'inline-flex h-5 flex-shrink-0 items-center rounded-xs border px-[7px] text-2xs font-semibold whitespace-nowrap',
           personalizado ? 'border-transparent bg-accent-soft text-accent-dark' : 'border-surface-700 text-surface-400',
         )}>
           {personalizado ? 'Personalizado' : 'Padrão da Oryon'}
@@ -126,19 +128,19 @@ function Criterio({ c, agent, onAtualizar }: { c: Categoria; agent: AgentConfig;
             placeholder={BASE_CRITERIA[c.key]}
             className="font-mono text-xs leading-relaxed placeholder:whitespace-pre-line"
           />
-          <div className="flex items-center gap-2">
-            <p className="flex-1 text-xs text-surface-500">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <p className="basis-full text-xs text-surface-500 sm:flex-1 sm:basis-auto">
               {rascunho.trim() ? `${rascunho.length.toLocaleString('pt-BR')} caracteres` : 'Vazio = a IA segue o padrão da Oryon (o texto de exemplo acima).'}
             </p>
             {personalizado && (
-              <Button variant="ghost" size="sm" leftIcon={<RotateCcw className="h-3.5 w-3.5" />} onClick={() => void gravar(null)} disabled={salvando}>
+              <Button variant="ghost" size={tam} leftIcon={<RotateCcw className="h-3.5 w-3.5" />} onClick={() => void gravar(null)} disabled={salvando}>
                 Voltar ao padrão
               </Button>
             )}
             {sujo && (
-              <Button variant="ghost" size="sm" onClick={() => setRascunho(salvo)} disabled={salvando}>Descartar</Button>
+              <Button variant="ghost" size={tam} onClick={() => setRascunho(salvo)} disabled={salvando}>Descartar</Button>
             )}
-            <Button size="sm" onClick={() => void gravar(rascunho.trim() ? rascunho : null)} disabled={!sujo} loading={salvando}>
+            <Button size={tam} onClick={() => void gravar(rascunho.trim() ? rascunho : null)} disabled={!sujo} loading={salvando}>
               Salvar
             </Button>
           </div>

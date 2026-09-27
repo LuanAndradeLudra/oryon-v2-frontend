@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { useToast } from '@/hooks/useToast'
 import { useSalvamento } from '../salvamentoContexto'
+import { useTamanhoDeToque } from '../useToque'
 
 const METODOS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
 
@@ -59,6 +60,7 @@ function FormularioIntegracao({ inicial, onSalvar, onCancelar }: {
   onSalvar: (f: Formulario) => Promise<void>
   onCancelar: () => void
 }) {
+  const tam = useTamanhoDeToque()
   const [f, setF] = useState(inicial)
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -72,7 +74,7 @@ function FormularioIntegracao({ inicial, onSalvar, onCancelar }: {
 
   return (
     <div className="space-y-4 rounded-lg border border-surface-700 bg-[var(--sf2)] p-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Nome interno" hint="Sem espaços. É como o agente chama a integração." required>
           <Input value={f.name} onChange={(e) => set('name', e.target.value.replace(/\s/g, '_'))} placeholder="verificar_disponibilidade" className="font-mono" />
         </FormField>
@@ -80,7 +82,7 @@ function FormularioIntegracao({ inicial, onSalvar, onCancelar }: {
           <Input value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="Consulta horários livres na agenda" />
         </FormField>
       </div>
-      <div className="grid grid-cols-[120px_1fr] gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[120px_1fr]">
         <FormField label="Método">
           <Select value={f.method} onChange={(e) => set('method', e.target.value as AgentTool['method'])}>
             {METODOS.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -90,7 +92,7 @@ function FormularioIntegracao({ inicial, onSalvar, onCancelar }: {
           <Input value={f.url} onChange={(e) => set('url', e.target.value)} placeholder="https://api.suaempresa.com/horarios?data={{params.data}}" className="font-mono" />
         </FormField>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Cabeçalhos (JSON)" hint="Use {{secrets.nome}} para chaves guardadas com segurança.">
           <Textarea rows={4} value={f.headers} onChange={(e) => set('headers', e.target.value)} className="font-mono text-xs" />
         </FormField>
@@ -103,8 +105,8 @@ function FormularioIntegracao({ inicial, onSalvar, onCancelar }: {
       </FormField>
       {erro && <p className="text-xs text-danger" role="alert">{erro}</p>}
       <div className="flex justify-end gap-2">
-        <Button variant="neutral" size="sm" onClick={onCancelar} disabled={salvando}>Cancelar</Button>
-        <Button size="sm" onClick={() => void salvar()} loading={salvando} disabled={!f.name || !f.url}>Salvar integração</Button>
+        <Button variant="neutral" size={tam} onClick={onCancelar} disabled={salvando}>Cancelar</Button>
+        <Button size={tam} onClick={() => void salvar()} loading={salvando} disabled={!f.name || !f.url}>Salvar integração</Button>
       </div>
     </div>
   )
@@ -118,6 +120,7 @@ export function IntegracoesHttp({ agent, onFerramentas }: {
   agent: AgentConfigWithTools
   onFerramentas: (t: AgentTool[]) => void
 }) {
+  const tam = useTamanhoDeToque()
   const { toast } = useToast()
   const { salvar } = useSalvamento()
   const [novo, setNovo] = useState(false)
@@ -166,7 +169,7 @@ export function IntegracoesHttp({ agent, onFerramentas }: {
     <div className="space-y-2">
       {!novo && agent.tools.length > 0 && (
         <div className="flex justify-end">
-          <Button variant="neutral" size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setNovo(true)}>Nova integração</Button>
+          <Button variant="neutral" size={tam} leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setNovo(true)}>Nova integração</Button>
         </div>
       )}
       {novo && <FormularioIntegracao inicial={VAZIO} onSalvar={criar} onCancelar={() => setNovo(false)} />}
@@ -179,22 +182,24 @@ export function IntegracoesHttp({ agent, onFerramentas }: {
           <FormularioIntegracao key={t.id} inicial={paraFormulario(t)} onSalvar={(f) => editar(t.id, f)} onCancelar={() => setEditando(null)} />
         ) : (
           <div key={t.id} className={cn('rounded-lg border border-surface-700 bg-[var(--sf2)]', !t.enabled && 'opacity-70')}>
-            <div className="flex items-center gap-3 px-3.5 py-2.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-2.5">
               <ChipMetodo metodo={t.method} />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-[calc(100%-4rem)] sm:basis-auto">
                 <p className="truncate font-mono text-sm font-semibold text-surface-100">{t.name}</p>
                 <p className="truncate text-xs text-surface-400">{t.description}</p>
               </div>
-              <Switch checked={t.enabled} onChange={() => void alternar(t)} />
-              <Button variant="ghost" size="sm" iconOnly aria-label={`Editar ${t.name}`} onClick={() => setEditando(t.id)}><Pencil className="h-3.5 w-3.5" /></Button>
-              <Button variant="ghost" size="sm" iconOnly aria-label={`Remover ${t.name}`} onClick={() => setExcluir(t.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-              <Button variant="ghost" size="sm" iconOnly aria-label={aberto === t.id ? 'Recolher detalhes' : 'Ver detalhes'} aria-expanded={aberto === t.id}
+              <div className="flex w-full items-center justify-end gap-1 sm:w-auto">
+              <Switch checked={t.enabled} onChange={() => void alternar(t)} className="mr-1" />
+              <Button variant="ghost" size={tam} iconOnly aria-label={`Editar ${t.name}`} onClick={() => setEditando(t.id)}><Pencil className="h-3.5 w-3.5" /></Button>
+              <Button variant="ghost" size={tam} iconOnly aria-label={`Remover ${t.name}`} onClick={() => setExcluir(t.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              <Button variant="ghost" size={tam} iconOnly aria-label={aberto === t.id ? 'Recolher detalhes' : 'Ver detalhes'} aria-expanded={aberto === t.id}
                 onClick={() => setAberto(aberto === t.id ? null : t.id)}>
                 <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', aberto === t.id && 'rotate-180')} />
               </Button>
+              </div>
             </div>
             {aberto === t.id && (
-              <dl className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-1.5 border-t border-surface-700 px-3.5 py-3 text-xs">
+              <dl className="grid grid-cols-1 gap-x-3 gap-y-1 sm:grid-cols-[110px_1fr] sm:gap-y-1.5 border-t border-surface-700 px-3.5 py-3 text-xs">
                 <dt className="text-surface-500">Endereço</dt><dd className="break-all font-mono text-surface-200">{t.url}</dd>
                 {t.parameters.length > 0 && <><dt className="text-surface-500">Parâmetros</dt><dd className="text-surface-200">{t.parameters.map((p) => `${p.name}${p.required ? '*' : ''}`).join(', ')}</dd></>}
                 {t.response_hint && <><dt className="text-surface-500">Resposta</dt><dd className="text-surface-200">{t.response_hint}</dd></>}

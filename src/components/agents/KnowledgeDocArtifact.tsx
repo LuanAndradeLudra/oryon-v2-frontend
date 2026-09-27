@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { renderPromptLine } from './PromptArtifact'
+import { useTamanhoDeToque } from './pagina/useToque'
 
 // ─── KnowledgeDocArtifact ────────────────────────────────────────────────────
 // Visual editor for knowledge base documents and brand files,
@@ -26,6 +27,7 @@ export function KnowledgeDocArtifact({
   saving?: boolean
   readOnly?: boolean
 }) {
+  const tam = useTamanhoDeToque()
   const [editing, setEditing] = useState(false)
   const lines = content.split('\n')
 
@@ -82,10 +84,10 @@ export function KnowledgeDocArtifact({
       {!readOnly && (onSave || onCancel) && (
         <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-surface-700 flex-shrink-0">
           {onCancel && (
-            <Button type="button" variant="neutral" size="sm" onClick={onCancel}>Fechar</Button>
+            <Button type="button" variant="neutral" size={tam} onClick={onCancel}>Fechar</Button>
           )}
           {onSave && (
-            <Button type="button" size="sm" onClick={onSave} loading={saving}>Salvar alterações</Button>
+            <Button type="button" size={tam} onClick={onSave} loading={saving}>Salvar alterações</Button>
           )}
         </div>
       )}

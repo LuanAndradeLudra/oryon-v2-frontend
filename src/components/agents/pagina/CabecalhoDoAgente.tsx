@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
-import { ConfirmModal } from '@/components/ui/Modal'
+import { ConfirmModal, Modal } from '@/components/ui/Modal'
+import { FormField } from '@/components/ui/FormField'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { useToast } from '@/hooks/useToast'
 import { IndicadorDeSalvamento } from './SalvamentoDoAgente'
 import { useSalvamento } from './salvamentoContexto'
@@ -20,13 +22,16 @@ import { StatusDoAgente } from './StatusDoAgente'
  * rascunho" e "Excluir" ficam no menu, porque são raros.
  */
 export function CabecalhoDoAgente({
-  agent, onAtualizar, testado, testeAberto, onAlternarTeste,
+  agent, onAtualizar, testado, testeAberto, onAlternarTeste, movel = false,
 }: {
   agent: AgentConfigWithTools
   onAtualizar: (a: AgentConfig) => void
   testado: boolean
   testeAberto: boolean
   onAlternarTeste: () => void
+  /** Celular: cabeçalho da casca móvel (seta, nome, Testar, menu) + faixa de
+   *  identidade com o interruptor Ligado. */
+  movel?: boolean
 }) {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -34,6 +39,7 @@ export function CabecalhoDoAgente({
   const [menu, setMenu] = useState(false)
   const [confirmar, setConfirmar] = useState<null | 'rascunho' | 'excluir'>(null)
   const [ocupado, setOcupado] = useState(false)
+  const [novoNome, setNovoNome] = useState<string | null>(null)
   const numero = agent.channels?.whatsapp?.number
 
   const mudarStatus = async (status: AgentConfig['status']) => {
@@ -59,6 +65,143 @@ export function CabecalhoDoAgente({
       setOcupado(false)
       setConfirmar(null)
     }
+  }
+
+  const itensDoMenu = (
+    <>
+      {movel && (
+        <DropdownItem icon={Pencil} onClick={() => { setMenu(false); setNovoNome(agent.name) }}>
+          Renomear
+        </DropdownItem>
+      )}
+      <DropdownItem icon={Copy} onClick={() => { setMenu(false); void navigator.clipboard?.writeText(agent.name).catch(() => {}) }}>
+        Copiar nome
+      </DropdownItem>
+      {agent.status !== 'draft' && (
+        <DropdownItem icon={FileText} onClick={() => { setMenu(false); setConfirmar('rascunho') }}>
+          Voltar para rascunho
+        </DropdownItem>
+      )}
+      <DropdownSeparator />
+      <DropdownItem icon={Trash2} danger onClick={() => { setMenu(false); setConfirmar('excluir') }}>
+        Excluir agente
+      </DropdownItem>
+    </>
+  )
+
+  const modais = (
+    <>
+        <ConfirmModal
+          open={confirmar === 'rascunho'}
+          onClose={() => setConfirmar(null)}
+          onConfirm={() => { setConfirmar(null); void mudarStatus('draft') }}
+          title="Voltar para rascunho"
+          description="O agente deixa de responder conversas até ser ligado de novo. Nada da configuração se perde."
+          impact={{ label: `Agente "${agent.name}"`, tone: 'warning' }}
+          confirmLabel="Voltar para rascunho"
+        />
+        <ConfirmModal
+          open={confirmar === 'excluir'}
+          onClose={() => setConfirmar(null)}
+          onConfirm={() => void excluir()}
+          title="Excluir agente"
+          description="O agente, as instruções, as regras e a base de conhecimento dele são apagados. Isso não pode ser desfeito."
+          impact={{ label: `Agente "${agent.name}"`, tone: 'danger' }}
+          confirmLabel="Excluir agente"
+          danger
+          loading={ocupado && confirmar === 'excluir'}
+        />
+      <Modal open={novoNome !== null} onClose={() => setNovoNome(null)} title="Renomear agente" className="max-w-sm">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            const v = (novoNome ?? '').trim()
+            if (!v || v === agent.name) { setNovoNome(null); return }
+            salvar(() => updateAgent(agent.id, { name: v }))
+              .then((a) => { onAtualizar(a); setNovoNome(null) })
+              .catch(() => toast('Não foi possível renomear o agente.', 'error'))
+          }}
+        >
+          <FormField label="Nome">
+            <Input autoFocus value={novoNome ?? ''} onChange={(e) => setNovoNome(e.target.value)} />
+          </FormField>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="neutral" onClick={() => setNovoNome(null)}>Cancelar</Button>
+            <Button type="submit">Salvar</Button>
+          </div>
+        </form>
+      </Modal>
+    </>
+  )
+
+  if (movel) {
+    return (
+      <>
+        <MobilePageHeader
+          title={agent.name}
+          onBack={() => navigate('/agents')}
+          hideBell
+          className="sticky top-0 z-20"
+          rightActions={
+            <>
+              <Button
+                size="md"
+                iconOnly
+                variant={!testado ? 'primary' : 'ghost'}
+                aria-label="Testar o agente"
+                aria-pressed={testeAberto}
+                onClick={onAlternarTeste}
+              >
+                <Sparkles className="w-[18px] h-[18px]" />
+              </Button>
+              <Dropdown
+                open={menu}
+                onClose={() => setMenu(false)}
+                align="right"
+                className="w-56"
+                anchor={
+                  <Button size="md" variant="ghost" iconOnly aria-label="Mais ações" aria-expanded={menu} onClick={() => setMenu((v) => !v)}>
+                    <MoreHorizontal className="w-5 h-5" />
+                  </Button>
+                }
+              >
+                {itensDoMenu}
+              </Dropdown>
+            </>
+          }
+        />
+        <div className="flex flex-shrink-0 items-center gap-3 border-b border-surface-700 px-4 py-3">
+          <AgentIcon iconId={agent.icon} dashed={agent.status === 'draft'} className="w-10 h-10" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <StatusDoAgente status={agent.status} />
+              {!testado && (
+                <span className="inline-flex items-center h-5 px-[7px] rounded-xs text-2xs font-semibold whitespace-nowrap bg-status-pending-bg text-status-pending border border-status-pending-border">
+                  Ainda não testado
+                </span>
+              )}
+            </div>
+            {(agent.objective || numero) && (
+              <p className="mt-1 line-clamp-2 text-xs leading-snug text-surface-400">
+                {numero && <span className="tabular-nums">{numero}</span>}
+                {numero && agent.objective && ' · '}
+                {agent.objective}
+              </p>
+            )}
+          </div>
+          <label className="flex flex-shrink-0 flex-col items-center gap-1 text-2xs font-semibold text-surface-300">
+            <Switch
+              checked={agent.status === 'active'}
+              disabled={ocupado}
+              onChange={(ligar) => void mudarStatus(ligar ? 'active' : 'paused')}
+            />
+            {agent.status === 'active' ? 'Ligado' : 'Desligado'}
+          </label>
+        </div>
+        {modais}
+      </>
+    )
   }
 
   return (
@@ -118,41 +261,11 @@ export function CabecalhoDoAgente({
             </Button>
           }
         >
-          <DropdownItem icon={Copy} onClick={() => { setMenu(false); void navigator.clipboard?.writeText(agent.name).catch(() => {}) }}>
-            Copiar nome
-          </DropdownItem>
-          {agent.status !== 'draft' && (
-            <DropdownItem icon={FileText} onClick={() => { setMenu(false); setConfirmar('rascunho') }}>
-              Voltar para rascunho
-            </DropdownItem>
-          )}
-          <DropdownSeparator />
-          <DropdownItem icon={Trash2} danger onClick={() => { setMenu(false); setConfirmar('excluir') }}>
-            Excluir agente
-          </DropdownItem>
+          {itensDoMenu}
         </Dropdown>
       </div>
 
-      <ConfirmModal
-        open={confirmar === 'rascunho'}
-        onClose={() => setConfirmar(null)}
-        onConfirm={() => { setConfirmar(null); void mudarStatus('draft') }}
-        title="Voltar para rascunho"
-        description="O agente deixa de responder conversas até ser ligado de novo. Nada da configuração se perde."
-        impact={{ label: `Agente "${agent.name}"`, tone: 'warning' }}
-        confirmLabel="Voltar para rascunho"
-      />
-      <ConfirmModal
-        open={confirmar === 'excluir'}
-        onClose={() => setConfirmar(null)}
-        onConfirm={() => void excluir()}
-        title="Excluir agente"
-        description="O agente, as instruções, as regras e a base de conhecimento dele são apagados. Isso não pode ser desfeito."
-        impact={{ label: `Agente "${agent.name}"`, tone: 'danger' }}
-        confirmLabel="Excluir agente"
-        danger
-        loading={ocupado && confirmar === 'excluir'}
-      />
+      {modais}
     </header>
   )
 }

@@ -87,17 +87,18 @@ function hora(d: Date) {
 }
 
 /** O indicador único — cabeçalho da página. */
-export function IndicadorDeSalvamento({ className }: { className?: string }) {
+/** `curto`: a barra do celular não tem largura para "Alterações não salvas em…". */
+export function IndicadorDeSalvamento({ className, curto = false }: { className?: string; curto?: boolean }) {
   const { fase, salvoEm, erro, pendentes } = useSalvamento()
   let conteudo: ReactNode
   if (fase === 'salvando') {
     conteudo = <><Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />Salvando…</>
   } else if (fase === 'erro') {
-    conteudo = <span className="inline-flex items-center gap-1.5 text-danger" title={erro ?? undefined}><AlertCircle className="w-3.5 h-3.5" aria-hidden />Não foi possível salvar</span>
+    conteudo = <span className="inline-flex items-center gap-1.5 text-danger" title={erro ?? undefined}><AlertCircle className="w-3.5 h-3.5" aria-hidden />{curto ? 'Erro ao salvar' : 'Não foi possível salvar'}</span>
   } else if (pendentes.length > 0) {
-    conteudo = <span className="inline-flex items-center gap-1.5 text-status-pending"><PencilLine className="w-3.5 h-3.5" aria-hidden />Alterações não salvas em {pendentes.join(' e ')}</span>
+    conteudo = <span className="inline-flex items-center gap-1.5 text-status-pending"><PencilLine className="w-3.5 h-3.5" aria-hidden />{curto ? 'Não salvo' : <>Alterações não salvas em {pendentes.join(' e ')}</>}</span>
   } else if (salvoEm) {
-    conteudo = <><Check className="w-3.5 h-3.5 text-status-active" aria-hidden />Salvo às {hora(salvoEm)}</>
+    conteudo = <><Check className="w-3.5 h-3.5 text-status-active" aria-hidden />{curto ? 'Salvo' : 'Salvo às'} {hora(salvoEm)}</>
   } else {
     conteudo = null
   }

@@ -21,6 +21,7 @@ import {
   type HandoffTemplateVariants,
   type HandoffKeywordTiers,
 } from '@/services/agentsApi'
+import { useTamanhoDeToque } from './pagina/useToque'
 
 // ─── Rule Modal shell ─────────────────────────────────────────────────────────
 
@@ -175,6 +176,7 @@ function RuleCard({
    *  qual regra vale quando duas casam. */
   onMove: (delta: -1 | 1) => void
 }) {
+  const tam = useTamanhoDeToque()
   const [expanded, setExpanded] = useState(false)
   const actionCfg = ACTION_OPTIONS.find(a => a.value === rule.action)
 
@@ -186,7 +188,7 @@ function RuleCard({
         !rule.enabled && 'opacity-70',
       )}
     >
-      <div className="flex items-center gap-3 px-3.5 py-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-3">
         <span className="w-6 h-6 rounded-sm bg-surface-800 border border-surface-700 flex items-center justify-center text-2xs font-bold tabular-nums text-surface-400 flex-shrink-0" aria-label={`Ordem ${index + 1}`}>
           {index + 1}
         </span>
@@ -217,21 +219,21 @@ function RuleCard({
           </p>
         </div>
 
-        <div className="flex items-center gap-0.5 flex-shrink-0">
-          <Button variant="ghost" size="sm" iconOnly aria-label="Subir regra" title="Subir" disabled={index === 0} onClick={() => onMove(-1)}>
+        <div className="flex w-full items-center justify-end gap-0.5 flex-shrink-0 border-t border-surface-700 pt-2 sm:w-auto sm:border-t-0 sm:pt-0">
+          <Button variant="ghost" size={tam} iconOnly aria-label="Subir regra" title="Subir" disabled={index === 0} onClick={() => onMove(-1)}>
             <ArrowUp className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" iconOnly aria-label="Descer regra" title="Descer" disabled={index === total - 1} onClick={() => onMove(1)}>
+          <Button variant="ghost" size={tam} iconOnly aria-label="Descer regra" title="Descer" disabled={index === total - 1} onClick={() => onMove(1)}>
             <ArrowDown className="w-3.5 h-3.5" />
           </Button>
           <Switch checked={rule.enabled} onChange={onToggle} className="mx-1.5" />
-          <Button variant="ghost" size="sm" iconOnly aria-label={`Editar ${rule.name}`} onClick={onEdit}>
+          <Button variant="ghost" size={tam} iconOnly aria-label={`Editar ${rule.name}`} onClick={onEdit}>
             <Edit3 className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" iconOnly aria-label={`Excluir ${rule.name}`} onClick={onDelete}>
+          <Button variant="ghost" size={tam} iconOnly aria-label={`Excluir ${rule.name}`} onClick={onDelete}>
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" iconOnly aria-label={expanded ? 'Recolher detalhes' : 'Ver detalhes'} aria-expanded={expanded} onClick={() => setExpanded(v => !v)}>
+          <Button variant="ghost" size={tam} iconOnly aria-label={expanded ? 'Recolher detalhes' : 'Ver detalhes'} aria-expanded={expanded} onClick={() => setExpanded(v => !v)}>
             <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
           </Button>
         </div>
@@ -246,7 +248,7 @@ function RuleCard({
             transition={{ duration: 0.15 }}
             className="overflow-hidden border-t border-surface-700"
           >
-            <dl className="px-3.5 py-3 grid grid-cols-[130px_1fr] gap-x-3 gap-y-2 text-xs">
+            <dl className="px-3.5 py-3 grid grid-cols-1 gap-x-3 gap-y-1 text-xs sm:grid-cols-[130px_1fr] sm:gap-y-2">
               <dt className="text-surface-500">Palavras ({rule.matchMode === 'any_keyword' ? 'qualquer uma' : rule.matchMode === 'all_keywords' ? 'todas' : 'frase exata'})</dt>
               <dd className="flex flex-wrap gap-1">
                 {rule.keywords.map(kw => (
@@ -453,7 +455,7 @@ function DraftEditor({
   }
 
   return (
-    <div className="space-y-4 bg-surface-900/80 border border-surface-700 rounded-2xl p-4">
+    <div className="space-y-4 rounded-lg border border-surface-700 bg-[var(--sf2)] p-3 sm:p-4">
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-brand-400" />
         <p className="text-sm font-semibold text-surface-100">Revisar e salvar regra</p>
@@ -473,7 +475,7 @@ function DraftEditor({
       {/* Action selector */}
       <div>
         <label className="block text-xs font-medium text-surface-400 mb-2">Ação ao detectar</label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
           {ACTION_OPTIONS.map(opt => (
             <button
               key={opt.value}
@@ -724,6 +726,7 @@ function AIRuleBuilder({
   onRuleCreated: (draft: HandoffRuleDraft) => void
   onCancel: () => void
 }) {
+  const tam = useTamanhoDeToque()
   const uid = useId()
   const [messages, setMessages] = useState<BuilderMessage[]>([
     {
@@ -863,7 +866,7 @@ function AIRuleBuilder({
         {/* Regenerate button */}
         {editingDraft && draft && !savingDraft && (
           <div className="flex justify-center">
-            <Button variant="ghost" size="sm" onClick={handleRegenerate} loading={generating} leftIcon={<Sparkles className="w-3.5 h-3.5" />}>
+            <Button variant="ghost" size={tam} onClick={handleRegenerate} loading={generating} leftIcon={<Sparkles className="w-3.5 h-3.5" />}>
               Gerar outra sugestão
             </Button>
           </div>
@@ -963,6 +966,7 @@ export function HandoffRulesPanel({
   businessContext,
   onChange,
 }: HandoffRulesPanelProps) {
+  const tam = useTamanhoDeToque()
   const [modal, setModal] = useState<ModalMode>(null)
   const [editingRule, setEditingRule] = useState<HandoffRule | null>(null)
 
@@ -1034,7 +1038,7 @@ export function HandoffRulesPanel({
     <div className="flex flex-col h-full min-h-0">
       {/* Always-visible list */}
       <div className="flex flex-col h-full min-h-0">
-        {rules.length > 0 && <div className="flex items-center justify-between gap-3 mb-3 flex-shrink-0">
+        {rules.length > 0 && <div className="flex flex-col gap-2 mb-3 flex-shrink-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <p className="text-xs text-surface-400">
             {rules.length === 0
               ? 'Nenhuma regra ainda'
@@ -1042,10 +1046,10 @@ export function HandoffRulesPanel({
           </p>
           {rules.length > 0 && (
             <div className="flex items-center gap-2">
-              <Button variant="neutral" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setModal('manual')}>
+              <Button variant="neutral" size={tam} leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setModal('manual')}>
                 Escrever regra
               </Button>
-              <Button variant="secondary" size="sm" leftIcon={<Sparkles className="w-3.5 h-3.5" />} onClick={() => setModal('ai_builder')}>
+              <Button variant="secondary" size={tam} leftIcon={<Sparkles className="w-3.5 h-3.5" />} onClick={() => setModal('ai_builder')}>
                 Criar com IA
               </Button>
             </div>
@@ -1061,7 +1065,7 @@ export function HandoffRulesPanel({
                 hint="Diga em que situações a IA deve chamar uma pessoa, redirecionar ou responder algo fixo. Descreva o caso e a IA monta a regra."
                 action={{ label: 'Criar com IA', onClick: () => setModal('ai_builder') }}
               />
-              <Button variant="ghost" size="sm" className="mt-2" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setModal('manual')}>
+              <Button variant="ghost" size={tam} className="mt-2" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setModal('manual')}>
                 Ou escrever a regra à mão
               </Button>
             </div>

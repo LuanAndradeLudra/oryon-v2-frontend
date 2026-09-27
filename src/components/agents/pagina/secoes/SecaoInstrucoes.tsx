@@ -8,8 +8,10 @@ import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
 import { useToast } from '@/hooks/useToast'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { useRascunhoPendente, useSalvamento } from '../salvamentoContexto'
 import { CabecalhoDaSecao } from './Estrutura'
+import { useTamanhoDeToque } from '../useToque'
 
 const CHAVE = 'instrucoes'
 
@@ -19,6 +21,8 @@ const CHAVE = 'instrucoes'
  * para quem está sendo atendido. O rascunho sobrevive à troca de seção.
  */
 export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWithTools; onAtualizar: (a: AgentConfig) => void }) {
+  const tam = useTamanhoDeToque()
+  const movel = useIsMobile()
   const { user } = useAuth()
   const { toast } = useToast()
   const { salvar, lerTexto, guardarTexto } = useSalvamento()
@@ -81,17 +85,17 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
     <div>
       <CabecalhoDaSecao
         id="instrucoes"
-        acoes={editando ? (
+        acoes={editando ? (movel ? undefined : (
           <>
-            <Button variant="ghost" size="sm" onClick={descartar} disabled={salvando}>
+            <Button variant="ghost" size={tam} onClick={descartar} disabled={salvando}>
               {sujo ? 'Descartar alterações' : 'Cancelar'}
             </Button>
-            <Button size="sm" onClick={() => void gravar()} disabled={!sujo} loading={salvando}>
+            <Button size={tam} onClick={() => void gravar()} disabled={!sujo} loading={salvando}>
               Salvar instruções
             </Button>
           </>
-        ) : (
-          <Button variant="neutral" size="sm" leftIcon={<Pencil className="h-3.5 w-3.5" />} onClick={() => setEditando(true)}>
+        )) : (
+          <Button variant="neutral" size={tam} leftIcon={<Pencil className="h-3.5 w-3.5" />} onClick={() => setEditando(true)}>
             Editar
           </Button>
         )}
@@ -102,7 +106,7 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
           variant="warning"
           className="mb-4"
           action={
-            <Button size="sm" variant="neutral" onClick={() => void sincronizar()} loading={sincronizando} leftIcon={<Sparkles className="h-3.5 w-3.5" />}>
+            <Button size={tam} variant="neutral" onClick={() => void sincronizar()} loading={sincronizando} leftIcon={<Sparkles className="h-3.5 w-3.5" />}>
               Sincronizar
             </Button>
           }
@@ -112,11 +116,11 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
       )}
 
       <div className="overflow-hidden rounded-lg border border-surface-700 bg-[var(--sf2)]">
-        <div className="flex items-center gap-3 border-b border-surface-700 px-4 py-2 text-xs text-surface-400">
-          <span className="font-semibold text-surface-200">{editando ? 'Editando' : 'Em uso'}</span>
-          <span aria-hidden>·</span>
-          <span>atualizadas em {new Date(agent.updated_at).toLocaleDateString('pt-BR')}</span>
-          <span className="ml-auto font-mono tabular-nums text-surface-500">{(editando ? rascunho : agent.system_prompt).length.toLocaleString('pt-BR')} caracteres</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-surface-700 px-4 py-2 text-xs text-surface-400">
+          <span className="whitespace-nowrap font-semibold text-surface-200">{editando ? 'Editando' : 'Em uso'}</span>
+          <span aria-hidden className="hidden sm:inline">·</span>
+          <span className="whitespace-nowrap">atualizadas em {new Date(agent.updated_at).toLocaleDateString('pt-BR')}</span>
+          <span className="ml-auto whitespace-nowrap font-mono tabular-nums text-surface-500">{(editando ? rascunho : agent.system_prompt).length.toLocaleString('pt-BR')} caracteres</span>
         </div>
         {editando ? (
           <Textarea
@@ -125,7 +129,7 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
             onChange={(e) => setRascunho(e.target.value)}
             rows={24}
             autoFocus
-            className="min-h-[420px] rounded-none border-0 bg-transparent px-5 py-4 font-mono text-[13px] leading-relaxed focus:ring-0"
+            className="min-h-[60dvh] rounded-none border-0 bg-transparent px-4 py-4 font-sans leading-relaxed focus:ring-0 sm:min-h-[420px] sm:px-5 sm:font-mono sm:text-[13px]"
           />
         ) : agent.system_prompt.trim() ? (
           <div className="flex flex-col gap-3 px-5 py-4 text-sm leading-relaxed text-surface-200">
@@ -140,8 +144,19 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
 
       {temHub && !desatualizado && !editando && (
         <div className="mt-3">
-          <Button variant="ghost" size="sm" onClick={() => void sincronizar()} loading={sincronizando} leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
+          <Button variant="ghost" size={tam} onClick={() => void sincronizar()} loading={sincronizando} leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
             Reaplicar o Contexto da IA
+          </Button>
+        </div>
+      )}
+      {/* Celular: editando um texto longo, salvar fica sempre à mão. */}
+      {editando && movel && (
+        <div className="sticky bottom-0 z-10 -mx-4 mt-4 flex items-center gap-2 border-t border-surface-700 bg-surface-950 px-4 py-3">
+          <Button variant="neutral" size="md" className="flex-1" onClick={descartar} disabled={salvando}>
+            {sujo ? 'Descartar' : 'Cancelar'}
+          </Button>
+          <Button size="md" className="flex-1" onClick={() => void gravar()} disabled={!sujo} loading={salvando}>
+            Salvar
           </Button>
         </div>
       )}

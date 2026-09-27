@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { useSalvamento } from '../salvamentoContexto'
 import { CabecalhoDaSecao } from './Estrutura'
+import { useTamanhoDeToque } from '../useToque'
 
 const ACEITOS = '.pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg,.webp'
 
@@ -72,6 +73,7 @@ function ProgressoDoEnvio({ nome }: { nome: string }) {
 }
 
 export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTools; onMudou: () => void }) {
+  const tam = useTamanhoDeToque()
   const { toast } = useToast()
   const { salvar } = useSalvamento()
   const [docs, setDocs] = useState<AgentKnowledgeDoc[]>([])
@@ -207,10 +209,10 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
         id="conhecimento"
         acoes={
           <>
-            <Button variant="neutral" size="sm" leftIcon={<PenLine className="h-3.5 w-3.5" />} onClick={() => setCompondo(true)}>
+            <Button variant="neutral" size={tam} leftIcon={<PenLine className="h-3.5 w-3.5" />} onClick={() => setCompondo(true)}>
               Escrever texto
             </Button>
-            <Button size="sm" leftIcon={<FileUp className="h-3.5 w-3.5" />} onClick={() => arquivoNovo.current?.click()} disabled={!!enviando}>
+            <Button size={tam} leftIcon={<FileUp className="h-3.5 w-3.5" />} onClick={() => arquivoNovo.current?.click()} disabled={!!enviando}>
               Enviar arquivo
             </Button>
           </>
@@ -242,11 +244,11 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
           {docs.map((doc) => {
             const previa = (doc.content_preview ?? '').replace(/\s+/g, ' ').trim()
             return (
-              <li key={doc.id} className="flex items-start gap-3 bg-[var(--sf2)] px-4 py-3">
+              <li key={doc.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 bg-[var(--sf2)] px-4 py-3">
                 <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-surface-500" aria-hidden />
-                <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <p className="truncate text-sm font-semibold text-surface-100">{doc.document_name}</p>
+                <div className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <p className="min-w-0 truncate text-sm font-semibold text-surface-100">{doc.document_name}</p>
                     <ChipDoDocumento status={doc.status} />
                   </div>
                   <p className="mt-0.5 text-xs text-surface-500">
@@ -254,17 +256,17 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
                   </p>
                   {previa && <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-surface-400">{previa}</p>}
                 </div>
-                <div className="flex flex-shrink-0 items-center gap-1">
-                  <Button variant="ghost" size="sm" loading={abrindo === doc.id} leftIcon={<Eye className="h-3.5 w-3.5" />} onClick={() => void abrir(doc.id)}>
+                <div className="flex w-full flex-shrink-0 items-center justify-end gap-1 sm:w-auto">
+                  <Button variant="ghost" size={tam} loading={abrindo === doc.id} leftIcon={<Eye className="h-3.5 w-3.5" />} onClick={() => void abrir(doc.id)}>
                     Abrir
                   </Button>
                   {doc.source_type === 'file' && (
-                    <Button variant="ghost" size="sm" iconOnly aria-label={`Trocar o arquivo de ${doc.document_name}`} title="Trocar arquivo"
+                    <Button variant="ghost" size={tam} iconOnly aria-label={`Trocar o arquivo de ${doc.document_name}`} title="Trocar arquivo"
                       onClick={() => { setAtualizando(doc.id); arquivoTroca.current?.click() }} disabled={!!enviando}>
                       <FileUp className="h-3.5 w-3.5" />
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" iconOnly aria-label={`Excluir ${doc.document_name}`} title="Excluir" onClick={() => setExcluir(doc.id)}>
+                  <Button variant="ghost" size={tam} iconOnly aria-label={`Excluir ${doc.document_name}`} title="Excluir" onClick={() => setExcluir(doc.id)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>

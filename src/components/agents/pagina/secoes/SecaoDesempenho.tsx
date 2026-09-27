@@ -89,7 +89,26 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
           ) : linhas.length === 0 ? (
             <EmptyState icon={BarChart3} title="Nenhuma ferramenta chamada no período" hint="Quando o agente usar integrações ou skills, as chamadas aparecem aqui." />
           ) : (
-            <div className="overflow-hidden rounded-lg border border-surface-700">
+            <>
+            {/* Celular: uma linha por ferramenta, sem tabela de quatro colunas. */}
+            <ul className="divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700 sm:hidden">
+              {linhas.map((r) => {
+                const taxa = r.total > 0 ? (r.successes / r.total) * 100 : 0
+                return (
+                  <li key={r.tool_name} className="bg-[var(--sf2)] px-4 py-3">
+                    <p className="break-all font-mono text-xs text-surface-100">{r.tool_name}</p>
+                    <p className="mt-1 text-xs text-surface-400 tabular-nums">
+                      {r.total.toLocaleString('pt-BR')} chamadas ·{' '}
+                      <span className={taxa >= 95 ? 'text-status-active' : taxa >= 80 ? 'text-status-pending' : 'text-danger'}>
+                        {taxa.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% de sucesso
+                      </span>
+                      {r.avg_duration_ms != null && <> · {Math.round(r.avg_duration_ms).toLocaleString('pt-BR')} ms</>}
+                    </p>
+                  </li>
+                )
+              })}
+            </ul>
+            <div className="hidden overflow-hidden rounded-lg border border-surface-700 sm:block">
               <table className="w-full text-sm">
                 <caption className="sr-only">Chamadas por ferramenta</caption>
                 <thead className="bg-[var(--sf2)] text-left text-3xs font-bold uppercase tracking-[.1em] text-surface-500">
@@ -127,6 +146,7 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
                 </tfoot>
               </table>
             </div>
+            </>
           )}
         </Bloco>
       </div>
