@@ -291,7 +291,19 @@ export interface AgentPromptRequest {
   }
 }
 
-export async function generateAgentPrompt(request: AgentPromptRequest): Promise<string> {
+/**
+ * Resultado do gerador. `source: 'local_fallback'` quer dizer que a IA NÃO
+ * respondeu e o texto é um modelo básico montado aqui a partir das respostas
+ * do assistente — a tela precisa dizer isso, nunca apresentar como da IA.
+ */
+export interface GeneratedAgentPrompt {
+  prompt: string
+  source: 'ai' | 'local_fallback'
+  /** Motivo da falha da IA, só quando `source === 'local_fallback'`. */
+  failureReason?: string
+}
+
+export async function generateAgentPrompt(request: AgentPromptRequest): Promise<GeneratedAgentPrompt> {
   const { userId, tenantId, actorName } = readSession()
   const t0 = Date.now()
   try {
@@ -336,7 +348,7 @@ export async function generateAgentPrompt(request: AgentPromptRequest): Promise<
       details: { prompt_length: result.prompt.length, sector: request.identity.sector },
       source: 'ui',
     })
-    return result.prompt
+    return { prompt: result.prompt, source: 'ai' }
   } catch (err) {
     console.error('[generate-prompt] backend call failed — using local fallback. Reason:', err instanceof Error ? err.message : err)
     // Local fallback: generate a baseline prompt from the wizard data
@@ -371,7 +383,11 @@ export async function generateAgentPrompt(request: AgentPromptRequest): Promise<
       details: { prompt_length: prompt.length, source: 'local_fallback', sector: request.identity.sector },
       source: 'ui',
     })
-    return prompt
+    return {
+      prompt,
+      source: 'local_fallback',
+      failureReason: err instanceof Error ? err.message : String(err),
+    }
   }
 }
 

@@ -1435,6 +1435,8 @@ function Step6({
 }: { data: WizardData; setData: React.Dispatch<React.SetStateAction<WizardData>> }) {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // A IA não respondeu e o texto é o modelo básico local: a tela diz isso.
+  const [fallbackReason, setFallbackReason] = useState<string | null>(null)
   const [manualMode, setManualMode] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
 
@@ -1442,7 +1444,7 @@ function Step6({
     setGenerating(true)
     setError(null)
     try {
-      const prompt = await generateAgentPrompt({
+      const { prompt, source, failureReason } = await generateAgentPrompt({
         identity: { name: data.name, emoji: '', sector: data.sector, objective: data.objective },
         personality: {
           persona_name: data.persona_name || data.name,
@@ -1466,9 +1468,15 @@ function Step6({
         },
       })
       setData(d => ({ ...d, generated_prompt: prompt }))
-      // Open the review modal right after a successful generation so the user
-      // can read the full prompt comfortably and edit before confirming.
-      setReviewOpen(true)
+      if (source === 'local_fallback') {
+        // Sem modal: o aviso abaixo precisa ser visto antes do texto.
+        setFallbackReason(failureReason ?? 'sem resposta')
+      } else {
+        setFallbackReason(null)
+        // Open the review modal right after a successful generation so the user
+        // can read the full prompt comfortably and edit before confirming.
+        setReviewOpen(true)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao conectar com o servidor')
     } finally {
@@ -1540,6 +1548,20 @@ function Step6({
 
       {/* Generating animation */}
       {generating && <PromptGeneratingAnimation />}
+
+      {fallbackReason && data.generated_prompt && !generating && !manualMode && (
+        <Banner
+          variant="warning"
+          action={(
+            <button type="button" onClick={generate} className="text-xs font-semibold underline">
+              Tentar de novo
+            </button>
+          )}
+        >
+          A IA não respondeu ({fallbackReason}). O texto abaixo é um modelo básico montado a partir das suas
+          respostas, não um prompt gerado pela IA. Tente gerar de novo ou revise com cuidado antes de publicar.
+        </Banner>
+      )}
 
       {/* Completed — collapsed inline preview (first 10 lines).
           Editing happens only in the modal; both views share data.generated_prompt. */}
