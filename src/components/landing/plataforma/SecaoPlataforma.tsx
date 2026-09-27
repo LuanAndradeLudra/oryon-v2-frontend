@@ -56,8 +56,9 @@ const RECORTES: Record<string, Recorte> = {
   // A gaveta do relatório da campanha.
   // Até a legenda do gráfico (a 640 px ela saía cortada).
   relatorio: { x: 684, y: 0, w: 596, h: 656 },
-  // O detalhe do agente (medido: começa em x ≈ 360): cabeçalho, abas e a aba.
-  agente: { x: 356, y: 44, w: 924, h: 676 },
+  // A página do agente (direção D, 27/09 — medido em 1280×720): cabeçalho de
+  // identidade, a navegação em três grupos e a seção até o fim dos cartões.
+  agente: { x: 62, y: 48, w: 1104, h: 672 },
   // O Dashboard de ponta a ponta: indicadores, volume, funil, fila e equipe —
   // um recorte mais estreito cortava cartões pela metade.
   painel: { x: 62, y: 56, w: 1218, h: 382 },
