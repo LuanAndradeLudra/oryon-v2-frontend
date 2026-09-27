@@ -6,7 +6,8 @@ import { getAgent, type AgentConfig, type AgentConfigWithTools } from '@/service
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { AgentTestModal } from '@/components/agents/AgentTestModal'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { BancadaDeTeste } from './bancada/BancadaDeTeste'
 import { SecaoInstrucoes } from './secoes/SecaoInstrucoes'
 import { SecaoConhecimento } from './secoes/SecaoConhecimento'
 import { SecaoCatalogo } from './secoes/SecaoCatalogo'
@@ -33,6 +34,8 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
   const [searchParams, setSearchParams] = useSearchParams()
   const testeAberto = searchParams.get('teste') === '1'
   const isMobile = useIsMobile()
+  // A partir de 1280 px a bancada divide a tela; abaixo, abre por cima.
+  const bancadaAcoplada = useMediaQuery('(min-width: 1280px)')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -121,14 +124,18 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
               onFontesMudaram={recarregarResumo}
             />
           </main>
+          {testeAberto && bancadaAcoplada && (
+            <BancadaDeTeste agent={agent} onTestou={() => setTestadoNaSessao(true)} onFechar={alternarTeste} />
+          )}
         </div>
       </div>
 
-      <AnimatePresence>
-        {testeAberto && (
-          <AgentTestModal agent={agent} onClose={alternarTeste} onTested={() => setTestadoNaSessao(true)} />
-        )}
-      </AnimatePresence>
+      {testeAberto && !bancadaAcoplada && (
+        <>
+          <div className="overlay-scrim z-40" aria-hidden onClick={alternarTeste} />
+          <BancadaDeTeste agent={agent} onTestou={() => setTestadoNaSessao(true)} onFechar={alternarTeste} flutuante />
+        </>
+      )}
     </SalvamentoDoAgenteProvider>
   )
 }

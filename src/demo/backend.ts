@@ -295,6 +295,26 @@ export function instalarBackendDemo() {
       },
     },
   }))
+  // Bancada de teste: sessão e uma resposta que mostra fontes e ação no CRM.
+  rota('agents/builder/configs/:id/test-sessions (post)', (m, u) => m.toLowerCase() === 'post' && /^\/agents\/builder\/configs\/[^/]+\/test-sessions$/.test(u), () => ({
+    data: { data: { id: `ts-${Date.now()}`, created_at: new Date().toISOString(), ended_at: null, message_count: 0, input_tokens: 0, output_tokens: 0 } },
+  }))
+  rota('agents/builder/configs/:id/test-sessions/:s (patch)', (m, u) => m.toLowerCase() !== 'get' && /^\/agents\/builder\/configs\/[^/]+\/test-sessions\/[^/]+$/.test(u), () => ({
+    data: { data: { id: 'ts', created_at: new Date().toISOString(), ended_at: new Date().toISOString(), message_count: 0, input_tokens: 0, output_tokens: 0 } },
+  }))
+  rota('agents/builder/chat', (m, u) => m.toLowerCase() === 'post' && u === '/agents/builder/chat', () => ({
+    data: {
+      data: {
+        message: HERO.answer,
+        toolCalls: [
+          { name: 'buscar_base_conhecimento', kind: 'kb', success: true },
+          { name: 'manage_conversation_tags', kind: 'crm', success: true },
+        ],
+        turnSummary: { status: 'answered', model: 'claude-haiku', turns: 2, toolsCalledCount: 2, tokens: { input: 4_812, output: 164, cacheRead: 3_900, cacheCreation: 0 } },
+        guard: null,
+      },
+    },
+  }))
   // Skills (seção Capacidades, 27/09): a clínica da demo não usa skills n8n.
   rota('agents/builder/configs/:id/skills', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/skills$/.test(u), () => ({
     data: { data: [] },
