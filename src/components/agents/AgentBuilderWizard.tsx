@@ -397,7 +397,7 @@ function Step2({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
         <label className="block text-xs font-medium text-surface-400 mb-2">
           Tom de comunicação <span className="text-danger">*</span>
         </label>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
           {TONES.map(t => {
             const selected = data.tone === t.value
             return (
@@ -680,7 +680,7 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             {/* Identidade */}
             <div className="space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Identidade</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="block text-[11px] text-surface-400 mb-1">Nome da empresa</label>
                   <input
@@ -770,7 +770,7 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             {/* Presença online */}
             <div className="space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Presença online</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {HUB_PRESENCE_FIELDS.map(({ key, label, placeholder }) => (
                   <div key={key}>
                     <label className="block text-[11px] text-surface-400 mb-1">{label}</label>
@@ -1494,7 +1494,7 @@ function Step6({
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {summaryItems.map(({ label, value }) => (
           <div key={label} className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5">
             <p className="text-[10px] text-surface-600 uppercase tracking-wide">{label}</p>
@@ -2035,7 +2035,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                 "O · Novo agente", eyebrow --acs, título 18/700, trilha logo
                 abaixo do texto e nota fixa no rodapé; X vive no header da
                 direita. */}
-            <div className="relative z-10 w-80 flex-shrink-0 flex flex-col border-r border-surface-700 bg-surface-800">
+            <div className="relative z-10 hidden w-80 flex-shrink-0 flex-col border-r border-surface-700 bg-surface-800 md:flex">
               <div className="flex-1 overflow-y-auto px-5 py-[18px]">
                 <div className="flex items-center gap-2 mb-[22px]">
                   <span className="w-[22px] h-[22px] rounded-[6px] bg-gradient-to-br from-[#5EEAD4] via-[#14B8A6] to-[#0F766E] text-[#04201D] text-[12px] font-extrabold flex items-center justify-center">O</span>
@@ -2112,7 +2112,20 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
             </div>
 
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────── */}
-            <div className="relative z-10 flex-1 flex flex-col">
+            <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+              {/* Celular (27/09): sem o painel tutor, o cabeçalho diz a etapa,
+                  o que ela pede e fecha o assistente. */}
+              <div className="flex flex-shrink-0 items-start gap-3 bg-surface-800 px-4 pb-2 pt-[max(12px,env(safe-area-inset-top))] md:hidden">
+                <div className="min-w-0 flex-1">
+                  <p className="text-3xs font-bold uppercase tracking-[.14em] text-accent-dark">
+                    Etapa {step} de {STEP_LABELS.length} · {STEP_LABELS[step - 1]}
+                  </p>
+                  <p className="mt-1 text-base font-bold leading-tight tracking-[-0.01em] text-surface-100">{teaching.title}</p>
+                </div>
+                <Button type="button" variant="ghost" size="md" iconOnly aria-label="Fechar" onClick={handleCloseClick} disabled={publishing}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
               {/* Header de 52px com barra de progresso segmentada de 3px
                   (tela 2b) — a trilha vertical do painel Tutor à esquerda já
                   cobre a navegação por etapa (nomes + clique pra concluídas),
@@ -2121,7 +2134,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   aqui de propósito: aquele componente é o stepper horizontal
                   com círculos numerados — visual bem mais pesado que o traço
                   fino do mock, e duplicaria a trilha da esquerda. */}
-              <div className="flex-shrink-0 h-[52px] flex items-center gap-1 px-6 bg-surface-800 border-b border-surface-700">
+              <div className="flex flex-shrink-0 items-center gap-1 border-b border-surface-700 bg-surface-800 px-4 pb-3 md:h-[52px] md:px-6 md:pb-0">
                 {STEP_LABELS.map((_, i) => (
                   <div
                     key={i}
@@ -2135,7 +2148,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   onClick={handleCloseClick}
                   disabled={publishing}
                   aria-label="Fechar"
-                  className="ml-3.5 w-7 h-7 flex items-center justify-center rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition disabled:opacity-40 flex-shrink-0"
+                  className="ml-3.5 hidden w-7 h-7 items-center justify-center rounded-sm md:flex text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition disabled:opacity-40 flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -2145,7 +2158,17 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   isto, campos de texto/grades de opção esticavam até a
                   largura toda do painel em telas grandes. */}
               <div className="flex-1 overflow-y-auto">
-                <div className="max-w-[720px] px-10 py-8">
+                <div className="max-w-[720px] px-4 py-5 md:px-10 md:py-8">
+                  {/* Celular: o que o painel tutor ensina, recolhido. */}
+                  <details className="mb-5 rounded-md border border-surface-700 bg-[var(--sf2)] px-3 py-2.5 md:hidden">
+                    <summary className="cursor-pointer text-sm font-semibold text-surface-200">Como preencher esta etapa</summary>
+                    <p className="mt-2 text-sm leading-relaxed text-surface-400">{teaching.description}</p>
+                    {teaching.tips.length > 0 && (
+                      <ul className="mt-2 space-y-1.5">
+                        {teaching.tips.map((tip, i) => <li key={i} className="text-xs leading-relaxed text-surface-500">{tip.text}</li>)}
+                      </ul>
+                    )}
+                  </details>
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={`form-${step}`}
@@ -2175,7 +2198,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   existiam, entra na regra de reestilo puro). Cresce um pouco só
                   quando há erro de validação/publicação pra não cortar o texto. */}
               <div className={cn(
-                'flex-shrink-0 min-h-16 px-10 border-t border-surface-700 bg-surface-800 flex items-center',
+                'flex-shrink-0 min-h-16 px-4 pb-[env(safe-area-inset-bottom)] md:px-10 border-t border-surface-700 bg-surface-800 flex items-center',
                 (step < 8 ? validationError : publishError) ? 'flex-col items-stretch gap-2 py-3' : 'gap-2',
               )}>
                 {step < 8 && validationError && (
@@ -2206,17 +2229,17 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     escurece no hover (hover:brightness-90). Result: o CTA
                     mais importante do wizard reagia ao contrário de todos os
                     outros. */}
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex flex-1 flex-wrap items-center gap-2 py-2 md:py-0">
                   {step > 1 && (
                     <Button type="button" variant="ghost" size="md" onClick={back} disabled={publishing} leftIcon={<ChevronLeft className="w-4 h-4" />}>
                       Voltar
                     </Button>
                   )}
-                  <div className="ml-auto flex items-center gap-2">
+                  <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                     {step === 8 ? (
                       <>
                         <Button type="button" variant="neutral" size="md" onClick={() => handlePublish('draft')} disabled={publishing}>
-                          Salvar como rascunho
+                          <span className="sm:hidden">Rascunho</span><span className="hidden sm:inline">Salvar como rascunho</span>
                         </Button>
                         <Button
                           type="button"

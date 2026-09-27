@@ -9,8 +9,6 @@ import { AgentBuilderWizard } from '@/components/agents/AgentBuilderWizard'
 import { PaginaDoAgente } from '@/components/agents/pagina/PaginaDoAgente'
 import { ListaDeAgentes } from '@/components/agents/pagina/ListaDeAgentes'
 import { ehSecao, rotaDoAgente, secaoDaAbaAntiga, SECAO_PADRAO } from '@/components/agents/pagina/secoesDoAgente'
-import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { Button } from '@/components/ui/Button'
 
 /**
@@ -24,7 +22,6 @@ export function AgentsPage() {
   const { agentId, secao } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const isMobile = useIsMobile()
   const [criando, setCriando] = useState(false)
   const legado = searchParams.get('agent')
 
@@ -57,21 +54,12 @@ export function AgentsPage() {
           "use o computador" que esta tela mostrava. */}
       <div className="flex min-w-0 flex-1 min-h-0 overflow-hidden">{conteudo}</div>
 
-      {/* Criar agente — assistente em tela cheia; no celular, o aviso. */}
-      {isMobile ? (
-        <MobileFeatureGate
-          open={criando}
-          onClose={() => setCriando(false)}
-          featureName="Criar agente IA"
-          description="O assistente de criação tem instruções longas, regras e teste. No celular fica apertado — abra no computador para configurar com calma."
-        />
-      ) : (
-        <AnimatePresence>
-          {criando && (
-            <AgentBuilderWizard key="agent-builder-wizard" onClose={() => setCriando(false)} onCreated={aoCriar} />
-          )}
-        </AnimatePresence>
-      )}
+      {/* Criar agente — assistente em tela cheia, também no celular. */}
+      <AnimatePresence>
+        {criando && (
+          <AgentBuilderWizard key="agent-builder-wizard" onClose={() => setCriando(false)} onCreated={aoCriar} />
+        )}
+      </AnimatePresence>
     </>
   )
 }
