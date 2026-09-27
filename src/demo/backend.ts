@@ -315,6 +315,16 @@ export function instalarBackendDemo() {
       },
     },
   }))
+  // Respostas rápidas (seção Transferência): uma de exemplo.
+  rota('agents/builder/configs/:id/faqs', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/faqs$/.test(u), () => ({
+    data: {
+      data: [{
+        id: 'faq-endereco', agent_id: 'ag-recepcao', name: 'Endereço e estacionamento', keywords: ['endereço', 'onde fica', 'estacionamento'],
+        match_mode: 'any_keyword', response_template: 'Estamos na Rua XV de Novembro, 1200, sala 804, em Joinville. O prédio tem estacionamento com 2 h grátis validando na recepção.',
+        priority: 0, enabled: true, cooldown_minutes: 60, created_at: hoursAgo(300), updated_at: hoursAgo(300),
+      }],
+    },
+  }))
   // Skills (seção Capacidades, 27/09): a clínica da demo não usa skills n8n.
   rota('agents/builder/configs/:id/skills', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/skills$/.test(u), () => ({
     data: { data: [] },

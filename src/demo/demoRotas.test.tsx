@@ -44,6 +44,16 @@ const TELAS: { rota: string; aparece: string | RegExp }[] = [
   { rota: '/agents/ag-recepcao/conhecimento', aparece: 'Convênios aceitos' },
   { rota: '/agents/ag-recepcao/catalogo', aparece: 'Consulta de retorno' },
   { rota: '/dashboard', aparece: 'Volume de Mensagens' },
+  // Agentes IA, direção D (27/09): a lista, cada seção da página, o formato
+  // antigo redirecionando e a bancada de teste aberta pela URL.
+  { rota: '/agents', aparece: 'Precisam de atenção' },
+  { rota: '/agents?agent=ag-recepcao&tab=knowledge', aparece: 'Convênios aceitos' },
+  { rota: '/agents/ag-recepcao', aparece: /Use só valores e condições/ },
+  { rota: '/agents/ag-recepcao/transferencia', aparece: 'Encaixe ou urgência' },
+  { rota: '/agents/ag-recepcao/comportamento', aparece: 'Esperar o cliente terminar de escrever' },
+  { rota: '/agents/ag-recepcao/desempenho', aparece: 'buscar_base_conhecimento' },
+  { rota: '/agents/ag-recepcao/alteracoes', aparece: 'Regras de transferência atualizadas' },
+  { rota: '/agents/ag-recepcao/instrucoes?teste=1', aparece: 'Converse como se fosse um cliente' },
 ]
 
 describe('demonstração da landing — rotas do roteiro', () => {
