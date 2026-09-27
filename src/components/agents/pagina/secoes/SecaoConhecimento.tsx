@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BookOpen, Eye, FileText, FileUp, PenLine, RefreshCw, Trash2 } from 'lucide-react'
 import {
-  addAgentKnowledge, deleteAgentKnowledge, extractBrandFile, getAgentKnowledgeDoc, listAgentKnowledge,
+  addAgentKnowledge, deleteAgentKnowledge, extractBrandFileDetailed, getAgentKnowledgeDoc, listAgentKnowledge,
   updateAgentKnowledge, type AgentConfigWithTools, type AgentKnowledgeDoc,
 } from '@/services/agentsApi'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
@@ -17,7 +17,7 @@ import { useSalvamento } from '../salvamentoContexto'
 import { CabecalhoDaSecao } from './Estrutura'
 import { useTamanhoDeToque } from '../useToque'
 
-const ACEITOS = '.pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg,.webp'
+const ACEITOS = '.pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp'
 
 const STATUS_DOC: Record<string, { rotulo: string; cor: string }> = {
   ready: { rotulo: 'Pronto', cor: 'var(--color-status-active)' },
@@ -114,7 +114,7 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
     setEnviando(file.name)
     try {
       const { conteudo, tipo } = await lerArquivo(file)
-      const extraido = await extractBrandFile(file.name, file.type || 'text/plain', conteudo, tipo)
+      const { text: extraido, warning } = await extractBrandFileDetailed(file.name, file.type || 'text/plain', conteudo, tipo)
       if (trocarId) {
         await salvar(() => updateAgentKnowledge(agent.id, trocarId, { content: extraido, document_name: file.name }))
         setAberto({ id: trocarId, conteudo: extraido })
@@ -129,8 +129,11 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
       }
       await recarregar()
       onMudou()
-    } catch {
-      toast(`Não foi possível enviar "${file.name}".`, 'error')
+      // Arquivo lido só em parte: o final não está na base, e o dono precisa saber.
+      if (warning) toast(warning, 'warning')
+    } catch (err) {
+      // A rota explica o motivo (formato não suportado, arquivo sem texto...).
+      toast(err instanceof Error && err.message ? err.message : `Não foi possível enviar "${file.name}".`, 'error')
     } finally {
       setEnviando(null)
       setAtualizando(null)

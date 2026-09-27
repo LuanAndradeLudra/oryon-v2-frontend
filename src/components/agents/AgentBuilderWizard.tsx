@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
-import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFile } from '@/services/agentsApi'
+import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFileDetailed } from '@/services/agentsApi'
 import { showToast } from '@/hooks/useToast'
 import {
   loadHub, loadHubAsync, saveHub, hubToBrandLinks, hubHasContent,
@@ -1177,6 +1177,8 @@ function Step6KB({
     // is CPU-heavy on the agent-server side). Each file gets its own doc
     // entry in knowledge_docs; failures are logged but don't abort the batch.
     const failed: string[] = []
+    const failureReasons: string[] = []
+    const partial: string[] = []
     const total = files.length
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
@@ -1198,7 +1200,8 @@ function Step6KB({
           contentType = 'base64'
         }
 
-        const extracted = await extractBrandFile(file.name, file.type || 'text/plain', content, contentType)
+        const { text: extracted, warning } = await extractBrandFileDetailed(file.name, file.type || 'text/plain', content, contentType)
+        if (warning) partial.push(warning)
         // Suffix the id with the index so a fast batch (sub-ms apart) doesn't
         // collide on Date.now() and produce duplicate doc ids.
         const id = `kb-${Date.now()}-${i}`
@@ -1212,14 +1215,20 @@ function Step6KB({
       } catch (err) {
         console.error('[KB upload]', file.name, err)
         failed.push(file.name)
+        if (err instanceof Error && err.message) failureReasons.push(err.message)
       }
     }
     if (failed.length > 0) {
       showToast(
-        `Falha ao processar ${failed.length} arquivo${failed.length > 1 ? 's' : ''}: ${failed.join(', ')}`,
+        // Um arquivo só: o motivo que a rota deu (ex.: formato não suportado).
+        failed.length === 1 && failureReasons.length === 1
+          ? failureReasons[0]
+          : `Falha ao processar ${failed.length} arquivo${failed.length > 1 ? 's' : ''}: ${failed.join(', ')}`,
         'error',
       )
     }
+    // Lido só em parte: o final do arquivo não entrou na base.
+    for (const w of partial) showToast(w, 'warning')
     setUploadingFile(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -1250,7 +1259,7 @@ function Step6KB({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg,.webp"
+          accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp"
           multiple
           onChange={handleFileUpload}
           className="hidden"

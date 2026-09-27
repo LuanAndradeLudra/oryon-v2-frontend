@@ -1181,17 +1181,39 @@ export async function getAgentRuntimeFlags(): Promise<AgentRuntimeFlags> {
 
 // ─── Brand File Extraction ─────────────────────────────────────────────────────
 
+/**
+ * Texto extraído de um arquivo. `truncated` = o arquivo foi lido só em parte
+ * (corte por tamanho ou o modelo parou antes do fim); `warning` traz a frase
+ * pronta para mostrar. Formato não suportado ou arquivo sem texto chegam como
+ * erro (422), nunca como um texto-placeholder.
+ */
+export interface ExtractedBrandFile {
+  text: string
+  truncated: boolean
+  warning?: string
+}
+
+export async function extractBrandFileDetailed(
+  fileName: string,
+  mimeType: string,
+  content: string,
+  contentType: 'base64' | 'text',
+): Promise<ExtractedBrandFile> {
+  const data = await apiFetch<{ extractedText: string; truncated?: boolean; warning?: string }>('/extract-brand-file', {
+    method: 'POST',
+    body: JSON.stringify({ fileName, mimeType, content, contentType }),
+  })
+  return { text: data.extractedText, truncated: data.truncated === true, warning: data.warning }
+}
+
+/** Só o texto (Hub da empresa, onboarding). Quem monta a base do agente usa a versão detalhada. */
 export async function extractBrandFile(
   fileName: string,
   mimeType: string,
   content: string,
   contentType: 'base64' | 'text',
 ): Promise<string> {
-  const data = await apiFetch<{ extractedText: string }>('/extract-brand-file', {
-    method: 'POST',
-    body: JSON.stringify({ fileName, mimeType, content, contentType }),
-  })
-  return data.extractedText
+  return (await extractBrandFileDetailed(fileName, mimeType, content, contentType)).text
 }
 
 // ─── Agent Knowledge Base ─────────────────────────────────────────────────────
