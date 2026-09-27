@@ -95,7 +95,7 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
   if (isMobile) {
     return (
       <SalvamentoDoAgenteProvider ultimaAlteracao={agent.updated_at}>
-        <div ref={rolo} className="pagina-agente flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        <div ref={rolo} className="pagina-agente min-w-0 flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain">
           <CabecalhoDoAgente
             agent={agent}
             onAtualizar={onAtualizar}

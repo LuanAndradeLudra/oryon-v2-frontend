@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Bot, Copy, ExternalLink, Search, Sparkles } from 'lucide-react'
+import { Bot, ChevronRight, Copy, ExternalLink, Plus, Search, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAgentStale, loadHub } from '@/services/companyContextService'
@@ -13,7 +13,11 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { Button } from '@/components/ui/Button'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { StatusDoAgente } from './StatusDoAgente'
+import './agenteMovel.css'
 import { rotaDoAgente } from './secoesDoAgente'
 
 type Filtro = 'todos' | 'ativos' | 'pausados' | 'rascunhos' | 'atencao'
@@ -109,6 +113,39 @@ function Linha({ a, desatualizado }: { a: AgentConfig; desatualizado: boolean })
   )
 }
 
+function CartaoMovel({ a, desatualizado }: { a: AgentConfig; desatualizado: boolean }) {
+  const numero = a.channels?.whatsapp?.number
+  const naoTestado = (a.test_count ?? 0) === 0
+  return (
+    <li>
+      <Link
+        to={rotaDoAgente(a.id)}
+        className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500"
+      >
+        <AgentIcon iconId={a.icon} dashed={a.status === 'draft'} className="h-10 w-10" />
+        <span className="min-w-0 flex-1">
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-semibold text-surface-100">{a.name}</span>
+            <StatusDoAgente status={a.status} />
+          </span>
+          <span className="mt-0.5 block truncate text-xs text-surface-400">
+            {numero ?? 'sem número'}{a.objective ? ` · ${a.objective}` : ''}
+          </span>
+          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-surface-500 tabular-nums">
+            <span>{a.conversation_count.toLocaleString('pt-BR')} conversas</span>
+            <span aria-hidden>·</span>
+            {naoTestado ? <span className="font-semibold text-status-pending">nunca testado</span> : <span>{a.test_count} testes</span>}
+            <span aria-hidden>·</span>
+            <span>alterado {relativo(a.updated_at)}</span>
+            {desatualizado && <span className="font-semibold text-status-pending">· desatualizado</span>}
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 flex-shrink-0 text-surface-500" aria-hidden />
+      </Link>
+    </li>
+  )
+}
+
 /**
  * A lista de agentes como tabela de operação (direção D). Números só do que a
  * API já devolve — conversas desde a criação e testes — sem métrica inventada.
@@ -122,6 +159,24 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
   const [busca, setBusca] = useState('')
   const [params, setParams] = useSearchParams()
   const filtro: Filtro = FILTROS.includes(params.get('filtro') as Filtro) ? params.get('filtro') as Filtro : 'todos'
+  const movel = useIsMobile()
+  // Celular: a casca móvel não tem barra de topo — a página traz o cabeçalho
+  // (com o botão de novo agente) e rola por baixo dele.
+  const casca = (conteudo: ReactNode) => movel ? (
+    <div className="pagina-agente flex min-w-0 flex-1 flex-col min-h-0">
+      <MobilePageHeader
+        title="Agentes IA"
+        rightActions={
+          <Button size="md" iconOnly aria-label="Novo agente" onClick={onNovo}>
+            <Plus className="h-[18px] w-[18px]" />
+          </Button>
+        }
+      />
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">{conteudo}</div>
+    </div>
+  ) : (
+    <div className="pagina-agente min-w-0 flex-1 overflow-y-auto">{conteudo}</div>
+  )
 
   useEffect(() => {
     let vivo = true
@@ -161,17 +216,17 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
   }, [lista, filtro, busca, desatualizado])
 
   if (agentes === null) {
-    return (
-      <div className="flex-1 overflow-y-auto px-8 py-6" aria-busy="true">
+    return casca(
+      <div className="px-4 py-5 sm:px-8 sm:py-6" aria-busy="true">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[84px] bg-[var(--sf2)]" />)}</div>
         <Skeleton className="mt-6 h-64 w-full bg-[var(--sf2)]" />
-      </div>
+      </div>,
     )
   }
 
   if (lista.length === 0) {
-    return (
-      <div className="flex-1 px-8 pt-10">
+    return casca(
+      <div className="px-4 pt-6 sm:px-8 sm:pt-10">
         <EmptyState
           icon={Bot}
           title="Nenhum agente ainda"
@@ -179,7 +234,7 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
           action={{ label: 'Criar o primeiro agente', onClick: onNovo }}
           className="max-w-lg"
         />
-      </div>
+      </div>,
     )
   }
 
@@ -193,9 +248,8 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
     ...(contagem.atencao ? [{ value: 'atencao' as const, label: 'Precisam de atenção', count: contagem.atencao }] : []),
   ]
 
-  return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto w-full max-w-[1280px] px-8 py-6">
+  return casca(
+      <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-8 sm:py-6">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Resumo rotulo="Ligados" valor={`${contagem.ativos} de ${lista.length}`} detalhe="atendendo agora" />
           <Resumo rotulo="Conversas atendidas" valor={conversas.toLocaleString('pt-BR')} detalhe="somando todos, desde a criação" />
@@ -209,14 +263,25 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
           />
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <SegmentedControl label="Filtrar agentes" options={opcoes} value={filtro} onChange={setFiltro} />
-          <div className="relative ml-auto w-full max-w-xs">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          {/* No celular os filtros rolam de lado em vez de quebrar linha. */}
+          <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
+            <SegmentedControl label="Filtrar agentes" options={opcoes} value={filtro} onChange={setFiltro} size={movel ? '32' : 'sm'} />
+          </div>
+          <div className="relative w-full sm:ml-auto sm:max-w-xs">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-surface-500" aria-hidden />
-            <Input size="sm" aria-label="Buscar agente" placeholder="Buscar por nome, objetivo ou número" value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-8" />
+            <Input size={movel ? 'md' : 'sm'} aria-label="Buscar agente" placeholder="Buscar por nome, objetivo ou número" value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-8" />
           </div>
         </div>
 
+        {movel ? (
+          <ul className="mt-3 divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700 bg-[var(--sf2)]">
+            {visiveis.map((a) => <CartaoMovel key={a.id} a={a} desatualizado={desatualizado(a)} />)}
+            {visiveis.length === 0 && (
+              <li className="px-4 py-8 text-center text-sm text-surface-400">Nenhum agente com esse filtro{busca ? ' e essa busca' : ''}.</li>
+            )}
+          </ul>
+        ) : (
         <div className="mt-3 overflow-x-auto rounded-lg border border-surface-700">
           <table className="w-full min-w-[820px]">
             <caption className="sr-only">Agentes de IA</caption>
@@ -238,7 +303,7 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
             <p className="px-4 py-8 text-center text-sm text-surface-400">Nenhum agente com esse filtro{busca ? ' e essa busca' : ''}.</p>
           )}
         </div>
-      </div>
-    </div>
+        )}
+      </div>,
   )
 }

@@ -9,8 +9,6 @@ import { AgentBuilderWizard } from '@/components/agents/AgentBuilderWizard'
 import { PaginaDoAgente } from '@/components/agents/pagina/PaginaDoAgente'
 import { ListaDeAgentes } from '@/components/agents/pagina/ListaDeAgentes'
 import { ehSecao, rotaDoAgente, secaoDaAbaAntiga, SECAO_PADRAO } from '@/components/agents/pagina/secoesDoAgente'
-import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
-import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { Button } from '@/components/ui/Button'
@@ -27,7 +25,6 @@ export function AgentsPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const banner = useDesktopRecommendedBanner('agents')
   const [criando, setCriando] = useState(false)
   const legado = searchParams.get('agent')
 
@@ -56,14 +53,9 @@ export function AgentsPage() {
 
   return (
     <>
-      {!agentId && (
-        <DesktopRecommendedBanner
-          visible={banner.visible}
-          onDismiss={banner.dismiss}
-          message="Criar e ajustar agentes pede tela grande: instruções longas, regras e o teste lado a lado. No celular dá para acompanhar a lista."
-        />
-      )}
-      <div className="flex flex-1 min-h-0 overflow-hidden">{conteudo}</div>
+      {/* A lista e a página funcionam no celular (27/09): sem o aviso de
+          "use o computador" que esta tela mostrava. */}
+      <div className="flex min-w-0 flex-1 min-h-0 overflow-hidden">{conteudo}</div>
 
       {/* Criar agente — assistente em tela cheia; no celular, o aviso. */}
       {isMobile ? (
