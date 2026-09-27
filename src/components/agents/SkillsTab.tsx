@@ -42,9 +42,11 @@ interface Props {
    * JWT tenantId is used by the backend.
    */
   tenantId?: string
+  /** Na página do agente o bloco já tem título e explicação: só as contagens. */
+  semCabecalho?: boolean
 }
 
-export function SkillsTab({ agentId, tenantId }: Props) {
+export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
   const { user } = useAuth()
   const staff = isOryonStaff(user?.role)
   const navigate = useNavigate()
@@ -190,8 +192,8 @@ export function SkillsTab({ agentId, tenantId }: Props) {
     <div>
       {/* Hero — explain + at-a-glance counters */}
       <header className="mb-5">
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <h2 className="text-sm font-semibold text-surface-100">Capacidades do agente</h2>
+        {!semCabecalho && <><div className="flex items-center gap-1.5 mb-1.5">
+          <h2 className="text-sm font-semibold text-surface-100">Skills do agente</h2>
           <Tooltip
             content="As configurações detalhadas (tokens, IDs, regras de cada integração) são gerenciadas pela equipe Oryon. Você pode pausar e retomar qualquer capacidade aqui."
             side="top"
@@ -202,8 +204,8 @@ export function SkillsTab({ agentId, tenantId }: Props) {
           </Tooltip>
         </div>
         <p className="text-xs text-surface-500 mb-3">
-          O que esse agente sabe fazer durante as conversas. Pause uma capacidade para suspender o uso temporariamente.
-        </p>
+          O que esse agente sabe fazer durante as conversas. Pause uma skill para suspender o uso temporariamente.
+        </p></>}
         <Stats active={stats.active} paused={stats.paused} mutates={stats.mutates} />
       </header>
 
@@ -254,7 +256,7 @@ export function SkillsTab({ agentId, tenantId }: Props) {
         onConfirm={handleRemove}
         title="Remover skill do agente?"
         description={removing
-          ? 'A skill será removida deste agente imediatamente. Essa ação não pode ser desfeita — o histórico do agent_skills é apagado (hard delete). Para reatribuir depois, use a tela de Atribuir skill.'
+          ? 'A skill sai deste agente na hora, com o histórico de uso dela. Isso não pode ser desfeito — para voltar a usar, atribua de novo.'
           : ''}
         impact={removing ? { label: `Skill "${removing.template_name}"`, tone: 'danger' } : undefined}
         confirmLabel="Remover"
@@ -360,8 +362,8 @@ function SkillRow({
         // status-active token used in the header chip — visual continuity.
         'border-l-2',
         row.enabled
-          ? 'bg-surface-900 border-surface-700 border-l-status-active hover:border-surface-600'
-          : 'bg-surface-900/40 border-surface-700 border-l-transparent opacity-80',
+          ? 'bg-[var(--sf2)] border-surface-700 border-l-status-active'
+          : 'bg-[var(--sf2)] border-surface-700 border-l-transparent opacity-80',
       )}
     >
       <CategoryIcon
@@ -392,11 +394,11 @@ function SkillRow({
             quiet inline hint communicates the resting state without
             looking broken. */}
         {row.enabled ? (
-          <p className="text-[11px] text-surface-600 mt-2">
-            Capacidade disponível durante as conversas
+          <p className="text-2xs text-surface-500 mt-2">
+            Disponível durante as conversas
           </p>
         ) : (
-          <p className="text-[11px] text-surface-600 mt-2">
+          <p className="text-2xs text-surface-500 mt-2">
             Pausada — não será usada nas conversas
           </p>
         )}
@@ -427,12 +429,12 @@ function SkillRow({
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             </Tooltip>
-            <Tooltip content="Remover skill (hard delete)" side="top">
+            <Tooltip content="Remover skill" side="top">
               <button
                 type="button"
                 onClick={onRemove}
                 disabled={toggling}
-                aria-label="Remover skill (hard delete)"
+                aria-label="Remover skill"
                 className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-danger hover:bg-danger/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />

@@ -6,21 +6,20 @@ import { getAgent, type AgentConfig, type AgentConfigWithTools } from '@/service
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { CapabilitiesTab } from '@/components/agents/CapabilitiesTab'
-import { DecisionCriteriaTab } from '@/components/agents/DecisionCriteriaTab'
-import { SkillsTab } from '@/components/agents/SkillsTab'
-import { AgentCatalogTab } from '@/components/agents/AgentCatalogTab'
 import { AgentTestModal } from '@/components/agents/AgentTestModal'
-import {
-  AiBehaviorCard, KnowledgeBaseTab, MetricsTab, RulesTab, SystemPromptTab, ToolsTab, type RulesSubTab,
-} from '@/components/agents/AgentDetail'
-import { useAdvancedMode } from '@/hooks/useAdvancedMode'
-import { isFeatureVisible } from '@/config/featureFlags'
+import { SecaoInstrucoes } from './secoes/SecaoInstrucoes'
+import { SecaoConhecimento } from './secoes/SecaoConhecimento'
+import { SecaoCatalogo } from './secoes/SecaoCatalogo'
+import { SecaoCapacidades } from './secoes/SecaoCapacidades'
+import { SecaoTransferencia } from './secoes/SecaoTransferencia'
+import { SecaoComportamento } from './secoes/SecaoComportamento'
+import { SecaoDesempenho } from './secoes/SecaoDesempenho'
+import { SecaoAlteracoes } from './secoes/SecaoAlteracoes'
 import { SalvamentoDoAgenteProvider } from './SalvamentoDoAgente'
 import { CabecalhoDoAgente } from './CabecalhoDoAgente'
 import { NavegacaoDoAgente } from './NavegacaoDoAgente'
 import { useResumoDoAgente } from './useResumoDoAgente'
-import { secaoPorId, type SecaoId } from './secoesDoAgente'
+import type { SecaoId } from './secoesDoAgente'
 
 /**
  * A PÁGINA DO AGENTE (direção D, 27/09): identidade em cima, navegação vertical
@@ -144,33 +143,17 @@ function ConteudoDaSecao({
   onFontesMudaram: () => void
 }) {
   const semMovimento = useReducedMotion()
-  const [advancedMode] = useAdvancedMode()
-  const skillsVisiveis = isFeatureVisible('agentSkills')
-  const [subRegras, setSubRegras] = useState<RulesSubTab>('handoff')
-  const s = secaoPorId(secao)
-  void onFontesMudaram
 
   let corpo: ReactNode
   switch (secao) {
-    case 'instrucoes': corpo = <SystemPromptTab agent={agent} onUpdate={onAtualizar} />; break
-    case 'conhecimento': corpo = <KnowledgeBaseTab agent={agent} />; break
-    case 'catalogo': corpo = <AgentCatalogTab agentId={agent.id} />; break
-    case 'capacidades': corpo = (
-      <div className="space-y-10">
-        <CapabilitiesTab agent={agent} onUpdate={onAtualizar} />
-        {skillsVisiveis && <SkillsTab agentId={agent.id} />}
-        {advancedMode && <ToolsTab agent={agent} onToolsChange={onFerramentas} />}
-      </div>
-    ); break
-    case 'transferencia': corpo = (
-      <div className="space-y-10">
-        <RulesTab agent={agent} onUpdate={onAtualizar} subTab={subRegras} onSubTabChange={setSubRegras} />
-        <DecisionCriteriaTab agent={agent} onUpdate={onAtualizar} />
-      </div>
-    ); break
-    case 'comportamento': corpo = <AiBehaviorCard agent={agent} onUpdate={onAtualizar} />; break
-    case 'desempenho': corpo = <MetricsTab agent={agent} />; break
-    case 'alteracoes': corpo = null; break
+    case 'instrucoes': corpo = <SecaoInstrucoes agent={agent} onAtualizar={onAtualizar} />; break
+    case 'conhecimento': corpo = <SecaoConhecimento agent={agent} onMudou={onFontesMudaram} />; break
+    case 'catalogo': corpo = <SecaoCatalogo agent={agent} onMudou={onFontesMudaram} />; break
+    case 'capacidades': corpo = <SecaoCapacidades agent={agent} onAtualizar={onAtualizar} onFerramentas={onFerramentas} />; break
+    case 'transferencia': corpo = <SecaoTransferencia agent={agent} onAtualizar={onAtualizar} />; break
+    case 'comportamento': corpo = <SecaoComportamento agent={agent} onAtualizar={onAtualizar} />; break
+    case 'desempenho': corpo = <SecaoDesempenho agent={agent} />; break
+    case 'alteracoes': corpo = <SecaoAlteracoes agent={agent} />; break
   }
 
   return (
@@ -181,12 +164,8 @@ function ConteudoDaSecao({
         animate={{ opacity: 1, y: 0 }}
         exit={semMovimento ? undefined : { opacity: 0 }}
         transition={{ duration: 0.14, ease: 'easeOut' }}
-        className="px-8 py-6 max-w-[920px]"
+        className="w-full max-w-[900px] px-8 py-6"
       >
-        <header className="mb-5">
-          <h2 id="titulo-secao" className="font-display text-base font-bold tracking-[-0.01em] text-surface-50">{s.rotulo}</h2>
-          <p className="mt-1 text-sm text-surface-400">{s.descricao}</p>
-        </header>
         {corpo}
       </motion.div>
     </AnimatePresence>

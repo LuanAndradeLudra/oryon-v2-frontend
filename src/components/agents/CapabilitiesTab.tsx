@@ -19,13 +19,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import {
-  CheckCircle, ShieldCheck, AlertCircle, Loader2, ChevronRight, Sparkles,
+  CheckCircle, ShieldCheck, AlertCircle, Loader2, ChevronRight,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/Switch'
 import { Modal } from '@/components/ui/Modal'
-import { EmptyState } from '@/components/ui/EmptyState'
+import { Banner } from '@/components/ui/Banner'
 import { tagsApi, usersApi, stagesApi, pipelinesApi } from '@/services/api'
 import { updateAgent } from '@/services/agentsApi'
 import { pipelineKindOption } from '@/lib/pipelineKinds'
@@ -57,9 +57,13 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 export function CapabilitiesTab({
   agent,
   onUpdate,
+  salvar,
 }: {
   agent: AgentConfig
   onUpdate: (updated: AgentConfig) => void
+  /** Página do agente: grava pelo salvamento único (e esconde o cabeçalho
+   *  e o indicador próprios desta aba). */
+  salvar?: <T>(tarefa: () => Promise<T>) => Promise<T>
 }) {
   // Server is the source of truth; we keep a local copy that mirrors it
   // optimistically. `dirty` flips when the user tweaks anything; the
@@ -86,7 +90,8 @@ export function CapabilitiesTab({
     const timer = setTimeout(async () => {
       try {
         const payload: AgentCrmCapabilities = { capabilities: caps }
-        const updated = await updateAgent(agent.id, { crm_capabilities: payload })
+        const tarefa = () => updateAgent(agent.id, { crm_capabilities: payload })
+        const updated = salvar ? await salvar(tarefa) : await tarefa()
         onUpdate(updated)
         setSaveState('saved')
         setErrorMsg(null)
@@ -96,7 +101,7 @@ export function CapabilitiesTab({
       }
     }, 400)
     return () => clearTimeout(timer)
-  }, [caps, agent.id, agent.crm_capabilities, onUpdate])
+  }, [caps, agent.id, agent.crm_capabilities, onUpdate, salvar])
 
   const grouped = useMemo(() => {
     const out: Record<CrmCapabilityCategory, CatalogEntry[]> = {
@@ -139,7 +144,7 @@ export function CapabilitiesTab({
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <header className="flex items-start justify-between gap-4">
+      {!salvar && <header className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-base font-semibold text-surface-100 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-brand-400" />
@@ -152,7 +157,13 @@ export function CapabilitiesTab({
           </p>
         </div>
         <SaveIndicator state={saveState} error={errorMsg} />
-      </header>
+      </header>}
+
+      {!caps.some((c) => c.enabled) && (
+        <Banner variant="info">
+          Nenhuma capacidade ligada: a IA conversa, mas não muda nada no CRM.
+        </Banner>
+      )}
 
       {(['conversation', 'tags', 'pipeline'] as CrmCapabilityCategory[]).map((cat) => {
         const entries = grouped[cat]
@@ -160,7 +171,7 @@ export function CapabilitiesTab({
         const meta = CATEGORY_META[cat]
         return (
           <section key={cat} className="space-y-2">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
+            <div className="flex items-center gap-2 text-3xs font-bold uppercase tracking-[.14em] text-surface-500">
               {meta.icon}
               {meta.label}
             </div>
@@ -184,14 +195,6 @@ export function CapabilitiesTab({
           </section>
         )
       })}
-
-      {caps.length === 0 && (
-        <EmptyState
-          icon={Sparkles}
-          title="Nenhuma capacidade habilitada"
-          hint="Habilite ao menos uma capacidade acima para que seu agente WhatsApp possa executar ações no CRM."
-        />
-      )}
 
       {editingEntry && (
         <ConstraintsModal
@@ -221,7 +224,7 @@ function SaveIndicator({ state, error }: { state: SaveState; error: string | nul
     return (
       <motion.span
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        className="inline-flex items-center gap-1.5 text-xs text-status-success-400"
+        className="inline-flex items-center gap-1.5 text-xs text-status-active"
       >
         <CheckCircle className="w-3 h-3" />
         Salvo
@@ -230,7 +233,7 @@ function SaveIndicator({ state, error }: { state: SaveState; error: string | nul
   }
   if (state === 'error') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-status-error-400" title={error ?? ''}>
+      <span className="inline-flex items-center gap-1.5 text-xs text-danger" title={error ?? ''}>
         <AlertCircle className="w-3 h-3" />
         Erro ao salvar
       </span>
@@ -252,24 +255,24 @@ function CapabilityCard({
   return (
     <div
       className={cn(
-        'rounded-lg border p-3 transition-colors',
+        'rounded-lg border px-3.5 py-3 transition-colors',
         enabled
-          ? 'border-brand-700/40 bg-brand-950/20'
-          : 'border-surface-700 bg-surface-950/40',
+          ? 'border-[color-mix(in_srgb,var(--color-brand-500)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-brand-500)_6%,var(--sf2))]'
+          : 'border-surface-700 bg-[var(--sf2)]',
       )}
     >
       <div className="flex items-start gap-3">
         <span
           className={cn(
             'mt-0.5 flex h-7 w-7 items-center justify-center rounded-md',
-            enabled ? 'bg-brand-700/30 text-brand-300' : 'bg-surface-900 text-surface-500',
+            enabled ? 'bg-accent-soft text-accent-dark' : 'bg-surface-800 text-surface-500',
           )}
         >
           {entry.icon}
         </span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-surface-100">{entry.label}</div>
-          <div className="text-xs text-surface-500 mt-0.5">{entry.description}</div>
+          <div className="text-xs text-surface-400 mt-0.5 leading-relaxed">{entry.description}</div>
         </div>
         <Switch checked={enabled} onChange={onToggle} />
       </div>
@@ -277,11 +280,11 @@ function CapabilityCard({
         <button
           type="button"
           onClick={onEdit}
-          className="mt-3 ml-10 inline-flex items-center gap-1.5 text-[11px] font-medium text-surface-300 hover:text-surface-100"
+          className="mt-2.5 ml-10 inline-flex items-center gap-1.5 rounded-sm px-1.5 -mx-1.5 h-6 text-xs font-medium text-surface-200 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
-          <span className="text-surface-500">Limites:</span>
+          <span className="text-surface-400">Limites:</span>
           <span>{constraintsSummary}</span>
-          <ChevronRight className="w-3 h-3 text-surface-600" />
+          <ChevronRight className="w-3 h-3 text-surface-500" aria-hidden />
         </button>
       )}
     </div>

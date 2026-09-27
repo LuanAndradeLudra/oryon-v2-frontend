@@ -1,10 +1,11 @@
 import { rota } from './guards'
 import {
-  HERO_CONTACT_STAGES, HERO_LINE, HERO_PIPELINE, HERO_PIPELINE_STAGES, HERO_PRODUCTS, HERO_TAGS, HERO_USER,
+  HERO, HERO_CONTACT_STAGES, HERO_LINE, HERO_PIPELINE, HERO_PIPELINE_STAGES, HERO_PRODUCTS, HERO_TAGS, HERO_USER,
   heroCampaigns, heroContact, heroConversation, heroConversations, heroDeal, heroDealsByStage, heroMessages,
   heroNotifications, heroTimeline, heroHistoricoGanho, HERO_STAGE_QUALIFICACAO,
 } from '../components/landing/stage/hero/heroRealData'
 import type { HeroState } from '../components/landing/stage/hero/heroStory'
+import { hoursAgo } from '../components/landing/stage/hero/heroClock'
 import { AGENTES_DEMO, CATALOGO_RECEPCAO, CONHECIMENTO_RECEPCAO, agenteComFerramentas } from './agentesDemo'
 import { heroActivityFeed, heroHomeSnapshot, heroHomeStats, heroPipelineOverview } from './dashboardDemo'
 import { ANALYTICS_RENOVACAO, CONVERSAS_RENOVACAO } from './campanhaDemo'
@@ -258,6 +259,41 @@ export function instalarBackendDemo() {
   rota('agents/builder/configs', eq('get', '/agents/builder/configs'), () => ({ data: { data: AGENTES_DEMO } }))
   rota('agents/builder/configs/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+$/.test(u), ({ url }) => ({
     data: { data: agenteComFerramentas(url.split('/').pop()!) },
+  }))
+  // Página do agente (27/09): Alterações lê a auditoria e as sessões de
+  // teste; Desempenho lê o uso das ferramentas.
+  rota('audit/tenant-feed', eq('get', '/audit/tenant-feed'), () => ({
+    data: {
+      nextCursor: null,
+      data: [
+        { id: 'au-1', tenantId: 'demo-tenant', actorId: 'demo-user-1', actorName: HERO.atendente, actorType: 'user', action: 'agent_prompt_updated',
+          entityType: 'ai_agent', entityId: 'ag-recepcao', entityName: HERO.agent, description: '', details: {}, source: 'ui', severity: 'info', createdAt: hoursAgo(48) },
+        { id: 'au-2', tenantId: 'demo-tenant', actorId: 'demo-user-1', actorName: HERO.atendente, actorType: 'user', action: 'agent_handoff_rules_updated',
+          entityType: 'ai_agent', entityId: 'ag-recepcao', entityName: HERO.agent, description: '', details: {}, source: 'ui', severity: 'info', createdAt: hoursAgo(50) },
+        { id: 'au-3', tenantId: 'demo-tenant', actorId: 'demo-user-2', actorName: HERO.doctor, actorType: 'user', action: 'agent_updated',
+          entityType: 'ai_agent', entityId: 'ag-recepcao', entityName: HERO.agent, description: `Agente "${HERO.agent}" atualizado (crm_capabilities, ai_handoff_pause_minutes)`, details: {}, source: 'ui', severity: 'info', createdAt: hoursAgo(144) },
+      ],
+    },
+  }))
+  rota('agents/builder/configs/:id/test-sessions', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/test-sessions$/.test(u), () => ({
+    data: {
+      data: [
+        { id: 'ts-1', created_at: hoursAgo(20), ended_at: hoursAgo(20), message_count: 8, input_tokens: 9_200, output_tokens: 1_100 },
+        { id: 'ts-2', created_at: hoursAgo(49), ended_at: hoursAgo(49), message_count: 12, input_tokens: 14_000, output_tokens: 1_800 },
+      ],
+    },
+  }))
+  rota('agents/builder/metrics/tools', (m, u) => m.toLowerCase() === 'get' && u.startsWith('/agents/builder/metrics/tools'), () => ({
+    data: {
+      data: {
+        window_days: 7,
+        tools: [
+          { tool_name: 'buscar_base_conhecimento', total: 812, successes: 809, failures: 3, avg_duration_ms: 420, p95_duration_ms: 910 },
+          { tool_name: 'atualizar_situacao_contato', total: 264, successes: 264, failures: 0, avg_duration_ms: 180, p95_duration_ms: 330 },
+          { tool_name: 'mover_negocio_funil', total: 131, successes: 129, failures: 2, avg_duration_ms: 240, p95_duration_ms: 520 },
+        ],
+      },
+    },
   }))
   // Skills (seção Capacidades, 27/09): a clínica da demo não usa skills n8n.
   rota('agents/builder/configs/:id/skills', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/skills$/.test(u), () => ({

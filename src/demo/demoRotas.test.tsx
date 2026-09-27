@@ -38,7 +38,7 @@ const TELAS: { rota: string; aparece: string | RegExp }[] = [
   { rota: '/campaigns', aparece: /Retorno · setembro/ },
   { rota: '/campaigns?report=cp-retorno', aparece: /Funil de engajamento/ },
   { rota: '/pipelines/pl-consultas?deal=demo-deal-0', aparece: /Particular/ },
-  { rota: '/agents/ag-recepcao/capacidades', aparece: 'Capacidades de CRM' },
+  { rota: '/agents/ag-recepcao/capacidades', aparece: 'Mover negócio ou registro no funil' },
   // Seção Plataforma (26/09): de onde vem o conhecimento e o Dashboard.
   { rota: '/agents/ag-recepcao/instrucoes', aparece: /Use só valores e condições/ },
   { rota: '/agents/ag-recepcao/conhecimento', aparece: 'Convênios aceitos' },

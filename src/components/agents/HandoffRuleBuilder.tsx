@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect, useId, useCallback } from 'react'
 import {
-  Sparkles, Send, X, Plus, Trash2, Edit3, GripVertical,
-  ArrowRight, Check, Loader2, Users, ExternalLink, MessageSquare,
-  Zap, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, AlertCircle,
+  Sparkles, Send, X, Plus, Trash2, Edit3, ArrowUp, ArrowDown,
+  ArrowRightLeft, Check, Loader2, Users, ExternalLink, MessageSquare,
+  Zap, ChevronDown,
   Tag, Layers, FileText, AlignLeft, Heart,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { Switch } from '@/components/ui/Switch'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   generateHandoffRule,
   type HandoffRule,
@@ -156,15 +159,21 @@ const INPUT = 'w-full bg-surface-800 border border-surface-700 rounded-xl px-3 p
 function RuleCard({
   rule,
   index,
+  total,
   onToggle,
   onEdit,
   onDelete,
+  onMove,
 }: {
   rule: HandoffRule
   index: number
+  total: number
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
+  /** Troca de lugar com a vizinha (-1 = sobe, 1 = desce). A ordem decide
+   *  qual regra vale quando duas casam. */
+  onMove: (delta: -1 | 1) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const actionCfg = ACTION_OPTIONS.find(a => a.value === rule.action)
@@ -173,69 +182,61 @@ function RuleCard({
     <motion.div
       layout
       className={cn(
-        'bg-surface-900 border rounded-xl overflow-hidden transition-colors',
-        rule.enabled ? 'border-surface-700' : 'border-surface-700 opacity-60',
+        'rounded-lg border border-surface-700 bg-[var(--sf2)] overflow-hidden transition-opacity',
+        !rule.enabled && 'opacity-70',
       )}
     >
-      {/* Header row */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Priority badge + drag handle */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <GripVertical className="w-3.5 h-3.5 text-surface-700 cursor-grab" />
-          <span className="w-5 h-5 rounded-md bg-surface-800 border border-surface-700 flex items-center justify-center text-[10px] font-bold text-surface-500">
-            {index + 1}
-          </span>
-        </div>
+      <div className="flex items-center gap-3 px-3.5 py-3">
+        <span className="w-6 h-6 rounded-sm bg-surface-800 border border-surface-700 flex items-center justify-center text-2xs font-bold tabular-nums text-surface-400 flex-shrink-0" aria-label={`Ordem ${index + 1}`}>
+          {index + 1}
+        </span>
 
-        {/* Name + action badge */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn('text-sm font-semibold', rule.enabled ? 'text-surface-100' : 'text-surface-500')}>
-              {rule.name}
-            </span>
+            <span className="text-sm font-semibold text-surface-100">{rule.name}</span>
             <span
-              className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md border font-medium"
-              style={{ ['--chip']: ACTION_CHIP[rule.action] } as React.CSSProperties}
+              className="inline-flex items-center gap-1 h-5 px-[7px] rounded-xs border text-2xs font-semibold"
+              style={{
+                color: ACTION_CHIP[rule.action],
+                backgroundColor: `color-mix(in srgb, ${ACTION_CHIP[rule.action]} 12%, transparent)`,
+                borderColor: `color-mix(in srgb, ${ACTION_CHIP[rule.action]} 25%, transparent)`,
+              }}
             >
               {actionCfg?.icon}
               {ACTION_LABEL[rule.action]}
             </span>
             {rule.aiGenerated && (
-              <span
-                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md border"
-                style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
-              >
-                <Sparkles className="w-2.5 h-2.5" /> IA
+              <span className="inline-flex items-center gap-1 h-5 px-[7px] rounded-xs text-2xs font-semibold bg-accent-soft text-accent-dark">
+                <Sparkles className="w-3 h-3" aria-hidden /> Sugerida pela IA
               </span>
             )}
           </div>
-          <p className="text-xs text-surface-500 truncate mt-0.5">
-            {rule.keywords.slice(0, 4).join(' · ')}
-            {rule.keywords.length > 4 && <span className="text-surface-600"> +{rule.keywords.length - 4}</span>}
+          <p className="text-xs text-surface-400 truncate mt-0.5">
+            {rule.keywords.slice(0, 5).join(' · ')}
+            {rule.keywords.length > 5 && <span className="text-surface-500"> +{rule.keywords.length - 5}</span>}
           </p>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={onToggle} title={rule.enabled ? 'Desativar' : 'Ativar'} aria-label={rule.enabled ? 'Desativar regra' : 'Ativar regra'}
-            className="p-1 rounded-lg hover:bg-[var(--rowhover)] transition text-surface-500 hover:text-surface-200">
-            {rule.enabled
-              ? <ToggleRight className="w-5 h-5 text-status-active" />
-              : <ToggleLeft  className="w-5 h-5" />}
-          </button>
-          <button onClick={onEdit} aria-label="Editar regra" className="p-1.5 rounded-lg hover:bg-[var(--rowhover)] text-surface-500 hover:text-surface-200 transition">
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <Button variant="ghost" size="sm" iconOnly aria-label="Subir regra" title="Subir" disabled={index === 0} onClick={() => onMove(-1)}>
+            <ArrowUp className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" iconOnly aria-label="Descer regra" title="Descer" disabled={index === total - 1} onClick={() => onMove(1)}>
+            <ArrowDown className="w-3.5 h-3.5" />
+          </Button>
+          <Switch checked={rule.enabled} onChange={onToggle} className="mx-1.5" />
+          <Button variant="ghost" size="sm" iconOnly aria-label={`Editar ${rule.name}`} onClick={onEdit}>
             <Edit3 className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onDelete} aria-label="Excluir regra" className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition">
+          </Button>
+          <Button variant="ghost" size="sm" iconOnly aria-label={`Excluir ${rule.name}`} onClick={onDelete}>
             <Trash2 className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => setExpanded(v => !v)} className="p-1.5 rounded-lg hover:bg-[var(--rowhover)] text-surface-600 hover:text-surface-300 transition">
-            {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
+          </Button>
+          <Button variant="ghost" size="sm" iconOnly aria-label={expanded ? 'Recolher detalhes' : 'Ver detalhes'} aria-expanded={expanded} onClick={() => setExpanded(v => !v)}>
+            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
+          </Button>
         </div>
       </div>
 
-      {/* Expanded detail */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -245,51 +246,18 @@ function RuleCard({
             transition={{ duration: 0.15 }}
             className="overflow-hidden border-t border-surface-700"
           >
-            <div className="px-4 py-3 space-y-3">
-              {/* Keywords */}
-              <div>
-                <p className="text-[10px] text-surface-600 uppercase tracking-wide mb-1.5">Palavras-chave ({rule.matchMode === 'any_keyword' ? 'qualquer' : rule.matchMode === 'all_keywords' ? 'todas' : 'exata'})</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {rule.keywords.map(kw => (
-                    <span key={kw} className="text-xs px-2 py-0.5 rounded-lg bg-surface-800 border border-surface-700 text-surface-300 font-mono">
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Template */}
-              {rule.template && (
-                <div>
-                  <p className="text-[10px] text-surface-600 uppercase tracking-wide mb-1.5">Template de resposta</p>
-                  <pre className="text-xs text-surface-300 whitespace-pre-wrap font-sans bg-surface-950/60 rounded-lg px-3 py-2 leading-relaxed">
-                    {rule.template}
-                  </pre>
-                </div>
-              )}
-
-              {/* Redirect URL */}
-              {rule.redirectUrl && (
-                <div className="flex items-center gap-2 text-xs">
-                  <ExternalLink className="w-3.5 h-3.5 text-surface-600" />
-                  <span className="text-surface-500">Redirect:</span>
-                  <span className="text-violet-400 font-mono">{rule.redirectUrl}</span>
-                </div>
-              )}
-
-              {/* Department */}
-              {rule.department && (
-                <div className="flex items-center gap-2 text-xs">
-                  <Users className="w-3.5 h-3.5 text-surface-600" />
-                  <span className="text-surface-500">Departamento:</span>
-                  <span className="text-surface-300">{rule.department}</span>
-                </div>
-              )}
-
-              {rule.description && (
-                <p className="text-xs text-surface-600 italic">{rule.description}</p>
-              )}
-            </div>
+            <dl className="px-3.5 py-3 grid grid-cols-[130px_1fr] gap-x-3 gap-y-2 text-xs">
+              <dt className="text-surface-500">Palavras ({rule.matchMode === 'any_keyword' ? 'qualquer uma' : rule.matchMode === 'all_keywords' ? 'todas' : 'frase exata'})</dt>
+              <dd className="flex flex-wrap gap-1">
+                {rule.keywords.map(kw => (
+                  <span key={kw} className="px-1.5 h-5 inline-flex items-center rounded-xs bg-surface-800 border border-surface-700 text-surface-200 font-mono">{kw}</span>
+                ))}
+              </dd>
+              {rule.template && (<><dt className="text-surface-500">Resposta</dt><dd className="text-surface-200 whitespace-pre-wrap leading-relaxed">{rule.template}</dd></>)}
+              {rule.redirectUrl && (<><dt className="text-surface-500 inline-flex items-center gap-1"><ExternalLink className="w-3 h-3" aria-hidden />Redireciona para</dt><dd className="text-surface-200 font-mono break-all">{rule.redirectUrl}</dd></>)}
+              {rule.department && (<><dt className="text-surface-500 inline-flex items-center gap-1"><Users className="w-3 h-3" aria-hidden />Setor</dt><dd className="text-surface-200">{rule.department}</dd></>)}
+              {rule.description && (<><dt className="text-surface-500">Observação</dt><dd className="text-surface-300">{rule.description}</dd></>)}
+            </dl>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1051,6 +1019,14 @@ export function HandoffRulesPanel({
     close()
   }
 
+  const moveRule = (index: number, delta: -1 | 1) => {
+    const alvo = index + delta
+    if (alvo < 0 || alvo >= rules.length) return
+    const next = [...rules]
+    ;[next[index], next[alvo]] = [next[alvo], next[index]]
+    onChange(next.map((r, i) => ({ ...r, priority: i + 1, updatedAt: new Date().toISOString() })))
+  }
+
   const toggleRule = (id: string) =>
     onChange(rules.map(r => r.id === id ? { ...r, enabled: !r.enabled, updatedAt: new Date().toISOString() } : r))
 
@@ -1073,80 +1049,50 @@ export function HandoffRulesPanel({
     <div className="flex flex-col h-full min-h-0">
       {/* Always-visible list */}
       <div className="flex flex-col h-full min-h-0">
-        {/* Header */}
-        <div className="flex items-center justify-between px-1 mb-3 flex-shrink-0">
-          <p className="text-xs text-surface-500">
+        {rules.length > 0 && <div className="flex items-center justify-between gap-3 mb-3 flex-shrink-0">
+          <p className="text-xs text-surface-400">
             {rules.length === 0
-              ? 'Nenhuma regra configurada'
-              : `${rules.filter(r => r.enabled).length} de ${rules.length} regra(s) ativa(s) — avaliadas em ordem`}
+              ? 'Nenhuma regra ainda'
+              : `${rules.filter(r => r.enabled).length} de ${rules.length} ligadas · avaliadas de cima para baixo, a primeira que casar vale`}
           </p>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setModal('manual')}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-surface-700 text-surface-400 text-xs hover:text-surface-200 hover:border-surface-600 transition"
-            >
-              <Plus className="w-3 h-3" />
-              Manual
-            </button>
-            <button
-              onClick={() => setModal('ai_builder')}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-medium ring-1 ring-brand-500/25 transition"
-            >
-              <Sparkles className="w-3 h-3" />
-              Criar com IA
-            </button>
-          </div>
-        </div>
+          {rules.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Button variant="neutral" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setModal('manual')}>
+                Escrever regra
+              </Button>
+              <Button variant="secondary" size="sm" leftIcon={<Sparkles className="w-3.5 h-3.5" />} onClick={() => setModal('ai_builder')}>
+                Criar com IA
+              </Button>
+            </div>
+          )}
+        </div>}
 
-        {/* Rules list */}
         <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
           {rules.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-12 border border-dashed border-[var(--bd2)] rounded-lg">
-              <div className="w-12 h-12 rounded-2xl bg-brand-600/10 ring-1 ring-brand-500/20 flex items-center justify-center">
-                <ArrowRight className="w-6 h-6 text-brand-500" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-surface-400 font-medium">Nenhuma regra de encaminhamento</p>
-                <p className="text-xs text-surface-600 mt-1 max-w-[260px]">
-                  Crie regras para que o agente encaminhe automaticamente quando detectar palavras-chave específicas.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setModal('manual')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-surface-700 text-surface-400 text-xs hover:text-surface-200 hover:border-surface-600 transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Criar manualmente
-                </button>
-                <button
-                  onClick={() => setModal('ai_builder')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-medium transition"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Criar com IA
-                </button>
-              </div>
+            <div>
+              <EmptyState
+                icon={ArrowRightLeft}
+                title="Nenhuma regra de transferência"
+                hint="Diga em que situações a IA deve chamar uma pessoa, redirecionar ou responder algo fixo. Descreva o caso e a IA monta a regra."
+                action={{ label: 'Criar com IA', onClick: () => setModal('ai_builder') }}
+              />
+              <Button variant="ghost" size="sm" className="mt-2" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setModal('manual')}>
+                Ou escrever a regra à mão
+              </Button>
             </div>
           ) : (
-            <>
-              <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-900 border border-surface-700 rounded-xl">
-                <AlertCircle className="w-3.5 h-3.5 text-surface-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-surface-600">
-                  As regras são avaliadas em ordem — a primeira que corresponder é executada.
-                </p>
-              </div>
-              {rules.map((rule, i) => (
-                <RuleCard
-                  key={rule.id}
-                  rule={rule}
-                  index={i}
-                  onToggle={() => toggleRule(rule.id)}
-                  onEdit={() => openEdit(rule.id)}
-                  onDelete={() => setDeleteRuleTarget(rule.id)}
-                />
-              ))}
-            </>
+            rules.map((rule, i) => (
+              <RuleCard
+                key={rule.id}
+                rule={rule}
+                index={i}
+                total={rules.length}
+                onToggle={() => toggleRule(rule.id)}
+                onEdit={() => openEdit(rule.id)}
+                onDelete={() => setDeleteRuleTarget(rule.id)}
+                onMove={(d) => moveRule(i, d)}
+              />
+            ))
           )}
         </div>
       </div>

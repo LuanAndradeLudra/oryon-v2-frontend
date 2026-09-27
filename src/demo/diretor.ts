@@ -208,8 +208,8 @@ const PRONTA_CENA: Partial<Record<HeroCena, string>> = {
   'agente-instrucoes': 'Use só valores e condições',
   'agente-conhecimento': 'Convênios aceitos',
   'agente-catalogo': 'Consulta de retorno',
-  'agente-capacidades': 'Capacidades de CRM',
-  'agente-capacidades-funil': 'Capacidades de CRM',
+  'agente-capacidades': 'Encerrar e reabrir conversas',
+  'agente-capacidades-funil': 'Encerrar e reabrir conversas',
   painel: 'Volume de Mensagens',
 }
 

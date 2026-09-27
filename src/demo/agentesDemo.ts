@@ -1,4 +1,4 @@
-import type { AgentConfig, AgentConfigWithTools, AgentCrmCapabilities, AgentKnowledgeDoc } from '@/services/agentsApi'
+import type { AgentConfig, HandoffRule, AgentConfigWithTools, AgentCrmCapabilities, AgentKnowledgeDoc } from '@/services/agentsApi'
 import { daysAgo, hoursAgo } from '@/components/landing/stage/hero/heroClock'
 import { HERO } from '@/components/landing/stage/hero/heroRealData'
 
@@ -25,6 +25,20 @@ const CRM_RECEPCAO: AgentCrmCapabilities = {
   ],
 }
 
+/** Regras de transferência do Agente Recepção (seção Transferência da demo). */
+const REGRAS_RECEPCAO: HandoffRule[] = [
+  { id: 'hr-encaixe', name: 'Encaixe ou urgência', priority: 1, enabled: true, matchMode: 'any_keyword',
+    keywords: ['encaixe', 'urgente', 'hoje', 'dor', 'sangrando'], action: 'human_handoff', department: 'Recepção',
+    template: 'Claro! Já chamei a recepção para ver o encaixe com você por aqui mesmo.',
+    aiGenerated: true, createdAt: hoursAgo(300), updatedAt: hoursAgo(48) },
+  { id: 'hr-clinica', name: 'Dúvida clínica', priority: 2, enabled: true, matchMode: 'any_keyword',
+    keywords: ['sintoma', 'remédio', 'resultado de exame', 'posso tomar'], action: 'human_handoff', department: 'Dra. Helena',
+    aiGenerated: false, createdAt: hoursAgo(290), updatedAt: hoursAgo(290) },
+  { id: 'hr-humano', name: 'Pedido de uma pessoa', priority: 3, enabled: true, matchMode: 'any_keyword',
+    keywords: ['falar com alguém', 'atendente', 'pessoa', 'humano'], action: 'human_handoff', department: 'Recepção',
+    aiGenerated: false, createdAt: hoursAgo(290), updatedAt: hoursAgo(290) },
+]
+
 function agente(
   id: string, nome: string, icon: string, setor: string, objetivo: string,
   status: AgentConfig['status'], conversas: number, crm?: AgentCrmCapabilities,
@@ -39,7 +53,7 @@ function agente(
     objective: objetivo,
     status,
     system_prompt: id === 'ag-recepcao' ? PROMPT_RECEPCAO : `Você é o ${nome} da Clínica Vitalis. ${objetivo}`,
-    handoff_rules: { rules: [] },
+    handoff_rules: { rules: id === 'ag-recepcao' ? REGRAS_RECEPCAO : [] },
     channels: { whatsapp: { number: '+55 47 3030-1100', enabled: status === 'active' } },
     wizard_config: {},
     crm_capabilities: crm ?? { capabilities: [] },

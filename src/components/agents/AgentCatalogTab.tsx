@@ -1,25 +1,31 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, AlertCircle, Package, RefreshCw, Search, Check } from 'lucide-react'
+import { Loader2, AlertCircle, Package, RefreshCw, Search } from 'lucide-react'
 import { productsApi, agentCatalogApi } from '@/services/api'
 import type { Product } from '@/types'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/Switch'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { cn } from '@/lib/utils'
 
 interface Props {
   agentId: string
+  /** Página do agente: toda gravação passa pelo salvamento único dela. */
+  salvar?: <T>(tarefa: () => Promise<T>) => Promise<T>
+  /** Avisado depois de cada gravação (o resumo da navegação conta os itens). */
+  onMudou?: () => void
 }
 
 type SaveState = 'idle' | 'saving' | 'error'
 
 /** Menor preço do produto (em centavos), para o resumo "a partir de R$ X". */
 function fromPriceCents(product: Product): number | null {
-  if (!product.priceVariations?.length) return null
-  return Math.min(...product.priceVariations.map((v) => v.amountCents))
+  const pagos = (product.priceVariations ?? []).map((v) => v.amountCents).filter((c) => c > 0)
+  return pagos.length ? Math.min(...pagos) : null
 }
 
 function formatBRL(cents: number): string {
@@ -98,7 +104,7 @@ function SectionHeader({ label, count, accent }: { label: string; count: number;
  * usuário clica durante um save em andamento, uma nova rodada roda no fim com o estado final.
  * Leitura para todos; alternar só admin (espelha o catálogo de produtos).
  */
-export function AgentCatalogTab({ agentId }: Props) {
+export function AgentCatalogTab({ agentId, salvar, onMudou }: Props) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdminTier(user?.role)
@@ -151,18 +157,20 @@ export function AgentCatalogTab({ agentId }: Props) {
     try {
       do {
         pendingRef.current = false
-        const res = await agentCatalogApi.set(agentId, [...selectedRef.current])
+        const ids = [...selectedRef.current]
+        const res = salvar ? await salvar(() => agentCatalogApi.set(agentId, ids)) : await agentCatalogApi.set(agentId, ids)
         // Backend tolerante pode ter ignorado produtos que sumiram (excluídos em outra sessão).
         if (res.data.length !== selectedRef.current.size) diverged = true
       } while (pendingRef.current)
       setSaveState('idle')
+      onMudou?.()
     } catch {
       setSaveState('error')
     } finally {
       savingRef.current = false
     }
     if (diverged) void reload(true) // re-sincroniza a tela tirando o produto que sumiu
-  }, [agentId, reload])
+  }, [agentId, reload, salvar, onMudou])
 
   /** Liga/desliga um produto e grava na hora (auto-save). */
   const toggle = useCallback(
@@ -203,14 +211,11 @@ export function AgentCatalogTab({ agentId }: Props) {
   if (loadError) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <AlertCircle className="w-6 h-6 text-red-400" />
+        <AlertCircle className="w-6 h-6 text-danger" />
         <p className="text-sm text-surface-400">{loadError}</p>
-        <button
-          onClick={() => reload()}
-          className="inline-flex items-center gap-1.5 text-xs text-accent-dark hover:opacity-80"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Tentar de novo
-        </button>
+        <Button variant="neutral" size="sm" leftIcon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => reload()}>
+          Tentar de novo
+        </Button>
       </div>
     )
   }
@@ -228,41 +233,29 @@ export function AgentCatalogTab({ agentId }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h3 className="text-sm font-semibold text-surface-100">Catálogo do agente</h3>
-        <p className="text-xs text-surface-500 mt-0.5">
-          Ative os produtos que este agente pode oferecer e citar preços. Só os ativos entram no
-          contexto da IA — as alterações são salvas automaticamente.
-        </p>
-      </div>
-
       <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-          <input
+        <div className="relative flex-1 max-w-sm">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" aria-hidden />
+          <Input
+            aria-label="Buscar produto"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar produto..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-900 border border-surface-700 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50"
+            placeholder="Buscar produto ou categoria"
+            className="pl-8"
           />
         </div>
         {canManage && (
           <div className="flex-shrink-0 text-xs">
-            {saveState === 'saving' ? (
+            {saveState === 'error' ? (
+              <Button variant="ghost" size="sm" className="text-danger hover:text-danger" leftIcon={<AlertCircle className="w-3.5 h-3.5" />} onClick={() => void persist()}>
+                Não salvou — tentar de novo
+              </Button>
+            ) : salvar ? null : saveState === 'saving' ? (
               <span className="inline-flex items-center gap-1.5 text-surface-500">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Salvando…
               </span>
-            ) : saveState === 'error' ? (
-              <button
-                onClick={() => void persist()}
-                className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-300"
-              >
-                <AlertCircle className="w-3.5 h-3.5" /> Falha — tentar de novo
-              </button>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-surface-500">
-                <Check className="w-3.5 h-3.5 text-emerald-400" /> Salvo automaticamente
-              </span>
+              <span className="text-surface-500">Salvo automaticamente</span>
             )}
           </div>
         )}
@@ -278,7 +271,7 @@ export function AgentCatalogTab({ agentId }: Props) {
             ))}
           </AnimatePresence>
           {!activeProducts.length && (
-            <p className="text-xs text-surface-600 px-3 py-4 rounded-lg border border-dashed border-surface-700 text-center">
+            <p className="text-xs text-surface-400 px-3 py-4 rounded-lg border border-dashed border-[var(--bd2)]">
               {search
                 ? 'Nenhum produto ativo corresponde à busca.'
                 : 'Nenhum produto ativo ainda — ative na lista abaixo.'}
@@ -297,7 +290,7 @@ export function AgentCatalogTab({ agentId }: Props) {
             ))}
           </AnimatePresence>
           {!availableProducts.length && (
-            <p className="text-xs text-surface-600 px-3 py-4 rounded-lg border border-dashed border-surface-700 text-center">
+            <p className="text-xs text-surface-400 px-3 py-4 rounded-lg border border-dashed border-[var(--bd2)]">
               {search
                 ? 'Nenhum produto disponível corresponde à busca.'
                 : 'Todos os produtos já estão ativos neste agente.'}
@@ -307,7 +300,7 @@ export function AgentCatalogTab({ agentId }: Props) {
       </section>
 
       {!canManage && (
-        <p className="text-xs text-surface-600">
+        <p className="text-xs text-surface-400">
           Apenas administradores podem alterar o catálogo do agente.
         </p>
       )}

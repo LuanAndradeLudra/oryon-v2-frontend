@@ -79,9 +79,9 @@ export function NavegacaoDoAgente({
 /** "De onde saem as respostas" — o que a IA consulta hoje, num relance. */
 function FontesDasRespostas({ resumo, className }: { resumo: ResumoDoAgente; className?: string }) {
   const linhas: Array<{ rotulo: string; valor: string; ligado: boolean }> = [
-    { rotulo: 'Instruções', valor: resumo.caracteresInstrucoes > 0 ? `${resumo.caracteresInstrucoes.toLocaleString('pt-BR')} caract.` : 'vazias', ligado: resumo.caracteresInstrucoes > 0 },
-    { rotulo: 'Conhecimento', valor: resumo.documentos == null ? '…' : resumo.documentos === 1 ? '1 documento' : `${resumo.documentos} documentos`, ligado: (resumo.documentos ?? 0) > 0 },
-    { rotulo: 'Catálogo', valor: resumo.produtosAtivos == null ? '…' : resumo.produtosAtivos === 1 ? '1 item' : `${resumo.produtosAtivos} itens`, ligado: (resumo.produtosAtivos ?? 0) > 0 },
+    { rotulo: 'Instruções', valor: resumo.caracteresInstrucoes > 0 ? 'escritas' : 'vazias', ligado: resumo.caracteresInstrucoes > 0 },
+    { rotulo: 'Documentos', valor: resumo.documentos == null ? '…' : String(resumo.documentos), ligado: (resumo.documentos ?? 0) > 0 },
+    { rotulo: 'Itens do catálogo', valor: resumo.produtosAtivos == null ? '…' : String(resumo.produtosAtivos), ligado: (resumo.produtosAtivos ?? 0) > 0 },
   ]
   return (
     <div className={cn('rounded-md border border-surface-700 bg-[var(--sf2)] px-3 py-2.5', className)}>
@@ -90,8 +90,8 @@ function FontesDasRespostas({ resumo, className }: { resumo: ResumoDoAgente; cla
         {linhas.map((l) => (
           <li key={l.rotulo} className="flex items-center gap-2 text-xs">
             <span aria-hidden className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', l.ligado ? 'bg-brand-500' : 'bg-[var(--bd2)]')} />
-            <span className={l.ligado ? 'text-surface-200' : 'text-surface-400'}>{l.rotulo}</span>
-            <span className="ml-auto tabular-nums text-surface-500">{l.valor}</span>
+            <span className={cn('truncate', l.ligado ? 'text-surface-200' : 'text-surface-400')}>{l.rotulo}</span>
+            <span className="ml-auto whitespace-nowrap text-2xs tabular-nums text-surface-500">{l.valor}</span>
           </li>
         ))}
       </ul>
