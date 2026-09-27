@@ -1167,6 +1167,18 @@ export async function chatWithAgent(
   }
 }
 
+// ─── Runtime flags ────────────────────────────────────────────────────────────
+
+/** O que o motor do agente faz hoje neste tenant, para a tela não prometer além. */
+export interface AgentRuntimeFlags {
+  /** Os produtos escolhidos na seção Catálogo chegam ao modelo na conversa. */
+  catalogInjection: boolean
+}
+
+export async function getAgentRuntimeFlags(): Promise<AgentRuntimeFlags> {
+  return apiFetch<AgentRuntimeFlags>('/runtime-flags')
+}
+
 // ─── Brand File Extraction ─────────────────────────────────────────────────────
 
 export async function extractBrandFile(

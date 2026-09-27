@@ -103,7 +103,8 @@ function SectionHeader({ label, count, accent }: { label: string; count: number;
 
 /**
  * Aba "Catálogo" do agente (SCRUM-222): escolhe quais produtos do tenant este agente pode
- * oferecer. Só os ativos serão injetados no contexto da IA (consumo no card 139).
+ * oferecer. Só os ativos entram no contexto da IA, e só quando FF_CATALOG_INJECTION está
+ * ligada no agent-server (desligada por padrão) — a SecaoCatalogo avisa quando não entram.
  *
  * Auto-save: cada toggle grava na hora. Os saves são serializados (um PUT por vez) — se o
  * usuário clica durante um save em andamento, uma nova rodada roda no fim com o estado final.
