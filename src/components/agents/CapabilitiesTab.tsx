@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/Switch'
 import { Modal } from '@/components/ui/Modal'
 import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
 import { tagsApi, usersApi, stagesApi, pipelinesApi } from '@/services/api'
 import { updateAgent } from '@/services/agentsApi'
 import { pipelineKindOption } from '@/lib/pipelineKinds'
@@ -317,20 +318,8 @@ function ConstraintsModal({
       title={`Limites — ${entry.label}`}
       footer={
         <div className="flex justify-end gap-2 px-4 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 text-sm rounded-md text-surface-300 hover:text-surface-100"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="px-3 py-1.5 text-sm rounded-md bg-surface-100 hover:bg-surface-50 text-surface-950 font-medium"
-          >
-            Salvar limites
-          </button>
+          <Button type="button" variant="neutral" onClick={onClose}>Cancelar</Button>
+          <Button type="button" onClick={handleSave}>Salvar limites</Button>
         </div>
       }
     >
@@ -392,7 +381,7 @@ function StatusesPicker({ value, onChange }: { value: ConversationStatus[]; onCh
                 <div className="text-surface-200 font-medium">
                   {opt.label}
                   {isResolved && (
-                    <span className="ml-2 text-[10px] uppercase tracking-wide text-status-warn-400">Cuidado</span>
+                    <span className="ml-2 text-3xs font-bold uppercase tracking-wide text-status-pending">Cuidado</span>
                   )}
                 </div>
                 <div className="text-surface-500">{opt.help}</div>
@@ -579,7 +568,7 @@ function PickerSection({ title, hint, children }: { title: string; hint: string;
   return (
     <div>
       <div className="text-xs font-semibold text-surface-200">{title}</div>
-      <div className="text-[11px] text-surface-500 mt-0.5">{hint}</div>
+      <div className="text-2xs text-surface-400 mt-0.5">{hint}</div>
       <div className="mt-2 max-h-60 overflow-y-auto rounded-md border border-surface-700 bg-surface-950/40 p-1.5">
         {children}
       </div>
@@ -617,7 +606,7 @@ function CheckboxList({
             {it.color && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: it.color }} />}
             <div className="text-xs flex-1 min-w-0">
               <div className="text-surface-200 truncate">{it.label}</div>
-              {it.sub && <div className="text-surface-500 truncate text-[11px]">{it.sub}</div>}
+              {it.sub && <div className="text-surface-500 truncate text-2xs">{it.sub}</div>}
             </div>
           </label>
         )

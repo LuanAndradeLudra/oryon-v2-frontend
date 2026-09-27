@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useId, useCallback } from 'react'
 import {
   Sparkles, Send, X, Plus, Trash2, Edit3, ArrowUp, ArrowDown,
-  ArrowRightLeft, Check, Loader2, Users, ExternalLink, MessageSquare,
+  ArrowRightLeft, Check, Users, ExternalLink, MessageSquare,
   Zap, ChevronDown,
   Tag, Layers, FileText, AlignLeft, Heart,
 } from 'lucide-react'
@@ -296,8 +296,8 @@ function TemplateVariantPicker({
               : 'bg-surface-800 border-surface-700 text-surface-500 hover:border-surface-600 hover:text-surface-300',
           )}
         >
-          <span className="text-[11px] font-medium">{VARIANT_LABELS[key].label}</span>
-          <span className="text-[9px] opacity-70">{VARIANT_LABELS[key].desc}</span>
+          <span className="text-2xs font-medium">{VARIANT_LABELS[key].label}</span>
+          <span className="text-3xs opacity-70">{VARIANT_LABELS[key].desc}</span>
         </button>
       ))}
     </div>
@@ -351,12 +351,12 @@ function KeywordTiersView({
           <div key={tier}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <span
-                className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded border"
+                className="color-chip text-3xs font-medium px-1.5 py-0.5 rounded border"
                 style={{ ['--chip']: meta.chip } as React.CSSProperties}
               >
                 {meta.label}
               </span>
-              <span className="text-[10px] text-surface-600">{meta.tip}</span>
+              <span className="text-3xs text-surface-600">{meta.tip}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {kws.map(kw => (
@@ -371,7 +371,7 @@ function KeywordTiersView({
                 >
                   {kw}
                   {flatKeywords.includes(kw) && (
-                    <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="opacity-60 hover:opacity-100 hover:text-red-400 transition">
+                    <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="opacity-60 hover:opacity-100 hover:text-danger transition">
                       <X className="w-3 h-3" />
                     </button>
                   )}
@@ -385,12 +385,12 @@ function KeywordTiersView({
       {/* Manually added keywords */}
       {manualKws.length > 0 && (
         <div>
-          <span className="text-[10px] text-surface-600 uppercase tracking-wide">Adicionadas manualmente</span>
+          <span className="text-3xs text-surface-600 uppercase tracking-wide">Adicionadas manualmente</span>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {manualKws.map(kw => (
               <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
                 {kw}
-                <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-red-400 transition">
+                <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-danger transition">
                   <X className="w-3 h-3" />
                 </button>
               </span>
@@ -405,15 +405,14 @@ function KeywordTiersView({
           value={kwInput}
           onChange={e => setKwInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword() } }}
-          placeholder="Adicionar keyword e pressionar Enter..."
+          placeholder="Adicionar palavra-chave e pressionar Enter..."
           className={INPUT}
         />
-        <button type="button" onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave"
-          className="px-3 rounded-xl bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
+        <Button type="button" variant="neutral" iconOnly onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave">
           <Plus className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
-      <p className="text-[10px] text-surface-700">Total: {flatKeywords.length} keyword(s) ativas</p>
+      <p className="text-2xs text-surface-500">{flatKeywords.length} {flatKeywords.length === 1 ? 'palavra-chave ativa' : 'palavras-chave ativas'}</p>
     </div>
   )
 }
@@ -491,7 +490,7 @@ function DraftEditor({
               <span className={draft.action === opt.value ? '' : 'text-surface-500 mt-0.5'}>{opt.icon}</span>
               <div>
                 <p className="text-xs font-medium text-surface-200">{opt.label}</p>
-                <p className="text-[10px] text-surface-500 leading-tight mt-0.5">{opt.desc}</p>
+                <p className="text-3xs text-surface-500 leading-tight mt-0.5">{opt.desc}</p>
               </div>
             </button>
           ))}
@@ -540,7 +539,7 @@ function DraftEditor({
               {draft.keywords.map(kw => (
                 <span key={kw} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
                   {kw}
-                  <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-red-400 transition">
+                  <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-danger transition">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -554,10 +553,9 @@ function DraftEditor({
                 placeholder="Adicionar palavra-chave e pressionar Enter..."
                 className={INPUT}
               />
-              <button type="button" onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave"
-                className="px-3 rounded-xl bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
+              <Button type="button" variant="neutral" iconOnly onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave">
                 <Plus className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -585,29 +583,26 @@ function DraftEditor({
             placeholder="Mensagem que será enviada ao lead..."
           />
           {draft.templateVariants && (
-            <p className="text-[10px] text-surface-600 mt-1">Edite o texto acima para personalizar esta variante.</p>
+            <p className="text-3xs text-surface-600 mt-1">Edite o texto acima para personalizar esta variante.</p>
           )}
         </div>
       )}
 
       {/* Buttons */}
       <div className="flex items-center gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 px-4 py-2.5 rounded-sm border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition"
-        >
+        <Button type="button" variant="neutral" className="flex-1" onClick={onCancel}>
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          className="flex-1"
           onClick={onSave}
-          disabled={!draft.name.trim() || draft.keywords.length === 0 || saving}
-          className="flex-1 px-4 py-2.5 rounded-sm bg-surface-100 hover:bg-surface-50 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition inline-flex items-center justify-center gap-2"
+          disabled={!draft.name.trim() || draft.keywords.length === 0}
+          loading={saving}
+          leftIcon={<Check className="w-4 h-4" />}
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-          {saving ? 'Salvando…' : 'Salvar regra'}
-        </button>
+          Salvar regra
+        </Button>
       </div>
     </div>
   )
@@ -660,7 +655,7 @@ function HandoffGeneratingCard() {
         <div className="w-5 h-5 rounded-lg bg-brand-600/20 flex items-center justify-center flex-shrink-0">
           <Sparkles className="w-3 h-3 text-brand-400" />
         </div>
-        <span className="text-[11px] font-medium text-surface-400">Gerando regra de handoff</span>
+        <span className="text-2xs font-medium text-surface-400">Gerando regra de handoff</span>
         <div className="ml-auto flex gap-1">
           {[0, 1, 2].map(i => (
             <span
@@ -696,7 +691,7 @@ function HandoffGeneratingCard() {
               initial={{ opacity: 0, scale: 0.75 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-              className="px-2 py-0.5 rounded-md bg-surface-800 border border-[var(--bd2)] text-[11px] text-surface-300"
+              className="px-2 py-0.5 rounded-md bg-surface-800 border border-[var(--bd2)] text-2xs text-surface-300"
             >
               {kw}
             </motion.span>
@@ -868,14 +863,9 @@ function AIRuleBuilder({
         {/* Regenerate button */}
         {editingDraft && draft && !savingDraft && (
           <div className="flex justify-center">
-            <button
-              onClick={handleRegenerate}
-              disabled={generating}
-              className="inline-flex items-center gap-1.5 text-xs text-surface-500 hover:text-brand-400 transition"
-            >
-              {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-              Regenerar sugestão
-            </button>
+            <Button variant="ghost" size="sm" onClick={handleRegenerate} loading={generating} leftIcon={<Sparkles className="w-3.5 h-3.5" />}>
+              Gerar outra sugestão
+            </Button>
           </div>
         )}
 
@@ -906,16 +896,11 @@ function AIRuleBuilder({
               className="flex-1 bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition leading-relaxed disabled:opacity-50"
               style={{ maxHeight: '100px' }}
             />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || generating}
-              aria-label="Enviar descrição da regra"
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all bg-surface-100 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950"
-            >
+            <Button iconOnly onClick={handleSend} disabled={!input.trim() || generating} aria-label="Enviar descrição da regra">
               <Send className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
-          <p className="text-[10px] text-surface-700 mt-1">Enter para enviar · Shift+Enter para nova linha</p>
+          <p className="text-2xs text-surface-500 mt-1">Enter envia · Shift+Enter quebra a linha</p>
         </div>
       )}
     </div>

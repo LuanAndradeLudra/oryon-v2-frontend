@@ -22,6 +22,7 @@ import {
 import { listAgentSkills, updateAgentSkill, detachSkill } from '@/services/agentSkillsApi'
 import type { AgentSkillWithTemplate } from '@/types/skills'
 import { Switch } from '@/components/ui/Switch'
+import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
@@ -408,37 +409,19 @@ function SkillRow({
         {staff && (
           <div className="flex items-center gap-1">
             <Tooltip content="Testar skill" side="top">
-              <button
-                type="button"
-                onClick={onTest}
-                disabled={toggling}
-                aria-label="Testar skill"
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-brand-300 hover:bg-[var(--rowhover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+              <Button variant="ghost" size="sm" iconOnly onClick={onTest} disabled={toggling} aria-label="Testar skill">
                 <Beaker className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </Tooltip>
             <Tooltip content="Editar configuração" side="top">
-              <button
-                type="button"
-                onClick={onEdit}
-                disabled={toggling}
-                aria-label="Editar configuração"
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+              <Button variant="ghost" size="sm" iconOnly onClick={onEdit} disabled={toggling} aria-label="Editar configuração">
                 <Pencil className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </Tooltip>
             <Tooltip content="Remover skill" side="top">
-              <button
-                type="button"
-                onClick={onRemove}
-                disabled={toggling}
-                aria-label="Remover skill"
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-danger hover:bg-danger/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+              <Button variant="ghost" size="sm" iconOnly onClick={onRemove} disabled={toggling} aria-label="Remover skill">
                 <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </Tooltip>
           </div>
         )}
@@ -448,7 +431,7 @@ function SkillRow({
           disabled={disabled}
         />
         {toggling && (
-          <span className="text-[10px] text-surface-500 inline-flex items-center gap-1">
+          <span className="text-3xs text-surface-500 inline-flex items-center gap-1">
             <Loader2 className="w-2.5 h-2.5 animate-spin" /> salvando
           </span>
         )}
