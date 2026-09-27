@@ -62,14 +62,25 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
 
   const { resumo, recarregarResumo } = useResumoDoAgente(agent)
 
+  // No celular a bancada ocupa a tela: abrir EMPILHA uma entrada no histórico
+  // para que o voltar do aparelho feche o teste em vez de sair da página.
+  // No desktop ela é uma coluna ao lado e troca a URL no lugar.
+  const empilhou = useRef(false)
   const alternarTeste = useCallback(() => {
+    const aberto = searchParams.get('teste') === '1'
+    if (aberto && empilhou.current) {
+      empilhou.current = false
+      navigate(-1)
+      return
+    }
+    empilhou.current = !aberto && isMobile
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
-      if (next.get('teste') === '1') next.delete('teste')
+      if (aberto) next.delete('teste')
       else next.set('teste', '1')
       return next
-    }, { replace: true })
-  }, [setSearchParams])
+    }, { replace: !empilhou.current })
+  }, [searchParams, setSearchParams, isMobile, navigate])
 
   if (erro) {
     return (

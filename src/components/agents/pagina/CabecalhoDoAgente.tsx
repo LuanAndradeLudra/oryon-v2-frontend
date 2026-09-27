@@ -177,9 +177,14 @@ export function CabecalhoDoAgente({
             <div className="flex flex-wrap items-center gap-1.5">
               <StatusDoAgente status={agent.status} />
               {!testado && (
-                <span className="inline-flex items-center h-5 px-[7px] rounded-xs text-2xs font-semibold whitespace-nowrap bg-status-pending-bg text-status-pending border border-status-pending-border">
-                  Ainda não testado
-                </span>
+                <button
+                  type="button"
+                  onClick={onAlternarTeste}
+                  className="inline-flex items-center gap-1 min-h-7 px-2 rounded-xs text-2xs font-semibold whitespace-nowrap bg-status-pending-bg text-status-pending border border-status-pending-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                >
+                  <Sparkles className="w-3 h-3" aria-hidden />
+                  Ainda não testado · Testar agora
+                </button>
               )}
             </div>
             {(agent.objective || numero) && (
