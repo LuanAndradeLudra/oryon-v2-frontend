@@ -10,12 +10,13 @@ import { motion } from 'framer-motion'
 import { SettingsSection } from '../SettingsSection'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 import {
   PLANS, formatCredits, mapBackendTier,
 } from '@/config/plans'
 import { useBilling } from '@/hooks/useBilling'
-import { billingApi } from '@/services/billingApi'
+import { billingApi, type BillingInvoiceRow } from '@/services/billingApi'
 import type {
   CreditTransaction, PlanOption, PaymentStatus, BackendPlanTier, CreditPack,
 } from '@/services/billingApi'
@@ -136,6 +137,57 @@ const TX_TYPE_LABEL: Record<CreditTransaction['type'], string> = {
   reset:      'Renovação',
   refund:     'Estorno',
   adjustment: 'Ajuste',
+}
+
+// Rótulos das faturas — os valores vêm de InvoiceKind/InvoiceStatus
+// (backend, billing-invoice.entity.ts). Valor desconhecido aparece cru.
+const INVOICE_KIND_LABEL: Record<string, string> = {
+  subscription: 'Assinatura',
+  setup: 'Implantação',
+  overage: 'Excedente',
+  credit_pack: 'Pacote de créditos',
+}
+const INVOICE_STATUS: Record<string, { label: string; variant: 'pending' | 'resolved' | 'danger' | 'abandoned' }> = {
+  pending: { label: 'Em aberto', variant: 'pending' },
+  paid: { label: 'Paga', variant: 'resolved' },
+  past_due: { label: 'Vencida', variant: 'danger' },
+  failed: { label: 'Falhou', variant: 'danger' },
+  canceled: { label: 'Cancelada', variant: 'abandoned' },
+}
+
+function formatMoney(amount: string, currency: string): string {
+  const n = Number(amount)
+  if (!Number.isFinite(n)) return amount
+  try {
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: currency || 'BRL' })
+  } catch {
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  }
+}
+
+const dia = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+
+/** Uma fatura na mesma gramática do extrato: descrição · metadados · valor e situação à direita. */
+function InvoiceRow({ inv }: { inv: BillingInvoiceRow }) {
+  const kind = INVOICE_KIND_LABEL[inv.kind] ?? inv.kind
+  const status = INVOICE_STATUS[inv.status]
+  const quando = inv.status === 'paid' && inv.paidAt
+    ? `paga em ${dia(inv.paidAt)}`
+    : inv.dueAt ? `vence em ${dia(inv.dueAt)}` : null
+  return (
+    <div className="flex items-center gap-4 py-3 border-b border-surface-700 last:border-0">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-surface-200 truncate">{inv.description || kind}</p>
+        <p className="text-xs text-surface-500 mt-0.5 truncate">
+          {[kind, inv.number ? `nº ${inv.number}` : null, quando].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+      <div className="flex flex-shrink-0 items-center gap-3">
+        <span className="text-sm font-semibold text-surface-100 tabular-nums">{formatMoney(inv.amount, inv.currency)}</span>
+        {status ? <Badge variant={status.variant}>{status.label}</Badge> : <Badge>{inv.status}</Badge>}
+      </div>
+    </div>
+  )
 }
 
 function TransactionRow({ tx }: { tx: CreditTransaction }) {
@@ -262,7 +314,7 @@ export function BillingSettings() {
   // Falha ao carregar payment-status NÃO assume "novo cliente" (evita cobrança duplicada).
   const [statusError, setStatusError] = useState(false)
   const [packs, setPacks] = useState<CreditPack[]>([])
-  const [invoices, setInvoices] = useState<import('@/services/billingApi').BillingInvoiceRow[]>([])
+  const [invoices, setInvoices] = useState<BillingInvoiceRow[]>([])
   const [intent, setIntent] = useState<CheckoutIntent | null>(null)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [canceling, setCanceling] = useState(false)
@@ -557,37 +609,18 @@ export function BillingSettings() {
         )}
       </SettingsSection>
 
-      {/* Faturas (F3) — fonte: GET /settings/billing/invoices */}
+      {/* Faturas (F3) — fonte: GET /settings/billing/invoices. Mesma gramática
+          do extrato de créditos logo acima (linha com borda, valor à direita). */}
       <SettingsSection
+        labelWidth={220}
+        dense
         title="Faturas"
-        description="Cobranças de assinatura, setup, excedente e pacotes."
+        description="Assinatura, implantação, excedente e pacotes de créditos."
       >
-        {invoices.length === 0 ? (
-          <p className="text-sm text-surface-500 py-2">Nenhuma fatura emitida ainda.</p>
+        {invoices.length > 0 ? (
+          invoices.map((inv) => <InvoiceRow key={inv.id} inv={inv} />)
         ) : (
-          <ul className="divide-y divide-surface-800">
-            {invoices.map((inv) => (
-              <li key={inv.id} className="py-2.5 flex items-center justify-between gap-3 text-sm">
-                <div className="min-w-0">
-                  <p className="text-surface-100 font-medium truncate">
-                    {inv.number ?? inv.id.slice(0, 8)} · {inv.kind}
-                  </p>
-                  <p className="text-xs text-surface-500 truncate">
-                    {inv.description ?? '—'}
-                    {inv.dueAt
-                      ? ` · vence ${new Date(inv.dueAt).toLocaleDateString('pt-BR')}`
-                      : ''}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-surface-100 font-semibold">
-                    R$ {Number(inv.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-[11px] uppercase tracking-wide text-surface-500">{inv.status}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <p className="text-sm text-surface-500 py-2">Nenhuma fatura emitida ainda.</p>
         )}
       </SettingsSection>
 
