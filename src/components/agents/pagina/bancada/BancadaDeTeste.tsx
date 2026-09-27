@@ -111,11 +111,22 @@ export function BancadaDeTeste({
   const agentRef = useRef(agent)
   useEffect(() => { agentRef.current = agent }, [agent])
 
+  // Cada abertura é uma geração: se a bancada fechar (ou a conversa recomeçar)
+  // antes de a sessão nascer no servidor, a resposta atrasada é encerrada em
+  // vez de virar uma sessão órfã aberta.
+  const geracao = useRef(0)
   const abrirSessao = useCallback(() => {
-    startTestSession(agent.id).then((s) => { sessao.current = s.id }).catch(() => { sessao.current = null })
+    const minha = ++geracao.current
+    startTestSession(agent.id)
+      .then((s) => {
+        if (minha === geracao.current) sessao.current = s.id
+        else endTestSession(agent.id, s.id).catch(() => {})
+      })
+      .catch(() => { if (minha === geracao.current) sessao.current = null })
   }, [agent.id])
 
   const fecharSessao = useCallback(() => {
+    geracao.current += 1
     if (sessao.current) endTestSession(agent.id, sessao.current).catch(() => {})
     sessao.current = null
   }, [agent.id])
