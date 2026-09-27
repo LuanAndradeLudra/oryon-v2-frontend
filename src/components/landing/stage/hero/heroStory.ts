@@ -137,25 +137,25 @@ export const HERO_CAPITULOS: readonly HeroCapitulo[] = [
   {
     id: 'atendimento',
     titulo: 'Atendimento com IA',
-    valor: 'A IA responde na hora com o que você ensinou e deixa situação e etiquetas em dia.',
+    valor: 'O agente responde com as informações configuradas e mantém a situação e as etiquetas atualizadas.',
     cue: 0,
   },
   {
     id: 'funil',
     titulo: 'Funil em dia',
-    valor: 'A conversa avança o atendimento de etapa, e o quadro mostra onde cada um está.',
+    valor: 'A IA move o negócio para a próxima etapa, e a equipe acompanha tudo no quadro.',
     cue: idx((c) => c.composition === 'funil'),
   },
   {
     id: 'equipe',
     titulo: 'A equipe no controle',
-    valor: 'A IA chama uma pessoa quando o cliente pede — e quem confirma é sempre a sua equipe.',
+    valor: 'Quando a paciente pede ajuda, a IA chama a recepção. A decisão final fica com a equipe.',
     cue: idx((c) => c.state === 'pedido') - 1,
   },
   {
     id: 'disparos',
     titulo: 'De onde veio a conversa',
-    valor: 'Campanhas para a sua base: quem recebeu, leu e respondeu vira atendimento.',
+    valor: 'As respostas às campanhas entram direto no atendimento.',
     cue: idx((c) => c.composition === 'relatorio'),
   },
 ]
@@ -174,23 +174,23 @@ export function capituloDe(estado: HeroState, cena: HeroCena, index: number): He
  */
 export function batidaDe(estado: HeroState, cena: HeroCena): string {
   if (cena === 'disparos') return 'A campanha de retorno sai para 1.240 pacientes'
-  if (cena === 'relatorio') return 'De onde veio a conversa: a campanha de retorno, e quem mais respondeu'
+  if (cena === 'relatorio') return 'O relatório mostra quem recebeu, leu e respondeu à campanha'
   if (cena === 'funil') {
     return estado === 'avanco'
-      ? 'O atendimento da Marina passa de Avaliação para Agendado'
-      : 'O funil de consultas, com o atendimento da Marina em Avaliação'
+      ? 'A IA move o negócio de Avaliação para Agendado'
+      : 'O negócio da Marina aparece na etapa Avaliação'
   }
   switch (estado) {
     case 'inicio': return 'A campanha de retorno chega no WhatsApp da Marina'
     case 'demanda': return 'A Marina pede um horário com a Dra. Helena'
-    case 'resposta': return 'A IA responde na hora: valor, convênio e horários da agenda'
+    case 'resposta': return 'A IA responde com valor, convênio e horários usando os dados da clínica'
     case 'confirma': return 'A Marina escolhe quinta às 14h30'
-    case 'situacao': return 'A IA atualiza a situação do contato no CRM'
-    case 'etiqueta': return 'e etiqueta a conversa como "retorno"'
+    case 'situacao': return 'A IA atualiza a situação da Marina no CRM'
+    case 'etiqueta': return 'A IA adiciona a etiqueta "retorno" à conversa'
     case 'avanco': return 'O atendimento já está em Agendado'
-    case 'pedido': return 'A Marina pede uma pessoa: quer um encaixe antes'
-    case 'assumido': return 'A IA chama a Ana e coloca a conversa na fila'
-    case 'humano': return 'A Ana assume — a IA fica em pausa enquanto ela atende'
-    case 'ganho': return 'A Ana confirma o encaixe: o atendimento vai para Confirmado'
+    case 'pedido': return 'Marina pede ajuda para conseguir um encaixe'
+    case 'assumido': return 'A IA avisa Ana e transfere a conversa com todo o histórico'
+    case 'humano': return 'Quando Ana responde, a IA pausa enquanto ela atende'
+    case 'ganho': return 'Ana confirma o encaixe e move o negócio para Confirmado'
   }
 }

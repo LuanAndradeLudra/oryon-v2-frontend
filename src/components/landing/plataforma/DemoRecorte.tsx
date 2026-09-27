@@ -39,6 +39,9 @@ const AMPLIACAO_MAX = 0.87
 /** Cabeçalho fixo + frase do bloco + moldura + folgas, fora do recorte. */
 const FORA_DO_RECORTE = 300
 const ALTURA = { min: 202, max: 419 }
+/** Evita remontar uma demonstração quando a pessoa apenas compara dois itens
+ *  do índice em sequência. A página continua liberando iframes distantes. */
+const DESMONTAR_APOS_MS = 10_000
 
 export interface Recorte { x: number; y: number; w: number; h: number }
 
@@ -47,8 +50,136 @@ function temaDaPagina(): 'dark' | 'light' {
   return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'
 }
 
+type TipoPoster = 'agente' | 'campanha' | 'conversa' | 'funil' | 'painel'
+
+function tipoPoster(rota: string): TipoPoster {
+  if (rota.startsWith('/agents')) return 'agente'
+  if (rota.startsWith('/campaigns')) return 'campanha'
+  if (rota.startsWith('/pipelines')) return 'funil'
+  if (rota.startsWith('/dashboard')) return 'painel'
+  return 'conversa'
+}
+
+/**
+ * Um primeiro quadro leve para a janela nunca ficar vazia enquanto o app real
+ * aguarda a fila de montagem. Ele preserva a silhueta da tela que vai entrar,
+ * mas não duplica conteúdo nem lógica da simulação.
+ */
+function PosterDaDemo({ rota }: { rota: string }) {
+  const tipo = tipoPoster(rota)
+  const linha = 'rounded-sm bg-surface-700/75'
+  const cartao = 'rounded-md border border-surface-700/80 bg-surface-900/75'
+
+  return (
+    <div
+      data-demo-poster={tipo}
+      className="absolute inset-0 overflow-hidden bg-surface-950 p-[3%]"
+    >
+      <div className="mb-[2.5%] flex h-[5%] items-center gap-[1.3%]">
+        <span className="h-full aspect-square rounded-full bg-brand-500/70" />
+        <span className={cn(linha, 'h-[45%] w-[18%]')} />
+        <span className={cn(linha, 'ml-auto h-[45%] w-[11%] opacity-55')} />
+      </div>
+
+      {tipo === 'conversa' && (
+        <div className="grid h-[89%] grid-cols-[minmax(0,1.7fr)_minmax(0,.85fr)] gap-[2%]">
+          <div className={cn(cartao, 'flex flex-col justify-end gap-[3%] p-[4%]')}>
+            <span className={cn(linha, 'h-[10%] w-[45%]')} />
+            <span className="ml-auto h-[14%] w-[58%] rounded-md bg-brand-700/55" />
+            <span className={cn(linha, 'h-[12%] w-[52%]')} />
+            <span className="ml-auto h-[18%] w-[68%] rounded-md bg-brand-700/65" />
+            <span className={cn(cartao, 'mt-[2%] h-[15%] w-full')} />
+          </div>
+          <div className={cn(cartao, 'space-y-[5%] p-[7%]')}>
+            <span className={cn(linha, 'block h-[5%] w-[48%]')} />
+            <span className={cn(linha, 'block h-[9%] w-[78%]')} />
+            <span className={cn(linha, 'block h-[5%] w-full opacity-60')} />
+            <span className={cn(linha, 'block h-[5%] w-[85%] opacity-60')} />
+            <span className="block h-px w-full bg-surface-700" />
+            <span className={cn(cartao, 'block h-[24%] w-full')} />
+          </div>
+        </div>
+      )}
+
+      {tipo === 'funil' && (
+        <div className="grid h-[88%] grid-cols-3 gap-[2%]">
+          {[0, 1, 2].map((coluna) => (
+            <div key={coluna} className="min-w-0">
+              <div className="mb-[5%] flex h-[8%] items-center gap-[4%] border-b border-surface-700">
+                <span className={cn(linha, 'h-[35%] w-[44%]')} />
+                <span className={cn(linha, 'ml-auto h-[35%] w-[18%] opacity-55')} />
+              </div>
+              <div className={cn(cartao, 'h-[30%] p-[6%]')}>
+                <span className={cn(linha, 'block h-[12%] w-[72%]')} />
+                <span className={cn(linha, 'mt-[6%] block h-[10%] w-[48%] opacity-60')} />
+                <span className="mt-[12%] block h-[12%] w-[35%] rounded-sm bg-brand-600/55" />
+              </div>
+              {coluna < 2 && <div className={cn(cartao, 'mt-[5%] h-[25%] opacity-70')} />}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tipo === 'campanha' && (
+        <div className={cn(cartao, 'h-[89%] p-[3.5%]')}>
+          <div className="grid h-[16%] grid-cols-4 divide-x divide-surface-700 overflow-hidden rounded-md border border-surface-700">
+            {[52, 12, 3, 29].map((n) => <span key={n} className="grid place-items-center text-[clamp(8px,1.2vw,15px)] font-semibold text-brand-400/80">{n}%</span>)}
+          </div>
+          <div className="mt-[4%] space-y-[2.5%]">
+            {[92, 78, 61, 37].map((w, i) => (
+              <div key={w} className="flex h-[6%] items-center gap-[3%]">
+                <span className={cn(linha, 'h-[35%] w-[17%] opacity-60')} />
+                <span className="h-full rounded-sm bg-brand-600/35" style={{ width: `${w - i * 4}%` }} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-[5%] flex h-[42%] items-end gap-[2%] border-b border-l border-surface-700 px-[3%]">
+            {[30, 46, 38, 68, 57, 79, 72, 88].map((h, i) => <span key={i} className="flex-1 rounded-t-sm bg-brand-600/45" style={{ height: `${h}%` }} />)}
+          </div>
+        </div>
+      )}
+
+      {tipo === 'agente' && (
+        <div className={cn(cartao, 'h-[89%] p-[4%]')}>
+          <div className="flex h-[9%] gap-[2%] border-b border-surface-700">
+            {[24, 30, 22].map((w, i) => <span key={w} className={cn(linha, i === 1 && 'bg-brand-600/55')} style={{ width: `${w}%`, height: '42%' }} />)}
+          </div>
+          <div className="mt-[4%] grid h-[80%] grid-cols-[minmax(0,1.45fr)_minmax(0,.55fr)] gap-[3%]">
+            <div className="space-y-[3%]">
+              <span className={cn(linha, 'block h-[4%] w-[28%]')} />
+              <div className={cn(cartao, 'h-[35%] p-[4%]')}>
+                {[88, 72, 91, 48].map((w) => <span key={w} className={cn(linha, 'mb-[3%] block h-[8%] opacity-60')} style={{ width: `${w}%` }} />)}
+              </div>
+              <span className={cn(linha, 'block h-[4%] w-[35%]')} />
+              <div className={cn(cartao, 'h-[28%]')} />
+            </div>
+            <div className={cn(cartao, 'h-full p-[8%]')}>
+              <span className="mx-auto block aspect-square w-[28%] rounded-full bg-brand-600/45" />
+              {[68, 88, 76].map((w) => <span key={w} className={cn(linha, 'mx-auto mt-[9%] block h-[3%] opacity-60')} style={{ width: `${w}%` }} />)}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tipo === 'painel' && (
+        <div className="h-[89%]">
+          <div className="grid h-[27%] grid-cols-4 gap-[2%]">
+            {[0, 1, 2, 3].map((i) => <div key={i} className={cn(cartao, 'p-[9%]')}><span className={cn(linha, 'block h-[12%] w-[55%] opacity-60')} /><span className="mt-[12%] block h-[22%] w-[32%] rounded-sm bg-brand-600/55" /></div>)}
+          </div>
+          <div className="mt-[2%] grid h-[69%] grid-cols-[minmax(0,1.55fr)_minmax(0,.65fr)] gap-[2%]">
+            <div className={cn(cartao, 'flex items-end gap-[2%] px-[4%] pb-[5%]')}>
+              {[46, 70, 55, 86, 68, 92, 76].map((h, i) => <span key={i} className="flex-1 rounded-t-sm bg-brand-600/45" style={{ height: `${h}%` }} />)}
+            </div>
+            <div className={cn(cartao, 'space-y-[8%] p-[8%]')}>{[84, 64, 76, 55].map((w) => <span key={w} className={cn(linha, 'block h-[5%] opacity-60')} style={{ width: `${w}%` }} />)}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className, onLimite, foraDoRecorte = FORA_DO_RECORTE, preencherAltura = false, onPasso,
+  titulo, rota, estado, cues, recorte, className, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
 }: {
   titulo: string
   /** Rota em que o app nasce. */
@@ -65,10 +196,6 @@ export function DemoRecorte({
   /** Altura da tela reservada ao que fica fora do recorte (cabeçalho, frase do
    *  recurso, folgas). Menor quando o conteúdo já está empilhado e rola. */
   foraDoRecorte?: number
-  /** A moldura ocupa a ALTURA do contêiner (ao lado de evidências mais altas):
-   *  o recorte revela mais do app real para baixo — nunca estica a imagem,
-   *  nunca fica menor que a proporção natural nem passa do fim da tela do app. */
-  preencherAltura?: boolean
   /** Cada passo da mini-história (estado, cena, índice do cue — 0 = recomeçou). */
   onPasso?: (estado: HeroState, cena: HeroCena, indice: number) => void
 }) {
@@ -79,11 +206,12 @@ export function DemoRecorte({
   const celular = !useMediaQuery('(min-width: 768px)')
 
   // ── Montar perto da tela, UM POR VEZ (filaDeMontagem); desmontar depois que sai ─
-  const [montar, setMontar] = useState(false)
+  const [montar, setMontar] = useState(() => typeof IntersectionObserver === 'undefined')
+  const [pronta, setPronta] = useState(false)
   const pedidoRef = useRef<number | null>(null)
   useEffect(() => {
     const el = hostRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') { setMontar(true); return }
+    if (!el || typeof IntersectionObserver === 'undefined') return
     let sair: ReturnType<typeof setTimeout> | undefined
     let montado = false
     // A raiz tem de ser o contêiner que rola a landing: com a viewport como
@@ -102,8 +230,9 @@ export function DemoRecorte({
           if (pedidoRef.current !== null) cancelarMontagem(pedidoRef.current)
           pedidoRef.current = null
           montado = false
+          setPronta(false)
           setMontar(false)
-        }, 2500)
+        }, DESMONTAR_APOS_MS)
       }
     }, { root, rootMargin: '100% 0px' })
     // Já na tela e ainda esperando a vez: passa na frente.
@@ -119,8 +248,6 @@ export function DemoRecorte({
     }
   }, [])
 
-  const [pronta, setPronta] = useState(false)
-  useEffect(() => { if (!montar) setPronta(false) }, [montar])
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== location.origin || !iframeRef.current || e.source !== iframeRef.current.contentWindow) return
@@ -146,7 +273,7 @@ export function DemoRecorte({
   // O passo também sai para o artigo: os cartões de evidência ao lado reagem
   // à MESMA história que a tela conta (e sabem quando o laço recomeça).
   const avisarPasso = useRef(onPasso)
-  avisarPasso.current = onPasso
+  useLayoutEffect(() => { avisarPasso.current = onPasso }, [onPasso])
   useEffect(() => {
     if (pronta) avisarPasso.current?.(state, composition, index)
   }, [pronta, state, composition, index])
@@ -165,7 +292,7 @@ export function DemoRecorte({
   const regiao = celular ? { x: 0, y: 0, w: APP_CELULAR.w, h: APP_CELULAR.h } : recorte
   const app = celular ? APP_CELULAR : APP
   const avisar = useRef(onLimite)
-  avisar.current = onLimite
+  useLayoutEffect(() => { avisar.current = onLimite }, [onLimite])
   useLayoutEffect(() => {
     const medir = () => {
       // O teto de altura é do desktop; no celular (tela alta e estreita) manda
@@ -186,11 +313,10 @@ export function DemoRecorte({
     return () => window.removeEventListener('resize', medir)
   }, [regiao.w, regiao.h, celular, foraDoRecorte])
   const [tela, setTela] = useState(0)
-  const [telaAltura, setTelaAltura] = useState(0)
   useLayoutEffect(() => {
     const el = telaRef.current
     if (!el) return
-    const medir = () => { setTela(el.clientWidth); setTelaAltura(el.clientHeight) }
+    const medir = () => { setTela(el.clientWidth) }
     medir()
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
     ro?.observe(el)
@@ -201,27 +327,20 @@ export function DemoRecorte({
   const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}`)
 
   return (
-    <div className={cn('w-full', preencherAltura && 'h-full', className)}>
-        <div ref={hostRef} className={cn('relative', preencherAltura && 'h-full')} aria-hidden>
-          <Bandeja titulo={titulo} className={cn('w-full', preencherAltura && 'h-full')}>
+    <div className={cn('w-full', className)}>
+        <div ref={hostRef} className="relative" aria-hidden>
+          <Bandeja titulo={titulo} className="w-full">
             <div
               ref={telaRef}
               inert
               className="relative w-full overflow-hidden pointer-events-none select-none"
-              style={preencherAltura && tela > 0
-                ? {
-                    height: '100%',
-                    minHeight: Math.round(tela * (regiao.h / regiao.w)),
-                    // Até o fim da tela do app: abaixo disso não há mais app.
-                    maxHeight: Math.round((app.h - regiao.y) * (tela / regiao.w)),
-                  }
-                : { aspectRatio: `${regiao.w} / ${regiao.h}` }}
+              style={{ aspectRatio: `${regiao.w} / ${regiao.h}` }}
             >
               {montar && (
                 <iframe
                   ref={iframeRef}
                   src={src}
-                  title={`Oryon em demonstração — ${titulo}`}
+                  title={`Oryon em demonstração: ${titulo}`}
                   tabIndex={-1}
                   className="absolute left-0 top-0 border-0 origin-top-left transition-opacity duration-500"
                   style={{
@@ -232,11 +351,12 @@ export function DemoRecorte({
                   }}
                 />
               )}
-              {!pronta && (
-                <div className="absolute inset-0 flex items-center justify-center bg-surface-950">
-                  <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin opacity-60" />
-                </div>
-              )}
+              <div
+                className="absolute inset-0 transition-opacity duration-500"
+                style={{ opacity: pronta ? 0 : 1, visibility: pronta ? 'hidden' : 'visible' }}
+              >
+                <PosterDaDemo rota={rota} />
+              </div>
               {/* O contorno do alvo, recortado pela janela (sem conector: aqui a
                   frase do bloco já está colada ao recorte). */}
               {!semMovimento && pronta && (

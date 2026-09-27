@@ -65,10 +65,10 @@ export const HERO = {
   amountCents: 18_000,
   tag: 'retorno',
   demand: 'Oi! Quero marcar o retorno com a Dra. Helena. Tem horário à tarde essa semana?',
-  answer: 'Oi, Marina! O retorno com a Dra. Helena é R$ 180 no particular ou pela Unimed com a guia. Na agenda dela tenho quinta às 14h30 e sexta às 15h — qual prefere?',
-  confirm: 'Quinta às 14h30 é perfeito!',
+  answer: 'Oi, Marina! O retorno com a Dra. Helena custa R$ 180 no particular. Pela Unimed, basta levar a guia. Tenho quinta às 14h30 e sexta às 15h. Qual horário você prefere?',
+  confirm: 'Perfeito! Quinta às 14h30.',
   ask: 'Consigo falar com alguém? Queria ver se dá um encaixe antes, é meio urgente.',
-  human: 'Oi Marina, aqui é a Ana da recepção! Consegui um encaixe amanhã às 9h com a Dra. Helena. Já deixei reservado pra você.',
+  human: 'Oi, Marina! Aqui é a Ana, da recepção. Consegui um encaixe amanhã às 9h com a Dra. Helena. Já deixei reservado pra você.',
 } as const
 
 export const HERO_LINE: WhatsAppNumber = {
@@ -374,11 +374,11 @@ export function heroTimeline(at: HeroState): TimelineEntry[] {
   // A história começa com o template da campanha chegando à Marina (hoje, há
   // 6 min) — o filtro padrão da linha do tempo é "Hoje".
   const out: TimelineEntry[] = [
-    pessoa('t0', 'Template enviado', 'template_sent', 6, { templateName: HERO_TEMPLATE.name }),
+    pessoa('t0', 'Modelo de mensagem enviado', 'template_sent', 6, { templateName: HERO_TEMPLATE.name }),
   ]
   if (reached(at, 'situacao')) out.push(agente('t1', 'Situação do contato: Novo → Em agendamento', 'update_contact', 3))
   if (reached(at, 'etiqueta')) out.push(agente('t2', `Adicionou a etiqueta "${HERO.tag}" à conversa`, 'add_tag_to_conversation', 3))
-  if (reached(at, 'avanco')) out.push(agente('t3', 'Moveu o atendimento de Avaliação para Agendado', 'manage_deal_pipeline', 2))
+  if (reached(at, 'avanco')) out.push(agente('t3', 'Moveu o negócio de Avaliação para Agendado', 'manage_deal_pipeline', 2))
   if (reached(at, 'assumido')) out.push(agente('t4', `Chamou ${HERO.atendente} para a conversa`, 'assign_conversation', 1))
   if (reached(at, 'ganho')) {
     out.push(pessoa('t5', `"${HERO.dealTitle}" confirmado`, 'deal_won', 0, {
@@ -402,7 +402,7 @@ export const HERO_TEMPLATE: WhatsAppTemplate = {
   language: 'pt_BR',
   category: 'MARKETING',
   status: 'APPROVED',
-  body: 'Olá, {{1}}! Está na hora do seu retorno na *Clínica Vitalis*. A Dra. Helena abriu novos horários em setembro — quer que a gente reserve o seu?',
+  body: 'Olá, {{1}}! Já está na hora do seu retorno com a Dra. Helena. Abrimos novos horários para setembro. Quer que eu procure um para você?',
   footer: 'Clínica Vitalis',
   buttons: [
     { type: 'QUICK_REPLY', text: 'Quero marcar' },
@@ -492,7 +492,7 @@ export const HERO_PRODUCTS: Product[] = [
 export function heroNotifications(at: HeroState): AppNotification[] {
   const out: AppNotification[] = []
   if (reached(at, 'assumido')) out.push({
-    id: 'nt-handoff', type: 'agent_handoff', title: `${HERO.person} pediu atendimento humano`,
+    id: 'nt-handoff', type: 'agent_handoff', title: `${HERO.person} quer falar com a equipe`,
     description: `${HERO.agent} chamou você para a conversa`, link: '/conversations', isRead: false,
     createdAt: minutesAgo(1), priority: 'urgent',
     metadata: { contactName: HERO.person, conversationId: 'demo-conv-0' },

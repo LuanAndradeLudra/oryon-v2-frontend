@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, MessageCircle, Smartphone, Settings2, Rocket, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -19,10 +19,10 @@ export function Revelar({ children, atraso = 0, className }: { children: ReactNo
   return (
     <motion.div
       className={className}
-      initial={semMovimento ? false : { opacity: 0, y: 24, filter: 'blur(6px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      initial={semMovimento ? false : { opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-12% 0px' }}
-      transition={{ duration: 0.9, delay: atraso, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.55, delay: atraso, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </motion.div>
@@ -66,11 +66,11 @@ const ICONES_DEPOIS = { ajuste: PencilLine, crescer: Layers, acompanhar: LayoutD
 export function SecaoImplantacao() {
   const semMovimento = useReducedMotion()
   return (
-    <section id="implantacao" data-section="implantacao" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
+    <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
       <div className="landing-container">
         <Cabecalho eyebrow={implantacao.eyebrow} titulo={implantacao.title} cinza={implantacao.titleCinza} />
 
-        <div className="relative mt-14 sm:mt-16">
+        <div className="relative mt-10 sm:mt-12">
           {/* A linha do tempo que se desenha ao entrar na tela (desktop). */}
           <div aria-hidden className="absolute left-0 right-0 top-[16px] hidden h-px bg-surface-800 md:block">
             <motion.div
@@ -90,13 +90,13 @@ export function SecaoImplantacao() {
                     <span className="relative z-10 flex h-[34px] w-[34px] items-center justify-center rounded-2xl bg-surface-900 ring-1 ring-surface-700 text-[var(--landing-destaque)]">
                       <Icone className="h-[14.5px] w-[14.5px]" strokeWidth={1.8} />
                     </span>
-                    <p className="mt-5 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{p.quem}</p>
-                    <p className="mt-1.5 font-display text-[13px] font-semibold tracking-[-0.01em] text-surface-50">{p.titulo}</p>
-                    <p className="mt-2 max-w-[34ch] text-[12px] leading-relaxed text-surface-400">{p.texto}</p>
+                    <p className="mt-4 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{p.quem}</p>
+                    <p className="mt-1.5 font-display text-[17px] font-semibold tracking-[-0.01em] text-surface-50">{p.titulo}</p>
+                    <p className="mt-2 max-w-[34ch] text-[15px] leading-relaxed text-surface-400">{p.texto}</p>
                     {/* O que sai deste passo — concreto, verificável. */}
                     <ul className="mt-4 space-y-2 border-t border-[var(--landing-borda)] pt-4">
                       {p.entregas.map((e) => (
-                        <li key={e} className="flex items-start gap-2 text-[11.5px] leading-snug text-surface-300">
+                        <li key={e} className="flex items-start gap-2 text-[14px] leading-relaxed text-surface-300">
                           <Check className="mt-[1px] h-3.5 w-3.5 flex-shrink-0 text-[var(--landing-destaque)]" strokeWidth={2.2} aria-hidden />
                           <span>{e}</span>
                         </li>
@@ -110,8 +110,8 @@ export function SecaoImplantacao() {
         </div>
 
         {/* Depois do ar: o ajuste passa a ser do cliente, na própria Oryon. */}
-        <Revelar atraso={0.2} className="mt-16">
-          <p className="font-display text-[13px] font-semibold tracking-[-0.01em] text-surface-50">{implantacao.depois.titulo}</p>
+        <Revelar atraso={0.2} className="mt-10">
+          <p className="font-display text-[17px] font-semibold tracking-[-0.01em] text-surface-50">{implantacao.depois.titulo}</p>
         </Revelar>
         <div className="mt-5 grid gap-px overflow-hidden rounded-2xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] md:grid-cols-3">
           {implantacao.depois.itens.map((d, i) => {
@@ -121,16 +121,18 @@ export function SecaoImplantacao() {
                 <span className="flex h-[26px] w-[26px] items-center justify-center rounded-xl bg-surface-900 text-[var(--landing-destaque)] ring-1 ring-surface-700">
                   <Icone className="h-[13px] w-[13px]" strokeWidth={1.8} aria-hidden />
                 </span>
-                <p className="mt-3.5 font-display text-[12px] font-semibold tracking-[-0.01em] text-surface-50">{d.titulo}</p>
-                <p className="mt-2 max-w-[40ch] text-[12px] leading-relaxed text-surface-400">{d.texto}</p>
+                <p className="mt-3.5 font-display text-[16px] font-semibold tracking-[-0.01em] text-surface-50">{d.titulo}</p>
+                <p className="mt-2 max-w-[40ch] text-[15px] leading-relaxed text-surface-400">{d.texto}</p>
               </Revelar>
             )
           })}
         </div>
 
-        <Revelar atraso={0.4} className="mt-12">
-          <BotaoContato />
-        </Revelar>
+        {contatoDisponivel && (
+          <Revelar atraso={0.4} className="mt-10">
+            <BotaoContato />
+          </Revelar>
+        )}
       </div>
     </section>
   )
@@ -139,6 +141,7 @@ export function SecaoImplantacao() {
 // ─── Perguntas frequentes ────────────────────────────────────────────────────
 
 function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }) {
+  const respostaId = useId()
   const [aberta, setAberta] = useState(false)
   const semMovimento = useReducedMotion()
   return (
@@ -147,21 +150,23 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
         type="button"
         onClick={() => setAberta((v) => !v)}
         aria-expanded={aberta}
-        className="flex w-full items-center justify-between gap-6 py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] rounded-md"
+        aria-controls={aberta ? respostaId : undefined}
+        className="flex w-full items-center justify-between gap-6 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] rounded-md"
       >
-        <span className="text-[12px] font-semibold text-surface-50">{pergunta}</span>
+        <span className="text-[15px] font-semibold text-surface-50">{pergunta}</span>
         <ChevronDown className={cn('h-5 w-5 flex-shrink-0 text-surface-500 transition-transform duration-300', aberta && 'rotate-180')} />
       </button>
       <AnimatePresence initial={false}>
         {aberta && (
           <motion.div
+            id={respostaId}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: semMovimento ? 0 : 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <p className="max-w-[62ch] pb-6 text-[12px] leading-relaxed text-surface-400">{resposta}</p>
+            <p className="max-w-[62ch] pb-5 text-[14px] leading-relaxed text-surface-400">{resposta}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -171,16 +176,16 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
 
 export function SecaoPerguntas() {
   return (
-    <section id="perguntas" data-section="perguntas" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
-      <div className="landing-container grid gap-12 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
-        {/* Com treze perguntas, o título acompanha a leitura (desktop). */}
+    <section id="perguntas" data-section="perguntas" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
+      <div className="landing-container grid gap-10 lg:grid-cols-[.85fr_1.4fr] lg:gap-16">
+        {/* O título acompanha a leitura no desktop. */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <Cabecalho eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
           <Revelar atraso={0.2} className="mt-8">
             <BotaoContato longo={false} />
           </Revelar>
         </div>
-        <div className="space-y-10">
+        <div className="space-y-6">
           {perguntas.grupos.map((g, gi) => (
             <Revelar key={g.titulo} atraso={0.1 + gi * 0.08}>
               <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{g.titulo}</p>
@@ -202,7 +207,7 @@ export function SecaoPerguntas() {
 
 export function SecaoFecho() {
   return (
-    <section id="contato" data-section="cta" className="relative overflow-hidden border-t border-[var(--landing-borda)] bg-surface-950 py-24 sm:py-32">
+    <section id="contato" data-section="cta" className="relative overflow-hidden border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-24">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-70"
@@ -211,9 +216,9 @@ export function SecaoFecho() {
       <div className="relative mx-auto w-full max-w-[960px] px-4 text-center sm:px-6">
         <Revelar>
           <h2 className="font-display font-extrabold tracking-[-0.03em] leading-[1.05] text-surface-50 text-[clamp(1.3rem,2.98vw,2.24rem)] text-balance">
-            {fecho.title}
+            {contatoDisponivel ? fecho.title : fecho.titleSemContato}
           </h2>
-          <p className="mx-auto mt-5 max-w-[46ch] text-[12.5px] leading-relaxed text-surface-400 text-balance">{contatoDisponivel ? fecho.lead : fecho.leadSemContato}</p>
+          <p className="mx-auto mt-5 max-w-[46ch] text-[16px] leading-relaxed text-surface-400 text-balance">{contatoDisponivel ? fecho.lead : fecho.leadSemContato}</p>
         </Revelar>
         <Revelar atraso={0.15} className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <BotaoContato />

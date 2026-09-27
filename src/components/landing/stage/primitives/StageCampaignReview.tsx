@@ -32,7 +32,7 @@ export function StageCampaignReview() {
     <div className="flex flex-col gap-2 lg:gap-4 p-2.5 lg:p-5">
       <div>
         <h3 className="text-[7.5px] lg:text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">Revisar e disparar</h3>
-        <p className="hidden lg:block text-xs text-surface-400 mt-0.5">Confira antes de enviar — o disparo não pode ser desfeito.</p>
+        <p className="hidden lg:block text-xs text-surface-400 mt-0.5">Confira antes de enviar. Depois do disparo, não dá para desfazer.</p>
       </div>
 
       <div className="flex gap-2.5 lg:gap-5">

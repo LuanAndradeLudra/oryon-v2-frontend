@@ -571,7 +571,7 @@ export function HeroPalco({ className }: { className?: string }) {
       {/* A BARRA DE CONTROLE — capítulos, a divulgação dos dados e a pausa,
           como num player: o título, a narração e o palco ficam juntos em cima. */}
       <div ref={barraRef} className="relative mt-3.5 flex flex-col gap-2 px-1 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-3">
-        <p className="hidden md:block text-[11.5px] text-surface-500">A Oryon de verdade, com dados fictícios.</p>
+        <p className="hidden md:block text-[11.5px] text-surface-500">Telas reais da Oryon · dados de demonstração.</p>
         <HeroCapitulosLinha
           className="flex-1 md:col-start-2"
           capitulos={HERO_CAPITULOS}
@@ -583,7 +583,7 @@ export function HeroPalco({ className }: { className?: string }) {
         />
         {/* Celular: a legenda e a pausa numa linha só, abaixo dos capítulos. */}
         <div className="flex items-center justify-between md:col-start-3 md:justify-end">
-          <p className="text-[11px] text-surface-500 md:hidden">A Oryon de verdade, com dados fictícios.</p>
+          <p className="text-[11px] text-surface-500 md:hidden">Telas reais da Oryon · dados de demonstração.</p>
           {canAnimate && (
             <button
               type="button"

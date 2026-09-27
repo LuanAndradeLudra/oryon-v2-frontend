@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
-import { borderRadiusDoFoco, escalarRaios, raiosDoElemento, recortarForma, SEM_RAIOS, type RaiosFoco } from './focoGeometry'
+import { planoDoFoco, borderRadiusDoFoco, escalarRaios, raiosDoElemento, recortarForma, SEM_RAIOS, type RaiosFoco } from './focoGeometry'
 
 /**
  * O FOCO — o contorno sobre o elemento real e o conector que o liga à
@@ -101,6 +101,9 @@ function desenhar(pts: P[]): string {
 type Lado = 'esquerda' | 'direita' | 'topo'
 
 interface Geometria {
+  /** Measurements are viewport pixels. Cancel the root's accumulated scale
+   * on this drawing plane so CSS zoom/transform cannot scale them twice. */
+  plano: { w: number; h: number; inversaX: number; inversaY: number }
   anel: R
   /** O anel está à vista (não coberto por janela nem fora da tela do app). */
   anelVisivel: boolean
@@ -209,6 +212,11 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
       const raiz = raizRef.current
       if (!raiz) return
       const base = raiz.getBoundingClientRect()
+      if (base.width <= 0 || base.height <= 0) return
+      const css = getComputedStyle(raiz)
+      const plano = planoDoFoco(base.width, base.height,
+        parseFloat(css.width) || raiz.clientWidth,
+        parseFloat(css.height) || raiz.clientHeight)
       const m = medirRef.current(base)
       if (!m) return
       // Assentar: a tomada só entra no ar quando o alvo para de se mexer.
@@ -316,8 +324,8 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
         raios: forma.raios,
         esfumar: false,
       }
-      const g: Geometria = { anel, anelVisivel, caminho, veu }
-      const chave = JSON.stringify([Math.round(anel.x), Math.round(anel.y), Math.round(anel.w), Math.round(anel.h), Math.round(veu.area.x), Math.round(veu.area.y), Math.round(veu.area.w), Math.round(veu.area.h), ...Object.values(veu.raios).flatMap((r) => [Math.round(r.x), Math.round(r.y)]), anelVisivel, caminho?.d])
+      const g: Geometria = { plano, anel, anelVisivel, caminho, veu }
+      const chave = JSON.stringify([plano.w, plano.h, plano.inversaX, plano.inversaY, Math.round(anel.x), Math.round(anel.y), Math.round(anel.w), Math.round(anel.h), Math.round(veu.area.x), Math.round(veu.area.y), Math.round(veu.area.w), Math.round(veu.area.h), ...Object.values(veu.raios).flatMap((r) => [Math.round(r.x), Math.round(r.y)]), anelVisivel, caminho?.d])
       if (chave !== ultimo) { ultimo = chave; mudou = true; setGeo(g) }
     }
     // Medir o layout a cada quadro custa caro em máquina fraca (medido: ~4% da
@@ -362,7 +370,12 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
       data-hero-foco={tomada.id}
       data-lado={c?.lado ?? 'nenhum'}
       data-saindo={saindo ? 'sim' : undefined}
-      style={{ zIndex: 40, opacity: saindo ? 0 : 1 }}
+      style={{
+        zIndex: 40, opacity: saindo ? 0 : 1,
+        width: geo.plano.w, height: geo.plano.h,
+        transformOrigin: '0 0',
+        transform: `scale(${geo.plano.inversaX}, ${geo.plano.inversaY})`,
+      }}
     >
       <style>{'@keyframes hero-foco-traco{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:0}}@keyframes hero-foco-veu{0%{opacity:0}100%{opacity:1}}@keyframes hero-foco-ponto{0%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}@keyframes hero-foco-marca-h{0%{opacity:0;transform:scaleX(0)}100%{opacity:1;transform:scaleX(1)}}@keyframes hero-foco-marca-v{0%{opacity:0;transform:scaleY(0)}100%{opacity:1;transform:scaleY(1)}}'}</style>
       {/* O HOLOFOTE (25/09, pedido do PO): no lugar do anel teal — que vazava

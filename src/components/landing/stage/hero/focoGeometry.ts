@@ -67,3 +67,8 @@ export function borderRadiusDoFoco(raios: RaiosFoco): string {
   const { tl, tr, br, bl } = raios
   return `${tl.x}px ${tr.x}px ${br.x}px ${bl.x}px / ${tl.y}px ${tr.y}px ${br.y}px ${bl.y}px`
 }
+
+/** Viewport measurements must be drawn once, even inside nested CSS zoom/scale. */
+export function planoDoFoco(w: number, h: number, larguraLocal: number, alturaLocal: number) {
+  return { w, h, inversaX: larguraLocal / w, inversaY: alturaLocal / h }
+}

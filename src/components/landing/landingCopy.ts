@@ -24,30 +24,56 @@ export const LANDING_ROUTES = {
 /** Âncoras internas — cada uma corresponde a um `id` de seção. */
 export const LANDING_ANCHORS = {
   plataforma: 'plataforma',
+  confianca: 'confianca',
+  area: 'area',
+  equipe: 'equipe-no-comando',
+  resposta: 'resposta',
   implantacao: 'implantacao',
   perguntas: 'perguntas',
 } as const
 
 export const nav = {
-  homeLabel: 'Oryon — início',
+  homeLabel: 'Oryon, início',
   links: [
     { label: 'Plataforma', anchor: LANDING_ANCHORS.plataforma },
     { label: 'Implantação', anchor: LANDING_ANCHORS.implantacao },
     { label: 'Perguntas', anchor: LANDING_ANCHORS.perguntas },
+  ],
+  platformMenuLabel: 'Abrir índice da plataforma',
+  platformGroups: [
+    {
+      label: 'Produto',
+      items: [
+        { label: 'Visão geral', anchor: LANDING_ANCHORS.plataforma },
+        { label: 'Ensinar a IA', anchor: 'plataforma-conhecer' },
+        { label: 'Atender com IA', anchor: 'plataforma-atender' },
+        { label: 'Vender pelo funil', anchor: 'plataforma-funil' },
+        { label: 'Passar para a equipe', anchor: 'plataforma-equipe' },
+        { label: 'Reativar a base', anchor: 'plataforma-campanhas' },
+        { label: 'Medir o resultado', anchor: 'plataforma-medir' },
+      ],
+    },
+    {
+      label: 'Para decidir',
+      items: [
+        { label: 'Limites da IA', anchor: LANDING_ANCHORS.confianca },
+        { label: 'Para a sua área', anchor: LANDING_ANCHORS.area },
+        { label: 'Equipe e acessos', anchor: LANDING_ANCHORS.equipe },
+        { label: 'Fila e avisos', anchor: LANDING_ANCHORS.resposta },
+        { label: 'Implantação', anchor: LANDING_ANCHORS.implantacao },
+        { label: 'Perguntas', anchor: LANDING_ANCHORS.perguntas },
+      ],
+    },
   ],
   themeToggleLabel: 'Alternar tema claro e escuro',
   cta: 'Entrar',
 } as const
 
 export const hero = {
-  // H1 de 4 palavras (medição da Attio, 24/09: o deles também tem 4 — H1
-  // maior deixa a tipografia atada só à altura da viewport ilegível em
-  // celular, onde a viewport é alta E estreita). "O humano entra na hora
-  // certa" migrou pra 1ª frase do lead.
-  // "atende sozinho" (até 26/09) prometia o que o próprio lead desmentia — a
-  // equipe entra quando precisa. "na hora" é o que a demonstração mostra.
-  title: 'Seu WhatsApp atende na hora.',
-  lead: 'Um Agente IA treinado no seu negócio responde cada conversa. Quando o cliente precisa de uma pessoa, ele chama a sua equipe com o contexto inteiro.',
+  // H1 curto, em duas frases: apresenta o trabalho da IA e o diferencial do
+  // CRM sem depender do lead para explicar a categoria do produto.
+  title: 'A IA atende. O CRM se atualiza.',
+  lead: 'A Oryon responde aos clientes no WhatsApp, atualiza contatos e negócios durante a conversa e chama sua equipe com todo o histórico quando uma pessoa precisa assumir.',
   stageLabel: 'Demonstração animada do produto',
 } as const
 
@@ -58,41 +84,31 @@ export const trust = {
   // 26/09 (PO): NENHUMA promessa de que a IA não erra ou não inventa — isso
   // acontece e não se garante na venda. A seção diz o contrário da concorrência:
   // nenhuma IA acerta sempre; a Oryon é feita para que o erro custe pouco.
-  title: 'A IA trabalha dentro de limites.',
-  titleCinza: 'Você define quais são.',
+  title: 'Você define os limites da IA.',
+  titleCinza: 'Sua equipe decide quando assumir.',
   /** A frase que prepara a tela real (aba Capacidades do agente). */
-  lead: 'Nenhuma IA acerta sempre — e a gente não promete o contrário. A Oryon é feita para que um erro custe pouco: a IA só faz o que você liberou, tudo fica registrado, e a sua equipe vê e assume quando quiser.',
+  lead: 'A IA pode errar. Por isso, sua equipe define o que ela pode fazer, acompanha o histórico e assume a conversa sempre que precisar.',
   tela: 'Oryon · Agentes IA',
   items: [
     {
       key: 'permissoes',
-      title: 'Você liga o que ela pode fazer',
-      text: 'Mudar a situação do contato, etiquetar, mover o negócio de etapa, chamar uma pessoa: cada capacidade tem o seu interruptor e os seus limites.',
+      title: 'Escolha o que o agente pode fazer',
+      text: 'Ative apenas as capacidades necessárias, como mudar a situação do contato, aplicar etiquetas, mover negócios e chamar a equipe.',
     },
     {
       key: 'venda',
-      title: 'Ganho ou perdido é de uma pessoa',
-      text: 'A IA avança o negócio entre as etapas; marcar como ganho ou perdido, não. O sistema recusa, mesmo que alguém tente liberar.',
-    },
-    {
-      key: 'historico',
-      title: 'Tudo fica no histórico',
-      text: 'Cada ação da IA entra na linha do tempo do contato, com o nome do agente — dá para ver o que ela fez e quando.',
+      title: 'Só uma pessoa conclui a venda',
+      text: 'A IA pode avançar o negócio entre as etapas. Marcar uma venda como ganha ou perdida continua sendo uma decisão da equipe.',
     },
     {
       key: 'chamada',
-      title: 'Quando não sabe, ela chama alguém',
-      text: 'Pedido de encaixe, urgência, assunto fora do que você ensinou: a regra do agente é chamar uma pessoa da equipe em vez de improvisar — e a regra é sua, você escreve.',
-    },
-    {
-      key: 'controle',
-      title: 'A equipe assume quando quiser',
-      text: 'Um clique em Assumir pausa a IA naquela conversa, pelo tempo que você definir na configuração do agente; Reativar IA devolve a conversa.',
+      title: 'Defina o que exige uma pessoa',
+      text: 'Configure situações como encaixes, urgências e assuntos fora do escopo para chamar a equipe. A pessoa responsável recebe a conversa com o histórico.',
     },
     {
       key: 'conexao',
-      title: 'Conexão oficial, regras da Meta',
-      text: 'A integração usa a API oficial do WhatsApp Business. Fora da janela de atendimento, a conversa só reabre com um modelo aprovado pela Meta.',
+      title: 'Conexão oficial com o WhatsApp',
+      text: 'A integração usa a API oficial do WhatsApp Business. Para iniciar uma conversa fora da janela de atendimento, a Oryon usa um modelo aprovado pela Meta.',
     },
   ],
 } as const
@@ -143,17 +159,18 @@ export function linkContato(): string {
 // diz o que o visitante vai ver acontecer. Os cartões aprofundam, sem repetir.
 export const plataforma = {
   eyebrow: 'Plataforma',
-  title: 'Do primeiro "oi" ao resultado medido.',
-  titleCinza: 'Cada etapa acontecendo na própria Oryon.',
+  title: 'Veja o atendimento acontecer.',
+  titleCinza: 'A conversa avança enquanto o CRM e o funil se atualizam.',
+  contexto: 'Demonstração completa · uma clínica atendendo pelo WhatsApp',
   /**
    * Os três ATOS (26/09): seis capítulos com a mesma anatomia cansavam no
    * terceiro; agrupados em três ideias, o visitante percebe blocos. Cada ato
    * abre com uma frase e agrupa os capítulos pelo id.
    */
   atos: [
-    { id: 'ia',     numero: 'I',   titulo: 'A IA atende',        frase: 'Antes de responder, ela precisa conhecer o seu negócio.', blocos: ['conhecer', 'atender'] },
-    { id: 'venda',  numero: 'II',  titulo: 'A venda acontece',   frase: 'O negócio anda com a conversa. Quem fecha é a sua equipe.', blocos: ['funil', 'equipe'] },
-    { id: 'escala', numero: 'III', titulo: 'A operação cresce',  frase: 'Reative quem já comprou e veja tudo numa tela.', blocos: ['campanhas', 'medir'] },
+    { id: 'ia',     numero: 'I',   titulo: 'A IA responde',           frase: 'Seu conteúdo orienta cada resposta no WhatsApp.', blocos: ['conhecer', 'atender'] },
+    { id: 'venda',  numero: 'II',  titulo: 'O atendimento avança',    frase: 'A IA atualiza o funil e chama sua equipe quando é hora de assumir.', blocos: ['funil', 'equipe'] },
+    { id: 'escala', numero: 'III', titulo: 'Você reativa a base',     frase: 'Campanhas reabrem conversas e o painel mostra o resultado.', blocos: ['campanhas', 'medir'] },
   ],
   // Ordem (26/09, aprovada pelo PO): conhecer → atender → funil → equipe →
   // reativar → medir. O funil vem ANTES da equipe porque o clímax da história
@@ -163,61 +180,61 @@ export const plataforma = {
     {
       id: 'conhecer',
       indice: 'Ensinar a IA',
-      destaque: 'Ela responde com o que você ensinou.',
-      texto: 'As instruções, a base de conhecimento e o catálogo liberado ficam na configuração de cada agente — é disso que sai cada resposta.',
+      destaque: 'Suas informações orientam cada resposta.',
+      texto: 'O agente consulta as instruções, os documentos e os itens de catálogo liberados pela sua equipe.',
       cartoes: [
-        { titulo: 'A resposta sai daqui.', texto: 'O valor vem do catálogo; a regra do convênio, de um documento da base de conhecimento.' },
-        { titulo: 'Mudou? Atualize e pronto.', texto: 'Edite um documento ou libere outro item do catálogo — as próximas respostas passam a seguir a versão nova.' },
+        { titulo: 'Resposta baseada no que você cadastrou.', texto: 'Os valores vêm do catálogo. As regras de convênio vêm da base de conhecimento.' },
+        { titulo: 'Informação mudou? Atualize uma vez.', texto: 'Edite o documento ou o item do catálogo. As próximas respostas já usam a versão atualizada.' },
       ],
     },
     {
       id: 'atender',
       indice: 'Atender com IA',
-      destaque: 'Responde fora do expediente. E anota tudo.',
-      texto: 'O cliente pede um horário à noite e recebe a resposta na hora — enquanto a situação e as etiquetas do contato mudam no CRM.',
+      destaque: 'A IA atende mesmo quando a equipe está offline.',
+      texto: 'A paciente pede um horário à noite. O agente responde e atualiza a situação e as etiquetas do contato no CRM.',
       cartoes: [
-        { titulo: 'Situação e etiquetas em dia.', texto: 'A IA atualiza a situação do contato e as etiquetas durante a conversa — cada mudança fica registrada com quem fez.' },
-        { titulo: 'No WhatsApp de sempre.', texto: 'O cliente conversa pelo WhatsApp que já usa — sem aplicativo novo, link ou formulário.' },
+        { titulo: 'O CRM se atualiza durante a conversa.', texto: 'Situação e etiquetas mudam durante o atendimento. O histórico mostra o que aconteceu e quem fez.' },
+        { titulo: 'O cliente continua no WhatsApp.', texto: 'Sem instalar outro aplicativo ou preencher um formulário.' },
       ],
     },
     {
       id: 'funil',
       indice: 'Vender pelo funil',
-      destaque: 'O funil anda junto com a conversa.',
-      texto: 'O negócio muda de etapa conforme a conversa avança — sem ninguém arrastar card nem lembrar de atualizar.',
+      destaque: 'A IA mantém o funil em dia.',
+      texto: 'Com essa capacidade ativa, o agente move o negócio conforme a conversa avança. A equipe acompanha etapa, itens e valor no mesmo registro.',
       cartoes: [
-        { titulo: 'Itens e valor no negócio.', texto: 'Itens, quantidades e valores entram no negócio a partir do catálogo.' },
-        { titulo: 'Histórico de cada movimento.', texto: 'Quem moveu, quando e por quê — a IA e a equipe, lado a lado.' },
+        { titulo: 'O negócio reúne itens e valores.', texto: 'Produtos, quantidades e valores entram no registro a partir do catálogo.' },
+        { titulo: 'Histórico de cada movimento.', texto: 'Veja quando a etapa mudou e se a ação foi feita pelo agente ou por uma pessoa.' },
       ],
     },
     {
       id: 'equipe',
       indice: 'Passar para a equipe',
-      destaque: 'Quem confirma é uma pessoa.',
-      texto: 'Quando o cliente quer falar com alguém, a IA chama a pessoa certa, com o histórico completo — e é ela quem marca o negócio como ganho.',
+      destaque: 'A equipe assume com todo o contexto.',
+      texto: 'Quando a paciente pede ajuda, a IA transfere a conversa, avisa a pessoa certa e mantém o histórico à vista.',
       cartoes: [
-        { titulo: 'Avisada na hora.', texto: 'A atendente recebe a notificação e abre a conversa inteira — sem perguntar de novo ao cliente.' },
-        { titulo: 'O fechamento fica com a sua equipe.', texto: 'A IA prepara e avança o negócio; marcar ganho ou perdido é sempre de uma pessoa.' },
+        { titulo: 'A pessoa certa recebe o aviso.', texto: 'A atendente abre a conversa já sabendo o que foi pedido e respondido.' },
+        { titulo: 'A decisão final continua humana.', texto: 'A IA registra e avança as etapas. Só uma pessoa marca o negócio como ganho ou perdido.' },
       ],
     },
     {
       id: 'campanhas',
       indice: 'Reativar a base',
-      destaque: 'Campanhas que viram conversas.',
-      texto: 'Dispare um modelo aprovado pela Meta para a sua base e veja quem recebeu, leu e respondeu. Cada resposta cai no atendimento com IA.',
+      destaque: 'Campanhas trazem contatos de volta.',
+      texto: 'Envie modelos aprovados pela Meta e acompanhe entregas, leituras e respostas. Quem responde entra direto na caixa de entrada.',
       cartoes: [
-        { titulo: 'Do jeito que o cliente vê.', texto: 'O modelo chega com o nome dele e botões de resposta — um toque e a conversa começa.' },
-        { titulo: 'Leituras e respostas contadas.', texto: 'Entregues, lidas, respostas e conversões de cada campanha, num relatório só.' },
+        { titulo: 'Mensagem personalizada no WhatsApp.', texto: 'Use o nome do cliente e botões de resposta para facilitar o retorno.' },
+        { titulo: 'Resultados reunidos em um relatório.', texto: 'Entregas, leituras, respostas e conversões ficam reunidas no relatório.' },
       ],
     },
     {
       id: 'medir',
       indice: 'Medir o resultado',
-      destaque: 'A operação inteira numa tela.',
-      texto: 'O Dashboard mostra, numa tela, quantas conversas estão em atendimento, quem espera na fila, o volume da semana e a equipe online.',
+      destaque: 'Veja onde a operação precisa de atenção.',
+      texto: 'O painel reúne conversas em atendimento, fila, volume da semana e equipe online.',
       cartoes: [
-        { titulo: 'Onde está cada conversa.', texto: 'Ativas, na fila e resolvidas hoje — o retrato do atendimento agora.' },
-        { titulo: 'O que acabou de acontecer.', texto: 'Transferências e conversas resolvidas entram no feed de atividade, com quem fez.' },
+        { titulo: 'Status de cada conversa.', texto: 'Veja quantas estão ativas, na fila ou resolvidas no dia.' },
+        { titulo: 'Atividade recente, com responsável.', texto: 'Transferências e conversas resolvidas entram no histórico com quem fez cada ação.' },
       ],
     },
   ],
@@ -230,19 +247,19 @@ export const plataforma = {
  *  os outros segmentos como cenários, sem prometer o que não foi feito. */
 export const area = {
   eyebrow: 'Para a sua área',
-  title: 'Começamos por clínicas.',
-  titleCinza: 'A plataforma serve a qualquer negócio que atende pelo WhatsApp.',
-  lead: 'O que muda de uma área para outra é o que você ensina ao agente: instruções, base de conhecimento, catálogo e a agenda ou o sistema que ele consulta. O resto é o mesmo.',
+  title: 'Veja como uma clínica usa a Oryon.',
+  titleCinza: 'O mesmo fluxo pode atender outros negócios de serviço.',
+  lead: 'Na clínica, o agente consulta informações sobre consultas, convênios e agenda. Em outras operações, você configura o conteúdo, o catálogo, o funil e as regras de transferência.',
   caso: {
     rotulo: 'Caso completo',
     titulo: 'Clínicas e consultórios',
-    texto: 'A recepção que não para no fim do expediente: valores e convênios, horários da agenda, marcação de consulta, lembrete de retorno — e a equipe para o que precisa de gente.',
+    texto: 'O agente responde às dúvidas recorrentes e organiza cada novo atendimento. A recepção assume encaixes, urgências e dúvidas clínicas.',
     itens: [
       'Informa valores e convênios a partir do catálogo e da base de conhecimento',
-      'Consulta a agenda da clínica e oferece só horários que existem',
-      'Marca a consulta e registra o atendimento no funil',
+      'Consulta horários quando a agenda está integrada à Oryon',
+      'Encaminha a marcação e registra o atendimento no funil',
       'Chama a recepção para encaixes, urgências e dúvidas clínicas',
-      'Lembra o retorno com campanhas para quem já é paciente',
+      'Reativa pacientes com campanhas de retorno',
     ],
     /** Honesto: a agenda só entra com a integração feita na implantação. */
     nota: 'A consulta à agenda depende da integração com o sistema da clínica, feita na implantação.',
@@ -251,17 +268,17 @@ export const area = {
     {
       titulo: 'Contabilidade',
       exemplo: '“Qual o prazo pra mandar as notas de agosto?”',
-      texto: 'Prazos, documentos pendentes e status de entregas respondidos com o que o escritório ensinou; o contador entra quando o caso é específico.',
+      texto: 'Responde dúvidas sobre prazos e documentos usando o conteúdo do escritório. O contador entra quando o caso é específico.',
     },
     {
       titulo: 'Jurídico',
       exemplo: '“Preciso de orientação sobre uma rescisão.”',
-      texto: 'Triagem inicial, documentos necessários e marcação da reunião; o advogado assume a conversa quando o assunto pede.',
+      texto: 'Faz a triagem inicial e pede os documentos definidos pelo escritório. O advogado assume quando o assunto exige análise.',
     },
     {
       titulo: 'Serviços em geral',
       exemplo: '“Vocês fazem entrega no sábado?”',
-      texto: 'Orçamentos a partir do catálogo, prazos e acompanhamento do pedido — e uma pessoa da equipe a um clique.',
+      texto: 'Consulta o catálogo e as regras de atendimento, organiza o primeiro contato e chama a equipe quando alguém precisa assumir.',
     },
   ],
 } as const
@@ -269,50 +286,50 @@ export const area = {
 /** "Perco o controle?" — setores, papéis, auditoria e chat interno: fatos do produto. */
 export const equipe = {
   eyebrow: 'A equipe no comando',
-  title: 'Cada pessoa vê o que precisa.',
-  titleCinza: 'E tudo o que muda fica registrado.',
-  lead: 'Setores, papéis, permissões e auditoria vêm com a plataforma — não é a IA que decide quem faz o quê.',
+  title: 'Dê a cada pessoa o acesso certo.',
+  titleCinza: 'Permissões, responsáveis e histórico no mesmo lugar.',
+  lead: 'Organize o atendimento por setor, defina as permissões de cada perfil e consulte o histórico das ações da equipe.',
   cartoes: [
-    { key: 'setores', titulo: 'Setores com permissões', texto: 'Cada setor tem o seu número de WhatsApp, o seu Agente IA e as suas permissões: ler, responder, atribuir, ver relatórios, mexer na configuração.' },
-    { key: 'papeis', titulo: 'Papéis claros', texto: 'Dono, administrador, supervisor e agente — cada um enxerga e faz o que o papel permite.' },
-    { key: 'auditoria', titulo: 'Auditoria de tudo', texto: 'Cada alteração feita pela equipe entra numa linha do tempo da conta, com quem fez e quando.' },
-    { key: 'chat', titulo: 'A equipe conversa dentro da Oryon', texto: 'Canais e mensagens diretas entre a equipe, com menções — sem sair do atendimento.' },
+    { key: 'setores', titulo: 'Setores com permissões', texto: 'Cada setor pode ter seu número de WhatsApp, seu Agente IA e permissões para ler, responder, atribuir, ver relatórios ou alterar configurações.' },
+    { key: 'papeis', titulo: 'Acessos por perfil', texto: 'Dono, administrador, supervisor e agente têm acessos diferentes de acordo com a função.' },
+    { key: 'auditoria', titulo: 'Quem mudou o quê', texto: 'A linha do tempo mostra quem alterou o quê e quando.' },
+    { key: 'chat', titulo: 'Chat interno da equipe', texto: 'A equipe usa canais, mensagens diretas e menções sem sair da Oryon.' },
   ],
 } as const
 
 /** "E se ninguém responder?" — notificações, aviso de espera, fila, vários números. */
 export const resposta = {
-  eyebrow: 'Nada fica sem resposta',
-  title: 'Quando alguém precisa agir, a Oryon avisa.',
-  titleCinza: 'No app e no celular.',
-  lead: 'A IA chama, a fila mostra, o aviso chega — e, se um cliente ficar esperando uma pessoa, a plataforma avisa antes de virar problema.',
+  eyebrow: 'Fila e avisos',
+  title: 'A equipe vê o que precisa de resposta.',
+  titleCinza: 'Transferências, fila e avisos aparecem juntos.',
+  lead: 'Quando a IA transfere uma conversa ou alguém fica esperando, a Oryon destaca o caso no painel e envia um alerta ao celular quando essa opção está ativa.',
   cartoes: [
-    { key: 'notificacoes', titulo: 'Avisos por categoria, no app e no celular', texto: 'Transferências da IA, conversas atribuídas, campanhas concluídas, menções da equipe e alertas da conexão — cada tipo com o seu aviso, também no celular.' },
-    { key: 'espera', titulo: 'Cliente esperando? A plataforma avisa.', texto: 'Se uma conversa atribuída a uma pessoa fica sem resposta por tempo demais, quem responde recebe o aviso.' },
-    { key: 'fila', titulo: 'Fila e atribuição', texto: 'O que a IA passou para a equipe entra na fila; quem está online assume, ou a conversa é atribuída e transferida entre setores.' },
-    { key: 'numeros', titulo: 'Vários números, uma caixa', texto: 'Recepção, comercial e pós-atendimento com números diferentes, cada um com o seu agente — tudo na mesma tela de Conversas.' },
+    { key: 'notificacoes', titulo: 'Cada aviso chega com contexto.', texto: 'Transferências, conversas atribuídas, campanhas concluídas, menções e alertas de conexão aparecem no app e podem chegar ao celular.' },
+    { key: 'espera', titulo: 'Aviso quando a resposta atrasa.', texto: 'Se uma conversa atribuída fica sem resposta além do tempo definido, o responsável recebe um aviso.' },
+    { key: 'fila', titulo: 'Fila e atribuição', texto: 'As conversas transferidas pela IA entram na fila. A equipe pode assumir, escolher um responsável ou transferir para outro setor.' },
+    { key: 'numeros', titulo: 'Números diferentes, uma caixa de entrada', texto: 'Recepção, comercial e pós-atendimento podem usar números e agentes diferentes na mesma tela de Conversas.' },
   ],
 } as const
 
 export const implantacao = {
   eyebrow: 'Implantação',
-  title: 'No ar em até 7 dias.',
-  titleCinza: 'Você libera o número; a configuração da plataforma fica com a gente.',
+  title: 'Sua operação no ar em até 7 dias.',
+  titleCinza: 'O prazo começa depois que a Meta libera o número.',
   passos: [
     {
       quem: 'Você',
-      titulo: 'Libera o seu número',
-      texto: 'Você configura o número de WhatsApp e o deixa liberado pela Meta — a conexão é a oficial, pela API do WhatsApp Business.',
+      titulo: 'Prepare o número de atendimento',
+      texto: 'Você informa o número e conclui a autorização na Meta. A Oryon se conecta pela API oficial do WhatsApp Business.',
       entregas: [
-        'O número de WhatsApp que vai atender',
-        'A conta liberada pela Meta, na API oficial',
-        'Quem da equipe atende, e em quais setores',
+        'Número que será usado no atendimento',
+        'Conta aprovada pela Meta para a API oficial',
+        'Pessoas e setores responsáveis pelo atendimento',
       ],
     },
     {
       quem: 'Nós',
       titulo: 'Configuramos a Oryon',
-      texto: 'Toda a configuração é feita pela nossa equipe, a partir do jeito que a sua empresa já vende e atende.',
+      texto: 'Nossa equipe configura a plataforma de acordo com o jeito que sua empresa vende e atende.',
       entregas: [
         'Agentes IA com instruções, conhecimento e catálogo',
         'Funis com as etapas do seu atendimento',
@@ -321,33 +338,33 @@ export const implantacao = {
     },
     {
       quem: 'Juntos',
-      titulo: 'A IA começa a atender',
-      texto: 'Antes de ligar, o agente passa pelo chat de teste. Depois, a IA atende no seu número e a equipe acompanha pelo painel.',
+      titulo: 'Teste antes de ativar',
+      texto: 'Você conversa com o agente no chat de teste, ajusta o que for preciso e só então ativa o atendimento no seu número.',
       entregas: [
-        'Conversas de teste com o agente, antes de ligar',
-        'Ajustes de respostas e capacidades com você',
-        'A IA ligada no número, com a equipe no comando',
+        'Cenários de teste antes da ativação',
+        'Respostas e capacidades ajustadas com a sua equipe',
+        'Atendimento com IA ativado no número oficial',
       ],
     },
   ],
   /** O que muda depois do ar — tudo na própria Oryon, sem depender de nós. */
   depois: {
-    titulo: 'Depois de no ar, o ajuste é seu.',
+    titulo: 'Depois da implantação, sua equipe faz os ajustes.',
     itens: [
       {
         key: 'ajuste',
-        titulo: 'Mudou a condição? Atualize e salve.',
-        texto: 'Instruções, base de conhecimento e catálogo ficam na tela de cada agente — as próximas respostas já seguem a versão nova.',
+        titulo: 'Mudou uma regra? Basta atualizar.',
+        texto: 'Instruções, base de conhecimento e catálogo ficam na configuração de cada agente. As próximas respostas já usam a informação atualizada.',
       },
       {
         key: 'crescer',
         titulo: 'Mais de um número, mais de um agente.',
-        texto: 'Cada número de WhatsApp tem o seu Agente IA; atendimento, comercial e pós-venda podem ter o seu, cada um com a sua equipe.',
+        texto: 'Cada número de WhatsApp pode ter seu próprio Agente IA, equipe e fluxo de atendimento.',
       },
       {
         key: 'acompanhar',
-        titulo: 'A operação numa tela.',
-        texto: 'O Dashboard mostra fila, conversas abertas, volume e equipe online — o mesmo do capítulo Medir o resultado.',
+        titulo: 'Acompanhe pelo painel.',
+        texto: 'Veja fila, conversas abertas, volume de atendimento e equipe online em um só lugar.',
       },
     ],
   },
@@ -355,37 +372,31 @@ export const implantacao = {
 
 export const perguntas = {
   eyebrow: 'Perguntas',
-  title: 'Perguntas frequentes.',
-  titleCinza: 'O que quem está decidindo costuma perguntar.',
-  // 26/09: de seis para treze perguntas, em três grupos — cada resposta
-  // amarrada a um comportamento do produto que a página mostra ou que foi
-  // conferido no código (chat de teste, espera por mensagens seguidas, linha
-  // do tempo, relatório da campanha, ganho/perdido recusado para a IA).
+  title: 'Dúvidas comuns antes de começar.',
+  titleCinza: 'Respostas sobre implantação, IA e WhatsApp.',
+  // A página já demonstra boa parte do produto. O FAQ fica restrito às dez
+  // objeções residuais que alguém precisa resolver antes de avançar.
   grupos: [
     {
       titulo: 'Implantação e WhatsApp',
       itens: [
         {
           pergunta: 'Quanto custa a Oryon?',
-          resposta: 'Cada operação é diferente, por isso trabalhamos com proposta comercial, montada para o seu volume de atendimento e a sua equipe. Fale com a gente e receba a sua.',
+          resposta: 'O valor depende do volume de atendimento e do tamanho da equipe. Por isso, montamos uma proposta para cada operação. Fale com a gente para receber a sua.',
           /** Sem canal comercial publicado, não mandamos "falar com a gente". */
-          respostaSemContato: 'Cada operação é diferente, por isso trabalhamos com proposta comercial, montada para o seu volume de atendimento e a sua equipe.',
+          respostaSemContato: 'O valor depende do volume de atendimento e do tamanho da equipe. Por isso, montamos uma proposta para cada operação.',
         },
         {
           pergunta: 'Em quanto tempo começo a usar?',
-          resposta: 'Em até 7 dias. Você libera o seu número na Meta e nós configuramos toda a plataforma.',
+          resposta: 'Depois que o número estiver liberado pela Meta, a implantação pode levar até 7 dias. Você informa o número e quem atende. Nossa equipe configura agentes, catálogo, funis, setores e regras de transferência.',
         },
         {
-          pergunta: 'O que eu preciso fazer na implantação?',
-          resposta: 'A parte do número: configurar o WhatsApp e deixá-lo liberado pela Meta, e dizer quem da equipe atende. Agentes IA, catálogo, funis, setores e regras ficam com a gente.',
-        },
-        {
-          pergunta: 'É o WhatsApp oficial?',
-          resposta: 'Sim. A Oryon usa a conexão oficial do WhatsApp Business, pela API da Meta.',
+          pergunta: 'A conexão com o WhatsApp é oficial?',
+          resposta: 'Sim. A Oryon se conecta pela API oficial do WhatsApp Business, fornecida pela Meta.',
         },
         {
           pergunta: 'Posso conectar mais de um número?',
-          resposta: 'Sim. Cada número conectado tem o seu Agente IA — atendimento, comercial e pós-venda podem ter números e agentes diferentes.',
+          resposta: 'Sim. Cada número conectado pode ter seu próprio Agente IA. Atendimento, comercial e pós-venda podem usar números, equipes e fluxos diferentes.',
         },
       ],
     },
@@ -393,28 +404,20 @@ export const perguntas = {
       titulo: 'Agente IA',
       itens: [
         {
-          pergunta: 'De onde a IA tira as respostas?',
-          resposta: 'Das instruções, da base de conhecimento e do catálogo configurados em cada agente. O que não está lá, ela não deveria afirmar — e a regra do agente é chamar uma pessoa quando o assunto sai disso.',
-        },
-        {
-          pergunta: 'E quando a IA não souber responder?',
-          resposta: 'Ela chama uma pessoa da equipe, com a conversa inteira à vista, em vez de improvisar. E a equipe pode assumir qualquer conversa a qualquer momento, com um clique.',
+          pergunta: 'Quais informações o agente usa para responder?',
+          resposta: 'O agente consulta as instruções, a base de conhecimento e o catálogo configurados pela sua equipe. Você também define quando ele deve chamar uma pessoa.',
         },
         {
           pergunta: 'A IA pode fechar vendas sozinha?',
-          resposta: 'Não. A IA avança o negócio entre as etapas do funil, mas marcar uma venda como ganha ou perdida é sempre decisão de uma pessoa — o sistema recusa, mesmo que alguém tente liberar.',
+          resposta: 'Não. A IA pode avançar o negócio entre as etapas do funil, mas marcar uma venda como ganha ou perdida é sempre decisão de uma pessoa. O sistema bloqueia essa ação para agentes de IA.',
         },
         {
           pergunta: 'A IA pode errar?',
-          resposta: 'Pode, como qualquer IA — e a gente não promete o contrário. A Oryon é construída para que um erro apareça e custe pouco: cada ação fica registrada com o nome do agente, a equipe acompanha em tempo real e assume quando quiser, e a IA nunca marca ganho ou perdido. Seguimos desenvolvendo, aos poucos, mecanismos para reduzir isso.',
-        },
-        {
-          pergunta: 'A IA responde fora do horário da equipe?',
-          resposta: 'Sim, assim que a mensagem chega. E, por padrão, se o cliente manda várias mensagens seguidas, o agente espera ele terminar de escrever para responder tudo de uma vez.',
+          resposta: 'Sim. Por isso, você testa o agente antes de ativar, define o que ele pode fazer e acompanha suas ações. A equipe pode assumir a conversa e corrigir as informações a qualquer momento.',
         },
         {
           pergunta: 'Dá para testar o agente antes de ligar?',
-          resposta: 'Sim. Cada agente tem um chat de teste: você conversa com ele como se fosse um cliente antes de colocá-lo no número.',
+          resposta: 'Sim. Cada agente tem um chat de teste. Você conversa com ele como se fosse um cliente antes de ativá-lo no número.',
         },
       ],
     },
@@ -422,28 +425,12 @@ export const perguntas = {
       titulo: 'No dia a dia',
       itens: [
         {
-          pergunta: 'Por onde a minha equipe atende?',
-          resposta: 'Pela Oryon, no computador ou no celular. A caixa de Conversas reúne tudo, com as mensagens da IA e das pessoas no mesmo histórico.',
-        },
-        {
-          pergunta: 'Consigo ver o que a IA fez em cada conversa?',
-          resposta: 'Sim. Situação, etiquetas, etapa do negócio e transferências feitas pela IA entram na linha do tempo do contato, com o nome do agente.',
-        },
-        {
-          pergunta: 'Posso disparar campanhas para a minha base?',
-          resposta: 'Sim, com modelos aprovados pela Meta. O relatório de cada campanha mostra entregas, leituras e respostas — e cada resposta cai no atendimento com IA.',
-        },
-        {
           pergunta: 'Como funcionam os modelos de mensagem da Meta?',
-          resposta: 'Para iniciar uma conversa ou reabrir uma que passou da janela de atendimento, o WhatsApp exige um modelo aprovado pela Meta. Você cria, envia para aprovação e acompanha o status dentro da Oryon.',
+          resposta: 'Para iniciar uma conversa ou retomar uma conversa fora da janela de atendimento, o WhatsApp exige um modelo aprovado pela Meta. Você cria, envia para aprovação e acompanha o status dentro da Oryon.',
         },
         {
           pergunta: 'A IA marca consultas na agenda da clínica?',
-          resposta: 'Sim, quando a agenda da clínica está integrada à Oryon — isso é feito na implantação. Ela consulta os horários livres e só oferece o que existe; se não conseguir confirmar a disponibilidade, chama a recepção.',
-        },
-        {
-          pergunta: 'Minha equipe consegue atender pelo celular?',
-          resposta: 'Sim. A Oryon funciona no navegador do celular e como aplicativo, com os avisos chegando no aparelho.',
+          resposta: 'Quando a agenda está integrada à Oryon, o agente pode consultar os horários livres e encaminhar a marcação. Quando não puder confirmar a disponibilidade, chama a recepção.',
         },
       ],
     },
@@ -451,9 +438,10 @@ export const perguntas = {
 } as const
 
 export const fecho = {
-  title: 'Coloque a IA para atender, com a sua equipe no comando.',
-  lead: 'Converse com o nosso Agente IA pelo WhatsApp — é a própria Oryon te mostrando como funciona.',
+  title: 'Coloque a IA para atender e mantenha sua equipe no comando.',
+  titleSemContato: 'Já usa a Oryon? Continue de onde parou.',
+  lead: 'Fale com o Agente IA da Oryon pelo WhatsApp e experimente o mesmo atendimento que seus clientes vão usar.',
   /** Sem canal comercial configurado: nada de prometer conversa. */
-  leadSemContato: 'Já usa a Oryon? Entre e continue de onde parou.',
+  leadSemContato: 'Entre na sua conta e retome o atendimento.',
   entrar: 'Já sou cliente',
 } as const

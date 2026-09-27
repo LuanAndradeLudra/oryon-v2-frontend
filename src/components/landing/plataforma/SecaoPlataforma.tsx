@@ -159,9 +159,9 @@ function Surgir({ chave, children, className }: { chave: string | number; childr
       <motion.div
         key={chave}
         className={className}
-        initial={semMovimento ? false : { opacity: 0, y: 10, filter: 'blur(3px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        exit={semMovimento ? undefined : { opacity: 0, y: -6, filter: 'blur(2px)' }}
+        initial={semMovimento ? false : { opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={semMovimento ? undefined : { opacity: 0 }}
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       >
         {children}
@@ -189,6 +189,7 @@ function Contador({ para }: { para: number }) {
  * mesmo momento, com os componentes reais do produto.
  */
 function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number; at: HeroState; cena: HeroCena; ciclo: number }) {
+  const semMovimento = useReducedMotion()
   const contatoMarina = { displayName: HERO.person, profilePicUrl: null }
   const mensagem = (id: string) => heroMessages('humano').find((m) => m.id === id)!
   const chave = `${bloco}-${i}`
@@ -246,24 +247,23 @@ function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number;
       const eventos = heroActivityFeed(at).map((l) => ({
         id: l.id, type: l.type as ActivityEvent['type'], actorName: l.actor,
         actorType: (l.metadata.actorType === 'ai' ? 'agent' : 'user') as ActivityEvent['actorType'],
-        subject: l.subject, timestamp: l.timestamp,
+        subject: l.summary, timestamp: l.timestamp,
       }))
       return <div className="relative h-[330px] overflow-hidden px-2 py-1"><ActivityFeed events={eventos} /></div>
     }
     case 'equipe-0': {
       // O sino: a transferência entra no topo quando a IA chama a Ana.
-      const lista = heroNotifications(at)
+      const presentes = new Set(heroNotifications(at).map((n) => n.id))
+      const lista = heroNotifications('assumido')
       return (
         <div className="py-1">
           <AnimatePresence initial={false}>
             {lista.map((n) => (
               <motion.div
                 key={`${ciclo}-${n.id}`}
-                layout="position"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+                initial={false}
+                animate={{ opacity: presentes.has(n.id) ? 1 : 0, y: presentes.has(n.id) ? 0 : 5 }}
+                transition={{ duration: semMovimento ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
                 className="overflow-hidden"
               >
                 <NotificationItem n={n} onClick={NOOP} />
@@ -336,62 +336,47 @@ function Revelar({ children, atraso = 0, className }: { children: ReactNode; atr
   return (
     <motion.div
       className={className}
-      initial={semMovimento ? false : { opacity: 0, y: 24, filter: 'blur(6px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      initial={semMovimento ? false : { opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-12% 0px' }}
-      transition={{ duration: 0.9, delay: atraso, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.55, delay: atraso, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </motion.div>
   )
 }
 
-/**
- * COMPOSIÇÃO de cada recurso (25/09, 4ª rodada) — promessa, operação visível e
- * duas evidências lidas como UMA unidade, que cabe na área útil da tela depois
- * de clicar no índice (viewport − cabeçalho fixo − folga de ancoragem).
- *
- * A demonstração mora num PALCO tingido; a largura do palco é a da moldura (o
- * limite que o próprio recorte informa: orçamento de altura + teto de
- * ampliação) mais a folga — nunca uma faixa larga com a moldura boiando. As
- * evidências ocupam TODO o resto da largura:
- *  • `lado` — Conversas: a tela à esquerda, as duas evidências empilhadas à
- *    direita, divididas na altura do palco;
- *  • `panoramico` — o funil: ampliar a tela larga também a deixaria alta e
- *    empurraria as evidências para fora da tela; então a moldura fica no
- *    tamanho legível e as evidências vão AO LADO;
- *  • `vertical` — o relatório de campanhas é alto e estreito: sobra largura
- *    para as duas evidências lado a lado, cada uma com a altura da tela —
- *    três colunas altas; sem largura para isso, elas empilham ao lado.
- * Sem largura para nada ao lado (tablet, celular), tudo empilha:
- * palco → evidências.
- */
-type Arranjo = 'lado' | 'panoramico' | 'vertical' | 'abaixo'
+/** Each resource keeps its own reading order. Conversations pair the window
+ * with stacked evidence; the wide funnel/dashboard use evidence below;
+ * portrait campaign reports can share a row with both evidence cards.
+ * The window IS the stage: no second stretched container around it. */
+type Arranjo = 'lado' | 'vertical' | 'abaixo'
 const COMPOSICAO: Record<string, Arranjo> = {
   conhecer: 'lado',
   // Dashboard: tela larga demais para dividir a largura — evidências embaixo.
   medir: 'abaixo',
   atender: 'lado',
   equipe: 'lado',
-  funil: 'panoramico',
+  funil: 'abaixo',
   campanhas: 'vertical',
 }
 
 /** Largura mínima da coluna de evidências ao lado do palco. */
 const EVIDENCIAS_MIN = 320
 /** Largura mínima de cada evidência quando ficam lado a lado (arranjo vertical). */
-// Três colunas altas só com largura folgada: abaixo disso, os cartões esticados
-// até a altura da tela deixavam o conteúdo boiando em vãos (medido em 1440).
-const EVIDENCIA_COLUNA_MIN = 420
+// Below this width, stack the evidence beside the portrait report.
+const EVIDENCIA_COLUNA_MIN = 300
 const VAO = 20
 
-/** Folga horizontal do palco (a mesma conta do CSS: clamp(7px, 1.3vw, 19px)). */
-function folgaDoPalco() {
-  if (typeof window === 'undefined') return 24
-  return Math.round(Math.min(19, Math.max(7, window.innerWidth * 0.013)))
-}
-
 type Bloco = (typeof plataforma.blocos)[number]
+
+/** Invisible endpoint states reserve the largest intrinsic height at this width.
+ * They stay in the same grid cell, so text wrapping remains responsive. Playback
+ * never sizes the card, and no fixed height clips a longer translated label. */
+const RESERVAS: Record<string, HeroState[]> = {
+  conhecer: ['inicio'], atender: ['etiqueta'],
+  equipe: ['avanco', 'ganho'], funil: ['etiqueta', 'avanco'],
+}
 
 /** Uma evidência: o componente real em cima, a frase embaixo. */
 function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean; at: HeroState; cena: HeroCena; ciclo: number }) {
@@ -399,10 +384,17 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
     // Esticada, a evidência divide a altura do palco (flex-1): a folga vai para
     // a área do visual, centrado — nunca um vão entre as duas.
     <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-w-0', esticar && 'flex-1')}>
-      <div className={cn('flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]', esticar && 'h-full')}>
+      <div className={cn('flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]', bloco === 'medir' && 'lg:grid lg:grid-cols-[1.3fr_1fr] lg:items-center', esticar && 'h-full')}>
         <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5">
-          <div aria-hidden inert data-evidencia className="pointer-events-none select-none [zoom:0.8]">
-            <VisualCartao bloco={bloco} i={i} at={at} cena={cena} ciclo={ciclo} />
+          <div aria-hidden inert data-evidencia className="pointer-events-none grid min-w-0 select-none [zoom:0.8]">
+            {RESERVAS[bloco]?.map((estado) => (
+              <div key={estado} className="invisible min-w-0 [grid-area:1/1]" data-reserva>
+                <VisualCartao bloco={bloco} i={i} at={estado} cena="agente-catalogo" ciclo={0} />
+              </div>
+            ))}
+            <div className="min-w-0 self-center [grid-area:1/1]" data-evidencia-atual>
+              <VisualCartao bloco={bloco} i={i} at={at} cena={cena} ciclo={ciclo} />
+            </div>
           </div>
         </div>
         <div className="px-5 pb-4 pt-3.5">
@@ -418,6 +410,28 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
   const h = HISTORIAS[b.id]
   const arranjo = COMPOSICAO[b.id]
   const ref = useRef<HTMLElement | null>(null)
+  const editorialRef = useRef<HTMLDivElement>(null)
+  const composicaoRef = useRef<HTMLDivElement>(null)
+  const [escala, setEscala] = useState(1)
+  // Fit the complete composition, not each window independently. offsetHeight
+  // is in unscaled CSS pixels, so applying zoom cannot feed back into sizing.
+  useLayoutEffect(() => {
+    const composicao = composicaoRef.current
+    const editorial = editorialRef.current
+    if (!composicao || !editorial) return
+    const medir = () => {
+      const desktop = window.innerWidth >= 1024
+      const disponivel = window.innerHeight - 96 - editorial.offsetHeight - 24 - 24
+      const natural = composicao.offsetHeight
+      setEscala(desktop && natural > 0 ? 0.92 * Math.min(1, Math.max(1, disponivel) / natural) : 1)
+    }
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
+    ro?.observe(composicao)
+    ro?.observe(editorial)
+    window.addEventListener('resize', medir)
+    medir()
+    return () => { ro?.disconnect(); window.removeEventListener('resize', medir) }
+  }, [])
   // Largura REAL do artigo — decide o arranjo (não o breakpoint da viewport).
   const [largura, setLargura] = useState(0)
   useLayoutEffect(() => {
@@ -429,22 +443,13 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
     ro?.observe(el)
     return () => ro?.disconnect()
   }, [])
-  // A largura máxima da moldura neste viewport, informada pelo recorte. O funil
-  // leva 70 % dela (pedido do PO, 25/09): o quadro panorâmico em tamanho cheio
-  // dominava o recurso e empurrava as evidências.
-  const [limite, setLimiteBruto] = useState(0)
-  const fatorTela = arranjo === 'panoramico' ? 0.7 : 1
-  const setLimite = useCallback((px: number) => setLimiteBruto(Math.round(px * fatorTela)), [fatorTela])
-  const palco = limite ? limite + 2 * folgaDoPalco() : 0
-
-  // Cabe algo ao lado do palco? E, no vertical, cabem as duas evidências lado a lado?
+  // The window itself is the stage. Portrait reports keep their natural
+  // width; landscape screens use the available column without an outer mat.
+  const [limite, setLimite] = useState(0)
+  const palco = limite
   const sobra = palco ? largura - palco - VAO : 0
   const aoLado = palco > 0 && sobra >= EVIDENCIAS_MIN && arranjo !== 'abaixo'
   const tresColunas = aoLado && arranjo === 'vertical' && sobra >= 2 * EVIDENCIA_COLUNA_MIN + VAO
-  // Quando há evidências ao lado, a moldura deve ocupar toda a coluna do
-  // palco. Centralizar a tela dentro de uma área maior cria o vazio visível
-  // nas laterais e faz a simulação parecer um cartão solto.
-  const preencher = aoLado
   // Configurar agentes é desktop no próprio produto (no celular ele avisa "use
   // o desktop"): ali o capítulo conta a história só pelas evidências.
   const celular = !useMediaQuery('(min-width: 768px)')
@@ -464,9 +469,9 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
   }, [])
   const colunas = !aoLado ? undefined
     : tresColunas ? `${palco}px minmax(0, 1fr) minmax(0, 1fr)`
-    // O palco divide a largura com as evidências (1,3 : 1), nunca menor que a
-    // moldura: a tela real é a superfície principal, centrada no palco.
-    : `minmax(${palco}px, 1.3fr) minmax(${EVIDENCIAS_MIN}px, 1fr)`
+    // Conversas usam duas colunas; relatórios verticais preservam sua largura.
+    : arranjo === 'vertical' ? `${palco}px minmax(0, 1fr)`
+    : `minmax(0, 1.3fr) minmax(${EVIDENCIAS_MIN}px, 1fr)`
 
   return (
     <article
@@ -477,34 +482,26 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
       className="scroll-mt-24"
     >
       {/* A promessa (curta, no H3) e a explicação (parágrafo à parte). */}
-      <Revelar>
+      <div ref={editorialRef}><Revelar>
         <p className="text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">
           <span className="tabular-nums">{String(n).padStart(2, '0')}</span>
           <span aria-hidden className="mx-2 text-surface-600">·</span>
           {b.indice}
         </p>
-        <h3 className="mt-2.5 font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(0.98rem,1.33vw,1.27rem)] text-balance">
+        <h4 className="mt-2.5 font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance">
           {b.destaque}
-        </h3>
+        </h4>
         <p className="mt-2.5 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
-      </Revelar>
+      </Revelar></div>
 
-      <div className="mt-6 grid gap-4 sm:gap-5" style={colunas ? { gridTemplateColumns: colunas, gap: VAO } : undefined}>
+      <div className="mt-6 flex justify-start" data-composicao-envelope>
+      <div ref={composicaoRef} data-composicao-recurso className="grid shrink-0 gap-4 sm:gap-5"
+        style={{ width: largura || '100%', zoom: escala, ...(colunas ? { gridTemplateColumns: colunas, gap: VAO } : {}) }}>
         {/* A operação, na tela. */}
         {!semTela && (
-        <Revelar atraso={0.1} className="min-w-0">
-          <div className={cn(
-            'flex h-full justify-center rounded-2xl bg-[var(--landing-palco)]',
-            // Funil ao lado das evidências: a moldura ocupa a altura do palco.
-            preencher ? 'items-stretch' : 'items-center',
-            ' p-2 ring-1 ring-[var(--landing-borda)] sm:px-[clamp(7px,1.3vw,19px)]',
-            arranjo === 'panoramico' ? 'sm:py-[clamp(6px,0.85vw,12px)]' : 'sm:py-[clamp(7px,1.3vw,17px)]',
-          )}>
-            <div className={cn('w-full', preencher && 'h-full')} style={{ maxWidth: limite || undefined }}>
-              <DemoRecorte preencherAltura={preencher} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
-                foraDoRecorte={aoLado ? 330 : 170} />
-            </div>
-          </div>
+        <Revelar atraso={0.1} className="min-w-0 self-start">
+          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto max-w-[1000px]' : undefined} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
+            foraDoRecorte={aoLado ? 330 : 170} />
         </Revelar>
         )}
 
@@ -518,11 +515,13 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
             </div>
           )}
       </div>
+      </div>
     </article>
   )
 }
 
 export function SecaoPlataforma() {
+  const semMovimento = useReducedMotion()
   const [ativo, setAtivo] = useState<string>(plataforma.blocos[0].id)
   const blocosRef = useRef<Record<string, HTMLElement | null>>({})
 
@@ -552,10 +551,10 @@ export function SecaoPlataforma() {
     return () => { alvo.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(quadro) }
   }, [])
 
-  const irPara = (id: string) => blocosRef.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const irPara = (id: string) => blocosRef.current[id]?.scrollIntoView({ behavior: semMovimento ? 'auto' : 'smooth', block: 'start' })
 
   return (
-    <section id="plataforma" data-section="plataforma" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-24">
+    <section id="plataforma" data-section="plataforma" aria-labelledby="plataforma-titulo" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
       {/* GRADE (25/09, 4ª rodada). Abaixo de 1280 px: o container da landing, sem
           índice (cada artigo traz o rótulo numerado). A partir de 1280 px a
           seção deixa o container: o índice é a primeira coluna da grade, a
@@ -568,8 +567,11 @@ export function SecaoPlataforma() {
             {plataforma.atos.map((ato) => (
               <li key={ato.id} className="mt-3 first:mt-0">
                 {/* O ato: rótulo pequeno; os capítulos dele logo abaixo. */}
-                <p className="mb-1 pl-3 text-[10px] font-semibold uppercase tracking-[.12em] text-surface-500">
-                  {ato.numero} · {ato.titulo}
+                <p className={cn(
+                  'mb-1 pl-3 text-[10px] font-semibold uppercase tracking-[.12em] transition-colors',
+                  (ato.blocos as readonly string[]).includes(ativo) ? 'text-[var(--landing-destaque)]' : 'text-surface-500',
+                )}>
+                  Ato {ato.numero} · {ato.titulo}
                 </p>
                 <ol className="flex flex-col gap-0.5">
             {plataforma.blocos.filter((b) => (ato.blocos as readonly string[]).includes(b.id)).map((b) => { const i = plataforma.blocos.findIndex((x) => x.id === b.id); return (
@@ -608,47 +610,64 @@ export function SecaoPlataforma() {
           <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">
             {plataforma.eyebrow}
           </p>
-          <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.16rem,2.17vw,1.73rem)] text-balance">
+          <h2 id="plataforma-titulo" className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
             <span className="text-surface-50">{plataforma.title}</span>{' '}
             <span className="text-surface-500">{plataforma.titleCinza}</span>
           </h2>
+          <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--landing-borda)] bg-[var(--landing-cartao)] px-3 py-1.5 text-[12px] font-medium text-surface-300">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-brand-400" />
+            {plataforma.contexto}
+          </p>
         </Revelar>
 
-        <div className="mt-12 sm:mt-16">
+        <nav aria-label="Escolher recurso" className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:hidden">
+          {plataforma.blocos.map((b, i) => {
+            const ato = plataforma.atos.find((a) => (a.blocos as readonly string[]).includes(b.id))!
+            return (
+              <button key={b.id} type="button" onClick={() => irPara(b.id)}
+                className="min-h-12 rounded-lg border border-[var(--landing-borda)] bg-[var(--landing-cartao)] px-3 py-2 text-left text-[13px] font-medium text-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                <span className="block text-[9px] font-semibold uppercase tracking-[.12em] text-surface-500">Ato {ato.numero}</span>
+                <span className="mt-0.5 block"><span className="mr-2 text-[var(--landing-destaque)]">{String(i + 1).padStart(2, '0')}</span>{b.indice}</span>
+              </button>
+            )
+          })}
+        </nav>
+        <div className="mt-10 sm:mt-12">
 
           {/* Os recursos: separados por um fio; o fio vertical à esquerda liga o
               índice à coluna (moldura de linhas finas, como a referência). */}
           <div className="min-w-0">
             {plataforma.atos.map((ato, ai) => {
               const blocos = plataforma.blocos.filter((b) => (ato.blocos as readonly string[]).includes(b.id))
-              const tingido = ai % 2 === 1
               return (
-                <div
+                <section
                   key={ato.id}
                   data-ato={ato.id}
-                  className={cn(
-                    ai > 0 && 'mt-16 sm:mt-20',
-                    // A faixa: sangra 24 px para fora da coluna, para o fundo não
-                    // colar no texto; sem largura para isso (celular), só o fundo.
-                    tingido && 'rounded-3xl bg-[color-mix(in_srgb,var(--landing-palco)_75%,transparent)] px-4 py-10 ring-1 ring-[var(--landing-borda)] sm:-mx-6 sm:px-6 sm:py-14',
-                  )}
+                  aria-labelledby={`plataforma-ato-${ato.id}`}
+                  className={cn(ai > 0 && 'mt-14 sm:mt-16')}
                 >
-                  <Revelar className="mb-10 flex items-baseline gap-4 sm:mb-14">
-                    <span aria-hidden className="font-display text-[clamp(1.6rem,2.6vw,2.2rem)] font-bold leading-none tracking-[-0.03em] text-[var(--landing-destaque)] opacity-90">{ato.numero}</span>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">Ato {ato.numero} · {ato.titulo}</p>
-                      <p className="mt-1.5 max-w-[48ch] font-display text-[clamp(0.98rem,1.33vw,1.27rem)] font-semibold leading-[1.15] tracking-[-0.022em] text-surface-50 text-balance">{ato.frase}</p>
+                  <Revelar className="mb-8 sm:mb-10">
+                    <div className="relative grid gap-3 overflow-hidden rounded-xl border border-[var(--landing-borda)] bg-[color-mix(in_srgb,var(--color-brand-500)_7%,var(--landing-cartao))] px-5 py-5 sm:grid-cols-[7.25rem_minmax(0,1fr)] sm:items-center sm:gap-6 sm:px-6 sm:py-6">
+                      <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-[var(--landing-destaque)]" />
+                      <div className="flex items-baseline gap-2 sm:block">
+                        <span className="text-[10px] font-semibold uppercase tracking-[.18em] text-surface-500">Ato</span>
+                        <span aria-hidden className="font-display text-[2rem] font-bold leading-none tracking-[-.04em] text-[var(--landing-destaque)] sm:mt-1 sm:block sm:text-[2.5rem]">{ato.numero}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <h3 id={`plataforma-ato-${ato.id}`} className="font-display text-[clamp(1.35rem,1.9vw,1.75rem)] font-bold leading-[1.08] tracking-[-.025em] text-surface-50 text-balance">{ato.titulo}</h3>
+                        <p className="mt-2 max-w-[56ch] text-[14px] leading-relaxed text-surface-400 sm:text-[15px]">{ato.frase}</p>
+                      </div>
                     </div>
                   </Revelar>
                   {blocos.map((b, bi) => {
                     const n = plataforma.blocos.findIndex((x) => x.id === b.id) + 1
                     return (
-                      <div key={b.id} className={cn(bi > 0 && 'mt-16 border-t border-[var(--landing-borda)] pt-16 sm:mt-20 sm:pt-20')}>
+                      <div key={b.id} className={cn(bi > 0 && 'mt-10 border-t border-[var(--landing-borda)] pt-10 sm:mt-12 sm:pt-12')}>
                         <ArtigoRecurso b={b} n={n} registrar={(el) => { blocosRef.current[b.id] = el }} />
                       </div>
                     )
                   })}
-                </div>
+                </section>
               )
             })}
 
@@ -657,8 +676,8 @@ export function SecaoPlataforma() {
             <Revelar className="mt-16 sm:mt-20">
               <div className="flex flex-col items-start gap-4 rounded-2xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:flex-row sm:items-center sm:justify-between sm:p-8">
                 <p className="max-w-[34ch] font-display text-[13px] font-semibold leading-snug tracking-[-0.01em] text-surface-50">
-                  Veja a Oryon atendendo no seu WhatsApp.
-                  <span className="block text-surface-400 text-[12px] font-medium mt-1">Converse com o nosso Agente IA — ele mesmo te mostra.</span>
+                  Teste o Agente IA da Oryon pelo WhatsApp.
+                  <span className="block text-surface-400 text-[12px] font-medium mt-1">Envie uma mensagem e veja como o atendimento funciona.</span>
                 </p>
                 <LinkButton
                   href={linkContato()}

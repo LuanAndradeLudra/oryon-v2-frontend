@@ -7,13 +7,10 @@ import { hero } from '../landingCopy'
  * dissecado em 24/09). Duas correções de uma 1ª leitura que só copiou a
  * FÓRMULA deles sem copiar a CONDIÇÃO por trás:
  *
- * 1. O H1 deles tem 4 palavras — por isso `svh` sozinho funciona: em celular
- *    (viewport alta E estreita) `16px + 5.333svh` cresce com a ALTURA e nada
- *    segura a LARGURA, e um H1 de 10 palavras estourava (61px em 7 linhas,
- *    medido em 390×844). Corrigido dos dois lados: H1 encurtado pra 4
- *    palavras (a 2ª frase migrou pro lead) e a fórmula ganhou um piso de
- *    largura — `min(8.2vw, 16px + 5.333svh)` — a MENOR das duas manda: altura
- *    no desktop baixo/largo, largura no celular alto/estreito.
+ * 1. `svh` sozinho não funciona em celular: numa viewport alta e estreita,
+ *    `16px + 5.333svh` cresce com a ALTURA e nada segura a LARGURA. A fórmula
+ *    ganhou um limite de largura — `min(8.2vw, 16px + 5.333svh)` — para que
+ *    a menor dimensão governe a manchete em desktop baixo e celular estreito.
  * 2. O palco precisa começar dentro da dobra (medido: 60%+ visível em
  *    1240×751) — por isso os espaços entre H1/lead/CTAs/palco são enxutos,
  *    não decorativos.
@@ -37,7 +34,7 @@ export function Hero() {
         // propósito, mas nunca pode criar rolagem horizontal na página.
         // `isolate`: o véu do holofote (z 40, dentro da seção) nunca passa por
         // cima do menu fixo quando a página rola.
-        'relative isolate overflow-x-clip scroll-mt-16 pb-10 sm:pb-12',
+        'relative isolate overflow-x-clip scroll-mt-16 pb-10 sm:pb-5',
         // Espaçamento do conjunto título → narração → palco em TOKENS (25/09):
         // encolhem juntos em telas baixas, para o conjunto caber na altura.
         'pt-[var(--hero-gap-topo)]',

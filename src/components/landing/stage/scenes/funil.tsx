@@ -28,7 +28,7 @@ function Strip({ open }: { open: number }) {
       <span className="inline-flex items-center gap-1 text-3xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-900 border border-surface-700 text-surface-300">
         Vendas
       </span>
-      <span>Negócios com valor — fecham em Ganho ou Perdido.</span>
+      <span>Negócios com valor só podem ser concluídos como ganhos ou perdidos.</span>
       <span className="text-surface-600">·</span>
       <span>{open} abertos · 0 ganhos hoje · 0 perdidos</span>
     </StageBoardStrip>

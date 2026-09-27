@@ -66,6 +66,8 @@ function renderPage() {
 
 /** Rotas reais que a landing pode apontar. Só a entrada do app. */
 const ROTAS_VALIDAS = new Set(['/login'])
+/** O título do fecho depende do canal comercial: sem número, chama quem já é cliente. */
+const TITULO_FECHO = copy.contatoDisponivel ? copy.fecho.title : copy.fecho.titleSemContato
 
 describe('WelcomePage', () => {
   it('renderiza sem crash com o H1 curto (medição Attio 24/09: svh sozinho só funciona com H1 curto)', () => {
@@ -84,7 +86,7 @@ describe('WelcomePage', () => {
   it('tem as seções na escada de consciência: nav · hero · plataforma · limites da IA · área · equipe · resposta · implantação · perguntas · cta · footer', async () => {
     const { container } = renderPage()
     // As seções abaixo do Hero chegam por lazy import.
-    await screen.findByText(copy.fecho.title, undefined, { timeout: 8000 })
+    await screen.findByText(TITULO_FECHO, undefined, { timeout: 8000 })
     const seções = Array.from(container.querySelectorAll('[data-section]')).map((el) => el.getAttribute('data-section'))
     expect(seções).toEqual(['nav', 'hero', 'plataforma', 'confianca', 'area', 'equipe', 'resposta', 'implantacao', 'perguntas', 'cta', 'footer'])
   }, 15_000) // a página inteira, com as seções que chegam por import tardio
@@ -98,7 +100,7 @@ describe('WelcomePage', () => {
 
   it('CTAs: conversa comercial só com o número configurado; "Entrar"/"Já sou cliente" (→ /login) sempre — o hero não tem botões', async () => {
     renderPage()
-    await screen.findByText(copy.fecho.title, undefined, { timeout: 8000 })
+    await screen.findByText(TITULO_FECHO, undefined, { timeout: 8000 })
     const entrar = [
       ...screen.getAllByRole('link', { name: 'Entrar' }),
       screen.getByRole('link', { name: copy.fecho.entrar }),
@@ -116,11 +118,11 @@ describe('WelcomePage', () => {
     }
     entrar.forEach((a) => expect(a).toHaveAttribute('href', '/login'))
     expect(screen.queryByRole('link', { name: 'Ver o produto' })).toBeNull()
-  })
+  }, 15_000)
 
   it('nenhum link para rota inexistente: só /login, âncoras que existem na página e o WhatsApp comercial', async () => {
     const { container } = renderPage()
-    await screen.findByText(copy.fecho.title, undefined, { timeout: 8000 })
+    await screen.findByText(TITULO_FECHO, undefined, { timeout: 8000 })
     const links = Array.from(container.querySelectorAll('a'))
     expect(links.length).toBeGreaterThan(0)
     for (const a of links) {
@@ -136,7 +138,7 @@ describe('WelcomePage', () => {
         expect(ROTAS_VALIDAS.has(href!), `rota fora da lista: ${href}`).toBe(true)
       }
     }
-  })
+  }, 15_000)
 
   it('sem botão morto: todo <button> tem nome acessível e (o de tema) age', () => {
     renderPage()
@@ -150,7 +152,7 @@ describe('WelcomePage', () => {
 
   it('não vende o que não existe: sem planos, preços, depoimentos nem módulos desligados', async () => {
     const { container } = renderPage()
-    await screen.findByText(copy.fecho.title, undefined, { timeout: 8000 })
+    await screen.findByText(TITULO_FECHO, undefined, { timeout: 8000 })
     // O palco do hero e os visuais da Plataforma (aria-hidden) mostram os dados
     // da empresa FICTÍCIA da demo, que vende "planos" — aqui vale só a copy.
     const clone = container.cloneNode(true) as HTMLElement
@@ -163,7 +165,7 @@ describe('WelcomePage', () => {
     ]) {
       expect(texto, `texto banido: ${proibido}`).not.toMatch(proibido)
     }
-  })
+  }, 15_000)
 })
 
 describe('landingCopy (P14: zero número)', () => {

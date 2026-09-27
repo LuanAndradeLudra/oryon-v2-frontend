@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useRef } from 'react'
 import {
   LandingNav, Hero, Trust, Footer,
 } from '@/components/landing/sections'
+import { useHashAnchorScroll } from '@/hooks/useHashAnchorScroll'
 
 // Abaixo da primeira dobra: carrega depois do Hero (demo, recortes e
 // componentes reais pesam — não podem atrasar a primeira pintura).
@@ -24,8 +25,12 @@ const SecaoResposta = lazy(() => import('@/components/landing/plataforma/SecoesP
  * #como-funciona) rolam este contêiner. Copy toda em `landingCopy.ts`.
  */
 export function WelcomePage() {
+  const landingRootRef = useRef<HTMLDivElement>(null)
+  useHashAnchorScroll(landingRootRef)
+
   return (
     <div
+      ref={landingRootRef}
       data-landing-root
       className="h-screen w-full overflow-y-auto scroll-smooth motion-reduce:scroll-auto bg-surface-950 text-surface-100"
     >
