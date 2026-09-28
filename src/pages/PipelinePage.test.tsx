@@ -209,11 +209,13 @@ describe('PipelinePage — tipo do funil no cabecalho', () => {
 // "onde este negócio está no meu funil". A ficha abre POR CIMA do quadro: as
 // duas respostas de uma vez.
 describe('PipelinePage — chegada com ?deal=', () => {
-  it('abre a ficha do negócio pedida na URL', async () => {
+  // R4 (SCRUM-1161): a ficha aberta mora na URL e quem a abre é o
+  // DealPanelProvider global, lendo o parâmetro. A página não consome mais o
+  // `?deal=` — consumir apagava o id antes de o quadro destacar o card.
+  it('deixa o ?deal= na URL para o painel global e o quadro usarem', async () => {
     renderAt('/pipelines/p1?deal=d9', [pipeline({})])
-    await waitFor(() => expect(openDeal).toHaveBeenCalledWith('d9'))
-    // O quadro continua sendo o que a página mostra — a ficha vem por cima.
     await waitFor(() => expect(screen.getByTestId('board-tab')).toBeInTheDocument())
+    expect(openDeal).not.toHaveBeenCalled()
   })
 
   it('sem o parâmetro, nada é aberto', async () => {

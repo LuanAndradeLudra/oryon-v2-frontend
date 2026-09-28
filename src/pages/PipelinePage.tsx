@@ -9,7 +9,6 @@ import { pipelinesApi } from '@/services/api'
 import { getDefaultPipeline, getActivePipelines, getPipelineStages } from '@/lib/utils'
 import { pipelineKindOf, pipelineKindOption, pipelineNoun } from '@/lib/pipelineKinds'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { useDealPanel } from '@/contexts/DealPanelContext'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
@@ -92,27 +91,13 @@ export function PipelinePage() {
     }, { replace: true })
   }
 
-  /**
-   * `?deal=<id>` — chegou de outra tela pedindo "mostre onde ele está".
-   *
-   * Quem manda é o painel do contato na conversa: a ficha responde "o que é
-   * este negócio", e o quadro responde "onde ele está no funil". Abrir a ficha
-   * POR CIMA do quadro dá as duas de uma vez.
-   *
-   * O parâmetro é consumido uma única vez e some da URL: sem isso, recarregar
-   * ou voltar no histórico reabriria a ficha que o operador já fechou.
+  /*
+   * `?deal=<id>` — chegou de outra tela pedindo "mostre onde ele está". Quem
+   * abre a ficha é o `DealPanelProvider`, que agora LÊ o parâmetro como estado
+   * (não o consome mais); o quadro usa o mesmo id para destacar e centralizar
+   * o card. Antes esta página também o apagava, e o destaque nunca acontecia
+   * (R4 · SCRUM-1161).
    */
-  const { openDeal } = useDealPanel()
-  const dealParam = searchParams.get('deal')
-  useEffect(() => {
-    if (!dealParam) return
-    openDeal(dealParam)
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev)
-      params.delete('deal')
-      return params
-    }, { replace: true })
-  }, [dealParam, openDeal, setSearchParams])
 
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [loading, setLoading] = useState(true)

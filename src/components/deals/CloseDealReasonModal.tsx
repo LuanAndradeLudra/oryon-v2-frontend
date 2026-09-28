@@ -109,7 +109,6 @@ export function CloseDealReasonModal({ open, onClose, deal, stage, pipeline, onC
   const terminalLabel = stage?.label ?? (outcome === 'won' ? labels.won : labels.lost)
   // README 3.4: título "Mover para Perdido" (era "<etapa> — motivo").
   const title = `Mover para ${terminalLabel}`
-  const canConfirm = !!fields.picked || (!!pipeline?.allowFreeCloseReason && fields.free.trim().length > 0)
 
   return (
     <Modal
@@ -125,7 +124,9 @@ export function CloseDealReasonModal({ open, onClose, deal, stage, pipeline, onC
             variant={outcome === 'lost' ? 'danger' : 'primary'}
             onClick={handleConfirm}
             loading={saving}
-            disabled={saving || !canConfirm}
+            // Decisão do PO (27/09, D6): o botão nunca nasce cinza sem
+            // explicação — tentar sem motivo mostra o erro no campo.
+            disabled={saving}
             data-testid="close-deal-confirm"
           >
             Mover para {terminalLabel}

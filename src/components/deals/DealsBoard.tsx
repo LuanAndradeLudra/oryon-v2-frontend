@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -76,6 +76,10 @@ export function DealsBoard({
   onOpenDeal,
   users = [],
 }: DealsBoardProps) {
+  // Centraliza o card destacado UMA vez por destaque. O ref inline era uma
+  // função nova a cada render — cada atualização do quadro (tempo real, mover
+  // outro card) rolava a tela de volta até ele (R4 · SCRUM-1161).
+  const centralizadoRef = useRef<string | null>(null)
   // O card anda entre colunas (ver o invólucro do card). Desligado com
   // movimento reduzido e em quadros muito grandes, onde medir todos os cards a
   // cada renderização custaria mais do que a animação vale.
@@ -340,7 +344,11 @@ export function DealsBoard({
                 transition={{ type: 'spring', stiffness: 150, damping: 26, mass: 1 }}
               >
               <div
-                ref={highlightDealId === deal.id ? (el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : undefined}
+                ref={highlightDealId === deal.id ? (el) => {
+                  if (!el || centralizadoRef.current === deal.id) return
+                  centralizadoRef.current = deal.id
+                  el.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+                } : undefined}
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.effectAllowed = 'move'

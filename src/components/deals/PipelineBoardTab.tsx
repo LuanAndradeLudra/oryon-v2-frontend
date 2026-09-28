@@ -14,7 +14,7 @@ import { toastDealClosedWithUndo, UNDO_CLOSE_WINDOW_MS } from '@/lib/dealClose'
 import { pipelineKindOf, pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { boardStats, entrySources } from '@/lib/dealCard'
 import { matchesCloseDate, matchesOwner, boardSummary, type CloseFilter, type OwnerFilter } from '@/lib/boardFilters'
-import { contactsApi } from '@/services/api'
+import { contactsApi, dealsApi } from '@/services/api'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, Deal, Pipeline, PipelineStage } from '@/types'
 
@@ -165,7 +165,12 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
     // A4 (SCRUM-926): terminal = fechamento com motivo do catálogo, em
     // QUALQUER funil — o card fica na coluna de origem até o modal fechar.
     if (stage && (stage.isWon || stage.isLost)) {
-      setCloseDealTarget({ deal, stage })
+      // O quadro não traz os itens do negócio: o modal leria "sem itens" e
+      // ofereceria editar um valor que é a soma deles (R1 · SCRUM-1161). A
+      // ficha completa vem antes de abrir; se falhar, abre com o que há.
+      dealsApi.get(deal.id)
+        .then((res) => setCloseDealTarget({ deal: { ...deal, ...res.data }, stage }))
+        .catch(() => setCloseDealTarget({ deal, stage }))
       return
     }
     // PL-C2-CAR-1 (P7): mover para uma etapa ABERTA é reversível e de 1 clique
@@ -195,6 +200,11 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
     const fromStageId = deal.stageId
     const labels = terminalLabelsOf(pipeline)
     const terminalLabel = input.outcome === 'won' ? labels.won : labels.lost
+    // O valor final digitado no modal era descartado aqui — a ficha aplicava,
+    // o quadro não (R1 · SCRUM-1161). Mesma ordem da ficha: valor, depois etapa.
+    if (input.amountCents !== undefined) {
+      await dealsApi.update(deal.id, { amountCents: input.amountCents })
+    }
     await moveStage(deal, stage.id, { closeReason: input.reason, closeNote: input.note })
     toastDealClosedWithUndo({
       message: `${terminalLabel}.`,
@@ -317,12 +327,15 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
             void refetch()
             onDealsChanged?.()
           }}
-          onConflict={() => {
-            // Conflito (409 open_exists) num negócio criado direto do board:
-            // sem drawer de contato nesta tela pra oferecer as 3 saídas do
-            // fluxo "Adicionar ao funil" — aponta o caminho existente por toast.
+          onConflict={(info) => {
+            // Conflito (409 open_exists) num negócio criado direto do board: o
+            // backend devolve o id do negócio que já existe — o aviso leva até
+            // ele em vez de só dizer que existe (R5 · SCRUM-1161).
             setNewDealStageId(null)
-            toast('Este contato já tem um negócio aberto neste funil.', 'error')
+            toast(`${info.contactName} já tem um ${pipelineNoun(pipeline)} aberto neste funil.`, 'error', {
+              label: 'Abrir',
+              onClick: () => openDeal(info.openDealId),
+            })
           }}
         />
       )}

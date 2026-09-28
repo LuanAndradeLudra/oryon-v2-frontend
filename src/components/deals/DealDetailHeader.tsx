@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import {
   X, KanbanSquare, CheckCircle2, XCircle, MoreHorizontal,
-  Trash2, ArrowRightLeft, Calendar, Percent,
+  Trash2, ArrowRightLeft, Calendar,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { UserPicker } from '@/components/ui/UserPicker'
@@ -22,6 +22,37 @@ import { moveTargets } from '@/lib/contactPipelines'
 import { dealProbability } from '@/lib/dealProbability'
 import { DealProgress } from './DealProgress'
 import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage, User } from '@/types'
+
+/**
+ * Valor livre da ficha, salvo ao SAIR do campo. O `MoneyInput` avisa a cada
+ * tecla (2 → 20 → 200…) e cada aviso virava um PATCH — cada PATCH emite
+ * `deal:changed` e o quadro inteiro recarregava por tecla (R3 · SCRUM-1161).
+ * O rascunho acompanha o valor do servidor enquanto o campo não está em uso.
+ */
+function ValorDoNegocio({ amountCents, noun, onSave }: { amountCents: number; noun: string; onSave: (cents: number) => void }) {
+  const [rascunho, setRascunho] = useState(amountCents)
+  const [editando, setEditando] = useState(false)
+  // Valor novo do servidor (tempo real, outra aba) com o campo fora de uso:
+  // o rascunho acompanha. Ajuste durante a renderização, sem efeito.
+  const [base, setBase] = useState(amountCents)
+  if (base !== amountCents && !editando) {
+    setBase(amountCents)
+    setRascunho(amountCents)
+  }
+  return (
+    <MoneyInput
+      value={rascunho}
+      onChange={setRascunho}
+      onFocus={() => setEditando(true)}
+      onBlur={() => {
+        setEditando(false)
+        if (rascunho !== amountCents) onSave(rascunho)
+      }}
+      aria-label={`Valor do ${noun}`}
+      className="h-11 !text-2xl font-display font-bold text-surface-50 w-48"
+    />
+  )
+}
 
 interface DealDetailHeaderProps {
   deal: Deal
@@ -263,11 +294,10 @@ export function DealDetailHeader({
               </>
             ) : (
               <div data-testid="deal-amount">
-                <MoneyInput
-                  value={deal.amountCents}
-                  onChange={(cents) => void onPatch({ amountCents: cents, updateAmount: false })}
-                  aria-label={`Valor do ${noun}`}
-                  className="h-11 !text-2xl font-display font-bold text-surface-50 w-48"
+                <ValorDoNegocio
+                  amountCents={deal.amountCents}
+                  noun={noun}
+                  onSave={(cents) => void onPatch({ amountCents: cents, updateAmount: false })}
                 />
               </div>
             )}

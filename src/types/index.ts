@@ -297,6 +297,10 @@ export interface Deal {
    *  Resolvida na leitura por `src/lib/dealProbability.ts`, nunca persistida
    *  calculada — só este campo cru é gravado. */
   probability?: number | null
+  /** O mesmo override, com o nome que a LISTAGEM DO QUADRO usa (`GET /deals?pipelineId=`):
+   *  lá o backend remove `probability` e manda `probabilityOverride` (A6 · SCRUM-927).
+   *  Ler só `probability` fazia o ponderado da coluna ignorar o ajuste (R2 · SCRUM-1161). */
+  probabilityOverride?: number | null
   closedAt?: string | null
   lineItems?: DealLineItem[]
   createdAt?: string

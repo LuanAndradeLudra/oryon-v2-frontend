@@ -25,7 +25,7 @@ const DEAL: Deal = { id: 'd', contactId: 'c', title: 'x', status: 'open', pipeli
 const options = () => Array.from((screen.getByRole('combobox', { name: 'Motivo do desfecho' }) as HTMLSelectElement).options).map((o) => o.value)
 
 describe('CloseDealReasonModal (F8)', () => {
-  it('terminal Ganho: lista só motivos won/any; confirmar fica desabilitado até escolher; envia outcome+reason+note', async () => {
+  it('terminal Ganho: lista só motivos won/any; confirmar sem motivo mostra o erro e não envia; com motivo envia outcome+reason+note', async () => {
     const onConfirm = vi.fn(async () => {})
     const onClose = vi.fn()
     render(<CloseDealReasonModal open onClose={onClose} deal={DEAL} stage={WON} pipeline={PIPE} onConfirm={onConfirm} />)
@@ -35,8 +35,13 @@ describe('CloseDealReasonModal (F8)', () => {
     expect(screen.getByRole('heading', { name: 'Mover para Confirmado' })).toBeInTheDocument()
     expect(options()).toEqual(['', 'concluido', 'outro'])
     const confirm = screen.getByTestId('close-deal-confirm')
-    expect(confirm).toBeDisabled()
+    // Decisão do PO (27/09, D6): o botão não nasce desabilitado — tentar sem
+    // motivo mostra o erro no campo e não chama onConfirm.
+    expect(confirm).toBeEnabled()
     expect(confirm).toHaveTextContent('Mover para Confirmado')
+    fireEvent.click(confirm)
+    expect(await screen.findByText('Escolha um motivo.')).toBeInTheDocument()
+    expect(onConfirm).not.toHaveBeenCalled()
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'concluido' } })
     fireEvent.change(screen.getByPlaceholderText(/paciente confirmou/), { target: { value: 'por telefone' } })

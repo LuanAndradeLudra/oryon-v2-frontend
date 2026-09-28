@@ -189,14 +189,14 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
     dealsApi.movePipeline(deal.id, pipelineId)
       .then((res) => { setDeal(res.data); toast(`${Noun} transferido de funil.`, 'success') })
       .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível transferir o ${noun}.`), 'error'))
-  }, [deal, toast])
+  }, [deal, toast, Noun, noun])
 
   const handleDelete = useCallback(() => {
     if (!deal) return
     dealsApi.remove(deal.id)
       .then(() => { toast(`${Noun} excluído.`, 'success'); onClose?.() })
       .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível excluir o ${noun}.`), 'error'))
-  }, [deal, toast, onClose])
+  }, [deal, toast, onClose, Noun, noun])
 
   const lastEntry = Array.isArray(history) ? history[history.length - 1] : null
   const lastMovedLabel = lastEntry
