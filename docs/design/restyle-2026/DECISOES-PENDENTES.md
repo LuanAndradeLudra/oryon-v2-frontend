@@ -160,3 +160,30 @@ Split Humano/IA por hora e deltas dos KPIs (Dashboard); painel "HOJE"/CSAT do ag
 custo estimado e "enviar teste" na campanha; check duplo e nome do agente no chip da lista; Copilot, Nota interna e
 microfone no composer; evento "agente pediu transferência"; horário de atendimento/handoff/webhooks sem rota;
 contagens por segmento Minhas/Fila; tags em negócio. Faturamento 6a atrás da flag `settingsBilling` (desligada).
+
+## Funis — passada estrutural, direção C (27/09)
+
+Canvas: https://claude.ai/artifact/7B8LwxAHK6Lq81nCySKmgw · backend e decisões rastreados no **SCRUM-1161**.
+Commits: `dd65a92` · `930d139` · `5015f86` · `c09ab59` · `de96fe2` · `b168840`.
+
+**Decidido pelo PO (27/09):** direção C (Quadro + lentes); fechados numa coluna com os últimos 30 dias +
+"ver todos"; "parado" = dias por etapa, configurável; zera ao mudar de etapa ou com qualquer mensagem na
+conversa; sem estado "Pausado"; fechar sem motivo = botão clicável com erro ao tentar; Quadro + Lista agora,
+Previsão depois; **aviso "encerra a conversa e pausa 1 automação" ao fechar SAI da especificação por enquanto**
+(D2 — o backend não faz nenhum desses efeitos; mostrar seria afirmar algo falso).
+
+**Em aberto (nada disso está na tela hoje):**
+- "Parado" ainda usa 5 dias fixos para toda etapa (`lib/dealCard.ts`) — espera F4 (`staleAfterDays` por
+  etapa) e F5 (`lastActivityAt` com a última mensagem). Quando chegarem: campo na configuração da etapa e a
+  lente Esfriando passa a usar o limite da etapa.
+- Recorte dos fechados em 30 dias é feito no navegador; o quadro ainda baixa todos os fechados — espera F1
+  (`closedSince`).
+- Ficha busca o contato numa segunda chamada — espera F6 (contato no `GET /deals/:id`).
+- Empresa e etiquetas do contato no card (canvas) — espera F2; filtro "Etiqueta" na barra também pode entrar
+  junto (o backend já filtra por `tagId`).
+- Previsão (visão por mês de fechamento previsto) — fica para depois (D7); F3 é opcional.
+- "+ Salvar recorte" (lente personalizada) do canvas C não foi feito — decidir se entra.
+- Aviso D2 ao fechar — fora da especificação; volta só se o backend passar a encerrar conversa/pausar
+  automação ao fechar um negócio.
+- Esc não fecha a ficha do negócio (herdado, `DealPanelContext`); `FunnelsConfigDrawer` com z-index fixo fora
+  do `useLayer` (herdado) — não tocados nesta passada.
