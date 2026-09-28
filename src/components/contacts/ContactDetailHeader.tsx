@@ -147,18 +147,21 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
             </button>
           </div>
         </div>
+        {/* 28/09: com os três em partes iguais (118 px no painel de 400),
+            "Abrir conversa" + ícone (132 px) quebrava em duas linhas. O
+            principal ganha mais espaço; nenhum quebra o texto. */}
         <div className="flex gap-1.5 px-4 pb-3">
-          <Button size="sm" variant="primary" className="flex-1" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={handleOpenChat}>
+          <Button size="sm" variant="primary" className="flex-[1.4] whitespace-nowrap" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={handleOpenChat}>
             Abrir conversa
           </Button>
-          <Button size="sm" variant="neutral" className="flex-1" onClick={() => setTemplateDrawerOpen(true)}>
+          <Button size="sm" variant="neutral" className="flex-1 whitespace-nowrap" onClick={() => setTemplateDrawerOpen(true)}>
             Template
           </Button>
           {salesPipeline && (
             <Button
               size="sm"
               variant="neutral"
-              className="flex-1"
+              className="flex-1 whitespace-nowrap"
               onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline })}
             >
               Negócio

@@ -551,13 +551,14 @@ export function ContactsPage() {
                 size="sm"
                 value={view}
                 onChange={changeView}
+                // Barra estreita (< 720 px): só o ícone; o nome segue para leitor de tela.
                 options={[
-                  { value: 'list', label: 'Lista', icon: List },
-                  { value: 'table', label: 'Tabela', icon: Table },
+                  { value: 'list', label: <span className="sr-only @[720px]:not-sr-only">Lista</span>, icon: List },
+                  { value: 'table', label: <span className="sr-only @[720px]:not-sr-only">Tabela</span>, icon: Table },
                 ]}
               />
-              <Button size="sm" variant="neutral" leftIcon={<Upload className="w-3.5 h-3.5" />} onClick={() => setShowImport(true)}>
-                Importar
+              <Button size="sm" variant="neutral" leftIcon={<Upload className="w-3.5 h-3.5" />} onClick={() => setShowImport(true)} title="Importar contatos">
+                <span className="sr-only @[720px]:not-sr-only">Importar</span>
               </Button>
               <Button size="sm" variant="primary" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setShowNewContact(true)}>
                 Novo {vocab.contact}

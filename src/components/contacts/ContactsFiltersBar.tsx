@@ -223,9 +223,12 @@ export function ContactsFiltersBar({ filters, onFiltersChange, tags, commercial,
   if (filters.optIn !== undefined) chips.push({ key: 'optin', label: filters.optIn ? 'Com opt-in' : 'Sem opt-in', onRemove: () => set({ optIn: undefined }) })
 
   return (
-    <div className="h-12 flex items-center gap-2 px-4 border-b border-surface-700 bg-surface-800">
+    // @container: os botões à direita (trailing) encolhem pela largura da
+    // PRÓPRIA barra (muda com a barra lateral aberta ou recolhida).
+    <div className="@container h-12 flex items-center gap-2 px-4 border-b border-surface-700 bg-surface-800">
       {/* Busca — 220px no desktop, largura total no mobile */}
-      <div className="relative flex-shrink-0 w-full md:w-[220px]">
+      {/* 28/09: a busca pode encolher até 140 px quando falta espaço. */}
+      <div className="relative flex-shrink-0 w-full md:w-[220px] md:min-w-[140px] md:flex-shrink">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
         <Input
           size="sm"
@@ -251,7 +254,10 @@ export function ContactsFiltersBar({ filters, onFiltersChange, tags, commercial,
         )}
       </div>
 
-      <div className="hidden md:flex items-center gap-2 min-w-0">
+      {/* Sem min-w-0: o grupo não encolhe abaixo do botão Filtro (antes
+          encolhia a zero e o seletor Lista|Tabela passava por cima dele);
+          quem encolhe é a faixa de chips, que já rola na horizontal. */}
+      <div className="hidden md:flex items-center gap-2">
         <div className="relative flex-shrink-0">
           <Button
             size="sm"
