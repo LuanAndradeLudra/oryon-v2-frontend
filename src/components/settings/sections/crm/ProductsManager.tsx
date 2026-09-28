@@ -161,6 +161,7 @@ export function ProductsManager() {
                     checked={isActive}
                     onChange={() => handleToggleActive(p)}
                     disabled={!canManage}
+                    aria-label={`${p.name} ativo`}
                   />
 
                   {canManage && (

@@ -189,7 +189,7 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    <Switch checked={r.active} onChange={() => handleToggleActive(r)} disabled={!canManage} />
+                    <Switch checked={r.active} onChange={() => handleToggleActive(r)} disabled={!canManage} aria-label={`Motivo ${r.label} ativo`} />
                   </>
                 )}
               </li>
@@ -236,7 +236,7 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
             "Outro" com a nota completa preservada.
           </p>
         </div>
-        <Switch checked={!!pipeline.allowFreeCloseReason} onChange={handleToggleFree} disabled={!canManage || savingFreeToggle} />
+        <Switch checked={!!pipeline.allowFreeCloseReason} onChange={handleToggleFree} disabled={!canManage || savingFreeToggle} aria-label="Permitir motivo livre neste funil" />
       </div>
 
     </div>

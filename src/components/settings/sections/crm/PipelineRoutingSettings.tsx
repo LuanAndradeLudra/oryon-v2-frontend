@@ -240,6 +240,7 @@ export function PipelineRoutingSettings() {
                         checked={draft.autoCreateDeal}
                         onChange={() => updateDraft(n.id, { autoCreateDeal: !draft.autoCreateDeal })}
                         disabled={!canManage}
+                        aria-label={`Auto-criar negócio no 1º contato em ${n.label || n.displayPhoneNumber}`}
                       />
                       <span className="text-xs text-surface-400">Auto-criar negócio no 1º contato</span>
                     </div>
@@ -252,6 +253,7 @@ export function PipelineRoutingSettings() {
                       checked={draft.autoCreateDeal}
                       onChange={() => updateDraft(n.id, { autoCreateDeal: !draft.autoCreateDeal })}
                       disabled={!canManage}
+                      aria-label={`Auto-criar negócio no 1º contato em ${n.label || n.displayPhoneNumber}`}
                     />
                     <span className="text-xs text-surface-400">Auto-criar negócio no 1º contato</span>
                   </div>

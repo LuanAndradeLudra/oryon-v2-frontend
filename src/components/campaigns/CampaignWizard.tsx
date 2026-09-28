@@ -225,7 +225,7 @@ export function CampaignWizard({
     })
     whatsappNumbersApi.listDetailed().then(({ data }) => {
       if (staleRef.current) return
-      setMessagingLimits(Object.fromEntries(data.filter((n) => n.messagingLimit).map((n) => [n.id, n.messagingLimit])))
+      setMessagingLimits(Object.fromEntries(data.filter((n) => n.messagingLimit).map((n) => [n.id, n.messagingLimit as string])))
     }).catch(() => { if (!staleRef.current) setMessagingLimits({}) })
 
     return () => { staleRef.current = true }

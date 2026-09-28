@@ -242,7 +242,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
             <p className="text-sm font-medium text-surface-200">Produto ativo</p>
             <p className="text-xs text-surface-500 mt-0.5">Produtos inativos não são oferecidos pela IA</p>
           </div>
-          <Switch checked={active} onChange={setActive} />
+          <Switch checked={active} onChange={setActive} aria-label="Produto ativo" />
         </div>
 
         <div className="flex gap-2 justify-end pt-1">

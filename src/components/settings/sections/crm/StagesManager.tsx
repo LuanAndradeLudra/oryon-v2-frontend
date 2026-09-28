@@ -6,7 +6,6 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { SectionHeader } from '@/components/settings/SectionHeader'
 import { StageModal } from '@/components/settings/modals/StageModal'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { stagesApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
@@ -24,7 +23,7 @@ const STAGE_AXIS_COLOR = 'var(--color-accent-cyan)'
 
 export function StagesManager() {
   const { stages, refetchStages, setStagesOptimistic } = useCRMConfig()
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   // Mirror @Roles(ADMIN, BUSINESS_ADMIN) on POST/PATCH/DELETE /settings/stages.
   // GET is open (used everywhere as part of CRMConfig), so non-admins still
@@ -39,16 +38,16 @@ export function StagesManager() {
     try {
       if (editStage) {
         await stagesApi.update(editStage.id, data)
-        toast('Estágio atualizado com sucesso.', 'success')
+        toast('Situação atualizada.', 'success')
       } else {
         await stagesApi.create(data)
-        toast('Estágio criado com sucesso.', 'success')
+        toast('Situação criada.', 'success')
       }
       setModalOpen(false)
       setEditStage(null)
       refetchStages()
     } catch (err: unknown) {
-      toast(getApiErrorMessage(err, 'Erro ao salvar estágio.'), 'error')
+      toast(getApiErrorMessage(err, 'Erro ao salvar a situação.'), 'error')
       throw err // Re-throw so StageModal keeps open
     }
   }
@@ -58,11 +57,11 @@ export function StagesManager() {
     setDeleting(true)
     try {
       await stagesApi.delete(deleteStage.id)
-      toast('Estágio excluído.', 'success')
+      toast('Situação excluída.', 'success')
       refetchStages()
       setDeleteStage(null)
     } catch (err: unknown) {
-      toast(getApiErrorMessage(err, 'Erro ao excluir estágio.'), 'error')
+      toast(getApiErrorMessage(err, 'Erro ao excluir a situação.'), 'error')
     } finally {
       setDeleting(false)
     }
@@ -77,7 +76,7 @@ export function StagesManager() {
       setStagesOptimistic(withNewOrder)
       try {
         await stagesApi.reorder(withNewOrder.map((s) => s.id))
-        toast('Pipeline reordenado.', 'success')
+        toast('Ordem das situações salva.', 'success')
       } catch {
         toast('Erro ao reordenar. Recarregando...', 'error')
         refetchStages()
@@ -193,13 +192,12 @@ export function StagesManager() {
         onConfirm={handleDelete}
         title="Excluir situação"
         impact={{ label: `Situação ${deleteStage?.label ?? ''}`.trim(), tone: 'danger' }}
-        description="Contatos nesta situação não serão afetados, mas deixarão de ser agrupados. Esta ação não pode ser desfeita."
+        description="Só é possível excluir uma situação sem contatos: se houver algum nela, mova-os para outra situação antes. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}
       />
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )
 }

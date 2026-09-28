@@ -35,7 +35,7 @@ const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
 }
 
 export function Notifications() {
-  const { preferences, loading, saving, error, update, reset } = useNotificationPreferences()
+  const { preferences, loading, saving, error, update, reset, reload } = useNotificationPreferences()
   const { enabled: soundEnabled, toggle: toggleSound } = useNotificationSound()
 
   if (loading) {
@@ -68,7 +68,14 @@ export function Notifications() {
 
       {error && (
         <div className="mb-6">
-          <Banner variant="danger">{error}</Banner>
+          <Banner variant="danger">
+            <p>{error}</p>
+            {preferences.length === 0 && (
+              <button type="button" onClick={() => { void reload() }} className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80">
+                Tentar de novo
+              </button>
+            )}
+          </Banner>
         </div>
       )}
 
@@ -89,7 +96,7 @@ export function Notifications() {
               </p>
             </div>
           </div>
-          <Switch checked={soundEnabled} onChange={toggleSound} />
+          <Switch checked={soundEnabled} onChange={toggleSound} aria-label="Tocar som" />
         </div>
       </SettingsSection>
 
@@ -189,6 +196,7 @@ function PreferenceRow({
           checked={pref.enabled}
           onChange={onToggle}
           disabled={pref.mandatory || saving}
+          aria-label={pref.label}
         />
       </div>
     </div>

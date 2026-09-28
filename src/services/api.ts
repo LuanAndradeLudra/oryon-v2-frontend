@@ -1,4 +1,4 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import axios, { type AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios'
 import { appLogger } from '@/services/appLogger'
 import type {
   AdAccount,
@@ -808,6 +808,12 @@ let refreshPromise: Promise<boolean> | null = null
  *  re-enters the interceptor and deadlocks waiting on its own promise. */
 export const SKIP_AUTH_REFRESH = { _skipAuthRefresh: true } as const
 
+/** Para rotas em que o 401 é resposta de negócio, não sessão vencida (ex.:
+ *  PATCH /settings/password com a senha atual errada). O interceptor ainda
+ *  tenta renovar a sessão uma vez; se a repetição volta 401, a sessão está
+ *  viva e o 401 é do pedido: rejeita sem mandar para o login. */
+export const UNAUTHORIZED_IS_BUSINESS = { _unauthorizedIsBusiness: true } as AxiosRequestConfig
+
 /** Exported so useSocket can renew the HTTP session before reconnecting
  *  the websocket after an `auth:expired` event (R39). */
 export async function attemptRefresh(): Promise<boolean> {
@@ -865,6 +871,7 @@ export function clearSessionAndRedirect() {
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
   _skipAuthRefresh?: boolean
+  _unauthorizedIsBusiness?: boolean
 }
 
 const AUTH_NO_REFRESH_RE = /\/auth\/(refresh|mobile-refresh|logout|login|mobile-login)(?:\/|$|\?)/
@@ -886,6 +893,11 @@ function makeRefreshInterceptor(client: typeof axios | typeof api) {
 
     // Second 401 after a refresh retry, or an auth endpoint itself failed
     // (e.g. expired refresh cookie) — session is dead, send user to login.
+    // Exceção: a repetição de um pedido cujo 401 é de negócio (a renovação
+    // já deu certo, então a sessão está viva).
+    if (original._retry && original._unauthorizedIsBusiness) {
+      return Promise.reject(error)
+    }
     if (original._retry || isAuthNoRefreshRequest(original)) {
       if (hasSession) clearSessionAndRedirect()
       return Promise.reject(error)
@@ -1043,9 +1055,21 @@ export const messagesApi = {
 
 export const tagsApi = {
   async list() {
-    const res = await api.get<{ data: Tag[] } | Tag[]>('/tags')
-    // Support both paginated { data } and legacy array responses
-    return { ...res, data: Array.isArray(res.data) ? res.data : res.data.data }
+    // O backend pagina (padrão 50, teto 100): lia-se só a 1ª página e quem
+    // tinha mais de 50 tags perdia o resto em todo o sistema. Lê todas as
+    // páginas (teto de 20 = 2.000 tags, folga para qualquer tenant real).
+    type Pagina = { data: Tag[]; hasMore?: boolean } | Tag[]
+    const primeira = await api.get<Pagina>('/tags', { params: { page: 1, limit: 100 } })
+    if (Array.isArray(primeira.data)) return { ...primeira, data: primeira.data }
+    const todas = [...primeira.data.data]
+    let temMais = !!primeira.data.hasMore
+    for (let page = 2; temMais && page <= 20; page++) {
+      const r = await api.get<Pagina>('/tags', { params: { page, limit: 100 } })
+      if (Array.isArray(r.data)) break
+      todas.push(...r.data.data)
+      temMais = !!r.data.hasMore
+    }
+    return { ...primeira, data: todas }
   },
   create(name: string, color: string) {
     return api.post<Tag>('/tags', { name, color })

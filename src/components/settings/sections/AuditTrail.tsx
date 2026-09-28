@@ -71,8 +71,9 @@ export function AuditTrail() {
       const res = await listTenantAuditFeed(q)
       setRows(prev => (append ? [...prev, ...res.data] : res.data))
       setNextCursor(res.nextCursor)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar atividades')
+    } catch {
+      // Texto próprio: o err.message do axios ("Request failed…") não diz nada ao admin.
+      setError('Não foi possível carregar as atividades.')
     } finally {
       setLoading(false)
     }

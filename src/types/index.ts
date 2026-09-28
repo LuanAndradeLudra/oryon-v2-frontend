@@ -965,6 +965,8 @@ export interface Tag {
   id: string
   name: string
   color: string
+  /** Quantas conversas usam a tag — só o `GET /tags` traz (create/update não). */
+  usageCount?: number
 }
 
 export interface WhatsAppNumber {
@@ -1308,13 +1310,17 @@ export interface Tenant {
   createdAt: string
 }
 
+/** `GET /whatsapp/numbers` hoje NÃO devolve wabaId, wabaName, messagingLimit
+ *  nem connectedAt (lista fechada em settings-compat.controller): opcionais
+ *  para a tela não contar com eles. Pedido no SCRUM-1161. */
 export interface WhatsAppNumberDetailed extends WhatsAppNumber {
-  wabaId: string
-  wabaName: string
+  wabaId?: string
+  wabaName?: string
+  verifiedName?: string
   phoneNumberId: string
   qualityRating: 'green' | 'yellow' | 'red' | 'unknown'
-  messagingLimit: string
-  connectedAt: string
+  messagingLimit?: string
+  connectedAt?: string
   agentId?: string | null
   agentName?: string | null
 }

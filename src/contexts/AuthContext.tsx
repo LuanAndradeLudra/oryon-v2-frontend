@@ -66,6 +66,9 @@ interface AuthContextValue {
   logout: () => void
   completePasswordChange: (newPassword: string, currentPassword?: string) => Promise<void>
   completeOnboarding: () => void
+  /** Atualiza campos do usuário da sessão (ex.: nome salvo em Minha conta)
+   *  para o resto da tela refletir sem recarregar. */
+  updateSessionUser: (patch: Partial<User>) => void
 }
 
 function loadSession(): AuthSession | null {
@@ -261,6 +264,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(updated)
   }, [session])
 
+  const updateSessionUser = useCallback((patch: Partial<User>) => {
+    setSession((prev) => {
+      if (!prev) return prev
+      const updated: AuthSession = { ...prev, user: { ...prev.user, ...patch } }
+      saveSession(updated)
+      return updated
+    })
+  }, [])
+
   // ── Validate session on app load ────────────────────────────────────────
   useEffect(() => {
     if (!session?.user) return
@@ -316,6 +328,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       completePasswordChange,
       completeOnboarding,
+      updateSessionUser,
     }}>
       {children}
     </AuthContext.Provider>

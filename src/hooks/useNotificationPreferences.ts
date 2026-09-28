@@ -50,8 +50,9 @@ export function useNotificationPreferences() {
       const { data } = await api.get<ResolvedPreference[]>('/notification-preferences')
       setPreferences(data)
       setError(null)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro ao carregar preferências')
+    } catch {
+      // Sem o e.message do axios ("Request failed with status code 500") na tela.
+      setError('Não foi possível carregar suas preferências de notificação.')
     } finally {
       setLoading(false)
     }
@@ -82,7 +83,7 @@ export function useNotificationPreferences() {
       setError(null)
     } catch (e) {
       setPreferences(snapshot)
-      setError(e instanceof Error ? e.message : 'Erro ao salvar preferência')
+      setError('Não foi possível salvar a preferência. Ela voltou ao valor anterior.')
       throw e
     } finally {
       setSaving(false)

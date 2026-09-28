@@ -17,14 +17,12 @@ import { isAdminTier } from '@/lib/roleHelpers'
 import type { Tag } from '@/types'
 
 
-// Simulated usage count
-const TAG_USAGE: Record<string, number> = {
-  tag1: 8, tag2: 5, tag3: 3, tag4: 7, tag5: 2, tag6: 4,
-}
 
 interface TagCardProps {
   tag: Tag
-  usageCount: number
+  /** Conversas com a tag, do GET /tags. Antes vinha de um mapa fixo
+   *  (tag1…tag6) e toda tag real mostrava "0 usos". */
+  usageCount?: number
   onEdit: (tag: Tag) => void
   onDelete: (tag: Tag) => void
   /** When false, the card stays visible but the edit/delete affordances
@@ -72,19 +70,25 @@ function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps)
         </div>
         <div>
           <p className="text-sm font-semibold text-surface-100">{tag.name}</p>
-          <p className="text-xs text-surface-500">{usageCount} uso{usageCount !== 1 ? 's' : ''}</p>
+          {usageCount !== undefined && (
+            <p className="text-xs text-surface-500">{usageCount === 0 ? 'Nenhuma conversa' : `${usageCount.toLocaleString('pt-BR')} conversa${usageCount !== 1 ? 's' : ''}`}</p>
+          )}
         </div>
       </div>
       {canManage && (
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(tag)}
+            aria-label={`Editar tag ${tag.name}`}
+            title="Editar"
             className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(tag)}
+            aria-label={`Excluir tag ${tag.name}`}
+            title="Excluir"
             className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -256,7 +260,7 @@ export function TagsSettings() {
           <TagCard
             key={tag.id}
             tag={tag}
-            usageCount={TAG_USAGE[tag.id] ?? 0}
+            usageCount={tag.usageCount}
             onEdit={handleEdit}
             onDelete={setDeleteTarget}
             canManage={canManageTags}
@@ -278,7 +282,7 @@ export function TagsSettings() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Excluir tag"
-        impact={{ label: `Tag ${deleteTarget?.name ?? ''}`.trim(), tone: 'danger' }}
+        impact={{ label: `Tag ${deleteTarget?.name ?? ''}${deleteTarget?.usageCount ? ` — em ${deleteTarget.usageCount.toLocaleString('pt-BR')} conversa${deleteTarget.usageCount !== 1 ? 's' : ''}` : ''}`.trim(), tone: 'danger' }}
         description="Ela será removida de todas as conversas. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger

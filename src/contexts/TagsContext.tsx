@@ -67,7 +67,8 @@ export function TagsProvider({ children }: { children: ReactNode }) {
 
   const updateTag = useCallback(async (id: string, patch: Partial<Pick<Tag, 'name' | 'color'>>) => {
     const { data } = await tagsApi.update(id, patch)
-    setTags((prev) => prev.map((t) => (t.id === id ? data : t)))
+    // Mescla: a resposta do PATCH não traz usageCount.
+    setTags((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)))
     return data
   }, [])
 

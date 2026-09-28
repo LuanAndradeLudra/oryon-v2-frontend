@@ -56,6 +56,7 @@ export function WhatsAppNumbers() {
   const [dependencies, setDependencies] = useState<WhatsappLineDependencies | null>(null)
   const [savingAgent, setSavingAgent] = useState<string | null>(null)
   const [fetchError, setFetchError] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [resubscribing, setResubscribing] = useState<string | null>(null)
 
@@ -83,12 +84,17 @@ export function WhatsAppNumbers() {
       // Backend returns { redirectUrl: "https://facebook.com/dialog/oauth?..." }
       const oauthUrl = (data.redirectUrl ?? data.url ?? '') as string
       if (oauthUrl) {
-        window.open(oauthUrl, '_blank', 'width=600,height=700')
+        const janela = window.open(oauthUrl, '_blank', 'width=600,height=700')
+        // Popup bloqueado: antes nada acontecia e o clique parecia morto.
+        if (!janela) toast('O navegador bloqueou a janela da Meta. Libere pop-ups para este site e tente de novo.', 'error')
       } else {
-        toast('URL de OAuth não retornada pelo servidor.', 'error')
+        toast('Não foi possível iniciar a conexão com a Meta. Tente de novo.', 'error')
       }
-    } catch {
-      toast('Erro ao iniciar conexão com WhatsApp. Verifique as configurações do Meta App.', 'error')
+    } catch (e) {
+      const status = (e as { response?: { status?: number } })?.response?.status
+      toast(status === 403
+        ? 'Só administradores conectam números.'
+        : 'Não foi possível iniciar a conexão com a Meta. Tente de novo.', 'error')
     }
   }
 
@@ -124,7 +130,7 @@ export function WhatsAppNumbers() {
   /** R16 — force unsubscribe → subscribe on the line's WABA. Self-serve fix
    *  for "webhook stopped delivering" instead of depending on support. */
   const handleResubscribe = async (num: WhatsAppNumberDetailed) => {
-    if (resubscribing) return
+    if (resubscribing || !num.wabaId) return
     setResubscribing(num.id)
     try {
       await whatsappNumbersApi.resubscribeWaba(num.wabaId)
@@ -149,7 +155,9 @@ export function WhatsAppNumbers() {
       }
     }
     if (params.get('error')) {
-      toast(`Erro na conexão: ${params.get('error')}`, 'error')
+      // O texto do `?error=` não entra no toast: qualquer link poderia exibir
+      // uma mensagem arbitrária dentro da plataforma.
+      toast('A conexão com a Meta não foi concluída. Tente de novo.', 'error')
       window.history.replaceState({}, '', window.location.pathname)
       if (window.opener) { window.close(); return }
     }
@@ -172,12 +180,17 @@ export function WhatsAppNumbers() {
 
   const handleDisconnect = async () => {
     if (!disconnectTarget) return
+    setDisconnecting(true)
     try {
       await api.delete(`/whatsapp/numbers/${disconnectTarget.id}`)
-      setNumbers((n) => n.filter((x) => x.id !== disconnectTarget.id))
-      toast('Número desconectado e removido com sucesso.', 'success')
+      // O backend desconecta (status DISCONNECTED), não apaga: a linha segue
+      // na lista como "Desconectado". Tirá-la daqui fazia ela "voltar" no F5.
+      setNumbers((n) => n.map((x) => (x.id === disconnectTarget.id ? { ...x, status: 'DISCONNECTED' as WhatsAppNumberDetailed['status'], isActive: false } : x)))
+      toast('Número desconectado.', 'success')
     } catch {
       toast('Erro ao desconectar. Tente novamente.', 'error')
+    } finally {
+      setDisconnecting(false)
     }
     setDisconnectTarget(null)
     setDependencies(null)
@@ -276,7 +289,7 @@ export function WhatsAppNumbers() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-surface-400 mb-3">{num.wabaName}</p>
+                    {(num.wabaName || num.verifiedName) && <p className="text-xs text-surface-400 mb-3">{num.wabaName || num.verifiedName}</p>}
 
                     <div className="grid grid-cols-2 gap-x-8 gap-y-2">
                       <div>
@@ -301,7 +314,7 @@ export function WhatsAppNumbers() {
                       </div>
                       )}
                       <div>
-                        <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5">Phone Number ID</p>
+                        <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5">ID do número na Meta</p>
                         <span className="text-xs text-surface-500 font-mono">{num.phoneNumberId}</span>
                       </div>
                     </div>
@@ -357,23 +370,31 @@ export function WhatsAppNumbers() {
                         <button
                           onClick={() => { void handlePromote(num.id) }}
                           disabled={promoting === num.id}
+                          aria-label="Definir como linha principal"
                           className="p-1.5 rounded-xs text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
                         >
                           <Star className="w-3.5 h-3.5" />
                         </button>
                       </Tooltip>
                     )}
+                    {/* Só com o wabaId em mãos: sem ele a chamada virava
+                        /meta/waba/undefined/resubscribe e sempre falhava. */}
+                    {num.wabaId && (
                     <Tooltip content="Reinscrever nos webhooks da Meta">
                       <button
                         onClick={() => { void handleResubscribe(num) }}
                         disabled={resubscribing === num.id}
+                        aria-label="Reinscrever nos webhooks da Meta"
                         className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
                       >
                         <RefreshCw className={cn('w-3.5 h-3.5', resubscribing === num.id && 'animate-spin')} />
                       </button>
                     </Tooltip>
+                    )}
                     <button
                       onClick={() => { void openDisconnectConfirm(num) }}
+                      aria-label={`Desconectar ${num.displayPhoneNumber}`}
+                      title="Desconectar número"
                       className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -390,6 +411,7 @@ export function WhatsAppNumbers() {
         open={!!disconnectTarget}
         onClose={() => { setDisconnectTarget(null); setDependencies(null) }}
         onConfirm={handleDisconnect}
+        loading={disconnecting}
         title="Desconectar número"
         impact={disconnectImpact}
         description={disconnectDescription}

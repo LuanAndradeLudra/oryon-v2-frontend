@@ -146,6 +146,7 @@ export function PractitionersManager() {
                     checked={isActive}
                     onChange={() => handleToggleActive(p)}
                     disabled={!canManage}
+                    aria-label={`${p.name} ativo`}
                   />
 
                   {canManage && (

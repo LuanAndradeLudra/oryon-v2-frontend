@@ -198,7 +198,7 @@ export function CustomFieldModal({ open, onClose, onSave, editField, existingKey
             <p className="text-sm font-medium text-surface-200">Campo obrigatório</p>
             <p className="text-xs text-surface-500 mt-0.5">Bloqueia salvar contato sem preencher</p>
           </div>
-          <Switch checked={required} onChange={setRequired} />
+          <Switch checked={required} onChange={setRequired} aria-label="Campo obrigatório" />
         </div>
     </FormDialog>
   )

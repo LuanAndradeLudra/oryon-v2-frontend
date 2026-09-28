@@ -14,6 +14,8 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { cn, formatWaSelectLabel } from '@/lib/utils'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
@@ -249,10 +251,13 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
   )
 }
 
+/** `waNumbers` null = a lista de linhas não pôde ser lida (supervisor: a rota
+ *  é só admin). Aí a coluna da linha some em vez de dizer "Conectar número".
+ *  Sem `onEdit`/`onDelete` (quem só lê), os botões da linha não aparecem. */
 function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
-  dept: Department; waNumbers: WhatsAppNumber[]; onEdit: (d: Department) => void; onDelete: (d: Department) => void
+  dept: Department; waNumbers: WhatsAppNumber[] | null; onEdit?: (d: Department) => void; onDelete?: (d: Department) => void
 }) {
-  const linkedNumber = dept.whatsappNumberId ? waNumbers.find((n) => n.id === dept.whatsappNumberId) : null
+  const linkedNumber = dept.whatsappNumberId ? waNumbers?.find((n) => n.id === dept.whatsappNumberId) : null
   const deptNeedsWa = hasConversationModule(dept.permissions ?? [])
 
   return (
@@ -272,7 +277,7 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
         </div>
 
         <div className="flex items-center gap-4 flex-shrink-0">
-          {deptNeedsWa ? (
+          {waNumbers === null ? null : deptNeedsWa ? (
             linkedNumber ? (
               <div className="hidden sm:flex items-center gap-1.5 text-xs text-surface-400">
                 <Smartphone className="w-3 h-3 text-status-active" /><span>{formatWaSelectLabel(linkedNumber)}</span>
@@ -290,14 +295,17 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
             <ShieldCheck className="w-3 h-3" /><span>{dept.permissions?.length ?? 0}</span>
           </div>
 
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors" title="Editar">
+          {/* Visíveis também ao Tab (focus-within) e em tela de toque (sem hover). */}
+          {onEdit && onDelete && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors" title="Editar" aria-label={`Editar setor ${dept.name}`}>
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir">
+            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir" aria-label={`Excluir setor ${dept.name}`}>
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
+          )}
         </div>
       </div>
 
@@ -319,7 +327,11 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
 export function Departments() {
   const { toast } = useToast()
   const [departments, setDepartments] = useState<Department[]>([])
-  const [waNumbers, setWaNumbers] = useState<WhatsAppNumber[]>([])
+  const [waNumbers, setWaNumbers] = useState<WhatsAppNumber[] | null>([])
+  const { user: actor } = useAuth()
+  // Criar/editar/excluir setor é só admin+ no backend; o supervisor só lê.
+  const canEdit = isAdminTier(actor?.role)
+  const [deleting, setDeleting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [editTarget, setEditTarget] = useState<Department | null>(null)
@@ -332,7 +344,9 @@ export function Departments() {
     setFetchError(false)
     Promise.all([
       departmentsApi.list().then((r) => setDepartments(r.data)),
-      whatsappNumbersApi.list().then((r) => setWaNumbers(r.data)),
+      // A lista de linhas é só admin: se falhar, os setores aparecem mesmo
+      // assim (antes a tela inteira virava erro para o supervisor).
+      whatsappNumbersApi.list().then((r) => setWaNumbers(r.data)).catch(() => setWaNumbers(null)),
     ]).catch(() => setFetchError(true)).finally(() => setLoading(false))
   }, [reloadKey])
 
@@ -359,11 +373,12 @@ export function Departments() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return
+    setDeleting(true)
     try {
       await departmentsApi.remove(deleteTarget.id)
       setDepartments((d) => d.filter((x) => x.id !== deleteTarget.id))
       toast('Setor excluído.', 'success')
-    } catch { toast('Erro ao excluir.', 'error') } finally { setDeleteTarget(null) }
+    } catch { toast('Erro ao excluir.', 'error') } finally { setDeleting(false); setDeleteTarget(null) }
   }
 
   const editInitial = editTarget
@@ -400,7 +415,7 @@ export function Departments() {
         title="Setores"
         description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
         action={
-          !creating && !editTarget && (
+          canEdit && !creating && !editTarget && (
             <Button onClick={() => setCreating(true)} leftIcon={<Plus className="w-4 h-4" />}>
               Novo setor
             </Button>
@@ -408,11 +423,14 @@ export function Departments() {
         }
       />
 
-      {creating && <DeptForm key="dept-form-new" title="Novo setor" initial={DEFAULT_FORM} saving={saving} waNumbers={waNumbers} onSave={handleCreate} onCancel={() => setCreating(false)} />}
-      {editTarget && <DeptForm key={`dept-form-${editTarget.id}`} title="Editar setor" initial={editInitial} saving={saving} waNumbers={waNumbers} onSave={handleSaveEdit} onCancel={() => setEditTarget(null)} />}
+      {creating && <DeptForm key="dept-form-new" title="Novo setor" initial={DEFAULT_FORM} saving={saving} waNumbers={waNumbers ?? []} onSave={handleCreate} onCancel={() => setCreating(false)} />}
+      {editTarget && <DeptForm key={`dept-form-${editTarget.id}`} title="Editar setor" initial={editInitial} saving={saving} waNumbers={waNumbers ?? []} onSave={handleSaveEdit} onCancel={() => setEditTarget(null)} />}
 
       <div className="divide-y divide-surface-700">
-        {departments.map((dept) => <DeptCard key={dept.id} dept={dept} waNumbers={waNumbers} onEdit={setEditTarget} onDelete={setDeleteTarget} />)}
+                {/* Editar com o "Novo setor" aberto fecha o novo: antes os dois formulários apareciam juntos. */}
+        {departments.map((dept) => <DeptCard key={dept.id} dept={dept} waNumbers={waNumbers}
+          onEdit={canEdit ? (d) => { setCreating(false); setEditTarget(d) } : undefined}
+          onDelete={canEdit ? setDeleteTarget : undefined} />)}
       </div>
 
       {departments.length === 0 && !creating && (
@@ -420,13 +438,15 @@ export function Departments() {
           icon={Layers}
           title="Nenhum setor criado"
           hint="Crie setores por equipe ou função. Vincule um WhatsApp quando o setor puder acessar conversas."
-          action={{ label: 'Criar primeiro setor', onClick: () => setCreating(true) }}
+          action={canEdit ? { label: 'Criar primeiro setor', onClick: () => setCreating(true) } : undefined}
         />
       )}
 
-      <ConfirmModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
+      {/* Texto fiel ao backend: a exclusão é física; users.departmentId vira
+          NULL (migration 029) e o pipeline_access do setor cai em cascata (097). */}
+      <ConfirmModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} loading={deleting}
         title="Excluir setor" impact={{ label: `Setor ${deleteTarget?.name ?? ''}`.trim(), tone: 'danger' }}
-        description="Os usuários vinculados não serão afetados. Esta ação não pode ser desfeita." confirmLabel="Excluir" danger />
+        description="Os usuários deste setor ficam sem setor e perdem os acessos a funis dados por ele. Esta ação não pode ser desfeita." confirmLabel="Excluir" danger />
     </div>
   )
 }

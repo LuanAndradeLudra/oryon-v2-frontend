@@ -11,7 +11,6 @@ import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast, showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -367,7 +366,7 @@ function BrandFilesSection({
 
 export function CompanyBrain() {
   const { user } = useAuth()
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const [form, setForm] = useState<CompanyHubData>({ ...DEFAULT_HUB })
   const [fetching, setFetching] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -585,7 +584,6 @@ export function CompanyBrain() {
         <Button onClick={save} loading={loading} disabled={fetching}>Salvar contexto</Button>
       </div>
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

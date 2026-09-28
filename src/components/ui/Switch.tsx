@@ -6,15 +6,22 @@ interface SwitchProps {
   onChange: (checked: boolean) => void
   disabled?: boolean
   className?: string
+  /** Nome para leitor de tela quando nenhum <label htmlFor> aponta para o switch. */
+  'aria-label'?: string
+  'aria-labelledby'?: string
+  id?: string
 }
 
 // SCRUM-1097: trilho compacto 32×18px (era 44×24px), thumb 14px (era 20px) —
 // raio continua pílula (`rounded-full`, não é um dos radius tokens novos).
-export function Switch({ checked, onChange, disabled = false, className }: SwitchProps) {
+export function Switch({ checked, onChange, disabled = false, className, id, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledby }: SwitchProps) {
   return (
     <button
       type="button"
       role="switch"
+      id={id}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledby}
       aria-checked={checked}
       disabled={disabled}
       onClick={() => !disabled && onChange(!checked)}

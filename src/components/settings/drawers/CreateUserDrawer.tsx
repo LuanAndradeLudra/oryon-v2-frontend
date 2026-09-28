@@ -6,18 +6,21 @@ import { appLogger } from '@/services/appLogger'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Drawer } from '@/components/ui/Drawer'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
 import { api } from '@/services/api'
+import { useAuth } from '@/contexts/AuthContext'
+import { isOwnerTier } from '@/lib/roleHelpers'
 
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Equipe Oryon',
-  business_admin: 'Business Admin',
+  business_admin: 'Dono',
   admin:      'Administrador',
   supervisor: 'Supervisor',
-  agent:      'Usuário',
+  agent:      'Agente',
 }
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -80,6 +83,10 @@ function Stepper({ current }: { current: number }) {
 
 export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerProps) {
   const [step, setStep] = useState(1)
+  // O backend só aceita `role` no convite vindo do dono; um admin que o
+  // enviava (sempre, com padrão "agent") recebia 403 no fim dos 3 passos.
+  const { user: autor } = useAuth()
+  const podeDefinirPapel = isOwnerTier(autor?.role)
   const [departments, setDepartments] = useState<Department[]>([])
 
   const [s1, setS1] = useState<Step1Data>({ firstName: '', lastName: '', email: '', departmentId: '' })
@@ -91,12 +98,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // ESC to close
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    if (open) document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
 
   // Load departments
   useEffect(() => {
@@ -171,7 +172,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
         firstName:    s1.firstName.trim(),
         lastName:     s1.lastName.trim(),
         email:        s1.email.trim(),
-        role:         s2.role,
+        ...(podeDefinirPapel ? { role: s2.role } : {}),
         departmentId: s1.departmentId || undefined,
       })
       appLogger.logWizardEvent({
@@ -208,35 +209,25 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     }
   }
 
+  // Com algo digitado, Esc e clique fora não fecham (antes o Esc no
+  // document descartava o formulário inteiro): sai-se pelo Cancelar.
+  const sujo = !!(s1.firstName.trim() || s1.lastName.trim() || s1.email.trim() || s1.departmentId)
+
   // Review helpers
   const deptName = departments.find((d) => d.id === s1.departmentId)?.name ?? '—'
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/60
-            // cru — preto cru fica pesado demais no tema claro (MODAL-07).
-            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-40"
-            onClick={onClose}
-          />
-
-          {/* Drawer panel */}
-          <motion.div
-            key="drawer"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-[520px] bg-surface-950 border-l overlay-frame z-50 flex flex-col"
-          >
+    // Primitivo Drawer: entra na pilha do useLayer (z-index e Esc em ordem de
+    // montagem), role="dialog" e foco devolvido ao fechar — antes era um
+    // fixed z-40/z-50 feito à mão, fora da pilha.
+    <Drawer
+      open={open}
+      onClose={onClose}
+      side="right"
+      dismissible={!sujo}
+      ariaLabel="Criar usuário"
+      className="w-full max-w-[520px] bg-surface-950"
+    >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-surface-700 flex-shrink-0">
               <div>
@@ -346,8 +337,14 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                   >
                     {/* Role */}
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500 mb-3">Papel (Role)</p>
-                      <div className="flex flex-col gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500 mb-3">Papel</p>
+                      {!podeDefinirPapel && (
+                        <p className="text-sm text-surface-300 leading-relaxed">
+                          O convidado entra como <strong className="text-surface-100">{ROLE_LABELS.agent}</strong> ({ROLE_DESCRIPTIONS.agent.toLowerCase()}).
+                          Só o dono do negócio escolhe outro papel.
+                        </p>
+                      )}
+                      {podeDefinirPapel && <div className="flex flex-col gap-2">
                         {(['admin', 'supervisor', 'agent'] as UserRole[]).map((role) => (
                           <label
                             key={role}
@@ -369,7 +366,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                             </div>
                           </label>
                         ))}
-                      </div>
+                      </div>}
                     </div>
                   </motion.div>
                 )}
@@ -410,7 +407,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                       <p className="text-xs font-semibold text-surface-500 mb-3">Acesso</p>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-surface-500">Papel</p>
-                        <p className="text-sm text-surface-100 mt-0.5">{ROLE_LABELS[s2.role]}</p>
+                        <p className="text-sm text-surface-100 mt-0.5">{ROLE_LABELS[podeDefinirPapel ? s2.role : 'agent']}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -452,9 +449,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
               )}
               </div>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </Drawer>
   )
 }
