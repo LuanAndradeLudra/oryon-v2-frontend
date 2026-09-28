@@ -142,6 +142,9 @@ export function instalarBackendDemo() {
     const todas = heroConversations(estado)
     const lista = todas
       .filter((c) => !status || status === 'all' || c.status === status)
+      // Sem dono (aba Fila e fila do Dashboard) e linha, como o backend real.
+      .filter((c) => params?.get('assignedTo') !== 'unassigned' || !c.assignedUser)
+      .filter((c) => !params?.get('whatsappNumberId') || c.whatsappNumber?.id === params?.get('whatsappNumberId'))
       .filter((c) => !aguardando || (
         c.status !== 'resolved' && c.status !== 'abandoned'
         && (!c.lastAgentReplyAt || new Date(c.lastAgentReplyAt).getTime() < new Date(c.lastMessageAt).getTime())

@@ -157,9 +157,11 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
   if (d.erro && !d.atualizadoEm) return <div className="space-y-3.5">{cabecalho}<ErrorState onRetry={d.recarregar} /></div>
 
   const contagens: Record<FiltroDaFila, number> = {
-    todas: d.fila.length,
-    'sem-dono': d.fila.filter((i) => i.semDono).length,
-    'ia-passou': d.fila.filter((i) => i.iaPassou).length,
+    // Os números dos filtros são os totais exatos do servidor — os mesmos da
+    // faixa e da aba Fila da inbox (28/09: contar a lista carregada divergia).
+    todas: d.totais?.esperando ?? d.fila.length,
+    'sem-dono': d.totais?.semDono ?? d.fila.filter((i) => i.semDono).length,
+    'ia-passou': d.totais?.iaPassou ?? d.fila.filter((i) => i.iaPassou).length,
     janela: d.fila.filter(janelaFechando).length,
   }
   const itens = filtro === 'sem-dono' ? d.fila.filter((i) => i.semDono)
@@ -175,7 +177,7 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
           A última atualização falhou. Os dados abaixo são de {d.atualizadoEm?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.
         </p>
       )}
-      <FaixaDoAgora fila={d.fila} linhas={d.linhas} linhasComIA={d.linhasComIA} verificarTotal={d.verificarTotal} />
+      <FaixaDoAgora fila={d.fila} linhas={d.linhas} linhasComIA={d.linhasComIA} verificarTotal={d.verificarTotal} totais={d.totais} />
       <VerificacaoAgora
         conversas={d.verificar}
         total={d.verificarTotal}
@@ -196,6 +198,8 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
             meuId={user?.id}
             mostrarLinha={d.linhas.length > 1}
             truncada={d.filaTruncada}
+            carregadas={d.fila.length}
+            totalReal={d.totais?.esperando}
             ocupadaId={ocupadaId}
             onAbrir={abrir}
             onAssumir={(i) => void assumir(i)}

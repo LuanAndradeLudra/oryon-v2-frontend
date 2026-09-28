@@ -31,13 +31,27 @@ const CONVERSAS: Conversation[] = [
 ]
 
 const assign = vi.fn(() => Promise.resolve({ data: {} }))
-const resposta = (data: Conversation[]) => Promise.resolve({ data: { data, total: data.length, page: 1, limit: 100, statusCounts: {} } })
 let aguardando: Conversation[] = CONVERSAS
 let aVerificar: Conversation[] = []
-const list = vi.fn((filtros: { needsReview?: boolean }) => resposta(filtros?.needsReview ? aVerificar : aguardando))
+
+type Filtros = { needsReview?: boolean; status?: string; assignedTo?: string; awaitingReply?: boolean; whatsappNumberId?: string }
+/** Um servidor de mentira que aplica os filtros como o backend (total e paginação inclusos). */
+function servidor(filtros: Filtros = {}, page = 1, limit = 100) {
+  let l = filtros.needsReview ? aVerificar : aguardando
+  if (filtros.status && filtros.status !== 'all') l = l.filter((c) => c.status === filtros.status)
+  if (filtros.assignedTo === 'unassigned') l = l.filter((c) => !c.assignedUser)
+  if (filtros.awaitingReply) {
+    l = l.filter((c) => c.status !== 'resolved' && c.status !== 'abandoned'
+      && (!c.lastAgentReplyAt || new Date(c.lastAgentReplyAt).getTime() < new Date(c.lastMessageAt).getTime()))
+  }
+  if (filtros.whatsappNumberId) l = l.filter((c) => c.whatsappNumber?.id === filtros.whatsappNumberId)
+  const data = l.slice((page - 1) * limit, page * limit)
+  return Promise.resolve({ data: { data, total: l.length, hasMore: page * limit < l.length, page, limit, statusCounts: {} } })
+}
+const list = vi.fn((filtros: Filtros, page?: number, limit?: number) => servidor(filtros, page, limit))
 
 vi.mock('@/services/api', () => ({
-  conversationsApi: { list: (...a: unknown[]) => list(...(a as [{ needsReview?: boolean }])), assign: (...a: unknown[]) => assign(...(a as [])) },
+  conversationsApi: { list: (...a: unknown[]) => list(...(a as [Filtros, number, number])), assign: (...a: unknown[]) => assign(...(a as [])) },
   usersApi: {
     available: () => Promise.resolve({ data: [
       { id: 'u1', firstName: 'Ana', lastName: 'Prado', email: 'a@x', role: 'agent', departmentId: null, isOnline: true, activeConversations: 4 },
@@ -92,7 +106,9 @@ describe('Dashboard · aba Agora', () => {
   it('pede quem aguarda resposta e mostra a fila da maior espera para a menor, sem o que a IA atende', async () => {
     montar()
     await screen.findByText('Carla')
-    expect(list).toHaveBeenCalledWith({ status: 'pending' }, 1, 100)
+    // As pendentes sem dono (a aba Fila da inbox) e as pendentes aguardando resposta.
+    expect(list).toHaveBeenCalledWith({ status: 'pending', assignedTo: 'unassigned' }, 1, 100)
+    expect(list).toHaveBeenCalledWith({ status: 'pending', awaitingReply: true }, 1, 100)
     const nomes = screen.getAllByTestId('fila-item').map((li) => within(li).getByRole('button', { name: /Abrir a conversa/ }).getAttribute('aria-label'))
     expect(nomes).toEqual([
       'Abrir a conversa com Carla',

@@ -1,9 +1,11 @@
 import { cn } from '@/lib/utils'
 import { formatarEspera, janelaFechada, janelaFechando, PRAZO_RESPOSTA_MIN, type ItemDaFila } from '@/lib/filaAgora'
 import type { WhatsAppNumberDetailed } from '@/types'
+import type { TotaisDaFila } from '@/hooks/useDashboardAgora'
 
-// Faixa do "agora" (direção A): seis contagens do momento, todas tiradas das
-// mesmas listas que a tela mostra logo abaixo — nenhuma é indicador de período
+// Faixa do "agora" (direção A): seis contagens do momento. As da fila vêm dos
+// totais EXATOS do servidor (as mesmas consultas da aba Fila da inbox); maior
+// espera e janela saem da lista carregada — nenhuma é indicador de período
 // (esses ficam em Relatórios, e os KPIs estão com o outro dev; ver memória
 // dev-externo-dashboard-kpis). Cada célula diz o que conta.
 
@@ -13,19 +15,22 @@ interface Props {
   linhasComIA: ReadonlySet<string>
   /** Conversas que precisam de verificação (total do backend). */
   verificarTotal: number
+  /** Totais do servidor; sem eles (primeira carga), conta pela lista. */
+  totais?: TotaisDaFila | null
 }
 
 function conectada(l: WhatsAppNumberDetailed): boolean {
   return String(l.status).toLowerCase() === 'connected'
 }
 
-export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal }: Props) {
+export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais = null }: Props) {
   const fechando = fila.filter(janelaFechando).length
   const fechadas = fila.filter(janelaFechada).length
-  const semDono = fila.filter((i) => i.semDono).length
+  const esperando = totais?.esperando ?? fila.length
+  const semDono = totais?.semDono ?? fila.filter((i) => i.semDono).length
   const maior = fila[0]?.esperaMin ?? null
-  const passou = fila.filter((i) => i.iaPassou)
-  const passouSemDono = passou.filter((i) => i.semDono).length
+  const passouTotal = totais?.iaPassou ?? fila.filter((i) => i.iaPassou).length
+  const passouSemDono = totais?.iaPassouSemDono ?? fila.filter((i) => i.iaPassou && i.semDono).length
   const conectadas = linhas.filter(conectada)
   const comIA = conectadas.filter((l) => linhasComIA.has(l.id)).length
 
@@ -33,8 +38,8 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal }: Prop
     {
       id: 'esperando',
       rotulo: 'Esperando alguém',
-      valor: String(fila.length),
-      nota: fila.length === 0 ? 'ninguém na fila' : semDono === 0 ? 'todas com dono' : `${semDono} sem dono`,
+      valor: String(esperando),
+      nota: esperando === 0 ? 'ninguém na fila' : semDono === 0 ? 'todas com dono' : `${semDono} sem dono`,
       tom: semDono > 0 ? 'atencao' : undefined,
     },
     {
@@ -47,8 +52,8 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal }: Prop
     {
       id: 'ia-passou',
       rotulo: 'IA passou para a equipe',
-      valor: String(passou.length),
-      nota: passou.length === 0 ? 'nenhuma agora' : passouSemDono === 0 ? 'todas com dono' : `${passouSemDono} sem dono`,
+      valor: String(passouTotal),
+      nota: passouTotal === 0 ? 'nenhuma agora' : passouSemDono === 0 ? 'todas com dono' : `${passouSemDono} sem dono`,
       tom: passouSemDono > 0 ? 'atencao' : undefined,
     },
     {

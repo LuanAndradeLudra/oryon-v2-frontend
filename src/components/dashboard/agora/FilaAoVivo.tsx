@@ -51,7 +51,14 @@ interface Props {
   meuId: string | undefined
   /** Mais de uma linha: a linha aparece em cada conversa. */
   mostrarLinha: boolean
+  /**
+   * A lista não coube inteira (teto de carga): o aviso diz quantas carregaram
+   * de quantas há. As sem dono vêm sempre inteiras até o teto; as com dono,
+   * as mais recentes.
+   */
   truncada: boolean
+  carregadas?: number
+  totalReal?: number
   /** Conversa com ação em andamento (desabilita a linha). */
   ocupadaId: string | null
   onAbrir: (item: ItemDaFila) => void
@@ -71,7 +78,7 @@ const FILTROS: Array<{ id: FiltroDaFila; rotulo: string }> = [
 ]
 
 export function FilaAoVivo({
-  itens, contagens, filtro, onFiltro, equipe, meuId, mostrarLinha, truncada, ocupadaId,
+  itens, contagens, filtro, onFiltro, equipe, meuId, mostrarLinha, truncada, carregadas, totalReal, ocupadaId,
   onAbrir, onAssumir, onAtribuir, pagina, onPagina, celular = false,
 }: Props) {
   const [menuDe, setMenuDe] = useState<string | null>(null)
@@ -290,7 +297,9 @@ export function FilaAoVivo({
 
       {truncada && (
         <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-[11.5px] text-surface-500">
-          Há mais de 500 conversas pendentes: a fila mostra as 500 mais recentes. A Fila completa está em Conversas.
+          {carregadas !== undefined && totalReal !== undefined && totalReal > carregadas
+            ? `A lista mostra ${carregadas} de ${totalReal}: todas as sem dono e as mais recentes com dono. Os números acima são o total.`
+            : 'A lista não coube inteira: mostra as mais recentes. Os números acima são o total.'}
         </p>
       )}
     </section>
