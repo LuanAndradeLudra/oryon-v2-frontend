@@ -1187,6 +1187,41 @@ export async function chatWithAgent(
   }
 }
 
+// ─── O que o agente recebe (onda 3) ──────────────────────────────────────────
+
+export interface EffectivePromptLayer {
+  id: 'plataforma' | 'agente' | 'empresa' | 'fontes' | 'turno'
+  title: string
+  source: string
+  text: string
+}
+
+export interface EffectivePrompt {
+  mode: 'compiled' | 'legacy'
+  model: string
+  layers: EffectivePromptLayer[]
+  tools: Array<{ name: string; description: string }>
+  totalChars: number
+}
+
+/**
+ * Monta o prompt do agente pelo MESMO caminho do /chat (dry_run), sem chamar o
+ * modelo. Canal WhatsApp, modo compilado — o mesmo que a bancada usa.
+ */
+export async function getEffectivePrompt(agent: Pick<AgentConfigWithTools, 'id' | 'system_prompt'>): Promise<EffectivePrompt> {
+  return apiFetch<EffectivePrompt>('/chat', {
+    method: 'POST',
+    body: JSON.stringify({
+      system_prompt: agent.system_prompt,
+      messages: [],
+      agent_id: agent.id,
+      prompt_mode: 'compiled',
+      channel: 'whatsapp',
+      dry_run: true,
+    }),
+  })
+}
+
 // ─── Runtime flags ────────────────────────────────────────────────────────────
 
 /** O que o motor do agente faz hoje neste tenant, para a tela não prometer além. */

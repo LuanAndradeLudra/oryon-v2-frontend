@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/useToast'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useRascunhoPendente, useSalvamento } from '../salvamentoContexto'
 import { CabecalhoDaSecao } from './Estrutura'
+import { OQueOAgenteRecebe } from './OQueOAgenteRecebe'
 import { useTamanhoDeToque } from '../useToque'
 
 const CHAVE = 'instrucoes'
@@ -142,11 +143,14 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
         )}
       </div>
 
-      {temHub && !desatualizado && !editando && (
-        <div className="mt-3">
-          <Button variant="ghost" size={tam} onClick={() => void sincronizar()} loading={sincronizando} leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
-            Reaplicar o Contexto da IA
-          </Button>
+      {!editando && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <OQueOAgenteRecebe agent={agent} tamanho={tam} />
+          {temHub && !desatualizado && (
+            <Button variant="ghost" size={tam} onClick={() => void sincronizar()} loading={sincronizando} leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
+              Reaplicar o Contexto da IA
+            </Button>
+          )}
         </div>
       )}
       {/* Celular: editando um texto longo, salvar fica sempre à mão. */}
