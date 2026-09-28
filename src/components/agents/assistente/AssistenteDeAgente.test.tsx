@@ -17,6 +17,8 @@ const api = vi.hoisted(() => ({
   chatWithAgent: vi.fn(),
   listAgentTestRuns: vi.fn(async () => []),
   studyBusiness: vi.fn(),
+  fetchInterview: vi.fn(),
+  fetchAnswerExamples: vi.fn(),
   patch: vi.fn(),
   rodarBateria: vi.fn(async (_opts: unknown) => ({})),
   loadHubAsync: vi.fn(),
@@ -37,7 +39,7 @@ vi.mock('@/services/api', () => ({
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: 't1' } }) }))
 
 import { AssistenteDeAgente } from './AssistenteDeAgente'
-import { cobertura, completarSpec, faltaNaEtapa, specVazia, textoParaEnsaio } from './especificacao'
+import { cobertura, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia, textoParaEnsaio } from './especificacao'
 
 const DRAFT = { id: 'draft-1', agent_id: null, spec: specVazia(), step: 1, published_agent_id: null, published_version: null, updated_at: '' }
 
@@ -50,6 +52,8 @@ beforeEach(() => {
   api.saveHubAndWait.mockResolvedValue('ok')
   api.products.mockResolvedValue({ data: [] })
   api.practitioners.mockResolvedValue({ data: [] })
+  api.fetchInterview.mockResolvedValue({ segment: { key: 'saude', label: 'saúde' }, questions: [] })
+  api.fetchAnswerExamples.mockResolvedValue({ examples: [] })
 })
 
 const HUB_VAZIO = {
@@ -66,7 +70,8 @@ describe('regras do assistente', () => {
     s.context.studied = true
     expect(faltaNaEtapa(1, s)).toBeNull()
     expect(faltaNaEtapa(2, s)).toBeNull()
-    expect(faltaNaEtapa(3, s)).toMatch(/nome/)
+    expect(faltaNaEtapa(3, s)).toBeNull()
+    expect(faltaNaEtapa(5, s)).toMatch(/nome/)
     s.persona.text = 'Você é a Serrinha, recepcionista virtual.'
     s.flow.text = 'Cumprimente e entenda o pedido antes de responder.'
     expect(textoParaEnsaio(s)).toMatch(/^## Quem você é\nVocê é a Serrinha/)
@@ -101,7 +106,7 @@ describe('AssistenteDeAgente', () => {
     localStorage.setItem('oryon:agentes:assistente:t1', 'draft-9')
     api.getSpecDraft.mockResolvedValue({ ...DRAFT, id: 'draft-9', step: 5, spec: { ...specVazia(), identity: { name: 'Serrinha', goal: 'atender_agendar', segment: 'Clínica' } } })
     render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
-    expect(await screen.findByText('Setor que recebe')).toBeInTheDocument()
+    expect(await screen.findByText('Como ele conduz a conversa')).toBeInTheDocument()
     expect(api.createSpecDraft).not.toHaveBeenCalled()
   })
 
@@ -242,7 +247,7 @@ describe('estudar o negócio', () => {
 
   it('a IA diz o que supôs; responder refaz o texto com a resposta guardada', async () => {
     localStorage.setItem('oryon:agentes:assistente:t1', 'draft-1')
-    api.getSpecDraft.mockResolvedValue({ ...DRAFT, step: 3, spec: { ...specVazia(), identity: { name: 'Clara', goal: 'atender_agendar', segment: 'Clínica' } } })
+    api.getSpecDraft.mockResolvedValue({ ...DRAFT, step: 5, spec: { ...specVazia(), identity: { name: 'Clara', goal: 'atender_agendar', segment: 'Clínica' } } })
     api.generateSpecText
       .mockResolvedValueOnce({ persona: 'Você é a Clara.', flow: '1. Cumprimente.', warnings: [], generatorVersion: 'v2',
         assumptions: [{ text: 'Supus que só a equipe confirma horário.', question: 'A Clara pode confirmar sozinha?' }] })
@@ -255,6 +260,99 @@ describe('estudar o negócio', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Refazer com as respostas' })) })
     expect(api.generateSpecText.mock.calls[1][0].context.answers).toEqual([{ question: 'A Clara pode confirmar sozinha?', answer: 'Sim, pode confirmar.' }])
     await waitFor(() => expect(screen.queryByText('Supus que só a equipe confirma horário.')).not.toBeInTheDocument())
+  })
+})
+
+// ── SCRUM-1192 — entrevista, jeito de responder e para onde foi cada coisa ──
+describe('entrevista e jeito de responder', () => {
+  const PERGUNTAS = [
+    { id: 'urgencia', question: 'Atendem urgência no mesmo dia?', why: 'para prometer encaixe ou chamar a equipe.', kind: 'single', options: ['Sim, com encaixe no mesmo dia', 'Não'], destination: 'behavior', prefill: 'Sim, com encaixe no mesmo dia' },
+    { id: 'antes_agendar', question: 'O que precisa saber antes de agendar?', why: 'para perguntar na ordem.', kind: 'multi', options: ['Nome completo', 'CPF', 'Convênio ou particular'], destination: 'behavior', prefill: null },
+    { id: 'convenios', question: 'Atendem por convênio? Quais?', why: 'dúvida comum.', kind: 'text', placeholder: 'Ex.: Unimed', destination: 'fact', prefill: null },
+    { id: 'atraso', question: 'Existe política de atraso?', why: 'para avisar antes.', kind: 'text', destination: 'fact', prefill: null },
+  ]
+  const naEtapa = (step: number, context: Partial<ReturnType<typeof specVazia>['context']> = {}) => {
+    localStorage.setItem('oryon:agentes:assistente:t1', 'draft-1')
+    const base = specVazia()
+    api.getSpecDraft.mockResolvedValue({ ...DRAFT, step, spec: { ...base, identity: { name: 'Clara', goal: 'atender_agendar', segment: 'clínica odontológica' }, context: { ...base.context, studied: true, ...context } } })
+  }
+  const ultimoSalvo = () => api.saveSpecDraft.mock.calls.at(-1)![1]
+
+  it('pré-preenche o que o estudo sabia, responde, deixa para depois e vira pendência ao sair', async () => {
+    api.fetchInterview.mockResolvedValue({ segment: { key: 'saude', label: 'saúde' }, questions: PERGUNTAS })
+    naEtapa(3)
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByText('1. Atendem urgência no mesmo dia?')).toBeInTheDocument()
+    expect(screen.getByText('Das fontes — confira')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Sim, com encaixe no mesmo dia/ })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'CPF' }))
+    fireEvent.change(screen.getByLabelText('Atendem por convênio? Quais?'), { target: { value: 'Unimed e Amil' } })
+    // Ações e transferência agora são seções da entrevista.
+    expect(screen.getByRole('heading', { name: 'O que ele faz sozinho' })).toBeInTheDocument()
+    expect(screen.getByText('Setor que recebe')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    await waitFor(() => {
+      const i = ultimoSalvo().context.interview
+      expect(i.find((x: { id: string }) => x.id === 'urgencia')).toMatchObject({ answer: 'Sim, com encaixe no mesmo dia', skipped: false })
+      expect(i.find((x: { id: string }) => x.id === 'antes_agendar')).toMatchObject({ answer: ['CPF'] })
+      expect(i.find((x: { id: string }) => x.id === 'convenios')).toMatchObject({ answer: 'Unimed e Amil', destination: 'fact' })
+      expect(i.find((x: { id: string }) => x.id === 'atraso')).toMatchObject({ answer: null, skipped: true })
+    }, { timeout: 2000 })
+  })
+
+  it('jeito de responder: sugere ao entrar, escolher vira exemplo e dá para ajustar', async () => {
+    api.fetchAnswerExamples.mockResolvedValue({ examples: [{
+      question: 'Aceita convênio?',
+      answers: [{ style: 'direta', text: 'Aceitamos alguns. Qual é o seu?' }, { style: 'acolhedora', text: 'Aceitamos sim! Me conta qual é o seu 😊' }],
+    }] })
+    naEtapa(4)
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    const acolhedora = await screen.findByRole('radio', { name: /Mais acolhedora/ })
+    expect(api.fetchAnswerExamples).toHaveBeenCalledTimes(1)
+    fireEvent.click(acolhedora)
+    fireEvent.change(await screen.findByLabelText('Ajustar a resposta: Aceita convênio?'), { target: { value: 'Aceitamos sim! Qual é o seu?' } })
+    await waitFor(() => expect(ultimoSalvo().context.examples).toEqual([{ question: 'Aceita convênio?', answer: 'Aceitamos sim! Qual é o seu?' }]), { timeout: 2000 })
+  })
+
+  it('texto de teste: regras e exemplos entram; fato não', () => {
+    const s = specVazia()
+    s.persona.text = 'Você é a Clara.'
+    s.flow.text = '1. Cumprimente.'
+    s.context.interview = [
+      { id: 'nunca', question: 'O que o atendente nunca pode fazer?', destination: 'behavior', answer: ['Dar desconto ou condição especial'], skipped: false },
+      { id: 'convenios', question: 'Convênios?', destination: 'fact', answer: 'Unimed', skipped: false },
+      { id: 'atraso', question: 'Atraso?', destination: 'fact', answer: null, skipped: false },
+    ]
+    s.context.examples = [{ question: 'Aceita convênio?', answer: 'Aceitamos alguns.' }]
+    const t = textoParaEnsaio(s)
+    expect(t).toContain('## Regras deste negócio\n- O que o atendente nunca pode fazer? Dar desconto ou condição especial')
+    expect(t).toContain('Cliente: Aceita convênio?\nVocê: Aceitamos alguns.')
+    expect(t).not.toContain('Unimed')
+    expect(marcarNaoRespondidas(s).context.interview.find((i) => i.id === 'atraso')?.skipped).toBe(true)
+  })
+
+  it('colocar no ar mostra para onde foi cada coisa; fatos que falharam não fecham o assistente em silêncio', async () => {
+    naEtapa(7, {
+      interview: [
+        { id: 'convenios', question: 'Atendem por convênio? Quais?', destination: 'fact', answer: 'Unimed', skipped: false },
+        { id: 'atraso', question: 'Existe política de atraso?', destination: 'fact', answer: null, skipped: true },
+      ],
+    })
+    api.getSpecReadiness.mockResolvedValue({ ready: true, items: [{ id: 'identidade', label: 'Nome, persona e fluxo preenchidos', ok: true, blocking: true }] })
+    api.publishSpecDraft.mockResolvedValue({ agentId: 'agent-1', version: 1, alreadyPublished: false, factsDoc: 'error' })
+    api.getAgent.mockResolvedValue({ id: 'agent-1' })
+    const onCreated = vi.fn()
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={onCreated} />)
+    expect(await screen.findByText('Para onde foi cada coisa que você contou')).toBeInTheDocument()
+    expect(screen.getByText('Atendem por convênio? Quais?')).toBeInTheDocument()
+    expect(screen.getByText('Existe política de atraso?')).toBeInTheDocument()
+    const publicar = screen.getByRole('button', { name: 'Publicar agente' })
+    await waitFor(() => expect(publicar).not.toBeDisabled())
+    await act(async () => { fireEvent.click(publicar) })
+    expect(await screen.findByText(/não foram para a base de conhecimento/)).toBeInTheDocument()
+    expect(onCreated).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir o agente' }))
+    expect(onCreated).toHaveBeenCalledWith({ id: 'agent-1' })
   })
 })
 

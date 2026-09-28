@@ -10,21 +10,25 @@ import type { CrmCapabilityId } from '@/services/agentsApi'
 // SCRUM-1190 — o assistente estuda o negócio antes de perguntar: "Ponto de
 // partida" vira "Estudar o negócio", e "O que ele sabe" (as fontes) passa a
 // ser "O que já sei", logo depois, com o resumo do que foi descoberto.
+// SCRUM-1192 — entrevista e jeito de responder entram antes do texto; "O que
+// ele pode fazer" e "Quando chamar uma pessoa" viram seções da entrevista.
 export const ETAPAS = [
   'Estudar o negócio',
   'O que já sei',
-  'Quem é o agente',
-  'O que ele pode fazer',
-  'Quando chamar uma pessoa',
+  'Entrevista',
+  'Jeito de responder',
+  'Texto do agente',
   'Ensaio',
   'Colocar no ar',
 ] as const
 
+export const ETAPA_ENTREVISTA = 3
+export const ETAPA_EXEMPLOS = 4
 /** Etapa em que mora o texto do agente (revisão de um agente existente abre nela). */
-export const ETAPA_TEXTO = 3
+export const ETAPA_TEXTO = 5
 
 export function contextoVazio(): SpecContext {
-  return { studied: false, findings: [], answers: [], pricePolicy: null, namePolicy: null, pendingCompany: null }
+  return { studied: false, findings: [], answers: [], pricePolicy: null, namePolicy: null, pendingCompany: null, interview: [], examples: [] }
 }
 
 /** Rascunho salvo antes do SCRUM-1190 não tem `context`: completa sem perder nada. */
@@ -43,8 +47,35 @@ export function cobertura(spec: AgentSpec, fontes: { catalogo: boolean; profissi
   const itens = ctx.findings.reduce((a, f) => a + (f.confirmed ? 1 : f.confidence === 'segmento' ? 0.25 : 0.5), 0)
   const precos = fontes.catalogo || ctx.pricePolicy ? 1 : 0
   const nomes = fontes.profissionais || ctx.namePolicy ? 1 : 0
-  const total = 8 + 2
-  return Math.round(((Math.min(itens, 8) + precos + nomes) / total) * 100)
+  // SCRUM-1192 — cada pergunta da entrevista respondida conta como um item.
+  const respondidas = ctx.interview.filter((i) => !i.skipped && i.answer !== null).length
+  const total = 8 + 2 + ctx.interview.length
+  return Math.round(((Math.min(itens, 8) + precos + nomes + respondidas) / total) * 100)
+}
+
+const formatarResposta = (a: string | string[]) => (Array.isArray(a) ? a.join('; ') : a)
+
+/** Respostas de jeito de atender (espelha behaviorRulesFromSpec do servidor). */
+export function regrasDoNegocio(spec: AgentSpec): string[] {
+  return spec.context.interview
+    .filter((i) => i.destination === 'behavior' && !i.skipped && i.answer !== null)
+    .map((i) => `${i.question} ${formatarResposta(i.answer!)}`)
+}
+
+/** Sair da entrevista: o que ficou sem resposta vira "para depois" (pendência). */
+export function marcarNaoRespondidas(spec: AgentSpec): AgentSpec {
+  return {
+    ...spec,
+    context: {
+      ...spec.context,
+      interview: spec.context.interview.map((i) => (i.answer === null && !i.skipped ? { ...i, skipped: true } : i)),
+    },
+  }
+}
+
+/** Respostas que são fatos (vão para a base ao publicar). */
+export function fatosDaEntrevista(spec: AgentSpec) {
+  return spec.context.interview.filter((i) => i.destination === 'fact' && !i.skipped && i.answer !== null)
 }
 
 export function specVazia(): AgentSpec {
@@ -117,6 +148,15 @@ export function textoParaEnsaio(spec: AgentSpec): string {
   ]
   if (spec.handoff.situations.includes('fora_do_escopo')) {
     partes.push('## Quando chamar uma pessoa\nSe o assunto estiver fora do que você atende, ou faltar a informação para responder com segurança, transfira para a equipe em vez de improvisar.')
+  }
+  const regras = regrasDoNegocio(spec)
+  if (regras.length) partes.push(`## Regras deste negócio\n${regras.map((r) => `- ${r}`).join('\n')}`)
+  if (spec.context.examples.length) {
+    partes.push([
+      '## Exemplos de como responder',
+      'Siga o jeito destes exemplos; valores e dados vêm sempre das fontes.',
+      ...spec.context.examples.map((e) => `Cliente: ${e.question}\nVocê: ${e.answer}`),
+    ].join('\n\n'))
   }
   return partes.join('\n\n')
 }

@@ -1269,6 +1269,47 @@ export interface SpecContext {
   namePolicy: 'cite' | 'no_names' | null
   /** Empresa digitada aqui sem permissão para salvar no Contexto da IA. */
   pendingCompany: { name: string; city: string; description: string; link: string } | null
+  /** SCRUM-1192 — entrevista: 'behavior' entra no texto; 'fact' vai para a base ao publicar. */
+  interview: InterviewAnswer[]
+  /** SCRUM-1192 — respostas de exemplo escolhidas pelo dono. */
+  examples: Array<{ question: string; answer: string }>
+}
+
+export interface InterviewAnswer {
+  id: string
+  question: string
+  destination: 'behavior' | 'fact'
+  answer: string | string[] | null
+  skipped: boolean
+}
+
+export interface InterviewQuestion {
+  id: string
+  question: string
+  why: string
+  kind: 'single' | 'multi' | 'text'
+  options?: string[]
+  placeholder?: string
+  destination: 'behavior' | 'fact'
+  /** O que o estudo já respondia (o dono confirma). */
+  prefill: string | string[] | null
+}
+
+/** SCRUM-1192 — roteiro da entrevista do segmento, com o que o estudo já sabe. */
+export function fetchInterview(spec: AgentSpec) {
+  return apiFetch<{ segment: { key: string; label: string }; questions: InterviewQuestion[] }>('/specs/interview', {
+    method: 'POST', body: JSON.stringify({ spec }),
+  })
+}
+
+export interface AnswerExampleSet {
+  question: string
+  answers: Array<{ style: 'direta' | 'acolhedora' | 'detalhada'; text: string }>
+}
+
+/** SCRUM-1192 — respostas de exemplo para as dúvidas mais comuns, sem fatos. */
+export function fetchAnswerExamples(spec: AgentSpec) {
+  return apiFetch<{ examples: AnswerExampleSet[] }>('/specs/answer-examples', { method: 'POST', body: JSON.stringify({ spec }) })
 }
 
 export interface StudySource {
@@ -1339,7 +1380,11 @@ export function getAgentSpecForAgent(agentId: string) {
 }
 
 export function publishSpecDraft(id: string) {
-  return apiFetch<{ agentId: string; version: number; alreadyPublished: boolean }>(`/specs/drafts/${id}/publish`, { method: 'POST' })
+  return apiFetch<{
+    agentId: string; version: number; alreadyPublished: boolean
+    /** SCRUM-1192 — documento de fatos na base: 'error' = publicado, mas os fatos não foram. */
+    factsDoc?: 'created' | 'updated' | 'removed' | 'none' | 'error'
+  }>(`/specs/drafts/${id}/publish`, { method: 'POST' })
 }
 
 export function generateSpecText(spec: AgentSpec, language?: string) {

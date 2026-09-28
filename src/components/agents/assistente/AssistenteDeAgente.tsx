@@ -12,10 +12,11 @@ import {
 import { rodarBateria } from '@/components/agents/bateria/bateria'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
-import { ETAPAS, ETAPA_TEXTO, completarSpec, faltaNaEtapa, specVazia } from './especificacao'
 import {
-  EtapaEnsaio, EtapaNoAr, EtapaPodeFazer, EtapaQuemE, EtapaTransferencia,
-} from './EtapasDoAssistente'
+  ETAPAS, ETAPA_ENTREVISTA, ETAPA_EXEMPLOS, ETAPA_TEXTO, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia,
+} from './especificacao'
+import { EtapaEnsaio, EtapaNoAr, EtapaQuemE } from './EtapasDoAssistente'
+import { EtapaEntrevista, EtapaJeitoDeResponder, ParaOndeFoi } from './EtapasDaEntrevista'
 import { EtapaEstudar, EtapaOQueJaSei, type FontesDaConta } from './EtapasDeEstudo'
 
 type EstadoSalvo = 'salvando' | 'salvo' | 'sem-servidor'
@@ -30,9 +31,9 @@ const TIPO_FATO: Record<RepeatedFact['kind'], string> = {
 const ENSINO: string[] = [
   'O Oryon lê o que a empresa já tem antes de fazer qualquer pergunta. Nada aqui é sobre IA: é sobre o seu negócio.',
   'Um resumo do negócio montado a partir das fontes. Você só confirma ou corrige; as fontes ficam vinculadas.',
-  'A IA escreve com o que você confirmou e diz o que ainda teve de supor. Fatos (preço, horário, endereço) vêm das fontes.',
-  'Cada ação marcada é uma ferramenta de verdade. O que não tiver ferramenta, o agente explica e passa para a equipe.',
-  'Estas situações viram regras que transferem antes da IA responder, e a IA fica pausada enquanto a equipe atende.',
+  'Só o que as fontes não responderam, mais o que ele faz sozinho e quando chama a equipe. Fatos vão para a base; jeito de atender, para o texto.',
+  'Em vez de escolher um "tom" num rótulo, você reconhece a resposta certa. As escolhidas viram exemplos no texto do agente.',
+  'A IA escreve com o que você confirmou e respondeu, e diz o que ainda teve de supor. Fatos (preço, horário, endereço) vêm das fontes.',
   'Teste como um cliente. Os testes ficam salvos e viram casos para conferir a cada mudança.',
   'Publicar é uma operação só: ou o agente fica pronto por inteiro, ou nada muda.',
 ]
@@ -68,6 +69,7 @@ export function AssistenteDeAgente({
   const [fontes, setFontes] = useState<FontesDaConta>({ hub: null, catalogo: null, profissionais: null })
   const [fontesLidas, setFontesLidas] = useState<StudySource[] | null>(null)
   const [erroResumo, setErroResumo] = useState<string | null>(null)
+  const [publicadoSemFatos, setPublicadoSemFatos] = useState<AgentConfigWithTools | null>(null)
 
   // Retoma o rascunho aberto (M15) ou cria um no servidor.
   useEffect(() => {
@@ -143,6 +145,8 @@ export function AssistenteDeAgente({
   const avancar = () => {
     const f = faltaNaEtapa(etapa, spec)
     if (f) { setFalta(f); return }
+    // Sair da entrevista: o que ficou sem resposta vira pendência, não some.
+    if (etapa === ETAPA_ENTREVISTA) setSpec((s) => marcarNaoRespondidas(s))
     setEtapa((e) => Math.min(e + 1, ETAPAS.length))
   }
 
@@ -152,7 +156,7 @@ export function AssistenteDeAgente({
     setErroPublicar(null)
     try {
       await saveSpecDraft(draftId, spec, etapa)
-      const { agentId: publicadoId, version: versaoPublicada } = await publishSpecDraft(draftId)
+      const { agentId: publicadoId, version: versaoPublicada, factsDoc } = await publishSpecDraft(draftId)
       if (spec.channel.whatsappNumberId) {
         await api.patch(`/meta/numbers/${spec.channel.whatsappNumberId}`, { agentId: publicadoId }).catch(() => {
           setErroPublicar('O agente foi publicado, mas não deu para ligar o número. Ligue em Configurações → WhatsApp.')
@@ -170,6 +174,12 @@ export function AssistenteDeAgente({
           .then((runs) => rodarBateria({
           agent: publicado, tests: spec.tests, anterior: runs[0] ?? null, trigger: 'publish', specVersion: versaoPublicada,
         })).catch(() => {})
+      }
+      // SCRUM-1192 — o agente está no ar, mas os fatos da entrevista não foram
+      // para a base: fica aqui para o dono saber e poder abrir o agente.
+      if (factsDoc === 'error') {
+        setPublicadoSemFatos(publicado)
+        return
       }
       onCreated(publicado)
     } catch (e) {
@@ -257,15 +267,22 @@ export function AssistenteDeAgente({
                   </ul>
                 </Banner>
               )}
+              {etapa === ETAPA_ENTREVISTA && <EtapaEntrevista spec={spec} mudar={mudar} setores={setores} />}
+              {etapa === ETAPA_EXEMPLOS && <EtapaJeitoDeResponder spec={spec} mudar={mudar} />}
               {etapa === ETAPA_TEXTO && <EtapaQuemE spec={spec} mudar={mudar} />}
-              {etapa === 4 && <EtapaPodeFazer spec={spec} mudar={mudar} />}
-              {etapa === 5 && <EtapaTransferencia spec={spec} mudar={mudar} setores={setores} />}
               {etapa === 6 && <EtapaEnsaio spec={spec} mudar={mudar} />}
+              {etapa === 7 && <div className="mb-8"><ParaOndeFoi spec={spec} /></div>}
               {etapa === 7 && (
                 <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros} prontidao={prontidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} />
               )}
               {falta && <Banner variant="warning" className="mt-6">{falta}</Banner>}
               {erroPublicar && <Banner variant="danger" className="mt-6">{erroPublicar}</Banner>}
+              {publicadoSemFatos && (
+                <Banner variant="warning" className="mt-6" action={<Button size="sm" onClick={() => onCreated(publicadoSemFatos)}>Abrir o agente</Button>}>
+                  O agente foi publicado, mas as informações da entrevista não foram para a base de conhecimento. Abra o agente e
+                  adicione em Conhecimento, ou publique de novo.
+                </Banner>
+              )}
             </div>
           </div>
 
