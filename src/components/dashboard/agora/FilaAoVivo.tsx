@@ -290,7 +290,7 @@ export function FilaAoVivo({
 
       {truncada && (
         <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-[11.5px] text-surface-500">
-          A fila mostra as conversas aguardando mais recentes. Para ver todas, abra Conversas com o filtro "Aguardando resposta".
+          Há mais de 500 conversas pendentes: a fila mostra as 500 mais recentes. A Fila completa está em Conversas.
         </p>
       )}
     </section>

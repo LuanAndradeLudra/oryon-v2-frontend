@@ -7,7 +7,8 @@ const minAtras = (n: number) => new Date(Date.now() - n * 60_000).toISOString()
 
 function conversa(id: string, nome: string, over: Partial<Conversation> = {}): Conversation {
   return {
-    id, tenantId: 't', status: 'open', channel: 'whatsapp', unreadCount: 1,
+    // Padrão = pendente: a fila do Dashboard lê as pendentes (alinhada à aba Fila).
+    id, tenantId: 't', status: 'pending', channel: 'whatsapp', unreadCount: 1,
     lastMessageAt: minAtras(5), lastMessagePreview: `oi, aqui é ${nome}`, lastMessageSenderKind: 'client',
     lastAgentReplyAt: null, aiPausedUntil: null,
     contact: { id: `k-${id}`, tenantId: 't', waId: '55', displayName: nome, createdAt: minAtras(999) },
@@ -19,8 +20,8 @@ function conversa(id: string, nome: string, over: Partial<Conversation> = {}): C
 const CONVERSAS: Conversation[] = [
   conversa('c-recente', 'Rafaela', { lastMessageAt: minAtras(3) }),
   conversa('c-antiga', 'Carla', { lastMessageAt: minAtras(42) }),
-  // A IA está atendendo esta linha: fora da fila.
-  conversa('c-ia', 'Bruno', { lastMessageAt: minAtras(60), whatsappNumber: { id: 'linha-ia', displayPhoneNumber: '+55 11 1111-1111', status: 'connected' } as Conversation['whatsappNumber'] }),
+  // Aberta, com a IA atendendo: fora da fila.
+  conversa('c-ia', 'Bruno', { status: 'open', lastMessageAt: minAtras(60), whatsappNumber: { id: 'linha-ia', displayPhoneNumber: '+55 11 1111-1111', status: 'connected' } as Conversation['whatsappNumber'] }),
   // A IA passou para a equipe (pendente): entra, com o selo.
   conversa('c-passou', 'Joana', {
     status: 'pending', lastMessageSenderKind: 'ai', lastMessageAt: minAtras(12),
@@ -91,7 +92,7 @@ describe('Dashboard · aba Agora', () => {
   it('pede quem aguarda resposta e mostra a fila da maior espera para a menor, sem o que a IA atende', async () => {
     montar()
     await screen.findByText('Carla')
-    expect(list).toHaveBeenCalledWith({ awaitingReply: true }, 1, 100)
+    expect(list).toHaveBeenCalledWith({ status: 'pending' }, 1, 100)
     const nomes = screen.getAllByTestId('fila-item').map((li) => within(li).getByRole('button', { name: /Abrir a conversa/ }).getAttribute('aria-label'))
     expect(nomes).toEqual([
       'Abrir a conversa com Carla',

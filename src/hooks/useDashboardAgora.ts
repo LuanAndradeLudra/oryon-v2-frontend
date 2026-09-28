@@ -9,8 +9,13 @@ import type { Conversation, ConversationFilters, WhatsAppNumberDetailed } from '
 const RECARGA_MS = 60_000
 /** A espera exibida anda sem recarregar: recalcula a cada 30 s. */
 const RELOGIO_MS = 30_000
-/** Quantas conversas "aguardando" a fila lê de uma vez (ver P1 do SCRUM-1161). */
-export const LIMITE_DA_FILA = 100
+/**
+ * A fila lê as PENDENTES (a mesma base da aba "Fila" da inbox), em páginas de
+ * 100 (teto do backend), até este número de páginas; a ordem pela espera é
+ * feita aqui (o servidor só ordena pela mais recente — P1 do SCRUM-1161).
+ */
+export const POR_PAGINA_DA_FILA = 100
+const MAX_PAGINAS_DA_FILA = 5
 /** Quantas conversas "precisam de verificação" o painel lê de uma vez. */
 export const LIMITE_DA_VERIFICACAO = 50
 
@@ -50,9 +55,25 @@ export interface DashboardAgora {
   agora: number
 }
 
+/** Todas as pendentes (até MAX_PAGINAS_DA_FILA páginas). */
+async function lerPendentes(): Promise<{ lista: Conversation[]; truncada: boolean }> {
+  const filtros = { status: 'pending' } as ConversationFilters
+  const lista: Conversation[] = []
+  let pagina = 1
+  let temMais = true
+  while (temMais && pagina <= MAX_PAGINAS_DA_FILA) {
+    const { data } = await conversationsApi.list(filtros, pagina, POR_PAGINA_DA_FILA)
+    const itens = Array.isArray(data?.data) ? data.data : []
+    for (const c of itens) if (!lista.some((x) => x.id === c.id)) lista.push(c)
+    temMais = !!data?.hasMore
+    pagina += 1
+  }
+  return { lista, truncada: temMais }
+}
+
 /**
  * Dados da aba "Agora" do Dashboard (direção A). Leituras que já existiam no
- * backend e a tela não usava: quem espera (`awaitingReply`), a presença e a
+ * backend e a tela não usava: as pendentes (a base da aba "Fila" da inbox), a presença e a
  * carga da equipe (`/users/available`), as linhas com o agente de cada uma
  * (`/whatsapp/numbers`) e os agentes de IA.
  *
@@ -79,16 +100,15 @@ export function useDashboardAgora(): DashboardAgora {
       // A fila vem com folga e é ordenada no cliente pela maior espera: o
       // backend só ordena pela mensagem mais recente (P1 do SCRUM-1161).
       const [convs, revisar, pessoas, numeros, ias] = await Promise.all([
-        conversationsApi.list({ awaitingReply: true } as ConversationFilters, 1, LIMITE_DA_FILA),
+        lerPendentes(),
         conversationsApi.list({ needsReview: true } as ConversationFilters, 1, LIMITE_DA_VERIFICACAO).catch(() => null),
         usersApi.available().catch(() => ({ data: [] as AvailableUser[] })),
         whatsappNumbersApi.listDetailed().catch(() => ({ data: [] as WhatsAppNumberDetailed[] })),
         listAgents().catch(() => null),
       ])
       if (!vivo.current) return
-      const lista = Array.isArray(convs.data?.data) ? convs.data.data : []
-      setConversas(lista)
-      setFilaTruncada((convs.data?.total ?? lista.length) > lista.length)
+      setConversas(convs.lista)
+      setFilaTruncada(convs.truncada)
       // Falhou só esta leitura: mantém a anterior em vez de dizer "nenhuma".
       if (revisar) {
         const rev = Array.isArray(revisar.data?.data) ? revisar.data.data : []

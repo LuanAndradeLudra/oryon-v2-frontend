@@ -132,7 +132,7 @@ export function instalarBackendDemo() {
     // A aba "Todas" manda `status=all` — sem filtro (antes filtrava tudo fora e
     // o cabeçalho dizia "0 abertas · 0 pendentes").
     const status = params?.get('status')
-    // `?awaitingReply=true` (a fila do Dashboard): a mesma regra do backend —
+    // `?awaitingReply=true` (filtro "aguardando" da inbox): a mesma regra do backend —
     // nenhuma resposta humana depois da última mensagem, conversa não encerrada.
     const aguardando = params?.get('awaitingReply') === 'true'
     // `?needsReview=true`: a história não tem anomalia da IA — lista vazia.

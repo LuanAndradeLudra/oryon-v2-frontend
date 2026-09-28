@@ -5,10 +5,10 @@ import { computeWhatsAppWindow, type WhatsAppWindow } from '@/lib/whatsappWindow
 /**
  * Fila do Dashboard (direção A · Fila primeiro, decisões do PO de 27/09).
  *
- * "Fila" = quem espera resposta HUMANA: nenhuma pessoa respondeu desde a
- * última mensagem e a IA não está cuidando da conversa — ou porque a linha não
- * tem IA (ou ela está pausada) e o cliente falou por último, ou porque a IA a
- * passou para a equipe (status "pendente").
+ * "Fila" = as conversas PENDENTES que esperam alguém (`esperaNaFila`): sem
+ * dono, ou com dono e sem resposta humana desde a última mensagem. 28/09: a
+ * mesma ideia da aba "Fila" da inbox (pendentes sem dono) — antes o Dashboard
+ * tinha regra própria, mais ampla.
  *
  * Antes o app tinha três definições (status pendente no Dashboard, "sem dono
  * e aberta" na Home, "sem dono" na inbox) e o card mostrava as 3 conversas
@@ -122,13 +122,28 @@ export function esperaPessoa(c: ConversaDaFila, linhasComIA: LinhasComIA, now: n
   return true
 }
 
+/**
+ * Entra na fila do Dashboard? (28/09, decisão do PO — alinhada à aba "Fila"
+ * da inbox.) "Pendente" é, na operação, "precisa de atendimento humano" (a IA
+ * marca ao encaminhar). Espera alguém:
+ *  - a pendente SEM dono (é a aba Fila da inbox: ninguém pegou ainda), ou
+ *  - a pendente COM dono em que nenhuma pessoa respondeu desde a última
+ *    mensagem (pegou, mas o cliente ainda aguarda).
+ * Uma regra só para o operador: não há um segundo "esperando" com critério
+ * próprio. (O selo "sem resposta" da lista usa `esperaPessoa`, acima.)
+ */
+export function esperaNaFila(c: ConversaDaFila): boolean {
+  if (c.status !== 'pending') return false
+  return !c.assignedUser || !pessoaRespondeu(c)
+}
+
 export function faixaDoPrazo(esperaMin: number): FaixaDePrazo {
   if (esperaMin >= PRAZO_RESPOSTA_MIN) return 'atrasada'
   if (esperaMin >= VENCE_EM_BREVE_MIN) return 'vence-em-breve'
   return 'no-prazo'
 }
 
-/** Monta a fila: só quem espera pessoa, da maior espera para a menor. */
+/** Monta a fila do Dashboard (`esperaNaFila`), da maior espera para a menor. */
 export function montarFila(
   conversas: ReadonlyArray<Conversation>,
   linhasComIA: LinhasComIA,
@@ -136,7 +151,7 @@ export function montarFila(
 ): ItemDaFila[] {
   const out: ItemDaFila[] = []
   for (const c of conversas) {
-    if (!esperaPessoa(c, linhasComIA, now)) continue
+    if (!esperaNaFila(c)) continue
     const t = new Date(c.lastMessageAt).getTime()
     if (!Number.isFinite(t)) continue
     const esperaMin = Math.max(0, Math.floor((now - t) / 60_000))
