@@ -106,7 +106,12 @@ export function EtapaQuemE({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
         </Button>
         <span className="text-xs text-surface-500">A IA escreve só quem ele é e como conduz. Preços, horários e endereço vêm das fontes.</span>
       </div>
-      {erro && <Banner variant="danger">{erro} Você pode escrever abaixo.</Banner>}
+      {erro && (
+        <Banner variant="danger">
+          <span className="block">{erro}</span>
+          <span className="block">Você pode escrever os textos abaixo.</span>
+        </Banner>
+      )}
       {avisos.length > 0 && (
         <Banner variant="warning">
           {avisos.map((a) => <span key={a} className="block">{a}</span>)}

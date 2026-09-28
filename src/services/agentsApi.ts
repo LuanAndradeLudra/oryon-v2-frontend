@@ -203,10 +203,14 @@ export async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> 
   try {
     json = JSON.parse(text) as { data?: T; error?: string }
   } catch {
+    // 404 sem JSON = a rota não existe no servidor dos agentes em execução
+    // (versão anterior à tela). Reiniciar não resolve; dizer o que é.
     throw new Error(
       res.ok
-        ? 'Resposta inválida do servidor'
-        : `Servidor indisponível (${res.status}) — reinicie o backend`,
+        ? 'Resposta inválida do servidor.'
+        : res.status === 404
+          ? 'Este recurso ainda não está disponível no servidor dos agentes.'
+          : `Servidor dos agentes indisponível (erro ${res.status}). Tente de novo em instantes.`,
     )
   }
   if (!res.ok) throw new Error(json.error ?? `Erro ${res.status}`)
