@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { EscopoDoCartao } from './EscopoDoCartao'
 import { ArrowRight, Milestone } from 'lucide-react'
 import { pipelinesApi, pipelineAnalyticsApi } from '@/services/api'
 import { isMoneyBucket } from '@/types/pipelineAnalytics'
@@ -57,7 +58,8 @@ export function SalesFunnelCard() {
             irmãos VolumeChart/FilaAgoraCard na mesma linha do grid (40px). */}
         <div className="flex items-center h-10 px-3.5 border-b border-surface-700">
           <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
-          <span className="text-[11.5px] text-surface-500 ml-2">por etapa · mês atual</span>
+          <span className="text-[11.5px] text-surface-500 ml-2">em aberto por etapa</span>
+        <EscopoDoCartao className="ml-2">agora</EscopoDoCartao>
         </div>
         <EmptyState icon={Milestone} title="Nenhum funil configurado" className="py-8" />
       </div>

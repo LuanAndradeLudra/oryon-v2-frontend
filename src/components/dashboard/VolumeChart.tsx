@@ -4,8 +4,9 @@ import {
   Tooltip,
 } from 'recharts'
 import { useChartColors } from '@/hooks/useChartColors'
-import { cn } from '@/lib/utils'
 import type { DateRange, VolumeDataPoint } from '@/types/dashboard'
+import { baldeDeHoje, ESCOPO, volumeSeguePeriodo } from '@/lib/periodoDoPainel'
+import { EscopoDoCartao } from './EscopoDoCartao'
 
 function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null
@@ -31,34 +32,22 @@ function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?:
 // (o backend só expõe volume por dia, Recebidas/Enviadas). Portamos o
 // VOCABULÁRIO visual (header 40px, legenda com quadradinho de 8px, colunas
 // empilhadas) sobre o dado real existente, sem inventar granularidade nova.
-// PL-C2-FAR-1: só "Hoje"/"7 dias" — "30 dias" saiu (ver DateRangePicker.tsx);
-// `data` só tem 7 dias no máximo, então virou filtro real no cliente abaixo
-// em vez de implicar um refetch que nunca existiu.
-const RANGE_OPTIONS: { value: 'today' | '7d'; label: string }[] = [
-  { value: 'today', label: 'Hoje' },
-  { value: '7d', label: '7 dias' },
-]
-
 /** "2026-09-14" → "14/09": o eixo mostrava a data ISO crua. */
 function diaMes(iso: string): string {
   return /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : iso
 }
 
-function todayIso(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-export const VolumeChart = memo(function VolumeChart({ data, range, onRangeChange }: {
+export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
   data: VolumeDataPoint[]
-  /** R2-DASH-04: seletor Hoje/7 dias no header (mock 1b) — liga ao MESMO
-   *  período global da página; "Hoje" filtra `data` no cliente (PL-C2-FAR-1),
-   *  sem fetch próprio. */
+  /**
+   * O período da página (28/09: o seletor próprio do cartão saiu — eram dois
+   * controles para o mesmo estado). O backend manda sempre os últimos 7 dias:
+   * "Hoje" filtra aqui; 30 dias e "Este mês" mostram os 7 dias e dizem isso.
+   */
   range?: DateRange
-  onRangeChange?: (r: DateRange) => void
 }) {
   const C = useChartColors()
-  const chartData = range === 'today' ? data.filter((d) => d.date === todayIso()) : data
+  const chartData = range === 'today' ? data.filter((d) => d.date === baldeDeHoje()) : data
   // R2-DASH-09 (canvas 1b, valores exatos): card sem padding próprio; header
   // h40 px14 gap16 border-b; legenda gap14 11.5 --tx2; segmentado raio 6 borda --bd
   // com células h24 px9 11.5/600 (ativa --sf2/--tx, demais --tx2 + border-left);
@@ -77,25 +66,7 @@ export const VolumeChart = memo(function VolumeChart({ data, range, onRangeChang
             Enviadas
           </span>
         </div>
-        {range && onRangeChange && (
-          <div role="tablist" aria-label="Período do gráfico" className="ml-auto inline-flex rounded-[6px] border border-surface-700 overflow-hidden text-[11.5px] font-semibold">
-            {RANGE_OPTIONS.map((o, i) => (
-              <button
-                key={o.value}
-                role="tab"
-                aria-selected={range === o.value}
-                onClick={() => onRangeChange(o.value)}
-                className={cn(
-                  'h-6 px-[9px] inline-flex items-center transition-colors',
-                  i > 0 && 'border-l border-surface-700',
-                  range === o.value ? 'bg-[var(--sf2)] text-surface-100' : 'text-surface-400 hover:bg-[var(--rowhover)]',
-                )}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {!volumeSeguePeriodo(range) && <EscopoDoCartao className="ml-auto">{ESCOPO.seteDias}</EscopoDoCartao>}
       </div>
       {/* Altura FIXA (26/09): com `flex-1` num cartão de altura indefinida, os
           100% do ResponsiveContainer resolviam para zero e o gráfico sumia —

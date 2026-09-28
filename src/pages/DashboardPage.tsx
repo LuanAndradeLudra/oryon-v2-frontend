@@ -33,8 +33,9 @@ export function DashboardPage() {
       const next = new URLSearchParams(prev)
       if (a === 'agora') next.delete('aba')
       else next.set('aba', a)
-      // Filtro e páginas são da aba Agora; não viajam para Relatórios.
+      // Filtro e páginas da Agora não viajam para Relatórios, nem o período o contrário.
       if (a !== 'agora') { next.delete('fila'); next.delete('filaPag'); next.delete('equipePag'); next.delete('verificarPag') }
+      if (a !== 'relatorios') next.delete('periodo')
       return next
     })
   }

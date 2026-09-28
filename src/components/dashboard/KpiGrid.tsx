@@ -25,7 +25,7 @@ function loadSlots(): KpiId[] {
 // vira `border-bottom` no empilhamento mobile). Sem ícone — só rótulo, valor
 // e linha de apoio (delta + contexto).
 
-function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text: string; tone: 'warn' } }) {
+function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text: string; tone: 'warn' | 'muted' } }) {
   const isGood =
     (metric.trend > 0 && metric.trendIsGood === 'up') ||
     (metric.trend < 0 && metric.trendIsGood === 'down')
@@ -56,7 +56,7 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
       ) : support ? (
         // R2-DASH-02: linha de apoio com dado real que o snapshot já traz
         // (ex.: "12 aguardando" = fila `pending`), no lugar da linha vazia.
-        <span className={cn('text-[11.5px] font-semibold truncate', support.tone === 'warn' ? 'text-status-pending' : 'text-surface-500')}>{support.text}</span>
+        <span className={cn('text-[11.5px] truncate', support.tone === 'warn' ? 'font-semibold text-status-pending' : 'text-surface-500')}>{support.text}</span>
       ) : (
         <span className="text-[11.5px] text-surface-500">&nbsp;</span>
       )}
@@ -68,6 +68,21 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
 // card `--sf/--bd/raio 8`, em linhas de 5 células separadas por hairline
 // (sem tile de ícone, sem card por KPI).
 const STRIP_COLS = 5
+
+// 28/09: KPIs que NÃO seguem o período dizem o próprio recorte na linha de
+// apoio (os demais seguem o seletor e não precisam de etiqueta).
+const KPI_ESCOPO: Partial<Record<KpiId, string>> = {
+  active_conversations: 'agora',
+  queued: 'agora',
+  agents_online: 'agora',
+  new_contacts: 'últimos 7 dias',
+}
+
+function apoioDo(metric: KpiMetric, queued: number): { text: string; tone: 'warn' | 'muted' } | undefined {
+  if (metric.id === 'active_conversations' && queued > 0) return { text: `agora · ${queued} na fila`, tone: 'warn' }
+  const escopo = KPI_ESCOPO[metric.id]
+  return escopo ? { text: escopo, tone: 'muted' } : undefined
+}
 
 function KpiStrip({ metrics, queued }: { metrics: KpiMetric[]; queued: number }) {
   const rows: KpiMetric[][] = []
@@ -86,7 +101,7 @@ function KpiStrip({ metrics, queued }: { metrics: KpiMetric[]; queued: number })
             <KpiStripCell
               key={metric.id}
               metric={metric}
-              support={metric.id === 'active_conversations' && queued > 0 ? { text: `${queued} aguardando`, tone: 'warn' } : undefined}
+              support={apoioDo(metric, queued)}
             />
           ))}
         </div>

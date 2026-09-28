@@ -4,6 +4,7 @@ import {
   CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 import { useChartColors } from '@/hooks/useChartColors'
+import { EscopoDoCartao } from './EscopoDoCartao'
 import type { HeatmapCell } from '@/types/dashboard'
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
@@ -46,7 +47,7 @@ function CustomTooltip({ active, payload, label }: {
   )
 }
 
-export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data }: { data: HeatmapCell[] }) {
+export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data, escopo }: { data: HeatmapCell[]; escopo?: string }) {
   const C = useChartColors()
   // aggregate() varre 168 células com 21 filter/reduce — só recalcula se data mudar
   const chartData = useMemo(() => aggregate(data), [data])
@@ -59,9 +60,13 @@ export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data }: { data:
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
-      <div className="mb-4">
-        <p className="text-sm font-semibold text-surface-100">Horários de Pico</p>
-        <p className="text-xs text-surface-400 mt-0.5">Volume de conversas por período e dia da semana</p>
+      <div className="mb-4 flex items-start gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-surface-100">Horários de Pico</p>
+          {/* Conta MENSAGENS (o texto dizia "conversas" — R8 do SCRUM-1161). */}
+          <p className="text-xs text-surface-400 mt-0.5">Mensagens por turno e dia da semana</p>
+        </div>
+        {escopo && <EscopoDoCartao className="ml-auto mt-0.5">{escopo}</EscopoDoCartao>}
       </div>
 
       <ResponsiveContainer width="100%" height={240}>

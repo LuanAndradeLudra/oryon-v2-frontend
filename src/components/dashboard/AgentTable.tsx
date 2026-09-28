@@ -10,10 +10,10 @@ import type { AgentMetrics } from '@/types/dashboard'
 // definition propagates to every place the table is rendered, and so the
 // product team can iterate on copy without hunting through JSX.
 const COLUMN_TOOLTIPS: Record<string, string> = {
-  conversations:  'Quantidade de conversas atualmente abertas atribuídas ao atendente.',
-  resolved:       'Conversas que o atendente marcou como resolvidas no dia de hoje.',
-  responseTime:   'TMR — Tempo Médio de Resposta. Quanto o atendente leva, em média, para enviar a primeira resposta após o cliente abrir a conversa.',
-  resolutionTime: 'Tempo médio entre o início da conversa e o momento em que ela foi marcada como resolvida.',
+  conversations:  'Conversas abertas atribuídas ao atendente agora (não segue o período).',
+  resolved:       'Conversas que o atendente resolveu no período escolhido.',
+  responseTime:   'TMR — Tempo Médio de Resposta. Quanto o atendente leva, em média, para enviar a primeira resposta após o cliente abrir a conversa. Média de todo o histórico (não segue o período).',
+  resolutionTime: 'Tempo médio entre o início da conversa e o momento em que ela foi marcada como resolvida. Média de todo o histórico (não segue o período).',
   csat:           'Satisfação do cliente (CSAT) — média das avaliações recebidas em uma escala de 0 a 5. Disponível quando a pesquisa de satisfação estiver ativa.',
   sla:            'Cumprimento do SLA — porcentagem de conversas em que a primeira resposta foi enviada dentro do tempo-alvo (atualmente 5 minutos).',
   utilization:    'Utilização da capacidade do atendente. 100% indica saturação (a partir de 20 conversas abertas simultâneas).',
