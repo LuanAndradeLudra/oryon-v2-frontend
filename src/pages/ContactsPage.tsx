@@ -42,6 +42,7 @@ import { tagsApi, pipelinesApi, contactsApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline } from '@/types'
+import { RODAPE_DA_LISTA } from '@/components/contacts/rodapeDaLista'
 
 /**
  * Faceta "Situação comercial" (D-10) — filtro opt-in derivado do
@@ -648,7 +649,7 @@ export function ContactsPage() {
                 dela (era uma pílula flutuante, BulkActionBar `inline`). As
                 setas de paginação do mock não entram: a lista é scroll
                 infinito, sem endpoint de página (GAPS-PENDENTES). */}
-            <div className="h-10 flex items-center px-4 gap-3.5 border-t border-surface-700 text-xs text-surface-400 flex-shrink-0">
+            <div className={RODAPE_DA_LISTA}>
               {selectedIds.size > 0 ? (
                 <BulkActionBar
                   inline

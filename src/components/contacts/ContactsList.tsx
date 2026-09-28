@@ -91,7 +91,9 @@ export function ContactsList({
           />
         </div>
       ) : (
-        <div className="px-2 py-1">
+        // Linhas leves entre os contatos (28/09, pedido do PO): a mesma borda
+        // que separa as linhas na visão Tabela (DataTable).
+        <div className="px-2 py-1 divide-y divide-surface-700">
           {contacts.map((c) => (
             <ContactListRow
               key={c.id}

@@ -12,6 +12,7 @@ import { ConversationsTab } from './tabs/ConversationsTab'
 import { CampaignsTab } from './tabs/CampaignsTab'
 import { DealsTab } from './tabs/DealsTab'
 import type { Contact, Tag } from '@/types'
+import { RODAPE_DA_LISTA } from './rodapeDaLista'
 
 interface ContactDetailPanelProps {
   contactId: string
@@ -230,7 +231,8 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
                 {tabContent}
               </div>
               {footer && (
-                <div className="flex-shrink-0 border-t border-surface-700 px-4 py-2.5 text-xs text-surface-400">
+                // Mesmo rodapé da lista ao lado (28/09): as duas faixas alinham no pé da tela.
+                <div className={RODAPE_DA_LISTA}>
                   {footer}
                 </div>
               )}
