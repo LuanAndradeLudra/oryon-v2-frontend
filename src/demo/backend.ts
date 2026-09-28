@@ -7,7 +7,7 @@ import {
 import type { HeroState } from '../components/landing/stage/hero/heroStory'
 import { hoursAgo } from '../components/landing/stage/hero/heroClock'
 import { AGENTES_DEMO, CATALOGO_RECEPCAO, CONHECIMENTO_RECEPCAO, PROFISSIONAIS_DEMO, PROFISSIONAIS_RECEPCAO, agenteComFerramentas } from './agentesDemo'
-import { heroActivityFeed, heroHomeSnapshot, heroHomeStats, heroPipelineOverview } from './dashboardDemo'
+import { heroActivityFeed, heroHomeSnapshot, heroHomeStats, heroPipelineOverview, heroEquipeDisponivel } from './dashboardDemo'
 import { ANALYTICS_RENOVACAO, CONVERSAS_RENOVACAO } from './campanhaDemo'
 
 /**
@@ -132,8 +132,16 @@ export function instalarBackendDemo() {
     // A aba "Todas" manda `status=all` — sem filtro (antes filtrava tudo fora e
     // o cabeçalho dizia "0 abertas · 0 pendentes").
     const status = params?.get('status')
+    // `?awaitingReply=true` (a fila do Dashboard): a mesma regra do backend —
+    // nenhuma resposta humana depois da última mensagem, conversa não encerrada.
+    const aguardando = params?.get('awaitingReply') === 'true'
     const todas = heroConversations(estado)
-    const lista = todas.filter((c) => !status || status === 'all' || c.status === status)
+    const lista = todas
+      .filter((c) => !status || status === 'all' || c.status === status)
+      .filter((c) => !aguardando || (
+        c.status !== 'resolved' && c.status !== 'abandoned'
+        && (!c.lastAgentReplyAt || new Date(c.lastAgentReplyAt).getTime() < new Date(c.lastMessageAt).getTime())
+      ))
     const conta = (s: string) => todas.filter((c) => c.status === s).length
     return {
       data: {
@@ -158,6 +166,8 @@ export function instalarBackendDemo() {
 
   // ── Equipe e contatos ─────────────────────────────────────────────────────
   rota('users', eq('get', '/users'), () => ({ data: [HERO_USER] }))
+  // Presença e carga da equipe — a aba Agora do Dashboard.
+  rota('users/available', eq('get', '/users/available'), () => ({ data: heroEquipeDisponivel(estado) }))
 
   rota('contacts', eq('get', '/contacts'), () => ({
     data: paginado(heroConversations(estado).map((c) => c.contact)),
@@ -350,7 +360,9 @@ export function instalarBackendDemo() {
   // linha WhatsApp conectada" por cima de tudo.
   rota('meta/numbers', eq('get', '/meta/numbers'), () => ({ data: [HERO_LINE] }))
   rota('whatsapp/numbers', eq('get', '/whatsapp/numbers'), () => ({
-    data: [{ ...HERO_LINE, qualityRating: 'GREEN', messagingLimit: 'TIER_10K' }],
+    // O Agente Recepção atende a linha (é por isto que a fila do Dashboard
+    // sabe o que a IA está cuidando).
+    data: [{ ...HERO_LINE, qualityRating: 'GREEN', messagingLimit: 'TIER_10K', agentId: 'ag-recepcao', agentName: 'Agente Recepção' }],
   }))
 
   // ── Disparos ──────────────────────────────────────────────────────────────

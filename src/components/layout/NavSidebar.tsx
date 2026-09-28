@@ -190,7 +190,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     { icon: <Home className="w-[16.5px] h-[16.5px]" />,          label: 'Home',       href: '/home' },
     {
       icon: <BarChart3 className="w-[16.5px] h-[16.5px]" />,
-      label: 'Relatórios',
+      label: 'Dashboard',
       href: '/dashboard',
       nudge: !checklist.dashboard ? 'Novo' : undefined,
     },

@@ -135,6 +135,7 @@ export function heroConversation(at: HeroState): Conversation {
     channel: 'whatsapp',
     lastMessageAt: ultima.sentAt,
     lastMessagePreview: ultima.body,
+    lastMessageSenderKind: ultima.senderKind ?? null,
     // `lastAgentReplyAt` é o que decide o aviso "X sem resposta" na lista
     // (`getAwaitingReply`). Marca a última saída: enquanto a IA ainda não
     // respondeu, o aviso aparece (e é verdade); assim que ela responde, some.

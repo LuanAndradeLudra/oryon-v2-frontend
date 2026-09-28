@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Users, BarChart3, Settings,
-  Clock, CheckCircle2, Inbox, CreditCard, Smartphone,
+  Clock, CheckCircle2, Inbox, CreditCard,
   ChevronRight, X, Sparkles, UserPlus, Tag, MessageCircle,
   Zap, Hand, Workflow, Send, TrendingUp,
 } from 'lucide-react'
@@ -17,7 +17,7 @@ import { isFeatureVisible } from '@/config/featureFlags'
 import { cn, getInitials } from '@/lib/utils'
 import { Card } from '@/components/ui/Card'
 import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
-import type { AuditLog, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
+import type { AuditLog, Conversation, HomeStats, User } from '@/types'
 import { api } from '@/services/api'
 
 
@@ -418,151 +418,31 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
 
 // ── Contextual block ───────────────────────────────────────────────────────────
 
-// ── Admin cards (Phase 28+ — split do antigo AdminBlock pra entrar como
-//    células do grid unificado de 12 colunas na Home). Cada card é
-//    independente: tem altura própria conforme conteúdo, mas como vão
-//    ocupar a mesma "linha" do grid principal (3 cards span-4), o grid
-//    alinha as alturas automaticamente — efeito harmônico sem flex hacks.
-
-function TeamCard({ stats }: { stats: HomeStats }) {
+// ── A operação fica no Dashboard (passada estrutural de 27/09) ────────────────
+// Antes a Home do admin repetia três cartões do "agora" — Equipe (online, sem
+// atendente), Números WhatsApp e Atendimento agora (na fila, abertas, tempo
+// médio) —, com as mesmas leituras que estavam erradas no Dashboard ("0
+// online", "na fila" = pendentes, "tempo médio" no lugar da espera). Decisão
+// do PO: a Home é o MEU dia; a operação ao vivo mora no Dashboard, aba Agora,
+// com dado real. Aqui fica só a porta até lá — sem número que possa discordar
+// do painel.
+function OperacaoNoDashboardCard() {
   const navigate = useNavigate()
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-surface-100">Equipe</h4>
-        <Users className="w-4 h-4 text-surface-600" />
+    <button
+      type="button"
+      onClick={() => navigate('/dashboard')}
+      className="group w-full text-left bg-surface-800 border border-surface-700 rounded-lg p-3.5 hover:border-surface-600 transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-online" aria-hidden />
+        <h4 className="text-sm font-semibold text-surface-100">A operação agora</h4>
+        <ChevronRight className="ml-auto w-4 h-4 text-surface-500 group-hover:text-surface-300 transition-colors" aria-hidden />
       </div>
-      <div className="flex flex-col gap-3 mt-1 flex-1">
-        {[
-          { label: 'Online agora',    value: stats.agentsOnline ?? 0,  cls: 'text-status-active' },
-          { label: 'Total contatos',  value: stats.totalContacts ?? 0, cls: 'text-surface-200' },
-          { label: 'Sem atendente',   value: stats.unassignedCount ?? 0, cls: (stats.unassignedCount ?? 0) > 0 ? 'text-status-pending' : 'text-surface-500' },
-        ].map((row) => (
-          <div key={row.label} className="flex items-center justify-between">
-            <span className="text-sm text-surface-400">{row.label}</span>
-            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value.toLocaleString('pt-BR')}</span>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => navigate('/settings/agents')}
-        className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
-      >
-        Gerenciar equipe <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  )
-}
-
-function WhatsAppNumbersCard() {
-  const navigate = useNavigate()
-  const [waNumbers, setWaNumbers] = useState<WhatsAppNumberDetailed[]>([])
-
-  useEffect(() => {
-    api
-      .get<WhatsAppNumberDetailed[]>('/whatsapp/numbers')
-      .then((w) => setWaNumbers(Array.isArray(w.data) ? w.data : []))
-      .catch(() => setWaNumbers([]))
-  }, [])
-
-  return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-surface-100">Números WhatsApp</h4>
-        <Smartphone className="w-4 h-4 text-surface-600" />
-      </div>
-      <div className="flex-1">
-        {waNumbers.length === 0 ? (
-          <div className="flex flex-col gap-2 py-4">
-            <p className="text-xs text-surface-500">Nenhum número conectado ainda.</p>
-            <button
-              onClick={() => navigate('/settings/numbers')}
-              className="self-start text-xs text-accent-dark hover:opacity-80 transition-colors"
-            >
-              Conectar agora →
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {waNumbers.map((num) => (
-              <div key={num.id} className="flex items-center gap-2.5">
-                <div className={cn('w-2 h-2 rounded-full flex-shrink-0', (num.status === 'connected' || num.status === 'CONNECTED') ? 'bg-status-active' : 'bg-surface-600')} />
-                <span className="text-sm text-surface-300 flex-1 truncate">{num.displayPhoneNumber}</span>
-                <span className={cn(
-                  'text-[10px] px-1.5 py-0.5 rounded-full leading-none font-medium',
-                  (num.status === 'connected' || num.status === 'CONNECTED') ? 'text-status-active bg-status-active-bg' : 'text-surface-500 bg-surface-800',
-                )}>
-                  {(num.status === 'connected' || num.status === 'CONNECTED') ? 'Ativo' : 'Inativo'}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <button
-        onClick={() => navigate('/settings/numbers')}
-        className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
-      >
-        Gerenciar números <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  )
-}
-
-function LiveServiceCard({ stats }: { stats: HomeStats }) {
-  const navigate = useNavigate()
-  return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-surface-100">Atendimento agora</h4>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-status-active animate-pulse" />
-          <span className="text-[10px] text-status-active font-medium">Ao vivo</span>
-        </div>
-      </div>
-      <div className="flex flex-col gap-3 flex-1">
-        {[
-          {
-            label: 'Na fila',
-            value: stats.queueCount,
-            cls: stats.queueCount > 5 ? 'text-red-400' : stats.queueCount > 2 ? 'text-status-pending' : 'text-status-active',
-            icon: <Inbox className="w-3.5 h-3.5" />,
-          },
-          {
-            label: 'Abertas',
-            value: stats.conversationsOpen,
-            cls: 'text-surface-200',
-            icon: <MessageSquare className="w-3.5 h-3.5" />,
-          },
-          {
-            label: 'Resolvidas hoje',
-            value: stats.conversationsResolvedToday,
-            cls: 'text-status-active',
-            icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-          },
-          {
-            label: 'Tempo médio',
-            value: `${stats.avgResponseMinutes}min`,
-            cls: stats.avgResponseMinutes > 10 ? 'text-status-pending' : 'text-surface-200',
-            icon: <Clock className="w-3.5 h-3.5" />,
-          },
-        ].map((row) => (
-          <div key={row.label} className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-surface-500">
-              {row.icon}
-              <span className="text-xs">{row.label}</span>
-            </div>
-            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value.toLocaleString('pt-BR')}</span>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => navigate('/conversations')}
-        className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
-      >
-        Ver conversas <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    </div>
+      <p className="mt-1.5 text-xs text-surface-400 leading-relaxed">
+        Quem espera uma pessoa e há quanto tempo, a equipe online e as linhas — no Dashboard, ao vivo.
+      </p>
+    </button>
   )
 }
 
@@ -721,8 +601,8 @@ export function HomePage() {
   //   2. WorkspaceReadinessBanner     — col-span-12  (auto-hides when no blockers)
   //   3. 4 KPIs (sub-grid)            — col-span-12  (KPIGrid mantém grid-cols-4 interno)
   //   4. Insights da Oryon AI         — col-span-12
-  //   5. 3 cards admin (Equipe / Whatsapp / Atendimento) — col-span-4 cada
-  //      Renderizado apenas pra admin / business_admin / super_admin.
+  //   5. (27/09) os 3 cards admin do "agora" saíram — a operação ao vivo
+  //      mora no Dashboard; no rail fica só a porta até lá.
   //   6. Quick Actions                — col-span-8
   //      Activity Feed                — col-span-4
   const isAdminRole = role === 'admin' || role === 'business_admin' || role === 'super_admin'
@@ -757,7 +637,7 @@ export function HomePage() {
                 MAIN (8/12): a narrativa do MEU dia — desempenho pessoal,
                 números do workspace, insights da IA, gestão e fila.
                 RAIL (4/12): o que eu FAÇO e o que ACONTECE — atendimento ao
-                vivo (admin), ações rápidas e atividade recente, sempre à
+                vivo (admin: a porta para o Dashboard), ações rápidas e atividade recente, sempre à
                 mão sem competir com a leitura principal. */}
             <div className="lg:col-span-12 xl:col-span-8">
               <div className="flex flex-col gap-5 sm:gap-6">
@@ -767,13 +647,6 @@ export function HomePage() {
 
                 {stats && <AIInsightsWidget stats={stats} />}
 
-                {stats && isAdminRole && !isMobile && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-                    <TeamCard stats={stats} />
-                    <WhatsAppNumbersCard />
-                  </div>
-                )}
-
                 {role === 'supervisor' && !isMobile && <SupervisorBlock />}
                 {role === 'agent' && !isMobile && <AgentBlock />}
               </div>
@@ -781,7 +654,7 @@ export function HomePage() {
 
             <div className="lg:col-span-12 xl:col-span-4">
               <div className="flex flex-col gap-5 sm:gap-6">
-                {stats && isAdminRole && !isMobile && <LiveServiceCard stats={stats} />}
+                {isAdminRole && <OperacaoNoDashboardCard />}
                 <QuickActions role={role} />
                 <ActivityFeed logs={logs} loading={logsLoading} />
               </div>

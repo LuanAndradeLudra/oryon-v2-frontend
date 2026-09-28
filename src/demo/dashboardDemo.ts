@@ -47,6 +47,18 @@ export function heroHomeStats(at: HeroState): HomeStats {
   } as HomeStats
 }
 
+/** `GET /users/available`: quem está online agora e quantas conversas abertas
+ *  cada um tem. A Ana tem as mesmas 5 do "Minhas abertas" de `heroHomeStats`. */
+export function heroEquipeDisponivel(at: HeroState) {
+  const ana = reached(at, 'assumido') ? 5 : 4
+  return [
+    { id: HERO_USER.id, firstName: HERO_USER.firstName, lastName: HERO_USER.lastName ?? null, email: HERO_USER.email, role: 'agent', departmentId: null, isOnline: true, activeConversations: ana },
+    { id: 'demo-user-2', firstName: 'Bruno', lastName: 'Lima', email: 'bruno@clinicavitalis.com.br', role: 'agent', departmentId: null, isOnline: true, activeConversations: 3 },
+    { id: 'demo-user-3', firstName: 'Carla', lastName: 'Mendes', email: 'carla@clinicavitalis.com.br', role: 'supervisor', departmentId: null, isOnline: true, activeConversations: 2 },
+    { id: 'demo-user-4', firstName: 'Diego', lastName: 'Souza', email: 'diego@clinicavitalis.com.br', role: 'agent', departmentId: null, isOnline: false, activeConversations: 0 },
+  ]
+}
+
 const EQUIPE = [
   { userId: HERO_USER.id, name: `${HERO_USER.firstName} ${HERO_USER.lastName ?? ''}`.trim(), conversations: 11, resolved: 8, online: true },
   { userId: 'demo-user-2', name: 'Bruno Lima', conversations: 9, resolved: 7, online: true },

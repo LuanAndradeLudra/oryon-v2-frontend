@@ -1058,9 +1058,26 @@ export const tagsApi = {
   },
 }
 
+/** Usuário com presença e carga — `GET /users/available` (online primeiro, menor carga depois). */
+export interface AvailableUser {
+  id: string
+  firstName: string
+  lastName: string | null
+  email: string
+  role: string
+  departmentId: string | null
+  isOnline: boolean
+  /** Conversas abertas + pendentes atribuídas à pessoa. */
+  activeConversations: number
+}
+
 export const usersApi = {
   list() {
     return api.get<User[]>('/users')
+  },
+  /** Presença e carga de cada pessoa da equipe (Dashboard · Equipe agora). */
+  available() {
+    return api.get<AvailableUser[]>('/users/available')
   },
 }
 

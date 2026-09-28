@@ -119,10 +119,11 @@ const HISTORIAS: Record<string, Historia> = {
     ],
   },
   // O Dashboard no momento em que a Marina espera na fila: o holofote passa
-  // pela fila, pelos indicadores e pelo volume da semana. A tela não muda de dado (o Dashboard
+  // pela fila (aba Agora) e depois pelos indicadores e pelo volume da semana
+  // (aba Relatórios). A tela não muda de dado (o Dashboard
   // real busca uma vez ao abrir) — só o olhar percorre.
   medir: {
-    titulo: 'Oryon · Relatórios',
+    titulo: 'Oryon · Dashboard',
     rota: HERO_ROTAS.painel, estado: 'assumido', recorte: RECORTES.painel,
     cues: [
       { t: 0, state: 'assumido', composition: 'painel' },

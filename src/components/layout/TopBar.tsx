@@ -40,7 +40,7 @@ import {
 const PAGE_TITLES: Record<string, string> = {
   '/home': 'Home',
   '/conversations': 'Conversas',
-  '/dashboard': 'Relatórios',
+  '/dashboard': 'Dashboard',
   '/contacts': 'Contatos',
   '/pipelines': 'Funis',
   '/campaigns': 'Disparos',
@@ -60,7 +60,7 @@ const PAGE_TITLES: Record<string, string> = {
 const PAGE_SUBTITLES: Record<string, string> = {
   '/home': 'Seu dia num relance',
   '/conversations': 'Chat com clientes',
-  '/dashboard': 'Relatórios e análises',
+  '/dashboard': 'A operação agora e os relatórios',
   // O funil saiu daqui (D2 · SCRUM-935): virou /pipelines, com página e
   // subtítulo próprios. Prometer "pipeline" nesta tela virou promessa falsa.
   '/contacts': 'Base de clientes',
@@ -95,7 +95,7 @@ const SEARCH_INDEX = ([
   // ── Páginas principais
   { type: 'page', label: 'Home', description: 'Visão geral e atalhos rápidos', href: '/home', Icon: Home, keywords: ['início', 'painel', 'overview'] },
   { type: 'page', label: 'Conversas', description: 'Atendimento via WhatsApp', href: '/conversations', Icon: MessageSquare, keywords: ['whatsapp', 'chat', 'atendimento', 'mensagens'] },
-  { type: 'page', label: 'Relatórios', description: 'Métricas, análises e KPIs', href: '/dashboard', Icon: BarChart3, keywords: ['dashboard', 'métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
+  { type: 'page', label: 'Dashboard', description: 'Fila ao vivo, equipe e relatórios', href: '/dashboard', Icon: BarChart3, keywords: ['relatórios', 'fila', 'painel', 'métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
   { type: 'page', label: 'Contatos', description: 'CRM e situação dos contatos', href: '/contacts', Icon: Users, keywords: ['crm', 'leads', 'clientes', 'base'] },
   // 'pipeline'/'kanban'/'funil' migraram de Contatos para cá junto com a tela
   // (D2 · SCRUM-935): quem busca por essas palavras quer o quadro, e ele não

@@ -16,7 +16,7 @@ interface Tab {
 const BASE_TABS: Tab[] = [
   { href: '/conversations', label: 'Conversas', Icon: MessageSquare, matchPrefix: true },
   { href: '/contacts', label: 'Contatos', Icon: Users, matchPrefix: true },
-  { href: '/dashboard', label: 'Relatórios', Icon: BarChart3, matchPrefix: true },
+  { href: '/dashboard', label: 'Dashboard', Icon: BarChart3, matchPrefix: true },
 ]
 
 const NEGOCIOS_TAB: Tab = { href: '/pipelines', label: 'Negócios', Icon: Handshake, matchPrefix: true }

@@ -56,10 +56,12 @@ export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   'agente-catalogo': '/agents/ag-recepcao/catalogo',
   'agente-capacidades': '/agents/ag-recepcao/capacidades',
   'agente-capacidades-funil': '/agents/ag-recepcao/capacidades',
+  // O Dashboard abre na aba Agora (a fila); os indicadores e o volume moram na
+  // aba Relatórios (passada estrutural de 27/09).
   painel: '/dashboard',
   'painel-fila': '/dashboard',
-  'painel-indicadores': '/dashboard',
-  'painel-volume': '/dashboard',
+  'painel-indicadores': '/dashboard?aba=relatorios',
+  'painel-volume': '/dashboard?aba=relatorios',
 }
 
 type Cue = HeroCue<HeroState, HeroCena>
