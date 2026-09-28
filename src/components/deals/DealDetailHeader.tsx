@@ -20,6 +20,7 @@ import { pipelineKindOption, pipelineKindOf, pipelineNoun, terminalLabelsOf } fr
 import { originInfo, humanDuration, timeInStage } from '@/lib/dealCard'
 import { moveTargets } from '@/lib/contactPipelines'
 import { dealProbability } from '@/lib/dealProbability'
+import { formatPhone } from '@/lib/phone'
 import { DealProgress } from './DealProgress'
 import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage, User } from '@/types'
 
@@ -70,6 +71,9 @@ interface DealDetailHeaderProps {
   onClose?: () => void
   /** Leva ao QUADRO do funil com a ficha em cima. Ausente = já está lá. */
   onOpenBoard?: () => void
+  /** De quem é o negócio — nome e telefone logo abaixo do título. */
+  contato?: { id: string; name: string; phone: string | null } | null
+  onOpenContact?: (contactId: string) => void
 }
 
 function InlineEditTitle({ value, onSave }: { value: string; onSave: (v: string) => Promise<void> }) {
@@ -114,6 +118,7 @@ function InlineEditTitle({ value, onSave }: { value: string; onSave: (v: string)
 
 export function DealDetailHeader({
   deal, pipeline, pipelines, users, lastMovedLabel, history, onPatch, onMoveToStage, onTransferPipeline, onDelete, onClose, onOpenBoard,
+  contato, onOpenContact,
 }: DealDetailHeaderProps) {
   const [ownerPickerOpen, setOwnerPickerOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -176,6 +181,16 @@ export function DealDetailHeader({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <InlineEditTitle value={deal.title} onSave={(title) => onPatch({ title })} />
+          {contato && (
+            <p className="mt-0.5 text-[12.5px] text-surface-400 truncate" data-testid="deal-contact-line">
+              {onOpenContact ? (
+                <button type="button" onClick={() => onOpenContact(contato.id)} className="font-medium text-surface-200 hover:text-brand-400 transition-colors">
+                  {contato.name}
+                </button>
+              ) : <span className="font-medium text-surface-200">{contato.name}</span>}
+              {contato.phone && <span className="tabular-nums"> · {formatPhone(contato.phone)}</span>}
+            </p>
+          )}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span
               className="inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[5px] bg-surface-800 border border-surface-700 text-surface-300"

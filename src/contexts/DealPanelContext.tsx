@@ -16,10 +16,15 @@ import { createContext, useContext, useCallback, useRef, type ReactNode } from '
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { DealDetailPanel } from '@/components/deals/DealDetailPanel'
+import { DealDetailPanel, type DealPanelTabId } from '@/components/deals/DealDetailPanel'
 import { useLayer } from '@/contexts/LayerContext'
 
 const NOOP = () => {}
+
+/** A aba da ficha na URL, em português (`?negocio=atividade`). */
+const ABA_NA_URL: Record<DealPanelTabId, string | null> = { summary: null, activity: 'atividade', conversations: 'conversas' }
+const abaDaUrl = (v: string | null): DealPanelTabId =>
+  v === 'atividade' ? 'activity' : v === 'conversas' ? 'conversations' : 'summary'
 
 interface DealPanelContextValue {
   /** Abre a ficha do negócio `dealId` como painel lateral, por cima da
@@ -70,6 +75,8 @@ export function DealPanelProvider({ children }: { children: ReactNode }) {
       if (prev.get('deal') === dealId) return prev
       const next = new URLSearchParams(prev)
       next.set('deal', dealId)
+      // Outro negócio abre no Resumo, como antes.
+      next.delete('negocio')
       return next
     })
   }, [setSearchParams])
@@ -77,7 +84,17 @@ export function DealPanelProvider({ children }: { children: ReactNode }) {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       next.delete('deal')
+      next.delete('negocio')
       return next
+    }, { replace: true })
+  }, [setSearchParams])
+  const aba = abaDaUrl(searchParams.get('negocio'))
+  const trocarAba = useCallback((next: DealPanelTabId) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev)
+      const v = ABA_NA_URL[next]
+      if (v) p.set('negocio', v); else p.delete('negocio')
+      return p
     }, { replace: true })
   }, [setSearchParams])
 
@@ -138,6 +155,13 @@ export function DealPanelProvider({ children }: { children: ReactNode }) {
                      "voltar" do navegador precisa devolver a tela de origem. */
                   onOpenBoard={(deal) => navigate(`/pipelines/${deal.pipelineId}?deal=${deal.id}`)}
                   rotaAtual={location.pathname}
+                  aba={aba}
+                  onAbaChange={trocarAba}
+                  /* O contato abre como página, e o "Voltar" dela devolve
+                     exatamente de onde se saiu — com a ficha ainda aberta. */
+                  onOpenContact={(contactId) => navigate(`/contacts/${contactId}`, {
+                    state: { voltarPara: `${location.pathname}${location.search}`, voltarLabel: 'Voltar' },
+                  })}
                 />
               </motion.div>
             </>

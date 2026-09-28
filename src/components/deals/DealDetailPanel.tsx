@@ -10,7 +10,7 @@
 // resolve isso no cliente (pipeline do `CRMConfigContext`, histórico próprio).
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Loader2, AlertTriangle, Lock } from 'lucide-react'
-import { dealsApi, usersApi } from '@/services/api'
+import { dealsApi, usersApi, contactsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useToast } from '@/hooks/useToast'
@@ -24,7 +24,8 @@ import { DealActivityTab } from './tabs/DealActivityTab'
 import { DealConversationsTab } from './tabs/DealConversationsTab'
 import type { Deal, DealStageHistoryEntry, PipelineStage, User } from '@/types'
 
-type TabId = 'summary' | 'activity' | 'conversations'
+export type DealPanelTabId = 'summary' | 'activity' | 'conversations'
+type TabId = DealPanelTabId
 
 interface DealDetailPanelProps {
   dealId: string
@@ -42,6 +43,15 @@ interface DealDetailPanelProps {
    * painel. Quem tem a rota é quem abre o painel.
    */
   rotaAtual?: string
+  /**
+   * Aba aberta, CONTROLADA por quem mostra a ficha (o painel global a guarda
+   * na URL — R6 · SCRUM-1161). Ausente = estado local, como antes (testes e a
+   * página /deals/:id, que não passam por lá).
+   */
+  aba?: DealPanelTabId
+  onAbaChange?: (aba: DealPanelTabId) => void
+  /** Abre a ficha do contato do negócio (o nome no cabeçalho vira link). */
+  onOpenContact?: (contactId: string) => void
 }
 
 function statusFromError(err: unknown): 404 | 403 | 'other' {
@@ -51,14 +61,22 @@ function statusFromError(err: unknown): 404 | 403 | 'other' {
   return 'other'
 }
 
-export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: DealDetailPanelProps) {
+export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual, aba, onAbaChange, onOpenContact }: DealDetailPanelProps) {
   const { pipelines } = useCRMConfig()
   const { toast } = useToast()
   const [deal, setDeal] = useState<Deal | null>(null)
   const [loadState, setLoadState] = useState<'loading' | 'ok' | 404 | 403 | 'error'>('loading')
   const [history, setHistory] = useState<DealStageHistoryEntry[] | 'loading' | 'error'>('loading')
   const [users, setUsers] = useState<User[]>([])
-  const [activeTab, setActiveTab] = useState<TabId>('summary')
+  const [abaLocal, setAbaLocal] = useState<TabId>('summary')
+  const activeTab: TabId = aba ?? abaLocal
+  const setActiveTab = (next: TabId) => { if (onAbaChange) onAbaChange(next); else setAbaLocal(next) }
+  /**
+   * Quem é o contato do negócio. A ficha não dizia — nem nome, nem telefone —,
+   * só pela aba Conversas (auditoria de Funis, 27/09). `GET /deals/:id` não
+   * traz o contato; até o backend incluí-lo, uma leitura leve à parte.
+   */
+  const [contato, setContato] = useState<{ id: string; name: string; phone: string | null } | null>(null)
   const [closeTarget, setCloseTarget] = useState<{ deal: Deal; stage: PipelineStage } | null>(null)
   const bodyRef = useRef<HTMLDivElement | null>(null)
 
@@ -73,7 +91,8 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
     setDeal(null)
     setLoadState('loading')
     setHistory('loading')
-    setActiveTab('summary')
+    setAbaLocal('summary')
+    setContato(null)
   }
 
   const loadDeal = useCallback(() => {
@@ -99,6 +118,22 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
     loadHistory()
     usersApi.list().then((res) => setUsers(res.data)).catch(() => setUsers([]))
   }, [dealId, loadDeal, loadHistory])
+
+  const contactId = deal?.contactId
+  useEffect(() => {
+    if (!contactId) return
+    let vivo = true
+    contactsApi.get(contactId)
+      .then((res) => {
+        if (!vivo) return
+        // A API devolve `phone`; o tipo do frontend só conhece `waId` (o
+        // número do WhatsApp) — vale o que vier.
+        const c = res.data as typeof res.data & { phone?: string | null }
+        setContato({ id: c.id, name: c.displayName, phone: c.phone ?? c.waId ?? null })
+      })
+      .catch(() => { /* sem o contato, o cabeçalho só não mostra a linha */ })
+    return () => { vivo = false }
+  }, [contactId])
 
   // Realtime — mesmo contrato dos outros consumidores (`{ contactId }`, ver
   // useContactPipelines/ConversationDealIndicator): sem `dealId` no payload,
@@ -285,6 +320,8 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
         onTransferPipeline={handleTransferPipeline}
         onDelete={handleDelete}
         onClose={onClose}
+        contato={contato}
+        onOpenContact={onOpenContact}
         /* Some quando a ficha já está aberta SOBRE o quadro daquele negócio —
            ali o botão levaria para onde já se está. Compara o funil do NEGÓCIO,
            não só "estou em /pipelines": aberta a ficha de um negócio de outro
