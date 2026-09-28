@@ -13,6 +13,7 @@ import { NewConversationModal } from '@/components/conversations/NewConversation
 import { Fab } from '@/components/common/Fab'
 import { donoDoEvento, estadoDaIA, type EventoDeAtribuicao } from '@/lib/conversationSignals'
 import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
+import { chaveDosFiltros, escreverFiltros, lerFiltros } from '@/lib/filtrosDaInbox'
 import { pedirResolver } from '@/lib/conversationActions'
 import { useConversations } from '@/hooks/useConversations'
 import { useConversationFromUrl } from '@/hooks/useConversationFromUrl'
@@ -46,7 +47,18 @@ export function ConversationsPage() {
   // chegou ontem. Num tenant sem mensagem hoje, a inbox nasce vazia. Intercom,
   // Front e Zendesk abrem a caixa com as conversas em aberto, sem recorte de
   // data; o chip de período continua disponível para quem quiser recortar.
-  const [filters, setFilters]       = useState<ConversationFilters>({ status: 'all' })
+  // 28/09 — aba e filtros vivem na URL (regra do PO): recarregar ou voltar
+  // devolve a mesma lista. A chave só muda com os filtros, não com o `?id=`
+  // da conversa aberta — abrir uma conversa não relê a lista.
+  const chaveFiltros = chaveDosFiltros(searchParams)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const filters = useMemo(() => lerFiltros(searchParams), [chaveFiltros])
+  const setFilters = useCallback((up: ConversationFilters | ((f: ConversationFilters) => ConversationFilters)) => {
+    setSearchParams((prev) => {
+      const atual = lerFiltros(prev)
+      return escreverFiltros(prev, typeof up === 'function' ? up(atual) : up)
+    }, { replace: true })
+  }, [setSearchParams])
   const [totalUnread, setTotalUnread] = useState(0)
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
@@ -288,7 +300,13 @@ export function ConversationsPage() {
     // anterior à lista (ex. Home) em vez de fechar o chat primeiro. No
     // desktop lista+chat convivem na mesma tela, então mantém replace
     // (comportamento inalterado).
-    setSearchParams({ id: conv.id }, { replace: !isMobile })
+    // 28/09: troca só o `id` — antes `setSearchParams({ id })` apagava os
+    // outros parâmetros (filtros, e o `?deal=` da ficha de negócio aberta).
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('id', conv.id)
+      return next
+    }, { replace: !isMobile })
     openedViaPushRef.current = isMobile
   }
 
@@ -618,7 +636,11 @@ export function ConversationsPage() {
     if (openedViaPushRef.current) {
       navigate(-1)
     } else {
-      setSearchParams({}, { replace: true })
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('id')
+        return next
+      }, { replace: true })
     }
   }, [navigate, setSearchParams])
 
