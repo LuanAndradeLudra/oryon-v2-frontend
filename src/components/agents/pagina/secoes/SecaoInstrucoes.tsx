@@ -1,8 +1,10 @@
-import { useState } from 'react'
-import { Pencil, RefreshCw, Sparkles } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ListChecks, Pencil, RefreshCw, Sparkles } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { hubHasContent, injectHubIntoPrompt, isAgentStale, loadHub } from '@/services/companyContextService'
-import { updateAgent, type AgentConfig, type AgentConfigWithTools } from '@/services/agentsApi'
+import { getAgentRuntimeFlags, updateAgent, type AgentConfig, type AgentConfigWithTools } from '@/services/agentsApi'
+import { AssistenteDeAgente } from '@/components/agents/assistente/AssistenteDeAgente'
 import { renderPromptSections } from '@/components/agents/PromptArtifact'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
@@ -36,8 +38,22 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
   useRascunhoPendente('Instruções', sujo)
 
   const hub = user?.tenantId ? loadHub(user.tenantId) : null
-  const temHub = hub ? hubHasContent(hub) : false
-  const desatualizado = hub ? isAgentStale(agent.updated_at, hub) : false
+  // Onda 4 (D8) — agente feito pela especificação recebe a empresa como fonte
+  // na montagem; copiar o Hub para o texto duplicaria. Sem "sincronizar".
+  const daEspecificacao = typeof (agent.wizard_config as { specVersion?: unknown } | null)?.specVersion === 'number'
+  const temHub = hub && !daEspecificacao ? hubHasContent(hub) : false
+  const desatualizado = hub && !daEspecificacao ? isAgentStale(agent.updated_at, hub) : false
+
+  // Onda 4 — revisar com o assistente novo (FF_AGENT_SPEC_WIZARD ou ?assistente=novo).
+  const [assistenteDisponivel, setAssistenteDisponivel] = useState(
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('assistente') === 'novo',
+  )
+  const [revisando, setRevisando] = useState(false)
+  useEffect(() => {
+    let vivo = true
+    getAgentRuntimeFlags().then((f) => { if (vivo && f.specWizard) setAssistenteDisponivel(true) }).catch(() => {})
+    return () => { vivo = false }
+  }, [])
 
   const setRascunho = (v: string) => {
     setRascunhoLocal(v)
@@ -146,6 +162,11 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
       {!editando && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <OQueOAgenteRecebe agent={agent} tamanho={tam} />
+          {assistenteDisponivel && (
+            <Button variant="ghost" size={tam} leftIcon={<ListChecks className="h-3.5 w-3.5" />} onClick={() => setRevisando(true)}>
+              Revisar com o assistente novo
+            </Button>
+          )}
           {temHub && !desatualizado && (
             <Button variant="ghost" size={tam} onClick={() => void sincronizar()} loading={sincronizando} leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
               Reaplicar o Contexto da IA
@@ -164,6 +185,15 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
           </Button>
         </div>
       )}
+      <AnimatePresence>
+        {revisando && (
+          <AssistenteDeAgente
+            agentId={agent.id}
+            onClose={() => setRevisando(false)}
+            onCreated={(a) => { setRevisando(false); onAtualizar(a); toast('Nova versão publicada.', 'success') }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

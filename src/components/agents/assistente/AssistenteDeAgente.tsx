@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import api, { departmentsApi, whatsappNumbersApi } from '@/services/api'
 import {
   createSpecDraft, getAgent, getSpecDraft, getSpecReadiness, publishSpecDraft, saveSpecDraft,
-  type AgentConfigWithTools, type AgentSpec, type ReadinessItem,
+  type AgentConfigWithTools, type AgentSpec, type ReadinessItem, type RepeatedFact,
 } from '@/services/agentsApi'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
@@ -17,7 +17,12 @@ import {
 
 type EstadoSalvo = 'salvando' | 'salvo' | 'sem-servidor'
 
-const chaveRascunho = (tenantId: string | undefined) => `oryon:agentes:assistente:${tenantId ?? '-'}`
+const chaveRascunho = (tenantId: string | undefined, agentId?: string) =>
+  `oryon:agentes:assistente:${tenantId ?? '-'}${agentId ? `:agente:${agentId}` : ''}`
+
+const TIPO_FATO: Record<RepeatedFact['kind'], string> = {
+  preco: 'preço', telefone: 'telefone', site: 'site', empresa: 'nome da empresa', endereco: 'endereço',
+}
 
 const ENSINO: string[] = [
   'Tudo que você responder aqui vira a especificação do agente. Nada é sobre IA: é sobre o seu negócio.',
@@ -34,7 +39,14 @@ const ENSINO: string[] = [
  * servidor a cada mudança (recarregar não perde nada) e publicação atômica.
  * Atrás de FF_AGENT_SPEC_WIZARD; o assistente antigo segue como padrão.
  */
-export function AssistenteDeAgente({ onClose, onCreated }: { onClose: () => void; onCreated: (agent: AgentConfigWithTools) => void }) {
+export function AssistenteDeAgente({
+  onClose, onCreated, agentId,
+}: {
+  onClose: () => void
+  onCreated: (agent: AgentConfigWithTools) => void
+  /** Revisar um agente existente: a spec vem dele (a última publicada ou derivada do texto antigo). */
+  agentId?: string
+}) {
   const { user } = useAuth()
   const [spec, setSpec] = useState<AgentSpec>(specVazia)
   const [etapa, setEtapa] = useState(1)
@@ -47,11 +59,12 @@ export function AssistenteDeAgente({ onClose, onCreated }: { onClose: () => void
   const [publicando, setPublicando] = useState(false)
   const [erroPublicar, setErroPublicar] = useState<string | null>(null)
   const carregado = useRef(false)
+  const [fatosRepetidos, setFatosRepetidos] = useState<RepeatedFact[]>([])
 
   // Retoma o rascunho aberto (M15) ou cria um no servidor.
   useEffect(() => {
     let vivo = true
-    const chave = chaveRascunho(user?.tenantId)
+    const chave = chaveRascunho(user?.tenantId, agentId)
     const iniciar = async () => {
       let guardado: string | null = null
       try { guardado = localStorage.getItem(chave) } catch { /* sem storage */ }
@@ -67,8 +80,14 @@ export function AssistenteDeAgente({ onClose, onCreated }: { onClose: () => void
             return
           }
         }
-        const { draft } = await createSpecDraft()
+        const { draft, repeatedFacts } = await createSpecDraft(agentId ? { agentId } : {})
         if (!vivo) return
+        if (agentId) {
+          setSpec(draft.spec)
+          setFatosRepetidos(repeatedFacts)
+          // Revisão: o texto do agente mora na etapa 2.
+          setEtapa(2)
+        }
         setDraftId(draft.id)
         setSalvo('salvo')
         try { localStorage.setItem(chave, draft.id) } catch { /* sem storage */ }
@@ -84,7 +103,7 @@ export function AssistenteDeAgente({ onClose, onCreated }: { onClose: () => void
       if (vivo) setNumeros((r.data ?? []).map((n) => ({ id: n.id, displayPhoneNumber: n.displayPhoneNumber, label: n.label, agentId: (n as { agentId?: string | null }).agentId ?? null })))
     }).catch(() => {})
     return () => { vivo = false }
-  }, [user?.tenantId])
+  }, [user?.tenantId, agentId])
 
   // Salva no servidor a cada mudança (com um respiro para não salvar a cada tecla).
   useEffect(() => {
@@ -118,14 +137,14 @@ export function AssistenteDeAgente({ onClose, onCreated }: { onClose: () => void
     setErroPublicar(null)
     try {
       await saveSpecDraft(draftId, spec, etapa)
-      const { agentId } = await publishSpecDraft(draftId)
+      const { agentId: publicadoId } = await publishSpecDraft(draftId)
       if (spec.channel.whatsappNumberId) {
-        await api.patch(`/meta/numbers/${spec.channel.whatsappNumberId}`, { agentId }).catch(() => {
+        await api.patch(`/meta/numbers/${spec.channel.whatsappNumberId}`, { agentId: publicadoId }).catch(() => {
           setErroPublicar('O agente foi publicado, mas não deu para ligar o número. Ligue em Configurações → WhatsApp.')
         })
       }
-      try { localStorage.removeItem(chaveRascunho(user?.tenantId)) } catch { /* sem storage */ }
-      onCreated(await getAgent(agentId))
+      try { localStorage.removeItem(chaveRascunho(user?.tenantId, agentId)) } catch { /* sem storage */ }
+      onCreated(await getAgent(publicadoId))
     } catch (e) {
       setErroPublicar(e instanceof Error ? e.message : 'Não foi possível publicar. Nada foi alterado.')
       carregarProntidao()
@@ -141,7 +160,7 @@ export function AssistenteDeAgente({ onClose, onCreated }: { onClose: () => void
       <div className="flex h-full overflow-hidden">
         <aside className="hidden w-80 flex-shrink-0 flex-col border-r border-surface-700 bg-surface-800 md:flex">
           <div className="flex-1 overflow-y-auto px-5 py-[18px]">
-            <p className="text-xs text-surface-400">Novo agente</p>
+            <p className="text-xs text-surface-400">{agentId ? 'Revisar agente' : 'Novo agente'}</p>
             <p className="mt-6 text-[10px] font-bold uppercase tracking-[.14em] text-accent-dark">Etapa {etapa} de {ETAPAS.length}</p>
             <h2 className="mt-1.5 text-[18px] font-bold leading-[1.25] text-surface-100">{ETAPAS[etapa - 1]}</h2>
             <p className="mt-2 text-[12.5px] leading-[1.55] text-surface-400">{ENSINO[etapa - 1]}</p>
@@ -196,6 +215,15 @@ export function AssistenteDeAgente({ onClose, onCreated }: { onClose: () => void
           <div className="flex-1 overflow-y-auto">
             <div className="mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8">
               {etapa === 1 && <EtapaPontoDePartida spec={spec} mudar={mudar} />}
+              {etapa === 2 && fatosRepetidos.length > 0 && (
+                <Banner variant="warning" className="mb-6">
+                  O texto atual repete {fatosRepetidos.length === 1 ? 'um fato que já vem' : 'fatos que já vêm'} das fontes. Tire daqui
+                  para não ficar desatualizado quando o cadastro mudar:
+                  <ul className="mt-1 list-disc pl-4">
+                    {fatosRepetidos.slice(0, 8).map((f) => <li key={`${f.kind}-${f.excerpt}`}>{TIPO_FATO[f.kind]}: {f.excerpt}</li>)}
+                  </ul>
+                </Banner>
+              )}
               {etapa === 2 && <EtapaQuemE spec={spec} mudar={mudar} />}
               {etapa === 3 && <EtapaPodeFazer spec={spec} mudar={mudar} />}
               {etapa === 4 && <EtapaSabe spec={spec} mudar={mudar} />}
@@ -218,7 +246,7 @@ export function AssistenteDeAgente({ onClose, onCreated }: { onClose: () => void
               <Button size="md" onClick={avancar}>Continuar</Button>
             ) : (
               <Button size="md" onClick={() => void publicar()} disabled={!pronto || publicando} loading={publicando}>
-                Publicar agente
+                {agentId ? 'Publicar nova versão' : 'Publicar agente'}
               </Button>
             )}
           </footer>

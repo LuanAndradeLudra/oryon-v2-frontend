@@ -107,3 +107,18 @@ describe('AssistenteDeAgente', () => {
     expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBeNull()
   })
 })
+
+describe('revisar agente existente', () => {
+  it('abre na etapa 2 com o texto do agente e aponta os fatos repetidos', async () => {
+    api.createSpecDraft.mockResolvedValue({
+      draft: { ...DRAFT, agent_id: 'a1', spec: { ...specVazia(), identity: { name: 'Antigo', goal: 'outro', segment: 'Clínica' }, persona: { tone: 'acolhedor', text: 'Consulta R$ 155. Ligue (24) 99999-1234.' } } },
+      repeatedFacts: [{ kind: 'preco', excerpt: 'R$ 155' }, { kind: 'telefone', excerpt: '(24) 99999-1234' }],
+    })
+    render(<AssistenteDeAgente agentId="a1" onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByText(/repete fatos que já vêm das fontes/)).toBeInTheDocument()
+    expect(screen.getByText('preço: R$ 155')).toBeInTheDocument()
+    expect(api.createSpecDraft).toHaveBeenCalledWith({ agentId: 'a1' })
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeInTheDocument()
+    expect(localStorage.getItem('oryon:agentes:assistente:t1:agente:a1')).toBe('draft-1')
+  })
+})
