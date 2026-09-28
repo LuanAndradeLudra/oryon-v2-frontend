@@ -68,7 +68,9 @@ describe('DealsBoard — funil de PROCESSO (F8)', () => {
   it('registro fechado mostra "fechado há …" a partir de closedAt', () => {
     const closed = deal({ status: 'won', stageId: 's3', closedAt: new Date(NOW - 2 * 3_600_000).toISOString() })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s3: [closed] }} onMoveStage={vi.fn()} pipeline={PROCESS} />)
-    expect(screen.getByTestId('process-card-time')).toHaveTextContent('fechado há 2 h')
+    // Direção C: fechados viram linha compacta na coluna terminal; em
+    // processo (sem valor) a linha diz quando fechou.
+    expect(screen.getByTestId('closed-row-meta')).toHaveTextContent('fechado há 2 h')
   })
 })
 
@@ -231,8 +233,8 @@ describe('DealsBoard — coluna terminal única (R2-1E-COL)', () => {
     expect(within(terminal).getByText('Confirmado')).toBeInTheDocument()
     expect(within(terminal).getByText('Não confirmou')).toBeInTheDocument()
     expect(within(terminal).queryByText('Enviado')).toBeNull()
-    expect(terminal).toHaveTextContent('Solte aqui para marcar como Ganho')
-    expect(terminal).toHaveTextContent('Solte aqui para marcar como Perdido')
+    expect(terminal).toHaveTextContent('Solte para Ganho')
+    expect(terminal).toHaveTextContent('Solte para Perdido')
   })
 
   it('soltar um card na etapa terminal continua chamando onMoveStage (o modal de motivo abre no pai)', async () => {
@@ -246,5 +248,32 @@ describe('DealsBoard — coluna terminal única (R2-1E-COL)', () => {
       fireEvent.drop(perdido)
       expect(onMoveStage).toHaveBeenCalledWith(expect.objectContaining({ id: 'dd' }), 's4')
     })
+  })
+})
+
+describe('DealsBoard — direção C (Quadro + lentes, 27/09)', () => {
+  it('cabeçalho da coluna mostra a soma e o ponderado visíveis', () => {
+    const st = [stage('s1', 'Enviado', { probability: 50 }), ...STAGES.slice(1)]
+    render(<DealsBoard stages={st} dealsByStage={{ s1: [deal({ pipelineId: 'ps', amountCents: 20_000 })] }} onMoveStage={vi.fn()} pipeline={SALES} />)
+    const soma = screen.getByTestId('coluna-soma-s1')
+    expect(soma).toHaveTextContent('R$ 200,00')
+    expect(soma).toHaveTextContent('pond. R$ 100,00')
+  })
+
+  it('recolher uma coluna vira faixa estreita e expandir volta', () => {
+    localStorage.clear()
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [deal({ pipelineId: 'ps' })] }} onMoveStage={vi.fn()} pipeline={SALES} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Recolher a coluna Enviado' }))
+    expect(screen.getByTestId('coluna-recolhida-s1')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Expandir a coluna Enviado' }))
+    expect(screen.queryByTestId('coluna-recolhida-s1')).toBeNull()
+  })
+
+  it('fechados: coluna diz a janela de 30 dias e oferece ver os escondidos', () => {
+    const onToggle = vi.fn()
+    render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} pipeline={SALES} closedWindow={{ allClosed: false, hidden: 3, onToggle }} />)
+    expect(screen.getByTestId('board-closed-window')).toHaveTextContent('Fechados · 30 dias')
+    fireEvent.click(screen.getByTestId('board-closed-toggle'))
+    expect(onToggle).toHaveBeenCalled()
   })
 })

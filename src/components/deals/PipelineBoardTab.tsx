@@ -3,17 +3,20 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Layers } from 'lucide-react'
 import { DealsBoard } from '@/components/deals/DealsBoard'
 import { BoardFilterBar } from '@/components/deals/BoardFilterBar'
+import { FunnelLensBar } from '@/components/deals/FunnelLensBar'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { NewContactDrawer } from '@/components/contacts/NewContactDrawer'
 import { useKanbanDeals } from '@/hooks/useKanbanDeals'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useDealPanel } from '@/contexts/DealPanelContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/useToast'
 import { toastDealClosedWithUndo, UNDO_CLOSE_WINDOW_MS } from '@/lib/dealClose'
 import { pipelineKindOf, pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { boardStats, entrySources } from '@/lib/dealCard'
-import { matchesCloseDate, matchesOwner, boardSummary, type CloseFilter, type OwnerFilter } from '@/lib/boardFilters'
+import { matchesCloseDate, matchesOwner, boardSummary, CLOSE_FILTER_LABELS, type CloseFilter, type OwnerFilter } from '@/lib/boardFilters'
+import { matchesLens, lensCounts, isFunnelLens, isRecentlyClosed, type FunnelLens } from '@/lib/funnelLenses'
 import { contactsApi, dealsApi } from '@/services/api'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, Deal, Pipeline, PipelineStage } from '@/types'
@@ -89,7 +92,28 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
    * negócio e o filtro esvaziaria o board sempre. É a lente para a pergunta
    * que a multiplicidade cria: quais clientes estão com propostas paralelas?
    */
-  const [multiOpenOnly, setMultiOpenOnly] = useState(false)
+  const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  /**
+   * Filtros, lente e janela dos fechados MORAM NA URL (regra do PO; R6 ·
+   * SCRUM-1161): antes eram `useState` e se perdiam ao abrir um card e voltar,
+   * no F5 e no link colado. `replace` porque trocar de recorte não é navegar.
+   */
+  const setParam = (key: string, value: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (value) next.set(key, value)
+      else next.delete(key)
+      return next
+    }, { replace: true })
+  }
+  const lensParam = searchParams.get('lente')
+  const lens: FunnelLens = isFunnelLens(lensParam) ? lensParam : 'todos'
+  const setLens = (l: FunnelLens) => setParam('lente', l === 'todos' ? null : l)
+  const allClosed = searchParams.get('fechados') === 'todos'
+  const setAllClosed = (v: boolean) => setParam('fechados', v ? 'todos' : null)
+  const multiOpenOnly = searchParams.get('multi') === '1'
+  const setMultiOpenOnly = (fn: (v: boolean) => boolean) => setParam('multi', fn(multiOpenOnly) ? '1' : null)
   const canFilterMultiOpen = !!pipeline.allowMultipleOpen
 
   /**
@@ -97,10 +121,13 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
    * previsto (`expectedCloseAt`) da barra do board. Client-side, sobre os
    * negócios que o quadro já carregou — mesma lente do "mais de um aberto".
    */
-  const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>('all')
-  const [closeFilter, setCloseFilter] = useState<CloseFilter>('all')
+  const ownerFilter: OwnerFilter = searchParams.get('resp') ?? 'all'
+  const setOwnerFilter = (o: OwnerFilter) => setParam('resp', o === 'all' ? null : o)
+  const closeParam = searchParams.get('previsao')
+  const closeFilter: CloseFilter = closeParam && closeParam in CLOSE_FILTER_LABELS ? (closeParam as CloseFilter) : 'all'
+  const setCloseFilter = (c: CloseFilter) => setParam('previsao', c === 'all' ? null : c)
 
-  const { visibleDealsByStage, multiOpenContacts } = useMemo(() => {
+  const { visibleDealsByStage, multiOpenContacts, counts, hiddenClosed } = useMemo(() => {
     const counts = new Map<string, number>()
     for (const list of Object.values(dealsByStage)) {
       for (const d of list ?? []) {
@@ -111,20 +138,30 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
     const repeated = new Set([...counts.entries()].filter(([, n]) => n > 1).map(([id]) => id))
     const onlyMulti = multiOpenOnly && canFilterMultiOpen
     const now = new Date()
-    const filtering = onlyMulti || ownerFilter !== 'all' || closeFilter !== 'all'
-    if (!filtering) {
-      return { visibleDealsByStage: dealsByStage, multiOpenContacts: repeated.size }
-    }
-    const filtered: typeof dealsByStage = {}
+    // Fechados: só os últimos 30 dias, salvo "ver todos" (decisão D4, 27/09).
+    // O recorte é no cliente até o backend aceitar `closedSince` (F1).
+    let hidden = 0
+    const recortado: typeof dealsByStage = {}
     for (const [stageId, list] of Object.entries(dealsByStage)) {
-      filtered[stageId] = (list ?? []).filter((d) =>
+      recortado[stageId] = (list ?? []).filter((d) => {
+        const ok = allClosed || isRecentlyClosed(d, now)
+        if (!ok) hidden += 1
+        return ok
+      })
+    }
+    const base = Object.values(recortado).flat()
+    const lensTotals = lensCounts(base, user?.id, now)
+    const filtered: typeof dealsByStage = {}
+    for (const [stageId, list] of Object.entries(recortado)) {
+      filtered[stageId] = list.filter((d) =>
         (!onlyMulti || (!!d.contactId && repeated.has(d.contactId)))
         && matchesOwner(d, ownerFilter)
-        && matchesCloseDate(d, closeFilter, now),
+        && matchesCloseDate(d, closeFilter, now)
+        && matchesLens(d, lens, user?.id, now),
       )
     }
-    return { visibleDealsByStage: filtered, multiOpenContacts: repeated.size }
-  }, [dealsByStage, multiOpenOnly, canFilterMultiOpen, ownerFilter, closeFilter])
+    return { visibleDealsByStage: filtered, multiOpenContacts: repeated.size, counts: lensTotals, hiddenClosed: hidden }
+  }, [dealsByStage, multiOpenOnly, canFilterMultiOpen, ownerFilter, closeFilter, lens, allClosed, user?.id])
   const summary = useMemo(() => boardSummary(Object.values(visibleDealsByStage).flat()), [visibleDealsByStage])
   // O que a faixa de contexto dizia (abertos · ganhos hoje · perdidos · entradas)
   // fica acessível no tooltip do resumo — a barra do funil é uma só.
@@ -154,7 +191,6 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
   // DealPanelContext global consome e limpa o MESMO param pra abrir a ficha;
   // se este estado reagisse a `searchParams` ao vivo, o realce sumiria assim
   // que a ficha abrisse.
-  const [searchParams] = useSearchParams()
   const [highlightDealId] = useState<string | null>(() => searchParams.get('deal'))
   const [showNewContactLocal, setShowNewContactLocal] = useState(false)
   const showNewContact = novoContatoAberto !== undefined ? novoContatoAberto : showNewContactLocal
@@ -296,6 +332,7 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
           </>
         )}
       </BoardFilterBar>
+      <FunnelLensBar value={lens} onChange={setLens} counts={counts} hasUser={!!user?.id} />
       <DealsBoard
         stages={sortedStages}
         dealsByStage={visibleDealsByStage}
@@ -313,6 +350,7 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
         highlightDealId={highlightDealId}
         selectedDealId={openDealId}
         showContextStrip={false}
+        closedWindow={{ allClosed, hidden: hiddenClosed, onToggle: () => setAllClosed(!allClosed) }}
       />
 
       {newDealStageId && (

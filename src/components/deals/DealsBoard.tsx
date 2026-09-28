@@ -1,6 +1,6 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock } from 'lucide-react'
+import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -53,6 +53,35 @@ interface DealsBoardProps {
   /** D2: usuários do tenant, para resolver o nome do dono no card de venda
    *  (F-FUNIL-11). Omitido/sem match = "Sem dono". */
   users?: User[]
+  /**
+   * Janela dos fechados (decisão D4 do PO, 27/09): o quadro mostra só os
+   * fechados dos últimos 30 dias; `hidden` diz quantos ficaram de fora e
+   * `onToggle` alterna "ver todos". Omitido = coluna terminal sem o recorte.
+   */
+  closedWindow?: { allClosed: boolean; hidden: number; onToggle: () => void }
+}
+
+/**
+ * Colunas recolhidas do funil — preferência de quem olha, não estado de tela
+ * (não vai para a URL): fica neste aparelho, por funil.
+ */
+function useColunasRecolhidas(pipelineId: string | undefined) {
+  const chave = pipelineId ? `funil-recolhidas:${pipelineId}` : null
+  const ler = (): string[] => {
+    if (!chave) return []
+    try { return JSON.parse(localStorage.getItem(chave) ?? '[]') as string[] } catch { return [] }
+  }
+  const [recolhidas, setRecolhidas] = useState<string[]>(ler)
+  const [chaveLida, setChaveLida] = useState(chave)
+  if (chaveLida !== chave) { setChaveLida(chave); setRecolhidas(ler()) }
+  const alternar = useCallback((stageId: string) => {
+    setRecolhidas((atual) => {
+      const next = atual.includes(stageId) ? atual.filter((id) => id !== stageId) : [...atual, stageId]
+      if (chave) { try { localStorage.setItem(chave, JSON.stringify(next)) } catch { /* sem armazenamento: só nesta sessão */ } }
+      return next
+    })
+  }, [chave])
+  return { recolhidas, alternar }
 }
 
 function brl(cents: number): string {
@@ -75,6 +104,7 @@ export function DealsBoard({
   showContextStrip = true,
   onOpenDeal,
   users = [],
+  closedWindow,
 }: DealsBoardProps) {
   // Centraliza o card destacado UMA vez por destaque. O ref inline era uma
   // função nova a cada render — cada atualização do quadro (tempo real, mover
@@ -108,6 +138,7 @@ export function DealsBoard({
   // Todos os `stages` recebidos são do MESMO pipeline (board de um funil só) —
   // basta ler de qualquer um pra saber qual funil excluir das opções do menu.
   const currentPipelineId = stages[0]?.pipelineId
+  const { recolhidas, alternar: alternarColuna } = useColunasRecolhidas(currentPipelineId)
   const otherPipelines = getActivePipelines(pipelines).filter((p) => p.id !== currentPipelineId)
 
   // PL-C2-CAR-2: fechar ao clicar fora agora é do `Dropdown` (ele já cobre
@@ -207,11 +238,45 @@ export function DealsBoard({
     // efetiva usada no card e na ficha (dealProbability) — nunca uma
     // conta paralela.
     const weightedCents = cards.reduce((sum, d) => sum + dealProbability(d, stage).weightedAmountCents, 0)
+    const recolhida = !terminal && recolhidas.includes(stage.id)
+
+    // Coluna recolhida (direção C): faixa estreita com cor, nome, contagem e
+    // soma na vertical. Continua sendo alvo de soltar — recolher é só para
+    // ver mais do resto, não tira a etapa do jogo.
+    if (recolhida) {
+      return (
+        <div
+          key={stage.id}
+          className={cn(
+            'flex flex-col items-center gap-2 w-11 flex-shrink-0 rounded-lg border border-surface-700 bg-surface-900 py-2',
+            isOver && 'ring-2 ring-brand-500/30 ring-inset bg-brand-500/5',
+          )}
+          onDragOver={(e) => { e.preventDefault(); setOverStageId(stage.id) }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
+          onDrop={() => handleDrop(stage.id)}
+          data-testid={`coluna-recolhida-${stage.id}`}
+        >
+          <button
+            type="button"
+            onClick={() => alternarColuna(stage.id)}
+            aria-label={`Expandir a coluna ${stage.label}`}
+            title={`Expandir ${stage.label}`}
+            className="w-8 h-8 flex items-center justify-center rounded-md text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100"
+          >
+            <ChevronsRight className="w-4 h-4" />
+          </button>
+          <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: stage.color }} aria-hidden />
+          <span className="[writing-mode:vertical-rl] text-[12.5px] font-bold text-surface-200 whitespace-nowrap">
+            {stage.label} · {cards.length}{!isProcess && totalCents > 0 ? ` · ${brl(totalCents)}` : ''}
+          </span>
+        </div>
+      )
+    }
 
     return (
       <div
         key={stage.id}
-        className={terminal ? cn('flex flex-col flex-1 min-h-0', stage.isLost && 'mt-2') : 'flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start'}
+        className={terminal ? 'flex flex-col flex-shrink-0 mt-2 first-of-type:mt-0' : 'flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start'}
         onDragOver={(e) => { e.preventDefault(); setOverStageId(stage.id) }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
         onDrop={() => handleDrop(stage.id)}
@@ -219,9 +284,10 @@ export function DealsBoard({
         {/* Header da coluna — README 3.4: 28px, border-bottom 2px na cor
             crua da etapa. */}
         <div
-          className={cn('flex items-center justify-between gap-[7px] h-7 px-1 mb-2 border-b-2', terminal && stage.isLost && 'rounded-t-[4px]')}
+          className={cn('flex flex-col px-1 mb-2 border-b-2', !terminal && !isProcess ? 'pb-1' : '', terminal && stage.isLost && 'rounded-t-[4px]')}
           style={{ borderColor: stage.color, ...(terminal && stage.isLost ? { backgroundColor: 'color-mix(in srgb, var(--color-danger) 10%, transparent)' } : null) }}
         >
+          <div className="flex items-center justify-between gap-[7px] h-7">
           <div className="flex items-center gap-[7px] min-w-0">
             {/* canvas 1e: sem ponto colorido — a cor vive na linha de 2px e no texto. Terminais usam ok/perigo. */}
             <span
@@ -251,16 +317,18 @@ export function DealsBoard({
               {cards.length}
             </span>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* DEAL-COL-17 (spec/1e-funis.GAPS.md): soma inline na MESMA
-                linha do cabeçalho, não numa linha separada abaixo. */}
-            {!isProcess && totalCents > 0 && (
-              <span
-                className="text-[11.5px] text-surface-400 tabular-nums whitespace-nowrap"
-                title={weightedCents !== totalCents ? `${brl(weightedCents)} ponderado` : undefined}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Recolher (direção C): só nas colunas abertas e onde o quadro é largo. */}
+            {!terminal && isDesktop && (
+              <button
+                type="button"
+                onClick={() => alternarColuna(stage.id)}
+                aria-label={`Recolher a coluna ${stage.label}`}
+                title={`Recolher ${stage.label}`}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-surface-500 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
               >
-                {brl(totalCents)}
-              </span>
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </button>
             )}
             {/* A3: criar já nesta etapa. Fora dos terminais — negócio não
                 nasce fechado (a A4 exige motivo, e o backend responde 400). */}
@@ -276,12 +344,24 @@ export function DealsBoard({
               </button>
             )}
           </div>
+          </div>
+          {/* Direção C: soma e ponderado VISÍVEIS numa segunda linha (antes o
+              ponderado só aparecia no tooltip). Toda coluna aberta de venda tem
+              a linha — com ou sem valor —, para os cards das colunas começarem
+              na mesma altura. */}
+          {!terminal && !isProcess && (
+            <div className="flex items-center gap-2.5 text-[11.5px] text-surface-400 tabular-nums whitespace-nowrap" data-testid={`coluna-soma-${stage.id}`}>
+              <span>{brl(totalCents)}</span>
+              {weightedCents !== totalCents && <span title="Soma ponderada pela probabilidade de cada negócio">pond. {brl(weightedCents)}</span>}
+            </div>
+          )}
         </div>
 
         {/* Lista de cards */}
         <div
           className={cn(
-            'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-lg transition-[background-color,border-color,box-shadow] duration-200 min-h-[80px]',
+            'flex flex-col gap-2 rounded-lg transition-[background-color,border-color,box-shadow] duration-200',
+            terminal ? 'pb-1' : 'flex-1 overflow-y-auto pb-4 min-h-[80px]',
             isOver ? 'bg-brand-500/5 ring-2 ring-brand-500/30 ring-inset' : 'bg-transparent',
             loading && cards.length > 0 && 'opacity-50',
           )}
@@ -310,14 +390,11 @@ export function DealsBoard({
                claro no claro (#D9DCE5) e escuro no escuro (#243333). */
             <div key="carregando" className="h-16 rounded-lg bg-surface-700/50 animate-pulse" aria-hidden />
           ) : cards.length === 0 ? (
-            terminal && stage.isWon && !isOver ? (
-              <div key="vazia" className="border border-surface-700 rounded-lg bg-surface-900 px-3 py-2.5 text-xs text-surface-400 leading-[1.5]">
-                Solte aqui para marcar como <b className="font-bold text-surface-100">{terminalLabels.won}</b>. Etapas terminais pedem motivo.
-              </div>
-            ) : (
+            (
               <div key="vazia" className={cn(
                 // canvas 1e: slot de drop = retângulo tracejado 1px, raio 8, 88px (Perdido: borda e fundo de perigo).
-                'border border-dashed rounded-lg h-[88px] flex items-center justify-center px-3 text-center transition-colors',
+                'border border-dashed rounded-lg flex items-center justify-center px-3 text-center transition-colors',
+                terminal ? 'h-10' : 'h-[88px]',
                 isOver
                   ? 'border-brand-500/60 bg-brand-500/5'
                   : terminal && stage.isLost
@@ -325,10 +402,17 @@ export function DealsBoard({
                     : 'border-[var(--bd2)] bg-surface-900',
               )}>
                 <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-500')}>
-                  {isOver ? 'Soltar aqui' : terminal ? `Solte aqui para marcar como ${stage.isWon ? terminalLabels.won : terminalLabels.lost}` : `Nenhum ${noun}`}
+                  {isOver ? 'Soltar aqui' : terminal ? `Solte para ${stage.isWon ? terminalLabels.won : terminalLabels.lost}` : `Nenhum ${noun}`}
                 </span>
               </div>
             )
+          ) : terminal ? (
+            // Fechados em linha compacta (direção C): o que importa num
+            // fechado é o quê, de quem e por quanto/por quê — o card inteiro
+            // não trabalha mais. Clicar abre a ficha, como no card.
+            cards.map((deal) => (
+              <ClosedRow key={deal.id} deal={deal} stage={stage} pipeline={pipeline} onOpenDeal={onOpenDeal} isProcess={isProcess} />
+            ))
           ) : (
             cards.map((deal) => (
               // O CARD ANDA (25/09): quando um negócio muda de etapa — arrastado,
@@ -536,14 +620,29 @@ export function DealsBoard({
       )}
       <div
         className="flex gap-[10px] px-4 py-3 h-full min-h-0"
-        style={{ minWidth: isDesktop ? openStages.length * 260 + (terminalStages.length > 0 ? 190 : 0) : undefined }}
+        style={{ minWidth: isDesktop ? openStages.reduce((w, st) => w + (recolhidas.includes(st.id) ? 54 : 260), 0) + (terminalStages.length > 0 ? 250 : 0) : undefined }}
       >
         {openStages.map((stage) => renderColumn(stage))}
         {terminalStages.length > 0 && (
           <div
-            className="flex flex-col gap-2 w-[85vw] md:w-auto md:flex-1 md:min-w-[180px] flex-shrink-0 md:flex-shrink snap-start min-h-0 border-l border-dashed border-[var(--bd2)] pl-[10px]"
+            className="flex flex-col gap-2 w-[85vw] md:w-[240px] flex-shrink-0 snap-start min-h-0 overflow-y-auto pb-4 border-l border-dashed border-[var(--bd2)] pl-[10px]"
             data-testid="board-terminal-column"
           >
+            {closedWindow && (
+              <div className="flex items-center justify-between gap-2 px-1 text-[11.5px] text-surface-400" data-testid="board-closed-window">
+                <span className="font-semibold text-surface-300">{closedWindow.allClosed ? 'Todos os fechados' : 'Fechados · 30 dias'}</span>
+                {(closedWindow.allClosed || closedWindow.hidden > 0) && (
+                  <button
+                    type="button"
+                    onClick={closedWindow.onToggle}
+                    className="font-semibold text-brand-400 hover:text-brand-300"
+                    data-testid="board-closed-toggle"
+                  >
+                    {closedWindow.allClosed ? 'Últimos 30 dias' : `Ver todos (+${closedWindow.hidden})`}
+                  </button>
+                )}
+              </div>
+            )}
             {terminalStages.map((stage) => renderColumn(stage, true))}
           </div>
         )}
@@ -585,6 +684,33 @@ function CardScope({ description }: { description?: string | null }) {
       <span className="block text-3xs uppercase tracking-wide text-surface-500 leading-none">Observações</span>
       <p className="mt-0.5 text-2xs text-surface-300 line-clamp-2 leading-snug">{text}</p>
     </div>
+  )
+}
+
+/** Linha compacta de um fechado — título · contato à esquerda; valor (ganho) ou motivo (perdido) à direita. */
+function ClosedRow({ deal, stage, pipeline, onOpenDeal, isProcess = false }: { deal: Deal; stage: PipelineStage; pipeline?: Pipeline | null; onOpenDeal?: (dealId: string) => void; isProcess?: boolean }) {
+  const lost = !!stage.isLost
+  const motivo = lost && deal.closeReason
+    ? (pipeline?.closeReasons ?? []).find((r) => r.key === deal.closeReason)?.label ?? deal.closeReason
+    : null
+  const nome = deal.contact?.displayName
+  // Processo não tem valor: o que diz algo num fechado é QUANDO fechou.
+  const meta = motivo ?? (isProcess ? timeInStage(deal) : brl(deal.amountCents ?? 0))
+  return (
+    <button
+      type="button"
+      onClick={() => onOpenDeal?.(deal.id)}
+      className="flex items-center gap-2 h-9 px-2.5 rounded-md border border-surface-700 bg-surface-900 text-left text-xs hover:bg-[var(--rowhover)] transition-colors"
+      data-testid="closed-row"
+    >
+      <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', lost ? 'bg-danger' : 'bg-success')} aria-hidden />
+      <span className="truncate flex-1 text-surface-200">
+        {deal.title}{nome && nome !== deal.title ? <span className="text-surface-500"> · {nome}</span> : null}
+      </span>
+      <span className="flex-shrink-0 tabular-nums text-surface-400" data-testid="closed-row-meta">
+        {meta}
+      </span>
+    </button>
   )
 }
 
@@ -643,7 +769,7 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
           // DEAL-CARD-11 (spec/1e-funis.GAPS.md): "parado Nd" em cor de
           // perigo/600 quando a etapa passa do limiar de "parado".
           <span
-            className={cn('inline-flex items-center gap-1', stuckDays !== null && 'text-danger font-semibold')}
+            className={cn('inline-flex items-center gap-1', stuckDays !== null && 'text-status-pending font-semibold')}
             title={`Nesta etapa há ${time}`}
             data-testid="process-card-time"
           >
@@ -742,7 +868,7 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
         {time && (
           // DEAL-CARD-11: "parado Nd" em cor de perigo quando passa do limiar.
           <span
-            className={cn('ml-auto text-[11px] whitespace-nowrap', stuckDays !== null ? 'text-danger font-semibold' : 'text-surface-500')}
+            className={cn('ml-auto text-[11px] whitespace-nowrap', stuckDays !== null ? 'text-status-pending font-semibold' : 'text-surface-500')}
             title={`Nesta etapa há ${time}`}
             data-testid="sales-card-time"
           >
