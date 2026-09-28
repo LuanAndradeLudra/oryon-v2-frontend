@@ -1,4 +1,5 @@
-import type { Conversation } from '@/types'
+import type { Conversation, WhatsAppNumberDetailed } from '@/types'
+import type { AgentConfig } from '@/services/agentsApi'
 import { computeWhatsAppWindow, type WhatsAppWindow } from '@/lib/whatsappWindow'
 
 /**
@@ -58,6 +59,25 @@ type ConversaDaFila = Pick<Conversation, 'lastMessageSenderKind' | 'lastMessageA
  * chama monta este conjunto a partir de `/whatsapp/numbers` + agentes ativos.
  */
 export type LinhasComIA = ReadonlySet<string>
+
+/**
+ * Linhas atendidas por IA: a linha tem `agentId` e esse agente está ligado.
+ * Sem a lista de agentes (servidor de agentes fora do ar), vale o vínculo da
+ * linha. Compartilhado pela fila do Dashboard e pela inbox.
+ */
+export function calcularLinhasComIA(
+  linhas: ReadonlyArray<Pick<WhatsAppNumberDetailed, 'id' | 'agentId'>>,
+  agentes: ReadonlyArray<Pick<AgentConfig, 'id' | 'status'>> | null,
+): Set<string> {
+  const ativos = agentes ? new Set(agentes.filter((a) => a.status === 'active').map((a) => a.id)) : null
+  const out = new Set<string>()
+  for (const l of linhas) {
+    if (!l.agentId) continue
+    if (ativos && !ativos.has(l.agentId)) continue
+    out.add(l.id)
+  }
+  return out
+}
 
 function iaPausada(c: ConversaDaFila, now: number): boolean {
   if (!c.aiPausedUntil) return false

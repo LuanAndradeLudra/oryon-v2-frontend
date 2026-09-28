@@ -7,7 +7,7 @@ import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
 import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed, SocketMediaReady } from '@/types'
-import { windowMsLeft } from '@/lib/conversationEntry'
+import { msRestantesDaJanela } from '@/lib/whatsappWindow'
 
 interface ChatWindowProps {
   conversation: Conversation | null
@@ -126,9 +126,27 @@ export function ChatWindow({
     await onStatusChange(conversation.id, status, dealOutcome)
   }
 
-  // Janela de 24h do WhatsApp: mesma conta de antes, agora também dizendo
-  // quantas horas faltam (R2-1D-COMP: "Janela de 24h aberta · fecha em N h").
-  const windowLeftMs = conversation ? windowMsLeft(conversation.lastMessageAt) : 0
+  // Janela de 24h do WhatsApp contada da última mensagem DO CLIENTE (28/09 —
+  // antes era de `lastMessageAt`, de qualquer remetente: prazo inflado quando a
+  // IA falava depois do cliente, e texto livre liberado logo após um modelo,
+  // que a Meta recusa). O relógio anda a cada minuto: a janela fecha sozinha
+  // com o chat aberto.
+  const [agora, setAgora] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setAgora(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
+  const windowLeftMs = conversation
+    ? msRestantesDaJanela({
+        conversationId: conversation.id,
+        mensagens: messages,
+        carregando: loading,
+        temMais: hasMore,
+        lastMessageAt: conversation.lastMessageAt,
+        lastMessageSenderKind: conversation.lastMessageSenderKind,
+        now: agora,
+      })
+    : 0
   const windowOpen = windowLeftMs > 0
 
   if (!conversation) {
@@ -207,7 +225,11 @@ export function ChatWindow({
         onReply={setReplyTo}
         contact={conversation.contact}
       />
+      {/* key por conversa (28/09): sem ela o rascunho, os anexos e o
+          "modelo enviado" sobreviviam à troca de conversa — digitar em A,
+          apertar J e Enviar mandava o texto para B. */}
       <MessageInput
+        key={conversation.id}
         onSend={handleSendWithErrorReporting}
         contactId={conversation.contact.id}
         windowOpen={windowOpen}

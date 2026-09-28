@@ -11,6 +11,7 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { ConversationsTopBarSlot } from '@/components/layout/ConversationsTopBarSlot'
 import { NewConversationModal } from '@/components/conversations/NewConversationModal'
 import { Fab } from '@/components/common/Fab'
+import { donoDoEvento, type EventoDeAtribuicao } from '@/lib/conversationSignals'
 import { useConversations } from '@/hooks/useConversations'
 import { useConversationFromUrl } from '@/hooks/useConversationFromUrl'
 import { useSocket } from '@/hooks/useSocket'
@@ -70,7 +71,7 @@ export function ConversationsPage() {
 
   const {
     conversations, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
-    handleNewMessage, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
+    handleNewMessage, handleAssigned, handleResolved, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
   } = useConversations(filters)
@@ -148,18 +149,21 @@ export function ConversationsPage() {
     }, []),
 
     onConversationResolved: useCallback((payload: { conversationId: string }) => {
+      handleResolved(payload)
       if (activeConversation?.id === payload.conversationId) {
         setActiveConversation((prev) => prev ? { ...prev, status: 'resolved' } : null)
       }
-    }, [activeConversation?.id]),
+    }, [handleResolved, activeConversation?.id]),
 
-    onConversationAssigned: useCallback((payload: { conversationId: string; assignedTo: User }) => {
-      if (activeConversation?.id === payload.conversationId) {
+    onConversationAssigned: useCallback((payload: EventoDeAtribuicao) => {
+      handleAssigned(payload)
+      const dono = donoDoEvento(payload)
+      if (dono !== undefined && activeConversation?.id === payload.conversationId) {
         setActiveConversation((prev) =>
-          prev ? { ...prev, assignedUser: payload.assignedTo } : null
+          prev ? { ...prev, assignedUser: dono ?? undefined } : null
         )
       }
-    }, [activeConversation?.id]),
+    }, [handleAssigned, activeConversation?.id]),
 
     // Sidebar updates (conversation:updated replaces tenant-wide message:new for list)
     onConversationUpdated: useCallback((payload: SocketMessageNew) => {

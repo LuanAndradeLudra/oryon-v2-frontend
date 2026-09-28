@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { conversationsApi, usersApi, whatsappNumbersApi, type AvailableUser } from '@/services/api'
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
 import { connectSocket } from '@/services/socket'
-import { montarFila, type ItemDaFila, type LinhasComIA } from '@/lib/filaAgora'
+import { calcularLinhasComIA, montarFila, type ItemDaFila, type LinhasComIA } from '@/lib/filaAgora'
 import type { Conversation, ConversationFilters, WhatsAppNumberDetailed } from '@/types'
 
 /** Recarga periódica (decisão do PO: o painel atualiza sozinho a cada minuto). */
@@ -48,23 +48,6 @@ export interface DashboardAgora {
   recarregar: () => void
   /** Relógio do painel (anda a cada 30 s) — para os tempos relativos. */
   agora: number
-}
-
-/**
- * Linhas atendidas por IA: a linha tem `agentId` e esse agente está ligado.
- * Sem a lista de agentes (servidor fora), vale o vínculo da linha — errar para
- * "a IA está cuidando" esconderia gente esperando, então só entra na conta o
- * que o backend confirma.
- */
-function calcularLinhasComIA(linhas: WhatsAppNumberDetailed[], agentes: AgentConfig[] | null): Set<string> {
-  const ativos = agentes ? new Set(agentes.filter((a) => a.status === 'active').map((a) => a.id)) : null
-  const out = new Set<string>()
-  for (const l of linhas) {
-    if (!l.agentId) continue
-    if (ativos && !ativos.has(l.agentId)) continue
-    out.add(l.id)
-  }
-  return out
 }
 
 /**

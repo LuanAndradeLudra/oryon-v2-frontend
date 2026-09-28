@@ -1,4 +1,5 @@
 import type { Conversation } from '@/types'
+import { esperaPessoa, type LinhasComIA } from '@/lib/filaAgora'
 
 /**
  * Helpers derived from the Conversation shape — kept pure (no React, no
@@ -44,29 +45,55 @@ export function getAssignment(
  *  and add visual noise without conveying real urgency. */
 const AWAITING_THRESHOLD_MIN = 2
 
+const SEM_LINHAS: LinhasComIA = new Set()
+
 /**
- * "Is the customer currently waiting for a reply, and for how long?"
+ * "O cliente está esperando uma PESSOA — e há quanto tempo?"
  *
- * Returns null when the conversation is resolved/abandoned, when the agent
- * has already replied after the client's last message, or when the wait is
- * shorter than the threshold above. Otherwise returns the wait in minutes
- * so the UI can format it (e.g. via chatRelTime on lastMessageAt).
+ * 28/09: a MESMA regra da fila do Dashboard (`esperaPessoa`, lib/filaAgora):
+ * nenhuma pessoa respondeu desde a última mensagem e a IA não está cuidando
+ * (linha sem IA ou IA pausada e o cliente falou por último — ou a IA passou a
+ * conversa para a equipe, status pendente). Antes comparava só
+ * `lastAgentReplyAt` (que só anda com mensagem HUMANA) com `lastMessageAt`
+ * (qualquer remetente) — então toda conversa em que a IA ou uma campanha
+ * falou por último aparecia "sem resposta".
  *
- * Uses lastAgentReplyAt < lastMessageAt as the signal (exposed by the
- * backend list DTO). If lastAgentReplyAt is null the conversation has
- * never been touched by a human — the customer is by definition waiting.
+ * `linhasComIA` vem de `useLinhasComIA`; sem ele, nenhuma linha conta como
+ * atendida por IA (erra para mostrar, nunca para esconder).
+ *
+ * Abaixo do limiar o chip piscaria a cada mensagem nova sem dizer urgência.
  */
 export function getAwaitingReply(
-  conv: Pick<Conversation, 'status' | 'lastMessageAt' | 'lastAgentReplyAt'>,
+  conv: Parameters<typeof esperaPessoa>[0],
+  linhasComIA: LinhasComIA = SEM_LINHAS,
+  now: number = Date.now(),
 ): { minutes: number } | null {
-  if (conv.status === 'resolved' || conv.status === 'abandoned') return null
   if (!conv.lastMessageAt) return null
-
-  const lastMsgMs = new Date(conv.lastMessageAt).getTime()
-  const lastReplyMs = conv.lastAgentReplyAt ? new Date(conv.lastAgentReplyAt).getTime() : 0
-  if (lastReplyMs >= lastMsgMs) return null
-
-  const minutes = Math.floor((Date.now() - lastMsgMs) / 60_000)
+  if (!esperaPessoa(conv, linhasComIA, now)) return null
+  const minutes = Math.floor((now - new Date(conv.lastMessageAt).getTime()) / 60_000)
   if (minutes < AWAITING_THRESHOLD_MIN) return null
   return { minutes }
+}
+
+/**
+ * `conversation:assigned` chega em DOIS formatos (28/09): o das automações
+ * (`assignedUserId` + `assignedUserName`, automations.processor.ts) e o que o
+ * frontend esperava (`assignedTo`). A página lia só o segundo — e, com o
+ * primeiro, apagava o dono da conversa aberta. A atribuição manual
+ * (PATCH /assign) não emite evento nenhum (item no SCRUM-1161).
+ */
+export interface EventoDeAtribuicao {
+  conversationId: string
+  assignedTo?: Conversation['assignedUser'] | null
+  assignedUserId?: string | null
+  assignedUserName?: string | null
+}
+
+/** O novo dono: objeto, `null` (ficou sem dono) ou `undefined` (o evento não diz). */
+export function donoDoEvento(p: EventoDeAtribuicao): Conversation['assignedUser'] | null | undefined {
+  if (p.assignedTo !== undefined) return p.assignedTo ?? null
+  if (p.assignedUserId === undefined) return undefined
+  if (!p.assignedUserId) return null
+  const [firstName = '', ...resto] = (p.assignedUserName ?? '').trim().split(/\s+/)
+  return { id: p.assignedUserId, firstName, lastName: resto.join(' ') || null }
 }

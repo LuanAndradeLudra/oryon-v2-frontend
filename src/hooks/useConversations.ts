@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
+import { donoDoEvento, type EventoDeAtribuicao } from '@/lib/conversationSignals'
+import { connectSocket } from '@/services/socket'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User, DealOutcomeInput } from '@/types'
 
@@ -23,6 +25,8 @@ const PAGE_SIZE = 50
  *  same event name, so a socket in both rooms sees it twice) and a burst of
  *  handoffs, short enough that the badge feels immediate. */
 const COUNTS_DEBOUNCE_MS = 1500
+/** Aba escondida por mais que isto: ao voltar, a lista é lida de novo. */
+const VOLTA_DA_ABA_MS = 30_000
 
 export function useConversations(filters: ConversationFilters = {}) {
   const { user } = useAuth()
@@ -265,9 +269,18 @@ export function useConversations(filters: ConversationFilters = {}) {
       const idx = prev.findIndex((c) => c.id === payload.conversationId)
       if (idx === -1) return prev
       const updated = [...prev]
+      // 28/09: sem remetente e sem `lastAgentReplyAt` no patch, a linha
+      // voltava a "sem resposta" logo depois de a PESSOA responder (a regra
+      // comparava com a resposta humana antiga), e o indicador de remetente e
+      // a janela de 24h ficavam errados até recarregar.
+      const m = payload.message
+      const remetente = m.senderKind
+        ?? (m.direction === 'inbound' ? 'client' : m.sentByUserId ? 'operator' : undefined)
       updated[idx] = {
         ...updated[idx],
         lastMessageAt: payload.message.sentAt,
+        ...(remetente ? { lastMessageSenderKind: remetente } : {}),
+        ...(remetente === 'operator' ? { lastAgentReplyAt: m.sentAt } : {}),
         lastMessagePreview: payload.message.body || payload.message.mediaCaption || `[${payload.message.type ?? 'text'}]`,
         unreadCount: payload.unreadCount,
         // Phase 27 — outbound human messages carry aiPausedUntil so the
@@ -283,6 +296,25 @@ export function useConversations(filters: ConversationFilters = {}) {
       return [item, ...updated]
     })
   }, [fetchAndPrependConversation])
+
+  /**
+   * 28/09 — `conversation:assigned` e `conversation:resolved` só atualizavam a
+   * conversa ABERTA; a lista ficava com o dono/status antigo. Uma atribuição
+   * feita por um colega não tirava a linha de "Fila" (sem dono), e uma
+   * resolução não tirava a linha de "Abertas". Agora a linha é corrigida e,
+   * se não couber mais no filtro, sai (mesmo caminho do status).
+   */
+  const handleAssigned = useCallback((payload: EventoDeAtribuicao) => {
+    const dono = donoDoEvento(payload)
+    if (!payload?.conversationId || dono === undefined) return
+    patchAndReconcile(payload.conversationId, { assignedUser: dono ?? undefined })
+  }, [patchAndReconcile])
+
+  const handleResolved = useCallback((payload: { conversationId: string }) => {
+    if (!payload?.conversationId) return
+    patchAndReconcile(payload.conversationId, { status: 'resolved' })
+    refetchCounts()
+  }, [patchAndReconcile, refetchCounts])
 
   /** Phase 27 — handler for the dedicated 'conversation:ai-pause-updated' socket
    *  event emitted by the backend's manual pause/resume endpoint.
@@ -453,6 +485,29 @@ export function useConversations(filters: ConversationFilters = {}) {
     return until
   }, [patchAndReconcile])
 
+  // 28/09 — eventos perdidos deixavam a lista errada até recarregar a página:
+  // ao reconectar o socket (queda de rede, sono do notebook) e ao voltar para
+  // a aba depois de um tempo, a lista é lida de novo. A primeira conexão não
+  // conta — a carga inicial já cuida dela.
+  useEffect(() => {
+    const socket = connectSocket()
+    const aoReconectar = () => { if (initialLoadDone.current) void fetchConversations() }
+    socket.on('connect', aoReconectar)
+    let escondidaDesde: number | null = null
+    const aoMudarVisibilidade = () => {
+      if (document.hidden) { escondidaDesde = Date.now(); return }
+      if (escondidaDesde !== null && Date.now() - escondidaDesde > VOLTA_DA_ABA_MS && initialLoadDone.current) {
+        void fetchConversations()
+      }
+      escondidaDesde = null
+    }
+    document.addEventListener('visibilitychange', aoMudarVisibilidade)
+    return () => {
+      socket.off('connect', aoReconectar)
+      document.removeEventListener('visibilitychange', aoMudarVisibilidade)
+    }
+  }, [fetchConversations])
+
   return {
     conversations,
     loading,
@@ -465,6 +520,8 @@ export function useConversations(filters: ConversationFilters = {}) {
     refetch: fetchConversations,
     refetchCounts,
     handleNewMessage,
+    handleAssigned,
+    handleResolved,
     handleAiPauseUpdated,
     handleStatusUpdated,
     markAsRead,

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/contexts/AuthContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
+import { useLinhasComIA } from '@/hooks/useLinhasComIA'
 import { renderHighlightedSnippet } from '@/lib/searchHighlight'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -86,7 +87,8 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
   const hasUnread = unreadCount > 0 && !isActive
   const aiActive = isAiActive(conversation)
   const assignment = getAssignment(conversation)
-  const awaiting = getAwaitingReply(conversation)
+  const linhasComIA = useLinhasComIA()
+  const awaiting = getAwaitingReply(conversation, linhasComIA)
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
