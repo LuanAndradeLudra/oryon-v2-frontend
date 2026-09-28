@@ -77,7 +77,8 @@ export function BoardFilterBar({
   users = [], owner = 'all', onOwnerChange, close = 'all', onCloseChange, summary, isProcess = false, noun = 'negócio',
   summaryTitle, lead, trail, children,
 }: BoardFilterBarProps) {
-  const withFilters = !!onOwnerChange && !!onCloseChange
+  const withOwner = !!onOwnerChange
+  const withClose = !!onCloseChange
   const [ownerOpen, setOwnerOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
 
@@ -92,7 +93,7 @@ export function BoardFilterBar({
       data-testid="board-filter-bar"
     >
       {lead}
-      {withFilters && (
+      {withOwner && (
       <Dropdown
         open={ownerOpen}
         onClose={() => setOwnerOpen(false)}
@@ -124,7 +125,7 @@ export function BoardFilterBar({
       </Dropdown>
       )}
 
-      {withFilters && (
+      {withClose && (
       <Dropdown
         open={closeOpen}
         onClose={() => setCloseOpen(false)}

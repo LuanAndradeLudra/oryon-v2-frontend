@@ -66,7 +66,7 @@ describe('PipelineReportsTab — cards de resumo (D2/SCRUM-935)', () => {
     expect(screen.getByText('R$ 150,00')).toBeInTheDocument() // ponderado
     expect(screen.getByText('R$ 200,00')).toBeInTheDocument() // ganho no período
     expect(screen.getByText('67%')).toBeInTheDocument() // conversão: 2 de 3 fechados
-    expect(screen.getByText('4.5 dias')).toBeInTheDocument() // ciclo médio
+    expect(screen.getByText('4,5 dias')).toBeInTheDocument() // ciclo médio
   })
 })
 
@@ -85,14 +85,14 @@ describe('PipelineReportsTab — estados vazios honestos (P14)', () => {
 })
 
 describe('PipelineReportsTab — filtro de período (D2/SCRUM-935)', () => {
-  it('"Todo o período" chama a API sem `from`/`to`', async () => {
+  it('"Tudo" chama a API sem `from`/`to`', async () => {
     vi.mocked(pipelineAnalyticsApi.overview).mockResolvedValue({ data: WITH_DATA } as never)
     render(<PipelineReportsTab pipeline={PIPELINE} />)
     await waitFor(() => expect(pipelineAnalyticsApi.overview).toHaveBeenCalled())
 
     // PL-C2-CAR-6: período agora é o `SegmentedControl` partilhado (mesma peça
     // do toggle Quadro/Relatórios), cujo item é role="tab", não "button".
-    fireEvent.click(screen.getByRole('tab', { name: 'Todo o período' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Tudo' }))
 
     await waitFor(() => {
       const calls = vi.mocked(pipelineAnalyticsApi.overview).mock.calls
@@ -100,13 +100,14 @@ describe('PipelineReportsTab — filtro de período (D2/SCRUM-935)', () => {
     })
   })
 
-  it('filtro de dono envia `ownerUserId` na chamada', async () => {
+  it('filtro de responsável (mesmo chip do quadro) envia `ownerUserId` na chamada', async () => {
     vi.mocked(usersApi.list).mockResolvedValue({ data: [{ id: 'u1', firstName: 'Ana', lastName: 'Souza' }] } as never)
     vi.mocked(pipelineAnalyticsApi.overview).mockResolvedValue({ data: WITH_DATA } as never)
     render(<PipelineReportsTab pipeline={PIPELINE} />)
-    await waitFor(() => expect(screen.getByText('Ana Souza')).toBeInTheDocument())
+    await waitFor(() => expect(pipelineAnalyticsApi.overview).toHaveBeenCalled())
 
-    fireEvent.change(screen.getByLabelText('Filtrar por dono'), { target: { value: 'u1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar por responsável' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Ana Souza' }))
 
     await waitFor(() => {
       const calls = vi.mocked(pipelineAnalyticsApi.overview).mock.calls

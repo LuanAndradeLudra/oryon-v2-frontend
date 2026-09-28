@@ -37,7 +37,10 @@ vi.mock('@/components/deals/FunnelsConfigDrawer', () => ({
     open ? <div data-testid="funnels-config-drawer">config</div> : null,
 }))
 vi.mock('@/components/deals/reports/PipelineReportsTab', () => ({
-  PipelineReportsTab: ({ pipeline }: { pipeline: Pipeline }) => <div data-testid="reports-tab">relatórios de {pipeline.name}</div>,
+  // A barra do funil (visão + Etapas) agora vem DENTRO da aba de relatórios.
+  PipelineReportsTab: ({ pipeline, toolbarLead, toolbarTrail }: { pipeline: Pipeline; toolbarLead?: import('react').ReactNode; toolbarTrail?: import('react').ReactNode }) => (
+    <div data-testid="reports-tab"><div>{toolbarLead}{toolbarTrail}</div>relatórios de {pipeline.name}</div>
+  ),
 }))
 
 const pipeline = (over: Partial<Pipeline>): Pipeline => ({

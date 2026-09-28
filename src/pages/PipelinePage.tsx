@@ -12,12 +12,12 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
-import { BoardFilterBar } from '@/components/deals/BoardFilterBar'
 import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { FunnelsConfigDrawer } from '@/components/deals/FunnelsConfigDrawer'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { PipelineBoardTab } from '@/components/deals/PipelineBoardTab'
 import { PipelineReportsTab } from '@/components/deals/reports/PipelineReportsTab'
+import { isReportPeriod, type ReportPeriod } from '@/lib/reportPeriods'
 import type { Pipeline } from '@/types'
 
 type Tab = 'board' | 'list' | 'reports'
@@ -67,6 +67,18 @@ export function PipelinePage() {
    * por letra em vez de sair da tela.
    */
   const busca = searchParams.get('q') ?? ''
+
+  /** Relatórios: período na URL; o responsável é o mesmo `?resp=` do quadro. */
+  const periodoParam = searchParams.get('periodo')
+  const periodoRelatorio: ReportPeriod = isReportPeriod(periodoParam) ? periodoParam : 'last7'
+  const setParam = (key: string, value: string | null) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      if (value) params.set(key, value)
+      else params.delete(key)
+      return params
+    }, { replace: true })
+  }
 
   /** Painel de configuração — aberto/fechado e funil escolhido, tudo na URL. */
   const configAberto = searchParams.get('config') === 'funis'
@@ -398,10 +410,15 @@ export function PipelinePage() {
                 toolbarTrail={toolbarTrail}
               />
             ) : (
-              <>
-                <BoardFilterBar lead={toolbarLead} trail={toolbarTrail} />
-                <PipelineReportsTab pipeline={pipeline} />
-              </>
+              <PipelineReportsTab
+                pipeline={pipeline}
+                period={periodoRelatorio}
+                onPeriodChange={(p) => setParam('periodo', p === 'last7' ? null : p)}
+                owner={searchParams.get('resp') ?? 'all'}
+                onOwnerChange={(o) => setParam('resp', o === 'all' ? null : o)}
+                toolbarLead={toolbarLead}
+                toolbarTrail={toolbarTrail}
+              />
             )}
           </motion.div>
         </AnimatePresence>
