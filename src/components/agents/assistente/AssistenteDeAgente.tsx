@@ -5,9 +5,10 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import api, { departmentsApi, whatsappNumbersApi } from '@/services/api'
 import {
-  createSpecDraft, getAgent, getSpecDraft, getSpecReadiness, publishSpecDraft, saveSpecDraft,
-  type AgentConfigWithTools, type AgentSpec, type ReadinessItem, type RepeatedFact,
+  createSpecDraft, getAgent, getSpecDraft, getSpecReadiness, listAgentTestRuns, publishSpecDraft, saveSpecDraft,
+  type AgentConfigWithTools, type AgentSpec, type AgentTestRun, type ReadinessItem, type RepeatedFact,
 } from '@/services/agentsApi'
+import { rodarBateria } from '@/components/agents/bateria/bateria'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { ETAPAS, faltaNaEtapa, specVazia } from './especificacao'
@@ -137,14 +138,26 @@ export function AssistenteDeAgente({
     setErroPublicar(null)
     try {
       await saveSpecDraft(draftId, spec, etapa)
-      const { agentId: publicadoId } = await publishSpecDraft(draftId)
+      const { agentId: publicadoId, version: versaoPublicada } = await publishSpecDraft(draftId)
       if (spec.channel.whatsappNumberId) {
         await api.patch(`/meta/numbers/${spec.channel.whatsappNumberId}`, { agentId: publicadoId }).catch(() => {
           setErroPublicar('O agente foi publicado, mas não deu para ligar o número. Ligue em Configurações → WhatsApp.')
         })
       }
       try { localStorage.removeItem(chaveRascunho(user?.tenantId, agentId)) } catch { /* sem storage */ }
-      onCreated(await getAgent(publicadoId))
+      const publicado = await getAgent(publicadoId)
+      // Onda 5 (M18) — a bateria de perguntas do ensaio roda em segundo plano
+      // a cada publicação; o resultado aparece em Desempenho. Falha aqui não
+      // desfaz a publicação.
+      if (spec.tests.some((t) => t.question.trim())) {
+        void Promise.resolve()
+          .then(() => listAgentTestRuns(publicadoId))
+          .catch(() => [] as AgentTestRun[])
+          .then((runs) => rodarBateria({
+          agent: publicado, tests: spec.tests, anterior: runs[0] ?? null, trigger: 'publish', specVersion: versaoPublicada,
+        })).catch(() => {})
+      }
+      onCreated(publicado)
     } catch (e) {
       setErroPublicar(e instanceof Error ? e.message : 'Não foi possível publicar. Nada foi alterado.')
       carregarProntidao()

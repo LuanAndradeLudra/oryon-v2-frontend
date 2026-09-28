@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { Bloco, CabecalhoDaSecao } from './Estrutura'
 import { OndeOAgenteFalha } from './OndeOAgenteFalha'
 import { TurnosGravados } from './TurnosGravados'
+import { BateriaDeTestes } from './BateriaDeTestes'
 
 type Periodo = '1' | '7' | '30'
 const PERIODOS: Array<{ value: Periodo; label: string }> = [
@@ -78,6 +79,8 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
             <Numero rotulo="Última alteração" valor={relativo(agent.updated_at)} detalhe={new Date(agent.updated_at).toLocaleDateString('pt-BR')} />
           </div>
         </Bloco>
+
+        <BateriaDeTestes agent={agent} />
 
         <OndeOAgenteFalha agentId={agent.id} />
 

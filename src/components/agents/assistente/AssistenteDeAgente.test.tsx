@@ -15,8 +15,11 @@ const api = vi.hoisted(() => ({
   getAgent: vi.fn(),
   generateSpecText: vi.fn(),
   chatWithAgent: vi.fn(),
+  listAgentTestRuns: vi.fn(async () => []),
   patch: vi.fn(),
+  rodarBateria: vi.fn(async (_opts: unknown) => ({})),
 }))
+vi.mock('@/components/agents/bateria/bateria', () => ({ rodarBateria: api.rodarBateria }))
 vi.mock('@/services/agentsApi', () => api)
 vi.mock('@/services/api', () => ({
   default: { patch: api.patch },
@@ -105,6 +108,9 @@ describe('AssistenteDeAgente', () => {
     expect(api.publishSpecDraft).toHaveBeenCalledWith('draft-1')
     expect(api.patch).toHaveBeenCalledWith('/meta/numbers/n1', { agentId: 'agent-1' })
     expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBeNull()
+    // Onda 5 — a bateria do ensaio roda em segundo plano ao publicar.
+    await waitFor(() => expect(api.rodarBateria).toHaveBeenCalledTimes(1))
+    expect(api.rodarBateria.mock.calls[0][0]).toMatchObject({ trigger: 'publish', tests: [{ question: 'Oi' }] })
   })
 })
 

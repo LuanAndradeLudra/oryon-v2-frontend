@@ -1159,7 +1159,7 @@ export type ChatWithAgentResult = { message: string } & ChatTurnDebug
 export async function chatWithAgent(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  meta: { sessionId?: string; agentId?: string } = {},
+  meta: { sessionId?: string; agentId?: string; stubTools?: boolean } = {},
 ): Promise<ChatWithAgentResult> {
   const data = await apiFetch<{
     message: string; toolCalls?: ToolCall[]; turnSummary?: TurnSummary; guard?: GuardSignal; simulated?: SimulatedReply
@@ -1176,6 +1176,8 @@ export async function chatWithAgent(
       prompt_mode: 'compiled',
       channel: 'whatsapp',
       simulate_rules: true,
+      // Onda 5 — bateria de testes: skill/CRM/HTTP simulados, nada executado.
+      ...(meta.stubTools ? { stub_tools: true } : {}),
     }),
   })
   return {
@@ -1279,6 +1281,11 @@ export function getSpecReadiness(id: string) {
   return apiFetch<{ ready: boolean; items: ReadinessItem[] }>(`/specs/drafts/${id}/readiness`)
 }
 
+/** Spec atual do agente: a última publicada ou a derivada do texto antigo. */
+export function getAgentSpecForAgent(agentId: string) {
+  return apiFetch<{ spec: AgentSpec; version: number | null }>(`/configs/${encodeURIComponent(agentId)}/spec`)
+}
+
 export function publishSpecDraft(id: string) {
   return apiFetch<{ agentId: string; version: number; alreadyPublished: boolean }>(`/specs/drafts/${id}/publish`, { method: 'POST' })
 }
@@ -1343,6 +1350,40 @@ export interface TurnReplayResult {
   textChanged: boolean
   toolsChanged: boolean
   recorded: { text: string; toolCalls: Array<{ name: string; input: Record<string, unknown> }> }
+}
+
+// ─── Bateria de testes (onda 5) ───────────────────────────────────────────────
+
+export interface AgentTestRunResult {
+  question: string
+  answer: string
+  toolCalls: string[]
+  approvedAnswer: string | null
+  similarity: number | null
+  answerChanged: boolean | null
+  toolsChanged: boolean | null
+  error: string | null
+}
+
+export interface AgentTestRun {
+  id: string
+  specVersion: number | null
+  trigger: 'publish' | 'manual'
+  total: number
+  changed: number
+  failed: number
+  results: AgentTestRunResult[]
+  createdAt: string
+}
+
+export async function listAgentTestRuns(agentId: string): Promise<AgentTestRun[]> {
+  return apiFetch<AgentTestRun[]>(`/configs/${encodeURIComponent(agentId)}/test-runs`)
+}
+
+export async function saveAgentTestRun(
+  agentId: string, run: { trigger: 'publish' | 'manual'; specVersion: number | null; results: AgentTestRunResult[] },
+): Promise<AgentTestRun> {
+  return apiFetch<AgentTestRun>(`/configs/${encodeURIComponent(agentId)}/test-runs`, { method: 'POST', body: JSON.stringify(run) })
 }
 
 export async function listAgentTurns(agentId: string): Promise<AgentTurnSummary[]> {

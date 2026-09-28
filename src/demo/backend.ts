@@ -267,6 +267,12 @@ export function instalarBackendDemo() {
   rota('agents/builder/configs/:id/turns', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/turns$/.test(u), () => ({
     data: { data: [] },
   }))
+  rota('agents/builder/configs/:id/test-runs', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/test-runs$/.test(u), () => ({
+    data: { data: [] },
+  }))
+  rota('agents/builder/configs/:id/spec', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/spec$/.test(u), () => ({
+    data: { data: { spec: { tests: [] }, version: null, repeatedFacts: [] } },
+  }))
   rota('agents/builder/configs/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+$/.test(u), ({ url }) => ({
     data: { data: agenteComFerramentas(url.split('/').pop()!) },
   }))
