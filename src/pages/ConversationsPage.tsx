@@ -13,7 +13,7 @@ import { NewConversationModal } from '@/components/conversations/NewConversation
 import { Fab } from '@/components/common/Fab'
 import { donoDoEvento, estadoDaIA, type EventoDeAtribuicao } from '@/lib/conversationSignals'
 import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
-import { chaveDosFiltros, escreverFiltros, lerFiltros } from '@/lib/filtrosDaInbox'
+import { chaveDosFiltros, ehFila, escreverFiltros, lerFiltros } from '@/lib/filtrosDaInbox'
 import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
 import { pedirResolver } from '@/lib/conversationActions'
 import { useConversations } from '@/hooks/useConversations'
@@ -82,7 +82,7 @@ export function ConversationsPage() {
   const openedViaPushRef = useRef(false)
 
   const {
-    conversations, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
+    conversations, filaIncompleta, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
     handleNewMessage, handleAssigned, handleResolved, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
@@ -134,6 +134,11 @@ export function ConversationsPage() {
           list.unshift(row)
         }
       }
+    }
+    // Fila (decisão do PO, 28/09): quem espera há mais tempo primeiro. A espera
+    // conta da última mensagem (o "esperando desde" exato é o P1 do SCRUM-1161).
+    if (ehFila(filters)) {
+      list.sort((a, b) => new Date(a.lastMessageAt).getTime() - new Date(b.lastMessageAt).getTime())
     }
     return { visibleConversations: list, offFilterId }
   }, [conversations, filters, activeConversation, user])
@@ -686,6 +691,7 @@ export function ConversationsPage() {
           onSelectConversation: handleSelectConversation,
           onFiltersChange: setFilters,
           scrollPositionRef: listScrollPosRef,
+          aviso: filaIncompleta ? 'A Fila tem mais de 500 conversas: a ordem por espera vale para as 500 mais recentes.' : null,
         }
         return isMobile ? (
           <div className="flex flex-col flex-1 min-h-0 w-full">

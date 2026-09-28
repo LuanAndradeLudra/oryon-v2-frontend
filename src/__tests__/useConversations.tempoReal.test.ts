@@ -92,6 +92,21 @@ describe('useConversations — tempo real', () => {
     expect(result.current.conversations.map((c) => c.id)).toEqual(['c1'])
   })
 
+  it('Fila: carrega todas as páginas (de 100) para ordenar pela espera', async () => {
+    const pag = (ids: string[], hasMore: boolean) => ({ data: { data: ids.map((id) => conv(id)), hasMore, statusCounts: {}, needsReviewCount: 0 } })
+    listMock.mockReset()
+    listMock
+      .mockResolvedValueOnce(pag(['a', 'b'], true) as never)
+      .mockResolvedValueOnce(pag(['c'], false) as never)
+    const { result } = renderHook(() => useConversations({ assignedTo: 'unassigned', status: 'pending' }))
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve() })
+    expect(listMock).toHaveBeenNthCalledWith(1, expect.objectContaining({ status: 'pending' }), 1, 100)
+    expect(listMock).toHaveBeenNthCalledWith(2, expect.anything(), 2, 100)
+    expect(result.current.conversations.map((c) => c.id)).toEqual(['a', 'b', 'c'])
+    expect(result.current.hasMore).toBe(false)
+    expect(result.current.filaIncompleta).toBe(false)
+  })
+
   it('reconectar o socket relê a lista', async () => {
     await montar({}, [conv('c1')])
     const antes = listMock.mock.calls.length

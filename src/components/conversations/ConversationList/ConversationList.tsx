@@ -46,6 +46,8 @@ interface ConversationListProps {
    *  rolagem nativa do navegador só respeita o arredondamento do elemento
    *  que de fato rola — um wrapper por fora não a recorta. */
   roundedBottomRight?: boolean
+  /** Aviso no topo da lista (ex.: a Fila passou do limite de carga). */
+  aviso?: string | null
 }
 
 export function ConversationList({
@@ -53,7 +55,7 @@ export function ConversationList({
   statusCounts, needsReviewCount = 0,
   activeId, offFilterId = null, filters, allTags, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
-  scrollPositionRef, roundedBottomRight = false,
+  scrollPositionRef, roundedBottomRight = false, aviso = null,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
@@ -201,6 +203,11 @@ export function ConversationList({
         className="flex-1 overflow-y-auto overscroll-y-contain pb-24 md:pb-0"
         style={{ contain: 'layout style', willChange: 'transform' }}
       >
+        {aviso && (
+          <p role="status" className="mx-3 mt-2 mb-1 px-2.5 py-1.5 rounded-sm border border-status-pending-border bg-status-pending-bg text-[11.5px] text-status-pending">
+            {aviso}
+          </p>
+        )}
         {loading && conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2">
             <Loader2 className="w-5 h-5 text-surface-400 animate-spin" />

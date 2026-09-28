@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { chaveDosFiltros, escreverFiltros, lerFiltros } from './filtrosDaInbox'
+import { abaAtiva, chaveDosFiltros, comAba, ehFila, escreverFiltros, lerFiltros } from './filtrosDaInbox'
 
 const sp = (q: string) => new URLSearchParams(q)
 
@@ -16,7 +16,8 @@ describe('filtros da inbox na URL', () => {
     }
     const url = escreverFiltros(sp(''), f)
     expect(url.get('aba')).toBe('fila')
-    expect(url.get('status')).toBe('pending')
+    // O "pendente" é da própria Fila: não vai como status avulso.
+    expect(url.has('status')).toBe(false)
     expect(url.get('ia')).toBe('pausada')
     expect(lerFiltros(url)).toEqual(f)
   })
@@ -42,5 +43,31 @@ describe('filtros da inbox na URL', () => {
   it('a chave muda com filtro, não com a conversa aberta', () => {
     expect(chaveDosFiltros(sp('aba=fila&id=a'))).toBe(chaveDosFiltros(sp('aba=fila&id=b')))
     expect(chaveDosFiltros(sp('aba=fila'))).not.toBe(chaveDosFiltros(sp('aba=minhas')))
+  })
+})
+
+describe('a Fila = pendentes sem dono (decisão do PO, 28/09)', () => {
+  it('entrar na Fila fixa pendente; sair devolve o status a todos', () => {
+    const naFila = comAba({ status: 'all' }, 'unassigned')
+    expect(naFila).toMatchObject({ assignedTo: 'unassigned', status: 'pending' })
+    expect(ehFila(naFila)).toBe(true)
+    expect(comAba(naFila, 'me')).toMatchObject({ assignedTo: 'me', status: 'all' })
+    // Fora da Fila, trocar de aba mantém o status escolhido.
+    expect(comAba({ status: 'resolved', assignedTo: 'all' }, 'me')).toMatchObject({ status: 'resolved' })
+  })
+
+  it('a aba marcada: "Sem atribuição" de qualquer status NÃO é a Fila', () => {
+    expect(abaAtiva({ assignedTo: 'unassigned', status: 'pending' })).toBe('unassigned')
+    expect(abaAtiva({ assignedTo: 'unassigned', status: 'all' })).toBeNull()
+    expect(abaAtiva({ assignedTo: 'me', status: 'all' })).toBe('me')
+    expect(abaAtiva({ status: 'all' })).toBe('all')
+  })
+
+  it('URL: aba=fila vence um status avulso; "Sem atribuição" vai como equipe=sem-dono', () => {
+    expect(lerFiltros(sp('aba=fila&status=resolved'))).toMatchObject({ assignedTo: 'unassigned', status: 'pending' })
+    const semDono = escreverFiltros(sp(''), { assignedTo: 'unassigned', status: 'resolved' })
+    expect(semDono.get('equipe')).toBe('sem-dono')
+    expect(semDono.get('status')).toBe('resolved')
+    expect(lerFiltros(semDono)).toMatchObject({ assignedTo: 'unassigned', status: 'resolved' })
   })
 })

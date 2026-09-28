@@ -3,6 +3,7 @@ import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
 import { donoDoEvento, type EventoDeAtribuicao } from '@/lib/conversationSignals'
+import { ehFila } from '@/lib/filtrosDaInbox'
 import { connectSocket } from '@/services/socket'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User, DealOutcomeInput } from '@/types'
@@ -27,6 +28,15 @@ const PAGE_SIZE = 50
 const COUNTS_DEBOUNCE_MS = 1500
 /** Aba escondida por mais que isto: ao voltar, a lista é lida de novo. */
 const VOLTA_DA_ABA_MS = 30_000
+/**
+ * Fila (28/09, decisão do PO): ordem pela MAIOR espera. O backend só ordena
+ * pela mensagem mais recente e pagina — ordenar só o que carregou sairia
+ * errado entre páginas. A Fila é pequena por natureza: carrega inteira, em
+ * páginas de 100 (teto do backend), até este limite. Passou disso, avisa.
+ * Ordenação no servidor é o P1 do SCRUM-1161.
+ */
+const FILA_POR_PAGINA = 100
+const FILA_MAX_PAGINAS = 5
 
 export function useConversations(filters: ConversationFilters = {}) {
   const { user } = useAuth()
@@ -77,12 +87,38 @@ export function useConversations(filters: ConversationFilters = {}) {
   // instead of AbortController because aborting would just make `withRetry`
   // retry the (still-aborted) call up to 3 times before giving up.
   const fetchTokenRef = useRef(0)
+  /** A Fila passou do limite de carga — a ordem vale para as mais recentes. */
+  const [filaIncompleta, setFilaIncompleta] = useState(false)
 
   const fetchConversations = useCallback(async () => {
     const token = ++fetchTokenRef.current
     try {
       if (!initialLoadDone.current) setLoading(true)
       pageRef.current = 1
+      if (ehFila(filtersRef.current)) {
+        // Fila: tudo de uma vez (ver FILA_MAX_PAGINAS) para ordenar pela espera.
+        let pagina = 1
+        let resp = (await withRetry(() => conversationsApi.list(filtersRef.current, 1, FILA_POR_PAGINA))).data
+        const todas = [...resp.data]
+        while (resp.hasMore && pagina < FILA_MAX_PAGINAS) {
+          pagina += 1
+          const p = pagina
+          resp = (await withRetry(() => conversationsApi.list(filtersRef.current, p, FILA_POR_PAGINA))).data
+          if (fetchTokenRef.current !== token) return
+          for (const c of resp.data) if (!todas.some((x) => x.id === c.id)) todas.push(c)
+        }
+        if (fetchTokenRef.current !== token) return
+        setConversations(todas)
+        loadedConvIds.current = new Set(todas.map((c) => c.id))
+        setHasMore(false)
+        setFilaIncompleta(resp.hasMore)
+        setStatusCounts(resp.statusCounts)
+        setNeedsReviewCount(resp.needsReviewCount ?? 0)
+        setError(null)
+        initialLoadDone.current = true
+        return
+      }
+      setFilaIncompleta(false)
       const { data } = await withRetry(() => conversationsApi.list(filtersRef.current, 1, PAGE_SIZE))
       if (fetchTokenRef.current !== token) return
       setConversations(data.data)
@@ -510,6 +546,7 @@ export function useConversations(filters: ConversationFilters = {}) {
 
   return {
     conversations,
+    filaIncompleta,
     loading,
     loadingMore,
     hasMore,

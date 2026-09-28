@@ -4,7 +4,7 @@ import { resolveActivePreset } from '@/lib/dateRange'
 import { resolveHandlingValue } from '@/lib/conversationFilterState'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { TagFilterMenu } from './TagFilterMenu'
-import { semFiltros } from '@/lib/filtrosDaInbox'
+import { abaAtiva, comAba, ehFila, semFiltros, type AbaDaInbox } from '@/lib/filtrosDaInbox'
 import type { ConversationFilters, Tag, User } from '@/types'
 
 // ── Esquema de filtros da lista (mock 1d) ────────────────────────────────────
@@ -76,7 +76,10 @@ export function ConversationFiltersBar({
 
   const handlingValue = resolveHandlingValue(filters)
   const activePeriod = resolveActivePreset(filters.startDate)
-  const activeStatus = filters.status && filters.status !== 'all' ? filters.status : null
+  // Na Fila o "pendente" é da própria aba — sem pílula de status (tirá-la
+  // desmontaria a Fila por baixo do operador).
+  const naFila = ehFila(filters)
+  const activeStatus = !naFila && filters.status && filters.status !== 'all' ? filters.status : null
   const teamPicked = handlingValue === 'team' && filters.assignedTo !== 'unassigned'
   const aiPaused = handlingValue === 'paused'
 
@@ -103,6 +106,8 @@ export function ConversationFiltersBar({
   if (activePeriod) pills.push({ key: 'period', label: PERIOD_LABEL[activePeriod] ?? 'Período', onRemove: () => set({ startDate: undefined, endDate: undefined }) })
   if (aiPaused) pills.push({ key: 'paused', label: 'IA pausada', onRemove: () => set({ aiHandling: 'all' }) })
   if (teamPicked) pills.push({ key: 'team', label: teamLabel, onRemove: () => set({ assignedTo: 'all' }) })
+  // "Sem atribuição" (menu Equipe) fora da Fila: agora é um filtro próprio.
+  if (!naFila && filters.assignedTo === 'unassigned') pills.push({ key: 'sem-dono', label: 'Sem atribuição', onRemove: () => set({ assignedTo: 'all' }) })
   if (filters.untagged) pills.push({ key: 'untagged', label: 'Sem etiqueta', onRemove: () => set({ untagged: undefined }) })
   if (filters.needsReview) pills.push({ key: 'review', label: 'Precisam de verificação', onRemove: () => set({ needsReview: undefined }) })
 
@@ -112,8 +117,7 @@ export function ConversationFiltersBar({
   const anyActive = pills.length > 0 || !!filters.tagId || !!filters.unreadOnly || !!filters.awaitingReply
     || filters.assignedTo === 'me' || filters.assignedTo === 'unassigned' || filters.aiHandling === 'active'
 
-  const segmentValue = filters.assignedTo === 'me' || filters.assignedTo === 'unassigned' ? filters.assignedTo
-    : (!filters.assignedTo || filters.assignedTo === 'all') ? 'all' : null
+  const segmentValue = abaAtiva(filters)
 
   return (
     <div className="px-3 pt-2.5 pb-2.5 space-y-2">
@@ -129,7 +133,7 @@ export function ConversationFiltersBar({
           label="Atendimento"
           options={SEGMENTS.map(({ label, value }) => ({ value, label }))}
           value={segmentValue as 'me' | 'unassigned' | 'all'}
-          onChange={(v) => set({ assignedTo: v })}
+          onChange={(v) => onFiltersChange(comAba(filters, v as AbaDaInbox))}
           variant="ink"
           className="flex-shrink-0 [&>button]:px-1.5"
         />

@@ -10,12 +10,42 @@ import type { ConversationFilters } from '@/types'
  * telas (`deal`, `negocio`…) nunca são tocados aqui.
  */
 
+/**
+ * A aba "Fila" (28/09, decisão do PO) = conversas PENDENTES que ninguém
+ * assumiu. "Pendente" já é, na operação, "precisa de atendimento humano" (a
+ * IA marca ao encaminhar); a Fila é o recorte sem dono — um conceito só, sem
+ * uma segunda regra para o operador aprender. Antes era "sem dono, de
+ * qualquer status": 2.243 conversas no banco local, metade resolvidas.
+ *
+ * "Sem atribuição" (menu Equipe) continua existindo, de qualquer status —
+ * agora distinto da Fila (na URL, `equipe=sem-dono`).
+ */
+export function ehFila(f: ConversationFilters): boolean {
+  return f.assignedTo === 'unassigned' && f.status === 'pending'
+}
+
+export type AbaDaInbox = 'me' | 'unassigned' | 'all'
+
+/** Qual aba do segmentado está marcada (nenhuma com "Sem atribuição" ou uma pessoa da equipe). */
+export function abaAtiva(f: ConversationFilters): AbaDaInbox | null {
+  if (f.assignedTo === 'me') return 'me'
+  if (ehFila(f)) return 'unassigned'
+  if (!f.assignedTo || f.assignedTo === 'all') return 'all'
+  return null
+}
+
+/** Troca de aba: entrar na Fila fixa "pendente"; sair dela devolve o status a "todos". */
+export function comAba(f: ConversationFilters, aba: AbaDaInbox): ConversationFilters {
+  if (aba === 'unassigned') return { ...f, assignedTo: 'unassigned', status: 'pending' }
+  return { ...f, assignedTo: aba, status: ehFila(f) ? 'all' : f.status }
+}
+
 const ABA_PARA_ASSIGNED: Record<string, ConversationFilters['assignedTo']> = {
   minhas: 'me',
-  fila: 'unassigned',
   todas: 'all',
 }
-const ASSIGNED_PARA_ABA: Record<string, string> = { me: 'minhas', unassigned: 'fila', all: 'todas' }
+const ASSIGNED_PARA_ABA: Record<string, string> = { me: 'minhas', all: 'todas' }
+const SEM_DONO = 'sem-dono'
 
 const STATUS = new Set(['open', 'pending', 'resolved'])
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -33,9 +63,15 @@ export function lerFiltros(sp: URLSearchParams): ConversationFilters {
   const aba = sp.get('aba')
   const equipe = sp.get('equipe')
   if (equipe && UUID.test(equipe)) f.assignedTo = equipe
+  else if (equipe === SEM_DONO) f.assignedTo = 'unassigned'
   else if (aba && ABA_PARA_ASSIGNED[aba]) f.assignedTo = ABA_PARA_ASSIGNED[aba]
   const status = sp.get('status')
   if (status && STATUS.has(status)) f.status = status as ConversationFilters['status']
+  // A Fila fixa o status: `aba=fila` vence um `status` avulso na URL.
+  if (aba === 'fila' && !f.assignedTo) {
+    f.assignedTo = 'unassigned'
+    f.status = 'pending'
+  }
   const ia = sp.get('ia')
   if (ia === 'atendendo') f.aiHandling = 'active'
   else if (ia === 'pausada') f.aiHandling = 'paused'
@@ -65,11 +101,14 @@ export function escreverFiltros(prev: URLSearchParams, f: ConversationFilters): 
   const next = new URLSearchParams(prev)
   for (const p of PARAMS_DOS_FILTROS) next.delete(p)
   const a = f.assignedTo
-  if (a && a !== 'all') {
+  const fila = ehFila(f)
+  if (fila) next.set('aba', 'fila')
+  else if (a && a !== 'all') {
     if (ASSIGNED_PARA_ABA[a]) next.set('aba', ASSIGNED_PARA_ABA[a])
+    else if (a === 'unassigned') next.set('equipe', SEM_DONO)
     else if (UUID.test(a)) next.set('equipe', a)
   }
-  if (f.status && f.status !== 'all') next.set('status', f.status)
+  if (!fila && f.status && f.status !== 'all') next.set('status', f.status)
   if (f.aiHandling === 'active') next.set('ia', 'atendendo')
   else if (f.aiHandling === 'paused') next.set('ia', 'pausada')
   if (f.unreadOnly) next.set('naoLidas', '1')
