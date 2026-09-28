@@ -14,6 +14,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { useRascunhoPendente, useSalvamento } from '../salvamentoContexto'
 import { CabecalhoDaSecao } from './Estrutura'
 import { OQueOAgenteRecebe } from './OQueOAgenteRecebe'
+import { AvisoDeFerramentas } from './AvisoDeFerramentas'
 import { useTamanhoDeToque } from '../useToque'
 
 const CHAVE = 'instrucoes'
@@ -130,6 +131,15 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
         >
           O Contexto da IA mudou depois que estas instruções foram geradas.
         </Banner>
+      )}
+
+      {!editando && (
+        <AvisoDeFerramentas
+          agent={agent}
+          tamanho={tam}
+          onEditar={() => setEditando(true)}
+          onRevisar={assistenteDisponivel ? () => setRevisando(true) : undefined}
+        />
       )}
 
       <div className="overflow-hidden rounded-lg border border-surface-700 bg-[var(--sf2)]">
