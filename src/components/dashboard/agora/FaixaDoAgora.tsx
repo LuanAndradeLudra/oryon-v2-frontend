@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
-import { formatarEspera, PRAZO_RESPOSTA_MIN, type ItemDaFila } from '@/lib/filaAgora'
+import { formatarEspera, janelaFechada, janelaFechando, PRAZO_RESPOSTA_MIN, type ItemDaFila } from '@/lib/filaAgora'
 import type { WhatsAppNumberDetailed } from '@/types'
 
-// Faixa do "agora" (direção A): quatro contagens do momento, todas tiradas das
+// Faixa do "agora" (direção A): seis contagens do momento, todas tiradas das
 // mesmas listas que a tela mostra logo abaixo — nenhuma é indicador de período
 // (esses ficam em Relatórios, e os KPIs estão com o outro dev; ver memória
 // dev-externo-dashboard-kpis). Cada célula diz o que conta.
@@ -11,13 +11,17 @@ interface Props {
   fila: ItemDaFila[]
   linhas: WhatsAppNumberDetailed[]
   linhasComIA: ReadonlySet<string>
+  /** Conversas que precisam de verificação (total do backend). */
+  verificarTotal: number
 }
 
 function conectada(l: WhatsAppNumberDetailed): boolean {
   return String(l.status).toLowerCase() === 'connected'
 }
 
-export function FaixaDoAgora({ fila, linhas, linhasComIA }: Props) {
+export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal }: Props) {
+  const fechando = fila.filter(janelaFechando).length
+  const fechadas = fila.filter(janelaFechada).length
   const semDono = fila.filter((i) => i.semDono).length
   const maior = fila[0]?.esperaMin ?? null
   const passou = fila.filter((i) => i.iaPassou)
@@ -48,6 +52,20 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA }: Props) {
       tom: passouSemDono > 0 ? 'atencao' : undefined,
     },
     {
+      id: 'janela',
+      rotulo: 'Janela de 24h fechando',
+      valor: String(fechando),
+      nota: fechadas > 0 ? `${fechadas} já ${fechadas === 1 ? 'fechou' : 'fecharam'} · só modelo` : 'nas próximas 2 h',
+      tom: fechando > 0 ? 'atencao' : undefined,
+    },
+    {
+      id: 'verificar',
+      rotulo: 'Precisam de verificação',
+      valor: String(verificarTotal),
+      nota: verificarTotal === 0 ? 'nenhuma agora' : 'a IA disse algo não confirmado',
+      tom: verificarTotal > 0 ? 'atencao' : undefined,
+    },
+    {
       id: 'linhas',
       rotulo: 'Linhas de WhatsApp',
       valor: linhas.length === 0 ? '—' : `${conectadas.length} de ${linhas.length}`,
@@ -58,17 +76,22 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA }: Props) {
 
   return (
     <div
-      className="grid grid-cols-2 lg:grid-cols-4 bg-surface-800 border border-surface-700 rounded-lg overflow-hidden"
+      className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 bg-surface-800 border border-surface-700 rounded-lg overflow-hidden"
       data-testid="faixa-do-agora"
     >
       {celulas.map((c, i) => (
         <div
           key={c.id}
           className={cn(
+            // Grade de 2 (celular), 3 (desktop) ou 6 (tela larga) colunas:
+            // divisória à esquerda de quem não abre linha e acima de quem não
+            // está na primeira linha.
             'px-4 py-3 min-w-0 border-surface-700',
-            i % 2 === 1 && 'border-l',
-            i >= 2 && 'border-t lg:border-t-0',
-            i === 2 && 'lg:border-l',
+            i % 2 === 1 && 'max-lg:border-l',
+            i >= 2 && 'max-lg:border-t',
+            i % 3 !== 0 && 'lg:max-2xl:border-l',
+            i >= 3 && 'lg:max-2xl:border-t',
+            i > 0 && '2xl:border-l',
           )}
         >
           <p className="text-[11.5px] font-medium text-surface-400 truncate">{c.rotulo}</p>

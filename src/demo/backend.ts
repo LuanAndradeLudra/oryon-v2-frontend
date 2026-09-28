@@ -135,6 +135,10 @@ export function instalarBackendDemo() {
     // `?awaitingReply=true` (a fila do Dashboard): a mesma regra do backend —
     // nenhuma resposta humana depois da última mensagem, conversa não encerrada.
     const aguardando = params?.get('awaitingReply') === 'true'
+    // `?needsReview=true`: a história não tem anomalia da IA — lista vazia.
+    if (params?.get('needsReview') === 'true') {
+      return { data: { ...paginado([]), statusCounts: { open: 0, pending: 0, resolved: 0, abandoned: 0 }, needsReviewCount: 0 } }
+    }
     const todas = heroConversations(estado)
     const lista = todas
       .filter((c) => !status || status === 'all' || c.status === status)

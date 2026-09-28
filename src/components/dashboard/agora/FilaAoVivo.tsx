@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bot, Check, ChevronDown, Inbox, UserPlus } from 'lucide-react'
+import { Bot, Check, ChevronDown, Clock, Inbox, ShieldAlert, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -15,7 +15,7 @@ import type { Conversation } from '@/types'
 // com o prazo à vista e as duas ações do PO (27/09) sem sair do painel —
 // Assumir (atribui a mim e abre a conversa) e Atribuir (escolhe alguém).
 
-export type FiltroDaFila = 'todas' | 'sem-dono' | 'ia-passou'
+export type FiltroDaFila = 'todas' | 'sem-dono' | 'ia-passou' | 'janela'
 
 /** Conversas por página. A lista rola dentro do cartão (altura fixa, PO 28/09). */
 const POR_PAGINA = 20
@@ -67,6 +67,7 @@ const FILTROS: Array<{ id: FiltroDaFila; rotulo: string }> = [
   { id: 'todas', rotulo: 'Todas' },
   { id: 'sem-dono', rotulo: 'Sem dono' },
   { id: 'ia-passou', rotulo: 'A IA passou' },
+  { id: 'janela', rotulo: 'Janela fechando' },
 ]
 
 export function FilaAoVivo({
@@ -168,14 +169,38 @@ export function FilaAoVivo({
                           {celular ? <span className="sr-only">IA passou</span> : 'IA passou'}
                         </span>
                       )}
+                      {c.hasRecentAnomaly && (
+                        <span
+                          className="inline-flex items-center gap-1 h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-status-pending-bg text-status-pending flex-shrink-0"
+                          title="A IA disse ter feito algo que o sistema não confirmou"
+                        >
+                          <ShieldAlert className="w-3 h-3" aria-hidden />
+                          {celular ? <span className="sr-only">Verificar</span> : 'Verificar'}
+                        </span>
+                      )}
                       {celular && chip}
                     </span>
                     <span className="block text-[12px] text-surface-400 truncate">{c.lastMessagePreview || 'Mídia'}</span>
                     <span className="flex items-center gap-1.5 text-[11px] text-surface-500 truncate">
+                      {item.janela?.state === 'closing' && (
+                        <>
+                          <span className="inline-flex items-center gap-1 text-status-pending font-semibold flex-shrink-0" title={item.janela.detail}>
+                            <Clock className="w-3 h-3" aria-hidden />
+                            janela {item.janela.label.toLowerCase()}
+                          </span>
+                          <span aria-hidden>·</span>
+                        </>
+                      )}
+                      {item.janela?.state === 'closed' && (
+                        <>
+                          <span className="text-danger font-semibold flex-shrink-0" title={item.janela.detail}>janela fechada · só modelo</span>
+                          <span aria-hidden>·</span>
+                        </>
+                      )}
                       {dono ? (
                         <span className="truncate">com {ehMinha ? 'você' : nomeDe(dono)}</span>
                       ) : (
-                        <span className="text-status-pending font-semibold">sem dono</span>
+                        <span className="text-status-pending font-semibold flex-shrink-0">sem dono</span>
                       )}
                       {mostrarLinha && rotuloDaLinha(c) && (
                         <>

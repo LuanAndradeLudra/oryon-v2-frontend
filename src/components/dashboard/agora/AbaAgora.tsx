@@ -8,12 +8,13 @@ import { useDashboardAgora } from '@/hooks/useDashboardAgora'
 import { useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import type { AbaDoPainel } from '@/lib/abaDoPainel'
 import { getApiErrorMessage } from '@/lib/utils'
-import type { ItemDaFila } from '@/lib/filaAgora'
+import { janelaFechando, type ItemDaFila } from '@/lib/filaAgora'
 import { lerPagina } from '@/lib/paginar'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { FaixaDoAgora } from './FaixaDoAgora'
 import { FilaAoVivo, type FiltroDaFila } from './FilaAoVivo'
 import { EquipeAgora } from './EquipeAgora'
+import { VerificacaoAgora } from './VerificacaoAgora'
 import { CabecalhoDoPainel } from '../CabecalhoDoPainel'
 
 // Aba "Agora" do Dashboard (direção A · Fila primeiro, PO 27/09): a faixa do
@@ -21,7 +22,7 @@ import { CabecalhoDoPainel } from '../CabecalhoDoPainel'
 // da fila vive na URL (`?fila=`), como todo estado de tela (regra do PO).
 
 function lerFiltro(v: string | null): FiltroDaFila {
-  return v === 'sem-dono' || v === 'ia-passou' ? v : 'todas'
+  return v === 'sem-dono' || v === 'ia-passou' || v === 'janela' ? v : 'todas'
 }
 
 function nomeDe(u: { firstName: string; lastName?: string | null }): string {
@@ -50,6 +51,7 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
   const filtro = lerFiltro(searchParams.get('fila'))
   const paginaDaFila = lerPagina(searchParams.get('filaPag'))
   const paginaDaEquipe = lerPagina(searchParams.get('equipePag'))
+  const paginaDaVerificacao = lerPagina(searchParams.get('verificarPag'))
   const [ocupadaId, setOcupadaId] = useState<string | null>(null)
   const [relogio, setRelogio] = useState(() => Date.now())
   useEffect(() => {
@@ -99,7 +101,7 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
     }, { replace: true })
   }
 
-  const setPagina = (param: 'filaPag' | 'equipePag', p: number) => {
+  const setPagina = (param: 'filaPag' | 'equipePag' | 'verificarPag', p: number) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       if (p <= 1) next.delete(param)
@@ -158,9 +160,11 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
     todas: d.fila.length,
     'sem-dono': d.fila.filter((i) => i.semDono).length,
     'ia-passou': d.fila.filter((i) => i.iaPassou).length,
+    janela: d.fila.filter(janelaFechando).length,
   }
   const itens = filtro === 'sem-dono' ? d.fila.filter((i) => i.semDono)
     : filtro === 'ia-passou' ? d.fila.filter((i) => i.iaPassou)
+    : filtro === 'janela' ? d.fila.filter(janelaFechando)
     : d.fila
 
   return (
@@ -171,7 +175,16 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
           A última atualização falhou. Os dados abaixo são de {d.atualizadoEm?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.
         </p>
       )}
-      <FaixaDoAgora fila={d.fila} linhas={d.linhas} linhasComIA={d.linhasComIA} />
+      <FaixaDoAgora fila={d.fila} linhas={d.linhas} linhasComIA={d.linhasComIA} verificarTotal={d.verificarTotal} />
+      <VerificacaoAgora
+        conversas={d.verificar}
+        total={d.verificarTotal}
+        meuId={user?.id}
+        agora={d.agora}
+        pagina={paginaDaVerificacao}
+        onPagina={(p) => setPagina('verificarPag', p)}
+        onAbrir={(c) => navigate(`/conversations?id=${c.id}`)}
+      />
       <div className="grid grid-cols-12 gap-3.5 items-start">
         <div className="col-span-12 xl:col-span-8">
           <FilaAoVivo

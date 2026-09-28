@@ -30,10 +30,13 @@ const CONVERSAS: Conversation[] = [
 ]
 
 const assign = vi.fn(() => Promise.resolve({ data: {} }))
-const list = vi.fn(() => Promise.resolve({ data: { data: CONVERSAS, total: CONVERSAS.length, page: 1, limit: 100, statusCounts: {} } }))
+const resposta = (data: Conversation[]) => Promise.resolve({ data: { data, total: data.length, page: 1, limit: 100, statusCounts: {} } })
+let aguardando: Conversation[] = CONVERSAS
+let aVerificar: Conversation[] = []
+const list = vi.fn((filtros: { needsReview?: boolean }) => resposta(filtros?.needsReview ? aVerificar : aguardando))
 
 vi.mock('@/services/api', () => ({
-  conversationsApi: { list: (...a: unknown[]) => list(...(a as [])), assign: (...a: unknown[]) => assign(...(a as [])) },
+  conversationsApi: { list: (...a: unknown[]) => list(...(a as [{ needsReview?: boolean }])), assign: (...a: unknown[]) => assign(...(a as [])) },
   usersApi: {
     available: () => Promise.resolve({ data: [
       { id: 'u1', firstName: 'Ana', lastName: 'Prado', email: 'a@x', role: 'agent', departmentId: null, isOnline: true, activeConversations: 4 },
@@ -77,7 +80,11 @@ function montar(url = '/dashboard') {
   )
 }
 
-beforeEach(() => { assign.mockClear(); list.mockClear(); toast.mockClear() })
+beforeEach(() => {
+  assign.mockClear(); list.mockClear(); toast.mockClear()
+  aguardando = CONVERSAS
+  aVerificar = []
+})
 afterEach(() => cleanup())
 
 describe('Dashboard · aba Agora', () => {
@@ -133,6 +140,54 @@ describe('Dashboard · aba Agora', () => {
     fireEvent.click(screen.getByRole('button', { name: /Todas/ }))
     await waitFor(() => expect(screen.getAllByTestId('fila-item')).toHaveLength(3))
     expect(screen.getByTestId('local').textContent).toBe('/dashboard')
+  })
+
+  it('a fila pagina dentro do cartão (20 por página) e a página fica na URL', async () => {
+    aguardando = Array.from({ length: 25 }, (_, i) => conversa('m' + i, 'Pessoa ' + i, { lastMessageAt: minAtras(100 - i) }))
+    montar()
+    await screen.findByText('Pessoa 0')
+    const fila = screen.getByTestId('fila-ao-vivo')
+    expect(within(fila).getAllByTestId('fila-item')).toHaveLength(20)
+    expect(within(fila).getByText('1–20 de 25')).toBeInTheDocument()
+    fireEvent.click(within(fila).getByRole('button', { name: 'Próxima página' }))
+    await waitFor(() => expect(within(fila).getAllByTestId('fila-item')).toHaveLength(5))
+    expect(screen.getByTestId('local').textContent).toBe('/dashboard?filaPag=2')
+  })
+
+  it('janela de 24h: marca quem está para fechar e quem já fechou, e filtra', async () => {
+    aguardando = [
+      conversa('j-fecha', 'Lúcia', { lastMessageAt: minAtras(22 * 60 + 30) }),
+      conversa('j-fechou', 'Otávio', { lastMessageAt: minAtras(26 * 60) }),
+      conversa('j-ok', 'Rita', { lastMessageAt: minAtras(5) }),
+    ]
+    montar()
+    await screen.findByText('Lúcia')
+    expect(screen.getByText('janela fecha em 1h')).toBeInTheDocument()
+    expect(screen.getByText('janela fechada · só modelo')).toBeInTheDocument()
+    const faixa = screen.getByTestId('faixa-do-agora')
+    expect(within(faixa).getByText('1 já fechou · só modelo')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Janela fechando/ }))
+    await waitFor(() => expect(screen.getAllByTestId('fila-item')).toHaveLength(1))
+    expect(screen.getByTestId('local').textContent).toBe('/dashboard?fila=janela')
+  })
+
+  it('precisam de verificação: o cartão aparece só quando há alguma e abre a conversa', async () => {
+    aVerificar = [conversa('v-1', 'Marcos', { hasRecentAnomaly: true, lastMessageSenderKind: 'ai' })]
+    aguardando = [conversa('v-1', 'Marcos', { hasRecentAnomaly: true })]
+    montar()
+    const cartao = await screen.findByTestId('verificacao-agora')
+    expect(list).toHaveBeenCalledWith({ needsReview: true }, 1, 50)
+    expect(within(screen.getByTestId('faixa-do-agora')).getByText('a IA disse algo não confirmado')).toBeInTheDocument()
+    // O selo também aparece na linha da fila.
+    expect(within(screen.getByTestId('fila-ao-vivo')).getByText('Verificar')).toBeInTheDocument()
+    fireEvent.click(within(cartao).getByRole('button', { name: 'Verificar a conversa com Marcos' }))
+    await waitFor(() => expect(screen.getByTestId('local').textContent).toBe('/conversations?id=v-1'))
+  })
+
+  it('sem nada a verificar, o cartão não ocupa espaço', async () => {
+    montar()
+    await screen.findByText('Carla')
+    expect(screen.queryByTestId('verificacao-agora')).toBeNull()
   })
 
   it('a equipe mostra o agente ligado à linha e as pessoas com a carga', async () => {

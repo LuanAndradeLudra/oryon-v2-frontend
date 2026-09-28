@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { esperaPessoa, faixaDoPrazo, montarFila, formatarEspera } from './filaAgora'
+import { esperaPessoa, faixaDoPrazo, montarFila, formatarEspera, janelaFechando, janelaFechada } from './filaAgora'
 import type { Conversation } from '@/types'
 
 const NOW = new Date('2026-09-28T09:00:00Z').getTime()
@@ -53,6 +53,20 @@ describe('fila do Dashboard', () => {
     expect(fila.map((i) => i.conversa.id)).toEqual(['b', 'c', 'a'])
     expect(fila[0]).toMatchObject({ esperaMin: 42, faixa: 'atrasada', iaPassou: true, semDono: true })
     expect(fila[1]).toMatchObject({ semDono: false, iaPassou: false })
+  })
+
+  it('marca a janela de 24h com a regra do produto (exata só quando o cliente falou por último)', () => {
+    const [fechando, fechada, passou] = [
+      montarFila([conv({ id: 'x', lastMessageAt: min(23 * 60) })], IA, NOW)[0],
+      montarFila([conv({ id: 'y', lastMessageAt: min(25 * 60) })], IA, NOW)[0],
+      montarFila([conv({ id: 'z', lastMessageAt: min(23 * 60), linha: 'ia', status: 'pending', lastMessageSenderKind: 'ai' })], IA, NOW)[0],
+    ]
+    expect(janelaFechando(fechando)).toBe(true)
+    expect(fechando.janela?.label).toBe('Fecha em 1h')
+    expect(janelaFechada(fechada)).toBe(true)
+    // A IA falou por último: a entrada do cliente é mais antiga, sem contagem.
+    expect(janelaFechando(passou)).toBe(false)
+    expect(passou.janela?.state).toBe('active')
   })
 
   it('formata a espera', () => {

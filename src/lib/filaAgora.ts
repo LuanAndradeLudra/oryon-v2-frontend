@@ -1,4 +1,5 @@
 import type { Conversation } from '@/types'
+import { computeWhatsAppWindow, type WhatsAppWindow } from '@/lib/whatsappWindow'
 
 /**
  * Fila do Dashboard (direção A · Fila primeiro, decisões do PO de 27/09).
@@ -9,9 +10,10 @@ import type { Conversation } from '@/types'
  * passou para a equipe (status "pendente").
  *
  * Antes o app tinha três definições (status pendente no Dashboard, "sem dono
- * e aberta" na Home, "sem dono" na inbox) e o card mostrava as 3 conversas MAIS RECENTES, não as que esperam há mais
- * tempo. Aqui a espera é contada da última mensagem (P1 do SCRUM-1161 pede ao
- * backend o "esperando desde" exato), e a lista sai da maior para a menor.
+ * e aberta" na Home, "sem dono" na inbox) e o card mostrava as 3 conversas
+ * MAIS RECENTES, não as que esperam há mais tempo. Aqui a espera é contada da
+ * última mensagem (P1 do SCRUM-1161 pede ao backend o "esperando desde"
+ * exato), e a lista sai da maior para a menor.
  *
  * Prazo: 15 min fixos (o mesmo limite com que o `sla-watcher` do backend já
  * avisa). Configurável por empresa é o item P4 do SCRUM-1161.
@@ -30,6 +32,22 @@ export interface ItemDaFila {
   /** A IA atende a linha e passou a conversa para a equipe (status pendente). */
   iaPassou: boolean
   semDono: boolean
+  /**
+   * Janela de 24h do WhatsApp — a MESMA regra do perfil do contato
+   * (`computeWhatsAppWindow`): exata quando o cliente falou por último,
+   * "ativa" sem contagem quando fomos nós (o backend não expõe
+   * `lastInboundAt` — P5 do SCRUM-1161).
+   */
+  janela: WhatsAppWindow | null
+}
+
+/** Janela prestes a fechar: depois dela, só modelo aprovado (pago). */
+export function janelaFechando(i: ItemDaFila): boolean {
+  return i.janela?.state === 'closing'
+}
+
+export function janelaFechada(i: ItemDaFila): boolean {
+  return i.janela?.state === 'closed'
 }
 
 type ConversaDaFila = Pick<Conversation, 'lastMessageSenderKind' | 'lastMessageAt' | 'lastAgentReplyAt' | 'aiPausedUntil' | 'status' | 'assignedUser' | 'whatsappNumber'>
@@ -108,6 +126,7 @@ export function montarFila(
       faixa: faixaDoPrazo(esperaMin),
       iaPassou: iaPassouParaEquipe(c, linhasComIA),
       semDono: !c.assignedUser,
+      janela: computeWhatsAppWindow({ lastMessageAt: c.lastMessageAt, lastMessageSenderKind: c.lastMessageSenderKind, now }),
     })
   }
   return out.sort((a, b) => b.esperaMin - a.esperaMin)

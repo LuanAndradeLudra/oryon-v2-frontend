@@ -34,7 +34,7 @@ export function DashboardPage() {
       if (a === 'agora') next.delete('aba')
       else next.set('aba', a)
       // Filtro e páginas são da aba Agora; não viajam para Relatórios.
-      if (a !== 'agora') { next.delete('fila'); next.delete('filaPag'); next.delete('equipePag') }
+      if (a !== 'agora') { next.delete('fila'); next.delete('filaPag'); next.delete('equipePag'); next.delete('verificarPag') }
       return next
     })
   }

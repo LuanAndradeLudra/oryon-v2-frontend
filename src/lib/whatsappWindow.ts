@@ -34,11 +34,13 @@ function fmtHoursLeft(h: number): string {
 export function computeWhatsAppWindow(opts: {
   lastMessageAt?: string | null
   lastMessageSenderKind?: SenderKind
+  /** Relógio de quem chama (o Dashboard recalcula a cada 30 s). */
+  now?: number
 }): WhatsAppWindow | null {
-  const { lastMessageAt, lastMessageSenderKind } = opts
+  const { lastMessageAt, lastMessageSenderKind, now = Date.now() } = opts
   if (!lastMessageAt) return null
 
-  const ageH = (Date.now() - new Date(lastMessageAt).getTime()) / 3_600_000
+  const ageH = (now - new Date(lastMessageAt).getTime()) / 3_600_000
   if (!Number.isFinite(ageH) || ageH < 0) return null
 
   // Sem atividade há >= 24h: janela certamente fechada (independe do remetente).

@@ -11,6 +11,8 @@ const RECARGA_MS = 60_000
 const RELOGIO_MS = 30_000
 /** Quantas conversas "aguardando" a fila lê de uma vez (ver P1 do SCRUM-1161). */
 export const LIMITE_DA_FILA = 100
+/** Quantas conversas "precisam de verificação" o painel lê de uma vez. */
+export const LIMITE_DA_VERIFICACAO = 50
 
 const EVENTOS = [
   'message:new',
@@ -32,10 +34,20 @@ export interface DashboardAgora {
   agentes: AgentConfig[] | null
   linhas: WhatsAppNumberDetailed[]
   linhasComIA: LinhasComIA
+  /**
+   * Conversas em que a IA disse ter feito algo que o sistema não confirmou
+   * (`agent_phantom_confirmation_handoff`, SCRUM-806) e ninguém verificou
+   * ainda. É o mesmo filtro "Precisam de verificação" da inbox.
+   */
+  verificar: Conversation[]
+  /** Total no backend (pode passar do que foi lido). */
+  verificarTotal: number
   carregando: boolean
   erro: boolean
   atualizadoEm: Date | null
   recarregar: () => void
+  /** Relógio do painel (anda a cada 30 s) — para os tempos relativos. */
+  agora: number
 }
 
 /**
@@ -71,6 +83,8 @@ export function useDashboardAgora(): DashboardAgora {
   const [equipe, setEquipe] = useState<AvailableUser[]>([])
   const [agentes, setAgentes] = useState<AgentConfig[] | null>(null)
   const [linhas, setLinhas] = useState<WhatsAppNumberDetailed[]>([])
+  const [verificar, setVerificar] = useState<Conversation[]>([])
+  const [verificarTotal, setVerificarTotal] = useState(0)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(false)
   const [atualizadoEm, setAtualizadoEm] = useState<Date | null>(null)
@@ -81,8 +95,9 @@ export function useDashboardAgora(): DashboardAgora {
     try {
       // A fila vem com folga e é ordenada no cliente pela maior espera: o
       // backend só ordena pela mensagem mais recente (P1 do SCRUM-1161).
-      const [convs, pessoas, numeros, ias] = await Promise.all([
+      const [convs, revisar, pessoas, numeros, ias] = await Promise.all([
         conversationsApi.list({ awaitingReply: true } as ConversationFilters, 1, LIMITE_DA_FILA),
+        conversationsApi.list({ needsReview: true } as ConversationFilters, 1, LIMITE_DA_VERIFICACAO).catch(() => null),
         usersApi.available().catch(() => ({ data: [] as AvailableUser[] })),
         whatsappNumbersApi.listDetailed().catch(() => ({ data: [] as WhatsAppNumberDetailed[] })),
         listAgents().catch(() => null),
@@ -91,6 +106,12 @@ export function useDashboardAgora(): DashboardAgora {
       const lista = Array.isArray(convs.data?.data) ? convs.data.data : []
       setConversas(lista)
       setFilaTruncada((convs.data?.total ?? lista.length) > lista.length)
+      // Falhou só esta leitura: mantém a anterior em vez de dizer "nenhuma".
+      if (revisar) {
+        const rev = Array.isArray(revisar.data?.data) ? revisar.data.data : []
+        setVerificar(rev)
+        setVerificarTotal(revisar.data?.total ?? rev.length)
+      }
       setEquipe(Array.isArray(pessoas.data) ? pessoas.data : [])
       setLinhas(Array.isArray(numeros.data) ? numeros.data : [])
       setAgentes(Array.isArray(ias) ? ias : null)
@@ -129,5 +150,5 @@ export function useDashboardAgora(): DashboardAgora {
   const fila = useMemo(() => montarFila(conversas, linhasComIA, agora), [conversas, linhasComIA, agora])
   const recarregar = useCallback(() => { void carregar() }, [carregar])
 
-  return { fila, filaTruncada, equipe, agentes, linhas, linhasComIA, carregando, erro, atualizadoEm, recarregar }
+  return { fila, filaTruncada, equipe, agentes, linhas, linhasComIA, verificar, verificarTotal, carregando, erro, atualizadoEm, recarregar, agora }
 }
