@@ -257,6 +257,9 @@ export function instalarBackendDemo() {
   // ── Agent-server (Agentes IA) ─────────────────────────────────────────────
   // O cliente do agent-server usa `fetch` e desembrulha `{ data }`.
   rota('agents/builder/configs', eq('get', '/agents/builder/configs'), () => ({ data: { data: AGENTES_DEMO } }))
+  // Seção Catálogo pergunta se os preços chegam à IA (onda 2 / A6). Na
+  // demonstração o agente fictício usa o catálogo, então sem aviso.
+  rota('agents/builder/runtime-flags', eq('get', '/agents/builder/runtime-flags'), () => ({ data: { data: { catalogInjection: true } } }))
   rota('agents/builder/configs/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+$/.test(u), ({ url }) => ({
     data: { data: agenteComFerramentas(url.split('/').pop()!) },
   }))
