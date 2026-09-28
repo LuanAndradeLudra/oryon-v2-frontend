@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Settings2 } from 'lucide-react'
 
 import { DateRangePicker }  from './DateRangePicker'
 import { KpiGrid }          from './KpiGrid'
@@ -290,8 +290,22 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
   useEffect(() => { fetchDashboard() }, [])
   const refresh = () => { fetchDashboard() }
 
+  const [personalizando, setPersonalizando] = useState(false)
+
+  // Linha da aba: Personalizar (os indicadores do topo) · período · atualizar.
   const dateAndRefreshActions = (
     <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setPersonalizando(true)}
+        disabled={!snapshot}
+        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border border-[var(--bd2)] text-xs font-semibold text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 disabled:pointer-events-none transition-colors"
+        title="Escolher e ordenar os indicadores do topo"
+      >
+        <Settings2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden />
+        <span className="hidden sm:inline">Personalizar</span>
+        <span className="sr-only sm:hidden">Personalizar indicadores</span>
+      </button>
       <DateRangePicker value={dateRange} onChange={setDateRange} />
       <button
         onClick={refresh}
@@ -347,7 +361,7 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
   return (
     <div className="space-y-3.5">
       {cabecalho}
-      <KpiGrid metrics={snapshot.kpis} />
+      <KpiGrid metrics={snapshot.kpis} customizerOpen={personalizando} onCustomizerClose={() => setPersonalizando(false)} />
 
       {/* Seção desligada por padrão (flag dashboardAiInsights) — não
           montar evita a chamada generateDashboardInsights() e o gasto

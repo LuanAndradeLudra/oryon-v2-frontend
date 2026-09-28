@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Settings2 } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
 import type { KpiId, KpiMetric } from '@/types/dashboard'
@@ -97,13 +97,20 @@ function KpiStrip({ metrics, queued }: { metrics: KpiMetric[]; queued: number })
 
 // ── KPI Grid ──────────────────────────────────────────────────────────────────
 
+/**
+ * O botão "Personalizar" mora na linha da aba (ao lado do período, pedido do
+ * PO 28/09) — quem abre é a aba; aqui fica a faixa e o drawer.
+ */
 export function KpiGrid({
   metrics,
+  customizerOpen,
+  onCustomizerClose,
 }: {
   metrics: KpiMetric[]
+  customizerOpen: boolean
+  onCustomizerClose: () => void
 }) {
   const [slots, setSlots] = useState<KpiId[]>(loadSlots)
-  const [customizerOpen, setCustomizerOpen] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(LS_KEY, JSON.stringify(slots)) } catch { /* ignore */ }
@@ -115,27 +122,6 @@ export function KpiGrid({
 
   return (
     <div>
-      {/* flex-wrap (SCRUM-1070): sem isto, em ~375px a soma de label + seletor
-          de período + "Personalizar" excedia a largura e o container pai
-          (overflow-hidden) cortava o botão fora da tela em vez de rolar. */}
-      <div className="flex items-center gap-3 mb-2 flex-wrap">
-        <div className="flex-1 min-w-0" />
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          {/* Eixo 10 (tema claro): border-surface-700/60 (opacidade
-              arbitrária) -> --bd2 sólido, mesma borda de input/botão do
-              resto do app. Settings2 sem versão desenhada da casa ->
-              strokeWidth explícito (DECISOES #18). Altura h-8 não mexida
-              (não fazia parte do achado, fora do escopo desta leva). */}
-          <button
-            onClick={() => setCustomizerOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-[var(--bd2)] hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors shrink-0"
-          >
-            <Settings2 className="w-3.5 h-3.5" strokeWidth={1.75} />
-            Personalizar
-          </button>
-        </div>
-      </div>
-
       {/* Hierarquia visual: os 5 primeiros KPIs da seleção do usuário formam a
           faixa (card único, hairlines); o restante fica compacto abaixo em
           cards soltos. A ordem dos slots continua sendo a do usuário —
@@ -144,7 +130,7 @@ export function KpiGrid({
 
       <KpiCustomizerDrawer
         open={customizerOpen}
-        onClose={() => setCustomizerOpen(false)}
+        onClose={onCustomizerClose}
         slots={slots}
         defaults={DEFAULT_KPI_SLOTS}
         onSave={setSlots}
