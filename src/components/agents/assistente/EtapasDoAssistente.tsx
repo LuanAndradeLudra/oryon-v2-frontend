@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Loader2, Send, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { Check, HelpCircle, Loader2, RefreshCw, Send, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   chatWithAgent, generateSpecText, type AgentSpec, type CrmCapabilityId, type HandoffSituation, type ReadinessItem,
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
 import { Textarea } from '@/components/ui/Textarea'
-import { OBJETIVOS, PADRAO_POR_OBJETIVO, PERGUNTAS_DE_ENSAIO, SITUACOES, TONS, textoParaEnsaio } from './especificacao'
+import { PERGUNTAS_DE_ENSAIO, SITUACOES, TONS, textoParaEnsaio } from './especificacao'
 
 type Mudar = (fn: (s: AgentSpec) => AgentSpec) => void
 
@@ -38,54 +38,38 @@ function Opcao({ ativa, onClick, titulo, descricao }: { ativa: boolean; onClick:
   )
 }
 
-// ── 1. Ponto de partida ──────────────────────────────────────────────────────
-
-export function EtapaPontoDePartida({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
-  const escolher = (goal: AgentSpec['identity']['goal']) => mudar((s) => {
-    const padrao = PADRAO_POR_OBJETIVO[goal]
-    return {
-      ...s,
-      identity: { ...s.identity, goal },
-      // Sugestão do objetivo só entra onde o dono ainda não mexeu.
-      capabilities: s.capabilities.length ? s.capabilities : padrao.capacidades.map((id) => ({ id })),
-      handoff: { ...s.handoff, situations: padrao.situacoes },
-    }
-  })
-  return (
-    <div className="space-y-6">
-      <FormField label="Tipo de negócio" hint='Ex.: "clínica odontológica", "loja de roupas", "escritório de contabilidade".'>
-        <Input value={spec.identity.segment ?? ''} onChange={(e) => mudar((s) => ({ ...s, identity: { ...s.identity, segment: e.target.value } }))} />
-      </FormField>
-      <div>
-        <p className="mb-2 text-sm font-medium text-surface-200">O principal que o agente vai fazer</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {OBJETIVOS.map((o) => (
-            <Opcao key={o.id} ativa={spec.identity.goal === o.id} onClick={() => escolher(o.id)} titulo={o.rotulo} descricao={o.descricao} />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── 2. Quem é o agente ───────────────────────────────────────────────────────
+// ── 3. Quem é o agente ───────────────────────────────────────────────────────
 
 export function EtapaQuemE({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
   const [gerando, setGerando] = useState(false)
   const [avisos, setAvisos] = useState<string[]>([])
   const [erro, setErro] = useState<string | null>(null)
-  const escrever = async () => {
+  // SCRUM-1190 — o que a IA precisou supor, com a pergunta que resolve.
+  const [suposicoes, setSuposicoes] = useState<Array<{ text: string; question: string }>>([])
+  const [respostas, setRespostas] = useState<Record<string, string>>({})
+  const escrever = async (base: AgentSpec = spec) => {
     setGerando(true)
     setErro(null)
     try {
-      const r = await generateSpecText(spec)
+      const r = await generateSpecText(base)
       mudar((s) => ({ ...s, persona: { ...s.persona, text: r.persona }, flow: { text: r.flow } }))
       setAvisos(r.warnings)
+      setSuposicoes(r.assumptions ?? [])
+      setRespostas({})
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'A IA não conseguiu escrever agora.')
     } finally {
       setGerando(false)
     }
+  }
+  const respondidas = suposicoes.filter((q) => respostas[q.question]?.trim())
+  const refazer = () => {
+    // As respostas ficam na especificação: valem para as próximas gerações também.
+    const novas = respondidas.map((q) => ({ question: q.question, answer: respostas[q.question].trim() }))
+    const answers = [...spec.context.answers.filter((a) => !novas.some((n) => n.question === a.question)), ...novas]
+    const proxima = { ...spec, context: { ...spec.context, answers } }
+    mudar((s) => ({ ...s, context: { ...s.context, answers } }))
+    void escrever(proxima)
   }
   return (
     <div className="space-y-6">
@@ -117,6 +101,33 @@ export function EtapaQuemE({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
           {avisos.map((a) => <span key={a} className="block">{a}</span>)}
         </Banner>
       )}
+      {suposicoes.length > 0 && (
+        <section aria-labelledby="suposicoes-titulo" className="rounded-lg border border-surface-700 p-4">
+          <h3 id="suposicoes-titulo" className="flex items-center gap-2 text-sm font-semibold text-surface-100">
+            <HelpCircle className="h-4 w-4 text-status-pending" aria-hidden /> O que a IA precisou supor
+          </h3>
+          <p className="mt-1 text-xs text-surface-400">Responda e o texto é refeito. Deixe em branco para manter a suposição.</p>
+          <ul className="mt-3 space-y-3">
+            {suposicoes.map((q) => (
+              <li key={q.question} className="space-y-1.5">
+                <p className="text-sm text-surface-200">{q.text}</p>
+                <Input
+                  aria-label={q.question}
+                  placeholder={q.question}
+                  value={respostas[q.question] ?? ''}
+                  onChange={(e) => setRespostas((r) => ({ ...r, [q.question]: e.target.value }))}
+                />
+              </li>
+            ))}
+          </ul>
+          <Button
+            className="mt-3" size="sm" variant="neutral" onClick={refazer} disabled={gerando || respondidas.length === 0}
+            leftIcon={gerando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          >
+            Refazer com as respostas
+          </Button>
+        </section>
+      )}
       <FormField label="Quem é o agente" hint="Personalidade e jeito de atender. Sem preços, endereço ou horários.">
         <Textarea rows={5} value={spec.persona.text} onChange={(e) => mudar((s) => ({ ...s, persona: { ...s.persona, text: e.target.value } }))} />
       </FormField>
@@ -127,7 +138,7 @@ export function EtapaQuemE({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
   )
 }
 
-// ── 3. O que ele pode fazer ──────────────────────────────────────────────────
+// ── 4. O que ele pode fazer ──────────────────────────────────────────────────
 
 export function EtapaPodeFazer({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
   const ligada = (id: CrmCapabilityId) => spec.capabilities.some((c) => c.id === id)
@@ -153,33 +164,6 @@ export function EtapaPodeFazer({ spec, mudar }: { spec: AgentSpec; mudar: Mudar 
         Agendar, consultar sistemas e outras integrações precisam ser conectadas depois de publicar (seção Capacidades do
         agente). Sem ferramenta, o agente explica e chama uma pessoa — não promete o que não consegue fazer.
       </Banner>
-    </div>
-  )
-}
-
-// ── 4. O que ele sabe ────────────────────────────────────────────────────────
-
-export function EtapaSabe({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
-  const linha = (chave: keyof AgentSpec['knowledge'], titulo: string, texto: string) => (
-    <li className="flex items-start gap-3 px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-surface-100">{titulo}</p>
-        <p className="mt-0.5 text-xs text-surface-400">{texto}</p>
-      </div>
-      <Switch checked={spec.knowledge[chave]} onChange={(v) => mudar((s) => ({ ...s, knowledge: { ...s.knowledge, [chave]: v } }))} />
-    </li>
-  )
-  return (
-    <div className="space-y-4">
-      <ul className="divide-y divide-surface-700 rounded-lg border border-surface-700">
-        {linha('useCompanyProfile', 'Dados da empresa', 'Nome, setor, descrição e site do Contexto da IA. Vinculados: mudou lá, o agente já sabe.')}
-        {linha('useCatalog', 'Produtos do catálogo', 'Os produtos e preços que você ligar para este agente.')}
-        {linha('usePractitioners', 'Profissionais', 'Quem ele pode citar, a partir do cadastro de profissionais.')}
-      </ul>
-      <p className="text-xs text-surface-500">
-        Documentos (tabelas, políticas, perguntas frequentes) entram depois de publicar, na seção Conhecimento, com um
-        relatório de leitura de cada arquivo.
-      </p>
     </div>
   )
 }

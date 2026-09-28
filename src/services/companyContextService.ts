@@ -139,6 +139,32 @@ async function saveHubToBackend(tenantId: string, data: CompanyHubData): Promise
   })
 }
 
+/**
+ * SCRUM-1190 — salva e ESPERA a resposta. O `saveHub` de cima é "atira e
+ * esquece"; o assistente precisa saber se gravou, porque sem permissão de
+ * administrador a empresa fica guardada no próprio agente como pendência.
+ * Devolve 'ok', 'forbidden' (sem permissão) ou 'error'.
+ */
+export async function saveHubAndWait(tenantId: string | undefined, data: CompanyHubData): Promise<'ok' | 'forbidden' | 'error'> {
+  if (!tenantId) return 'error'
+  try {
+    const res = await fetch(`${API}/context/brain`, {
+      method: 'PATCH',
+      headers: headers(),
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
+    if (res.status === 401 || res.status === 403) return 'forbidden'
+    if (!res.ok) return 'error'
+    cachedHub = { ...data, lastUpdatedAt: new Date().toISOString() }
+    cachedTenantId = tenantId
+    window.dispatchEvent(new CustomEvent('oryon:hub:updated', { detail: { tenantId } }))
+    return 'ok'
+  } catch {
+    return 'error'
+  }
+}
+
 // ─── RAG Sync ───────────────────────────────────────────────────────────────
 
 export async function syncBrainToRag(): Promise<{ synced: number; total: number }> {

@@ -3,18 +3,20 @@ import { motion } from 'framer-motion'
 import { Check, Cloud, CloudOff, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import api, { departmentsApi, whatsappNumbersApi } from '@/services/api'
+import api, { departmentsApi, practitionersApi, productsApi, whatsappNumbersApi } from '@/services/api'
+import { loadHubAsync } from '@/services/companyContextService'
 import {
   createSpecDraft, getAgent, getSpecDraft, getSpecReadiness, listAgentTestRuns, publishSpecDraft, saveSpecDraft,
-  type AgentConfigWithTools, type AgentSpec, type AgentTestRun, type ReadinessItem, type RepeatedFact,
+  type AgentConfigWithTools, type AgentSpec, type AgentTestRun, type ReadinessItem, type RepeatedFact, type StudySource,
 } from '@/services/agentsApi'
 import { rodarBateria } from '@/components/agents/bateria/bateria'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
-import { ETAPAS, faltaNaEtapa, specVazia } from './especificacao'
+import { ETAPAS, ETAPA_TEXTO, completarSpec, faltaNaEtapa, specVazia } from './especificacao'
 import {
-  EtapaEnsaio, EtapaNoAr, EtapaPodeFazer, EtapaPontoDePartida, EtapaQuemE, EtapaSabe, EtapaTransferencia,
+  EtapaEnsaio, EtapaNoAr, EtapaPodeFazer, EtapaQuemE, EtapaTransferencia,
 } from './EtapasDoAssistente'
+import { EtapaEstudar, EtapaOQueJaSei, type FontesDaConta } from './EtapasDeEstudo'
 
 type EstadoSalvo = 'salvando' | 'salvo' | 'sem-servidor'
 
@@ -26,10 +28,10 @@ const TIPO_FATO: Record<RepeatedFact['kind'], string> = {
 }
 
 const ENSINO: string[] = [
-  'Tudo que você responder aqui vira a especificação do agente. Nada é sobre IA: é sobre o seu negócio.',
-  'A IA escreve só a personalidade e o jeito de conduzir. Fatos (preço, horário, endereço) vêm das fontes, não do texto.',
+  'O Oryon lê o que a empresa já tem antes de fazer qualquer pergunta. Nada aqui é sobre IA: é sobre o seu negócio.',
+  'Um resumo do negócio montado a partir das fontes. Você só confirma ou corrige; as fontes ficam vinculadas.',
+  'A IA escreve com o que você confirmou e diz o que ainda teve de supor. Fatos (preço, horário, endereço) vêm das fontes.',
   'Cada ação marcada é uma ferramenta de verdade. O que não tiver ferramenta, o agente explica e passa para a equipe.',
-  'As fontes ficam vinculadas: mudou o cadastro da empresa ou o catálogo, o agente já sabe.',
   'Estas situações viram regras que transferem antes da IA responder, e a IA fica pausada enquanto a equipe atende.',
   'Teste como um cliente. Os testes ficam salvos e viram casos para conferir a cada mudança.',
   'Publicar é uma operação só: ou o agente fica pronto por inteiro, ou nada muda.',
@@ -61,6 +63,11 @@ export function AssistenteDeAgente({
   const [erroPublicar, setErroPublicar] = useState<string | null>(null)
   const carregado = useRef(false)
   const [fatosRepetidos, setFatosRepetidos] = useState<RepeatedFact[]>([])
+  // SCRUM-1190 — o que a conta já tem (cadastro, catálogo, profissionais) e o
+  // estado das fontes no último estudo.
+  const [fontes, setFontes] = useState<FontesDaConta>({ hub: null, catalogo: null, profissionais: null })
+  const [fontesLidas, setFontesLidas] = useState<StudySource[] | null>(null)
+  const [erroResumo, setErroResumo] = useState<string | null>(null)
 
   // Retoma o rascunho aberto (M15) ou cria um no servidor.
   useEffect(() => {
@@ -73,7 +80,7 @@ export function AssistenteDeAgente({
         if (guardado) {
           const d = await getSpecDraft(guardado).catch(() => null)
           if (d && !d.published_agent_id && vivo) {
-            setSpec(d.spec)
+            setSpec(completarSpec(d.spec))
             setEtapa(Math.min(Math.max(d.step, 1), ETAPAS.length))
             setDraftId(d.id)
             setSalvo('salvo')
@@ -84,10 +91,10 @@ export function AssistenteDeAgente({
         const { draft, repeatedFacts } = await createSpecDraft(agentId ? { agentId } : {})
         if (!vivo) return
         if (agentId) {
-          setSpec(draft.spec)
+          setSpec(completarSpec(draft.spec))
           setFatosRepetidos(repeatedFacts)
-          // Revisão: o texto do agente mora na etapa 2.
-          setEtapa(2)
+          // Revisão: abre direto no texto do agente.
+          setEtapa(ETAPA_TEXTO)
         }
         setDraftId(draft.id)
         setSalvo('salvo')
@@ -99,6 +106,13 @@ export function AssistenteDeAgente({
       }
     }
     void iniciar()
+    loadHubAsync(user?.tenantId).then((hub) => { if (vivo) setFontes((f) => ({ ...f, hub })) }).catch(() => {})
+    productsApi.list()
+      .then((r) => { if (vivo) setFontes((f) => ({ ...f, catalogo: { count: r.data.length, names: r.data.slice(0, 30).map((p) => p.name) } })) })
+      .catch(() => { if (vivo) setFontes((f) => ({ ...f, catalogo: { count: 0, names: [] } })) })
+    practitionersApi.list()
+      .then((r) => { if (vivo) setFontes((f) => ({ ...f, profissionais: r.data.length })) })
+      .catch(() => { if (vivo) setFontes((f) => ({ ...f, profissionais: 0 })) })
     departmentsApi.list().then((r) => { if (vivo) setSetores((r.data ?? []).map((d) => ({ id: d.id, name: d.name }))) }).catch(() => {})
     whatsappNumbersApi.list().then((r) => {
       if (vivo) setNumeros((r.data ?? []).map((n) => ({ id: n.id, displayPhoneNumber: n.displayPhoneNumber, label: n.label, agentId: (n as { agentId?: string | null }).agentId ?? null })))
@@ -227,8 +241,14 @@ export function AssistenteDeAgente({
 
           <div className="flex-1 overflow-y-auto">
             <div className="mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8">
-              {etapa === 1 && <EtapaPontoDePartida spec={spec} mudar={mudar} />}
-              {etapa === 2 && fatosRepetidos.length > 0 && (
+              {etapa === 1 && (
+                <EtapaEstudar
+                  spec={spec} mudar={mudar} fontes={fontes}
+                  onEstudado={(lidas, erroDoResumo) => { setFontesLidas(lidas); setErroResumo(erroDoResumo); setFalta(null); setEtapa(2) }}
+                />
+              )}
+              {etapa === 2 && <EtapaOQueJaSei spec={spec} mudar={mudar} fontes={fontes} fontesLidas={fontesLidas} erroResumo={erroResumo} />}
+              {etapa === ETAPA_TEXTO && fatosRepetidos.length > 0 && (
                 <Banner variant="warning" className="mb-6">
                   O texto atual repete {fatosRepetidos.length === 1 ? 'um fato que já vem' : 'fatos que já vêm'} das fontes. Tire daqui
                   para não ficar desatualizado quando o cadastro mudar:
@@ -237,9 +257,8 @@ export function AssistenteDeAgente({
                   </ul>
                 </Banner>
               )}
-              {etapa === 2 && <EtapaQuemE spec={spec} mudar={mudar} />}
-              {etapa === 3 && <EtapaPodeFazer spec={spec} mudar={mudar} />}
-              {etapa === 4 && <EtapaSabe spec={spec} mudar={mudar} />}
+              {etapa === ETAPA_TEXTO && <EtapaQuemE spec={spec} mudar={mudar} />}
+              {etapa === 4 && <EtapaPodeFazer spec={spec} mudar={mudar} />}
               {etapa === 5 && <EtapaTransferencia spec={spec} mudar={mudar} setores={setores} />}
               {etapa === 6 && <EtapaEnsaio spec={spec} mudar={mudar} />}
               {etapa === 7 && (

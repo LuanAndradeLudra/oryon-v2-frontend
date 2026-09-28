@@ -16,20 +16,28 @@ const api = vi.hoisted(() => ({
   generateSpecText: vi.fn(),
   chatWithAgent: vi.fn(),
   listAgentTestRuns: vi.fn(async () => []),
+  studyBusiness: vi.fn(),
   patch: vi.fn(),
   rodarBateria: vi.fn(async (_opts: unknown) => ({})),
+  loadHubAsync: vi.fn(),
+  saveHubAndWait: vi.fn(),
+  products: vi.fn(),
+  practitioners: vi.fn(),
 }))
+vi.mock('@/services/companyContextService', () => ({ loadHubAsync: api.loadHubAsync, saveHubAndWait: api.saveHubAndWait }))
 vi.mock('@/components/agents/bateria/bateria', () => ({ rodarBateria: api.rodarBateria }))
 vi.mock('@/services/agentsApi', () => api)
 vi.mock('@/services/api', () => ({
   default: { patch: api.patch },
   departmentsApi: { list: vi.fn(async () => ({ data: [{ id: 'd1', name: 'Recepção' }] })) },
+  productsApi: { list: api.products },
+  practitionersApi: { list: api.practitioners },
   whatsappNumbersApi: { list: vi.fn(async () => ({ data: [{ id: 'n1', displayPhoneNumber: '+55 24 99999-0000' }] })) },
 }))
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: 't1' } }) }))
 
 import { AssistenteDeAgente } from './AssistenteDeAgente'
-import { faltaNaEtapa, specVazia, textoParaEnsaio } from './especificacao'
+import { cobertura, completarSpec, faltaNaEtapa, specVazia, textoParaEnsaio } from './especificacao'
 
 const DRAFT = { id: 'draft-1', agent_id: null, spec: specVazia(), step: 1, published_agent_id: null, published_version: null, updated_at: '' }
 
@@ -38,18 +46,44 @@ beforeEach(() => {
   localStorage.clear()
   api.createSpecDraft.mockResolvedValue({ draft: DRAFT, repeatedFacts: [] })
   api.saveSpecDraft.mockResolvedValue(DRAFT)
+  api.loadHubAsync.mockResolvedValue(HUB_VAZIO)
+  api.saveHubAndWait.mockResolvedValue('ok')
+  api.products.mockResolvedValue({ data: [] })
+  api.practitioners.mockResolvedValue({ data: [] })
 })
 
+const HUB_VAZIO = {
+  companyName: '', industry: '', businessType: [], teamSize: '', description: '', productsServices: '',
+  website: '', instagram: '', facebook: '', linkedin: '', twitter: '', whatsapp: '', brandFiles: [], lastUpdatedAt: '',
+}
+
 describe('regras do assistente', () => {
-  it('etapas 1 e 2 exigem o mínimo; o ensaio usa só persona e fluxo', () => {
+  it('etapa 1 exige o tipo de negócio e o estudo; a do texto exige nome, persona e fluxo; o ensaio usa só persona e fluxo', () => {
     const s = specVazia()
     expect(faltaNaEtapa(1, s)).toMatch(/tipo de negócio/)
     s.identity.segment = 'Clínica'
+    expect(faltaNaEtapa(1, s)).toMatch(/Estudar meu negócio/)
+    s.context.studied = true
     expect(faltaNaEtapa(1, s)).toBeNull()
-    expect(faltaNaEtapa(2, s)).toMatch(/nome/)
+    expect(faltaNaEtapa(2, s)).toBeNull()
+    expect(faltaNaEtapa(3, s)).toMatch(/nome/)
     s.persona.text = 'Você é a Serrinha, recepcionista virtual.'
     s.flow.text = 'Cumprimente e entenda o pedido antes de responder.'
     expect(textoParaEnsaio(s)).toMatch(/^## Quem você é\nVocê é a Serrinha/)
+  })
+
+  it('rascunho antigo, sem contexto, é completado; cobertura sobe com confirmação e escolhas', () => {
+    const antigo = { ...specVazia() } as Partial<ReturnType<typeof specVazia>>
+    delete antigo.context
+    expect(completarSpec(antigo as ReturnType<typeof specVazia>).context.findings).toEqual([])
+    const s = specVazia()
+    expect(cobertura(s, { catalogo: false, profissionais: false })).toBe(0)
+    s.context.findings = [
+      { id: 'negocio', title: 'O negócio', text: 'x', source: 'site', confidence: 'confirmado', confirmed: true },
+      { id: 'jeito', title: 'Jeito', text: 'y', source: 'site', confidence: 'sugestao', confirmed: false },
+    ]
+    s.context.pricePolicy = 'evaluation'
+    expect(cobertura(s, { catalogo: false, profissionais: true })).toBe(35) // (1 + 0,5 + 1 + 1) / 10
   })
 })
 
@@ -115,7 +149,7 @@ describe('AssistenteDeAgente', () => {
 })
 
 describe('revisar agente existente', () => {
-  it('abre na etapa 2 com o texto do agente e aponta os fatos repetidos', async () => {
+  it('abre na etapa do texto e aponta os fatos repetidos', async () => {
     api.createSpecDraft.mockResolvedValue({
       draft: { ...DRAFT, agent_id: 'a1', spec: { ...specVazia(), identity: { name: 'Antigo', goal: 'outro', segment: 'Clínica' }, persona: { tone: 'acolhedor', text: 'Consulta R$ 155. Ligue (24) 99999-1234.' } } },
       repeatedFacts: [{ kind: 'preco', excerpt: 'R$ 155' }, { kind: 'telefone', excerpt: '(24) 99999-1234' }],
@@ -128,3 +162,99 @@ describe('revisar agente existente', () => {
     expect(localStorage.getItem('oryon:agentes:assistente:t1:agente:a1')).toBe('draft-1')
   })
 })
+
+// ── SCRUM-1190 — estudar o negócio antes de perguntar ──────────────────────
+describe('estudar o negócio', () => {
+  const ESTUDO = {
+    sources: [
+      { id: 'cadastro', label: 'Cadastro da empresa', state: 'ok', detail: '' },
+      { id: 'instagram', label: 'Instagram', state: 'partial', detail: 'Só a bio' },
+    ],
+    findings: [
+      { id: 'negocio', title: 'O negócio', text: 'Clínica odontológica familiar.', source: 'suas respostas', confidence: 'confirmado' },
+      { id: 'duvidas', title: 'Dúvidas mais comuns', text: 'Valor da avaliação e convênio.', source: 'típico do segmento', confidence: 'segmento' },
+    ],
+    summaryError: null,
+  }
+  const abrirNaEtapa1 = async () => {
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    await waitFor(() => expect(api.createSpecDraft).toHaveBeenCalled())
+    fireEvent.change(await screen.findByLabelText('Tipo de negócio'), { target: { value: 'clínica odontológica' } })
+  }
+
+  it('conta nova: 4 campos, grava no Contexto da IA, estuda e mostra o resumo para conferir', async () => {
+    api.studyBusiness.mockResolvedValue(ESTUDO)
+    await abrirNaEtapa1()
+    expect(await screen.findByText('Conte rapidinho sobre a empresa')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Nome da empresa'), { target: { value: 'Sorriso Serra' } })
+    fireEvent.change(screen.getByLabelText('Cidade ou região'), { target: { value: 'Teresópolis' } })
+    fireEvent.change(screen.getByLabelText('O que a empresa faz, numa frase'), { target: { value: 'Clínica odontológica familiar' } })
+    fireEvent.change(screen.getByLabelText('Site ou Instagram (opcional)'), { target: { value: '@sorrisoserra' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Estudar meu negócio' })) })
+
+    expect(api.saveHubAndWait).toHaveBeenCalledWith('t1', expect.objectContaining({
+      companyName: 'Sorriso Serra', description: 'Clínica odontológica familiar Em Teresópolis.', instagram: '@sorrisoserra', industry: 'clínica odontológica',
+    }))
+    expect(api.studyBusiness).toHaveBeenCalledWith(expect.objectContaining({
+      company: expect.objectContaining({ name: 'Sorriso Serra', city: 'Teresópolis' }),
+      catalog: { count: 0, names: [] }, practitioners: { count: 0 }, links: ['@sorrisoserra'],
+    }))
+    // Etapa 2: o que veio escrito já está confirmado; o do segmento espera o dono.
+    expect(await screen.findByText('Clínica odontológica familiar.')).toBeInTheDocument()
+    const botoes = screen.getAllByRole('button', { name: /Confirmado|Está certo/ })
+    expect(botoes.map((b) => b.textContent)).toEqual(['Confirmado', 'Está certo'])
+    fireEvent.click(botoes[1])
+    await waitFor(() => {
+      const ultimo = api.saveSpecDraft.mock.calls.at(-1)![1]
+      expect(ultimo.context.findings.map((f: { confirmed: boolean }) => f.confirmed)).toEqual([true, true])
+    }, { timeout: 2000 })
+    expect(screen.getByText('Instagram')).toBeInTheDocument()
+  })
+
+  it('sem permissão de administrador: guarda a empresa no agente e avisa', async () => {
+    api.saveHubAndWait.mockResolvedValue('forbidden')
+    api.studyBusiness.mockResolvedValue({ ...ESTUDO, findings: [] })
+    await abrirNaEtapa1()
+    fireEvent.change(await screen.findByLabelText('Nome da empresa'), { target: { value: 'Sorriso Serra' } })
+    fireEvent.change(screen.getByLabelText('O que a empresa faz, numa frase'), { target: { value: 'Clínica' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Estudar meu negócio' })) })
+    expect(await screen.findByText(/ficou guardada só neste agente/)).toBeInTheDocument()
+    await waitFor(() => expect(api.saveSpecDraft.mock.calls.at(-1)![1].context.pendingCompany).toMatchObject({ name: 'Sorriso Serra' }), { timeout: 2000 })
+  })
+
+  it('catálogo vazio vira escolha de comportamento', async () => {
+    api.studyBusiness.mockResolvedValue({ ...ESTUDO, findings: [] })
+    api.loadHubAsync.mockResolvedValue({ ...HUB_VAZIO, companyName: 'Sorriso Serra', description: 'Clínica familiar' })
+    await abrirNaEtapa1()
+    expect(await screen.findByText('Do Contexto da IA')).toBeInTheDocument()
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Estudar meu negócio' })) })
+    expect(api.saveHubAndWait).not.toHaveBeenCalled()
+    fireEvent.click(await screen.findByRole('button', { name: /Preço só na avaliação/ }))
+    await waitFor(() => expect(api.saveSpecDraft.mock.calls.at(-1)![1].context.pricePolicy).toBe('evaluation'), { timeout: 2000 })
+  })
+
+  it('pular: segue sem estudo e diz que a IA vai perguntar o que faltar', async () => {
+    await abrirNaEtapa1()
+    fireEvent.click(await screen.findByRole('button', { name: 'Pular e responder tudo' }))
+    expect(await screen.findByText(/Nada para conferir ainda/)).toBeInTheDocument()
+    expect(api.studyBusiness).not.toHaveBeenCalled()
+  })
+
+  it('a IA diz o que supôs; responder refaz o texto com a resposta guardada', async () => {
+    localStorage.setItem('oryon:agentes:assistente:t1', 'draft-1')
+    api.getSpecDraft.mockResolvedValue({ ...DRAFT, step: 3, spec: { ...specVazia(), identity: { name: 'Clara', goal: 'atender_agendar', segment: 'Clínica' } } })
+    api.generateSpecText
+      .mockResolvedValueOnce({ persona: 'Você é a Clara.', flow: '1. Cumprimente.', warnings: [], generatorVersion: 'v2',
+        assumptions: [{ text: 'Supus que só a equipe confirma horário.', question: 'A Clara pode confirmar sozinha?' }] })
+      .mockResolvedValueOnce({ persona: 'Você é a Clara, da recepção.', flow: '1. Cumprimente.', warnings: [], generatorVersion: 'v2', assumptions: [] })
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    const escrever = await screen.findByRole('button', { name: /Escrever com IA/ })
+    await act(async () => { fireEvent.click(escrever) })
+    expect(await screen.findByText('Supus que só a equipe confirma horário.')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('A Clara pode confirmar sozinha?'), { target: { value: 'Sim, pode confirmar.' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Refazer com as respostas' })) })
+    expect(api.generateSpecText.mock.calls[1][0].context.answers).toEqual([{ question: 'A Clara pode confirmar sozinha?', answer: 'Sim, pode confirmar.' }])
+    await waitFor(() => expect(screen.queryByText('Supus que só a equipe confirma horário.')).not.toBeInTheDocument())
+  })
+})
+

@@ -1245,6 +1245,54 @@ export interface AgentSpec {
   handoff: { situations: HandoffSituation[]; sectorName?: string | null; message?: string | null }
   channel: { whatsappNumberId?: string | null }
   tests: Array<{ question: string; answer?: string | null; verdict?: 'boa' | 'ruim' | null }>
+  /** SCRUM-1190 — o que o assistente descobriu e o dono confirmou. */
+  context: SpecContext
+}
+
+export type FindingConfidence = 'confirmado' | 'sugestao' | 'segmento'
+
+export interface SpecFinding {
+  id: string
+  title: string
+  text: string
+  source: string
+  confidence: FindingConfidence
+  /** O dono conferiu ou corrigiu. Só item confirmado entra como fato do negócio no gerador. */
+  confirmed: boolean
+}
+
+export interface SpecContext {
+  studied: boolean
+  findings: SpecFinding[]
+  answers: Array<{ question: string; answer: string }>
+  pricePolicy: 'catalog' | 'evaluation' | null
+  namePolicy: 'cite' | 'no_names' | null
+  /** Empresa digitada aqui sem permissão para salvar no Contexto da IA. */
+  pendingCompany: { name: string; city: string; description: string; link: string } | null
+}
+
+export interface StudySource {
+  id: 'cadastro' | 'site' | 'instagram' | 'catalogo' | 'profissionais'
+  label: string
+  state: 'ok' | 'partial' | 'empty' | 'na'
+  detail: string
+}
+
+export interface StudyResult {
+  sources: StudySource[]
+  findings: Array<Omit<SpecFinding, 'confirmed'>>
+  summaryError: string | null
+}
+
+/** SCRUM-1190 — estuda o negócio: estado das fontes e resumo com fonte e certeza. */
+export function studyBusiness(input: {
+  spec: AgentSpec
+  company: { name?: string; city?: string; industry?: string; description?: string; productsServices?: string }
+  catalog: { count: number; names: string[] }
+  practitioners: { count: number }
+  links: string[]
+}) {
+  return apiFetch<StudyResult>('/specs/study', { method: 'POST', body: JSON.stringify(input) })
 }
 
 export interface SpecDraft {
@@ -1295,7 +1343,11 @@ export function publishSpecDraft(id: string) {
 }
 
 export function generateSpecText(spec: AgentSpec, language?: string) {
-  return apiFetch<{ persona: string; flow: string; warnings: string[]; generatorVersion: string }>('/specs/generate-text', {
+  return apiFetch<{
+    persona: string; flow: string; warnings: string[]; generatorVersion: string
+    /** O que o gerador precisou supor, com a pergunta que resolve (SCRUM-1190). Ausente em servidor antigo. */
+    assumptions?: Array<{ text: string; question: string }>
+  }>('/specs/generate-text', {
     method: 'POST', body: JSON.stringify({ spec, language }),
   })
 }

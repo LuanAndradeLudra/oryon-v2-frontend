@@ -1,4 +1,4 @@
-import type { AgentGoal, AgentSpec, AgentTone, HandoffSituation } from '@/services/agentsApi'
+import type { AgentGoal, AgentSpec, AgentTone, HandoffSituation, SpecContext } from '@/services/agentsApi'
 import type { CrmCapabilityId } from '@/services/agentsApi'
 
 /**
@@ -7,15 +7,45 @@ import type { CrmCapabilityId } from '@/services/agentsApi'
  * os textos de exemplo e a prévia usada no ensaio.
  */
 
+// SCRUM-1190 — o assistente estuda o negócio antes de perguntar: "Ponto de
+// partida" vira "Estudar o negócio", e "O que ele sabe" (as fontes) passa a
+// ser "O que já sei", logo depois, com o resumo do que foi descoberto.
 export const ETAPAS = [
-  'Ponto de partida',
+  'Estudar o negócio',
+  'O que já sei',
   'Quem é o agente',
   'O que ele pode fazer',
-  'O que ele sabe',
   'Quando chamar uma pessoa',
   'Ensaio',
   'Colocar no ar',
 ] as const
+
+/** Etapa em que mora o texto do agente (revisão de um agente existente abre nela). */
+export const ETAPA_TEXTO = 3
+
+export function contextoVazio(): SpecContext {
+  return { studied: false, findings: [], answers: [], pricePolicy: null, namePolicy: null, pendingCompany: null }
+}
+
+/** Rascunho salvo antes do SCRUM-1190 não tem `context`: completa sem perder nada. */
+export function completarSpec(s: AgentSpec): AgentSpec {
+  return { ...s, context: { ...contextoVazio(), ...(s.context ?? {}) } }
+}
+
+/**
+ * Quanto o agente conhece da empresa, de 0 a 100: cada item do resumo conta
+ * inteiro quando o dono confirmou e metade quando é só sugestão; preço e
+ * profissionais contam quando há fonte ou uma escolha de comportamento. É um
+ * termômetro para o dono, não uma nota do agente.
+ */
+export function cobertura(spec: AgentSpec, fontes: { catalogo: boolean; profissionais: boolean }): number {
+  const ctx = spec.context
+  const itens = ctx.findings.reduce((a, f) => a + (f.confirmed ? 1 : f.confidence === 'segmento' ? 0.25 : 0.5), 0)
+  const precos = fontes.catalogo || ctx.pricePolicy ? 1 : 0
+  const nomes = fontes.profissionais || ctx.namePolicy ? 1 : 0
+  const total = 8 + 2
+  return Math.round(((Math.min(itens, 8) + precos + nomes) / total) * 100)
+}
 
 export function specVazia(): AgentSpec {
   return {
@@ -28,6 +58,7 @@ export function specVazia(): AgentSpec {
     handoff: { situations: ['pediu_humano'], sectorName: null, message: null },
     channel: { whatsappNumberId: null },
     tests: [],
+    context: contextoVazio(),
   }
 }
 
@@ -92,8 +123,11 @@ export function textoParaEnsaio(spec: AgentSpec): string {
 
 /** O que falta nesta etapa para seguir (vazio = pode seguir). */
 export function faltaNaEtapa(etapa: number, spec: AgentSpec): string | null {
-  if (etapa === 1 && !spec.identity.segment?.trim()) return 'Conte o tipo de negócio.'
-  if (etapa === 2) {
+  if (etapa === 1) {
+    if (!spec.identity.segment?.trim()) return 'Conte o tipo de negócio.'
+    if (!spec.context.studied) return 'Clique em "Estudar meu negócio" (ou em "Pular e responder tudo").'
+  }
+  if (etapa === ETAPA_TEXTO) {
     if (!spec.identity.name.trim()) return 'Dê um nome ao agente.'
     if (spec.persona.text.trim().length < 20) return 'Descreva quem é o agente (ou use "Escrever com IA").'
     if (spec.flow.text.trim().length < 20) return 'Descreva como ele conduz a conversa.'
