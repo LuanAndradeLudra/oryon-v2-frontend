@@ -4,6 +4,7 @@ import { resolveActivePreset } from '@/lib/dateRange'
 import { resolveHandlingValue } from '@/lib/conversationFilterState'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { TagFilterMenu } from './TagFilterMenu'
+import { semFiltros } from '@/lib/filtrosDaInbox'
 import type { ConversationFilters, Tag, User } from '@/types'
 
 // ── Esquema de filtros da lista (mock 1d) ────────────────────────────────────
@@ -105,20 +106,8 @@ export function ConversationFiltersBar({
   if (filters.untagged) pills.push({ key: 'untagged', label: 'Sem etiqueta', onRemove: () => set({ untagged: undefined }) })
   if (filters.needsReview) pills.push({ key: 'review', label: 'Precisam de verificação', onRemove: () => set({ needsReview: undefined }) })
 
-  const clearAll = () =>
-    onFiltersChange({
-      ...filters,
-      assignedTo: 'all',
-      aiHandling: 'all',
-      tagId: undefined,
-      unreadOnly: undefined,
-      awaitingReply: undefined,
-      untagged: undefined,
-      needsReview: undefined,
-      status: 'all',
-      startDate: undefined,
-      endDate: undefined,
-    })
+  // 28/09: o mesmo "Limpar filtros" do estado vazio da lista (semFiltros).
+  const clearAll = () => onFiltersChange(semFiltros(filters))
 
   const anyActive = pills.length > 0 || !!filters.tagId || !!filters.unreadOnly || !!filters.awaitingReply
     || filters.assignedTo === 'me' || filters.assignedTo === 'unassigned' || filters.aiHandling === 'active'

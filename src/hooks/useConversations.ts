@@ -237,7 +237,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       // SCRUM-561 — the 13-filter chain that used to be inlined here now lives
       // in conversationFilterPredicate, shared with the eviction path so the
       // two can't drift.
-      if (!conversationMatchesFilters(conv, filtersRef.current, userRef.current)) return
+      if (!conversationMatchesFilters(conv, filtersRef.current, userRef.current, { entrada: true })) return
 
       setConversations((prev) => {
         if (prev.some((c) => c.id === conversationId)) return prev

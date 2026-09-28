@@ -14,6 +14,7 @@ import { Fab } from '@/components/common/Fab'
 import { donoDoEvento, estadoDaIA, type EventoDeAtribuicao } from '@/lib/conversationSignals'
 import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
 import { chaveDosFiltros, escreverFiltros, lerFiltros } from '@/lib/filtrosDaInbox'
+import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
 import { pedirResolver } from '@/lib/conversationActions'
 import { useConversations } from '@/hooks/useConversations'
 import { useConversationFromUrl } from '@/hooks/useConversationFromUrl'
@@ -22,18 +23,17 @@ import { connectSocket, joinConversation, leaveConversation } from '@/services/s
 import { contactsApi, conversationsApi } from '@/services/api'
 import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
-import { useContacts } from '@/hooks/useContacts'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useListScrollMemory } from '@/hooks/useListScrollMemory'
 import { useAuth } from '@/contexts/AuthContext'
+import { getApiErrorMessage } from '@/lib/utils'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import type {
   Conversation, ConversationFilters,
-  SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, SocketUnreadUpdate,
+  SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew,
   Tag, User, DealOutcomeInput } from '@/types'
 
-const CURRENT_USER = { firstName: 'Admin', lastName: 'Oryon', avatarUrl: undefined }
 
 export function ConversationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -59,10 +59,8 @@ export function ConversationsPage() {
       return escreverFiltros(prev, typeof up === 'function' ? up(atual) : up)
     }, { replace: true })
   }, [setSearchParams])
-  const [totalUnread, setTotalUnread] = useState(0)
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
-  const { contacts: allContacts } = useContacts({}, { withDealsSummary: false })
   const { toast } = useToast()
   const isMobile = useIsMobile()
   const { user } = useAuth()
@@ -121,9 +119,12 @@ export function ConversationsPage() {
     // off-filter). Use the freshest copy from the list if still loaded, else
     // the activeConversation state itself — so it persists even if the list
     // was refetched without it.
+    // 28/09: vale para QUALQUER filtro, não só status — em "Fila", assumir
+    // (R) tirava a conversa aberta da lista e o J/K perdia a posição. Só não
+    // entra a conversa que cabe no filtro e apenas não foi carregada ainda.
     if (active && !list.some((c) => c.id === active.id)) {
       const row = conversations.find((c) => c.id === active.id) ?? active
-      if (!matches(row)) {
+      if (!matches(row) || !conversationMatchesFilters(row, filters, (user ?? null) as User | null)) {
         offFilterId = active.id
         const origIdx = conversations.findIndex((c) => c.id === active.id)
         if (origIdx >= 0) {
@@ -135,15 +136,12 @@ export function ConversationsPage() {
       }
     }
     return { visibleConversations: list, offFilterId }
-  }, [conversations, filters.status, activeConversation])
+  }, [conversations, filters, activeConversation, user])
 
   // ── Socket.IO real-time ────────────────────────────────────────────────────
   useSocket({
     onMessageNew: useCallback((payload: SocketMessageNew) => {
       handleNewMessage(payload)
-      if (payload.conversationId !== activeConversation?.id) {
-        setTotalUnread((p) => p + 1)
-      }
       // Phase 32 — outbound human messages now carry aiPausedUntil +
       // assignedUser via the same event. Mirror onto activeConversation so
       // the header pill flips state without a refetch.
@@ -170,9 +168,6 @@ export function ConversationsPage() {
       }
     }, [handleNewMessage, activeConversation?.id]),
 
-    onUnreadUpdate: useCallback((payload: SocketUnreadUpdate) => {
-      setTotalUnread(payload.total)
-    }, []),
 
     onConversationResolved: useCallback((payload: { conversationId: string }) => {
       handleResolved(payload)
@@ -194,9 +189,6 @@ export function ConversationsPage() {
     // Sidebar updates (conversation:updated replaces tenant-wide message:new for list)
     onConversationUpdated: useCallback((payload: SocketMessageNew) => {
       handleNewMessage(payload)
-      if (payload.conversationId !== activeConversation?.id) {
-        setTotalUnread((p) => p + 1)
-      }
       // Phase 32 — same as onMessageNew: keep activeConversation in lockstep
       // with the latest pause + assignment so the header pill is correct.
       if (activeConversation?.id === payload.conversationId) {
@@ -293,7 +285,6 @@ export function ConversationsPage() {
     // sobrepoe o chat; deve aparecer so quando o usuario aciona via menu.
     if (!isMobile) setInfoOpen(true)
     markAsRead(conv.id)
-    if (conv.unreadCount > 0) setTotalUnread((p) => Math.max(0, p - conv.unreadCount))
     // No mobile, lista e chat são telas alternadas — abrir uma conversa
     // precisa empilhar uma entrada de histórico própria (replace: false),
     // senão o gesto/botão de voltar do navegador pula direto pra tela
@@ -375,11 +366,19 @@ export function ConversationsPage() {
     )
   }, [])
 
-  const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => {
+  /** Devolve `false` quando falha (o popover de desfecho fica aberto). */
+  const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput): Promise<boolean> => {
     const rawBefore = conversations.find((c) => c.id === id)?.status
     // 'abandoned' não é um destino do seletor: só desfazemos entre os 3 do fluxo.
     const statusBefore = rawBefore === 'open' || rawBefore === 'pending' || rawBefore === 'resolved' ? rawBefore : undefined
-    await updateStatus(id, status, dealOutcome)
+    // 28/09: falha avisa (antes a tecla E virava rejeição sem tratamento).
+    try {
+      await updateStatus(id, status, dealOutcome)
+    } catch (err) {
+      if (pularAposResolverRef.current?.id === id) pularAposResolverRef.current = null
+      toast(getApiErrorMessage(err, 'Não foi possível mudar o status da conversa.'), 'error')
+      return false
+    }
     syncActive(id, { status })
     invalidateActivity(id)
     const pular = pularAposResolverRef.current
@@ -406,9 +405,10 @@ export function ConversationsPage() {
             .catch(() => toast('Não foi possível desfazer.', 'error'))
         },
       }, 8000)
-      return
+      return true
     }
     toast(msg, 'success')
+    return true
   }
 
   const handleAssign = async (convId: string, user: User | null) => {
@@ -525,7 +525,12 @@ export function ConversationsPage() {
   }
 
   const handleAddTag = async (convId: string, tag: Tag) => {
-    await addTag(convId, tag)
+    try {
+      await addTag(convId, tag)
+    } catch (err) {
+      toast(getApiErrorMessage(err, 'Não foi possível adicionar a etiqueta.'), 'error')
+      return
+    }
     setActiveConversation((prev) => {
       if (!prev || prev.id !== convId) return prev
       const existing = prev.tags ?? []
@@ -537,7 +542,12 @@ export function ConversationsPage() {
   }
 
   const handleRemoveTag = async (convId: string, tagId: string) => {
-    await removeTag(convId, tagId)
+    try {
+      await removeTag(convId, tagId)
+    } catch (err) {
+      toast(getApiErrorMessage(err, 'Não foi possível remover a etiqueta.'), 'error')
+      return
+    }
     setActiveConversation((prev) => {
       if (!prev || prev.id !== convId) return prev
       return { ...prev, tags: (prev.tags ?? []).filter((t) => t.id !== tagId) }
@@ -672,7 +682,6 @@ export function ConversationsPage() {
           offFilterId,
           filters,
           allTags,
-          allContacts,
           allUsers,
           onSelectConversation: handleSelectConversation,
           onFiltersChange: setFilters,

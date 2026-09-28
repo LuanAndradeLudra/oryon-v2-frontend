@@ -113,7 +113,7 @@ const JUDGE_SKIP_REASON_LABELS: Record<string, string> = {
 /**
  * B6 (SCRUM-941) — decisões do CRM Judge sobre a conversa de origem deste
  * negócio, incluindo o que ele decidiu NÃO fazer (skip_reason). Fetch
- * próprio (mount-time, sem realtime v1) — mesmo padrão de AgentActivitySection.
+ * próprio (mount-time, sem realtime v1) — mesmo padrão de ConversationActivitySection.
  * `deal.originConversationId` é o escopo hoje disponível; um negócio tocado
  * pelo Judge em MAIS de uma conversa só mostra a de origem (limitação
  * conhecida — a rota do agent-server é por conversa, não por negócio).

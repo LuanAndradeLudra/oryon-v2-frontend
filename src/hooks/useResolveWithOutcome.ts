@@ -21,7 +21,8 @@ export interface UseResolveWithOutcomeOptions {
   conversationId: string
   contactId: string
   /** Resolve a conversa (com ou sem desfecho) — a mesma ação do dropdown de status. */
-  onResolve: (dealOutcome?: DealOutcomeInput) => void | Promise<void>
+  /** `false` = não resolveu (o popover fica aberto para tentar de novo). */
+  onResolve: (dealOutcome?: DealOutcomeInput) => void | boolean | Promise<void | boolean>
 }
 
 export interface ResolveWithOutcomeState {
@@ -136,7 +137,8 @@ export function useResolveWithOutcome({ conversationId, contactId, onResolve }: 
       if (payload.amountCents !== undefined && target.dealId) {
         await dealsApi.update(target.dealId, { amountCents: payload.amountCents })
       }
-      await onResolve(payload.dealOutcome)
+      const ok = await onResolve(payload.dealOutcome)
+      if (ok === false) return
       window.dispatchEvent(new CustomEvent(DEALS_INVALIDATE_EVENT, { detail: { contactId } }))
       close()
     } finally {

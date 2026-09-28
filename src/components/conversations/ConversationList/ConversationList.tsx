@@ -7,7 +7,8 @@ import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
 import { QuickFiltersMenu } from './QuickFiltersMenu'
 import { cn } from '@/lib/utils'
-import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
+import { semFiltros } from '@/lib/filtrosDaInbox'
+import type { Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
 
 interface ConversationListProps {
   conversations: Conversation[]
@@ -28,7 +29,6 @@ interface ConversationListProps {
   offFilterId?: string | null
   filters: ConversationFilters
   allTags: Tag[]
-  allContacts: Contact[]
   /** Team roster — drives the "Equipe" filter dropdown. Optional so
    *  callers that don't surface the assignment filter (e.g. embedded
    *  previews) can omit it; the dropdown then only shows "Sem atribuição". */
@@ -82,7 +82,11 @@ export function ConversationList({
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0
     if (scrollPositionRef) scrollPositionRef.current = 0
-  }, [filters.status, filters.search, filters.assignedTo, filters.tagId, filters.contactId, scrollPositionRef])
+  // 28/09: todos os filtros — antes Não lidas, IA, verificação, sem etiqueta e
+  // período mantinham a rolagem da lista anterior na lista nova.
+  }, [filters.status, filters.search, filters.assignedTo, filters.tagId, filters.contactId,
+    filters.unreadOnly, filters.aiHandling, filters.needsReview, filters.untagged, filters.awaitingReply,
+    filters.startDate, filters.endDate, filters.whatsappNumberId, scrollPositionRef])
 
   // Infinite scroll — trigger `onLoadMore` when the user scrolls within 200px
   // of the bottom. Replaced an IntersectionObserver-based sentinel that wasn't
@@ -193,7 +197,8 @@ export function ConversationList({
       <div
         ref={listRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overscroll-y-contain"
+        // pb no celular: o botão flutuante "Nova conversa" cobria a última linha.
+        className="flex-1 overflow-y-auto overscroll-y-contain pb-24 md:pb-0"
         style={{ contain: 'layout style', willChange: 'transform' }}
       >
         {loading && conversations.length === 0 ? (
@@ -214,7 +219,7 @@ export function ConversationList({
                   : 'Quando alguém escrever pelo WhatsApp, a conversa aparece aqui.'
               }
               action={activeFilterLabels.length > 0
-                ? { label: 'Limpar filtros', onClick: () => onFiltersChange({ status: 'all' }) }
+                ? { label: 'Limpar filtros', onClick: () => onFiltersChange(semFiltros(filters)) }
                 : undefined}
             />
           </div>

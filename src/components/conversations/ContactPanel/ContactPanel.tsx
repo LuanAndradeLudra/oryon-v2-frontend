@@ -9,7 +9,7 @@ import {
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { TagPickerContent } from '@/components/ui/TagPicker'
-import { ConfirmModal, Modal } from '@/components/ui/Modal'
+import { Modal } from '@/components/ui/Modal'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { estadoDaIA } from '@/lib/conversationSignals'
@@ -113,7 +113,7 @@ interface ContactPanelProps {
 export function ContactPanel({
   conversation, allTags, allUsers, onClose,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
-  onAssign, onTransfer, onArchive,
+  onAssign, onTransfer,
 }: ContactPanelProps) {
   const { contact, tags = [], assignedUser, createdAt, lastMessageAt } = conversation
 
@@ -125,7 +125,6 @@ export function ContactPanel({
   const [tagOpen,     setTagOpen]     = useState(false)
   const [assignOpen,  setAssignOpen]  = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
-  const [archiveOpen, setArchiveOpen] = useState(false)
   const [stageOpen,   setStageOpen]   = useState(false)
   const [localStage, setLocalStage] = useState<string | undefined | null>(contact.stage)
   useEffect(() => { setLocalStage(contact.stage) }, [contact.id, contact.stage])
@@ -328,18 +327,6 @@ export function ContactPanel({
         <ConversationActivitySection conversationId={conversation.id} />
 
       </div>
-
-      {/* Archive confirm modal */}
-      <ConfirmModal
-        open={archiveOpen}
-        onClose={() => setArchiveOpen(false)}
-        onConfirm={() => { onArchive(); setArchiveOpen(false) }}
-        title="Arquivar conversa"
-        impact={{ label: `A conversa com ${contact.displayName} ficará como "Abandonada"`, tone: 'warning' }}
-        description="Tem certeza que deseja arquivar esta conversa?"
-        confirmLabel="Arquivar"
-        danger
-      />
       {addToPipeline.dialogs}
     </aside>
   )

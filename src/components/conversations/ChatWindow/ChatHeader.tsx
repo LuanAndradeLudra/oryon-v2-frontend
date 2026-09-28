@@ -46,7 +46,7 @@ interface ChatHeaderProps {
   allTags: TagType[]
   allUsers: User[]
   /** F10 (SCRUM-882): ao resolver com desfecho, `dealOutcome` vai junto (fecha o registro-alvo antes de resolver). */
-  onStatusChange: (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | Promise<void>
+  onStatusChange: (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | boolean | Promise<void | boolean>
   onToggleInfo: () => void
   infoOpen: boolean
   onAddTag: (tag: TagType) => void

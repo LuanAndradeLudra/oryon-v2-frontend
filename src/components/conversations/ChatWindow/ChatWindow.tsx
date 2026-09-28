@@ -14,7 +14,7 @@ interface ChatWindowProps {
   allTags: Tag[]
   allUsers: User[]
   /** F10 (SCRUM-882): `dealOutcome` chega junto com `resolved` quando o atendente registrou o desfecho. */
-  onStatusChange: (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | Promise<void>
+  onStatusChange: (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | boolean | Promise<void | boolean>
   onToggleInfo: () => void
   infoOpen: boolean
   onAddTag: (convId: string, tag: Tag) => void
@@ -84,8 +84,6 @@ export function ChatWindow({
     const socket = getSocket()
     const handleNew = (payload: SocketMessageNew) => {
       if (payload.conversationId === conversation.id && payload.message) {
-        // Temporary: log incoming message type to aid debugging (can be removed after reaction support is validated)
-        console.debug('[socket:message:new]', { type: payload.message.type, wamid: payload.message.wamid, payload })
         addIncomingMessage(payload.message)
       }
     }
@@ -125,7 +123,7 @@ export function ChatWindow({
   const handleStatusChange = async (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => {
     if (!conversation) return
     if (conversation.status === status) return
-    await onStatusChange(conversation.id, status, dealOutcome)
+    return onStatusChange(conversation.id, status, dealOutcome)
   }
 
   // Janela de 24h do WhatsApp contada da última mensagem DO CLIENTE (28/09 —

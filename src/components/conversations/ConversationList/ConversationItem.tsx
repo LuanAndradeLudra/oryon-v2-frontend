@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { estadoDaIA, getAssignment, getAwaitingReply } from '@/lib/conversationSignals'
 import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
+import { useRelogioDoMinuto } from '@/hooks/useRelogioDoMinuto'
 import { renderHighlightedSnippet } from '@/lib/searchHighlight'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -87,7 +88,9 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
   const hasUnread = unreadCount > 0 && !isActive
   const assignment = getAssignment(conversation)
   const linhasDaIA = useLinhasDaIA()
-  const awaiting = getAwaitingReply(conversation, linhasDaIA.linhasComIA)
+  // O relógio compartilhado faz a espera andar sozinha (a linha é memo).
+  const agora = useRelogioDoMinuto()
+  const awaiting = getAwaitingReply(conversation, linhasDaIA.linhasComIA, agora)
   const estadoIA = estadoDaIA(conversation, linhasDaIA)
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
@@ -277,7 +280,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             )}
             {awaiting && (() => {
               // Urgência progressiva: âmbar vira vermelho quando a espera passa de 15min.
-              const waitMin = (Date.now() - new Date(lastMessageAt).getTime()) / 60000
+              const waitMin = (agora - new Date(lastMessageAt).getTime()) / 60000
               const critical = waitMin >= 15
               return (
                 <span

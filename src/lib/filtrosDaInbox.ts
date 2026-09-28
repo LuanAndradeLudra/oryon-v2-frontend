@@ -91,3 +91,13 @@ export function escreverFiltros(prev: URLSearchParams, f: ConversationFilters): 
 export function chaveDosFiltros(sp: URLSearchParams): string {
   return PARAMS_DOS_FILTROS.map((p) => `${p}=${sp.get(p) ?? ''}`).join('&')
 }
+
+/**
+ * "Limpar filtros" — UM comportamento para a barra e para o estado vazio
+ * (28/09: o do estado vazio zerava também a busca e o filtro de linha da
+ * TopBar; o da barra mantinha). Ficam a busca, o contato e a linha: cada um
+ * tem controle próprio à vista.
+ */
+export function semFiltros(f: ConversationFilters): ConversationFilters {
+  return { status: 'all', search: f.search, contactId: f.contactId, whatsappNumberId: f.whatsappNumberId }
+}
