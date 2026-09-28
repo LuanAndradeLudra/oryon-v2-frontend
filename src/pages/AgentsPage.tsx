@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
-import type { AgentConfigWithTools } from '@/services/agentsApi'
+import { getAgentRuntimeFlags, type AgentConfigWithTools } from '@/services/agentsApi'
 import { AgentBuilderWizard } from '@/components/agents/AgentBuilderWizard'
+import { AssistenteDeAgente } from '@/components/agents/assistente/AssistenteDeAgente'
 import { PaginaDoAgente } from '@/components/agents/pagina/PaginaDoAgente'
 import { ListaDeAgentes } from '@/components/agents/pagina/ListaDeAgentes'
 import { ehSecao, rotaDoAgente, secaoDaAbaAntiga, SECAO_PADRAO } from '@/components/agents/pagina/secoesDoAgente'
@@ -24,6 +25,14 @@ export function AgentsPage() {
   const navigate = useNavigate()
   const [criando, setCriando] = useState(false)
   const legado = searchParams.get('agent')
+  // Onda 4 — assistente novo atrás de FF_AGENT_SPEC_WIZARD (agent-server).
+  // `?assistente=novo` abre a pré-visualização mesmo com a flag desligada.
+  const [assistenteNovo, setAssistenteNovo] = useState(searchParams.get('assistente') === 'novo')
+  useEffect(() => {
+    let vivo = true
+    getAgentRuntimeFlags().then((f) => { if (vivo && f.specWizard) setAssistenteNovo(true) }).catch(() => {})
+    return () => { vivo = false }
+  }, [])
 
   useRegisterTopBarActions(
     <Button size="sm" onClick={() => setCriando(true)} leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}>
@@ -56,8 +65,9 @@ export function AgentsPage() {
 
       {/* Criar agente — assistente em tela cheia, também no celular. */}
       <AnimatePresence>
-        {criando && (
-          <AgentBuilderWizard key="agent-builder-wizard" onClose={() => setCriando(false)} onCreated={aoCriar} />
+        {criando && (assistenteNovo
+          ? <AssistenteDeAgente key="assistente-de-agente" onClose={() => setCriando(false)} onCreated={aoCriar} />
+          : <AgentBuilderWizard key="agent-builder-wizard" onClose={() => setCriando(false)} onCreated={aoCriar} />
         )}
       </AnimatePresence>
     </>

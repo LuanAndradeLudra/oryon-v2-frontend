@@ -1222,12 +1222,81 @@ export async function getEffectivePrompt(agent: Pick<AgentConfigWithTools, 'id' 
   })
 }
 
+// ─── Especificação do agente (onda 4) ────────────────────────────────────────
+// Espelho de agent-server/src/services/agentSpec.ts.
+
+export type AgentGoal = 'atender_agendar' | 'tirar_duvidas' | 'qualificar' | 'outro'
+export type AgentTone = 'acolhedor' | 'direto' | 'formal' | 'descontraido'
+export type HandoffSituation = 'pediu_humano' | 'reclamacao' | 'urgencia' | 'fora_do_escopo'
+
+export interface AgentSpec {
+  schemaVersion: 1
+  identity: { name: string; icon?: string; segment?: string | null; goal: AgentGoal }
+  persona: { tone: AgentTone; text: string }
+  flow: { text: string }
+  capabilities: Array<{ id: CrmCapabilityId; constraints?: CrmCapabilityConstraints }>
+  knowledge: { useCompanyProfile: boolean; useCatalog: boolean; usePractitioners: boolean }
+  handoff: { situations: HandoffSituation[]; sectorName?: string | null; message?: string | null }
+  channel: { whatsappNumberId?: string | null }
+  tests: Array<{ question: string; answer?: string | null; verdict?: 'boa' | 'ruim' | null }>
+}
+
+export interface SpecDraft {
+  id: string
+  agent_id: string | null
+  spec: AgentSpec
+  step: number
+  published_agent_id: string | null
+  published_version: number | null
+  updated_at: string
+}
+
+export interface RepeatedFact { kind: 'preco' | 'telefone' | 'site' | 'empresa' | 'endereco'; excerpt: string }
+
+export interface ReadinessItem {
+  id: 'identidade' | 'ensaio' | 'fontes' | 'numero'
+  label: string
+  ok: boolean
+  blocking: boolean
+  detail?: string
+}
+
+export function createSpecDraft(opts: { agentId?: string; spec?: AgentSpec } = {}) {
+  return apiFetch<{ draft: SpecDraft; repeatedFacts: RepeatedFact[] }>('/specs/drafts', {
+    method: 'POST', body: JSON.stringify(opts),
+  })
+}
+
+export function getSpecDraft(id: string) {
+  return apiFetch<SpecDraft>(`/specs/drafts/${id}`)
+}
+
+export function saveSpecDraft(id: string, spec: AgentSpec, step: number) {
+  return apiFetch<SpecDraft>(`/specs/drafts/${id}`, { method: 'PUT', body: JSON.stringify({ spec, step }) })
+}
+
+export function getSpecReadiness(id: string) {
+  return apiFetch<{ ready: boolean; items: ReadinessItem[] }>(`/specs/drafts/${id}/readiness`)
+}
+
+export function publishSpecDraft(id: string) {
+  return apiFetch<{ agentId: string; version: number; alreadyPublished: boolean }>(`/specs/drafts/${id}/publish`, { method: 'POST' })
+}
+
+export function generateSpecText(spec: AgentSpec, language?: string) {
+  return apiFetch<{ persona: string; flow: string; warnings: string[]; generatorVersion: string }>('/specs/generate-text', {
+    method: 'POST', body: JSON.stringify({ spec, language }),
+  })
+}
+
 // ─── Runtime flags ────────────────────────────────────────────────────────────
 
 /** O que o motor do agente faz hoje neste tenant, para a tela não prometer além. */
 export interface AgentRuntimeFlags {
   /** Os produtos escolhidos na seção Catálogo chegam ao modelo na conversa. */
   catalogInjection: boolean
+  /** Onda 4 — o "Novo agente" abre o assistente de 7 etapas. */
+  specWizard?: boolean
 }
 
 export async function getAgentRuntimeFlags(): Promise<AgentRuntimeFlags> {
