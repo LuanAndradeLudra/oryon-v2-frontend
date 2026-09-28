@@ -20,7 +20,7 @@ import { PipelineBoardTab } from '@/components/deals/PipelineBoardTab'
 import { PipelineReportsTab } from '@/components/deals/reports/PipelineReportsTab'
 import type { Pipeline } from '@/types'
 
-type Tab = 'board' | 'reports'
+type Tab = 'board' | 'list' | 'reports'
 
 export function PipelinePage() {
   const { id } = useParams<{ id: string }>()
@@ -50,7 +50,8 @@ export function PipelinePage() {
    */
   const { pathname } = useLocation()
   const saindo = !pathname.startsWith('/pipelines/')
-  const tab: Tab = searchParams.get('tab') === 'reports' ? 'reports' : 'board'
+  const tabParam = searchParams.get('tab')
+  const tab: Tab = tabParam === 'reports' || tabParam === 'list' ? tabParam : 'board'
 
   /**
    * Busca do quadro — o campo é do CABEÇALHO (ao lado do seletor de funil) e
@@ -174,7 +175,7 @@ export function PipelinePage() {
                 key={p.id}
                 onClick={() => {
                   setSeletorAberto(false)
-                  if (!atual) navigate(`/pipelines/${p.id}${tab === 'reports' ? '?tab=reports' : ''}`)
+                  if (!atual) navigate(`/pipelines/${p.id}${tab !== 'board' ? `?tab=${tab}` : ''}`)
                 }}
               >
                 <span className="w-2 h-2 rounded-[2px] flex-shrink-0" style={{ backgroundColor: p.color }} />
@@ -207,7 +208,7 @@ export function PipelinePage() {
     </span>
   ) : null
 
-  const novoNegocioBtn = tab === 'board' && pipelineValido && (etapaInicial || processoAtual) ? (
+  const novoNegocioBtn = tab !== 'reports' && pipelineValido && (etapaInicial || processoAtual) ? (
     <Button
       size="sm"
       variant="primary"
@@ -259,7 +260,7 @@ export function PipelinePage() {
   // já fazia. Sem nenhum funil disponível, não há pra onde cair: volta pra Home.
   if (!pipeline || pipeline.isArchived) {
     const fallback = getDefaultPipeline(pipelines)
-    if (fallback) return <Navigate to={`/pipelines/${fallback.id}${tab === 'reports' ? '?tab=reports' : ''}`} replace />
+    if (fallback) return <Navigate to={`/pipelines/${fallback.id}${tab !== 'board' ? `?tab=${tab}` : ''}`} replace />
     return <Navigate to="/home" replace />
   }
 
@@ -279,6 +280,7 @@ export function PipelinePage() {
         onChange={setTab}
         options={[
           { value: 'board', label: 'Quadro' },
+          { value: 'list', label: 'Lista' },
           { value: 'reports', label: 'Relatórios' },
         ]}
       />
@@ -288,7 +290,7 @@ export function PipelinePage() {
           (deals.service.ts); só no QUADRO: a aba de relatórios agrega por
           etapa e período, e um campo que some ao trocar de aba é mais honesto
           do que um que fica visível sem fazer nada. */}
-      {tab === 'board' && (
+      {tab !== 'reports' && (
         <div className="relative w-56 flex-shrink-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
           <input
@@ -381,8 +383,9 @@ export function PipelinePage() {
             exit={semMovimento ? { opacity: 0 } : { opacity: 0, pointerEvents: "none" }}
             transition={{ duration: semMovimento ? 0 : 0.26, ease: "easeOut" }}
           >
-            {tab === 'board' ? (
+            {tab !== 'reports' ? (
               <PipelineBoardTab
+                view={tab === 'list' ? 'list' : 'board'}
                 pipeline={pipeline}
                 pipelines={pipelines}
                 onDealsChanged={fetchPipelines}

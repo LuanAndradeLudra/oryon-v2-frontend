@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, type ReactNode } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Layers } from 'lucide-react'
 import { DealsBoard } from '@/components/deals/DealsBoard'
+import { DealsList, type ListSort } from '@/components/deals/DealsList'
 import { BoardFilterBar } from '@/components/deals/BoardFilterBar'
 import { FunnelLensBar } from '@/components/deals/FunnelLensBar'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
@@ -49,6 +50,8 @@ interface PipelineBoardTabProps {
   /** Barra única do funil: a página entrega o início (visão + busca) e o fim (Etapas). */
   toolbarLead?: ReactNode
   toolbarTrail?: ReactNode
+  /** Direção C: o mesmo recorte do quadro, em colunas (`board`) ou em linhas (`list`). */
+  view?: 'board' | 'list'
 }
 
 /**
@@ -59,7 +62,7 @@ interface PipelineBoardTabProps {
  * motivo, "Novo negócio", "Adicionar contato ao funil") vive aqui agora —
  * fora do contexto da tabela de contatos, que não é mais irmã dela na tela.
  */
-export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, novoNegocioEtapaId, onNovoNegocioEtapa, novoContatoAberto, onNovoContato, toolbarLead, toolbarTrail }: PipelineBoardTabProps) {
+export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, novoNegocioEtapaId, onNovoNegocioEtapa, novoContatoAberto, onNovoContato, toolbarLead, toolbarTrail, view = 'board' }: PipelineBoardTabProps) {
   const { toast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -112,6 +115,20 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
   const setLens = (l: FunnelLens) => setParam('lente', l === 'todos' ? null : l)
   const allClosed = searchParams.get('fechados') === 'todos'
   const setAllClosed = (v: boolean) => setParam('fechados', v ? 'todos' : null)
+  const LIST_SORTS: ListSort[] = ['etapa', 'valor', 'previsao', 'parado']
+  const ordemParam = searchParams.get('ordem') as ListSort | null
+  const listSort: ListSort = ordemParam && LIST_SORTS.includes(ordemParam) ? ordemParam : 'etapa'
+  const listDesc = searchParams.get('desc') === '1'
+  const setListSort = (next: ListSort) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev)
+      // Clicar na mesma coluna inverte; outra coluna começa crescente.
+      const desc = next === listSort ? !listDesc : false
+      if (next === 'etapa') p.delete('ordem'); else p.set('ordem', next)
+      if (desc) p.set('desc', '1'); else p.delete('desc')
+      return p
+    }, { replace: true })
+  }
   const multiOpenOnly = searchParams.get('multi') === '1'
   const setMultiOpenOnly = (fn: (v: boolean) => boolean) => setParam('multi', fn(multiOpenOnly) ? '1' : null)
   const canFilterMultiOpen = !!pipeline.allowMultipleOpen
@@ -262,6 +279,25 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
       .catch((e: unknown) => toast(getApiErrorMessage(e, 'Não foi possível mover o negócio para o funil.'), 'error'))
   }
 
+  // ── Ações em lote da Lista ────────────────────────────────────────────────
+  // Uma chamada por negócio (não existe rota em lote); falhas não param o
+  // resto — o aviso diz quantos deram certo.
+  const emLote = async (deals: Deal[], fn: (d: Deal) => Promise<unknown>, feito: string) => {
+    const r = await Promise.allSettled(deals.map(fn))
+    const ok = r.filter((x) => x.status === 'fulfilled').length
+    const falhou = deals.length - ok
+    void refetch()
+    onDealsChanged?.()
+    if (falhou === 0) toast(`${ok} ${ok === 1 ? pipelineNoun(pipeline) : pipelineNoun(pipeline) + 's'} ${feito}.`, 'success')
+    else toast(`${ok} de ${deals.length} ${feito}; ${falhou} não ${falhou === 1 ? 'deu' : 'deram'} certo.`, 'error')
+  }
+  const handleBulkOwner = (deals: Deal[], ownerUserId: string | null) =>
+    emLote(deals, (d) => dealsApi.update(d.id, { ownerUserId }), 'com responsável trocado')
+  const handleBulkStage = (deals: Deal[], stageId: string) =>
+    emLote(deals.filter((d) => d.stageId !== stageId), (d) => dealsApi.moveStage(d.id, stageId), 'movidos de etapa')
+  const handleBulkPipeline = (deals: Deal[], pipelineId: string) =>
+    emLote(deals, (d) => dealsApi.movePipeline(d.id, pipelineId), 'transferidos de funil')
+
   const handleOpenDealContact = (contactId: string) => {
     // Board isolado (sem drawer de contato irmão na mesma tela) — a ficha
     // completa é o destino natural aqui, ao contrário do antigo
@@ -333,6 +369,25 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
         )}
       </BoardFilterBar>
       <FunnelLensBar value={lens} onChange={setLens} counts={counts} hasUser={!!user?.id} />
+      {view === 'list' ? (
+      <DealsList
+        stages={sortedStages}
+        deals={Object.values(visibleDealsByStage).flat()}
+        users={users}
+        pipeline={pipeline}
+        pipelines={pipelines}
+        loading={loading}
+        sort={listSort}
+        sortDesc={listDesc}
+        onSort={setListSort}
+        onOpenDeal={openDeal}
+        onOpenContact={handleOpenDealContact}
+        selectedDealId={openDealId}
+        onBulkOwner={handleBulkOwner}
+        onBulkStage={handleBulkStage}
+        onBulkPipeline={handleBulkPipeline}
+      />
+      ) : (
       <DealsBoard
         stages={sortedStages}
         dealsByStage={visibleDealsByStage}
@@ -352,6 +407,7 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
         showContextStrip={false}
         closedWindow={{ allClosed, hidden: hiddenClosed, onToggle: () => setAllClosed(!allClosed) }}
       />
+      )}
 
       {newDealStageId && (
         <NewDealDialog
