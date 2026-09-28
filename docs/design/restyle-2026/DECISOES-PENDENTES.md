@@ -187,3 +187,39 @@ Previsão depois; **aviso "encerra a conversa e pausa 1 automação" ao fechar S
   automação ao fechar um negócio.
 - Esc não fecha a ficha do negócio (herdado, `DealPanelContext`); `FunnelsConfigDrawer` com z-index fixo fora
   do `useLayer` (herdado) — não tocados nesta passada.
+
+## Dashboard — passada estrutural, direção A · Fila primeiro (27–28/09)
+
+Canvas: https://claude.ai/artifact/BNKradGSf8kbfD7zsCP77y · backend rastreado no **SCRUM-1161** (P1–P5).
+Commits: `9bdb080` · `b0bd9a5`.
+
+**Decidido pelo PO:** direção A; "fila" = esperando resposta humana; prazo de 15 min fixo por enquanto; Home
+pessoal e Dashboard operacional; Assumir e Atribuir no painel; atualiza a cada minuto e com eventos; nome do
+menu "Dashboard" (era "Relatórios"). 28/09: Fila e Equipe com altura fixa, rolagem interna e paginação;
+entram a janela de 24h e as conversas que precisam de verificação.
+
+**Como ficou:** abas Agora (padrão) | Relatórios (`?aba=`); Relatórios é o conteúdo antigo sem os três cartões
+do "agora" (Fila agora, Equipe, Ao vivo), que liam errado. Estado de tela na URL: `?fila=`, `?filaPag=`,
+`?equipePag=`, `?verificarPag=`.
+
+**Regra da fila (achado no código, 28/09):** o handoff do produto (regra de transferência ou ferramenta do
+agente) NÃO pausa a IA — marca a conversa como pendente e às vezes atribui; a IA pode seguir respondendo. Por
+isso a fila inclui "IA passou" (linha com IA + pendente) mesmo com a IA falando por último. Resto: nenhuma
+resposta humana desde a última mensagem (`lastAgentReplyAt`) e cliente por último numa linha sem IA ou com a
+IA pausada. A conversa não traz o agente da linha; o conjunto de linhas com IA vem de `/whatsapp/numbers` +
+agentes ativos.
+
+**Em aberto:**
+- Espera contada da última mensagem, não de quando o cliente passou a esperar — P1 (`waitingSince` e ordenar
+  pela maior espera no backend; hoje a fila lê 100 e ordena no navegador, com aviso quando há mais).
+- Números do Agente IA no dia (atendidas, passadas, resolvidas) — P2; a linha do agente mostra só "ligado" e
+  as linhas que atende.
+- Presença sem evento no socket — P3; entra na recarga do minuto.
+- Prazo configurável por empresa — P4.
+- Janela de 24h exata só quando o cliente falou por último; nas conversas em que a IA passou (IA por último)
+  fica "ativa" sem contagem — P5 (`lastInboundAt` na conversa). Mesma limitação do composer e do perfil.
+- Home: saíram Equipe, Números WhatsApp e Atendimento agora; os KPIs da Home não foram tocados (dev externo).
+- Propostas da revisão de produto ainda não decididas: conversa atribuída a pessoa offline, filtro "Minhas",
+  saúde das linhas (qualidade/limite), campanha disparando agora, negócios parados.
+- Os componentes antigos `FilaAgoraCard`, `TeamMiniCard` e `LiveNowCard` ficaram sem uso — remover numa
+  limpeza.
