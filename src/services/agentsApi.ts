@@ -1137,10 +1137,21 @@ export interface GuardSignal {
   repair?: { rung: number | null; llmCalls: number | null } | null
 }
 
+/** A regra ou FAQ que respondeu no lugar do modelo (bancada, onda 3). */
+export interface SimulatedReply {
+  kind: 'handoff_rule' | 'auto_reply' | 'redirect' | 'faq'
+  ruleName: string
+  message: string
+  /** Em produção a conversa iria para uma pessoa. */
+  transfers: boolean
+}
+
 export interface ChatTurnDebug {
   toolCalls: ToolCall[]
-  turnSummary: TurnSummary
+  /** Ausente quando uma regra respondeu sem chamar o modelo. */
+  turnSummary?: TurnSummary
   guard: GuardSignal | null
+  simulated?: SimulatedReply | null
 }
 
 export type ChatWithAgentResult = { message: string } & ChatTurnDebug
@@ -1150,20 +1161,29 @@ export async function chatWithAgent(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   meta: { sessionId?: string; agentId?: string } = {},
 ): Promise<ChatWithAgentResult> {
-  const data = await apiFetch<{ message: string; toolCalls: ToolCall[]; turnSummary: TurnSummary; guard?: GuardSignal }>('/chat', {
+  const data = await apiFetch<{
+    message: string; toolCalls?: ToolCall[]; turnSummary?: TurnSummary; guard?: GuardSignal; simulated?: SimulatedReply
+  }>('/chat', {
     method: 'POST',
     body: JSON.stringify({
       system_prompt: systemPrompt,
       messages,
       session_id: meta.sessionId ?? null,
       agent_id:   meta.agentId  ?? null,
+      // Onda 3 — a bancada recebe o mesmo prompt da produção (montado em
+      // camadas no agent-server, com empresa e dicas do WhatsApp) e as regras
+      // de transferência/FAQ são avaliadas antes do modelo, como lá.
+      prompt_mode: 'compiled',
+      channel: 'whatsapp',
+      simulate_rules: true,
     }),
   })
   return {
     message: data.message,
-    toolCalls: data.toolCalls,
+    toolCalls: data.toolCalls ?? [],
     turnSummary: data.turnSummary,
     guard: data.guard ?? null,
+    simulated: data.simulated ?? null,
   }
 }
 

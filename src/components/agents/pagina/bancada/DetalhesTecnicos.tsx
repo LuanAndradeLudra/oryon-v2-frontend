@@ -54,6 +54,9 @@ function Verificacao({ g }: { g: GuardSignal }) {
 
 export function DetalhesTecnicos({ debug }: { debug: ChatTurnDebug }) {
   const s = debug.turnSummary
+  if (!s) {
+    return <p className="text-xs text-surface-400">Respondido por regra, sem chamada ao modelo.</p>
+  }
   const modelo = s.model.includes('haiku') ? 'Haiku' : s.model.includes('sonnet') ? 'Sonnet' : s.model
   return (
     <div className="space-y-3 text-xs">

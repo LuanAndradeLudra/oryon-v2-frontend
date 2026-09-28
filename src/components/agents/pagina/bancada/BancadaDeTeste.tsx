@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  AlertTriangle, ArrowRightLeft, BookOpen, ChevronDown, History, MessageSquareDashed, Plug, RotateCcw, Send,
+  AlertTriangle, ArrowRightLeft, BookOpen, ChevronDown, History, ListChecks, MessageSquareDashed, Plug, RotateCcw, Send,
   ShieldCheck, Sparkles, Wand2, X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -32,6 +32,7 @@ const ICONE: Record<TipoDeFonte, LucideIcon> = {
   transferencia: ArrowRightLeft,
   verificacao: AlertTriangle,
   instrucoes: MessageSquareDashed,
+  regra: ListChecks,
 }
 
 const SUGESTOES = ['Quanto custa uma consulta?', 'Vocês aceitam meu convênio?', 'Quero falar com uma pessoa']
@@ -165,7 +166,7 @@ export function BancadaDeTeste({
       )
       setMensagens((m) => [...m, {
         id: `a-${Date.now()}`, papel: 'assistant', texto: r.message, em: new Date(),
-        debug: { toolCalls: r.toolCalls, turnSummary: r.turnSummary, guard: r.guard },
+        debug: { toolCalls: r.toolCalls, turnSummary: r.turnSummary, guard: r.guard, simulated: r.simulated },
       }])
       if (!avisouTeste.current) { avisouTeste.current = true; onTestou() }
     } catch (e) {
