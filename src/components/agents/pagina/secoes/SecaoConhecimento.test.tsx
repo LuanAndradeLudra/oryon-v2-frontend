@@ -25,7 +25,8 @@ vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast }) }))
 vi.mock('../salvamentoContexto', () => ({ useSalvamento: () => ({ salvar: (fn: () => Promise<unknown>) => fn() }) }))
 vi.mock('@/components/agents/KnowledgeDocArtifact', () => ({ KnowledgeDocArtifact: () => null }))
 
-import { SecaoConhecimento } from './SecaoConhecimento'
+import { RelatorioDoDocumento, SecaoConhecimento } from './SecaoConhecimento'
+import { render as renderSolo, screen } from '@testing-library/react'
 
 const AGENT = { id: 'agent-1' } as never
 
@@ -69,5 +70,31 @@ describe('SecaoConhecimento — envio de arquivo', () => {
     enviar(container, new File(['x'], 'planilha.xlsx'))
     await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringMatching(/não suportado/), 'error'))
     expect(api.addAgentKnowledge).not.toHaveBeenCalled()
+  })
+})
+
+// Onda 4 (M12/M13) — relatório de leitura e repasse do corte da extração.
+describe('relatório do documento', () => {
+  const base = { id: 'd', agent_id: 'a', tenant_id: 't', document_name: 'x', source_type: 'file', content_preview: '', chunk_count: 0, created_at: '' }
+
+  it('mostra trechos, tamanho e os avisos de corte e de busca só por texto', () => {
+    renderSolo(<RelatorioDoDocumento doc={{ ...base, status: 'ready', quality: { chunks: 4, chars: 12000, embedded: false, chunker: 'structural', truncated: true, warning: null, indexedAt: '' } }} />)
+    expect(screen.getByText(/4 trechos · 12\.000 caracteres/)).toBeInTheDocument()
+    expect(screen.getByText('lido só em parte')).toBeInTheDocument()
+    expect(screen.getByText('só busca por texto')).toBeInTheDocument()
+  })
+
+  it('documento com erro mostra o motivo', () => {
+    renderSolo(<RelatorioDoDocumento doc={{ ...base, status: 'error', error_message: 'Falha ao preparar a busca do documento' }} />)
+    expect(screen.getByText(/Falha ao preparar a busca/)).toBeInTheDocument()
+  })
+
+  it('o corte percebido na extração vai junto ao salvar o documento', async () => {
+    api.extractBrandFileDetailed.mockResolvedValue({ text: 'parte', truncated: true, warning: 'lido só em parte' })
+    const { container } = render(<SecaoConhecimento agent={AGENT} onMudou={() => {}} />)
+    await waitFor(() => expect(api.listAgentKnowledge).toHaveBeenCalled())
+    enviar(container, new File(['x'], 'precos.pdf', { type: 'application/pdf' }))
+    await waitFor(() => expect(api.addAgentKnowledge).toHaveBeenCalled())
+    expect(api.addAgentKnowledge.mock.calls[0][1]).toMatchObject({ quality_hints: { truncated: true, warning: 'lido só em parte' } })
   })
 })

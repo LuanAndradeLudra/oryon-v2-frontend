@@ -27,6 +27,26 @@ const STATUS_DOC: Record<string, { rotulo: string; cor: string }> = {
 
 const ORIGEM: Record<string, string> = { file: 'Arquivo', text: 'Texto', url: 'Página' }
 
+/** Onda 4 — o que o painel sabe da leitura do arquivo, em uma linha. */
+export function RelatorioDoDocumento({ doc }: { doc: AgentKnowledgeDoc }) {
+  if (doc.status === 'error') {
+    return doc.error_message ? <p className="mt-1 text-xs text-danger">{doc.error_message}</p> : null
+  }
+  const q = doc.quality
+  if (!q) return null
+  const partes = [
+    `${q.chunks} ${q.chunks === 1 ? 'trecho' : 'trechos'}`,
+    `${q.chars.toLocaleString('pt-BR')} caracteres`,
+  ]
+  return (
+    <p className="mt-1 flex flex-wrap gap-x-2 text-xs text-surface-500">
+      <span>{partes.join(' · ')}</span>
+      {q.truncated && <span className="font-medium text-status-pending">lido só em parte</span>}
+      {!q.embedded && <span className="font-medium text-status-pending">só busca por texto</span>}
+    </p>
+  )
+}
+
 function ChipDoDocumento({ status }: { status: string }) {
   const s = STATUS_DOC[status] ?? { rotulo: 'Pendente', cor: 'var(--color-status-muted)' }
   return (
@@ -101,6 +121,21 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
     }
   }, [agent.id, toast])
 
+  // M13 — enquanto algum documento estiver processando, a lista se atualiza
+  // sozinha (antes ficava "processando" até recarregar a página). Para depois
+  // de 2 minutos para não bater no servidor para sempre.
+  const processando = docs.some((d) => d.status === 'processing' || d.status === 'pending')
+  useEffect(() => {
+    if (!processando) return
+    let vivo = true
+    const inicio = Date.now()
+    const id = setInterval(() => {
+      if (Date.now() - inicio > 120_000) { clearInterval(id); return }
+      listAgentKnowledge(agent.id).then((d) => { if (vivo) setDocs(d) }).catch(() => {})
+    }, 3_000)
+    return () => { vivo = false; clearInterval(id) }
+  }, [processando, agent.id])
+
   useEffect(() => {
     let vivo = true
     listAgentKnowledge(agent.id)
@@ -114,9 +149,11 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
     setEnviando(file.name)
     try {
       const { conteudo, tipo } = await lerArquivo(file)
-      const { text: extraido, warning } = await extractBrandFileDetailed(file.name, file.type || 'text/plain', conteudo, tipo)
+      const { text: extraido, warning, truncated } = await extractBrandFileDetailed(file.name, file.type || 'text/plain', conteudo, tipo)
+      // O relatório do documento guarda o corte que a extração percebeu.
+      const quality_hints = { truncated, warning: warning ?? null }
       if (trocarId) {
-        await salvar(() => updateAgentKnowledge(agent.id, trocarId, { content: extraido, document_name: file.name }))
+        await salvar(() => updateAgentKnowledge(agent.id, trocarId, { content: extraido, document_name: file.name, quality_hints }))
         setAberto({ id: trocarId, conteudo: extraido })
       } else {
         const novo = await salvar(() => addAgentKnowledge(agent.id, {
@@ -124,6 +161,7 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
           document_name: file.name,
           content: extraido,
           source_type: 'file',
+          quality_hints,
         }))
         setAberto({ id: novo.id, conteudo: extraido })
       }
@@ -257,6 +295,7 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
                   <p className="mt-0.5 text-xs text-surface-500">
                     {ORIGEM[doc.source_type] ?? doc.source_type} · adicionado em {new Date(doc.created_at).toLocaleDateString('pt-BR')}
                   </p>
+                  <RelatorioDoDocumento doc={doc} />
                   {previa && <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-surface-400">{previa}</p>}
                 </div>
                 <div className="flex w-full flex-shrink-0 items-center justify-end gap-1 sm:w-auto">

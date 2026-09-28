@@ -1352,7 +1352,24 @@ export interface AgentKnowledgeDoc {
   chunk_count: number
   status: string
   created_at: string
+  /** Onda 4 — relatório de leitura; null em documentos indexados antes. */
+  quality?: KnowledgeDocQuality | null
+  error_message?: string | null
 }
+
+export interface KnowledgeDocQuality {
+  chunks: number
+  chars: number
+  /** false = só busca por texto (sem vetores). */
+  embedded: boolean
+  chunker: 'structural' | 'fixed'
+  truncated: boolean
+  warning: string | null
+  indexedAt: string
+}
+
+/** O que a extração sabe do arquivo, para o relatório do documento. */
+export interface QualityHints { truncated?: boolean; warning?: string | null }
 
 export async function listAgentKnowledge(agentId: string): Promise<AgentKnowledgeDoc[]> {
   return apiFetch<AgentKnowledgeDoc[]>(`/configs/${agentId}/knowledge`)
@@ -1360,7 +1377,7 @@ export async function listAgentKnowledge(agentId: string): Promise<AgentKnowledg
 
 export async function addAgentKnowledge(
   agentId: string,
-  doc: { document_id: string; document_name: string; content: string; source_type?: string },
+  doc: { document_id: string; document_name: string; content: string; source_type?: string; quality_hints?: QualityHints },
 ): Promise<AgentKnowledgeDoc> {
   return apiFetch<AgentKnowledgeDoc>(`/configs/${agentId}/knowledge`, {
     method: 'POST',
@@ -1375,7 +1392,7 @@ export async function deleteAgentKnowledge(agentId: string, docId: string): Prom
 export async function updateAgentKnowledge(
   agentId: string,
   docId: string,
-  updates: { content: string; document_name?: string },
+  updates: { content: string; document_name?: string; quality_hints?: QualityHints },
 ): Promise<AgentKnowledgeDoc> {
   return apiFetch<AgentKnowledgeDoc>(`/configs/${agentId}/knowledge/${docId}`, {
     method: 'PUT',
