@@ -4,6 +4,7 @@ import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, getActivePipelines, getInitials } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { dealProbability } from '@/lib/dealProbability'
 import { originInfo, timeInStage, stuckDaysInStage } from '@/lib/dealCard'
 import type { Deal, Pipeline, PipelineStage, User } from '@/types'
@@ -48,6 +49,7 @@ export function DealsList({
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [menu, setMenu] = useState<null | 'owner' | 'stage' | 'pipeline'>(null)
   const [ocupado, setOcupado] = useState(false)
+  const movel = useIsMobile()
 
   const stageById = useMemo(() => new Map(stages.map((s) => [s.id, s] as const)), [stages])
   const userById = useMemo(() => new Map(users.map((u) => [u.id, u] as const)), [users])
@@ -116,6 +118,47 @@ export function DealsList({
       <div className="p-6">
         <EmptyState icon={Handshake} title="Nenhum negócio neste recorte" hint="Troque a lente ou limpe os filtros para ver os outros negócios." />
       </div>
+    )
+  }
+
+  // Celular: a tabela de dez colunas deixava etapa e valor fora da tela.
+  // Uma linha por negócio com o que decide o toque (o quê, de quem, em que
+  // etapa, quanto, se está parado); ações em lote ficam no computador.
+  if (movel) {
+    return (
+      <ul className="flex-1 min-h-0 overflow-y-auto divide-y divide-surface-800" data-testid="deals-list">
+        {linhas.map((d) => {
+          const st = stageById.get(d.stageId)
+          const parado = stuckDaysInStage(d)
+          return (
+            <li key={d.id}>
+              <button
+                type="button"
+                onClick={() => onOpenDeal(d.id)}
+                className="w-full min-h-[60px] flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[var(--rowhover)]"
+                data-testid="deals-list-row"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-surface-100 truncate">{d.title}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-surface-400 min-w-0">
+                    <span className="w-2 h-2 rounded-[2px] flex-shrink-0" style={{ backgroundColor: st?.color }} aria-hidden />
+                    <span className="truncate">{st?.label ?? '—'}{d.contact ? ` · ${d.contact.displayName}` : ''}</span>
+                  </span>
+                </span>
+                <span className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                  <span className="text-sm font-bold tabular-nums text-surface-100">{brl(d.amountCents ?? 0)}</span>
+                  <span className={cn('text-2xs', parado !== null ? 'text-status-pending font-semibold' : 'text-surface-500')}>
+                    {parado !== null ? `${parado} d parado` : (timeInStage(d) ?? '')}
+                  </span>
+                </span>
+              </button>
+            </li>
+          )
+        })}
+        <li className="px-4 py-3 text-xs text-surface-400 tabular-nums">
+          {linhas.length} negócio{linhas.length === 1 ? '' : 's'} · {brl(total)}
+        </li>
+      </ul>
     )
   }
 

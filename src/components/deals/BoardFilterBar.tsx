@@ -126,6 +126,9 @@ export function BoardFilterBar({
       )}
 
       {withClose && (
+      // No celular este chip some: as lentes "Sem previsão" e "Previsão
+      // vencida" cobrem o uso comum e a barra já ocupava meia tela.
+      <div className="hidden md:contents">
       <Dropdown
         open={closeOpen}
         onClose={() => setCloseOpen(false)}
@@ -150,6 +153,7 @@ export function BoardFilterBar({
           ))}
         </div>
       </Dropdown>
+      </div>
       )}
 
       {children}
