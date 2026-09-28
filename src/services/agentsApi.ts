@@ -1303,6 +1303,20 @@ export async function getAgentRuntimeFlags(): Promise<AgentRuntimeFlags> {
   return apiFetch<AgentRuntimeFlags>('/runtime-flags')
 }
 
+// ─── Onde o agente está falhando (onda 5) ─────────────────────────────────────
+
+export interface AgentInsights {
+  days: number
+  /** Quais registros estão ligados; desligado = "nada registrado", não "nenhum problema". */
+  logging: { executions: boolean; ragQueries: boolean }
+  problems: Array<{ conversationId: string; at: string; kind: 'deadline' | 'error' | 'loop' | 'max_turns'; reason: string }>
+  unanswered: Array<{ question: string; count: number; lastAt: string }>
+}
+
+export async function getAgentInsights(agentId: string): Promise<AgentInsights> {
+  return apiFetch<AgentInsights>(`/configs/${encodeURIComponent(agentId)}/insights`)
+}
+
 // ─── Brand File Extraction ─────────────────────────────────────────────────────
 
 /**

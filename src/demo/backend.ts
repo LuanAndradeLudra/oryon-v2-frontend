@@ -260,6 +260,10 @@ export function instalarBackendDemo() {
   // Seção Catálogo pergunta se os preços chegam à IA (onda 2 / A6). Na
   // demonstração o agente fictício usa o catálogo, então sem aviso.
   rota('agents/builder/runtime-flags', eq('get', '/agents/builder/runtime-flags'), () => ({ data: { data: { catalogInjection: true } } }))
+  // Desempenho — onde o agente falha (onda 5). Demonstração sem registros.
+  rota('agents/builder/configs/:id/insights', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/insights$/.test(u), () => ({
+    data: { data: { days: 30, logging: { executions: true, ragQueries: true }, problems: [], unanswered: [] } },
+  }))
   rota('agents/builder/configs/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+$/.test(u), ({ url }) => ({
     data: { data: agenteComFerramentas(url.split('/').pop()!) },
   }))
