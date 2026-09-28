@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Bloco, CabecalhoDaSecao } from './Estrutura'
 import { OndeOAgenteFalha } from './OndeOAgenteFalha'
+import { TurnosGravados } from './TurnosGravados'
 
 type Periodo = '1' | '7' | '30'
 const PERIODOS: Array<{ value: Periodo; label: string }> = [
@@ -79,6 +80,8 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
         </Bloco>
 
         <OndeOAgenteFalha agentId={agent.id} />
+
+        <TurnosGravados agentId={agent.id} />
 
         <Bloco
           titulo="Uso das ferramentas"

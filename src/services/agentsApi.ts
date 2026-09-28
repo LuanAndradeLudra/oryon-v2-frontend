@@ -1297,6 +1297,8 @@ export interface AgentRuntimeFlags {
   catalogInjection: boolean
   /** Onda 4 — o "Novo agente" abre o assistente de 7 etapas. */
   specWizard?: boolean
+  /** Onda 5 — os turnos do agente são gravados para a repetição segura. */
+  turnRecord?: boolean
 }
 
 export async function getAgentRuntimeFlags(): Promise<AgentRuntimeFlags> {
@@ -1315,6 +1317,40 @@ export interface AgentInsights {
 
 export async function getAgentInsights(agentId: string): Promise<AgentInsights> {
   return apiFetch<AgentInsights>(`/configs/${encodeURIComponent(agentId)}/insights`)
+}
+
+// ─── Turnos gravados e repetição segura (onda 5) ──────────────────────────────
+
+export interface AgentTurnSummary {
+  id: string
+  conversationId: string | null
+  sessionId: string | null
+  model: string
+  finalStatus: string
+  toolsCalled: number
+  createdAt: string
+  expiresAt: string
+  lastUserText: string
+  finalReply: string
+}
+
+export interface TurnReplayResult {
+  /** current = com o texto atual do agente; current_not_applied = com o gravado. */
+  instructions: 'recorded' | 'current' | 'current_not_applied'
+  text: string
+  toolCalls: Array<{ name: string; input: Record<string, unknown>; source: 'recorded' | 'missing' }>
+  turns: number
+  textChanged: boolean
+  toolsChanged: boolean
+  recorded: { text: string; toolCalls: Array<{ name: string; input: Record<string, unknown> }> }
+}
+
+export async function listAgentTurns(agentId: string): Promise<AgentTurnSummary[]> {
+  return apiFetch<AgentTurnSummary[]>(`/configs/${encodeURIComponent(agentId)}/turns`)
+}
+
+export async function replayAgentTurn(agentId: string, turnId: string): Promise<TurnReplayResult> {
+  return apiFetch<TurnReplayResult>(`/configs/${encodeURIComponent(agentId)}/turns/${encodeURIComponent(turnId)}/replay`, { method: 'POST' })
 }
 
 // ─── Brand File Extraction ─────────────────────────────────────────────────────
