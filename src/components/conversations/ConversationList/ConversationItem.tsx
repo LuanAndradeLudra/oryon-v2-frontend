@@ -9,8 +9,8 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/contexts/AuthContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
-import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
-import { useLinhasComIA } from '@/hooks/useLinhasComIA'
+import { estadoDaIA, getAssignment, getAwaitingReply } from '@/lib/conversationSignals'
+import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
 import { renderHighlightedSnippet } from '@/lib/searchHighlight'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -85,10 +85,10 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
   const currentUserId = useAuth().user?.id
 
   const hasUnread = unreadCount > 0 && !isActive
-  const aiActive = isAiActive(conversation)
   const assignment = getAssignment(conversation)
-  const linhasComIA = useLinhasComIA()
-  const awaiting = getAwaitingReply(conversation, linhasComIA)
+  const linhasDaIA = useLinhasDaIA()
+  const awaiting = getAwaitingReply(conversation, linhasDaIA.linhasComIA)
+  const estadoIA = estadoDaIA(conversation, linhasDaIA)
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
@@ -215,10 +215,11 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           )}
         </div>
 
-        {/* Row 3 — R2-1D-LIST (RODADA-2.md): à esquerda UM chip de ator
-            (IA âmbar OU humano verde OU "Resolvida" neutro, mutuamente
-            exclusivos como no mock) + pontos das etiquetas; à direita só
-            texto colorido de estado (sem ícone): espera, verificação. */}
+        {/* Row 3 — R2-1D-LIST (RODADA-2.md): à esquerda os chips de ator
+            + pontos das etiquetas; à direita só texto colorido de estado.
+            28/09: IA e responsável são DOIS eixos — o chip "IA" escondia o
+            responsável, aparecia em linha sem agente e em conversa que a IA
+            já tinha passado para a equipe (ver estadoDaIA). */}
         <div className="flex items-center gap-1.5 mt-1">
           <div className="flex items-center gap-1.5 min-w-0">
             {status === "resolved" ? (
@@ -227,7 +228,15 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               <span className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-cstatus-resolved/[.14] text-cstatus-resolved flex-shrink-0">
                 Resolvida
               </span>
-            ) : aiActive ? (
+            ) : estadoIA === 'passou' ? (
+              <span
+                className="inline-flex items-center gap-1 h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-status-pending bg-status-pending-bg flex-shrink-0"
+                title="A IA passou a conversa para a equipe"
+              >
+                <Bot className="w-3 h-3" />
+                IA passou
+              </span>
+            ) : estadoIA === 'atendendo' ? (
               <span
                 // PO, 23/09: IA é neutro (cinza claro no escuro, cinza mais
                 // escuro no claro — os tokens surface-* invertem por tema), não
@@ -238,7 +247,8 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 <Bot className="w-3 h-3" />
                 IA
               </span>
-            ) : assignment === "human" && assignedUser ? (
+            ) : null}
+            {status !== "resolved" && assignment === "human" && assignedUser ? (
               <span
                 className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-accent-green bg-accent-green/[.12] truncate"
                 title={`Atribuída a ${assignedUser.firstName}${assignedUser.lastName ? " " + assignedUser.lastName : ""}`}

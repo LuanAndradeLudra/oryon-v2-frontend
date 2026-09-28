@@ -11,7 +11,9 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { ConversationsTopBarSlot } from '@/components/layout/ConversationsTopBarSlot'
 import { NewConversationModal } from '@/components/conversations/NewConversationModal'
 import { Fab } from '@/components/common/Fab'
-import { donoDoEvento, type EventoDeAtribuicao } from '@/lib/conversationSignals'
+import { donoDoEvento, estadoDaIA, type EventoDeAtribuicao } from '@/lib/conversationSignals'
+import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
+import { pedirResolver } from '@/lib/conversationActions'
 import { useConversations } from '@/hooks/useConversations'
 import { useConversationFromUrl } from '@/hooks/useConversationFromUrl'
 import { useSocket } from '@/hooks/useSocket'
@@ -75,6 +77,18 @@ export function ConversationsPage() {
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
   } = useConversations(filters)
+  const linhasDaIA = useLinhasDaIA()
+
+  // Ações que os atalhos globais chamam: a referência é trocada a cada render
+  // (o ouvinte do teclado é registrado uma vez e leria versões velhas).
+  const assumirRef = useRef<((conv: Conversation) => void) | null>(null)
+  const activeIdParaPular = activeConversation?.id
+  useEffect(() => {
+    if (pularAposResolverRef.current && pularAposResolverRef.current.id !== activeIdParaPular) pularAposResolverRef.current = null
+  }, [activeIdParaPular])
+  // Tecla E: resolve PELO MESMO fluxo do botão (pede o desfecho) e, quando a
+  // resolução acontecer, vai para a conversa que era a próxima ao apertar.
+  const pularAposResolverRef = useRef<{ id: string; proximaId: string | null } | null>(null)
 
   // Sticky active conversation — keep the OPEN conversation in the list even
   // after its status stops matching the active tab (e.g. moved to "Pendente"
@@ -350,6 +364,12 @@ export function ConversationsPage() {
     await updateStatus(id, status, dealOutcome)
     syncActive(id, { status })
     invalidateActivity(id)
+    const pular = pularAposResolverRef.current
+    if (status === 'resolved' && pular?.id === id) {
+      pularAposResolverRef.current = null
+      const proxima = pular.proximaId ? shortcutsRef.current.conversations.find((c) => c.id === pular.proximaId) : null
+      if (proxima) handleSelectConversation(proxima)
+    }
     const msg =
       status === 'resolved' ? (dealOutcome ? 'Conversa resolvida · desfecho registrado ✓' : 'Conversa resolvida ✓')
         : status === 'pending' ? 'Conversa marcada como pendente'
@@ -446,20 +466,25 @@ export function ConversationsPage() {
 
       if (key === 'e') {
         e.preventDefault()
-        if (active.status !== 'resolved') void handleStatusChange(active.id, 'resolved')
-        // Pula para a próxima da fila — o operador segue triando sem o mouse.
         const next = list[idx + 1] ?? list[idx - 1]
-        if (next && next.id !== active.id) {
-          handleSelectConversation(next)
-          scrollToConv(next.id)
+        const proximaId = next && next.id !== active.id ? next.id : null
+        if (active.status === 'resolved') {
+          // Já resolvida: só segue para a próxima.
+          if (next && proximaId) { handleSelectConversation(next); scrollToConv(next.id) }
+          return
         }
+        // 28/09 (decisão do PO): E pede o desfecho do negócio como o botão
+        // Resolver — antes resolvia direto e pulava o desfecho.
+        pularAposResolverRef.current = { id: active.id, proximaId }
+        pedirResolver(active.id)
         return
       }
 
       if (key === 'r') {
         e.preventDefault()
-        const me = allUsers.find((u) => u.id === user?.id)
-        if (me && active.assignedUser?.id !== me.id) void handleAssign(active.id, me)
+        // 28/09 (decisão do PO): R = Assumir (atribui a mim e pausa a IA),
+        // a mesma ação do botão — antes R só atribuía.
+        assumirRef.current?.(active)
       }
     }
 
@@ -530,13 +555,33 @@ export function ConversationsPage() {
   const handleInterveneAi = async (convId: string) => {
     try {
       const until = await interveneAi(convId)
-      syncActive(convId, { aiPausedUntil: until })
+      // O backend atribui a quem pausou (Phase 32): mostra já, sem esperar o socket.
+      const me = allUsers.find((u) => u.id === user?.id)
+      syncActive(convId, me ? { aiPausedUntil: until, assignedUser: me } : { aiPausedUntil: until })
       invalidateActivity(convId)
-      toast('IA pausada para esta conversa', 'info')
+      toast('Conversa assumida · IA pausada', 'info')
     } catch {
-      toast('Não foi possível atualizar a IA — tente de novo', 'error')
+      toast('Não foi possível assumir a conversa — tente de novo', 'error')
     }
   }
+
+  /**
+   * "Assumir" (28/09, decisão do PO): atribui a conversa a quem clicou e pausa
+   * a IA, num clique — o mesmo para o botão do cabeçalho e para a tecla R.
+   * Pausar já atribui no backend; em linha sem IA não há o que pausar, então
+   * só atribui. Com a IA já pausada, quem assume é pelo "Transferir".
+   */
+  const handleAssumir = (conv: Conversation) => {
+    const estado = estadoDaIA(conv, linhasDaIA)
+    if (estado === 'pausada') return
+    if (estado === 'sem-ia') {
+      const me = allUsers.find((u) => u.id === user?.id)
+      if (me && conv.assignedUser?.id !== me.id) void handleAssign(conv.id, me)
+      return
+    }
+    void handleInterveneAi(conv.id)
+  }
+  assumirRef.current = handleAssumir
 
   // Phase 29 — page-level handler for send-message failures bubbling up
   // from MessageInput. Reads the human-readable `message` that the backend's
@@ -627,7 +672,7 @@ export function ConversationsPage() {
             <div className="chat-shell-bg flex items-center justify-center gap-3 px-3 py-1.5 text-[10px] text-surface-600 select-none flex-shrink-0">
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">J</kbd>/<kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">K</kbd> navegar</span>
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">E</kbd> resolver</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> p/ mim</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> assumir</span>
             </div>
           </div>
         )
@@ -651,6 +696,7 @@ export function ConversationsPage() {
           onArchive={handleArchive}
           onSetAiPause={handleSetAiPause}
           onInterveneAi={handleInterveneAi}
+          onAssumir={() => { if (activeConversation) handleAssumir(activeConversation) }}
           onAiPauseSocketEvent={(p) => {
             handleAiPauseUpdated(p)
             // Mirror onto the currently-open conversation in case another

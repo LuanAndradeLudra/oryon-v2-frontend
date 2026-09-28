@@ -12,7 +12,8 @@ import { TagPickerContent } from '@/components/ui/TagPicker'
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { cn, formatRelativeTime } from '@/lib/utils'
-import { isAiActive } from '@/lib/conversationSignals'
+import { estadoDaIA } from '@/lib/conversationSignals'
+import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
 import { ConversationActivitySection } from './ConversationActivitySection'
 import { ContactPanelDeals } from './ContactPanelDeals'
@@ -159,6 +160,10 @@ export function ContactPanel({
     ...(contact.email ? [{ label: 'E-mail', value: <span className="truncate block">{contact.email}</span> }] : []),
   ]
 
+  // 28/09: o mesmo estado da IA do cabeçalho e da lista (não só a pausa).
+  const linhasDaIA = useLinhasDaIA()
+  const estadoIA = estadoDaIA(conversation, linhasDaIA)
+
   const extraRows: { label: string; value: React.ReactNode }[] = [
     { label: 'Primeiro contato', value: formatAbsDate(contact.firstContactedAt ?? contact.createdAt ?? createdAt) },
     { label: 'Último contato', value: formatAbsDate(contact.lastContactedAt ?? lastMessageAt) },
@@ -166,8 +171,12 @@ export function ContactPanel({
       label: 'IA',
       value: (
         <span className="flex items-center gap-1">
-          {isAiActive(conversation) ? (
-            <><Bot className="w-3 h-3 text-brand-400 flex-shrink-0" /> Ativa</>
+          {estadoIA === 'atendendo' ? (
+            <><Bot className="w-3 h-3 text-brand-400 flex-shrink-0" /> Atendendo</>
+          ) : estadoIA === 'passou' ? (
+            <><Bot className="w-3 h-3 text-status-pending flex-shrink-0" /> Passou para a equipe</>
+          ) : estadoIA === 'sem-ia' ? (
+            <>Linha sem IA</>
           ) : (
             <><UserCog className="w-3 h-3 text-amber-400 flex-shrink-0" /> Pausada</>
           )}

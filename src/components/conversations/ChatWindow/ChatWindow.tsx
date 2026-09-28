@@ -29,6 +29,8 @@ interface ChatWindowProps {
   /** Phase 34 — "Intervir agora": pause using the agent's configured handoff
    *  window (duration resolved server-side). */
   onInterveneAi?: (convId: string) => Promise<void> | void
+  /** 28/09 — "Assumir" único (botão e tecla R), vindo da página. */
+  onAssumir?: () => void
   /** Phase 27 — invoked when the backend emits 'conversation:ai-pause-updated'. */
   onAiPauseSocketEvent?: (payload: SocketAiPauseUpdated) => void
   /**
@@ -53,7 +55,7 @@ export function ChatWindow({
   onStatusChange, onToggleInfo, infoOpen,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
   onAssign, onTransfer, onArchive,
-  onSetAiPause, onInterveneAi, onAiPauseSocketEvent,
+  onSetAiPause, onInterveneAi, onAiPauseSocketEvent, onAssumir,
   onSendError, sendBlockedReason,
   onBack,
 }: ChatWindowProps) {
@@ -156,7 +158,7 @@ export function ChatWindow({
     const shortcuts = [
       { keys: ['J', 'K'], label: 'navegar na fila' },
       { keys: ['E'],      label: 'resolver e pular p/ a próxima' },
-      { keys: ['R'],      label: 'atribuir a mim' },
+      { keys: ['R'],      label: 'assumir (atribui a você e pausa a IA)' },
       { keys: ['/'],      label: 'respostas rápidas ao digitar' },
     ]
     return (
@@ -210,6 +212,7 @@ export function ChatWindow({
         onArchive={() => onArchive(conversation.id)}
         onSetAiPause={(until) => onSetAiPause(conversation.id, until)}
         onInterveneAi={onInterveneAi ? () => onInterveneAi(conversation.id) : undefined}
+        onAssumir={onAssumir}
         onBack={onBack}
       />
       {/* 2px peripheral status strip — emerald when AI is responding, amber

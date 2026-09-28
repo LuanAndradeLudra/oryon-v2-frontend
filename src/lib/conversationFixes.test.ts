@@ -108,3 +108,27 @@ describe('evento de atribuição nos dois formatos', () => {
     expect(donoDoEvento({ conversationId: 'c' })).toBeUndefined()
   })
 })
+
+import { estadoDaIA } from './conversationSignals'
+
+describe('estado da IA (dois eixos: quem responde agora)', () => {
+  const L = { linhasComIA: new Set(['com-ia']) as ReadonlySet<string>, conhecidas: true }
+  const c = (over: Partial<Conversation>) => ({ status: 'open', aiPausedUntil: null, whatsappNumber: { id: 'com-ia' }, ...over }) as unknown as Conversation
+
+  it('pausa no futuro = uma pessoa assumiu', () => {
+    expect(estadoDaIA(c({ aiPausedUntil: new Date(NOW + H).toISOString() }), L, NOW)).toBe('pausada')
+  })
+  it('linha sem agente', () => {
+    expect(estadoDaIA(c({ whatsappNumber: { id: 'sem' } as Conversation['whatsappNumber'] }), L, NOW)).toBe('sem-ia')
+  })
+  it('pendente numa linha com IA = a IA passou', () => {
+    expect(estadoDaIA(c({ status: 'pending' }), L, NOW)).toBe('passou')
+  })
+  it('linha com IA, sem pausa nem transferência = atendendo; pausa vencida volta a atendendo', () => {
+    expect(estadoDaIA(c({}), L, NOW)).toBe('atendendo')
+    expect(estadoDaIA(c({ aiPausedUntil: new Date(NOW - H).toISOString() }), L, NOW)).toBe('atendendo')
+  })
+  it('linhas ainda desconhecidas: não afirma "sem IA"', () => {
+    expect(estadoDaIA(c({ whatsappNumber: { id: 'sem' } as Conversation['whatsappNumber'] }), { linhasComIA: new Set(), conhecidas: false }, NOW)).toBe('atendendo')
+  })
+})

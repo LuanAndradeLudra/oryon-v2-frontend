@@ -97,3 +97,32 @@ export function donoDoEvento(p: EventoDeAtribuicao): Conversation['assignedUser'
   const [firstName = '', ...resto] = (p.assignedUserName ?? '').trim().split(/\s+/)
   return { id: p.assignedUserId, firstName, lastName: resto.join(' ') || null }
 }
+
+/**
+ * Quem está respondendo a conversa AGORA (28/09). Antes o app deduzia só da
+ * pausa (`isAiActive`): linha sem agente e conversa que a IA já passou para
+ * a equipe apareciam as duas como "Agente IA no controle".
+ *
+ *  - `pausada`   — uma pessoa assumiu (pausa no futuro).
+ *  - `sem-ia`    — a linha não tem agente ligado.
+ *  - `passou`    — a IA passou para a equipe (status pendente) e ninguém
+ *                  assumiu ainda; o handoff do produto não pausa a IA.
+ *  - `atendendo` — a IA está cuidando.
+ *
+ * Sem saber ainda quais linhas têm IA (`conhecidas` falso), não afirma
+ * "sem IA": cai no comportamento antigo (IA atendendo, salvo pausa).
+ */
+export type EstadoDaIA = 'atendendo' | 'passou' | 'pausada' | 'sem-ia'
+
+export function estadoDaIA(
+  conv: Pick<Conversation, 'aiPausedUntil' | 'status' | 'whatsappNumber'>,
+  linhas: { linhasComIA: ReadonlySet<string>; conhecidas: boolean } | null,
+  now: number = Date.now(),
+): EstadoDaIA {
+  if (conv.aiPausedUntil && new Date(conv.aiPausedUntil).getTime() > now) return 'pausada'
+  const lineId = conv.whatsappNumber?.id
+  const temIA = !linhas?.conhecidas || (!!lineId && linhas.linhasComIA.has(lineId))
+  if (!temIA) return 'sem-ia'
+  if (conv.status === 'pending') return 'passou'
+  return 'atendendo'
+}
