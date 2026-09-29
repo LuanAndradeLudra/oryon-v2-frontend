@@ -35,11 +35,14 @@ describe('AgentsPage — Novo agente', () => {
     h.drafts = [
       { id: 'd1', agent_id: null, spec: { identity: { name: 'Clara' } } },
       { id: 'd2', agent_id: null, spec: { identity: { name: '' } } },
+      { id: 'd3', agent_id: 'bia', spec: { identity: { name: 'Bia' } } },
+      { id: 'd4', agent_id: 'bia', spec: { identity: { name: 'Bia' } } },
     ]
     render(<MemoryRouter initialEntries={['/agents']}><Routes><Route path="/agents" element={<AgentsPage />} /></Routes></MemoryRouter>)
     await act(async () => { h.flags!({ specWizard: true }) })
     fireEvent.click(await screen.findByRole('button', { name: 'Continuar Clara' }))
     expect(screen.queryByRole('button', { name: /Continuar $/ })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Continuar Bia' })).toHaveLength(1)
     expect(await screen.findByText('assistente novo (d1)')).toBeInTheDocument()
     h.drafts = []
   })

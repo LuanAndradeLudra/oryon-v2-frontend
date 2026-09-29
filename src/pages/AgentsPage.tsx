@@ -49,7 +49,19 @@ export function AgentsPage() {
     if (!assistenteNovo || agentId) return
     let vivo = true
     listSpecDrafts()
-      .then((l) => { if (vivo) setRascunhos(l.filter((d) => d.spec?.identity?.name?.trim())) })
+      .then((l) => {
+        if (!vivo) return
+        // Um por agente (o mais recente; a lista vem por atualização): revisões
+        // antigas do mesmo agente não são outra coisa esperando publicação.
+        const vistos = new Set<string>()
+        setRascunhos(l.filter((d) => {
+          if (!d.spec?.identity?.name?.trim()) return false
+          if (!d.agent_id) return true
+          if (vistos.has(d.agent_id)) return false
+          vistos.add(d.agent_id)
+          return true
+        }))
+      })
       .catch(() => {})
     return () => { vivo = false }
   }, [assistenteNovo, agentId, criando, continuando])
