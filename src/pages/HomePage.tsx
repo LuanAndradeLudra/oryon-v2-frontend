@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Users, BarChart3, Settings,
   Clock, CheckCircle2, Inbox, CreditCard,
-  ChevronRight, X, Sparkles, UserPlus, Tag, MessageCircle,
-  Zap, Hand, Workflow, Send, TrendingUp,
+  ChevronRight, Sparkles, UserPlus, Tag, MessageCircle,
+  Zap, Hand, Send, TrendingUp,
 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -17,8 +17,12 @@ import { isFeatureVisible } from '@/config/featureFlags'
 import { cn, getInitials } from '@/lib/utils'
 import { Card } from '@/components/ui/Card'
 import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
-import type { AuditLog, Conversation, HomeStats, User } from '@/types'
-import { api } from '@/services/api'
+import type { Conversation, HomeStats, User } from '@/types'
+import { api, conversationsApi } from '@/services/api'
+import { listTenantAuditFeed, type TenantAuditRow } from '@/services/tenantAuditApi'
+import { formatActivity } from '@/components/dashboard/activityFormatter'
+import { isAdminTier, isOwnerTier } from '@/lib/roleHelpers'
+import { comVolta } from '@/lib/voltarPara'
 
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -37,7 +41,7 @@ function relativeTime(date: string) {
 
 const ROLE_CONFIG: Record<string, { label: string; chip: string }> = {
   super_admin:    { label: 'Equipe Oryon', chip: 'var(--color-accent-dark)' },
-  business_admin: { label: 'Admin',        chip: 'var(--color-brand-500)' },
+  business_admin: { label: 'Dono',         chip: 'var(--color-brand-500)' },
   admin:          { label: 'Admin',        chip: 'var(--color-brand-500)' },
   supervisor:     { label: 'Supervisor',   chip: 'var(--color-status-pending)' },
   agent:          { label: 'Agente',       chip: 'var(--color-status-muted)' },
@@ -46,9 +50,11 @@ const ROLE_CONFIG: Record<string, { label: string; chip: string }> = {
 function PersonalHeader({ user }: { user: User }) {
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
-  const date = new Intl.DateTimeFormat('pt-BR', {
+  const dataLonga = new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date())
+  // Só a primeira letra maiúscula: o `capitalize` do CSS fazia "29 De Setembro De".
+  const date = dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1)
   const role = ROLE_CONFIG[user.role] ?? ROLE_CONFIG.agent
 
   return (
@@ -67,7 +73,7 @@ function PersonalHeader({ user }: { user: User }) {
           </>
         )}
         <span className="text-surface-500">·</span>
-        <span className="text-sm text-surface-500 capitalize">{date}</span>
+        <span className="text-sm text-surface-500">{date}</span>
       </div>
     </div>
   )
@@ -79,6 +85,8 @@ type KPIColor = 'brand' | 'green' | 'blue' | 'amber' | 'purple'
 
 interface KPIData {
   label: string
+  /** Destino ao clicar (ex.: "Na fila" abre a Fila da inbox). */
+  href?: string
   value: string | number
   subtext?: string
   icon: React.ComponentType<{ className?: string }>
@@ -88,8 +96,8 @@ interface KPIData {
 }
 
 function KPICard({ data }: { data: KPIData }) {
-  return (
-    <div className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0">
+  const corpo = (
+    <>
       <span className="text-[11px] font-medium text-surface-400 truncate">{data.label}</span>
       <p className="text-[26px] font-extrabold tracking-[-0.02em] leading-[1.15] mt-0.5 text-surface-100 tabular-nums">{typeof data.value === 'number' ? data.value.toLocaleString('pt-BR') : data.value}</p>
       <div className="flex items-center gap-1.5 min-w-0 text-[11.5px]">
@@ -104,7 +112,14 @@ function KPICard({ data }: { data: KPIData }) {
         {data.subtext && <span className="text-surface-500 truncate">{data.subtext}</span>}
         {!data.trend && !data.subtext && <span>&nbsp;</span>}
       </div>
-    </div>
+    </>
+  )
+  return data.href ? (
+    <Link to={data.href} className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0 hover:bg-[var(--rowhover)] transition-colors">
+      {corpo}
+    </Link>
+  ) : (
+    <div className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0">{corpo}</div>
   )
 }
 
@@ -118,25 +133,30 @@ function getKPIs(stats: HomeStats, role: string): KPIData[] {
   ]
   if (role === 'supervisor') return [
     { label: 'Conversas abertas', value: stats.conversationsOpen ?? 0, icon: MessageSquare, color: 'brand' },
-    { label: 'Na fila', value: stats.queueCount ?? 0, icon: Inbox, color: (stats.queueCount ?? 0) > 5 ? 'amber' : 'green' },
+    { label: 'Na fila', value: stats.queueCount ?? 0, icon: Inbox, color: (stats.queueCount ?? 0) > 5 ? 'amber' : 'green', href: '/conversations?aba=fila', subtext: 'pendentes sem dono' },
     { label: 'Resolvidas hoje', value: stats.conversationsResolvedToday ?? 0, icon: CheckCircle2, color: 'green' },
     { label: 'Mensagens hoje', value: stats.messagesSentToday ?? 0, icon: MessageCircle, color: 'purple' },
   ]
   return [
     { label: 'Conversas abertas', value: stats.conversationsOpen ?? 0, icon: MessageSquare, color: 'brand' },
     { label: 'Resolvidas hoje', value: stats.conversationsResolvedToday ?? 0, icon: CheckCircle2, color: 'green' },
-    { label: 'Na fila', value: stats.queueCount ?? 0, icon: Inbox, color: 'amber' },
+    { label: 'Na fila', value: stats.queueCount ?? 0, icon: Inbox, color: 'amber', href: '/conversations?aba=fila', subtext: 'pendentes sem dono' },
     { label: 'Mensagens hoje', value: stats.messagesSentToday ?? 0, icon: MessageCircle, color: 'purple' },
   ]
 }
 
 function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
   return (
+    // Rótulo: sem ele, "Conversas abertas 1.948" (equipe) ficava logo abaixo de
+    // "Conversas abertas 0" (o seu desempenho) sem dizer que são números diferentes.
+    <section aria-label="Toda a equipe agora">
+    <h3 className="text-[11px] font-semibold uppercase tracking-[.08em] text-surface-500 mb-2">Toda a equipe</h3>
     <div className="grid grid-cols-2 lg:grid-cols-4 bg-surface-800 border border-surface-700 rounded-lg overflow-hidden divide-x divide-surface-700 [&>*:nth-child(n+3)]:border-t [&>*:nth-child(n+3)]:border-surface-700 lg:[&>*:nth-child(n+3)]:border-t-0">
       {getKPIs(stats, role).map((kpi) => (
         <KPICard key={kpi.label} data={kpi} />
       ))}
     </div>
+    </section>
   )
 }
 
@@ -254,7 +274,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
       <div className="flex flex-col gap-3 flex-1">
         {[
           {
-            label: 'Conversas abertas',
+            label: 'Minhas conversas abertas',
             value: myOpen,
             cls: 'text-surface-200',
             icon: <MessageSquare className="w-3.5 h-3.5" />,
@@ -272,8 +292,9 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
             icon: <Send className="w-3.5 h-3.5" />,
           },
           {
-            label: 'Tempo médio resposta',
-            value: `${myAvgMin}min`,
+            label: 'Tempo médio de resposta',
+            // Sem mensagem enviada hoje não há tempo médio: "—", não "0min".
+            value: mySent === 0 && myAvgMin === 0 ? '—' : `${myAvgMin.toLocaleString('pt-BR')} min`,
             // Mesma régua do "Atendimento agora": >10min = atenção.
             cls: myAvgMin > 10 ? 'text-status-pending' : 'text-surface-200',
             icon: <Clock className="w-3.5 h-3.5" />,
@@ -284,7 +305,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
               {row.icon}
               <span className="text-xs">{row.label}</span>
             </div>
-            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value.toLocaleString('pt-BR')}</span>
+            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{typeof row.value === 'number' ? row.value.toLocaleString('pt-BR') : row.value}</span>
           </div>
         ))}
       </div>
@@ -304,44 +325,49 @@ interface QuickAction {
 }
 
 function getQuickActions(role: string): QuickAction[] {
-  if (role === 'admin') return [
-    { label: 'Conversas',         description: 'Ver todas as conversas',          icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations' },
+  // Admin, dono e equipe Oryon: antes só `admin` caía aqui — dono e staff
+  // viam os atalhos de atendente.
+  if (isAdminTier(role)) return [
+    { label: 'Conversas',         description: 'Ver todas as conversas',          icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations?aba=todas' },
     { label: 'Convidar usuário',  description: 'Adicionar à equipe',              icon: UserPlus,      iconColor: 'text-accent-blue',    iconBg: 'bg-accent-blue/10',    href: '/settings/agents' },
-    { label: 'Plano & Cobrança',  description: 'Gerenciar assinatura',            icon: CreditCard,    iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/settings/billing' },
-    { label: 'Configurar CRM',    description: 'Estágios e campos personalizados', icon: Settings,      iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/contacts' },
-    { label: 'Automações',         description: 'Fluxos automáticos',               icon: Workflow,      iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/automations' },
-    { label: 'Relatórios',        description: 'Dashboard de métricas',            icon: BarChart3,     iconColor: 'text-surface-400', iconBg: 'bg-[var(--sf2)]',    href: '/dashboard' },
+    { label: 'Plano e cobrança',  description: 'Gerenciar assinatura',            icon: CreditCard,    iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/settings/billing' },
+    { label: 'Configurar CRM',    description: 'Situações e campos',              icon: Settings,      iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/contacts?config=crm' },
+    { label: 'Relatórios',        description: 'Métricas da equipe',              icon: BarChart3,     iconColor: 'text-surface-400', iconBg: 'bg-[var(--sf2)]',    href: '/dashboard?aba=relatorios' },
   ]
   if (role === 'supervisor') return [
-    { label: 'Fila de espera',    description: 'Sem agente atribuído',            icon: Inbox,         iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/conversations' },
+    { label: 'Fila',              description: 'Pendentes sem dono',              icon: Inbox,         iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/conversations?aba=fila' },
     { label: 'Minha equipe',      description: 'Gerenciar usuários',              icon: Users,         iconColor: 'text-accent-blue',    iconBg: 'bg-accent-blue/10',    href: '/settings/agents' },
-    { label: 'Criar tag',         description: 'Organizar conversas',             icon: Tag,           iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/settings/tags' },
-    { label: 'Relatórios',        description: 'Métricas da equipe',              icon: BarChart3,     iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/dashboard' },
-    { label: 'Respostas rápidas', description: 'Templates de mensagem',           icon: Zap,           iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/settings/quick-replies' },
-    { label: 'CRM',               description: 'Pipeline de vendas',              icon: MessageSquare, iconColor: 'text-surface-400', iconBg: 'bg-[var(--sf2)]',    href: '/contacts' },
+    { label: 'Etiquetas',         description: 'Organizar conversas',             icon: Tag,           iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/settings/tags' },
+    { label: 'Relatórios',        description: 'Métricas da equipe',              icon: BarChart3,     iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/dashboard?aba=relatorios' },
+    { label: 'Respostas rápidas', description: 'Atalhos de texto',                icon: Zap,           iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/settings/quick-replies' },
+    { label: 'Leads',             description: 'Contatos e funis',                icon: MessageSquare, iconColor: 'text-surface-400', iconBg: 'bg-[var(--sf2)]',    href: '/contacts' },
   ]
   return [
-    { label: 'Minhas conversas',  description: 'Ver atribuídas a mim',            icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations' },
-    { label: 'Contatos',          description: 'Gerenciar CRM',                   icon: Users,         iconColor: 'text-accent-blue',    iconBg: 'bg-accent-blue/10',    href: '/contacts' },
-    { label: 'Respostas rápidas', description: 'Usar templates salvos',           icon: Zap,           iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/settings/quick-replies' },
-    { label: 'Relatórios',        description: 'Meu desempenho',                  icon: BarChart3,     iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/dashboard' },
+    { label: 'Minhas conversas',  description: 'Atribuídas a mim',                icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations?aba=minhas' },
+    { label: 'Leads',             description: 'Contatos e funis',                icon: Users,         iconColor: 'text-accent-blue',    iconBg: 'bg-accent-blue/10',    href: '/contacts' },
+    { label: 'Funis',             description: 'Negócios em andamento',           icon: Zap,           iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/pipelines' },
+    { label: 'Relatórios',        description: 'Meu desempenho',                  icon: BarChart3,     iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/dashboard?aba=relatorios' },
   ]
 }
 
 function QuickActions({ role }: { role: string }) {
   const navigate = useNavigate()
   const { isRouteVisible } = useFeatureVisibility()
-  const actions = getQuickActions(role).filter((action) => isRouteVisible(action.href))
+  // Cobrança: além da flag (isRouteVisible), só o dono tem a seção.
+  const actions = getQuickActions(role).filter((action) =>
+    isRouteVisible(action.href) && (action.href !== '/settings/billing' || isOwnerTier(role)))
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Ações rápidas</h3>
-      <div className="grid grid-cols-2 gap-1.5">
+      {/* Na coluna estreita (xl) uma por linha: em duas, os textos saíam cortados. */}
+      <div className="grid grid-cols-2 xl:grid-cols-1 gap-1.5">
         {actions.map((a) => {
           const Icon = a.icon
           return (
             <button
               key={a.label}
-              onClick={() => navigate(a.href)}
+              // Configurações leva o caminho de volta para a Home.
+              onClick={() => navigate(a.href.startsWith('/settings/') ? comVolta(a.href, '/home', 'Voltar para a Home') : a.href)}
               className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left group"
             >
               <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', a.iconBg)}>
@@ -361,55 +387,61 @@ function QuickActions({ role }: { role: string }) {
 
 // ── Activity feed ──────────────────────────────────────────────────────────────
 
-const ACTION_MAP: Record<string, { label: string; dot: string }> = {
-  'conversation.resolved':  { label: 'resolveu uma conversa',          dot: 'bg-status-active' },
-  'conversation.assigned':  { label: 'assumiu uma conversa',           dot: 'bg-brand-400' },
-  'conversation.archived':  { label: 'arquivou uma conversa',          dot: 'bg-surface-500' },
-  'message.sent':           { label: 'enviou uma mensagem',            dot: 'bg-blue-400' },
-  'agent.invited':          { label: 'convidou um usuário',            dot: 'bg-brand-400' },
-  'automation.toggled':     { label: 'alterou uma automação',          dot: 'bg-status-pending' },
-  'tag.created':            { label: 'criou uma tag',                  dot: 'bg-status-active' },
-  'user.role_changed':      { label: 'alterou o papel de um usuário',  dot: 'bg-orange-400' },
-}
+/**
+ * Atividade recente: o mesmo feed da Auditoria (`/audit/tenant-feed`, só
+ * admin/dono). Antes lia `/audit-logs` com outro formato (userName, ações
+ * `conversation.resolved`) e mostrava "Em breve" — o registro já existe e
+ * funciona em Configurações → Auditoria.
+ */
+function ActivityFeed() {
+  const [rows, setRows] = useState<TenantAuditRow[] | null>(null)
+  const [erro, setErro] = useState(false)
+  const buscar = () => listTenantAuditFeed({ limit: 8 })
+    .then((r) => setRows(r.data))
+    .catch(() => setErro(true))
+  // Primeira carga direto no efeito (o estado inicial já é "carregando").
+  useEffect(() => { void buscar() }, [])
+  const carregar = () => {
+    setErro(false)
+    setRows(null)
+    void buscar()
+  }
 
-function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean }) {
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
-      <h3 className="text-sm font-semibold text-surface-100 mb-4">Atividade recente</h3>
-      {loading ? (
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-surface-100">Atividade recente</h3>
+        <Link to={comVolta('/settings/audit', '/home', 'Voltar para a Home')} className="text-[11px] text-surface-500 hover:text-surface-200 transition-colors">
+          Ver tudo
+        </Link>
+      </div>
+      {erro ? (
+        <div className="py-6 text-center">
+          <p className="text-sm text-surface-500">Não foi possível carregar a atividade.</p>
+          <button type="button" onClick={carregar} className="mt-2 text-xs font-semibold text-brand-300 hover:text-brand-200">Tentar de novo</button>
+        </div>
+      ) : rows === null ? (
         <div className="flex justify-center py-10">
           <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : logs.length === 0 ? (
-        // /audit-logs ainda e um stub no backend (sempre retorna lista vazia --
-        // ver SecuritySettings.tsx), entao "nenhuma atividade" seria enganoso:
-        // nao e que nada aconteceu, e que o rastreamento ainda nao existe.
-        <div className="flex flex-col items-center justify-center py-10 gap-2">
-          <p className="text-sm text-surface-500">Em breve — o feed de atividade ainda está em desenvolvimento.</p>
-        </div>
+      ) : rows.length === 0 ? (
+        <p className="py-8 text-center text-sm text-surface-500">Nenhuma atividade da equipe ainda.</p>
       ) : (
         <div className="flex flex-col">
-          {logs.map((log, i) => {
-            const action = ACTION_MAP[log.action] ?? { label: log.action, dot: 'bg-surface-500' }
-            return (
-              <div key={log.id} className="flex items-start gap-3 py-2.5 border-b border-surface-700 last:border-0">
-                <div className="flex flex-col items-center flex-shrink-0 mt-1.5 gap-1">
-                  <div className={cn('w-2 h-2 rounded-full flex-shrink-0', action.dot)} />
-                  {i < logs.length - 1 && <div className="w-px h-4 bg-surface-800" />}
-                </div>
-                <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-surface-300 mt-0.5">
-                  {getInitials(log.userName)}
-                </div>
-                <div className="flex-1 min-w-0 pt-0.5">
-                  <p className="text-sm text-surface-300 leading-snug">
-                    <span className="font-medium text-surface-100">{log.userName}</span>
-                    {' '}{action.label}
-                  </p>
-                </div>
-                <span className="text-xs text-surface-600 flex-shrink-0 pt-0.5">{relativeTime(log.createdAt)}</span>
+          {rows.map((row) => (
+            <div key={row.id} className="flex items-start gap-3 py-2.5 border-b border-surface-700 last:border-0">
+              <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-surface-300 mt-0.5">
+                {getInitials(row.actorName ?? 'Sistema')}
               </div>
-            )
-          })}
+              <div className="flex-1 min-w-0 pt-0.5">
+                <p className="text-sm text-surface-300 leading-snug">
+                  <span className="font-medium text-surface-100">{row.actorName ?? 'Sistema'}</span>
+                  {' '}{formatActivity({ action: row.action, subject: row.entityName ?? '', details: row.details })}
+                </p>
+              </div>
+              <span className="text-xs text-surface-600 flex-shrink-0 pt-0.5">{relativeTime(row.createdAt)}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -449,19 +481,23 @@ function OperacaoNoDashboardCard() {
 function SupervisorBlock() {
   const navigate = useNavigate()
   const [queue, setQueue] = useState<Conversation[]>([])
+  const [total, setTotal] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // A Fila = pendentes sem dono (mesma definição da inbox e do Dashboard).
+  // Antes pedia "abertas sem dono" e contava só as 5 da lista.
   useEffect(() => {
-    api.get('/conversations', { params: { assignedTo: 'unassigned', status: 'open' } })
-      .then((r) => { const list = Array.isArray(r.data?.data) ? r.data.data : Array.isArray(r.data) ? r.data : []; setQueue(list.slice(0, 5)); setLoading(false) })
-      .catch(() => { setQueue([]); setLoading(false) })
+    conversationsApi.list({ status: 'pending', assignedTo: 'unassigned' }, 1, 5)
+      .then((r) => { setQueue(r.data.data ?? []); setTotal(r.data.total ?? null) })
+      .catch(() => { setQueue([]); setTotal(null) })
+      .finally(() => setLoading(false))
   }, [])
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-surface-100">Fila de espera</h4>
-        <span className="text-xs text-surface-500">{loading ? '…' : `${queue.length} sem usuário`}</span>
+        <h4 className="text-sm font-semibold text-surface-100">Fila</h4>
+        <span className="text-xs text-surface-500">{loading ? '…' : total === null ? '' : `${total.toLocaleString('pt-BR')} pendentes sem dono`}</span>
       </div>
       {loading ? (
         <div className="flex justify-center py-8">
@@ -470,14 +506,14 @@ function SupervisorBlock() {
       ) : queue.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 gap-2">
           <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-          <p className="text-sm text-surface-400">Fila vazia — todas as conversas estão atribuídas!</p>
+          <p className="text-sm text-surface-400">Fila vazia: ninguém esperando atendimento.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-1">
           {queue.map((conv) => (
             <button
               key={conv.id}
-              onClick={() => navigate('/conversations')}
+              onClick={() => navigate(`/conversations?aba=fila&id=${conv.id}`)}
               className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left w-full"
             >
               <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
@@ -493,10 +529,10 @@ function SupervisorBlock() {
         </div>
       )}
       <button
-        onClick={() => navigate('/conversations')}
+        onClick={() => navigate('/conversations?aba=fila')}
         className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
       >
-        Ver todas as conversas <ChevronRight className="w-3.5 h-3.5" />
+        Abrir a Fila <ChevronRight className="w-3.5 h-3.5" />
       </button>
     </div>
   )
@@ -505,19 +541,30 @@ function SupervisorBlock() {
 function AgentBlock() {
   const navigate = useNavigate()
   const [convs, setConvs] = useState<Conversation[]>([])
+  const [total, setTotal] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // O total vem do servidor (antes contava só as 5 da lista).
   useEffect(() => {
-    api.get('/conversations', { params: { assignedTo: 'me', status: 'open' } })
-      .then((r) => { const list = Array.isArray(r.data?.data) ? r.data.data : Array.isArray(r.data) ? r.data : []; setConvs(list.slice(0, 5)); setLoading(false) })
-      .catch(() => { setConvs([]); setLoading(false) })
+    Promise.all([
+      conversationsApi.list({ status: 'pending', assignedTo: 'me' }, 1, 5),
+      conversationsApi.list({ status: 'open', assignedTo: 'me' }, 1, 5),
+    ])
+      .then(([pend, abertas]) => {
+        const todas = [...(pend.data.data ?? []), ...(abertas.data.data ?? [])]
+          .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime())
+        setConvs(todas.slice(0, 5))
+        setTotal((pend.data.total ?? 0) + (abertas.data.total ?? 0))
+      })
+      .catch(() => { setConvs([]); setTotal(null) })
+      .finally(() => setLoading(false))
   }, [])
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-surface-100">Minhas conversas abertas</h4>
-        <span className="text-xs text-surface-500">{loading ? '…' : `${convs.length} abertas`}</span>
+        <h4 className="text-sm font-semibold text-surface-100">Minhas conversas</h4>
+        <span className="text-xs text-surface-500">{loading ? '…' : total === null ? '' : `${total.toLocaleString('pt-BR')} em andamento`}</span>
       </div>
       {loading ? (
         <div className="flex justify-center py-8">
@@ -526,14 +573,14 @@ function AgentBlock() {
       ) : convs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 gap-2">
           <MessageSquare className="w-8 h-8 text-surface-700" />
-          <p className="text-sm text-surface-400">Nenhuma conversa aberta no momento.</p>
+          <p className="text-sm text-surface-400">Nenhuma conversa com você no momento.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-1">
           {convs.map((conv) => (
             <button
               key={conv.id}
-              onClick={() => navigate('/conversations')}
+              onClick={() => navigate(`/conversations?aba=minhas&id=${conv.id}`)}
               className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left w-full"
             >
               <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
@@ -553,10 +600,10 @@ function AgentBlock() {
         </div>
       )}
       <button
-        onClick={() => navigate('/conversations')}
+        onClick={() => navigate('/conversations?aba=minhas')}
         className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
       >
-        Ver todas as conversas <ChevronRight className="w-3.5 h-3.5" />
+        Ver minhas conversas <ChevronRight className="w-3.5 h-3.5" />
       </button>
     </div>
   )
@@ -568,8 +615,8 @@ export function HomePage() {
   const { user } = useAuth()
   const isMobile = useIsMobile()
   const [stats, setStats] = useState<HomeStats | null>(null)
-  const [logs, setLogs] = useState<AuditLog[]>([])
-  const [logsLoading, setLogsLoading] = useState(true)
+  // Os números não carregaram: mostra o erro em vez de zeros que parecem reais.
+  const [statsErro, setStatsErro] = useState(false)
 
   useEffect(() => {
     const fallbackStats: HomeStats = {
@@ -578,18 +625,19 @@ export function HomePage() {
       avgResponseMinutes: 0, queueCount: 0, planUsed: 0, planLimit: 0,
       myConversationsOpen: 0, myConversationsResolvedToday: 0, myAvgResponseMinutes: 0, myMessagesSentToday: 0,
     }
-    api.get<HomeStats>('/home/stats')
-      .then((r) => setStats(r.data))
-      .catch(() => setStats(fallbackStats))
-    api.get<{ data: AuditLog[] }>('/audit-logs', { params: { limit: 8 } })
-      .then((r) => { setLogs(Array.isArray(r.data?.data) ? r.data.data : []); setLogsLoading(false) })
-      .catch(() => { setLogs([]); setLogsLoading(false) })
+    // "Na fila" do /home/stats (queueCount) conta TODAS as pendentes, com ou
+    // sem dono; "sem atendente" (unassignedCount) conta abertas + pendentes sem
+    // dono. A Fila do produto é pendentes SEM dono (inbox e Dashboard): busca o
+    // total real e usa nos dois campos — é o que os cards e os insights leem.
+    Promise.all([
+      api.get<HomeStats>('/home/stats').then((r) => r.data).catch(() => { setStatsErro(true); return fallbackStats }),
+      conversationsApi.list({ status: 'pending', assignedTo: 'unassigned' }, 1, 1).then((r) => r.data.total).catch(() => null),
+    ]).then(([base, fila]) => {
+      setStats(fila === null || fila === undefined ? base : { ...base, queueCount: fila, unassignedCount: fila })
+    })
   }, [])
 
   const role = user?.role ?? 'agent'
-  const currentUser = user
-    ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
-    : undefined
 
   // Phase 28+ — Single 12-column grid for the whole Home page. Each card
   // declares its own col-span so cards on the same row align in height
@@ -641,11 +689,17 @@ export function HomePage() {
                 mão sem competir com a leitura principal. */}
             <div className="lg:col-span-12 xl:col-span-8">
               <div className="flex flex-col gap-5 sm:gap-6">
-                {stats && <MyPerformanceCard stats={stats} />}
-
-                {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
-
-                {stats && <AIInsightsWidget stats={stats} />}
+                {statsErro ? (
+                  <div role="alert" className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 text-sm text-surface-400">
+                    Não foi possível carregar os números de hoje. Recarregue a página para tentar de novo.
+                  </div>
+                ) : (
+                  <>
+                    {stats && <MyPerformanceCard stats={stats} />}
+                    {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
+                    {stats && <AIInsightsWidget stats={stats} />}
+                  </>
+                )}
 
                 {role === 'supervisor' && !isMobile && <SupervisorBlock />}
                 {role === 'agent' && !isMobile && <AgentBlock />}
@@ -656,7 +710,8 @@ export function HomePage() {
               <div className="flex flex-col gap-5 sm:gap-6">
                 {isAdminRole && <OperacaoNoDashboardCard />}
                 <QuickActions role={role} />
-                <ActivityFeed logs={logs} loading={logsLoading} />
+                {/* O feed é da Auditoria (admin/dono); os demais papéis não o leem. */}
+                {isAdminRole && <ActivityFeed />}
               </div>
             </div>
 
