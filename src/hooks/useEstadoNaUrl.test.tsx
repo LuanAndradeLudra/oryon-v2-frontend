@@ -75,3 +75,27 @@ describe('preservarVolta', () => {
     expect(preservarVolta('/settings/tags', new URLSearchParams('voltarPara=https://mal.com'))).toBe('/settings/tags')
   })
 })
+
+function DuasNoMesmoClique() {
+  const [ordem, setOrdem] = useEstadoNaUrl<string>('ordem', { padrao: 'atividade' })
+  const [direcao, setDirecao] = useEstadoNaUrl<string>('direcao', { padrao: 'desc' })
+  return (
+    <>
+      <p>{ordem}/{direcao}</p>
+      <button onClick={() => { setOrdem('nome'); setDirecao('asc') }}>ordenar</button>
+      <Endereco />
+    </>
+  )
+}
+
+describe('useEstadoNaUrl · duas mudanças no mesmo clique', () => {
+  it('as duas ficam na URL (o React Router montava a 2ª sobre a URL antiga e apagava a 1ª)', () => {
+    render(<MemoryRouter initialEntries={['/automations?busca=x']}><DuasNoMesmoClique /></MemoryRouter>)
+    fireEvent.click(screen.getByText('ordenar'))
+    const p = new URLSearchParams(screen.getByTestId('url').textContent ?? '')
+    expect(p.get('ordem')).toBe('nome')
+    expect(p.get('direcao')).toBe('asc')
+    expect(p.get('busca')).toBe('x')
+    expect(screen.getByText('nome/asc')).toBeInTheDocument()
+  })
+})

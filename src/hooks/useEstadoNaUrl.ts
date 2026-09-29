@@ -31,6 +31,25 @@ export interface OpcoesEstadoNaUrl<T> {
 
 type Atualizador<T> = T | ((atual: T) => T)
 
+/**
+ * O `setSearchParams` do React Router monta a query nova a partir da URL do
+ * RENDER atual — duas mudanças no mesmo clique (ex.: `ordem` e `direcao`)
+ * faziam a segunda partir da URL antiga e apagar a primeira. Aqui as mudanças
+ * do mesmo tique se acumulam: a segunda parte do resultado da primeira. O
+ * acumulado vale só até o fim do tique (microtask), para nunca reaplicar uma
+ * mudança velha se a pessoa voltar depois para a mesma URL.
+ */
+let pendente: { de: string; params: URLSearchParams } | null = null
+function baseDaMudanca(prev: URLSearchParams): URLSearchParams {
+  if (pendente && pendente.de === prev.toString()) return new URLSearchParams(pendente.params)
+  return new URLSearchParams(prev)
+}
+function registrarMudanca(prev: URLSearchParams, resultado: URLSearchParams) {
+  const primeiraDoTique = pendente === null
+  pendente = { de: prev.toString(), params: new URLSearchParams(resultado) }
+  if (primeiraDoTique) queueMicrotask(() => { pendente = null })
+}
+
 export function useEstadoNaUrl<T>(chave: string, opcoes: OpcoesEstadoNaUrl<T>): [T, (valor: Atualizador<T>) => void] {
   const [params, setParams] = useSearchParams()
   const { padrao, historico = 'replace' } = opcoes
@@ -51,7 +70,7 @@ export function useEstadoNaUrl<T>(chave: string, opcoes: OpcoesEstadoNaUrl<T>): 
 
   const definir = useCallback((proximo: Atualizador<T>) => {
     setParams((prev) => {
-      const p = new URLSearchParams(prev)
+      const p = baseDaMudanca(prev)
       const atualBruto = p.get(chave) ?? aliases?.map((a) => p.get(a)).find((v) => v !== null) ?? null
       const atual = ler ? ler(atualBruto) : ((atualBruto ?? padrao) as unknown as T)
       const novo = typeof proximo === 'function' ? (proximo as (a: T) => T)(atual) : proximo
@@ -61,6 +80,7 @@ export function useEstadoNaUrl<T>(chave: string, opcoes: OpcoesEstadoNaUrl<T>): 
       if (texto === null || texto === '' || texto === padraoTexto) p.delete(chave)
       else p.set(chave, texto)
       if (texto !== (atualBruto ?? padraoTexto)) resetar?.forEach((r) => p.delete(r))
+      registrarMudanca(prev, p)
       return p
     }, { replace: historico === 'replace' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
