@@ -240,16 +240,22 @@ export function WhatsAppNumbers() {
     )
   }
 
+  // Cada cliente tem UMA linha hoje. Com ela conectada, "Conectar número",
+  // a estrela de principal e o selo só aparecem quando houver mais de uma
+  // (sem nenhuma conectada, o botão volta — ex.: linha desconectada).
+  const conectadas = numbers.filter((n) => n.status === 'connected' || n.status === 'CONNECTED').length
+  const variasLinhas = conectadas > 1
+
   return (
     <div>
       <SectionHeader
         title="Números WhatsApp"
         description="Gerencie os números WhatsApp Business conectados à plataforma."
-        action={
+        action={conectadas === 0 && numbers.length > 0 ? (
           <Button onClick={() => { void startConnect() }} leftIcon={<Plus className="w-4 h-4" />}>
             Conectar número
           </Button>
-        }
+        ) : undefined}
       />
 
       {numbers.length === 0 && (
@@ -282,7 +288,7 @@ export function WhatsAppNumbers() {
                         {status.icon}
                         {status.label}
                       </span>
-                      {num.isPrimary && (
+                      {variasLinhas && num.isPrimary && (
                         <span className="inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border border-brand-500/40 text-brand-300 bg-brand-500/10">
                           <Star className="w-3 h-3 fill-current" />
                           Principal
@@ -365,7 +371,7 @@ export function WhatsAppNumbers() {
 
                 {connected && (
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    {!num.isPrimary && (
+                    {variasLinhas && !num.isPrimary && (
                       <Tooltip content="Definir como linha principal">
                         <button
                           onClick={() => { void handlePromote(num.id) }}

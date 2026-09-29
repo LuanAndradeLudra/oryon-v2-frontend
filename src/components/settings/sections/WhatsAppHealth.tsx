@@ -68,7 +68,7 @@ export function WhatsAppHealth() {
       load()
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      setError(msg || 'Falha ao definir linha primária.')
+      setError(msg || 'Falha ao definir a linha principal.')
     } finally {
       setPromoting(null)
     }
@@ -77,7 +77,7 @@ export function WhatsAppHealth() {
   const header = (
     <SectionHeader
       title="Saúde das Linhas"
-      description="Estado de cada número WhatsApp: linha primária, recursos vinculados e pendências."
+      description="Estado da linha WhatsApp, dos recursos ligados a ela e das pendências."
     />
   )
 
@@ -118,6 +118,9 @@ export function WhatsAppHealth() {
   const needsAttentionTotal = data.lines.reduce((sum, l) =>
     sum + l.templates.needsAssignment + l.campaigns.needsAssignment + l.automations.needsAssignment, 0)
   const orphansTotal = data.orphans.templates + data.orphans.campaigns + data.orphans.automations
+  // Cada cliente tem UMA linha hoje: "Linhas ativas 1/1", o selo de principal
+  // e o "Tornar principal" só aparecem quando houver mais de uma ativa.
+  const variasLinhas = data.lines.filter((l) => l.isActive).length > 1
 
   return (
     <div>
@@ -126,15 +129,17 @@ export function WhatsAppHealth() {
       {/* Global summary — admin's "everything OK" / "something off" snapshot */}
       <SettingsSection
         title="Visão geral"
-        description="Linhas ativas e recursos que precisam de atenção."
+        description="Recursos que precisam de atenção."
       >
-        <div className="grid grid-cols-3 gap-6">
-          <SummaryStat
-            label="Linhas ativas"
-            value={data.lines.filter((l) => l.isActive).length}
-            total={data.lines.length}
-            icon={Phone}
-          />
+        <div className={variasLinhas ? 'grid grid-cols-3 gap-6' : 'grid grid-cols-2 gap-6'}>
+          {variasLinhas && (
+            <SummaryStat
+              label="Linhas ativas"
+              value={data.lines.filter((l) => l.isActive).length}
+              total={data.lines.length}
+              icon={Phone}
+            />
+          )}
           <SummaryStat
             label="Recursos sem linha"
             value={needsAttentionTotal}
@@ -166,6 +171,7 @@ export function WhatsAppHealth() {
             onPromote={() => handlePromote(line.id)}
             promoting={promoting === line.id}
             disabled={promoting !== null && promoting !== line.id}
+            variasLinhas={variasLinhas}
           />
         ))}
       </div>
@@ -204,11 +210,14 @@ function LineHealthRow({
   onPromote,
   promoting,
   disabled,
+  variasLinhas,
 }: {
   line: WhatsappLineHealth
   onPromote: () => void
   promoting: boolean
   disabled: boolean
+  /** Com uma linha só, "principal" não significa nada: sem selo nem botão. */
+  variasLinhas: boolean
 }) {
   const needsAttention =
     line.templates.needsAssignment + line.campaigns.needsAssignment + line.automations.needsAssignment
@@ -223,9 +232,9 @@ function LineHealthRow({
             <span className="text-sm font-semibold text-surface-100 truncate">
               {line.label || formatPhone(line.displayPhoneNumber)}
             </span>
-            {line.isPrimary && (
+            {variasLinhas && line.isPrimary && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-3xs font-semibold bg-brand-cta/10 text-brand-cta border border-brand-cta/30">
-                <Star className="w-2.5 h-2.5" /> Primária
+                <Star className="w-2.5 h-2.5" /> Principal
               </span>
             )}
             {!line.isActive && (
@@ -263,7 +272,7 @@ function LineHealthRow({
           )}
         </div>
 
-        {!line.isPrimary && line.isActive && (
+        {variasLinhas && !line.isPrimary && line.isActive && (
           <button
             type="button"
             onClick={onPromote}
@@ -278,7 +287,7 @@ function LineHealthRow({
             ) : (
               <>
                 <Star className="w-3 h-3" />
-                Tornar primária
+                Tornar principal
               </>
             )}
           </button>
