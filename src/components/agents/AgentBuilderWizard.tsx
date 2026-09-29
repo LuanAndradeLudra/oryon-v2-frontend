@@ -8,7 +8,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
-import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFileDetailed } from '@/services/agentsApi'
+import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFileDetailed, podePublicarAgente } from '@/services/agentsApi'
+import { useAuth } from '@/contexts/AuthContext'
 import { showToast } from '@/hooks/useToast'
 import {
   loadHub, loadHubAsync, saveHub, hubToBrandLinks, hubHasContent,
@@ -1787,12 +1788,63 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
 // ─── Wizard root ──────────────────────────────────────────────────────────────
 
+export const MSG_ADMIN_PRECISA_PUBLICAR = 'Um administrador precisa publicar este agente.'
+
+/**
+ * D11 (PO, 29/09): só administrador põe agente no ar. O agent-server recusa o
+ * PATCH `status:'active'` de quem não é admin com 403 — e como o POST já criou
+ * o agente, ele ficava órfão, só com o nome. Quem não publica salva sempre
+ * como rascunho, com o resto da configuração junto.
+ */
+export function statusAoSalvar(pedido: 'active' | 'draft', podePublicar: boolean): 'active' | 'draft' {
+  return podePublicar ? pedido : 'draft'
+}
+
+/** Ações da revisão (etapa 8). Sem permissão de publicar, "Publicar" não aparece. */
+export function AcoesDaRevisao({ podePublicar, publishing, temPrompt, onPublish }: {
+  podePublicar: boolean
+  publishing: boolean
+  temPrompt: boolean
+  onPublish: (status: 'active' | 'draft') => void
+}) {
+  if (!podePublicar) {
+    return (
+      <>
+        <span className="text-xs text-surface-400">{MSG_ADMIN_PRECISA_PUBLICAR}</span>
+        <Button type="button" variant="primary" size="md" onClick={() => onPublish('draft')} disabled={!temPrompt} loading={publishing}>
+          <span className="sm:hidden">Rascunho</span><span className="hidden sm:inline">Salvar como rascunho</span>
+        </Button>
+      </>
+    )
+  }
+  return (
+    <>
+      <Button type="button" variant="neutral" size="md" onClick={() => onPublish('draft')} disabled={publishing}>
+        <span className="sm:hidden">Rascunho</span><span className="hidden sm:inline">Salvar como rascunho</span>
+      </Button>
+      <Button
+        type="button"
+        variant="primary"
+        size="md"
+        onClick={() => onPublish('active')}
+        disabled={!temPrompt}
+        loading={publishing}
+        leftIcon={<Zap className="w-4 h-4" />}
+      >
+        {publishing ? 'Publicando...' : 'Publicar agente'}
+      </Button>
+    </>
+  )
+}
+
 interface AgentBuilderWizardProps {
   onClose: () => void
   onCreated: (agent: AgentConfigWithTools) => void
 }
 
 export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardProps) {
+  const { user } = useAuth()
+  const podePublicar = podePublicarAgente((user as { role?: string } | null)?.role)
   const [step, setStep] = useState(1)
   const [data, setData] = useState<WizardData>(DEFAULT_DATA)
   const [publishing, setPublishing] = useState(false)
@@ -1905,7 +1957,8 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
     onClose()
   }
 
-  const handlePublish = async (status: 'active' | 'draft') => {
+  const handlePublish = async (pedido: 'active' | 'draft') => {
+    const status = statusAoSalvar(pedido, podePublicar)
     setPublishing(true)
     setPublishError(null)
     const { userId, tenantId, actorName } = readSession()
@@ -2258,22 +2311,12 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   )}
                   <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                     {step === 8 ? (
-                      <>
-                        <Button type="button" variant="neutral" size="md" onClick={() => handlePublish('draft')} disabled={publishing}>
-                          <span className="sm:hidden">Rascunho</span><span className="hidden sm:inline">Salvar como rascunho</span>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="primary"
-                          size="md"
-                          onClick={() => handlePublish('active')}
-                          disabled={!data.generated_prompt}
-                          loading={publishing}
-                          leftIcon={<Zap className="w-4 h-4" />}
-                        >
-                          {publishing ? 'Publicando...' : 'Publicar agente'}
-                        </Button>
-                      </>
+                      <AcoesDaRevisao
+                        podePublicar={podePublicar}
+                        publishing={publishing}
+                        temPrompt={!!data.generated_prompt}
+                        onPublish={(s) => void handlePublish(s)}
+                      />
                     ) : (
                       <Button
                         type="button"
