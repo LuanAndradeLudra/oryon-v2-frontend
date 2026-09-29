@@ -366,7 +366,9 @@ export function instalarBackendDemo() {
   // linha WhatsApp conectada" por cima de tudo.
   rota('meta/numbers', eq('get', '/meta/numbers'), () => ({ data: [HERO_LINE] }))
   rota('whatsapp/numbers', eq('get', '/whatsapp/numbers'), () => ({
-    data: [{ ...HERO_LINE, qualityRating: 'GREEN', messagingLimit: 'TIER_10K' }],
+    // agentId: a linha da demonstração é atendida pela recepção (a lista de
+    // agentes e o cabeçalho mostram o número a partir daqui).
+    data: [{ ...HERO_LINE, qualityRating: 'GREEN', messagingLimit: 'TIER_10K', agentId: 'ag-recepcao' }],
   }))
 
   // ── Disparos ──────────────────────────────────────────────────────────────

@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/useToast'
 import { IndicadorDeSalvamento } from './SalvamentoDoAgente'
 import { useSalvamento } from './salvamentoContexto'
 import { StatusDoAgente } from './StatusDoAgente'
+import { numeroDoAgente, useLinhasPorAgente } from '../linhasDosAgentes'
 
 /**
  * Cabeçalho de identidade: quem é o agente, em que número atende e se está
@@ -40,7 +41,9 @@ export function CabecalhoDoAgente({
   const [confirmar, setConfirmar] = useState<null | 'rascunho' | 'excluir'>(null)
   const [ocupado, setOcupado] = useState(false)
   const [novoNome, setNovoNome] = useState<string | null>(null)
-  const numero = agent.channels?.whatsapp?.number
+  // O número vem da linha ligada ao agente, não de `agent.channels` (nunca gravado).
+  const linhas = useLinhasPorAgente()
+  const numero = numeroDoAgente(linhas?.get(agent.id))
 
   const mudarStatus = async (status: AgentConfig['status']) => {
     setOcupado(true)
