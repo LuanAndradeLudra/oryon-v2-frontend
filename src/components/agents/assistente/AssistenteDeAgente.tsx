@@ -62,6 +62,7 @@ export function AssistenteDeAgente({
   const [setores, setSetores] = useState<Array<{ id: string; name: string }>>([])
   const [numeros, setNumeros] = useState<LinhaParaEscolher[] | null>(null)
   const [prontidao, setProntidao] = useState<ReadinessItem[] | null>(null)
+  const [erroProntidao, setErroProntidao] = useState(false)
   const [publicando, setPublicando] = useState(false)
   const [erroPublicar, setErroPublicar] = useState<string | null>(null)
   const carregado = useRef(false)
@@ -71,11 +72,19 @@ export function AssistenteDeAgente({
   const [fontes, setFontes] = useState<FontesDaConta>({ hub: null, catalogo: null, profissionais: null })
   const [fontesLidas, setFontesLidas] = useState<StudySource[] | null>(null)
   const [erroResumo, setErroResumo] = useState<string | null>(null)
-  const [publicadoSemFatos, setPublicadoSemFatos] = useState<AgentConfigWithTools | null>(null)
-  // Publicado, mas a linha de WhatsApp não foi ligada (PATCH /meta/numbers
-  // falhou): o assistente fica aberto até ligar ou o dono abrir o agente.
-  const [semLinha, setSemLinha] = useState<{ agente: AgentConfigWithTools; numeroId: string; motivo: string } | null>(null)
+  // Revisão: texto ou capacidades editados na página depois da última
+  // publicação — publicar por aqui substitui essas edições.
+  const [editadoFora, setEditadoFora] = useState<Array<'texto' | 'capacidades'>>([])
+  // Depois de publicar, o assistente só fecha quando tudo deu certo. Se algo
+  // faltou (linha, fatos, abrir o agente), fica aberto com o que falta e como
+  // resolver — o agente JÁ está publicado, e publicar de novo não é o caminho.
+  const [publicadoId, setPublicadoId] = useState<string | null>(null)
+  const [publicadoSemFatos, setPublicadoSemFatos] = useState(false)
+  const [semLinha, setSemLinha] = useState<{ numeroId: string; motivo: string } | null>(null)
+  const [semAbrir, setSemAbrir] = useState(false)
   const [religando, setReligando] = useState(false)
+  const [abrindo, setAbrindo] = useState(false)
+  const rolagem = useRef<HTMLDivElement>(null)
 
   // Retoma o rascunho aberto (M15) ou cria um no servidor.
   useEffect(() => {
@@ -86,7 +95,12 @@ export function AssistenteDeAgente({
       try { guardado = localStorage.getItem(chave) } catch { /* sem storage */ }
       try {
         if (guardado) {
-          const d = await getSpecDraft(guardado).catch(() => null)
+          // Só "não encontrado" descarta o rascunho guardado. Erro passageiro
+          // (rede, servidor fora) não cria outro por cima: fica "não salvo".
+          const d = await getSpecDraft(guardado).catch((e: unknown) => {
+            if ((e as { status?: number }).status === 404) return null
+            throw e
+          })
           if (d && !d.published_agent_id && vivo) {
             setSpec(completarSpec(d.spec))
             setEtapa(Math.min(Math.max(d.step, 1), ETAPAS.length))
@@ -96,11 +110,12 @@ export function AssistenteDeAgente({
             return
           }
         }
-        const { draft, repeatedFacts } = await createSpecDraft(agentId ? { agentId } : {})
+        const { draft, repeatedFacts, editedOutside } = await createSpecDraft(agentId ? { agentId } : {})
         if (!vivo) return
         if (agentId) {
           setSpec(completarSpec(draft.spec))
           setFatosRepetidos(repeatedFacts)
+          setEditadoFora(editedOutside ?? [])
           // Revisão: abre direto no texto do agente.
           setEtapa(ETAPA_TEXTO)
         }
@@ -162,8 +177,14 @@ export function AssistenteDeAgente({
 
   const carregarProntidao = useCallback(() => {
     if (!draftId) return
-    getSpecReadiness(draftId).then((r) => setProntidao(r.items)).catch(() => setProntidao(null))
+    setErroProntidao(false)
+    getSpecReadiness(draftId)
+      .then((r) => setProntidao(r.items))
+      .catch(() => { setProntidao(null); setErroProntidao(true) })
   }, [draftId])
+
+  // Trocar de etapa começa do topo (antes ficava na rolagem da etapa anterior).
+  useEffect(() => { rolagem.current?.scrollTo?.({ top: 0 }) }, [etapa])
 
   const avancar = () => {
     const f = faltaNaEtapa(etapa, spec)
@@ -187,47 +208,84 @@ export function AssistenteDeAgente({
     }
   }
 
+  /** Abre o agente já publicado; se a leitura falhar, fica aqui com "tentar de novo". */
+  const abrirPublicado = async (id = publicadoId) => {
+    if (!id) return
+    setAbrindo(true)
+    setSemAbrir(false)
+    try {
+      onCreated(await getAgent(id))
+    } catch {
+      setSemAbrir(true)
+    } finally {
+      setAbrindo(false)
+    }
+  }
+
   const tentarLigarDeNovo = async () => {
-    if (!semLinha) return
+    if (!semLinha || !publicadoId) return
     setReligando(true)
-    const motivo = await ligarLinha(semLinha.numeroId, semLinha.agente.id)
+    const motivo = await ligarLinha(semLinha.numeroId, publicadoId)
     setReligando(false)
     if (motivo) { setSemLinha({ ...semLinha, motivo }); return }
     setSemLinha(null)
-    if (!publicadoSemFatos) onCreated(semLinha.agente)
+    if (!publicadoSemFatos) void abrirPublicado()
+  }
+
+  /** Publicar de novo o mesmo rascunho não cria nada: só refaz o envio dos fatos. */
+  const reenviarFatos = async () => {
+    if (!draftId) return
+    setReligando(true)
+    try {
+      const { factsDoc } = await publishSpecDraft(draftId)
+      if (factsDoc === 'error') return
+      setPublicadoSemFatos(false)
+      if (!semLinha) void abrirPublicado()
+    } catch {
+      /* segue o aviso; o agente já está publicado */
+    } finally {
+      setReligando(false)
+    }
   }
 
   const publicar = async () => {
-    if (!draftId || publicadoSemFatos || semLinha) return
+    if (!draftId || publicadoId) return
     setPublicando(true)
     setErroPublicar(null)
+    let idPublicado: string | null = null
     try {
       await saveSpecDraft(draftId, spec, etapa)
-      const { agentId: publicadoId, version: versaoPublicada, factsDoc } = await publishSpecDraft(draftId)
-      const numeroId = spec.channel.whatsappNumberId
-      const motivoSemLinha = numeroId ? await ligarLinha(numeroId, publicadoId) : null
+      const { agentId: novoId, version: versaoPublicada, factsDoc } = await publishSpecDraft(draftId)
+      idPublicado = novoId
+      setPublicadoId(novoId)
       try { localStorage.removeItem(chaveRascunho(user?.tenantId, agentId)) } catch { /* sem storage */ }
-      const publicado = await getAgent(publicadoId)
+      const numeroId = spec.channel.whatsappNumberId
+      const motivoSemLinha = numeroId ? await ligarLinha(numeroId, novoId) : null
+      if (motivoSemLinha && numeroId) setSemLinha({ numeroId, motivo: motivoSemLinha })
+      // SCRUM-1192 — o agente está no ar, mas os fatos da entrevista não foram
+      // para a base: fica aqui para o dono saber e poder reenviar.
+      if (factsDoc === 'error') setPublicadoSemFatos(true)
+      const publicado = await getAgent(novoId).catch(() => null)
       // Onda 5 (M18) — a bateria de perguntas do ensaio roda em segundo plano
       // a cada publicação; o resultado aparece em Desempenho. Falha aqui não
       // desfaz a publicação.
-      if (spec.tests.some((t) => t.question.trim())) {
+      if (publicado && spec.tests.some((t) => t.question.trim())) {
         void Promise.resolve()
-          .then(() => listAgentTestRuns(publicadoId))
+          .then(() => listAgentTestRuns(novoId))
           .catch(() => [] as AgentTestRun[])
           .then((runs) => rodarBateria({
           agent: publicado, tests: spec.tests, anterior: runs[0] ?? null, trigger: 'publish', specVersion: versaoPublicada,
         })).catch(() => {})
       }
-      // SCRUM-1192 — o agente está no ar, mas os fatos da entrevista não foram
-      // para a base: fica aqui para o dono saber e poder abrir o agente.
-      if (motivoSemLinha && numeroId) setSemLinha({ agente: publicado, numeroId, motivo: motivoSemLinha })
-      if (factsDoc === 'error') setPublicadoSemFatos(publicado)
+      if (!publicado) { setSemAbrir(true); return }
       if (motivoSemLinha || factsDoc === 'error') return
       onCreated(publicado)
     } catch (e) {
-      setErroPublicar(e instanceof Error ? e.message : 'Não foi possível publicar. Nada foi alterado.')
-      carregarProntidao()
+      // Só chega aqui o que falhou ANTES de publicar (salvar, publicar).
+      if (!idPublicado) {
+        setErroPublicar(e instanceof Error ? e.message : 'Não foi possível publicar. Nada foi alterado.')
+        carregarProntidao()
+      }
     } finally {
       setPublicando(false)
     }
@@ -236,7 +294,11 @@ export function AssistenteDeAgente({
   const pronto = !!prontidao && prontidao.every((i) => !i.blocking || i.ok)
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 z-50 bg-surface-950">
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      role="dialog" aria-modal="true" aria-label={agentId ? 'Revisar agente' : 'Novo agente'}
+      className="fixed inset-0 z-50 bg-surface-950"
+    >
       <div className="flex h-full overflow-hidden">
         <aside className="hidden w-80 flex-shrink-0 flex-col border-r border-surface-700 bg-surface-800 md:flex">
           <div className="flex-1 overflow-y-auto px-5 py-[18px]">
@@ -249,7 +311,7 @@ export function AssistenteDeAgente({
                 const n = i + 1
                 const feita = n < etapa
                 return (
-                  <li key={rotulo}>
+                  <li key={rotulo} aria-current={n === etapa ? 'step' : undefined}>
                     <button
                       type="button"
                       disabled={!feita}
@@ -292,8 +354,17 @@ export function AssistenteDeAgente({
             </Button>
           </header>
 
-          <div className="flex-1 overflow-y-auto">
+          <div ref={rolagem} className="flex-1 overflow-y-auto">
             <div className="mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8">
+              {agentId && editadoFora.length > 0 && (etapa === ETAPA_TEXTO || etapa === 7) && (
+                <Banner variant="warning" className="mb-6">
+                  {editadoFora.includes('texto') && editadoFora.includes('capacidades')
+                    ? 'O texto e as capacidades deste agente foram editados na página'
+                    : editadoFora.includes('texto') ? 'O texto deste agente foi editado na página' : 'As capacidades deste agente foram editadas na página'}
+                  {' '}depois da última publicação pelo assistente. Esta revisão parte da versão publicada: publicar daqui
+                  substitui essas edições.
+                </Banner>
+              )}
               {etapa === 1 && (
                 <EtapaEstudar
                   spec={spec} mudar={mudar} fontes={fontes}
@@ -316,7 +387,7 @@ export function AssistenteDeAgente({
               {etapa === 6 && <EtapaEnsaio spec={spec} mudar={mudar} />}
               {etapa === 7 && <div className="mb-8"><ParaOndeFoi spec={spec} /></div>}
               {etapa === 7 && (
-                <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros ?? []} agentId={agentId} prontidao={prontidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} salvoNoServidor={salvo === 'salvo'} />
+                <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros ?? []} agentId={agentId} prontidao={prontidao} erroProntidao={erroProntidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} salvoNoServidor={salvo === 'salvo'} />
               )}
               {falta && <Banner variant="warning" className="mt-6">{falta}</Banner>}
               {erroPublicar && <Banner variant="danger" className="mt-6">{erroPublicar}</Banner>}
@@ -327,7 +398,7 @@ export function AssistenteDeAgente({
                   action={
                     <div className="flex flex-wrap gap-2">
                       <Button size="sm" onClick={() => void tentarLigarDeNovo()} loading={religando} disabled={religando}>Tentar ligar de novo</Button>
-                      <Button size="sm" variant="neutral" onClick={() => onCreated(semLinha.agente)} disabled={religando}>Abrir o agente</Button>
+                      <Button size="sm" variant="neutral" onClick={() => void abrirPublicado()} loading={abrindo} disabled={religando || abrindo}>Abrir o agente</Button>
                     </div>
                   }
                 >
@@ -336,9 +407,27 @@ export function AssistenteDeAgente({
                 </Banner>
               )}
               {publicadoSemFatos && (
-                <Banner variant="warning" className="mt-6" action={<Button size="sm" onClick={() => onCreated(publicadoSemFatos)}>Abrir o agente</Button>}>
-                  O agente foi publicado, mas as informações da entrevista não foram para a base de conhecimento. Abra o agente e
-                  adicione em Conhecimento, ou publique de novo.
+                <Banner
+                  variant="warning"
+                  className="mt-6"
+                  action={
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" onClick={() => void reenviarFatos()} loading={religando} disabled={religando}>Enviar de novo</Button>
+                      <Button size="sm" variant="neutral" onClick={() => void abrirPublicado()} loading={abrindo} disabled={religando || abrindo}>Abrir o agente</Button>
+                    </div>
+                  }
+                >
+                  O agente foi publicado, mas as informações da entrevista não foram para a base de conhecimento. Envie de novo,
+                  ou abra o agente e adicione em Conhecimento.
+                </Banner>
+              )}
+              {semAbrir && (
+                <Banner
+                  variant="warning"
+                  className="mt-6"
+                  action={<Button size="sm" onClick={() => void abrirPublicado()} loading={abrindo} disabled={abrindo}>Tentar abrir de novo</Button>}
+                >
+                  O agente foi publicado, mas não consegui abri-lo agora. Ele já está salvo; se fechar, ele aparece na lista de agentes.
                 </Banner>
               )}
             </div>
@@ -352,7 +441,7 @@ export function AssistenteDeAgente({
             {etapa < ETAPAS.length ? (
               <Button size="md" onClick={avancar}>Continuar</Button>
             ) : (
-              <Button size="md" onClick={() => void publicar()} disabled={!pronto || publicando || !!semLinha || !!publicadoSemFatos} loading={publicando}>
+              <Button size="md" onClick={() => void publicar()} disabled={!pronto || publicando || !!publicadoId} loading={publicando}>
                 {agentId ? 'Publicar nova versão' : 'Publicar agente'}
               </Button>
             )}

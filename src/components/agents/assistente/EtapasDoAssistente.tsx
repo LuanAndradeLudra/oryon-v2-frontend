@@ -250,7 +250,7 @@ export function EtapaEnsaio({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) 
             <div className="mt-3 flex items-center gap-2">
               <Button size="sm" variant={t.verdict === 'boa' ? 'primary' : 'neutral'} leftIcon={<ThumbsUp className="h-3.5 w-3.5" />} onClick={() => avaliar(i, 'boa')}>Boa</Button>
               <Button size="sm" variant={t.verdict === 'ruim' ? 'danger' : 'neutral'} leftIcon={<ThumbsDown className="h-3.5 w-3.5" />} onClick={() => avaliar(i, 'ruim')}>Ruim</Button>
-              {t.verdict === 'ruim' && <span className="text-xs text-surface-400">Ajuste a persona ou o fluxo na etapa 2 e teste de novo.</span>}
+              {t.verdict === 'ruim' && <span className="text-xs text-surface-400">Ajuste a persona ou o fluxo na etapa "Texto do agente" e teste de novo.</span>}
             </div>
           </li>
         ))}
@@ -278,7 +278,7 @@ function rotuloDaLinha(n: LinhaParaEscolher, agentId: string | undefined): strin
 }
 
 export function EtapaNoAr({
-  spec, mudar, numeros, agentId, prontidao, carregarProntidao, servidorOk, salvoNoServidor,
+  spec, mudar, numeros, agentId, prontidao, erroProntidao = false, carregarProntidao, servidorOk, salvoNoServidor,
 }: {
   spec: AgentSpec
   mudar: Mudar
@@ -286,6 +286,8 @@ export function EtapaNoAr({
   /** Revisão de um agente existente: a linha dele não é "ocupada". */
   agentId?: string
   prontidao: ReadinessItem[] | null
+  /** A conferência falhou: mostra o erro e "tentar de novo" em vez de "Conferindo…" para sempre. */
+  erroProntidao?: boolean
   carregarProntidao: () => void
   servidorOk: boolean
   /** O rascunho do servidor já tem a última mudança (o salvamento tem um respiro). */
@@ -319,6 +321,10 @@ export function EtapaNoAr({
         <p className="mb-2 text-sm font-medium text-surface-200">Pronto para publicar?</p>
         {!servidorOk ? (
           <Banner variant="warning">O rascunho não está salvo no servidor, então não dá para publicar daqui. O servidor dos agentes pode estar numa versão anterior.</Banner>
+        ) : erroProntidao ? (
+          <Banner variant="warning" action={<Button size="sm" variant="neutral" onClick={carregarProntidao}>Tentar de novo</Button>}>
+            Não deu para conferir o rascunho agora.
+          </Banner>
         ) : !prontidao ? (
           <p className="text-sm text-surface-400">Conferindo…</p>
         ) : (

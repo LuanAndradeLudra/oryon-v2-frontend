@@ -121,6 +121,23 @@ describe('AssistenteDeAgente', () => {
     expect(screen.getByText('Conte o tipo de negócio.')).toBeInTheDocument()
   })
 
+  it('rascunho guardado com falha passageira ao ler: não cria outro por cima', async () => {
+    localStorage.setItem('oryon:agentes:assistente:t1', 'draft-9')
+    api.getSpecDraft.mockRejectedValue(Object.assign(new Error('Servidor indisponível'), { status: 503 }))
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByText('Não salvo no servidor')).toBeInTheDocument()
+    expect(api.createSpecDraft).not.toHaveBeenCalled()
+    expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBe('draft-9')
+  })
+
+  it('rascunho guardado que não existe mais (404): começa um novo', async () => {
+    localStorage.setItem('oryon:agentes:assistente:t1', 'draft-9')
+    api.getSpecDraft.mockRejectedValue(Object.assign(new Error('Rascunho não encontrado'), { status: 404 }))
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    await waitFor(() => expect(api.createSpecDraft).toHaveBeenCalled())
+    expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBe('draft-1')
+  })
+
   it('servidor sem as rotas novas: avisa que não está salvo e não deixa publicar', async () => {
     api.createSpecDraft.mockRejectedValue(new Error('Erro 404'))
     render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
@@ -381,7 +398,7 @@ describe('entrevista e jeito de responder', () => {
     expect(await screen.findByText(/não foram para a base de conhecimento/)).toBeInTheDocument()
     expect(onCreated).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Abrir o agente' }))
-    expect(onCreated).toHaveBeenCalledWith({ id: 'agent-1' })
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ id: 'agent-1' }))
   })
 })
 
@@ -464,7 +481,43 @@ describe('linha de WhatsApp', () => {
     await act(async () => { fireEvent.click(publicar) })
     expect(await screen.findByText(/O servidor não respondeu ao ligar a linha/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Abrir o agente' }))
-    expect(onCreated).toHaveBeenCalledWith({ id: 'agent-1' })
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ id: 'agent-1' }))
+  })
+
+  it('publicou mas não conseguiu abrir o agente: não mostra erro de publicação e deixa tentar abrir de novo', async () => {
+    naEtapaFinal({ ...PRONTA, channel: { whatsappNumberId: null } } as unknown as typeof PRONTA)
+    api.publishSpecDraft.mockResolvedValue({ agentId: 'agent-1', version: 1, alreadyPublished: false })
+    api.getAgent.mockRejectedValueOnce(new Error('rede')).mockResolvedValue({ id: 'agent-1' })
+    const onCreated = vi.fn()
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={onCreated} />)
+    const publicar = await screen.findByRole('button', { name: 'Publicar agente' })
+    await waitFor(() => expect(publicar).not.toBeDisabled())
+    await act(async () => { fireEvent.click(publicar) })
+    expect(await screen.findByText(/O agente foi publicado, mas não consegui abri-lo agora/)).toBeInTheDocument()
+    expect(screen.queryByText(/Não foi possível publicar/)).not.toBeInTheDocument()
+    expect(onCreated).not.toHaveBeenCalled()
+    expect(publicar).toBeDisabled()
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Tentar abrir de novo' })) })
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ id: 'agent-1' }))
+    expect(api.publishSpecDraft).toHaveBeenCalledTimes(1)
+  })
+
+  it('conferência falhou: avisa e deixa tentar de novo, em vez de "Conferindo…" para sempre', async () => {
+    naEtapaFinal()
+    api.getSpecReadiness.mockRejectedValue(new Error('rede'))
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByText('Não deu para conferir o rascunho agora.')).toBeInTheDocument()
+    api.getSpecReadiness.mockResolvedValue({ ready: true, items: [{ id: 'identidade', label: 'Nome, persona e fluxo preenchidos', ok: true, blocking: true }] })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' })) })
+    expect(await screen.findByText('Nome, persona e fluxo preenchidos')).toBeInTheDocument()
+  })
+
+  it('revisão com edição feita na página depois de publicar: avisa que publicar substitui', async () => {
+    api.createSpecDraft.mockResolvedValue({
+      draft: { ...DRAFT, agent_id: 'bia', spec: PRONTA }, repeatedFacts: [], editedOutside: ['texto'],
+    })
+    render(<AssistenteDeAgente agentId="bia" onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByText(/O texto deste agente foi editado na página/)).toBeInTheDocument()
   })
 
   it('revisão: pré-preenche a linha que o agente atende hoje, não a da spec', async () => {

@@ -213,7 +213,8 @@ export async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> 
           : `Servidor dos agentes indisponível (erro ${res.status}). Tente de novo em instantes.`,
     )
   }
-  if (!res.ok) throw new Error(json.error ?? `Erro ${res.status}`)
+  // status junto da mensagem: quem chama distingue "não existe" (404) de falha passageira.
+  if (!res.ok) throw Object.assign(new Error(json.error ?? `Erro ${res.status}`), { status: res.status })
   return json.data as T
 }
 
@@ -1349,7 +1350,7 @@ export interface SpecDraft {
 export interface RepeatedFact { kind: 'preco' | 'telefone' | 'site' | 'empresa' | 'endereco'; excerpt: string }
 
 export interface ReadinessItem {
-  id: 'identidade' | 'ensaio' | 'fontes' | 'numero'
+  id: 'identidade' | 'ensaio' | 'fontes' | 'entrevista' | 'numero'
   label: string
   ok: boolean
   blocking: boolean
@@ -1357,7 +1358,11 @@ export interface ReadinessItem {
 }
 
 export function createSpecDraft(opts: { agentId?: string; spec?: AgentSpec } = {}) {
-  return apiFetch<{ draft: SpecDraft; repeatedFacts: RepeatedFact[] }>('/specs/drafts', {
+  return apiFetch<{
+    draft: SpecDraft; repeatedFacts: RepeatedFact[]
+    /** Revisão: o que foi editado na página depois da última publicação (ausente em servidor antigo). */
+    editedOutside?: Array<'texto' | 'capacidades'>
+  }>('/specs/drafts', {
     method: 'POST', body: JSON.stringify(opts),
   })
 }
