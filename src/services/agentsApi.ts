@@ -1164,7 +1164,11 @@ export type ChatWithAgentResult = { message: string } & ChatTurnDebug
 export async function chatWithAgent(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  meta: { sessionId?: string; agentId?: string; stubTools?: boolean } = {},
+  meta: {
+    sessionId?: string; agentId?: string; stubTools?: boolean
+    /** Ensaio do assistente: o servidor compila este rascunho e usa no lugar do texto salvo. */
+    specDraftId?: string
+  } = {},
 ): Promise<ChatWithAgentResult> {
   const data = await apiFetch<{
     message: string; toolCalls?: ToolCall[]; turnSummary?: TurnSummary; guard?: GuardSignal; simulated?: SimulatedReply
@@ -1183,6 +1187,7 @@ export async function chatWithAgent(
       simulate_rules: true,
       // Onda 5 — bateria de testes: skill/CRM/HTTP simulados, nada executado.
       ...(meta.stubTools ? { stub_tools: true } : {}),
+      ...(meta.specDraftId ? { spec_draft_id: meta.specDraftId } : {}),
     }),
   })
   return {

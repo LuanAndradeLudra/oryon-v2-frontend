@@ -55,13 +55,6 @@ export function cobertura(spec: AgentSpec, fontes: { catalogo: boolean; profissi
 
 const formatarResposta = (a: string | string[]) => (Array.isArray(a) ? a.join('; ') : a)
 
-/** Respostas de jeito de atender (espelha behaviorRulesFromSpec do servidor). */
-export function regrasDoNegocio(spec: AgentSpec): string[] {
-  return spec.context.interview
-    .filter((i) => i.destination === 'behavior' && !i.skipped && i.answer !== null)
-    .map((i) => `${i.question} ${formatarResposta(i.answer!)}`)
-}
-
 /** Sair da entrevista: o que ficou sem resposta vira "para depois" (pendência). */
 export function marcarNaoRespondidas(spec: AgentSpec): AgentSpec {
   return {
@@ -128,37 +121,6 @@ export const PERGUNTAS_DE_ENSAIO: Record<AgentGoal, string[]> = {
   tirar_duvidas: ['Como funciona o serviço?', 'Vocês atendem aos sábados?', 'Isso está fora do que vocês fazem?'],
   qualificar: ['Quero um orçamento', 'Tenho uma empresa de 20 pessoas', 'Quero falar com um vendedor'],
   outro: ['Oi, tudo bem?', 'O que vocês fazem?', 'Quero falar com uma pessoa'],
-}
-
-const TOM_LINHA: Record<AgentTone, string> = {
-  acolhedor: 'Tom acolhedor e próximo, frases curtas, sem exagero de emojis.',
-  direto: 'Tom direto e objetivo: responda o que foi perguntado, sem rodeios.',
-  formal: 'Tom formal e respeitoso, sem gírias.',
-  descontraido: 'Tom leve e descontraído, sem perder a clareza.',
-}
-
-/**
- * Texto do agente para o ensaio, antes de publicar. Espelha o compileSpec do
- * servidor; o que vai ao ar é o que o servidor compilar na publicação.
- */
-export function textoParaEnsaio(spec: AgentSpec): string {
-  const partes = [
-    `## Quem você é\n${spec.persona.text.trim()}\n\n${TOM_LINHA[spec.persona.tone]}`,
-    `## Como conduzir a conversa\n${spec.flow.text.trim()}`,
-  ]
-  if (spec.handoff.situations.includes('fora_do_escopo')) {
-    partes.push('## Quando chamar uma pessoa\nSe o assunto estiver fora do que você atende, ou faltar a informação para responder com segurança, transfira para a equipe em vez de improvisar.')
-  }
-  const regras = regrasDoNegocio(spec)
-  if (regras.length) partes.push(`## Regras deste negócio\n${regras.map((r) => `- ${r}`).join('\n')}`)
-  if (spec.context.examples.length) {
-    partes.push([
-      '## Exemplos de como responder',
-      'Siga o jeito destes exemplos; valores e dados vêm sempre das fontes.',
-      ...spec.context.examples.map((e) => `Cliente: ${e.question}\nVocê: ${e.answer}`),
-    ].join('\n\n'))
-  }
-  return partes.join('\n\n')
 }
 
 /** O que falta nesta etapa para seguir (vazio = pode seguir). */

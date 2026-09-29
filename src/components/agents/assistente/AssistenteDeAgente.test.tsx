@@ -46,7 +46,7 @@ const quem = vi.hoisted(() => ({ role: 'admin' }))
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: 't1', role: quem.role } }) }))
 
 import { AssistenteDeAgente } from './AssistenteDeAgente'
-import { cobertura, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia, textoParaEnsaio } from './especificacao'
+import { cobertura, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia } from './especificacao'
 
 const DRAFT = { id: 'draft-1', agent_id: null, spec: specVazia(), step: 1, published_agent_id: null, published_version: null, updated_at: '' }
 
@@ -72,7 +72,7 @@ const HUB_VAZIO = {
 }
 
 describe('regras do assistente', () => {
-  it('etapa 1 exige o tipo de negócio e o estudo; a do texto exige nome, persona e fluxo; o ensaio usa só persona e fluxo', () => {
+  it('etapa 1 exige o tipo de negócio e o estudo; a do texto exige nome, persona e fluxo', () => {
     const s = specVazia()
     expect(faltaNaEtapa(1, s)).toMatch(/tipo de negócio/)
     s.identity.segment = 'Clínica'
@@ -82,9 +82,6 @@ describe('regras do assistente', () => {
     expect(faltaNaEtapa(2, s)).toBeNull()
     expect(faltaNaEtapa(3, s)).toBeNull()
     expect(faltaNaEtapa(5, s)).toMatch(/nome/)
-    s.persona.text = 'Você é a Serrinha, recepcionista virtual.'
-    s.flow.text = 'Cumprimente e entenda o pedido antes de responder.'
-    expect(textoParaEnsaio(s)).toMatch(/^## Quem você é\nVocê é a Serrinha/)
   })
 
   it('rascunho antigo, sem contexto, é completado; cobertura sobe com confirmação e escolhas', () => {
@@ -376,10 +373,6 @@ describe('entrevista e jeito de responder', () => {
       { id: 'atraso', question: 'Atraso?', destination: 'fact', answer: null, skipped: false },
     ]
     s.context.examples = [{ question: 'Aceita convênio?', answer: 'Aceitamos alguns.' }]
-    const t = textoParaEnsaio(s)
-    expect(t).toContain('## Regras deste negócio\n- O que o atendente nunca pode fazer? Dar desconto ou condição especial')
-    expect(t).toContain('Cliente: Aceita convênio?\nVocê: Aceitamos alguns.')
-    expect(t).not.toContain('Unimed')
     expect(marcarNaoRespondidas(s).context.interview.find((i) => i.id === 'atraso')?.skipped).toBe(true)
   })
 
@@ -553,6 +546,22 @@ describe('linha de WhatsApp', () => {
     expect(api.getSpecDraft).toHaveBeenCalledWith('draft-do-supervisor')
     expect(api.createSpecDraft).not.toHaveBeenCalled()
     expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBe('draft-do-supervisor')
+  })
+
+  it('ensaio: grava o rascunho e pede ao servidor que compile; na revisão, com o agente real e ferramentas simuladas', async () => {
+    api.createSpecDraft.mockResolvedValue({ draft: { ...DRAFT, agent_id: 'bia', spec: PRONTA, step: 6 }, repeatedFacts: [], editedOutside: [] })
+    api.chatWithAgent.mockResolvedValue({ message: 'Oi! Posso ajudar.', toolCalls: [] })
+    render(<AssistenteDeAgente agentId="bia" onClose={() => {}} onCreated={() => {}} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Continuar' }))
+    expect(await screen.findByText(/O ensaio usa este agente de verdade/)).toBeInTheDocument()
+    api.saveSpecDraft.mockClear()
+    fireEvent.change(screen.getByPlaceholderText(/pergunta/i), { target: { value: 'Tem horário amanhã?' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Perguntar/ })) })
+    await waitFor(() => expect(api.chatWithAgent).toHaveBeenCalled())
+    expect(api.saveSpecDraft).toHaveBeenCalled()
+    expect(api.saveSpecDraft.mock.invocationCallOrder[0]).toBeLessThan(api.chatWithAgent.mock.invocationCallOrder[0])
+    expect(api.chatWithAgent.mock.calls[0][2]).toEqual({ agentId: 'bia', specDraftId: 'draft-1', stubTools: true })
+    expect(await screen.findByText('Oi! Posso ajudar.')).toBeInTheDocument()
   })
 
   it('revisão: pré-preenche a linha que o agente atende hoje, não a da spec', async () => {

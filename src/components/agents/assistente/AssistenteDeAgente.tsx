@@ -184,6 +184,13 @@ export function AssistenteDeAgente({
     return () => clearTimeout(t)
   }, [spec, etapa, draftId])
 
+  // O ensaio compila o rascunho SALVO: grava já, sem esperar o respiro.
+  const salvarAgora = useCallback(async () => {
+    if (!draftId) return
+    await saveSpecDraft(draftId, spec, etapa)
+    setSalvo('salvo')
+  }, [draftId, spec, etapa])
+
   const mudar = useCallback((fn: (s: AgentSpec) => AgentSpec) => {
     setFalta(null)
     setSpec((s) => fn(s))
@@ -398,7 +405,7 @@ export function AssistenteDeAgente({
               {etapa === ETAPA_ENTREVISTA && <EtapaEntrevista spec={spec} mudar={mudar} setores={setores} />}
               {etapa === ETAPA_EXEMPLOS && <EtapaJeitoDeResponder spec={spec} mudar={mudar} />}
               {etapa === ETAPA_TEXTO && <EtapaQuemE spec={spec} mudar={mudar} />}
-              {etapa === 6 && <EtapaEnsaio spec={spec} mudar={mudar} />}
+              {etapa === 6 && <EtapaEnsaio spec={spec} mudar={mudar} draftId={draftId} agentId={agentId} salvarAgora={salvarAgora} />}
               {etapa === 7 && <div className="mb-8"><ParaOndeFoi spec={spec} /></div>}
               {etapa === 7 && (
                 <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros ?? []} agentId={agentId} prontidao={prontidao} erroProntidao={erroProntidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} salvoNoServidor={salvo === 'salvo'} />

@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
 import { Textarea } from '@/components/ui/Textarea'
-import { PERGUNTAS_DE_ENSAIO, SITUACOES, TONS, textoParaEnsaio } from './especificacao'
+import { PERGUNTAS_DE_ENSAIO, SITUACOES, TONS } from './especificacao'
 
 type Mudar = (fn: (s: AgentSpec) => AgentSpec) => void
 
@@ -198,7 +198,16 @@ export function EtapaTransferencia({ spec, mudar, setores }: { spec: AgentSpec; 
 
 // ── 6. Ensaio ────────────────────────────────────────────────────────────────
 
-export function EtapaEnsaio({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
+export function EtapaEnsaio({ spec, mudar, draftId, agentId, salvarAgora }: {
+  spec: AgentSpec
+  mudar: Mudar
+  /** Rascunho que o servidor compila para o ensaio (sem cópia do compilador aqui). */
+  draftId: string | null
+  /** Revisão: ensaia com o agente real (base, catálogo, ferramentas simuladas, modelo). */
+  agentId?: string
+  /** Grava o rascunho antes de perguntar — o servidor ensaia o que está salvo. */
+  salvarAgora: () => Promise<void>
+}) {
   const [pergunta, setPergunta] = useState('')
   const [pensando, setPensando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -210,9 +219,11 @@ export function EtapaEnsaio({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) 
     setPensando(true)
     setErro(null)
     try {
-      // Antes de publicar não há agente: o ensaio usa o texto da spec, com as
-      // mesmas camadas da plataforma (modo compilado, canal WhatsApp).
-      const r = await chatWithAgent(textoParaEnsaio(spec), [{ role: 'user', content: texto }])
+      if (!draftId) throw new Error('O rascunho não está salvo no servidor; não dá para ensaiar agora.')
+      // Decisão do PO (2026-09-29): o servidor compila o rascunho; na revisão,
+      // o resto é o agente de verdade. Ferramentas simuladas: nada é executado.
+      await salvarAgora()
+      const r = await chatWithAgent('', [{ role: 'user', content: texto }], { agentId, specDraftId: draftId, stubTools: true })
       mudar((s) => ({ ...s, tests: [...s.tests, { question: texto, answer: r.message, verdict: null }] }))
       setPergunta('')
     } catch (e) {
@@ -228,6 +239,11 @@ export function EtapaEnsaio({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) 
   return (
     <div className="space-y-4">
       <p className="text-sm text-surface-400">Pergunte como um cliente perguntaria e marque se a resposta está boa. Cada teste fica salvo e vira um caso para conferir a cada mudança.</p>
+      <p className="text-xs text-surface-500">
+        {agentId
+          ? 'O ensaio usa este agente de verdade — base de conhecimento, catálogo, regras de transferência e modelo — com o texto novo. Ferramentas (agenda, CRM) são simuladas: nada é executado.'
+          : 'O agente ainda não existe: o ensaio testa o texto e as regras da plataforma. Base de conhecimento e ferramentas entram depois de publicar; aí a bancada da página testa com tudo.'}
+      </p>
       {sugestoes.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {sugestoes.map((q) => (
