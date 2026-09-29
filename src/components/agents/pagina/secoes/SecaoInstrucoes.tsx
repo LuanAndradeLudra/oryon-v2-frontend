@@ -38,6 +38,17 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
   const sujo = rascunho !== agent.system_prompt
   useRascunhoPendente('Instruções', sujo)
 
+  // O texto mudou por fora (ex.: nova versão publicada pela revisão) e ninguém
+  // está editando: o rascunho acompanha. Sem isto ele guardava o texto antigo,
+  // acusava "alterações não salvas" e Salvar desfazia a publicação.
+  useEffect(() => {
+    if (!editando) {
+      setRascunhoLocal(agent.system_prompt)
+      guardarTexto(CHAVE, undefined)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent.system_prompt])
+
   const hub = user?.tenantId ? loadHub(user.tenantId) : null
   // Onda 4 (D8) — agente feito pela especificação recebe a empresa como fonte
   // na montagem; copiar o Hub para o texto duplicaria. Sem "sincronizar".
