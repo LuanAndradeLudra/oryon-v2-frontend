@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, X, Hash, MessageSquareDot, Users, Info,
@@ -221,8 +222,9 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
   onCreateChannel: () => void
 }) {
   const { channels, activeChannelId, setActiveChannel, markAsRead, presence, loadingChannels } = useInternalChat()
-  const [tab, setTab] = useState<SidebarTab>('todos')
-  const [search, setSearch] = useState('')
+  // Aba e busca da barra lateral na URL (regra do PO).
+  const [tab, setTab] = useEstadoNaUrl<SidebarTab>('aba', { padrao: 'todos', ler: lerAbaTeamChat })
+  const [search, setSearch] = useEstadoNaUrl<string>('busca', { padrao: '' })
 
   const q = search.trim().toLowerCase()
   function matchName(ch: InternalChannel) {
@@ -745,6 +747,8 @@ function EmptyState({ onNewChat }: { onNewChat: () => void }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const CURRENT_USER = { firstName: 'Admin', lastName: 'Oryon', avatarUrl: undefined }
+
+const lerAbaTeamChat = lerUmDe(['todos', 'setores', 'pessoas'] as const, 'todos')
 
 export function TeamChatPage() {
   const isMobile = useIsMobile()

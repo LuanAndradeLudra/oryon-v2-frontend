@@ -6,7 +6,8 @@
 // (`@/components/schedule/scheduleMock`), sem integração real de calendário.
 // Cancelar/Reagendar/Abrir conversa no popover são inertes de propósito —
 // ligar isso a dado real é outro épico.
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
@@ -16,11 +17,19 @@ import { ScheduleWeekGrid } from '@/components/schedule/ScheduleWeekGrid'
 import { ScheduleListView } from '@/components/schedule/ScheduleListView'
 import { getWeekDays, formatWeekPeriod, isoWeekNumber, MOCK_EVENTS } from '@/components/schedule/scheduleMock'
 
+const lerVisaoAgenda = lerUmDe(['semana', 'dia', 'lista'] as const, 'semana')
+const lerSemana = (v: string | null) => { const n = Number(v); return Number.isInteger(n) ? n : 0 }
+
 export function SchedulePage() {
-  const [weekOffset, setWeekOffset] = useState(0)
-  const [viewMode, setViewMode] = useState<ScheduleViewMode>('semana')
-  const [agentFilter, setAgentFilter] = useState<string | null>(null)
-  const [typeFilter, setTypeFilter] = useState<string | null>(null)
+  // Semana, visão e filtros na URL (regra do PO).
+  const [weekOffset, setWeekOffset] = useEstadoNaUrl<number>('semana', { padrao: 0, ler: lerSemana })
+  const [viewMode, setViewMode] = useEstadoNaUrl<ScheduleViewMode>('visao', { padrao: 'semana', ler: lerVisaoAgenda })
+  const [agenteUrl, setAgenteUrl] = useEstadoNaUrl<string>('agente', { padrao: '' })
+  const [tipoUrl, setTipoUrl] = useEstadoNaUrl<string>('tipo', { padrao: '' })
+  const agentFilter = agenteUrl || null
+  const typeFilter = tipoUrl || null
+  const setAgentFilter = (v: string | null) => setAgenteUrl(v ?? '')
+  const setTypeFilter = (v: string | null) => setTipoUrl(v ?? '')
 
   const days = useMemo(() => getWeekDays(weekOffset), [weekOffset])
   const displayDays = viewMode === 'dia' ? [days.find((d) => d.isToday) ?? days[0]] : days

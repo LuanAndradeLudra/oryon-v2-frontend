@@ -3,6 +3,7 @@
 // mv_ai_cost_per_tenant_day (cross-tenant) + agent-server agent summaries.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
 import { Search } from 'lucide-react'
 import {
   fetchAgentSummary,
@@ -18,10 +19,11 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 
 export function AiObservabilityPage() {
-  const [tenantId, setTenantId] = useState('')
-  const [since, setSince] = useState(defaultSince())
-  const [until, setUntil] = useState('')
-  const [agentId, setAgentId] = useState('')
+  // Filtros na URL (regra do PO). O "desde" padrão (30 dias) fica fora dela.
+  const [tenantId, setTenantId] = useEstadoNaUrl<string>('tenant', { padrao: '' })
+  const [since, setSince] = useEstadoNaUrl<string>('de', { padrao: defaultSince(), ler: (v) => v || defaultSince() })
+  const [until, setUntil] = useEstadoNaUrl<string>('ate', { padrao: '' })
+  const [agentId, setAgentId] = useEstadoNaUrl<string>('agente', { padrao: '' })
 
   const [rollup, setRollup] = useState<CostRollupRow[]>([])
   const [rollupLoading, setRollupLoading] = useState(false)

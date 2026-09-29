@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import {
   Loader2, Bot, User, Tag, GitCommitHorizontal, UserPlus, ShieldCheck, History,
   Briefcase, Trophy, XCircle, Pencil, Trash2, RotateCcw,
@@ -56,10 +57,13 @@ interface HistoryTabProps {
   contactId: string
 }
 
+const lerHistorico = lerUmDe(['all', 'pipeline', 'conversas'] as const, 'all')
+
 export function HistoryTab({ contactId }: HistoryTabProps) {
   const [items, setItems] = useState<TimelineItem[]>([])
   const [loadedId, setLoadedId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | Section>('all')
+  // Filtro do histórico na URL (`?historico=`).
+  const [filter, setFilter] = useEstadoNaUrl<'all' | Section>('historico', { padrao: 'all', ler: lerHistorico })
   // `loading` é derivado: enquanto o contato já carregado não for o atual, mostra o spinner.
   // Evita setState síncrono dentro do effect (cascading renders).
   const loading = loadedId !== contactId

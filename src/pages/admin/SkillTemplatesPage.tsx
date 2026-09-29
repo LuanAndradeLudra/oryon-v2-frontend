@@ -3,6 +3,7 @@
 // and then assigns them to customer agents from /admin/skills/assign.
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Plus, Sparkles, Edit3, Beaker, Power, PowerOff, Link2, Users } from 'lucide-react'
 import { listSkillTemplates, updateSkillTemplate } from '@/services/skillTemplatesApi'
@@ -29,6 +30,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   custom:   'Custom',
 }
 
+const lerStatusSkill = lerUmDe(['all', 'enabled', 'disabled'] as const, 'all')
+const lerEscopo = lerUmDe(['all', 'public', 'private'] as const, 'all')
+
 export function SkillTemplatesPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -42,9 +46,10 @@ export function SkillTemplatesPage() {
   const [orgs, setOrgs] = useState<AdminOrganization[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filterCategory, setFilterCategory] = useState<string>('')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'enabled' | 'disabled'>('all')
-  const [filterScope, setFilterScope] = useState<'all' | 'public' | 'private'>('all')
+  // Filtros na URL (regra do PO).
+  const [filterCategory, setFilterCategory] = useEstadoNaUrl<string>('categoria', { padrao: '' })
+  const [filterStatus, setFilterStatus] = useEstadoNaUrl<'all' | 'enabled' | 'disabled'>('status', { padrao: 'all', ler: lerStatusSkill })
+  const [filterScope, setFilterScope] = useEstadoNaUrl<'all' | 'public' | 'private'>('escopo', { padrao: 'all', ler: lerEscopo })
 
   const reload = useCallback(async () => {
     setLoading(true)

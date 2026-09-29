@@ -7,6 +7,7 @@
 // while this one zooms into the AI agent runtime itself.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
 import { Search, RotateCcw } from 'lucide-react'
 import {
   fetchChatExecutions,
@@ -40,11 +41,12 @@ const STATUS_STYLE: Record<string, string> = {
 }
 
 export function AiExecutionsPage() {
-  const [tenantId, setTenantId] = useState('')
-  const [agentId, setAgentId] = useState('')
-  const [finalStatus, setFinalStatus] = useState('')
-  const [since, setSince] = useState(defaultSince())
-  const [until, setUntil] = useState('')
+  // Filtros na URL (regra do PO). O "desde" padrão (7 dias) fica fora dela.
+  const [tenantId, setTenantId] = useEstadoNaUrl<string>('tenant', { padrao: '' })
+  const [agentId, setAgentId] = useEstadoNaUrl<string>('agente', { padrao: '' })
+  const [finalStatus, setFinalStatus] = useEstadoNaUrl<string>('status', { padrao: '' })
+  const [since, setSince] = useEstadoNaUrl<string>('de', { padrao: defaultSince(), ler: (v) => v || defaultSince() })
+  const [until, setUntil] = useEstadoNaUrl<string>('ate', { padrao: '' })
 
   const [rows, setRows] = useState<ChatExecutionRow[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
