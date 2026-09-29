@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2, Sparkles,
-  Loader2, MessageSquare, Globe, Instagram, AlertCircle, Zap,
+  Loader2, MessageSquare, Globe, AlertCircle, Zap,
   BookOpen, FileUp, FileText, Upload,
   Briefcase, SmilePlus, GraduationCap, Heart, Flame,
 } from 'lucide-react'
@@ -61,8 +61,6 @@ interface WizardData {
   handoff_rules: HandoffRule[]
   knowledge_docs: Array<{ id: string; name: string; content: string; source_type: string }>
   channels_whatsapp: boolean
-  channels_messenger: boolean
-  channels_instagram: boolean
   /**
    * Phase 25 — opt-in CRM operations. Configured in the Revisão step as a
    * simple toggle list (no constraint pickers — those live in the post-
@@ -83,7 +81,7 @@ const DEFAULT_DATA: WizardData = {
   brand_links: [], brand_links_context: '',
   handoff_rules: [],
   knowledge_docs: [],
-  channels_whatsapp: true, channels_messenger: false, channels_instagram: false,
+  channels_whatsapp: true,
   crm_capabilities: { capabilities: [] },
   generated_prompt: '',
 }
@@ -1471,8 +1469,6 @@ function Step6({
           escalation_department: data.handoff_rules.find(r => r.department)?.department ?? '',
           channels: [
             data.channels_whatsapp && 'WhatsApp',
-            data.channels_messenger && 'Messenger',
-            data.channels_instagram && 'Instagram',
           ].filter(Boolean) as string[],
         },
       })
@@ -1709,8 +1705,6 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
   const activeChannels = [
     data.channels_whatsapp && 'WhatsApp',
-    data.channels_messenger && 'Messenger',
-    data.channels_instagram && 'Instagram',
   ].filter(Boolean) as string[]
 
   const sectorLabel = SECTORS.find(s => s.value === data.sector)?.label ?? data.sector
@@ -1934,8 +1928,6 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
         handoff_rules: { rules: data.handoff_rules },
         channels: {
           whatsapp:  { enabled: data.channels_whatsapp  },
-          messenger: { enabled: data.channels_messenger },
-          instagram: { enabled: data.channels_instagram },
         },
         // Phase 25 — persist CRM capabilities chosen in the wizard's review step.
         // Skip the field entirely when the user didn't enable anything so
@@ -1971,8 +1963,6 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
           },
           deployment: {
             channels_whatsapp:  data.channels_whatsapp,
-            channels_messenger: data.channels_messenger,
-            channels_instagram: data.channels_instagram,
             handoff_rules:      data.handoff_rules,
           },
         },
@@ -1998,7 +1988,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
         data: {
           agent_id: raw.id, agent_name: data.name, publish_mode: status,
           handoff_rules_count: data.handoff_rules.length,
-          channels: { whatsapp: data.channels_whatsapp, messenger: data.channels_messenger, instagram: data.channels_instagram },
+          channels: { whatsapp: data.channels_whatsapp },
           prompt_length: data.generated_prompt.length,
         },
       })
