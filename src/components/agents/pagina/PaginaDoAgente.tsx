@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
-import { getAgent, type AgentConfig, type AgentConfigWithTools } from '@/services/agentsApi'
+import { getAgent, podePublicarAgente, type AgentConfig, type AgentConfigWithTools } from '@/services/agentsApi'
+import { useAuth } from '@/contexts/AuthContext'
+import { Banner } from '@/components/ui/Banner'
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -23,6 +25,23 @@ import { useResumoDoAgente } from './useResumoDoAgente'
 import { SECOES, rotaDoAgente, type SecaoId } from './secoesDoAgente'
 import { SeletorDeSecaoMovel } from './SeletorDeSecaoMovel'
 import './agenteMovel.css'
+
+/**
+ * Decisão do PO (2026-09-29): agente no ar só é alterado por administrador
+ * (o agent-server recusa com 403). Quem não pode fica sabendo antes de editar.
+ */
+export function AvisoAgenteNoAr({ agent }: { agent: AgentConfig }) {
+  const { user } = useAuth()
+  if (agent.status !== 'active' || podePublicarAgente((user as { role?: string } | null)?.role)) return null
+  return (
+    <div className="px-4 pt-4 sm:px-8">
+      <Banner variant="info">
+        Este agente está no ar: só um administrador da empresa pode alterá-lo. Para editar, pause o agente — um
+        administrador o coloca no ar de novo — ou revise com o assistente e deixe o rascunho para um administrador publicar.
+      </Banner>
+    </div>
+  )
+}
 
 /**
  * A PÁGINA DO AGENTE (direção D, 27/09): identidade em cima, navegação vertical
@@ -117,6 +136,7 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
           />
           <SeletorDeSecaoMovel agentId={agent.id} ativa={secao} resumo={resumo} testeAberto={testeAberto} />
           <main aria-labelledby="titulo-secao">
+            <AvisoAgenteNoAr agent={agent} />
             <ConteudoDaSecao
               secao={secao}
               agent={agent}
@@ -153,6 +173,7 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
             className="w-[220px] flex-shrink-0 border-r border-surface-700 pt-3 pb-3"
           />
           <main className="flex-1 min-w-0 overflow-y-auto" aria-labelledby="titulo-secao">
+            <AvisoAgenteNoAr agent={agent} />
             <ConteudoDaSecao
               secao={secao}
               agent={agent}
