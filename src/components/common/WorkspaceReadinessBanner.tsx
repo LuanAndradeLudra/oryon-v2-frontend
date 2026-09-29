@@ -15,6 +15,7 @@
 // render nothing — readiness is a nudge, not a hard gate.
 
 import { Link } from 'react-router-dom'
+import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { AlertTriangle, AlertCircle, CheckCircle, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
@@ -77,13 +78,13 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
               quase transparente no claro (mesma família do achado em
               Departments.tsx). */}
           {primary.cta && (
-            <Link
+            <LinkComVolta
               to={primary.cta.href}
               className="inline-flex items-center gap-1 text-[11px] font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-2.5 py-1 rounded-md transition-colors"
             >
               {primary.cta.label}
               <ChevronRight className="w-3 h-3" />
-            </Link>
+            </LinkComVolta>
           )}
           {remaining > 0 && (
             <Link
@@ -177,7 +178,7 @@ function ChecklistItem({ check }: { check: WorkspaceCheck }) {
         <p className="text-[11px] text-surface-500 mt-0.5">{check.description}</p>
       </div>
       {check.cta && (
-        <Link
+        <LinkComVolta
           to={check.cta.href}
           className={cn(
             'flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border',
@@ -188,7 +189,7 @@ function ChecklistItem({ check }: { check: WorkspaceCheck }) {
         >
           {check.cta.label}
           <ChevronRight className="w-3 h-3" />
-        </Link>
+        </LinkComVolta>
       )}
     </li>
   )

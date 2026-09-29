@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { comVolta } from '@/lib/voltarPara'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, BookOpen, Megaphone as MegaphoneIcon, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
@@ -798,6 +799,8 @@ type NotifFilter = 'all' | 'unread'
 // types the backend filters on.
 
 function NotificationsPanel() {
+  // Localização do roteador: as preferências voltam para a tela de onde o sino foi aberto.
+  const location = useLocation()
   const {
     notifications,
     markAsRead,
@@ -996,7 +999,7 @@ function NotificationsPanel() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/settings/notifications')}
+              onClick={() => navigate(comVolta('/settings/notifications', `${location.pathname}${location.search}`))}
               title="Preferências de notificação"
               aria-label="Preferências de notificação"
               className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"

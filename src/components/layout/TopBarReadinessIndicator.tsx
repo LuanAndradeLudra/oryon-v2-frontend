@@ -18,7 +18,7 @@
 // Home checklist mode).
 
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { AlertTriangle, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -60,13 +60,13 @@ export function TopBarReadinessIndicator() {
           {issue.label}
         </span>
         {issue.cta && (
-          <Link
+          <LinkComVolta
             to={issue.cta.href}
             className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-[11px] font-semibold transition-colors flex-shrink-0 border border-warning/40 text-warning hover:bg-warning hover:text-white"
           >
             {issue.cta.label}
             <ChevronRight className="w-3 h-3" />
-          </Link>
+          </LinkComVolta>
         )}
       </div>
     )
@@ -135,14 +135,14 @@ function IssueCard({ issue, onAction }: { issue: WorkspaceCheck; onAction: () =>
         <p className="text-xs font-semibold leading-snug text-surface-200">{issue.label}</p>
         <p className="text-[11px] mt-0.5 leading-relaxed text-surface-500">{issue.description}</p>
         {issue.cta && (
-          <Link
+          <LinkComVolta
             to={issue.cta.href}
             onClick={onAction}
             className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border text-warning hover:text-white hover:bg-warning border-warning/40"
           >
             {issue.cta.label}
             <ChevronRight className="w-3 h-3" />
-          </Link>
+          </LinkComVolta>
         )}
       </div>
     </div>

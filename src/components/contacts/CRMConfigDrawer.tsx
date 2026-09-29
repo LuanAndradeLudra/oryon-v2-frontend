@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Columns, SlidersHorizontal, Workflow, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { StagesManager } from '@/components/settings/sections/crm/StagesManager'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
@@ -129,13 +129,14 @@ export function CRMConfigDrawer({
                       é só em Configurações.
                     </p>
                   </div>
-                  <Link
+                  <LinkComVolta
                     to="/settings/pipeline-stages"
+                    rotulo="Voltar para Leads"
                     onClick={onClose}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
                   >
                     Ir para Configurações → Funis <ArrowUpRight className="w-3.5 h-3.5" />
-                  </Link>
+                  </LinkComVolta>
                 </div>
               )}
               {currentTab === 'fields' && <CustomFieldsManager />}

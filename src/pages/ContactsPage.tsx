@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Avatar } from '@/components/ui/Avatar'
 import { useContacts } from '@/hooks/useContacts'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
 import { lerFiltrosDeContatos, escreverFiltrosDeContatos, chaveDosFiltrosDeContatos, lerSituacao } from '@/lib/filtrosDeContatos'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
@@ -78,6 +79,9 @@ const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
   { key: 'customer', label: 'Cliente' },
 ]
 
+const lerConfigCrm = (v: string | null) => v === 'crm'
+const escreverConfigCrm = (v: boolean) => (v ? 'crm' : null)
+
 /**
  * D2 (SCRUM-935): o board de negócios saiu daqui — cada funil agora é sua
  * própria tela, `/pipelines/:id` (Board + Relatórios). Esta página voltou a
@@ -125,7 +129,8 @@ export function ContactsPage() {
 
   const [showNewContact, setShowNewContact] = useState(false)
   const [showImport, setShowImport] = useState(false)
-  const [showCRMConfig, setShowCRMConfig] = useState(false)
+  // Painel de configuração do CRM aberto na URL (`?config=crm`, como `config=funis` no funil).
+  const [showCRMConfig, setShowCRMConfig] = useEstadoNaUrl<boolean>('config', { padrao: false, ler: lerConfigCrm, escrever: escreverConfigCrm })
   const [showColumnsModal, setShowColumnsModal] = useState(false)
   // Situação comercial na URL (`?situacao=`), como os demais filtros.
   const commercial: CommercialSituation = lerSituacao(searchParams)

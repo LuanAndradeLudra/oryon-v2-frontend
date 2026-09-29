@@ -17,7 +17,7 @@
 //   )
 
 import { ArrowRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { Banner } from '@/components/ui/Banner'
 
 interface WhatsappLineRequiredBannerProps {
@@ -47,13 +47,13 @@ export function WhatsappLineRequiredBanner({
       variant="warning"
       className="mb-4"
       action={
-        <Link
+        <LinkComVolta
           to={settingsHref}
           className="flex items-center gap-1.5 rounded-lg border border-current/25 bg-current/10 px-3 py-1.5 text-xs font-semibold text-current transition-colors hover:bg-current/20"
         >
           Configurar WhatsApp
           <ArrowRight className="h-3 w-3" />
-        </Link>
+        </LinkComVolta>
       }
     >
       <p className="font-semibold">Nenhuma linha WhatsApp conectada</p>

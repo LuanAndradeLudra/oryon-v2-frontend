@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { comVolta } from '@/lib/voltarPara'
 import { Bell, CheckCheck, Archive, Settings2, ChevronDown } from 'lucide-react'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Button } from '@/components/ui/Button'
@@ -142,7 +143,7 @@ export function NotificationsPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/settings/notifications')}
+              onClick={() => navigate(comVolta('/settings/notifications', '/notifications', 'Voltar para as notificações'))}
               title="Preferências de notificação"
               aria-label="Preferências de notificação"
               className="w-11 h-11 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
