@@ -1381,7 +1381,11 @@ export function getSpecReadiness(id: string) {
 
 /** Spec atual do agente: a última publicada ou a derivada do texto antigo. */
 export function getAgentSpecForAgent(agentId: string) {
-  return apiFetch<{ spec: AgentSpec; version: number | null }>(`/configs/${encodeURIComponent(agentId)}/spec`)
+  return apiFetch<{
+    spec: AgentSpec; version: number | null
+    /** O que foi editado na página depois da última publicação (ausente em servidor antigo). */
+    editedOutside?: Array<'texto' | 'capacidades'>
+  }>(`/configs/${encodeURIComponent(agentId)}/spec`)
 }
 
 export function publishSpecDraft(id: string) {

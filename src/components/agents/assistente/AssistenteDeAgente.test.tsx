@@ -17,6 +17,7 @@ const api = vi.hoisted(() => ({
   chatWithAgent: vi.fn(),
   listAgentTestRuns: vi.fn(async () => []),
   listAgents: vi.fn(),
+  getAgentSpecForAgent: vi.fn(),
   linhas: vi.fn(),
   studyBusiness: vi.fn(),
   fetchInterview: vi.fn(),
@@ -510,6 +511,15 @@ describe('linha de WhatsApp', () => {
     api.getSpecReadiness.mockResolvedValue({ ready: true, items: [{ id: 'identidade', label: 'Nome, persona e fluxo preenchidos', ok: true, blocking: true }] })
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' })) })
     expect(await screen.findByText('Nome, persona e fluxo preenchidos')).toBeInTheDocument()
+  })
+
+  it('revisão retomada: também avisa da edição feita na página', async () => {
+    localStorage.setItem('oryon:agentes:assistente:t1:agente:bia', 'draft-9')
+    api.getSpecDraft.mockResolvedValue({ ...DRAFT, id: 'draft-9', agent_id: 'bia', step: 5, spec: PRONTA })
+    api.getAgentSpecForAgent.mockResolvedValue({ spec: PRONTA, version: 1, editedOutside: ['texto', 'capacidades'] })
+    render(<AssistenteDeAgente agentId="bia" onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByText(/O texto e as capacidades deste agente foram editados na página/)).toBeInTheDocument()
+    expect(api.createSpecDraft).not.toHaveBeenCalled()
   })
 
   it('revisão com edição feita na página depois de publicar: avisa que publicar substitui', async () => {

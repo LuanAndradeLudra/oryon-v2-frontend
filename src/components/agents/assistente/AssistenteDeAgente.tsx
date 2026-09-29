@@ -6,7 +6,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import api, { departmentsApi, practitionersApi, productsApi } from '@/services/api'
 import { loadHubOrNull } from '@/services/companyContextService'
 import {
-  createSpecDraft, getAgent, getSpecDraft, getSpecReadiness, listAgents, listAgentTestRuns, publishSpecDraft, saveSpecDraft,
+  createSpecDraft, getAgent, getAgentSpecForAgent, getSpecDraft, getSpecReadiness, listAgents, listAgentTestRuns, publishSpecDraft,
+  saveSpecDraft,
   type AgentConfigWithTools, type AgentSpec, type AgentTestRun, type ReadinessItem, type RepeatedFact, type StudySource,
 } from '@/services/agentsApi'
 import { rodarBateria } from '@/components/agents/bateria/bateria'
@@ -102,6 +103,13 @@ export function AssistenteDeAgente({
             throw e
           })
           if (d && !d.published_agent_id && vivo) {
+            // Revisão retomada: a edição na página pode ter vindo depois de o
+            // rascunho começar — pergunta de novo (não bloqueia a retomada).
+            if (agentId) {
+              getAgentSpecForAgent(agentId)
+                .then((r) => { if (vivo) setEditadoFora(r.editedOutside ?? []) })
+                .catch(() => {})
+            }
             setSpec(completarSpec(d.spec))
             setEtapa(Math.min(Math.max(d.step, 1), ETAPAS.length))
             setDraftId(d.id)
