@@ -278,7 +278,7 @@ function rotuloDaLinha(n: LinhaParaEscolher, agentId: string | undefined): strin
 }
 
 export function EtapaNoAr({
-  spec, mudar, numeros, agentId, prontidao, carregarProntidao, servidorOk,
+  spec, mudar, numeros, agentId, prontidao, carregarProntidao, servidorOk, salvoNoServidor,
 }: {
   spec: AgentSpec
   mudar: Mudar
@@ -288,8 +288,12 @@ export function EtapaNoAr({
   prontidao: ReadinessItem[] | null
   carregarProntidao: () => void
   servidorOk: boolean
+  /** O rascunho do servidor já tem a última mudança (o salvamento tem um respiro). */
+  salvoNoServidor: boolean
 }) {
-  useEffect(() => { if (servidorOk) carregarProntidao() }, [servidorOk, spec, carregarProntidao])
+  // A prontidão é calculada sobre o rascunho SALVO: pedir antes do salvamento
+  // mostrava o estado anterior (ex.: "Número escolhido" depois de tirar o número).
+  useEffect(() => { if (servidorOk && salvoNoServidor) carregarProntidao() }, [servidorOk, salvoNoServidor, carregarProntidao])
   const escolhida = numeros.find((n) => n.id === spec.channel.whatsappNumberId)
   const ocupada = escolhida?.agentId && escolhida.agentId !== agentId ? escolhida : null
   return (

@@ -315,7 +315,7 @@ export function AssistenteDeAgente({
               {etapa === 6 && <EtapaEnsaio spec={spec} mudar={mudar} />}
               {etapa === 7 && <div className="mb-8"><ParaOndeFoi spec={spec} /></div>}
               {etapa === 7 && (
-                <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros ?? []} agentId={agentId} prontidao={prontidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} />
+                <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros ?? []} agentId={agentId} prontidao={prontidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} salvoNoServidor={salvo === 'salvo'} />
               )}
               {falta && <Banner variant="warning" className="mt-6">{falta}</Banner>}
               {erroPublicar && <Banner variant="danger" className="mt-6">{erroPublicar}</Banner>}

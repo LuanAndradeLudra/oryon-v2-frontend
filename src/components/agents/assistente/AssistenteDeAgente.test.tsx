@@ -392,6 +392,19 @@ describe('linha de WhatsApp', () => {
     expect(screen.queryByText('Bia', { selector: 'strong' })).not.toBeInTheDocument()
   })
 
+  it('trocar o número: a prontidão é recalculada depois de salvar, não antes', async () => {
+    naEtapaFinal()
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    const select = await screen.findByLabelText('Número de WhatsApp que ele atende')
+    await waitFor(() => expect(api.getSpecReadiness).toHaveBeenCalled())
+    api.getSpecReadiness.mockClear()
+    api.saveSpecDraft.mockClear()
+    fireEvent.change(select, { target: { value: '' } })
+    await waitFor(() => expect(api.getSpecReadiness).toHaveBeenCalled(), { timeout: 2000 })
+    expect(api.saveSpecDraft).toHaveBeenCalled()
+    expect(api.saveSpecDraft.mock.invocationCallOrder[0]).toBeLessThan(api.getSpecReadiness.mock.invocationCallOrder[0])
+  })
+
   it('falha ao ligar a linha: não fecha, avisa que publicou e deixa tentar de novo', async () => {
     naEtapaFinal()
     api.publishSpecDraft.mockResolvedValue({ agentId: 'agent-1', version: 1, alreadyPublished: false })
