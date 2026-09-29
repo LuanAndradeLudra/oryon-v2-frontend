@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Avatar } from '@/components/ui/Avatar'
 import { useContacts } from '@/hooks/useContacts'
+import { lerFiltrosDeContatos, escreverFiltrosDeContatos, chaveDosFiltrosDeContatos, lerSituacao } from '@/lib/filtrosDeContatos'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -126,7 +127,14 @@ export function ContactsPage() {
   const [showImport, setShowImport] = useState(false)
   const [showCRMConfig, setShowCRMConfig] = useState(false)
   const [showColumnsModal, setShowColumnsModal] = useState(false)
-  const [commercial, setCommercial] = useState<CommercialSituation>('all')
+  // Situação comercial na URL (`?situacao=`), como os demais filtros.
+  const commercial: CommercialSituation = lerSituacao(searchParams)
+  const setCommercial = (v: CommercialSituation) => setSearchParams((prev) => {
+    const p = new URLSearchParams(prev)
+    if (v === 'all') p.delete('situacao')
+    else p.set('situacao', v)
+    return p
+  }, { replace: true })
   // Direção A (DECISOES-PENDENTES #33): "Lista" é o padrão; "Tabela" é o modo
   // denso com colunas configuráveis. Estado na URL (regra do PO): `?view=tabela`;
   // ausente = lista. Sobrevive a recarregar e a voltar de /contacts/:id.
@@ -163,6 +171,13 @@ export function ContactsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [multiPipeline])
 
+  const chaveFiltros = chaveDosFiltrosDeContatos(searchParams)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const filtrosDaUrl = useMemo(() => lerFiltrosDeContatos(searchParams), [chaveFiltros])
+  const escreverFiltrosNaUrl = useCallback((f: ContactFilters) => {
+    setSearchParams((prev) => escreverFiltrosDeContatos(prev, f), { replace: true })
+  }, [setSearchParams])
+
   const { user } = useAuth()
   const currentUser = user
     ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
@@ -179,7 +194,13 @@ export function ContactsPage() {
     bulkAddTag, bulkRemoveTag, removeContact, refetch,
   } = useContacts(
     { ...DEFAULT_SORT },
-    { commercial: multiPipeline && commercial !== 'all' ? commercial : undefined },
+    {
+      commercial: multiPipeline && commercial !== 'all' ? commercial : undefined,
+      // Filtros, busca e ordem na URL (regra do PO): sobrevivem ao F5 e ao
+      // "voltar" da ficha. Objeto memoizado pela chave — objeto novo = nova busca.
+      filtros: filtrosDaUrl,
+      aoMudarFiltros: escreverFiltrosNaUrl,
+    },
   )
 
   // Tags are fetched once when the page mounts so the BulkActionBar can
@@ -410,9 +431,15 @@ export function ContactsPage() {
   const canOpenProfile = isFeatureVisible('contactProfilePage', user?.email)
   const openProfile = useMemo(
     () => (canOpenProfile
-      ? (contact: Contact) => navigate(`/contacts/${contact.id}`, { state: { contact } })
+      // A ficha volta para ESTA lista com filtros, busca e visão (a URL toda),
+      // e não para `/contacts?contact=` cru, que perdia tudo.
+      ? (contact: Contact) => {
+          const volta = new URLSearchParams(searchParams)
+          volta.set('contact', contact.id)
+          navigate(`/contacts/${contact.id}`, { state: { contact, voltarPara: `/contacts?${volta.toString()}` } })
+        }
       : undefined),
-    [canOpenProfile, navigate],
+    [canOpenProfile, navigate, searchParams],
   )
 
   // Linha da lista: Ctrl/Cmd (ou já existir seleção) marca em vez de abrir —
