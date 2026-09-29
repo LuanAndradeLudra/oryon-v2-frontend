@@ -697,7 +697,8 @@ export function HomePage() {
                   <>
                     {stats && <MyPerformanceCard stats={stats} />}
                     {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
-                    {stats && <AIInsightsWidget stats={stats} />}
+                    {/* Desligado (flag homeAiInsights): sem montar, sem chamada à IA. */}
+                    {stats && isFeatureVisible('homeAiInsights') && <AIInsightsWidget stats={stats} />}
                   </>
                 )}
 
