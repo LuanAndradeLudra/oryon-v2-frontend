@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   MessageSquare, Users, BarChart3, Settings,
-  Clock, CheckCircle2, Inbox, CreditCard,
+  Clock, CheckCircle2, Inbox,
   ChevronRight, Sparkles, UserPlus, Tag, MessageCircle,
   Zap, Hand, Send, TrendingUp, Keyboard, Lightbulb,
 } from 'lucide-react'
@@ -21,7 +21,7 @@ import type { Conversation, HomeStats, User } from '@/types'
 import { api, conversationsApi } from '@/services/api'
 import { listTenantAuditFeed, type TenantAuditRow } from '@/services/tenantAuditApi'
 import { formatActivity } from '@/components/dashboard/activityFormatter'
-import { isAdminTier, isOwnerTier } from '@/lib/roleHelpers'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { comVolta } from '@/lib/voltarPara'
 import type { ConversationFilters } from '@/types'
 
@@ -117,11 +117,11 @@ function KPICard({ data }: { data: KPIData }) {
     </>
   )
   return data.href ? (
-    <Link to={data.href} className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0 hover:bg-[var(--rowhover)] transition-colors">
+    <Link to={data.href} className="flex flex-col gap-0.5 px-3.5 py-3 lg:py-2.5 min-w-0 hover:bg-[var(--rowhover)] transition-colors">
       {corpo}
     </Link>
   ) : (
-    <div className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0">{corpo}</div>
+    <div className="flex flex-col gap-0.5 px-3.5 py-3 lg:py-2.5 min-w-0">{corpo}</div>
   )
 }
 
@@ -294,14 +294,14 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
 
   return (
     <Card className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-brand-400" />
           Seu desempenho hoje
         </h4>
       </div>
       {/* Linhas próximas (antes se espalhavam na altura e o card parecia vazio). */}
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2">
         {[
           {
             label: 'Precisam de você',
@@ -378,7 +378,6 @@ function getQuickActions(role: string): QuickAction[] {
   if (isAdminTier(role)) return [
     { label: 'Conversas',         description: 'Ver todas as conversas',          icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations?aba=todas' },
     { label: 'Convidar usuário',  description: 'Adicionar à equipe',              icon: UserPlus,      iconColor: 'text-accent-blue',    iconBg: 'bg-accent-blue/10',    href: '/settings/agents' },
-    { label: 'Plano e cobrança',  description: 'Gerenciar assinatura',            icon: CreditCard,    iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/settings/billing' },
     { label: 'Configurar CRM',    description: 'Situações e campos',              icon: Settings,      iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/contacts?config=crm' },
     { label: 'Relatórios',        description: 'Métricas da equipe',              icon: BarChart3,     iconColor: 'text-surface-400', iconBg: 'bg-[var(--sf2)]',    href: '/dashboard?aba=relatorios' },
   ]
@@ -401,9 +400,7 @@ function getQuickActions(role: string): QuickAction[] {
 function QuickActions({ role }: { role: string }) {
   const navigate = useNavigate()
   const { isRouteVisible } = useFeatureVisibility()
-  // Cobrança: além da flag (isRouteVisible), só o dono tem a seção.
-  const actions = getQuickActions(role).filter((action) =>
-    isRouteVisible(action.href) && (action.href !== '/settings/billing' || isOwnerTier(role)))
+  const actions = getQuickActions(role).filter((action) => isRouteVisible(action.href))
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-3">Ações rápidas</h3>
@@ -416,9 +413,9 @@ function QuickActions({ role }: { role: string }) {
               key={a.label}
               // Configurações leva o caminho de volta para a Home.
               onClick={() => navigate(a.href.startsWith('/settings/') ? comVolta(a.href, '/home', 'Voltar para a Home') : a.href)}
-              className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left group"
+              className="flex items-center gap-3 px-3 py-1.5 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left group"
             >
-              <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', a.iconBg)}>
+              <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0', a.iconBg)}>
                 <Icon className={cn('w-4 h-4', a.iconColor)} />
               </div>
               <div className="min-w-0">
@@ -471,7 +468,7 @@ function ActivityFeed() {
   // Busca 30 e agrupa repetições seguidas (ex.: a sincronização de modelos
   // roda muitas vezes): 6 linhas de coisas DIFERENTES, com a contagem.
   const buscar = () => listTenantAuditFeed({ limit: 30 })
-    .then((r) => setRows(agruparRepeticoes(r.data).slice(0, 6)))
+    .then((r) => setRows(agruparRepeticoes(r.data).slice(0, 5)))
     .catch(() => setErro(true))
   // Primeira carga direto no efeito (o estado inicial já é "carregando").
   useEffect(() => { void buscar() }, [])
@@ -483,7 +480,7 @@ function ActivityFeed() {
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-surface-100">Atividade recente</h3>
         <Link to={comVolta('/settings/audit', '/home', 'Voltar para a Home')} className="text-[11px] text-surface-500 hover:text-surface-200 transition-colors">
           Ver tudo
@@ -503,7 +500,7 @@ function ActivityFeed() {
       ) : (
         <div className="flex flex-col">
           {rows.map((row) => (
-            <div key={row.id} className="flex items-start gap-3 py-2.5 border-b border-surface-700 last:border-0">
+            <div key={row.id} className="flex items-start gap-3 py-1.5 border-b border-surface-700 last:border-0">
               <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-surface-300 mt-0.5">
                 {getInitials(quemFez(row, meuId))}
               </div>
@@ -511,9 +508,11 @@ function ActivityFeed() {
                 {/* A frase é o que aconteceu (em português, por evento); quem fez
                     e quando vão embaixo — antes o nome vinha colado numa frase
                     na voz passiva ("admin@… Templates pulled from meta"). */}
-                <p className="text-sm text-surface-200 leading-snug">
-                  {formatActivity({ action: row.action, subject: row.entityName ?? '', details: row.details, description: row.description })}
-                </p>
+                {/* Uma linha (o card não cresce em telas menores); a frase inteira no title. */}
+                {(() => {
+                  const frase = formatActivity({ action: row.action, subject: row.entityName ?? '', details: row.details, description: row.description })
+                  return <p className="text-sm text-surface-200 leading-snug truncate" title={frase}>{frase}</p>
+                })()}
                 <p className="mt-0.5 text-xs text-surface-500 truncate">
                   {quemFez(row, meuId)} · {relativeTime(row.createdAt)}{row.vezes > 1 ? ` · ${row.vezes} vezes` : ''}
                 </p>
@@ -542,8 +541,8 @@ const ATALHOS: { teclas: string[]; oQue: string }[] = [
   { teclas: ['J', 'K'], oQue: 'Próxima e anterior conversa' },
   { teclas: ['R'], oQue: 'Assumir a conversa aberta' },
   { teclas: ['E'], oQue: 'Resolver a conversa aberta' },
-  { teclas: ['/'], oQue: 'Na caixa de mensagem: respostas rápidas' },
-  { teclas: ['↑', '↓'], oQue: 'Em Leads: próximo contato com o painel aberto' },
+  { teclas: ['/'], oQue: 'Respostas rápidas ao escrever' },
+  { teclas: ['↑', '↓'], oQue: 'Trocar de contato em Leads' },
   { teclas: ['Esc'], oQue: 'Fechar janela ou painel' },
 ]
 
@@ -570,12 +569,12 @@ function AtalhosEDica() {
   const dia = Math.floor(Date.now() / 86_400_000)
   const dica = DICAS[dia % DICAS.length]
   return (
-    <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+    <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-4 items-stretch">
       <section aria-labelledby="home-atalhos" className="lg:col-span-2 bg-surface-800 border border-surface-700 rounded-lg p-3.5">
         <h3 id="home-atalhos" className="flex items-center gap-2 text-sm font-semibold text-surface-100 mb-3">
           <Keyboard className="w-4 h-4 text-brand-400" aria-hidden /> Atalhos do teclado
         </h3>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-2">
           {ATALHOS.map((a) => (
             <li key={a.oQue} className="flex items-center gap-3 min-w-0">
               <span className="flex items-center gap-1 flex-shrink-0 w-[64px]">
@@ -620,7 +619,7 @@ function AgentBlock() {
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Minhas conversas</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : total === null ? '' : `${total.toLocaleString('pt-BR')} em andamento`}</span>
       </div>
@@ -721,9 +720,9 @@ export function HomePage() {
             muito largas (≥1536px) e centraliza, mantendo respiro visual
             sem comprimir os cards. Mid-ground entre max-w-7xl (estreito
             demais) e largura total (cards esticam). */}
-        <div className="px-4 py-5 sm:px-6 sm:py-6 max-w-screen-2xl mx-auto w-full">
+        <div className="px-4 py-5 sm:px-6 sm:py-6 lg:pt-5 lg:pb-4 max-w-screen-2xl mx-auto w-full">
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-4">
 
             {/* ── Linha 1: saudação ────────────────────────────────────── */}
             {user && (
@@ -735,7 +734,9 @@ export function HomePage() {
             {/* ── Linha 2: workspace readiness banner ──────────────────────
                 Auto-hides quando não há pendências (return null no componente).
                 Sem placeholder — KPIs encostam direto na saudação no estado OK. */}
-            <div className="lg:col-span-12">
+            {/* empty:hidden — sem pendências o banner não renderiza nada, e a linha
+                vazia ainda levava o espaçamento da grade. */}
+            <div className="lg:col-span-12 empty:hidden">
               <WorkspaceReadinessBanner mode="checklist" />
             </div>
 
@@ -771,7 +772,7 @@ export function HomePage() {
               ].filter(Boolean)
               const colunas = ['lg:grid-cols-1', 'lg:grid-cols-1', 'lg:grid-cols-2', 'lg:grid-cols-3'][cards.length] ?? 'lg:grid-cols-3'
               return (
-                <div className={cn('lg:col-span-12 grid grid-cols-1 gap-5 sm:gap-6 items-stretch', colunas)}>
+                <div className={cn('lg:col-span-12 grid grid-cols-1 gap-5 sm:gap-6 lg:gap-4 items-stretch', colunas)}>
                   {cards}
                 </div>
               )
@@ -782,7 +783,7 @@ export function HomePage() {
           </div>
 
           {/* Footer spacer */}
-          <div className="h-4" />
+          <div className="h-4 lg:hidden" />
         </div>
       </div>
     </div>
