@@ -115,18 +115,19 @@ export function EtapaEstudar({
         const descricao = cidade.trim() && !frase.toLowerCase().includes(cidade.trim().toLowerCase())
           ? `${frase.trim()} Em ${cidade.trim()}.`
           : frase.trim()
-        const base: CompanyHubData = hub ?? {
-          companyName: '', industry: '', businessType: [], teamSize: '', description: '', productsServices: '',
-          website: '', instagram: '', facebook: '', linkedin: '', twitter: '', whatsapp: '', brandFiles: [], lastUpdatedAt: '',
-        }
-        const novo: CompanyHubData = {
-          ...base,
-          companyName: nome.trim(),
-          description: descricao,
-          industry: base.industry || spec.identity.segment?.trim() || '',
-          ...(link.trim() ? (ehInstagram(link) ? { instagram: link.trim() } : { website: link.trim() }) : {}),
-        }
-        const r = await saveHubAndWait(user?.tenantId, novo)
+        // O PATCH grava o Hub inteiro: só em cima do Hub LIDO. Sem leitura
+        // (falhou ou ainda não chegou), gravar partiria de um vazio e apagaria
+        // produtos, redes e arquivos de marca de todos os agentes — a empresa
+        // fica neste agente, como quando falta permissão.
+        const r = hub
+          ? await saveHubAndWait(user?.tenantId, {
+            ...hub,
+            companyName: nome.trim(),
+            description: descricao,
+            industry: hub.industry || spec.identity.segment?.trim() || '',
+            ...(link.trim() ? (ehInstagram(link) ? { instagram: link.trim() } : { website: link.trim() }) : {}),
+          })
+          : 'error'
         if (r !== 'ok') pendingCompany = { name: nome.trim(), city: cidade.trim(), description: frase.trim(), link: link.trim() }
       }
       // 2. Estudo: cadastro + site/Instagram + catálogo + profissionais.
@@ -353,8 +354,8 @@ export function EtapaOQueJaSei({
 
       {ctx.pendingCompany && (
         <Banner variant="warning">
-          A empresa ficou guardada só neste agente: sem permissão de administrador, não deu para salvar no Contexto da IA.
-          Peça a um administrador para completar em Configurações → Contexto da IA.
+          A empresa ficou guardada só neste agente: não deu para salvar no Contexto da IA (falta permissão de
+          administrador ou o cadastro não respondeu), e nada foi alterado lá. Complete em Configurações → Contexto da IA.
         </Banner>
       )}
       {erroResumo && <Banner variant="warning">{erroResumo}</Banner>}

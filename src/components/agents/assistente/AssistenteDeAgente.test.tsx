@@ -28,7 +28,7 @@ const api = vi.hoisted(() => ({
   products: vi.fn(),
   practitioners: vi.fn(),
 }))
-vi.mock('@/services/companyContextService', () => ({ loadHubAsync: api.loadHubAsync, saveHubAndWait: api.saveHubAndWait }))
+vi.mock('@/services/companyContextService', () => ({ loadHubOrNull: api.loadHubAsync, saveHubAndWait: api.saveHubAndWait }))
 vi.mock('@/components/agents/bateria/bateria', () => ({ rodarBateria: api.rodarBateria }))
 vi.mock('@/services/agentsApi', () => api)
 vi.mock('@/services/api', () => ({
@@ -229,6 +229,31 @@ describe('estudar o negócio', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Estudar meu negócio' })) })
     expect(await screen.findByText(/ficou guardada só neste agente/)).toBeInTheDocument()
     await waitFor(() => expect(api.saveSpecDraft.mock.calls.at(-1)![1].context.pendingCompany).toMatchObject({ name: 'Sorriso Serra' }), { timeout: 2000 })
+  })
+
+  it('Contexto da IA não foi lido: não grava por cima (apagaria o cadastro) e guarda a empresa no agente', async () => {
+    api.loadHubAsync.mockResolvedValue(null)
+    api.studyBusiness.mockResolvedValue({ ...ESTUDO, findings: [] })
+    await abrirNaEtapa1()
+    fireEvent.change(await screen.findByLabelText('Nome da empresa'), { target: { value: 'Sorriso Serra' } })
+    fireEvent.change(screen.getByLabelText('O que a empresa faz, numa frase'), { target: { value: 'Clínica' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Estudar meu negócio' })) })
+    expect(api.saveHubAndWait).not.toHaveBeenCalled()
+    expect(await screen.findByText(/ficou guardada só neste agente/)).toBeInTheDocument()
+    await waitFor(() => expect(api.saveSpecDraft.mock.calls.at(-1)![1].context.pendingCompany).toMatchObject({ name: 'Sorriso Serra' }), { timeout: 2000 })
+  })
+
+  it('Contexto da IA lido: grava por cima do que já existe, sem apagar produtos e arquivos', async () => {
+    api.loadHubAsync.mockResolvedValue({ ...HUB_VAZIO, productsServices: 'Limpeza, clareamento', brandFiles: [{ id: 'f1' }] })
+    api.saveHubAndWait.mockResolvedValue('ok')
+    api.studyBusiness.mockResolvedValue({ ...ESTUDO, findings: [] })
+    await abrirNaEtapa1()
+    fireEvent.change(await screen.findByLabelText('Nome da empresa'), { target: { value: 'Sorriso Serra' } })
+    fireEvent.change(screen.getByLabelText('O que a empresa faz, numa frase'), { target: { value: 'Clínica' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Estudar meu negócio' })) })
+    expect(api.saveHubAndWait).toHaveBeenCalledWith('t1', expect.objectContaining({
+      companyName: 'Sorriso Serra', productsServices: 'Limpeza, clareamento', brandFiles: [{ id: 'f1' }],
+    }))
   })
 
   it('catálogo vazio vira escolha de comportamento', async () => {

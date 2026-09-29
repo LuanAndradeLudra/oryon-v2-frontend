@@ -4,7 +4,7 @@ import { Check, Cloud, CloudOff, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import api, { departmentsApi, practitionersApi, productsApi } from '@/services/api'
-import { loadHubAsync } from '@/services/companyContextService'
+import { loadHubOrNull } from '@/services/companyContextService'
 import {
   createSpecDraft, getAgent, getSpecDraft, getSpecReadiness, listAgents, listAgentTestRuns, publishSpecDraft, saveSpecDraft,
   type AgentConfigWithTools, type AgentSpec, type AgentTestRun, type ReadinessItem, type RepeatedFact, type StudySource,
@@ -114,7 +114,8 @@ export function AssistenteDeAgente({
       }
     }
     void iniciar()
-    loadHubAsync(user?.tenantId).then((hub) => { if (vivo) setFontes((f) => ({ ...f, hub })) }).catch(() => {})
+    // null = não deu para ler o Contexto da IA; a etapa 1 não grava por cima.
+    loadHubOrNull(user?.tenantId).then((hub) => { if (vivo) setFontes((f) => ({ ...f, hub })) }).catch(() => {})
     productsApi.list()
       .then((r) => { if (vivo) setFontes((f) => ({ ...f, catalogo: { count: r.data.length, names: r.data.slice(0, 30).map((p) => p.name) } })) })
       .catch(() => { if (vivo) setFontes((f) => ({ ...f, catalogo: { count: 0, names: [] } })) })

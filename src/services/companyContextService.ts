@@ -102,6 +102,22 @@ export async function loadHubAsync(tenantId: string | undefined): Promise<Compan
   return data ?? { ...DEFAULT_HUB }
 }
 
+/**
+ * Como o `loadHubAsync`, mas devolve `null` quando a leitura FALHOU — em vez
+ * de um Hub vazio indistinguível de "empresa sem cadastro". Quem vai gravar o
+ * Hub inteiro (PATCH) a partir do que leu precisa desta diferença: gravar em
+ * cima de um vazio falso apaga produtos, redes e arquivos de marca.
+ */
+export async function loadHubOrNull(tenantId: string | undefined): Promise<CompanyHubData | null> {
+  if (!tenantId) return null
+  const data = await fetchHubFromBackend(tenantId)
+  if (data) {
+    cachedHub = data
+    cachedTenantId = tenantId
+  }
+  return data
+}
+
 export function saveHub(tenantId: string | undefined, data: CompanyHubData): void {
   if (!tenantId) return
 
