@@ -4,7 +4,7 @@ import {
   MessageSquare, Users, BarChart3, Settings,
   Clock, CheckCircle2, Inbox, CreditCard,
   ChevronRight, Sparkles, UserPlus, Tag, MessageCircle,
-  Zap, Hand, Send, TrendingUp,
+  Zap, Hand, Send, TrendingUp, Keyboard, Lightbulb,
 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -23,6 +23,7 @@ import { listTenantAuditFeed, type TenantAuditRow } from '@/services/tenantAudit
 import { formatActivity } from '@/components/dashboard/activityFormatter'
 import { isAdminTier, isOwnerTier } from '@/lib/roleHelpers'
 import { comVolta } from '@/lib/voltarPara'
+import type { ConversationFilters } from '@/types'
 
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -60,7 +61,8 @@ function PersonalHeader({ user }: { user: User }) {
   return (
     <div>
       <h1 className="text-2xl font-display font-bold tracking-[-0.01em] text-surface-100">
-        {greeting}, {user.firstName} <Hand className="w-6 h-6 inline text-brand-400" />
+        {greeting}, {user.firstName}
+        <Hand className="w-6 h-6 inline-block ml-3 align-[-3px] text-brand-400" aria-hidden />
       </h1>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
         <span className={cn('color-chip-soft inline-flex items-center h-5 px-1.5 rounded-xs text-[11px] font-semibold border')} style={{ ['--chip']: role.chip } as React.CSSProperties}>
@@ -145,12 +147,21 @@ function getKPIs(stats: HomeStats, role: string): KPIData[] {
   ]
 }
 
-function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
+function KPIGrid({ stats, role, linkAoVivo = false }: { stats: HomeStats; role: string; linkAoVivo?: boolean }) {
   return (
     // Rótulo: sem ele, "Conversas abertas 1.948" (equipe) ficava logo abaixo de
     // "Conversas abertas 0" (o seu desempenho) sem dizer que são números diferentes.
     <section aria-label="Toda a equipe agora">
-    <h3 className="text-[11px] font-semibold uppercase tracking-[.08em] text-surface-500 mb-2">Toda a equipe</h3>
+    <div className="flex items-center justify-between mb-2">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[.08em] text-surface-500">Toda a equipe</h3>
+      {/* A operação ao vivo (quem espera, equipe online) mora no Dashboard. */}
+      {linkAoVivo && (
+        <Link to="/dashboard" className="inline-flex items-center gap-1 text-[11.5px] font-medium text-surface-400 hover:text-surface-100 transition-colors">
+          <span className="w-1.5 h-1.5 rounded-full bg-online" aria-hidden />
+          Ao vivo no Dashboard <ChevronRight className="w-3.5 h-3.5" aria-hidden />
+        </Link>
+      )}
+    </div>
     <div className="grid grid-cols-2 lg:grid-cols-4 bg-surface-800 border border-surface-700 rounded-lg overflow-hidden divide-x divide-surface-700 [&>*:nth-child(n+3)]:border-t [&>*:nth-child(n+3)]:border-surface-700 lg:[&>*:nth-child(n+3)]:border-t-0">
       {getKPIs(stats, role).map((kpi) => (
         <KPICard key={kpi.label} data={kpi} />
@@ -253,7 +264,25 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
 // filtrados pro usuário logado, usando os campos myXxx do HomeStats. Útil
 // pro atendente ver seu trabalho do dia sem precisar ir em Métricas.
 
+/** Total de uma consulta de conversas (limit=1; só o `total` interessa). */
+function useTotalDeConversas(filtros: ConversationFilters): number | null {
+  const [total, setTotal] = useState<number | null>(null)
+  const chave = JSON.stringify(filtros)
+  useEffect(() => {
+    let vivo = true
+    conversationsApi.list(JSON.parse(chave) as ConversationFilters, 1, 1)
+      .then((r) => { if (vivo) setTotal(r.data.total ?? null) })
+      .catch(() => { if (vivo) setTotal(null) })
+    return () => { vivo = false }
+  }, [chave])
+  return total
+}
+
 function MyPerformanceCard({ stats }: { stats: HomeStats }) {
+  // Pessoais e acionáveis: as que a IA passou para mim (pendentes) e as em
+  // que o cliente falou por último. Mesmos filtros das abas da inbox.
+  const precisamDeVoce = useTotalDeConversas({ status: 'pending', assignedTo: 'me' })
+  const esperandoResposta = useTotalDeConversas({ assignedTo: 'me', awaitingReply: true })
   // Fallback p/ 0 quando o backend não popula os campos myXxx (acontece com
   // super_admin / users sem conversas atribuídas, ou se o endpoint
   // /home/stats ainda não retorna esses campos). Sem isso, o template
@@ -271,8 +300,21 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
           Seu desempenho hoje
         </h4>
       </div>
-      <div className="flex flex-col gap-3 flex-1">
+      {/* Linhas próximas (antes se espalhavam na altura e o card parecia vazio). */}
+      <div className="flex flex-col gap-2.5">
         {[
+          {
+            label: 'Precisam de você',
+            value: precisamDeVoce ?? '—',
+            cls: (precisamDeVoce ?? 0) > 0 ? 'text-status-pending' : 'text-surface-200',
+            icon: <Hand className="w-3.5 h-3.5" />,
+          },
+          {
+            label: 'Esperando sua resposta',
+            value: esperandoResposta ?? '—',
+            cls: (esperandoResposta ?? 0) > 0 ? 'text-status-pending' : 'text-surface-200',
+            icon: <MessageCircle className="w-3.5 h-3.5" />,
+          },
           {
             label: 'Minhas conversas abertas',
             value: myOpen,
@@ -309,6 +351,12 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
           </div>
         ))}
       </div>
+      <Link
+        to="/conversations?aba=minhas"
+        className="mt-auto pt-3 inline-flex items-center gap-1 text-xs font-medium text-surface-400 hover:text-surface-100 transition-colors"
+      >
+        Abrir minhas conversas <ChevronRight className="w-3.5 h-3.5" aria-hidden />
+      </Link>
     </Card>
   )
 }
@@ -358,9 +406,9 @@ function QuickActions({ role }: { role: string }) {
     isRouteVisible(action.href) && (action.href !== '/settings/billing' || isOwnerTier(role)))
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
-      <h3 className="text-sm font-semibold text-surface-100 mb-4">Ações rápidas</h3>
-      {/* Na coluna estreita (xl) uma por linha: em duas, os textos saíam cortados. */}
-      <div className="grid grid-cols-2 xl:grid-cols-1 gap-1.5">
+      <h3 className="text-sm font-semibold text-surface-100 mb-3">Ações rápidas</h3>
+      {/* Na grade de 3 (desktop) uma por linha: em duas, os textos saíam cortados. */}
+      <div className="grid grid-cols-2 lg:grid-cols-1 gap-1.5">
         {actions.map((a) => {
           const Icon = a.icon
           return (
@@ -393,11 +441,37 @@ function QuickActions({ role }: { role: string }) {
  * `conversation.resolved`) e mostrava "Em breve" — o registro já existe e
  * funciona em Configurações → Auditoria.
  */
+/** Quem fez: "Você", a IA, o sistema ou o nome (e-mail vira só a parte antes do @). */
+function quemFez(row: TenantAuditRow, meuId: string | undefined): string {
+  if (row.actorId && row.actorId === meuId) return 'Você'
+  if (row.actorType === 'agent') return row.actorName ? `IA · ${row.actorName}` : 'IA'
+  if (row.actorType !== 'user') return 'Sistema'
+  const nome = row.actorName ?? ''
+  return nome.includes('@') ? nome.split('@')[0] : nome || 'Alguém da equipe'
+}
+
+type ItemDeAtividade = TenantAuditRow & { vezes: number }
+
+/** Junta eventos seguidos iguais (mesma ação, mesmo alvo, mesmo autor) numa linha. */
+function agruparRepeticoes(rows: TenantAuditRow[]): ItemDeAtividade[] {
+  const out: ItemDeAtividade[] = []
+  for (const row of rows) {
+    const ant = out[out.length - 1]
+    if (ant && ant.action === row.action && ant.entityName === row.entityName && ant.actorId === row.actorId) ant.vezes++
+    else out.push({ ...row, vezes: 1 })
+  }
+  return out
+}
+
 function ActivityFeed() {
-  const [rows, setRows] = useState<TenantAuditRow[] | null>(null)
+  const { user } = useAuth()
+  const meuId = user?.id
+  const [rows, setRows] = useState<ItemDeAtividade[] | null>(null)
   const [erro, setErro] = useState(false)
-  const buscar = () => listTenantAuditFeed({ limit: 8 })
-    .then((r) => setRows(r.data))
+  // Busca 30 e agrupa repetições seguidas (ex.: a sincronização de modelos
+  // roda muitas vezes): 6 linhas de coisas DIFERENTES, com a contagem.
+  const buscar = () => listTenantAuditFeed({ limit: 30 })
+    .then((r) => setRows(agruparRepeticoes(r.data).slice(0, 6)))
     .catch(() => setErro(true))
   // Primeira carga direto no efeito (o estado inicial já é "carregando").
   useEffect(() => { void buscar() }, [])
@@ -431,15 +505,19 @@ function ActivityFeed() {
           {rows.map((row) => (
             <div key={row.id} className="flex items-start gap-3 py-2.5 border-b border-surface-700 last:border-0">
               <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-surface-300 mt-0.5">
-                {getInitials(row.actorName ?? 'Sistema')}
+                {getInitials(quemFez(row, meuId))}
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
-                <p className="text-sm text-surface-300 leading-snug">
-                  <span className="font-medium text-surface-100">{row.actorName ?? 'Sistema'}</span>
-                  {' '}{formatActivity({ action: row.action, subject: row.entityName ?? '', details: row.details })}
+                {/* A frase é o que aconteceu (em português, por evento); quem fez
+                    e quando vão embaixo — antes o nome vinha colado numa frase
+                    na voz passiva ("admin@… Templates pulled from meta"). */}
+                <p className="text-sm text-surface-200 leading-snug">
+                  {formatActivity({ action: row.action, subject: row.entityName ?? '', details: row.details, description: row.description })}
+                </p>
+                <p className="mt-0.5 text-xs text-surface-500 truncate">
+                  {quemFez(row, meuId)} · {relativeTime(row.createdAt)}{row.vezes > 1 ? ` · ${row.vezes} vezes` : ''}
                 </p>
               </div>
-              <span className="text-xs text-surface-600 flex-shrink-0 pt-0.5">{relativeTime(row.createdAt)}</span>
             </div>
           ))}
         </div>
@@ -451,89 +529,69 @@ function ActivityFeed() {
 // ── Contextual block ───────────────────────────────────────────────────────────
 
 // ── A operação fica no Dashboard (passada estrutural de 27/09) ────────────────
-// Antes a Home do admin repetia três cartões do "agora" — Equipe (online, sem
-// atendente), Números WhatsApp e Atendimento agora (na fila, abertas, tempo
-// médio) —, com as mesmas leituras que estavam erradas no Dashboard ("0
-// online", "na fila" = pendentes, "tempo médio" no lugar da espera). Decisão
-// do PO: a Home é o MEU dia; a operação ao vivo mora no Dashboard, aba Agora,
-// com dado real. Aqui fica só a porta até lá — sem número que possa discordar
-// do painel.
-function OperacaoNoDashboardCard() {
-  const navigate = useNavigate()
+// A Home é o MEU dia; a operação ao vivo mora no Dashboard (aba Agora). A porta
+// até lá é o link "Ao vivo no Dashboard" no título de "Toda a equipe" — o card
+// solto que fazia isso saiu na grade alinhada de 29/09.
+
+// ── Parte de baixo: atalhos e dica (informativo) ───────────────────────────────
+// Não repete o Dashboard: é o que ajuda a usar a plataforma no dia a dia. Só
+// atalhos e comportamentos que existem de verdade (conferidos no código).
+
+const ATALHOS: { teclas: string[]; oQue: string }[] = [
+  { teclas: ['/'], oQue: 'Buscar em qualquer tela' },
+  { teclas: ['J', 'K'], oQue: 'Próxima e anterior conversa' },
+  { teclas: ['R'], oQue: 'Assumir a conversa aberta' },
+  { teclas: ['E'], oQue: 'Resolver a conversa aberta' },
+  { teclas: ['/'], oQue: 'Na caixa de mensagem: respostas rápidas' },
+  { teclas: ['↑', '↓'], oQue: 'Em Leads: próximo contato com o painel aberto' },
+  { teclas: ['Esc'], oQue: 'Fechar janela ou painel' },
+]
+
+const DICAS: string[] = [
+  'Na Fila ficam as conversas que a IA passou para a equipe e ninguém assumiu, as mais antigas primeiro.',
+  'Pausar a IA numa conversa já atribui a conversa a você.',
+  'Depois de 24 horas sem mensagem do cliente, o WhatsApp só permite escrever com um modelo aprovado.',
+  'Ao resolver uma conversa, registre o desfecho do negócio: é ele que alimenta os relatórios do funil.',
+  'Os endereços de Leads, Conversas e Funis guardam os filtros: copie o link para mostrar a mesma tela a alguém.',
+  'Em Configurações → Respostas rápidas você cria atalhos de texto para as mensagens que mais se repetem.',
+  'Conversas com o selo de verificação pedem que alguém confira o que a IA respondeu antes de seguir.',
+]
+
+function Tecla({ children }: { children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={() => navigate('/dashboard')}
-      className="group w-full text-left bg-surface-800 border border-surface-700 rounded-lg p-3.5 hover:border-surface-600 transition-colors"
-    >
-      <div className="flex items-center gap-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-online" aria-hidden />
-        <h4 className="text-sm font-semibold text-surface-100">A operação agora</h4>
-        <ChevronRight className="ml-auto w-4 h-4 text-surface-500 group-hover:text-surface-300 transition-colors" aria-hidden />
-      </div>
-      <p className="mt-1.5 text-xs text-surface-400 leading-relaxed">
-        Quem espera uma pessoa e há quanto tempo, a equipe online e as linhas — no Dashboard, ao vivo.
-      </p>
-    </button>
+    <kbd className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-[5px] border border-surface-600 bg-[var(--sf2)] text-[11px] font-semibold text-surface-200 font-mono">
+      {children}
+    </kbd>
   )
 }
 
-function SupervisorBlock() {
-  const navigate = useNavigate()
-  const [queue, setQueue] = useState<Conversation[]>([])
-  const [total, setTotal] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  // A Fila = pendentes sem dono (mesma definição da inbox e do Dashboard).
-  // Antes pedia "abertas sem dono" e contava só as 5 da lista.
-  useEffect(() => {
-    conversationsApi.list({ status: 'pending', assignedTo: 'unassigned' }, 1, 5)
-      .then((r) => { setQueue(r.data.data ?? []); setTotal(r.data.total ?? null) })
-      .catch(() => { setQueue([]); setTotal(null) })
-      .finally(() => setLoading(false))
-  }, [])
-
+function AtalhosEDica() {
+  // Uma dica por dia (muda à meia-noite; a mesma para toda a equipe no dia).
+  const dia = Math.floor(Date.now() / 86_400_000)
+  const dica = DICAS[dia % DICAS.length]
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-surface-100">Fila</h4>
-        <span className="text-xs text-surface-500">{loading ? '…' : total === null ? '' : `${total.toLocaleString('pt-BR')} pendentes sem dono`}</span>
-      </div>
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : queue.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 gap-2">
-          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-          <p className="text-sm text-surface-400">Fila vazia: ninguém esperando atendimento.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1">
-          {queue.map((conv) => (
-            <button
-              key={conv.id}
-              onClick={() => navigate(`/conversations?aba=fila&id=${conv.id}`)}
-              className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left w-full"
-            >
-              <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
-                {getInitials(conv.contact.displayName)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-surface-200 truncate">{conv.contact.displayName}</p>
-                <p className="text-xs text-surface-500 truncate">{conv.lastMessagePreview}</p>
-              </div>
-              <span className="text-xs text-status-pending bg-status-pending-bg px-2 py-0.5 rounded-full flex-shrink-0">Na fila</span>
-            </button>
+    <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+      <section aria-labelledby="home-atalhos" className="lg:col-span-2 bg-surface-800 border border-surface-700 rounded-lg p-3.5">
+        <h3 id="home-atalhos" className="flex items-center gap-2 text-sm font-semibold text-surface-100 mb-3">
+          <Keyboard className="w-4 h-4 text-brand-400" aria-hidden /> Atalhos do teclado
+        </h3>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+          {ATALHOS.map((a) => (
+            <li key={a.oQue} className="flex items-center gap-3 min-w-0">
+              <span className="flex items-center gap-1 flex-shrink-0 w-[64px]">
+                {a.teclas.map((t) => <Tecla key={t}>{t}</Tecla>)}
+              </span>
+              <span className="text-xs text-surface-400 truncate">{a.oQue}</span>
+            </li>
           ))}
-        </div>
-      )}
-      <button
-        onClick={() => navigate('/conversations?aba=fila')}
-        className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
-      >
-        Abrir a Fila <ChevronRight className="w-3.5 h-3.5" />
-      </button>
+        </ul>
+      </section>
+      <section aria-labelledby="home-dica" className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 flex flex-col">
+        <h3 id="home-dica" className="flex items-center gap-2 text-sm font-semibold text-surface-100 mb-3">
+          <Lightbulb className="w-4 h-4 text-accent-amber" aria-hidden /> Você sabia?
+        </h3>
+        <p className="text-sm text-surface-300 leading-relaxed">{dica}</p>
+      </section>
     </div>
   )
 }
@@ -561,7 +619,7 @@ function AgentBlock() {
   }, [])
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Minhas conversas</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : total === null ? '' : `${total.toLocaleString('pt-BR')} em andamento`}</span>
@@ -601,7 +659,7 @@ function AgentBlock() {
       )}
       <button
         onClick={() => navigate('/conversations?aba=minhas')}
-        className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
+        className="mt-auto pt-2 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
       >
         Ver minhas conversas <ChevronRight className="w-3.5 h-3.5" />
       </button>
@@ -681,41 +739,46 @@ export function HomePage() {
               <WorkspaceReadinessBanner mode="checklist" />
             </div>
 
-            {/* ── Arquitetura main + rail ────────────────────────────────
-                MAIN (8/12): a narrativa do MEU dia — desempenho pessoal,
-                números do workspace, insights da IA, gestão e fila.
-                RAIL (4/12): o que eu FAÇO e o que ACONTECE — atendimento ao
-                vivo (admin: a porta para o Dashboard), ações rápidas e atividade recente, sempre à
-                mão sem competir com a leitura principal. */}
-            <div className="lg:col-span-12 xl:col-span-8">
-              <div className="flex flex-col gap-5 sm:gap-6">
-                {statsErro ? (
-                  <div role="alert" className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 text-sm text-surface-400">
-                    Não foi possível carregar os números de hoje. Recarregue a página para tentar de novo.
-                  </div>
-                ) : (
-                  <>
-                    {stats && <MyPerformanceCard stats={stats} />}
-                    {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
-                    {/* Desligado (flag homeAiInsights): sem montar, sem chamada à IA. */}
-                    {stats && isFeatureVisible('homeAiInsights') && <AIInsightsWidget stats={stats} />}
-                  </>
-                )}
-
-                {role === 'supervisor' && !isMobile && <SupervisorBlock />}
-                {role === 'agent' && !isMobile && <AgentBlock />}
-              </div>
+            {/* ── Linha 3: números da equipe, na largura toda ─────────────── */}
+            <div className="lg:col-span-12">
+              {statsErro ? (
+                <div role="alert" className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 text-sm text-surface-400">
+                  Não foi possível carregar os números de hoje. Recarregue a página para tentar de novo.
+                </div>
+              ) : stats ? (
+                <KPIGrid stats={stats} role={role} linkAoVivo={isAdminRole} />
+              ) : (
+                <KPIGridSkeleton />
+              )}
             </div>
 
-            <div className="lg:col-span-12 xl:col-span-4">
-              <div className="flex flex-col gap-5 sm:gap-6">
-                {isAdminRole && <OperacaoNoDashboardCard />}
-                <QuickActions role={role} />
-                {/* O feed é da Auditoria (admin/dono); os demais papéis não o leem. */}
-                {isAdminRole && <ActivityFeed />}
-              </div>
-            </div>
+            {/* Desligado (flag homeAiInsights): sem montar, sem chamada à IA. */}
+            {stats && !statsErro && isFeatureVisible('homeAiInsights') && (
+              <div className="lg:col-span-12"><AIInsightsWidget stats={stats} /></div>
+            )}
 
+            {/* ── Linha 4: três cards de mesma largura e altura ────────────
+                A grade estica cada card até a altura do mais alto: nada de
+                coluna curta com vazio embaixo (o layout 8+4 anterior deixava).
+                admin: desempenho · ações · atividade; supervisor: desempenho ·
+                Fila · ações; atendente: desempenho · minhas conversas · ações. */}
+            {(() => {
+              const cards = [
+                stats && !statsErro ? <MyPerformanceCard key="desempenho" stats={stats} /> : null,
+                role === 'supervisor' || role === 'agent' ? <AgentBlock key="minhas" /> : null,
+                <QuickActions key="acoes" role={role} />,
+                isAdminRole ? <ActivityFeed key="atividade" /> : null,
+              ].filter(Boolean)
+              const colunas = ['lg:grid-cols-1', 'lg:grid-cols-1', 'lg:grid-cols-2', 'lg:grid-cols-3'][cards.length] ?? 'lg:grid-cols-3'
+              return (
+                <div className={cn('lg:col-span-12 grid grid-cols-1 gap-5 sm:gap-6 items-stretch', colunas)}>
+                  {cards}
+                </div>
+              )
+            })()}
+
+            {/* ── Linha 5: atalhos do teclado e dica do dia (informativo) ── */}
+            <AtalhosEDica />
           </div>
 
           {/* Footer spacer */}
