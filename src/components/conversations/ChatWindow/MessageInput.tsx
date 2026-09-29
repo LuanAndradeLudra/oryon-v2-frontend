@@ -1,7 +1,7 @@
 import { useCallback, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import {
   Send, Paperclip, AlertTriangle, Zap, Image, FileText, Video, ChevronDown,
-  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2,
+  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2, Settings2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
@@ -15,6 +15,10 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
 import { inferMessageType } from '@/lib/inferMessageType'
 import { renderPdfThumbnail } from '@/lib/renderPdfThumbnail'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
+import { PainelDeConfiguracao } from '@/components/settings/PainelDeConfiguracao'
+import { QuickReplies } from '@/components/settings/sections/QuickReplies'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
 
@@ -152,6 +156,12 @@ function QuickReplyPicker({
 
 export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const { toast } = useToast()
+  // Respostas rápidas se gerenciam aqui mesmo, num painel ao lado (mesma
+  // seção de Configurações): a necessidade nasce escrevendo a mensagem.
+  // Criar/editar é só admin+ (o mesmo gate da seção).
+  const { user: autor } = useAuth()
+  const podeGerenciarRespostas = isAdminTier(autor?.role)
+  const [gerenciandoRespostas, setGerenciandoRespostas] = useState(false)
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
   const [allResponses, setAllResponses] = useState<CannedResponse[]>([])
@@ -259,17 +269,26 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
           requestAnimationFrame(() => textareaRef.current?.focus())
         },
       },
+      ...(podeGerenciarRespostas
+        ? [{ label: 'Gerenciar respostas rápidas', icon: Settings2, onClick: () => setGerenciandoRespostas(true) }]
+        : []),
     ]
-  }, [])
+  }, [podeGerenciarRespostas])
 
   const { onContextMenu: onInputContextMenu } = useContextMenu(buildInputContextMenu)
   const videoInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
 
-  // Load canned responses once
-  useEffect(() => {
+  // Carrega as respostas rápidas — e de novo ao fechar o painel de gerenciar,
+  // para a resposta recém-criada já aparecer nos atalhos e no "/".
+  const carregarRespostas = useCallback(() => {
     cannedResponsesApi.fetchAll().then(setAllResponses).catch(() => {})
   }, [])
+  useEffect(() => { carregarRespostas() }, [carregarRespostas])
+  const fecharGerenciarRespostas = useCallback(() => {
+    setGerenciandoRespostas(false)
+    carregarRespostas()
+  }, [carregarRespostas])
 
   // Close attach menu when clicking outside. We MUST check that the click
   // wasn't on the menu (or its toggle), otherwise a mousedown on one of the
@@ -909,8 +928,9 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
           </div>
         </div>
       </div>
-      {/* Quick reply shortcut chips */}
-      {allResponses.length > 0 && !pickerActive && (
+      {/* Quick reply shortcut chips — com o atalho de gerenciar no fim (admin+).
+          Sem nenhuma resposta, o admin vê só o convite para criar a primeira. */}
+      {(allResponses.length > 0 || podeGerenciarRespostas) && !pickerActive && (
         <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
           {allResponses.slice(0, 8).map((r) => (
             <button
@@ -923,7 +943,29 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
               /{r.shortcut}
             </button>
           ))}
+          {podeGerenciarRespostas && (
+            <button
+              type="button"
+              onClick={() => setGerenciandoRespostas(true)}
+              className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+            >
+              <Settings2 className="w-3 h-3" />
+              {allResponses.length > 0 ? 'Gerenciar' : 'Criar resposta rápida'}
+            </button>
+          )}
         </div>
+      )}
+
+      {podeGerenciarRespostas && (
+        <PainelDeConfiguracao
+          open={gerenciandoRespostas}
+          onClose={fecharGerenciarRespostas}
+          titulo="Respostas rápidas"
+          secao="quick-replies"
+          rotuloDeVolta="Voltar para a conversa"
+        >
+          <QuickReplies />
+        </PainelDeConfiguracao>
       )}
     </div>
   )

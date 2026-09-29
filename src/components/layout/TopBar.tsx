@@ -147,16 +147,20 @@ const SEARCH_INDEX = ([
   { type: 'action', label: 'Métricas de conversas', description: 'Volume, tempo de resposta e CSAT', href: '/dashboard', Icon: BarChart3, keywords: ['volume', 'csat', 'tempo', 'resposta'] },
 
   // ── Configurações
+  // Todo href aqui precisa ser uma seção real de /settings (VALID_SECTIONS em
+  // SettingsPage): antes /settings/team, /whatsapp, /hours e /integrations não
+  // existiam e caíam calados na primeira seção. Teste: TopBar.searchSettings.test.
   { type: 'settings', label: 'Minha conta', description: 'Perfil pessoal e senha', href: '/settings/account', Icon: Settings, keywords: ['perfil', 'senha', 'conta', 'pessoal'] },
 
-  { type: 'settings', label: 'Equipe', description: 'Membros, funções, setores e permissões', href: '/settings/team', Icon: Users, keywords: ['membros', 'usuários', 'permissões', 'funções', 'setores', 'departamentos', 'grupos', 'times'] },
-  { type: 'settings', label: 'WhatsApp — Números', description: 'Números de WhatsApp conectados', href: '/settings/whatsapp', Icon: Smartphone, keywords: ['numero', 'numeros', 'waba', 'meta', 'business', 'telefone', 'chip', 'conectar'] },
+  { type: 'settings', label: 'Usuários', description: 'Membros da equipe e papéis', href: '/settings/agents', Icon: Users, keywords: ['membros', 'usuários', 'permissões', 'funções', 'setores', 'departamentos', 'grupos', 'times'] },
+  { type: 'settings', label: 'Setores', description: 'Equipes, linha de atendimento e acesso a funis', href: '/settings/departments', Icon: Users2, keywords: ['setores', 'departamentos', 'grupos', 'times'] },
+  { type: 'settings', label: 'Respostas rápidas', description: 'Atalhos de texto para as conversas', href: '/settings/quick-replies', Icon: MessagesSquare, keywords: ['atalho', 'resposta pronta', 'modelo de texto', 'barra'] },
+  { type: 'settings', label: 'Números WhatsApp', description: 'Linha conectada e agente de IA', href: '/settings/numbers', Icon: Smartphone, keywords: ['numero', 'numeros', 'waba', 'meta', 'business', 'telefone', 'chip', 'conectar'] },
   { type: 'settings', label: 'Plano e cobrança', description: 'Assinatura, limites e faturas', href: '/settings/billing', Icon: CreditCard, keywords: ['plano', 'fatura', 'assinatura', 'pagamento', 'upgrade', 'limite', 'mensalidade'] },
   { type: 'settings', label: 'Etiquetas', description: 'Gerenciar tags de conversas', href: '/settings/tags', Icon: Tag, keywords: ['tags', 'etiquetas', 'labels', 'marcadores'] },
-  { type: 'settings', label: 'Horários de atendimento', description: 'Definir horários e expediente', href: '/settings/hours', Icon: Clock, keywords: ['horario', 'expediente', 'disponibilidade', 'fora do horario', 'funcionamento'] },
   { type: 'settings', label: 'Notificações', description: 'Preferências de alertas', href: '/settings/notifications', Icon: BellRing, keywords: ['alertas', 'avisos', 'push', 'email'] },
-  { type: 'settings', label: 'Integrações', description: 'Webhooks e APIs externas', href: '/settings/integrations', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
-  { type: 'settings', label: 'Empresa', description: 'Dados, setores e configurações da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
+  { type: 'settings', label: 'Conectores', description: 'Integrações com sistemas externos', href: '/settings/connectors', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
+  { type: 'settings', label: 'Perfil da empresa', description: 'Nome e e-mail de contato da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
 ] as SearchItem[])
 
 // ── Notification types ─────────────────────────────────────────────────────────

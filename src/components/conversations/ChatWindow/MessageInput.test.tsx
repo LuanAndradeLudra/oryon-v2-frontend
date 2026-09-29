@@ -3,7 +3,8 @@
 // lugar do MessageInput que ainda fazia isso. Vira toast (singleton global,
 // mesmo padrão do resto do app — sem ToastContainer próprio aqui).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { MessageInput } from './MessageInput'
 import { ToastContainer } from '@/components/ui/Toast'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
@@ -14,6 +15,13 @@ vi.mock('@/services/api', () => ({
   cannedResponsesApi: { fetchAll: vi.fn(async () => []) },
   templatesApi: { list: vi.fn(async () => []) },
   contactsApi: { sendTemplate: vi.fn() },
+}))
+
+// O compositor lê o papel para mostrar o atalho de gerenciar respostas rápidas
+// (admin+). Padrão: atendente, que não vê o atalho.
+const papel = vi.hoisted(() => ({ atual: 'agent' }))
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'u1', role: papel.atual } }),
 }))
 
 function Harness() {
@@ -129,5 +137,26 @@ describe('MessageInput — mediaCaption só pra documento (achado pós SCRUM-115
   it('documento: mediaCaption é o nome do arquivo — continua virando o título do card', async () => {
     const dto = await attachAndSend(smallFile('contrato.pdf', 'application/pdf'))
     expect(dto.mediaCaption).toBe('contrato.pdf')
+  })
+})
+
+describe('MessageInput — gerenciar respostas rápidas sem sair da conversa', () => {
+  beforeEach(() => { papel.atual = 'agent' })
+
+  it('atendente não vê o atalho de gerenciar', async () => {
+    render(<MemoryRouter><Harness /></MemoryRouter>)
+    await waitFor(() => expect(screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: /Criar resposta rápida|Gerenciar/ })).toBeNull()
+  })
+
+  it('admin abre a mesma seção de Configurações num painel, com link de tela cheia que volta à conversa', async () => {
+    papel.atual = 'admin'
+    render(<MemoryRouter initialEntries={['/conversations?id=c9']}><Harness /></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('button', { name: /Criar resposta rápida/ }))
+    const painel = await screen.findByRole('dialog', { name: 'Respostas rápidas' })
+    const link = within(painel).getByRole('link', { name: /Abrir em Configurações/ })
+    const href = new URL(link.getAttribute('href') ?? '', 'http://x')
+    expect(href.pathname).toBe('/settings/quick-replies')
+    expect(href.searchParams.get('voltarPara')).toBe('/conversations?id=c9')
   })
 })
