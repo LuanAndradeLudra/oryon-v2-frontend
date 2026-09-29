@@ -803,6 +803,25 @@ const SESSION_KEY = 'oryon:session'
 let isRefreshing = false
 let refreshPromise: Promise<boolean> | null = null
 
+/**
+ * Renovação da sessão pela fila ÚNICA: quem pedir enquanto uma renovação está
+ * em curso espera a mesma. O servidor troca a chave de renovação a cada uso —
+ * duas renovações em paralelo fazem a segunda chegar com a chave já trocada,
+ * ser recusada e deslogar a pessoa. Todo código que renova (interceptor,
+ * checagem da sessão ao abrir o app) passa por aqui, nunca por attemptRefresh
+ * direto.
+ */
+export function renovarSessao(): Promise<boolean> {
+  if (!isRefreshing || !refreshPromise) {
+    isRefreshing = true
+    refreshPromise = attemptRefresh().finally(() => {
+      isRefreshing = false
+      refreshPromise = null
+    })
+  }
+  return refreshPromise
+}
+
 /** Requests that carry this flag bypass the 401→refresh interceptor.
  *  Required on /auth/refresh itself — otherwise a dead refresh cookie
  *  re-enters the interceptor and deadlocks waiting on its own promise. */
@@ -910,14 +929,7 @@ function makeRefreshInterceptor(client: typeof axios | typeof api) {
 
     original._retry = true
 
-    if (!isRefreshing) {
-      isRefreshing = true
-      refreshPromise = attemptRefresh().finally(() => {
-        isRefreshing = false
-        refreshPromise = null
-      })
-    }
-    const ok = await refreshPromise
+    const ok = await renovarSessao()
     if (!ok) {
       clearSessionAndRedirect()
       return Promise.reject(error)

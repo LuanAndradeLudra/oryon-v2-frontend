@@ -6,7 +6,7 @@ import { disconnectSocket } from '@/services/socket'
 import { isNativePlatform } from '@/config/env'
 import { setTokens, clearTokens, getRefreshToken } from '@/services/auth-storage'
 import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBackend } from '@/services/push-registration'
-import { SKIP_AUTH_REFRESH, attemptRefresh } from '@/services/api'
+import { SKIP_AUTH_REFRESH, renovarSessao } from '@/services/api'
 import { resetBillingState } from '@/hooks/useBilling'
 
 // Ensure ALL axios requests send httpOnly cookies
@@ -284,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     me()
       .catch(async (err) => {
         if (err?.response?.status !== 401) throw err
-        if (!(await attemptRefresh())) throw err
+        if (!(await renovarSessao())) throw err
         return me()
       })
       // Sessão válida: aproveita a mesma resposta para (re)hidratar as flags
