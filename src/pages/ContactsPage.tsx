@@ -80,6 +80,8 @@ const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
 ]
 
 const lerConfigCrm = (v: string | null) => v === 'crm'
+const ABAS_FICHA: readonly TabId[] = ['overview', 'deals', 'history', 'conversations', 'campaigns']
+const lerAbaFicha = (v: string | null): TabId => (v && (ABAS_FICHA as readonly string[]).includes(v) ? (v as TabId) : 'overview')
 const escreverConfigCrm = (v: boolean) => (v ? 'crm' : null)
 
 /**
@@ -93,7 +95,6 @@ export function ContactsPage() {
   // SCRUM-1068: sobrevive à troca de rota (/contacts → /contacts/:id → volta),
   // diferente de um useRef local que se perde no unmount da página.
   const listScrollPosRef = useListScrollMemory('contacts-list')
-  const [initialPanelTab, setInitialPanelTab] = useState<TabId | undefined>(undefined)
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const isLg = useMediaQuery('(min-width: 1024px)')
@@ -103,11 +104,25 @@ export function ContactsPage() {
   // e limpo ao fechar (replace, sem empilhar histórico), preservando os demais
   // params (`?deal=`, `?pipeline=`…). A URL é a fonte da verdade.
   const selectedContactId = searchParams.get('contact')
-  const setSelectedContactId = useCallback((id: string | null) => {
+  // A aba do painel também vive na URL (`?ficha=`). Abrir/trocar de contato
+  // grava contato e aba NA MESMA atualização (duas chamadas seguidas se
+  // apagariam) — sem aba pedida, o contato abre na Visão geral (regra do painel).
+  const setSelectedContactId = useCallback((id: string | null, aba?: TabId) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       if (id) next.set('contact', id)
       else next.delete('contact')
+      if (id && aba && aba !== 'overview') next.set('ficha', aba)
+      else next.delete('ficha')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+  const abaDaFicha: TabId = lerAbaFicha(searchParams.get('ficha'))
+  const setAbaDaFicha = useCallback((aba: TabId) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (aba === 'overview') next.delete('ficha')
+      else next.set('ficha', aba)
       return next
     }, { replace: true })
   }, [setSearchParams])
@@ -225,8 +240,7 @@ export function ContactsPage() {
   const addToPipeline = useAddToPipeline({ onCreated: () => { void refetch() } })
 
   const handleOpenDealContact = (contactId: string) => {
-    setSelectedContactId(contactId)
-    setInitialPanelTab('deals')
+    setSelectedContactId(contactId, 'deals')
   }
 
   // ── Bulk selection state ───────────────────────────────────────────────
@@ -281,7 +295,6 @@ export function ContactsPage() {
           return
         }
         e.preventDefault()
-        setInitialPanelTab(undefined)
         setSelectedContactId(next.id)
         requestAnimationFrame(() => {
           document.querySelector(`[data-contact-id="${CSS.escape(next.id)}"]`)?.scrollIntoView({ block: 'nearest' })
@@ -425,7 +438,6 @@ export function ContactsPage() {
   // abrir/trocar de contato re-renderize só as 2 linhas cujo `active` mudou. O
   // que muda por render (tamanho da seleção) entra por ref, não por dependência.
   const handleOpenPanel = useCallback((contact: Contact) => {
-    setInitialPanelTab(undefined)
     setSelectedContactId(contact.id)
   }, [setSelectedContactId])
 
@@ -722,7 +734,8 @@ export function ContactsPage() {
                 contactId={selectedContactId}
                 initialContact={seedContact}
                 deferBody={deferredContactId !== selectedContactId}
-                initialTab={initialPanelTab}
+                tab={abaDaFicha}
+                onTabChange={setAbaDaFicha}
                 onClose={closePanel}
                 onContactUpdate={handleContactUpdate}
                 onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
@@ -910,7 +923,8 @@ export function ContactsPage() {
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
-                initialTab={initialPanelTab}
+                tab={abaDaFicha}
+                onTabChange={setAbaDaFicha}
                 onClose={closePanel}
                 onContactUpdate={handleContactUpdate}
                 onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}

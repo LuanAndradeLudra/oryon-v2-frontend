@@ -21,6 +21,11 @@ interface ContactDetailPanelProps {
   onContactDeleted?: (contactId: string) => void
   /** Aba com que o painel deve abrir (ex: "deals" ao clicar num chip de negócio na tabela). */
   initialTab?: TabId
+  /** Modo controlado: a aba vem de fora (ex.: `?ficha=` na tela de Leads) e
+   *  trocar de aba só avisa `onTabChange`. Quem controla decide o reset ao
+   *  trocar de contato. Omitido = estado interno (comportamento de antes). */
+  tab?: TabId
+  onTabChange?: (tab: TabId) => void
   /** Abre a página completa do contato — recebe o contato já carregado para
    *  a página nascer com dados (sem flash de skeleton na transição). */
   onExpand?: (contact: Contact) => void
@@ -39,13 +44,16 @@ interface ContactDetailPanelProps {
   deferBody?: boolean
 }
 
-export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab, onExpand, docked = false, footer, initialContact, deferBody = false }: ContactDetailPanelProps) {
+export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab, tab: tabControlada, onTabChange, onExpand, docked = false, footer, initialContact, deferBody = false }: ContactDetailPanelProps) {
   const seed = initialContact && initialContact.id === contactId ? initialContact : null
   const seedRef = useRef<Contact | null>(seed)
   seedRef.current = seed
   const [contact, setContact] = useState<Contact | null>(seed)
   const [loading, setLoading] = useState(!seed)
-  const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? 'overview')
+  const [abaInterna, setAbaInterna] = useState<TabId>(initialTab ?? 'overview')
+  const controlado = tabControlada !== undefined
+  const activeTab = controlado ? tabControlada : abaInterna
+  const setActiveTab = (t: TabId) => (controlado ? onTabChange?.(t) : setAbaInterna(t))
   const { toast } = useToast()
   // Contagem real da aba "Negócios" (README 3.2: "Negócios 4") — reportada
   // pelo DealsSummaryCard (Visão Geral), que já é o único lugar que busca os
@@ -57,7 +65,8 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
   // Reabre na aba pedida sempre que o contato ou a aba solicitada mudarem
   // (ex.: clicar num chip de negócio de OUTRO contato enquanto o painel já está aberto).
   useEffect(() => {
-    setActiveTab(initialTab ?? 'overview')
+    if (controlado) return
+    setAbaInterna(initialTab ?? 'overview')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactId, initialTab])
 
@@ -117,8 +126,8 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
   const bodyRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: 0 })
-    setActiveTab('overview')
-  }, [contactId])
+    if (!controlado) setAbaInterna('overview')
+  }, [contactId, controlado])
 
   const handleDelete = async () => {
     try {

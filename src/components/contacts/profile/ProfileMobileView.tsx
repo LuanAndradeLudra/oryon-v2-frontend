@@ -1,4 +1,5 @@
-import { useState, type RefObject } from 'react'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
+import { type RefObject } from 'react'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ContactProfileHeader } from './ContactProfileHeader'
 import { ContactPipelinesSection } from './ContactPipelinesSection'
@@ -22,6 +23,7 @@ import type { ContactStats } from '@/hooks/useContactProfile'
 import type { ContactNote, ContactTask } from '@/types/contactProfile'
 
 type MobileSegment = 'summary' | 'activity' | 'about'
+const lerSecao = lerUmDe(['summary', 'activity', 'about'] as const, 'summary')
 
 interface ProfileMobileViewProps {
   contact: Contact
@@ -54,7 +56,8 @@ export function ProfileMobileView({
   onBack, onOpenChat, onSendTemplate, onAddNote, onFocusComposer,
   onAddTask, onToggleTask, onDelete, onSave, onAddTag, onRemoveTag, onRefresh, onStageChanged,
 }: ProfileMobileViewProps) {
-  const [segment, setSegment] = useState<MobileSegment>('summary')
+  // Seção no celular na URL (`?secao=`): antes o F5 voltava sempre para Resumo.
+  const [segment, setSegment] = useEstadoNaUrl<MobileSegment>('secao', { padrao: 'summary', ler: lerSecao })
   const { user } = useAuth()
   const showAiContext = isFeatureVisible('aiContextCard', user?.email)
 
