@@ -18,10 +18,12 @@ export interface LinhaDoAgente {
 }
 
 let pedido: Promise<LinhaDoAgente[]> | null = null
+let falhou = false
 
 /** Todas as linhas do tenant, com uma consulta por carga de página. */
 export function carregarLinhas(forcar = false): Promise<LinhaDoAgente[]> {
   if (!pedido || forcar) {
+    falhou = false
     pedido = whatsappNumbersApi.listDetailed()
       .then((r) => (r.data ?? []).map((n) => ({
         id: n.id,
@@ -31,10 +33,16 @@ export function carregarLinhas(forcar = false): Promise<LinhaDoAgente[]> {
       })))
       .catch(() => {
         pedido = null
+        falhou = true
         return []
       })
   }
   return pedido
+}
+
+/** A última leitura falhou: a lista vazia não quer dizer "nenhuma linha". */
+export function leituraDeLinhasFalhou(): boolean {
+  return falhou
 }
 
 /** Depois de ligar ou trocar uma linha: a próxima leitura busca de novo. */

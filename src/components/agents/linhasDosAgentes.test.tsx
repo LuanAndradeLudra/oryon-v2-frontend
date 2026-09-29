@@ -9,7 +9,7 @@ vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: '
 vi.mock('@/services/companyContextService', () => ({ loadHub: () => null, isAgentStale: () => false }))
 vi.mock('@/hooks/useIsMobile', () => ({ useIsMobile: () => false }))
 
-import { carregarLinhas, formatarLinha, invalidarLinhas, linhasPorAgente, numeroDoAgente } from './linhasDosAgentes'
+import { carregarLinhas, formatarLinha, invalidarLinhas, leituraDeLinhasFalhou, linhasPorAgente, numeroDoAgente } from './linhasDosAgentes'
 import { ListaDeAgentes } from './pagina/ListaDeAgentes'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
 
@@ -44,6 +44,15 @@ describe('linhas dos agentes', () => {
     invalidarLinhas()
     await carregarLinhas()
     expect(h.listDetailed).toHaveBeenCalledTimes(2)
+  })
+
+  it('leitura que falha fica marcada (lista vazia ≠ nenhuma linha) e a seguinte limpa a marca', async () => {
+    h.listDetailed.mockRejectedValueOnce(new Error('500'))
+    expect(await carregarLinhas(true)).toEqual([])
+    expect(leituraDeLinhasFalhou()).toBe(true)
+    h.listDetailed.mockResolvedValueOnce({ data: LINHAS })
+    expect(await carregarLinhas(true)).toHaveLength(3)
+    expect(leituraDeLinhasFalhou()).toBe(false)
   })
 
   it('a lista mostra o número vindo da linha e a busca encontra por ele', async () => {

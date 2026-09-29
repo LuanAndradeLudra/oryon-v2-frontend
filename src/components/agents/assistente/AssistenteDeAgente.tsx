@@ -11,7 +11,7 @@ import {
   type AgentConfigWithTools, type AgentSpec, type AgentTestRun, type ReadinessItem, type RepeatedFact, type StudySource,
 } from '@/services/agentsApi'
 import { rodarBateria } from '@/components/agents/bateria/bateria'
-import { carregarLinhas, invalidarLinhas } from '@/components/agents/linhasDosAgentes'
+import { carregarLinhas, invalidarLinhas, leituraDeLinhasFalhou } from '@/components/agents/linhasDosAgentes'
 import { EtapaNoAr, type LinhaParaEscolher } from './EtapasDoAssistente'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
@@ -67,6 +67,7 @@ export function AssistenteDeAgente({
   const [falta, setFalta] = useState<string | null>(null)
   const [setores, setSetores] = useState<Array<{ id: string; name: string }>>([])
   const [numeros, setNumeros] = useState<LinhaParaEscolher[] | null>(null)
+  const [erroLinhas, setErroLinhas] = useState(false)
   const [prontidao, setProntidao] = useState<ReadinessItem[] | null>(null)
   const [erroProntidao, setErroProntidao] = useState(false)
   const [publicando, setPublicando] = useState(false)
@@ -155,13 +156,18 @@ export function AssistenteDeAgente({
     // Linhas de GET /whatsapp/numbers (traz agentId e não exige administrador;
     // /meta/numbers não traz). O nome do agente de cada linha vem da lista de
     // agentes, para dizer QUEM deixa de atender se a linha for escolhida.
-    void Promise.all([carregarLinhas(true), listAgents().catch(() => [])]).then(([linhas, agentes]) => {
-      if (!vivo) return
-      const nomes = new Map(agentes.map((a) => [a.id, a.name]))
-      setNumeros(linhas.map((l) => ({ ...l, agentName: l.agentId ? nomes.get(l.agentId) ?? null : null })))
-    })
+    void lerLinhas(() => vivo)
     return () => { vivo = false }
   }, [user?.tenantId, agentId, draftInicial])
+
+  /** Lê as linhas; se a leitura falhar, a etapa "No ar" avisa em vez de mostrar "nenhuma linha". */
+  async function lerLinhas(vivo: () => boolean = () => true) {
+    const [linhas, agentes] = await Promise.all([carregarLinhas(true), listAgents().catch(() => [])])
+    if (!vivo()) return
+    setErroLinhas(leituraDeLinhasFalhou())
+    const nomes = new Map(agentes.map((a) => [a.id, a.name]))
+    setNumeros(linhas.map((l) => ({ ...l, agentName: l.agentId ? nomes.get(l.agentId) ?? null : null })))
+  }
 
   // Revisão de agente já no ar: a linha certa é a que atende HOJE
   // (whatsapp_numbers.agentId), não a da spec — agente antigo vem sem linha, e
@@ -313,6 +319,10 @@ export function AssistenteDeAgente({
   }
 
   const pronto = !!prontidao && prontidao.every((i) => !i.blocking || i.ok)
+  // Revisão que troca de linha: publicar liga a nova, mas não desliga a antiga.
+  const linhasQueContinuam = agentId && spec.channel.whatsappNumberId && !publicadoId
+    ? (numeros ?? []).filter((n) => n.agentId === agentId && n.id !== spec.channel.whatsappNumberId)
+    : []
 
   return (
     <motion.div
@@ -414,6 +424,22 @@ export function AssistenteDeAgente({
                 <Banner variant="info" className="mt-6">
                   Só um administrador da empresa pode colocar o agente no ar. O rascunho fica salvo: um administrador
                   encontra em Agentes IA → Rascunhos esperando publicação.
+                </Banner>
+              )}
+              {etapa === 7 && erroLinhas && (
+                <Banner
+                  variant="danger"
+                  className="mt-6"
+                  action={<Button size="sm" variant="neutral" onClick={() => void lerLinhas()}>Tentar de novo</Button>}
+                >
+                  Não foi possível carregar as linhas de WhatsApp da empresa. A lista acima pode estar incompleta.
+                </Banner>
+              )}
+              {etapa === 7 && linhasQueContinuam.length > 0 && (
+                <Banner variant="info" className="mt-6">
+                  {linhasQueContinuam.length === 1 ? 'A linha' : 'As linhas'} {linhasQueContinuam.map((n) => n.label ? `${n.label} · ${n.displayPhoneNumber}` : n.displayPhoneNumber).join(', ')}{' '}
+                  {linhasQueContinuam.length === 1 ? 'continua' : 'continuam'} com este agente depois de publicar. Para tirar, vá em
+                  Configurações → Números WhatsApp.
                 </Banner>
               )}
               {falta && <Banner variant="warning" className="mt-6">{falta}</Banner>}
