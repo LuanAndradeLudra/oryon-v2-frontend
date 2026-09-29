@@ -3,19 +3,21 @@ import { motion } from 'framer-motion'
 import { Check, Cloud, CloudOff, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import api, { departmentsApi, practitionersApi, productsApi, whatsappNumbersApi } from '@/services/api'
+import api, { departmentsApi, practitionersApi, productsApi } from '@/services/api'
 import { loadHubAsync } from '@/services/companyContextService'
 import {
-  createSpecDraft, getAgent, getSpecDraft, getSpecReadiness, listAgentTestRuns, publishSpecDraft, saveSpecDraft,
+  createSpecDraft, getAgent, getSpecDraft, getSpecReadiness, listAgents, listAgentTestRuns, publishSpecDraft, saveSpecDraft,
   type AgentConfigWithTools, type AgentSpec, type AgentTestRun, type ReadinessItem, type RepeatedFact, type StudySource,
 } from '@/services/agentsApi'
 import { rodarBateria } from '@/components/agents/bateria/bateria'
+import { carregarLinhas, invalidarLinhas } from '@/components/agents/linhasDosAgentes'
+import { EtapaNoAr, type LinhaParaEscolher } from './EtapasDoAssistente'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import {
   ETAPAS, ETAPA_ENTREVISTA, ETAPA_EXEMPLOS, ETAPA_TEXTO, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia,
 } from './especificacao'
-import { EtapaEnsaio, EtapaNoAr, EtapaQuemE } from './EtapasDoAssistente'
+import { EtapaEnsaio, EtapaQuemE } from './EtapasDoAssistente'
 import { EtapaEntrevista, EtapaJeitoDeResponder, ParaOndeFoi } from './EtapasDaEntrevista'
 import { EtapaEstudar, EtapaOQueJaSei, type FontesDaConta } from './EtapasDeEstudo'
 
@@ -58,7 +60,7 @@ export function AssistenteDeAgente({
   const [salvo, setSalvo] = useState<EstadoSalvo>('salvando')
   const [falta, setFalta] = useState<string | null>(null)
   const [setores, setSetores] = useState<Array<{ id: string; name: string }>>([])
-  const [numeros, setNumeros] = useState<Array<{ id: string; displayPhoneNumber: string; label?: string; agentId?: string | null }>>([])
+  const [numeros, setNumeros] = useState<LinhaParaEscolher[] | null>(null)
   const [prontidao, setProntidao] = useState<ReadinessItem[] | null>(null)
   const [publicando, setPublicando] = useState(false)
   const [erroPublicar, setErroPublicar] = useState<string | null>(null)
@@ -70,6 +72,10 @@ export function AssistenteDeAgente({
   const [fontesLidas, setFontesLidas] = useState<StudySource[] | null>(null)
   const [erroResumo, setErroResumo] = useState<string | null>(null)
   const [publicadoSemFatos, setPublicadoSemFatos] = useState<AgentConfigWithTools | null>(null)
+  // Publicado, mas a linha de WhatsApp não foi ligada (PATCH /meta/numbers
+  // falhou): o assistente fica aberto até ligar ou o dono abrir o agente.
+  const [semLinha, setSemLinha] = useState<{ agente: AgentConfigWithTools; numeroId: string; motivo: string } | null>(null)
+  const [religando, setReligando] = useState(false)
 
   // Retoma o rascunho aberto (M15) ou cria um no servidor.
   useEffect(() => {
@@ -116,11 +122,27 @@ export function AssistenteDeAgente({
       .then((r) => { if (vivo) setFontes((f) => ({ ...f, profissionais: r.data.length })) })
       .catch(() => { if (vivo) setFontes((f) => ({ ...f, profissionais: 0 })) })
     departmentsApi.list().then((r) => { if (vivo) setSetores((r.data ?? []).map((d) => ({ id: d.id, name: d.name }))) }).catch(() => {})
-    whatsappNumbersApi.list().then((r) => {
-      if (vivo) setNumeros((r.data ?? []).map((n) => ({ id: n.id, displayPhoneNumber: n.displayPhoneNumber, label: n.label, agentId: (n as { agentId?: string | null }).agentId ?? null })))
-    }).catch(() => {})
+    // Linhas de GET /whatsapp/numbers (traz agentId e não exige administrador;
+    // /meta/numbers não traz). O nome do agente de cada linha vem da lista de
+    // agentes, para dizer QUEM deixa de atender se a linha for escolhida.
+    void Promise.all([carregarLinhas(true), listAgents().catch(() => [])]).then(([linhas, agentes]) => {
+      if (!vivo) return
+      const nomes = new Map(agentes.map((a) => [a.id, a.name]))
+      setNumeros(linhas.map((l) => ({ ...l, agentName: l.agentId ? nomes.get(l.agentId) ?? null : null })))
+    })
     return () => { vivo = false }
   }, [user?.tenantId, agentId])
+
+  // Revisão de agente já no ar: a linha certa é a que atende HOJE
+  // (whatsapp_numbers.agentId), não a da spec — agente antigo vem sem linha, e
+  // a linha pode ter mudado em Configurações → Números depois de publicar.
+  const linhaDaRevisao = useRef(false)
+  useEffect(() => {
+    if (!agentId || !numeros || !draftId || linhaDaRevisao.current) return
+    linhaDaRevisao.current = true
+    const atual = numeros.find((n) => n.agentId === agentId)?.id ?? null
+    setSpec((s) => (s.channel.whatsappNumberId === atual ? s : { ...s, channel: { ...s.channel, whatsappNumberId: atual } }))
+  }, [agentId, numeros, draftId])
 
   // Salva no servidor a cada mudança (com um respiro para não salvar a cada tecla).
   useEffect(() => {
@@ -150,18 +172,39 @@ export function AssistenteDeAgente({
     setEtapa((e) => Math.min(e + 1, ETAPAS.length))
   }
 
+  /** Liga a linha ao agente; devolve o motivo da falha, ou null se ligou. */
+  const ligarLinha = async (numeroId: string, publicadoId: string): Promise<string | null> => {
+    try {
+      await api.patch(`/meta/numbers/${numeroId}`, { agentId: publicadoId })
+      invalidarLinhas()
+      return null
+    } catch (e) {
+      const status = (e as { response?: { status?: number } })?.response?.status
+      return status === 403
+        ? 'Só um administrador da empresa pode ligar a linha.'
+        : 'O servidor não respondeu ao ligar a linha.'
+    }
+  }
+
+  const tentarLigarDeNovo = async () => {
+    if (!semLinha) return
+    setReligando(true)
+    const motivo = await ligarLinha(semLinha.numeroId, semLinha.agente.id)
+    setReligando(false)
+    if (motivo) { setSemLinha({ ...semLinha, motivo }); return }
+    setSemLinha(null)
+    if (!publicadoSemFatos) onCreated(semLinha.agente)
+  }
+
   const publicar = async () => {
-    if (!draftId) return
+    if (!draftId || publicadoSemFatos || semLinha) return
     setPublicando(true)
     setErroPublicar(null)
     try {
       await saveSpecDraft(draftId, spec, etapa)
       const { agentId: publicadoId, version: versaoPublicada, factsDoc } = await publishSpecDraft(draftId)
-      if (spec.channel.whatsappNumberId) {
-        await api.patch(`/meta/numbers/${spec.channel.whatsappNumberId}`, { agentId: publicadoId }).catch(() => {
-          setErroPublicar('O agente foi publicado, mas não deu para ligar o número. Ligue em Configurações → WhatsApp.')
-        })
-      }
+      const numeroId = spec.channel.whatsappNumberId
+      const motivoSemLinha = numeroId ? await ligarLinha(numeroId, publicadoId) : null
       try { localStorage.removeItem(chaveRascunho(user?.tenantId, agentId)) } catch { /* sem storage */ }
       const publicado = await getAgent(publicadoId)
       // Onda 5 (M18) — a bateria de perguntas do ensaio roda em segundo plano
@@ -177,10 +220,9 @@ export function AssistenteDeAgente({
       }
       // SCRUM-1192 — o agente está no ar, mas os fatos da entrevista não foram
       // para a base: fica aqui para o dono saber e poder abrir o agente.
-      if (factsDoc === 'error') {
-        setPublicadoSemFatos(publicado)
-        return
-      }
+      if (motivoSemLinha && numeroId) setSemLinha({ agente: publicado, numeroId, motivo: motivoSemLinha })
+      if (factsDoc === 'error') setPublicadoSemFatos(publicado)
+      if (motivoSemLinha || factsDoc === 'error') return
       onCreated(publicado)
     } catch (e) {
       setErroPublicar(e instanceof Error ? e.message : 'Não foi possível publicar. Nada foi alterado.')
@@ -273,10 +315,25 @@ export function AssistenteDeAgente({
               {etapa === 6 && <EtapaEnsaio spec={spec} mudar={mudar} />}
               {etapa === 7 && <div className="mb-8"><ParaOndeFoi spec={spec} /></div>}
               {etapa === 7 && (
-                <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros} prontidao={prontidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} />
+                <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros ?? []} agentId={agentId} prontidao={prontidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} />
               )}
               {falta && <Banner variant="warning" className="mt-6">{falta}</Banner>}
               {erroPublicar && <Banner variant="danger" className="mt-6">{erroPublicar}</Banner>}
+              {semLinha && (
+                <Banner
+                  variant="warning"
+                  className="mt-6"
+                  action={
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" onClick={() => void tentarLigarDeNovo()} loading={religando} disabled={religando}>Tentar ligar de novo</Button>
+                      <Button size="sm" variant="neutral" onClick={() => onCreated(semLinha.agente)} disabled={religando}>Abrir o agente</Button>
+                    </div>
+                  }
+                >
+                  O agente foi publicado. Falta só ligar a linha de WhatsApp: {semLinha.motivo} Enquanto isso, ela segue com o
+                  atendimento de antes.
+                </Banner>
+              )}
               {publicadoSemFatos && (
                 <Banner variant="warning" className="mt-6" action={<Button size="sm" onClick={() => onCreated(publicadoSemFatos)}>Abrir o agente</Button>}>
                   O agente foi publicado, mas as informações da entrevista não foram para a base de conhecimento. Abra o agente e
@@ -294,7 +351,7 @@ export function AssistenteDeAgente({
             {etapa < ETAPAS.length ? (
               <Button size="md" onClick={avancar}>Continuar</Button>
             ) : (
-              <Button size="md" onClick={() => void publicar()} disabled={!pronto || publicando} loading={publicando}>
+              <Button size="md" onClick={() => void publicar()} disabled={!pronto || publicando || !!semLinha || !!publicadoSemFatos} loading={publicando}>
                 {agentId ? 'Publicar nova versão' : 'Publicar agente'}
               </Button>
             )}

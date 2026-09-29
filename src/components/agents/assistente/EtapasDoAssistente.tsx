@@ -261,29 +261,56 @@ export function EtapaEnsaio({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) 
 
 // ── 7. Colocar no ar ─────────────────────────────────────────────────────────
 
+/** Linha de WhatsApp com o agente que a atende hoje (nome cruzado da lista de agentes). */
+export interface LinhaParaEscolher {
+  id: string
+  displayPhoneNumber: string
+  label?: string | null
+  agentId: string | null
+  agentName: string | null
+}
+
+function rotuloDaLinha(n: LinhaParaEscolher, agentId: string | undefined): string {
+  const base = `${n.label ? `${n.label} · ` : ''}${n.displayPhoneNumber}`
+  if (!n.agentId) return base
+  if (n.agentId === agentId) return `${base} — atendida por este agente`
+  return `${base} — hoje atendida por ${n.agentName ?? 'outro agente'}`
+}
+
 export function EtapaNoAr({
-  spec, mudar, numeros, prontidao, carregarProntidao, servidorOk,
+  spec, mudar, numeros, agentId, prontidao, carregarProntidao, servidorOk,
 }: {
   spec: AgentSpec
   mudar: Mudar
-  numeros: Array<{ id: string; displayPhoneNumber: string; label?: string; agentId?: string | null }>
+  numeros: LinhaParaEscolher[]
+  /** Revisão de um agente existente: a linha dele não é "ocupada". */
+  agentId?: string
   prontidao: ReadinessItem[] | null
   carregarProntidao: () => void
   servidorOk: boolean
 }) {
   useEffect(() => { if (servidorOk) carregarProntidao() }, [servidorOk, spec, carregarProntidao])
+  const escolhida = numeros.find((n) => n.id === spec.channel.whatsappNumberId)
+  const ocupada = escolhida?.agentId && escolhida.agentId !== agentId ? escolhida : null
   return (
     <div className="space-y-6">
-      <FormField label="Número de WhatsApp que ele atende" hint="Um número com outro agente passa a ser atendido por este.">
+      <FormField
+        label="Número de WhatsApp que ele atende"
+        hint={agentId ? '"Escolher depois" não muda a linha que o agente atende hoje.' : undefined}
+      >
         <Select value={spec.channel.whatsappNumberId ?? ''} onChange={(e) => mudar((s) => ({ ...s, channel: { whatsappNumberId: e.target.value || null } }))}>
           <option value="">Escolher depois</option>
           {numeros.map((n) => (
-            <option key={n.id} value={n.id}>
-              {n.label ? `${n.label} · ` : ''}{n.displayPhoneNumber}{n.agentId ? ' (já tem agente)' : ''}
-            </option>
+            <option key={n.id} value={n.id}>{rotuloDaLinha(n, agentId)}</option>
           ))}
         </Select>
       </FormField>
+      {ocupada && (
+        <Banner variant="warning">
+          Esta linha hoje é atendida por <strong>{ocupada.agentName ?? 'outro agente'}</strong>. Ao publicar, ela passa a ser
+          atendida por este agente, e {ocupada.agentName ?? 'o outro agente'} deixa de atender nela.
+        </Banner>
+      )}
       <div>
         <p className="mb-2 text-sm font-medium text-surface-200">Pronto para publicar?</p>
         {!servidorOk ? (

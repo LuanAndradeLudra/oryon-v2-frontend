@@ -16,6 +16,8 @@ const api = vi.hoisted(() => ({
   generateSpecText: vi.fn(),
   chatWithAgent: vi.fn(),
   listAgentTestRuns: vi.fn(async () => []),
+  listAgents: vi.fn(),
+  linhas: vi.fn(),
   studyBusiness: vi.fn(),
   fetchInterview: vi.fn(),
   fetchAnswerExamples: vi.fn(),
@@ -34,7 +36,7 @@ vi.mock('@/services/api', () => ({
   departmentsApi: { list: vi.fn(async () => ({ data: [{ id: 'd1', name: 'Recepção' }] })) },
   productsApi: { list: api.products },
   practitionersApi: { list: api.practitioners },
-  whatsappNumbersApi: { list: vi.fn(async () => ({ data: [{ id: 'n1', displayPhoneNumber: '+55 24 99999-0000' }] })) },
+  whatsappNumbersApi: { listDetailed: api.linhas },
 }))
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: 't1' } }) }))
 
@@ -54,6 +56,8 @@ beforeEach(() => {
   api.practitioners.mockResolvedValue({ data: [] })
   api.fetchInterview.mockResolvedValue({ segment: { key: 'saude', label: 'saúde' }, questions: [] })
   api.fetchAnswerExamples.mockResolvedValue({ examples: [] })
+  api.linhas.mockResolvedValue({ data: [{ id: 'n1', displayPhoneNumber: '+55 24 99999-0000', agentId: null }] })
+  api.listAgents.mockResolvedValue([])
 })
 
 const HUB_VAZIO = {
@@ -356,3 +360,85 @@ describe('entrevista e jeito de responder', () => {
   })
 })
 
+
+// ── Linha de WhatsApp no assistente ─────────────────────────────────────────
+describe('linha de WhatsApp', () => {
+  const PRONTA = {
+    ...specVazia(),
+    identity: { name: 'Serrinha', goal: 'atender_agendar' as const, segment: 'Clínica' },
+    persona: { tone: 'acolhedor' as const, text: 'Você é a Serrinha, recepcionista virtual.' },
+    flow: { text: 'Cumprimente e entenda o pedido antes de responder.' },
+    channel: { whatsappNumberId: 'n1' },
+  }
+  const LINHAS = [
+    { id: 'n1', displayPhoneNumber: '+55 24 99999-0000', label: 'Linha 1', agentId: 'bia' },
+    { id: 'n2', displayPhoneNumber: '+55 24 98888-0000', label: null, agentId: null },
+  ]
+  const naEtapaFinal = (spec = PRONTA) => {
+    localStorage.setItem('oryon:agentes:assistente:t1', 'draft-1')
+    api.getSpecDraft.mockResolvedValue({ ...DRAFT, step: 7, spec })
+    api.getSpecReadiness.mockResolvedValue({ ready: true, items: [{ id: 'identidade', label: 'ok', ok: true, blocking: true }] })
+    api.linhas.mockResolvedValue({ data: LINHAS })
+    api.listAgents.mockResolvedValue([{ id: 'bia', name: 'Bia' }])
+  }
+
+  it('linha ocupada mostra o nome do agente que sai dela', async () => {
+    naEtapaFinal()
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByRole('option', { name: 'Linha 1 · +55 24 99999-0000 — hoje atendida por Bia' })).toBeInTheDocument()
+    expect(screen.getByText(/passa a ser\s+atendida por este agente/)).toBeInTheDocument()
+    expect(screen.getByText('Bia', { selector: 'strong' })).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Número de WhatsApp que ele atende'), { target: { value: 'n2' } })
+    expect(screen.queryByText('Bia', { selector: 'strong' })).not.toBeInTheDocument()
+  })
+
+  it('falha ao ligar a linha: não fecha, avisa que publicou e deixa tentar de novo', async () => {
+    naEtapaFinal()
+    api.publishSpecDraft.mockResolvedValue({ agentId: 'agent-1', version: 1, alreadyPublished: false })
+    api.getAgent.mockResolvedValue({ id: 'agent-1' })
+    api.patch.mockRejectedValueOnce({ response: { status: 403 } })
+    const onCreated = vi.fn()
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={onCreated} />)
+    const publicar = await screen.findByRole('button', { name: 'Publicar agente' })
+    await waitFor(() => expect(publicar).not.toBeDisabled())
+    await act(async () => { fireEvent.click(publicar) })
+    expect(await screen.findByText(/O agente foi publicado. Falta só ligar a linha/)).toBeInTheDocument()
+    expect(screen.getByText(/Só um administrador da empresa pode ligar a linha/)).toBeInTheDocument()
+    expect(onCreated).not.toHaveBeenCalled()
+    expect(publicar).toBeDisabled()
+
+    api.patch.mockResolvedValueOnce({ data: {} })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Tentar ligar de novo' })) })
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ id: 'agent-1' }))
+    expect(api.patch).toHaveBeenCalledTimes(2)
+    expect(api.patch).toHaveBeenLastCalledWith('/meta/numbers/n1', { agentId: 'agent-1' })
+  })
+
+  it('falha ao ligar a linha: "Abrir o agente" leva ao agente publicado', async () => {
+    naEtapaFinal()
+    api.publishSpecDraft.mockResolvedValue({ agentId: 'agent-1', version: 1, alreadyPublished: false })
+    api.getAgent.mockResolvedValue({ id: 'agent-1' })
+    api.patch.mockRejectedValue(new Error('rede'))
+    const onCreated = vi.fn()
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={onCreated} />)
+    const publicar = await screen.findByRole('button', { name: 'Publicar agente' })
+    await waitFor(() => expect(publicar).not.toBeDisabled())
+    await act(async () => { fireEvent.click(publicar) })
+    expect(await screen.findByText(/O servidor não respondeu ao ligar a linha/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir o agente' }))
+    expect(onCreated).toHaveBeenCalledWith({ id: 'agent-1' })
+  })
+
+  it('revisão: pré-preenche a linha que o agente atende hoje, não a da spec', async () => {
+    api.createSpecDraft.mockResolvedValue({
+      draft: { ...DRAFT, agent_id: 'bia', spec: { ...PRONTA, channel: { whatsappNumberId: null } } },
+      repeatedFacts: [],
+    })
+    api.linhas.mockResolvedValue({ data: LINHAS })
+    api.listAgents.mockResolvedValue([{ id: 'bia', name: 'Bia' }])
+    render(<AssistenteDeAgente agentId="bia" onClose={() => {}} onCreated={() => {}} />)
+    await waitFor(() => expect(api.createSpecDraft).toHaveBeenCalled())
+    await waitFor(() => expect(api.saveSpecDraft).toHaveBeenCalled(), { timeout: 2000 })
+    expect(api.saveSpecDraft.mock.calls.at(-1)![1].channel.whatsappNumberId).toBe('n1')
+  })
+})
