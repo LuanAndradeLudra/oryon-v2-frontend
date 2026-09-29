@@ -6,8 +6,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import api, { departmentsApi, practitionersApi, productsApi } from '@/services/api'
 import { loadHubOrNull } from '@/services/companyContextService'
 import {
-  createSpecDraft, getAgent, getAgentSpecForAgent, getSpecDraft, getSpecReadiness, listAgents, listAgentTestRuns, publishSpecDraft,
-  saveSpecDraft,
+  createSpecDraft, getAgent, getAgentSpecForAgent, getSpecDraft, getSpecReadiness, listAgents, listAgentTestRuns, podePublicarAgente,
+  publishSpecDraft, saveSpecDraft,
   type AgentConfigWithTools, type AgentSpec, type AgentTestRun, type ReadinessItem, type RepeatedFact, type StudySource,
 } from '@/services/agentsApi'
 import { rodarBateria } from '@/components/agents/bateria/bateria'
@@ -47,14 +47,19 @@ const ENSINO: string[] = [
  * Atrás de FF_AGENT_SPEC_WIZARD; o assistente antigo segue como padrão.
  */
 export function AssistenteDeAgente({
-  onClose, onCreated, agentId,
+  onClose, onCreated, agentId, draftInicial,
 }: {
   onClose: () => void
   onCreated: (agent: AgentConfigWithTools) => void
   /** Revisar um agente existente: a spec vem dele (a última publicada ou derivada do texto antigo). */
   agentId?: string
+  /** Abrir um rascunho específico (ex.: o que um supervisor deixou para um administrador publicar). */
+  draftInicial?: string
 }) {
   const { user } = useAuth()
+  // Decisão do PO (2026-09-29): só administradores colocam no ar; os demais
+  // montam o rascunho, que fica salvo para um administrador publicar.
+  const podePublicar = podePublicarAgente((user as { role?: string } | null)?.role)
   const [spec, setSpec] = useState<AgentSpec>(specVazia)
   const [etapa, setEtapa] = useState(1)
   const [draftId, setDraftId] = useState<string | null>(null)
@@ -92,8 +97,9 @@ export function AssistenteDeAgente({
     let vivo = true
     const chave = chaveRascunho(user?.tenantId, agentId)
     const iniciar = async () => {
-      let guardado: string | null = null
-      try { guardado = localStorage.getItem(chave) } catch { /* sem storage */ }
+      let guardado: string | null = draftInicial ?? null
+      if (draftInicial) { try { localStorage.setItem(chave, draftInicial) } catch { /* sem storage */ } }
+      else { try { guardado = localStorage.getItem(chave) } catch { /* sem storage */ } }
       try {
         if (guardado) {
           // Só "não encontrado" descarta o rascunho guardado. Erro passageiro
@@ -155,7 +161,7 @@ export function AssistenteDeAgente({
       setNumeros(linhas.map((l) => ({ ...l, agentName: l.agentId ? nomes.get(l.agentId) ?? null : null })))
     })
     return () => { vivo = false }
-  }, [user?.tenantId, agentId])
+  }, [user?.tenantId, agentId, draftInicial])
 
   // Revisão de agente já no ar: a linha certa é a que atende HOJE
   // (whatsapp_numbers.agentId), não a da spec — agente antigo vem sem linha, e
@@ -397,6 +403,12 @@ export function AssistenteDeAgente({
               {etapa === 7 && (
                 <EtapaNoAr spec={spec} mudar={mudar} numeros={numeros ?? []} agentId={agentId} prontidao={prontidao} erroProntidao={erroProntidao} carregarProntidao={carregarProntidao} servidorOk={salvo !== 'sem-servidor' && !!draftId} salvoNoServidor={salvo === 'salvo'} />
               )}
+              {etapa === 7 && !podePublicar && !publicadoId && (
+                <Banner variant="info" className="mt-6">
+                  Só um administrador da empresa pode colocar o agente no ar. O rascunho fica salvo: um administrador
+                  encontra em Agentes IA → Rascunhos esperando publicação.
+                </Banner>
+              )}
               {falta && <Banner variant="warning" className="mt-6">{falta}</Banner>}
               {erroPublicar && <Banner variant="danger" className="mt-6">{erroPublicar}</Banner>}
               {semLinha && (
@@ -449,7 +461,7 @@ export function AssistenteDeAgente({
             {etapa < ETAPAS.length ? (
               <Button size="md" onClick={avancar}>Continuar</Button>
             ) : (
-              <Button size="md" onClick={() => void publicar()} disabled={!pronto || publicando || !!publicadoId} loading={publicando}>
+              <Button size="md" onClick={() => void publicar()} disabled={!pronto || publicando || !!publicadoId || !podePublicar} loading={publicando}>
                 {agentId ? 'Publicar nova versão' : 'Publicar agente'}
               </Button>
             )}

@@ -31,7 +31,10 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('@/services/companyContextService', () => ({ loadHubOrNull: api.loadHubAsync, saveHubAndWait: api.saveHubAndWait }))
 vi.mock('@/components/agents/bateria/bateria', () => ({ rodarBateria: api.rodarBateria }))
-vi.mock('@/services/agentsApi', () => api)
+vi.mock('@/services/agentsApi', () => ({
+  ...api,
+  podePublicarAgente: (r: string | null | undefined) => r === 'admin' || r === 'business_admin' || r === 'super_admin',
+}))
 vi.mock('@/services/api', () => ({
   default: { patch: api.patch },
   departmentsApi: { list: vi.fn(async () => ({ data: [{ id: 'd1', name: 'Recepção' }] })) },
@@ -39,7 +42,8 @@ vi.mock('@/services/api', () => ({
   practitionersApi: { list: api.practitioners },
   whatsappNumbersApi: { listDetailed: api.linhas },
 }))
-vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: 't1' } }) }))
+const quem = vi.hoisted(() => ({ role: 'admin' }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: 't1', role: quem.role } }) }))
 
 import { AssistenteDeAgente } from './AssistenteDeAgente'
 import { cobertura, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia, textoParaEnsaio } from './especificacao'
@@ -47,6 +51,7 @@ import { cobertura, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia
 const DRAFT = { id: 'draft-1', agent_id: null, spec: specVazia(), step: 1, published_agent_id: null, published_version: null, updated_at: '' }
 
 beforeEach(() => {
+  quem.role = 'admin'
   Object.values(api).forEach((f) => f.mockReset())
   localStorage.clear()
   api.createSpecDraft.mockResolvedValue({ draft: DRAFT, repeatedFacts: [] })
@@ -528,6 +533,26 @@ describe('linha de WhatsApp', () => {
     })
     render(<AssistenteDeAgente agentId="bia" onClose={() => {}} onCreated={() => {}} />)
     expect(await screen.findByText(/O texto deste agente foi editado na página/)).toBeInTheDocument()
+  })
+
+  it('supervisor: monta o rascunho, mas não publica — o aviso diz onde o administrador encontra', async () => {
+    quem.role = 'supervisor'
+    naEtapaFinal()
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByText(/Só um administrador da empresa pode colocar o agente no ar/)).toBeInTheDocument()
+    const publicar = screen.getByRole('button', { name: 'Publicar agente' })
+    await waitFor(() => expect(api.getSpecReadiness).toHaveBeenCalled())
+    expect(publicar).toBeDisabled()
+  })
+
+  it('abre um rascunho específico (o que outra pessoa deixou), sem criar outro', async () => {
+    api.getSpecDraft.mockResolvedValue({ ...DRAFT, id: 'draft-do-supervisor', step: 7, spec: PRONTA })
+    api.getSpecReadiness.mockResolvedValue({ ready: true, items: [] })
+    render(<AssistenteDeAgente draftInicial="draft-do-supervisor" onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByRole('button', { name: 'Publicar agente' })).toBeInTheDocument()
+    expect(api.getSpecDraft).toHaveBeenCalledWith('draft-do-supervisor')
+    expect(api.createSpecDraft).not.toHaveBeenCalled()
+    expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBe('draft-do-supervisor')
   })
 
   it('revisão: pré-preenche a linha que o agente atende hoje, não a da spec', async () => {

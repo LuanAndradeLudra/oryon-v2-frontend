@@ -1367,6 +1367,16 @@ export function createSpecDraft(opts: { agentId?: string; spec?: AgentSpec } = {
   })
 }
 
+/** Rascunhos do assistente ainda não publicados (os 10 mais recentes da empresa). */
+export function listSpecDrafts() {
+  return apiFetch<SpecDraft[]>('/specs/drafts')
+}
+
+/** Quem pode colocar agente no ar — espelha o agent-server (podePublicarAgente). */
+export function podePublicarAgente(role: string | null | undefined): boolean {
+  return role === 'admin' || role === 'business_admin' || role === 'super_admin'
+}
+
 export function getSpecDraft(id: string) {
   return apiFetch<SpecDraft>(`/specs/drafts/${id}`)
 }

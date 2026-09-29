@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
-import { getAgentRuntimeFlags, type AgentConfigWithTools } from '@/services/agentsApi'
+import { getAgentRuntimeFlags, listSpecDrafts, type AgentConfigWithTools, type SpecDraft } from '@/services/agentsApi'
 import { AgentBuilderWizard } from '@/components/agents/AgentBuilderWizard'
 import { AssistenteDeAgente } from '@/components/agents/assistente/AssistenteDeAgente'
 import { PaginaDoAgente } from '@/components/agents/pagina/PaginaDoAgente'
@@ -24,6 +24,9 @@ export function AgentsPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [criando, setCriando] = useState(false)
+  // Continuar um rascunho do assistente (de qualquer pessoa da empresa).
+  const [continuando, setContinuando] = useState<{ draftId: string; agentId: string | null } | null>(null)
+  const [rascunhos, setRascunhos] = useState<SpecDraft[]>([])
   const legado = searchParams.get('agent')
   // Onda 4 — assistente novo atrás de FF_AGENT_SPEC_WIZARD (agent-server).
   // `?assistente=novo` abre a pré-visualização mesmo com a flag desligada.
@@ -40,6 +43,17 @@ export function AgentsPage() {
     return () => { vivo = false }
   }, [])
 
+  // Rascunhos esperando publicação: sem isto, o rascunho de quem não pode
+  // publicar só existia no navegador dele. Só os que já têm nome.
+  useEffect(() => {
+    if (!assistenteNovo || agentId) return
+    let vivo = true
+    listSpecDrafts()
+      .then((l) => { if (vivo) setRascunhos(l.filter((d) => d.spec?.identity?.name?.trim())) })
+      .catch(() => {})
+    return () => { vivo = false }
+  }, [assistenteNovo, agentId, criando, continuando])
+
   useRegisterTopBarActions(
     <Button size="sm" onClick={() => setCriando(true)} leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}>
       Novo agente
@@ -49,6 +63,7 @@ export function AgentsPage() {
 
   const aoCriar = (agent: AgentConfigWithTools) => {
     setCriando(false)
+    setContinuando(null)
     navigate(rotaDoAgente(agent.id, SECAO_PADRAO, { teste: true }))
   }
 
@@ -60,7 +75,13 @@ export function AgentsPage() {
   } else if (agentId && ehSecao(secao)) {
     conteudo = <PaginaDoAgente key={agentId} agentId={agentId} secao={secao} />
   } else {
-    conteudo = <ListaDeAgentes onNovo={() => setCriando(true)} />
+    conteudo = (
+      <ListaDeAgentes
+        onNovo={() => setCriando(true)}
+        rascunhos={rascunhos}
+        onContinuarRascunho={(d) => setContinuando({ draftId: d.id, agentId: d.agent_id })}
+      />
+    )
   }
 
   return (
@@ -71,6 +92,15 @@ export function AgentsPage() {
 
       {/* Criar agente — assistente em tela cheia, também no celular. */}
       <AnimatePresence>
+        {continuando && (
+          <AssistenteDeAgente
+            key={`rascunho-${continuando.draftId}`}
+            draftInicial={continuando.draftId}
+            agentId={continuando.agentId ?? undefined}
+            onClose={() => setContinuando(null)}
+            onCreated={aoCriar}
+          />
+        )}
         {criando && flagsProntas && (assistenteNovo
           ? <AssistenteDeAgente key="assistente-de-agente" onClose={() => setCriando(false)} onCreated={aoCriar} />
           : <AgentBuilderWizard key="agent-builder-wizard" onClose={() => setCriando(false)} onCreated={aoCriar} />
