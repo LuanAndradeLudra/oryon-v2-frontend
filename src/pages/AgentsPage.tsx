@@ -28,9 +28,15 @@ export function AgentsPage() {
   // Onda 4 — assistente novo atrás de FF_AGENT_SPEC_WIZARD (agent-server).
   // `?assistente=novo` abre a pré-visualização mesmo com a flag desligada.
   const [assistenteNovo, setAssistenteNovo] = useState(searchParams.get('assistente') === 'novo')
+  // Até as flags chegarem, "Novo agente" espera: antes, clicar cedo abria o
+  // assistente antigo mesmo com o novo ligado. Falha ao ler = assistente antigo.
+  const [flagsProntas, setFlagsProntas] = useState(assistenteNovo)
   useEffect(() => {
     let vivo = true
-    getAgentRuntimeFlags().then((f) => { if (vivo && f.specWizard) setAssistenteNovo(true) }).catch(() => {})
+    getAgentRuntimeFlags()
+      .then((f) => { if (vivo && f.specWizard) setAssistenteNovo(true) })
+      .catch(() => {})
+      .finally(() => { if (vivo) setFlagsProntas(true) })
     return () => { vivo = false }
   }, [])
 
@@ -65,7 +71,7 @@ export function AgentsPage() {
 
       {/* Criar agente — assistente em tela cheia, também no celular. */}
       <AnimatePresence>
-        {criando && (assistenteNovo
+        {criando && flagsProntas && (assistenteNovo
           ? <AssistenteDeAgente key="assistente-de-agente" onClose={() => setCriando(false)} onCreated={aoCriar} />
           : <AgentBuilderWizard key="agent-builder-wizard" onClose={() => setCriando(false)} onCreated={aoCriar} />
         )}
