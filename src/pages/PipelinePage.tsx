@@ -22,6 +22,14 @@ import type { Pipeline } from '@/types'
 
 type Tab = 'board' | 'list' | 'reports'
 
+/** Query ao trocar de funil: tudo menos o que é específico do funil de origem. */
+function queryParaOutroFunil(atual: URLSearchParams): string {
+  const p = new URLSearchParams(atual)
+  for (const k of ['deal', 'negocio', 'config', 'pipeline']) p.delete(k)
+  const q = p.toString()
+  return q ? `?${q}` : ''
+}
+
 export function PipelinePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -187,7 +195,10 @@ export function PipelinePage() {
                 key={p.id}
                 onClick={() => {
                   setSeletorAberto(false)
-                  if (!atual) navigate(`/pipelines/${p.id}${tab !== 'board' ? `?tab=${tab}` : ''}`)
+                  // Trocar de funil mantém a visão (aba, período, responsável,
+                  // busca, lente, previsão, volta); só sai o que era DAQUELE
+                  // funil (negócio aberto, painel de configuração).
+                  if (!atual) navigate(`/pipelines/${p.id}${queryParaOutroFunil(searchParams)}`)
                 }}
               >
                 <span className="w-2 h-2 rounded-[2px] flex-shrink-0" style={{ backgroundColor: p.color }} />
@@ -272,7 +283,7 @@ export function PipelinePage() {
   // já fazia. Sem nenhum funil disponível, não há pra onde cair: volta pra Home.
   if (!pipeline || pipeline.isArchived) {
     const fallback = getDefaultPipeline(pipelines)
-    if (fallback) return <Navigate to={`/pipelines/${fallback.id}${tab !== 'board' ? `?tab=${tab}` : ''}`} replace />
+    if (fallback) return <Navigate to={`/pipelines/${fallback.id}${queryParaOutroFunil(searchParams)}`} replace />
     return <Navigate to="/home" replace />
   }
 
