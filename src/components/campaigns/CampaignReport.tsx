@@ -1,3 +1,4 @@
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -221,15 +222,18 @@ interface CampaignReportProps {
   onClose: () => void
 }
 
+const lerAbaRelatorio = lerUmDe(['overview', 'conversions', 'churn', 'attribution', 'conversations'] as const, 'overview')
+
 export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const navigate = useNavigate()
   const C = useChartColors()
   const [analytics, setAnalytics] = useState<CampaignAnalytics | null>(null)
   const [conversations, setConversations] = useState<CampaignConversationSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<Tab>('overview')
-  const [outcomeFilter, setOutcomeFilter] = useState<string>('all')
-  const [sentimentFilter, setSentimentFilter] = useState<string>('all')
+  // Aba e filtros do relatório na URL (limpos junto com ?report= ao fechar).
+  const [tab, setTab] = useEstadoNaUrl<Tab>('relatorioAba', { padrao: 'overview', ler: lerAbaRelatorio })
+  const [outcomeFilter, setOutcomeFilter] = useEstadoNaUrl<string>('resultado', { padrao: 'all' })
+  const [sentimentFilter, setSentimentFilter] = useEstadoNaUrl<string>('sentimento', { padrao: 'all' })
 
   const { stats } = campaign
 

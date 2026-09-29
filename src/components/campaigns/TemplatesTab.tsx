@@ -1,3 +1,4 @@
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Eye, Pencil, Trash2, AlertCircle, Loader2, RefreshCw, Copy, FileText } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
@@ -48,14 +49,19 @@ const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
   { value: 'PAUSED',   label: 'Pausados' },
 ]
 
+const lerStatusModelo = lerUmDe(['all', 'PENDING', 'APPROVED', 'REJECTED', 'PAUSED', 'DISABLED'] as const, 'all')
+
 export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) => void } = {}) {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<TemplateStatus | 'all'>('all')
+  // Busca, status, linha e o modelo em prévia na URL (regra do PO).
+  const [search, setSearch] = useEstadoNaUrl<string>('busca', { padrao: '' })
+  const [statusFilter, setStatusFilter] = useEstadoNaUrl<TemplateStatus | 'all'>('status', { padrao: 'all', ler: lerStatusModelo })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<WhatsAppTemplate | null>(null)
-  const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null)
+  const [previewId, setPreviewId] = useEstadoNaUrl<string>('modelo', { padrao: '' })
+  const previewTemplate = previewId ? templates.find((t) => t.id === previewId) ?? null : null
+  const setPreviewTemplate = (t: WhatsAppTemplate | null) => setPreviewId(t?.id ?? '')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [metaLoadWarning, setMetaLoadWarning] = useState<string | null>(null)
@@ -66,7 +72,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [assignWabaTarget, setAssignWabaTarget] = useState<WhatsAppTemplate | null>(null)
   const [duplicateTarget, setDuplicateTarget] = useState<WhatsAppTemplate | null>(null)
-  const [lineFilter, setLineFilter] = useState<LineFilterValue>('all')
+  const [lineFilter, setLineFilter] = useEstadoNaUrl<LineFilterValue>('linha', { padrao: 'all' })
   // Responsivo: o painel de detalhe (abaixo) só aparece a partir de `lg`
   // (1024px, mesmo breakpoint do `hidden lg:block` dele). Abaixo disso não
   // sobra NENHUM jeito de ver a prévia do modelo — o modal de prévia antigo

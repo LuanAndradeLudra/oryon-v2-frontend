@@ -1,3 +1,4 @@
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { useCallback, useState, useEffect } from 'react'
 import {
   Plus, Loader2, Send,
@@ -44,6 +45,8 @@ const FILTER_OPTIONS: { value: CampaignStatus | 'all'; label: string }[] = [
   { value: 'sent',      label: 'Enviadas' },
 ]
 
+const lerStatusCampanha = lerUmDe(['all', 'draft', 'scheduled', 'sending', 'sent', 'failed', 'cancelled'] as const, 'all')
+
 export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) => void } = {}) {
   // Gate on WhatsApp line availability — the backend rejects
   // create_campaign with 400 when no line is connected.
@@ -53,7 +56,9 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
   const isMobile = useIsMobile()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all')
+  // Filtros na URL (regra do PO). Trocar de aba em Disparos limpa a query,
+  // então as chaves não colidem com as da aba Modelos.
+  const [statusFilter, setStatusFilter] = useEstadoNaUrl<CampaignStatus | 'all'>('status', { padrao: 'all', ler: lerStatusCampanha })
   const [wizardOpen, setWizardOpen] = useState(false)
   const [sending, setSending] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -68,7 +73,8 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
   const openReport = (id: string) =>
     setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set('report', id); return p })
   const closeReport = useCallback(() =>
-    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete('report'); return p }, { replace: true }),
+    // Fechar o relatório leva junto o estado dele (aba e filtros internos).
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); ['report', 'relatorioAba', 'resultado', 'sentimento'].forEach((k) => p.delete(k)); return p }, { replace: true }),
   [setSearchParams])
 
   useEffect(() => {
@@ -124,7 +130,7 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [assignWabaTarget, setAssignWabaTarget] = useState<Campaign | null>(null)
-  const [lineFilter, setLineFilter] = useState<LineFilterValue>('all')
+  const [lineFilter, setLineFilter] = useEstadoNaUrl<LineFilterValue>('linha', { padrao: 'all' })
 
   const handleDelete = async () => {
     if (!deleteTarget) return
