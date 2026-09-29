@@ -161,7 +161,7 @@ export function EtapaEntrevista({ spec, mudar, setores }: { spec: AgentSpec; mud
             <span className="text-sm font-semibold tabular-nums text-surface-200">{respondidas} de {perguntas.length} respondidas</span>
           )}
         </div>
-        {erro && <Banner variant="warning">{erro} Você pode seguir; o agente chama a equipe nos assuntos sem resposta.</Banner>}
+        {erro && <Banner variant="warning">{erro} Você pode seguir; sem a entrevista, o agente responde com o que está nas fontes e no texto.</Banner>}
         {perguntas === null ? (
           <p className="flex items-center gap-2 text-sm text-surface-400"><Loader2 className="h-4 w-4 animate-spin" /> Montando as perguntas do seu segmento…</p>
         ) : (
@@ -174,7 +174,7 @@ export function EtapaEntrevista({ spec, mudar, setores }: { spec: AgentSpec; mud
             ))}
           </ol>
         )}
-        <p className="text-xs text-surface-500">O que ficar sem resposta vira pendência: o agente chama a equipe nesses assuntos.</p>
+        <p className="text-xs text-surface-500">O que ficar sem resposta vira pendência: nesses assuntos o agente não inventa e diz que vai confirmar com a equipe.</p>
       </section>
 
       <section aria-labelledby="entrevista-acoes" className="space-y-3">
@@ -336,7 +336,7 @@ export function ParaOndeFoi({ spec }: { spec: AgentSpec }) {
       </div>
       {(pendentes.length > 0 || ctx.pendingCompany) && (
         <Banner variant="warning">
-          <span className="block font-medium">Pendências — o agente chama a equipe nesses assuntos até você responder:</span>
+          <span className="block font-medium">Pendências — nesses assuntos o agente não inventa e diz que vai confirmar com a equipe, até você responder:</span>
           <ul className="mt-1 list-disc pl-4">
             {pendentes.map((p) => <li key={p.id}>{p.question}</li>)}
             {ctx.pendingCompany && <li>Dados da empresa esperando um administrador salvar no Contexto da IA</li>}

@@ -1350,7 +1350,7 @@ export interface SpecDraft {
 export interface RepeatedFact { kind: 'preco' | 'telefone' | 'site' | 'empresa' | 'endereco'; excerpt: string }
 
 export interface ReadinessItem {
-  id: 'identidade' | 'ensaio' | 'fontes' | 'entrevista' | 'numero'
+  id: 'identidade' | 'ensaio' | 'fontes' | 'entrevista' | 'acoes' | 'numero'
   label: string
   ok: boolean
   blocking: boolean
