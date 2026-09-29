@@ -83,6 +83,7 @@ export function ConversationsPage() {
 
   const {
     conversations, filaIncompleta, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
+    error: erroDaLista, refetch: recarregarLista,
     handleNewMessage, handleAssigned, handleResolved, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
@@ -692,6 +693,8 @@ export function ConversationsPage() {
           onFiltersChange: setFilters,
           scrollPositionRef: listScrollPosRef,
           aviso: filaIncompleta ? 'A Fila tem mais de 500 conversas: a ordem por espera vale para as 500 mais recentes.' : null,
+          erro: erroDaLista,
+          onTentarDeNovo: () => { void recarregarLista() },
         }
         return isMobile ? (
           <div className="flex flex-col flex-1 min-h-0 w-full">

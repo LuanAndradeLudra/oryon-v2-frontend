@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, MessageSquareOff } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
 import { QuickFiltersMenu } from './QuickFiltersMenu'
@@ -48,6 +49,11 @@ interface ConversationListProps {
   roundedBottomRight?: boolean
   /** Aviso no topo da lista (ex.: a Fila passou do limite de carga). */
   aviso?: string | null
+  /** A leitura da lista falhou (backend fora, rede). Sem conversas carregadas,
+   *  vira o estado de erro no lugar de "Nenhuma conversa" — antes, com o
+   *  backend fora do ar, a tela dizia que não havia conversas. */
+  erro?: string | null
+  onTentarDeNovo?: () => void
 }
 
 export function ConversationList({
@@ -55,7 +61,7 @@ export function ConversationList({
   statusCounts, needsReviewCount = 0,
   activeId, offFilterId = null, filters, allTags, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
-  scrollPositionRef, roundedBottomRight = false, aviso = null,
+  scrollPositionRef, roundedBottomRight = false, aviso = null, erro = null, onTentarDeNovo,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
@@ -208,10 +214,28 @@ export function ConversationList({
             {aviso}
           </p>
         )}
+        {/* Falha ao atualizar com a lista já na tela: avisa sem apagar o que existe. */}
+        {erro && conversations.length > 0 && (
+          <p role="alert" className="mx-3 mt-2 mb-1 px-2.5 py-1.5 rounded-sm border border-danger/40 bg-danger/10 text-[11.5px] text-danger flex items-center justify-between gap-2">
+            <span>Não foi possível atualizar a lista.</span>
+            {onTentarDeNovo && (
+              <button type="button" onClick={onTentarDeNovo} className="font-semibold underline underline-offset-2 hover:opacity-80">Tentar de novo</button>
+            )}
+          </p>
+        )}
         {loading && conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2">
             <Loader2 className="w-5 h-5 text-surface-400 animate-spin" />
             <span className="text-xs text-surface-500">Carregando...</span>
+          </div>
+        ) : erro && conversations.length === 0 ? (
+          <div className="px-3">
+            <ErrorState
+              compact
+              title="Não foi possível carregar as conversas"
+              hint="O servidor não respondeu. As conversas continuam salvas."
+              onRetry={onTentarDeNovo}
+            />
           </div>
         ) : conversations.length === 0 ? (
           /* PL-1-2 (P6): "sem resultados" agora DIZ qual filtro está ativo e traz
