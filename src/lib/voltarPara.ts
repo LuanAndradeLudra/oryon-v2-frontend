@@ -51,3 +51,18 @@ export function destinoDeVolta(params: URLSearchParams): DestinoDeVolta | null {
   if (!para || !ehCaminhoInterno(para)) return null
   return { para, rotulo: params.get('voltarRotulo')?.trim() || 'Voltar' }
 }
+
+/**
+ * Leva o caminho de volta que a tela ATUAL recebeu para um próximo destino
+ * (trocar de seção de Configurações, redirecionamento, link interno). Sem isto
+ * a faixa "Voltar para…" sumia no primeiro clique dentro de Configurações.
+ * Sem `voltarPara` na tela atual, devolve o destino intacto.
+ */
+export function preservarVolta(destino: string, atual: URLSearchParams): string {
+  const volta = destinoDeVolta(atual)
+  if (!volta) return destino
+  const url = new URL(destino, 'http://local')
+  url.searchParams.set('voltarPara', volta.para)
+  if (atual.get('voltarRotulo')) url.searchParams.set('voltarRotulo', volta.rotulo)
+  return `${url.pathname}${url.search}`
+}

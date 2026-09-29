@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 import { SettingsLayout, firstVisibleSection, MULTI_PIPELINE_SECTIONS } from '@/components/settings/SettingsLayout'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
-import { destinoDeVolta } from '@/lib/voltarPara'
+import { destinoDeVolta, preservarVolta } from '@/lib/voltarPara'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
@@ -138,7 +138,9 @@ export function SettingsPage() {
   // ficaria em erro. As demais seções mantêm o padrão "acessível por URL".
   const gatedOut = !!section && MULTI_PIPELINE_SECTIONS.has(section) && !multiPipeline
   if (!section || !VALID_SECTIONS.includes(section) || gatedOut) {
-    return <Navigate to={`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`} replace />
+    // Redirecionamentos levam o caminho de volta junto (antes o `voltarPara`
+    // se perdia aqui e a faixa "Voltar para…" sumia).
+    return <Navigate to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
   }
 
   // Esconder o item do menu nao impede ninguem de digitar /settings/billing —
@@ -146,10 +148,10 @@ export function SettingsPage() {
   // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
   // o comentario do featureFlags.ts cita para campaigns.
   if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
-    return <Navigate to="/settings/account" replace />
+    return <Navigate to={preservarVolta('/settings/account', searchParams)} replace />
   }
   if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
-    return <Navigate to="/settings/company" replace />
+    return <Navigate to={preservarVolta('/settings/company', searchParams)} replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]
@@ -186,7 +188,9 @@ export function SettingsPage() {
       {isHardBlocked && blockLabel ? (
         <MobileFeatureGate
           open
-          onClose={() => navigate('/settings/account')}
+          // Fechar o bloqueio devolve a quem trouxe a pessoa (ou à tela anterior),
+          // não a uma seção qualquer.
+          onClose={() => (volta ? navigate(volta.para) : navigate(-1))}
           featureName={blockLabel.name}
           description={blockLabel.description}
         />

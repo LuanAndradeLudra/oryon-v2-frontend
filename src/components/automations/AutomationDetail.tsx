@@ -1,3 +1,4 @@
+import { useComVolta } from '@/hooks/useComVolta'
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -348,8 +349,11 @@ export function AutomationDetail({
   }, [automation.id, failedOnly, nextCursor])
 
   const hasFailure = runs.some((r) => r.status === 'failed' || r.status === 'partial')
-  const openContact = (id: string) => navigate(`/contacts?contact=${id}`)
-  const openConversation = (id: string) => navigate(`/conversations?conversation=${id}`)
+  // Levam o caminho de volta para ESTA automação (a seleção está na URL).
+  const irCom = useComVolta()
+  const openContact = (id: string) => navigate(irCom(`/contacts?contact=${id}`, 'Voltar para a automação'))
+  // A inbox abre a conversa por `?id=` — `?conversation=` não abria nada.
+  const openConversation = (id: string) => navigate(irCom(`/conversations?id=${id}`, 'Voltar para a automação'))
 
   return (
     <div className="flex flex-col h-full min-h-0">

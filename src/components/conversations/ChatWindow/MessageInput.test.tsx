@@ -52,7 +52,7 @@ describe('MessageInput — anexo grande demais (P6, sem alert())', () => {
   })
 
   it('arquivo acima de 16MB: mostra toast de erro explicando o limite, nunca window.alert', async () => {
-    render(<Harness />)
+    render(<MemoryRouter><Harness /></MemoryRouter>)
     const textarea = screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas')
     const dropzone = textarea.closest('.msg-composer') as HTMLElement
     expect(dropzone).toBeTruthy()
@@ -64,7 +64,7 @@ describe('MessageInput — anexo grande demais (P6, sem alert())', () => {
   })
 
   it('2+ arquivos grandes: uma mensagem só, cita os nomes', async () => {
-    render(<Harness />)
+    render(<MemoryRouter><Harness /></MemoryRouter>)
     const textarea = screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas')
     const dropzone = textarea.closest('.msg-composer') as HTMLElement
 
@@ -77,7 +77,7 @@ describe('MessageInput — anexo grande demais (P6, sem alert())', () => {
   })
 
   it('arquivo dentro do limite: anexa sem passar pelo caminho de erro (sem alert, sem novo toast de tamanho)', async () => {
-    render(<Harness />)
+    render(<MemoryRouter><Harness /></MemoryRouter>)
     const textarea = screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas')
     const dropzone = textarea.closest('.msg-composer') as HTMLElement
 
@@ -114,7 +114,7 @@ describe('MessageInput — mediaCaption só pra documento (achado pós SCRUM-115
 
   async function attachAndSend(file: File) {
     const onSend = vi.fn(async (_dto: SendMessageDto) => {})
-    render(<HarnessSend onSend={onSend} />)
+    render(<MemoryRouter><HarnessSend onSend={onSend} /></MemoryRouter>)
     const textarea = screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas')
     const dropzone = textarea.closest('.msg-composer') as HTMLElement
     fireEvent.drop(dropzone, { dataTransfer: { types: ['Files'], files: [file] } })

@@ -21,6 +21,10 @@ import { useLayer } from '@/contexts/LayerContext'
 import { useBilling } from '@/hooks/useBilling'
 import { useCreditGate } from '@/hooks/usePlanGate'
 import { formatCredits } from '@/config/plans'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
+import { useAuth } from '@/contexts/AuthContext'
+import { isOwnerTier } from '@/lib/roleHelpers'
+import { useComVolta } from '@/hooks/useComVolta'
 
 // Cores literais do handoff (3.12) — não são os tokens semânticos
 // --color-warning/--color-danger de uso geral (que têm outros valores no
@@ -131,9 +135,16 @@ export function AiCreditsIndicator() {
 
   useEffect(() => () => cancelClose(), [])
 
+  // Cobrança só existe com a flag ligada e para o dono: sem isso o clique
+  // caía em /settings/account (beco sem saída). Leva o caminho de volta.
+  const { isFeatureVisible } = useFeatureVisibility()
+  const { user } = useAuth()
+  const podeIrACobranca = isFeatureVisible('settingsBilling') && isOwnerTier(user?.role)
+  const irCom = useComVolta()
   const goBilling = () => {
+    if (!podeIrACobranca) return
     setHovered(false)
-    navigate('/settings/billing')
+    navigate(irCom('/settings/billing', 'Voltar'))
   }
 
   // Sem snapshot de billing ainda (nem em cache) — nem carregando, nem com
@@ -273,6 +284,7 @@ export function AiCreditsIndicator() {
               </span>
             </div>
 
+            {podeIrACobranca && (
             <div className="flex gap-1.5 pt-2 border-t border-surface-700">
               <button
                 type="button"
@@ -289,6 +301,7 @@ export function AiCreditsIndicator() {
                 Comprar créditos
               </button>
             </div>
+            )}
           </motion.div>
         </div>,
         document.body,

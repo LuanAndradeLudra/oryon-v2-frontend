@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { preservarVolta } from '@/lib/voltarPara'
 import { cn } from '@/lib/utils'
 
 interface SettingsSidebarItemProps {
@@ -16,6 +17,8 @@ interface SettingsSidebarItemProps {
 export function SettingsSidebarItem({ section, label, adminOnly, currentRole, nested }: SettingsSidebarItemProps) {
   const { section: activeSection } = useParams()
   const isActive = activeSection === section
+  // Trocar de seção mantém o "Voltar para…" de quem veio de uma tela de trabalho.
+  const [searchParams] = useSearchParams()
 
   // Defense-in-depth duplicate of the parent's filter — accept all "admin"
   // tiers (admin / business_admin / super_admin), not just literal 'admin'.
@@ -31,7 +34,7 @@ export function SettingsSidebarItem({ section, label, adminOnly, currentRole, ne
   // + raio 0 6 6 0.
   return (
     <Link
-      to={`/settings/${section}`}
+      to={preservarVolta(`/settings/${section}`, searchParams)}
       aria-current={isActive ? 'page' : undefined}
       style={isActive ? { boxShadow: 'inset 2px 0 0 var(--color-brand-500)', borderRadius: '0 6px 6px 0' } : undefined}
       className={cn(

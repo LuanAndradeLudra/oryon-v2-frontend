@@ -29,8 +29,15 @@ export function CampaignsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const rawTab = searchParams.get('tab')
   const activeTab: Tab = rawTab === 'templates' || rawTab === 'attribution' ? rawTab : 'campaigns'
+  // Trocar de aba limpa o que é da aba anterior (filtros, relatório aberto),
+  // mas mantém o caminho de volta — antes `{}`/`{ tab }` apagava tudo.
   const setActiveTab = (tab: Tab) =>
-    setSearchParams(tab === 'campaigns' ? {} : { tab }, { replace: true })
+    setSearchParams((prev) => {
+      const p = new URLSearchParams()
+      for (const k of ['voltarPara', 'voltarRotulo']) { const v = prev.get(k); if (v) p.set(k, v) }
+      if (tab !== 'campaigns') p.set('tab', tab)
+      return p
+    }, { replace: true })
   const campaignsEnabled = isFeatureVisible('campaigns')
 
   if (!campaignsEnabled) {

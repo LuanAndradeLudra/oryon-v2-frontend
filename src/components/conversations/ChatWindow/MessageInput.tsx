@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/useToast'
 import { inferMessageType } from '@/lib/inferMessageType'
 import { renderPdfThumbnail } from '@/lib/renderPdfThumbnail'
 import { useAuth } from '@/contexts/AuthContext'
+import { Link } from 'react-router-dom'
+import { useComVolta } from '@/hooks/useComVolta'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { PainelDeConfiguracao } from '@/components/settings/PainelDeConfiguracao'
 import { QuickReplies } from '@/components/settings/sections/QuickReplies'
@@ -162,6 +164,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
   const { user: autor } = useAuth()
   const podeGerenciarRespostas = isAdminTier(autor?.role)
   const [gerenciandoRespostas, setGerenciandoRespostas] = useState(false)
+  const irCom = useComVolta()
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
   const [allResponses, setAllResponses] = useState<CannedResponse[]>([])
@@ -568,12 +571,14 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
         <Banner
           variant="warning"
           action={blockedReason.ctaHref && blockedReason.ctaLabel && (
-            <a
-              href={blockedReason.ctaHref}
+            // Link da SPA (o <a href> recarregava o app e perdia a inbox) e com
+            // o caminho de volta para esta conversa.
+            <Link
+              to={irCom(blockedReason.ctaHref, 'Voltar para a conversa')}
               className="text-xs font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-3 py-1.5 rounded-lg transition-colors"
             >
               {blockedReason.ctaLabel}
-            </a>
+            </Link>
           )}
         >
           <p className="text-xs font-semibold">Não é possível enviar mensagens agora</p>
