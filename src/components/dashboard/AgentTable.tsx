@@ -4,6 +4,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
+import { useEstadoNaUrl, lerPaginaUrl, escreverPaginaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import type { AgentMetrics } from '@/types/dashboard'
 
 // Helper text for each column header. Kept in one place so updating the
@@ -54,12 +55,21 @@ function utilizationColor(v: number): string {
 
 const PAGE_SIZE = 10
 
+const lerDir = lerUmDe(['desc', 'asc'] as const, 'desc')
+
 export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
-    key: 'conversationsToday', dir: 'desc',
-  })
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
+  // Ordem, busca e página na URL (prefixo `agentes` para não colidir com os
+  // parâmetros do resto do Dashboard).
+  const [ordemChave, setOrdemChave] = useEstadoNaUrl<string>('agentesOrdem', { padrao: 'conversationsToday' })
+  const [ordemDir, setOrdemDir] = useEstadoNaUrl<SortDir>('agentesDir', { padrao: 'desc', ler: lerDir })
+  const sort = useMemo(() => ({ key: ordemChave as SortKey, dir: ordemDir }), [ordemChave, ordemDir])
+  const setSort = (fn: (prev: { key: SortKey; dir: SortDir }) => { key: SortKey; dir: SortDir }) => {
+    const next = fn(sort)
+    setOrdemChave(String(next.key))
+    setOrdemDir(next.dir)
+  }
+  const [search, setSearch] = useEstadoNaUrl<string>('agentesBusca', { padrao: '' })
+  const [page, setPage] = useEstadoNaUrl<number>('agentesPag', { padrao: 1, ler: lerPaginaUrl, escrever: escreverPaginaUrl })
 
   const query = search.trim().toLowerCase()
   const filtered = query

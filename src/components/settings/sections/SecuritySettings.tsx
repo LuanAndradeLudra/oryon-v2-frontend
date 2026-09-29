@@ -1,5 +1,5 @@
 import { ShieldCheck, History } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { LinkDeConfiguracao as Link } from '../LinkDeConfiguracao'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
 import { EmptyState } from '@/components/ui/EmptyState'

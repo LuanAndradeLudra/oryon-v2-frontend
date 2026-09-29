@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { comVolta } from '@/lib/voltarPara'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { Bell, CheckCheck, Archive, Settings2, ChevronDown } from 'lucide-react'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Button } from '@/components/ui/Button'
@@ -20,6 +21,7 @@ import { cn } from '@/lib/utils'
 // popover — são superfícies diferentes (painel de 400px vs página cheia).
 
 type NotifFilter = 'all' | 'unread'
+const lerMostrar = (v: string | null): NotifFilter => (v === 'todas' ? 'all' : lerUmDe(['unread'] as const, 'unread')(v))
 
 /** Mesma chave do popover: recolher "Campanhas" num lugar vale no outro. */
 const COLLAPSED_KEY = 'oryon:notif:collapsed'
@@ -54,7 +56,8 @@ export function NotificationsPage() {
 
   // Aba lida/não-lida é filtro client-side sobre a lista já buscada (mesma
   // lógica do popover).
-  const [filter, setFilter] = useState<NotifFilter>('unread')
+  // Na URL (`?mostrar=todas`); padrão: não lidas.
+  const [filter, setFilter] = useEstadoNaUrl<NotifFilter>('mostrar', { padrao: 'unread', ler: lerMostrar, escrever: (v) => (v === 'all' ? 'todas' : null) })
 
   const visible = useMemo(
     () => (filter === 'unread' ? notifications.filter((n) => !n.isRead) : notifications),

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { LinkDeConfiguracao as Link } from '../LinkDeConfiguracao'
 import { Plus, Pencil, Trash2, X, Check, Layers, Smartphone, ExternalLink } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'

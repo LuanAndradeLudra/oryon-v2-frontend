@@ -969,7 +969,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
           secao="quick-replies"
           rotuloDeVolta="Voltar para a conversa"
         >
-          <QuickReplies />
+          <QuickReplies buscaNaUrl={false} />
         </PainelDeConfiguracao>
       )}
     </div>

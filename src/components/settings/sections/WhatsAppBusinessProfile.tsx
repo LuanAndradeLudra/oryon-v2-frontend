@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
 import { Avatar } from '@/components/ui/Avatar'
 import { Banner } from '@/components/ui/Banner'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
 import { useToast } from '@/hooks/useToast'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { api } from '@/services/api'
@@ -73,7 +74,9 @@ const EMPTY_FORM: ProfileForm = {
 export function WhatsAppBusinessProfile() {
   const { toast } = useToast()
   const { numbers, loading: loadingNumbers } = useWorkspaceNumber()
-  const [selectedId, setSelectedId] = useState<string>('')
+  // Linha escolhida na URL (`?linha=`); sem ela, a primeira (o caso comum: uma só).
+  const [linhaUrl, setSelectedId] = useEstadoNaUrl<string>('linha', { padrao: '' })
+  const selectedId = linhaUrl && numbers.some((n) => n.id === linhaUrl) ? linhaUrl : (numbers[0]?.id ?? '')
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM)
   const [loadingProfile, setLoadingProfile] = useState(false)
   // O que veio da Meta: o salvar só envia o que mudou em relação a isto, e
@@ -84,11 +87,6 @@ export function WhatsAppBusinessProfile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    if (!selectedId && numbers.length > 0) {
-      setSelectedId(numbers[0].id)
-    }
-  }, [numbers, selectedId])
 
   useEffect(() => {
     if (!selectedId) return

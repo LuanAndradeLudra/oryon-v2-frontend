@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Bell, UserCircle } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { LinkDeConfiguracao as Link } from '../LinkDeConfiguracao'
 import { AnimatePresence } from 'framer-motion'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'

@@ -4,6 +4,7 @@ import axios from 'axios'
 import { api, cannedResponsesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
 import { SectionHeader } from '../SectionHeader'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -103,13 +104,21 @@ function errorMessage(e: unknown, fallback: string): string {
   return fallback
 }
 
-export function QuickReplies() {
+/**
+ * `buscaNaUrl`: em /settings a busca vai para a URL (regra do PO). Aberta num
+ * painel dentro de outra tela (ex.: compositor da conversa) fica local — a
+ * chave `busca` da conversa é a busca da inbox e não pode ser sobrescrita.
+ */
+export function QuickReplies({ buscaNaUrl = true }: { buscaNaUrl?: boolean } = {}) {
   const { toast } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
   const [responses, setResponses] = useState<CannedResponse[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [buscaUrl, setBuscaUrl] = useEstadoNaUrl<string>('busca', { padrao: '' })
+  const [buscaLocal, setBuscaLocal] = useState('')
+  const search = buscaNaUrl ? buscaUrl : buscaLocal
+  const setSearch = buscaNaUrl ? setBuscaUrl : setBuscaLocal
   const [modalOpen, setModalOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CannedResponse | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CannedResponse | null>(null)

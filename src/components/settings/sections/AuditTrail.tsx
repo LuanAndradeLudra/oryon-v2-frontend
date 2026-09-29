@@ -4,6 +4,7 @@
 // tenantId from the JWT — no cross-tenant leakage possible.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Search, AlertCircle, Filter, X } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -55,8 +56,38 @@ const SEVERITY_CLASS: Record<string, string> = {
 
 const DEFAULT_AUDIT_QUERY: TenantAuditQuery = { limit: 30 }
 
+// Filtros aplicados na URL (regra do PO) — o rascunho do FilterBar segue local
+// até "Aplicar". Nomes em português.
+const CHAVES_AUDITORIA: [keyof TenantAuditQuery, string][] = [
+  ['actorId', 'quem'], ['action', 'acao'], ['entityType', 'entidade'], ['severity', 'gravidade'], ['since', 'desde'],
+]
+function lerFiltrosAuditoria(sp: URLSearchParams): TenantAuditQuery {
+  const q: TenantAuditQuery = { ...DEFAULT_AUDIT_QUERY }
+  for (const [campo, chave] of CHAVES_AUDITORIA) {
+    const v = sp.get(chave)
+    if (!v) continue
+    if (campo === 'severity') { if (v === 'info' || v === 'warn' || v === 'error') q.severity = v }
+    else (q as Record<string, unknown>)[campo] = v
+  }
+  return q
+}
+function escreverFiltrosAuditoria(prev: URLSearchParams, q: TenantAuditQuery): URLSearchParams {
+  const p = new URLSearchParams(prev)
+  for (const [campo, chave] of CHAVES_AUDITORIA) {
+    const v = q[campo]
+    if (v) p.set(chave, String(v))
+    else p.delete(chave)
+  }
+  return p
+}
+const chaveAuditoria = (sp: URLSearchParams) => CHAVES_AUDITORIA.map(([, k]) => sp.get(k) ?? '').join('|')
+
 export function AuditTrail() {
-  const [filters, setFilters] = useState<TenantAuditQuery>(DEFAULT_AUDIT_QUERY)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const chave = chaveAuditoria(searchParams)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const filters = useMemo(() => lerFiltrosAuditoria(searchParams), [chave])
+  const setFilters = (q: TenantAuditQuery) => setSearchParams((prev) => escreverFiltrosAuditoria(prev, q), { replace: true })
   const [rows, setRows] = useState<TenantAuditRow[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -79,11 +110,13 @@ export function AuditTrail() {
     }
   }, [])
 
-  useEffect(() => { void load(filters, false) /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [])
+  // Recarrega quando os filtros da URL mudam (aplicar, limpar, "voltar", link colado).
+  useEffect(() => { void load(filters, false) /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [chave])
 
   const onApply = (next: TenantAuditQuery) => {
-    setFilters(next)
-    void load(next, false)
+    // Mesmos filtros de antes: a URL não muda, então recarrega direto.
+    if (chaveAuditoria(escreverFiltrosAuditoria(new URLSearchParams(), next)) === chave) void load(next, false)
+    else setFilters(next)
   }
 
   const onLoadMore = () => {
@@ -98,7 +131,8 @@ export function AuditTrail() {
         description="Tudo que sua equipe fez na plataforma — criação, edição e remoção de contatos, campanhas, templates, automações e mais. Apenas leitura."
       />
 
-      <FilterBar key={filterBarKey} filters={filters} onApply={onApply} loading={loading} />
+      {/* A chave inclui os filtros da URL: "voltar" ou link colado refazem o rascunho. */}
+      <FilterBar key={`${filterBarKey}|${chave}`} filters={filters} onApply={onApply} loading={loading} />
 
       {error && rows.length > 0 && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-sm border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
@@ -128,7 +162,6 @@ export function AuditTrail() {
               label: 'Limpar filtros',
               onClick: () => {
                 setFilters(DEFAULT_AUDIT_QUERY)
-                void load(DEFAULT_AUDIT_QUERY, false)
                 setFilterBarKey((k) => k + 1)
               },
             } : undefined}
