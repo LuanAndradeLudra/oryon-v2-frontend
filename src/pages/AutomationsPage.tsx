@@ -5,7 +5,6 @@ import {
   Pencil, Copy, Trash2, CopyPlus, Phone, X,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSearchParams } from 'react-router-dom'
 
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
@@ -23,6 +22,7 @@ import { AssignWabaModal } from '@/components/common/AssignWabaModal'
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
 import { useContextMenuCtx } from '@/components/ui/contextMenuCore'
+import { useEstadoNaUrl, lerUmDe, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
@@ -214,24 +214,41 @@ const STATUS_OPTIONS_BASE: { value: AutomationStatus | 'all'; label: string }[] 
   { value: 'draft',    label: 'Rascunho'  },
 ]
 
+const lerStatus = lerUmDe(['all', 'active', 'inactive', 'draft'] as const, 'all')
+const lerTipo = lerUmDe(['all', 'boas_vindas', 'follow_up', 'fora_horario', 'triagem_keyword', 'estagio_crm', 'inatividade', 'custom'] as const, 'all')
+const lerOrdem = lerUmDe(['atividade', 'nome'] as const, 'atividade')
+const lerDirecao = lerUmDe(['desc', 'asc'] as const, 'desc')
+
 export function AutomationsPage() {
   const isMobile = useIsMobile()
   const { numbers: whatsappLines, loading: waLoading } = useWorkspaceNumber()
   const hasWhatsappLine = whatsappLines.length > 0
   const multiLine = whatsappLines.length > 1
   const { open: openContextMenu } = useContextMenuCtx()
-  const [searchParams, setSearchParams] = useSearchParams()
   const { open: openCopilot } = useCopilotContext()
 
   const [automations, setAutomations]   = useState<Automation[]>([])
   const [loading, setLoading]           = useState(true)
-  const [search, setSearch]             = useState('')
-  const [statusFilter, setStatusFilter] = useState<AutomationStatus | 'all'>('all')
-  const [typeFilter, setTypeFilter]     = useState<AutomationType | 'all'>('all')
-  const [lineFilter, setLineFilter]     = useState<LineFilterValue>('all')
-  const [attentionOnly, setAttentionOnly] = useState(false)
-  const [sort, setSort]                 = useState<DataTableSort>({ key: 'atividade', dir: 'desc' })
-  const [selectedId, setSelectedId]     = useState<string | null>(null)
+  // Estado de tela na URL (regra do PO): busca, filtros, ordem e a automação
+  // aberta sobrevivem ao F5, ao "voltar" e ao link colado. `?automation=` e
+  // `?atencao=1` (links de notificação) seguem valendo — antes eram lidos uma
+  // vez e a query inteira era apagada.
+  const [search, setSearch]             = useEstadoNaUrl<string>('busca', { padrao: '' })
+  const [statusFilter, setStatusFilter] = useEstadoNaUrl<AutomationStatus | 'all'>('status', { padrao: 'all', ler: lerStatus })
+  const [typeFilter, setTypeFilter]     = useEstadoNaUrl<AutomationType | 'all'>('tipo', { padrao: 'all', ler: lerTipo })
+  const [lineFilter, setLineFilter]     = useEstadoNaUrl<LineFilterValue>('linha', { padrao: 'all' })
+  const [attentionOnly, setAttentionOnly] = useEstadoNaUrl<boolean>('atencao', { padrao: false, ler: lerBool, escrever: escreverBool })
+  const [ordemChave, setOrdemChave]     = useEstadoNaUrl<'atividade' | 'nome'>('ordem', { padrao: 'atividade', ler: lerOrdem })
+  const [ordemDir, setOrdemDir]         = useEstadoNaUrl<'asc' | 'desc'>('direcao', { padrao: 'desc', ler: lerDirecao })
+  const sort = useMemo<DataTableSort>(() => ({ key: ordemChave, dir: ordemDir }), [ordemChave, ordemDir])
+  const setSort = (s: DataTableSort) => {
+    setOrdemChave(s.key === 'nome' ? 'nome' : 'atividade')
+    setOrdemDir(s.dir)
+  }
+  // Abrir uma automação entra no histórico: o "voltar" do navegador fecha.
+  const [selectedIdUrl, setSelectedIdUrl] = useEstadoNaUrl<string>('automacao', { padrao: '', aliases: ['automation'], historico: 'push' })
+  const setSelectedId = (id: string | null) => setSelectedIdUrl(id ?? '')
+  const selectedId: string | null = selectedIdUrl || null
 
   const [wizardOpen, setWizardOpen]         = useState(false)
   const [editTarget, setEditTarget]         = useState<Automation | null>(null)
@@ -252,16 +269,6 @@ export function AutomationsPage() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  // Deep-link: /automations?automation=:id abre o detalhe; ?atencao=1 filtra.
-  // Consumido uma vez e limpo da URL (padrão ContactsPage).
-  useEffect(() => {
-    const autoParam = searchParams.get('automation')
-    const atencaoParam = searchParams.get('atencao')
-    if (!autoParam && atencaoParam !== '1') return
-    if (autoParam) setSelectedId(autoParam)
-    if (atencaoParam === '1') setAttentionOnly(true)
-    setSearchParams({}, { replace: true })
-  }, [searchParams, setSearchParams])
 
   const handleToggle = async (automation: Automation) => {
     try {
