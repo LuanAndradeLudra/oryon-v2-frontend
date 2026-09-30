@@ -17,6 +17,12 @@ interface SettingsLayoutProps {
    *  Default `false`: seções de funil ficam escondidas a menos que o caller
    *  afirme o contrário. */
   multiPipeline?: boolean
+  /** SCRUM-1071: o container de leitura padrão (`max-w-4xl` + outline lateral)
+   *  foi desenhado para prosa/formulários — numa grade de 30+ cards de
+   *  conectores ele sobra espaço vazio dos dois lados da tela. `fullWidth`
+   *  troca esse container por uma faixa bem mais larga e tira o outline
+   *  (que não faz sentido para uma grade, só para conteúdo com seções). */
+  fullWidth?: boolean
 }
 
 /** Opções de visibilidade além do papel — flags por tenant vindas do backend. */
@@ -47,7 +53,7 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
   'pipeline-stages':   ['funil', 'estágios', 'pipeline', 'negócios', 'deals'],
   'pipeline-routing':  ['roteamento', 'funil', 'linha', 'canal'],
   billing:             ['plano', 'fatura', 'cobrança', 'pagamento', 'assinatura'],
-  connectors:          ['integrações', 'integração', 'api', 'feegow', 'doctoralia', 'webhook'],
+  connectors:          ['integrações', 'integração', 'conectores', 'erp', 'api', 'feegow', 'doctoralia', 'webhook', 'skills', 'mcp'],
   security:            ['segurança', 'sessões', 'logs de acesso', '2fa'],
   audit:               ['auditoria', 'logs', 'histórico', 'atividade'],
 }
@@ -141,7 +147,10 @@ export const SETTINGS_NAV: NavDomain[] = [
         label: 'Integrações',
         items: [
           // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
-          { section: 'connectors',    label: 'Conectores',          adminOnly: true },
+          // SCRUM-1071: instala a credencial 1x por tenant — só o dono (ownerOnly,
+          // igual ao guard do SettingsPage). D12: escondido pela flag
+          // connectorsSelfService (isRouteVisible) até os itens de segurança da T6.
+          { section: 'connectors',    label: 'Conectores',          ownerOnly: true },
         ],
       },
     ],
@@ -242,11 +251,11 @@ function NavClusterGroup({ cluster, activeSection, searching, currentRole }: {
   )
 }
 
-export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false }: SettingsLayoutProps) {
+export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false, fullWidth = false }: SettingsLayoutProps) {
   const isMobile = useIsMobile()
   const { section: activeSection } = useParams()
   // Canvas 5b: Conectores usa a coluna inteira (padding 26/32/24, sem max-width).
-  const wide = activeSection === 'connectors'
+  const wide = fullWidth || activeSection === 'connectors'
   const breadcrumb = (() => {
     for (const d of SETTINGS_NAV) for (const c of d.clusters) for (const i of c.items) {
       if (i.section === activeSection) return [d.domain, ...(c.label ? [c.label] : []), i.label]

@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import type { Connector } from './connectorsMock'
+import type { Connector } from './connectorView'
 
 interface ConnectorTileProps {
   connector: Pick<Connector, 'brandColor' | 'logoInitial' | 'status'>

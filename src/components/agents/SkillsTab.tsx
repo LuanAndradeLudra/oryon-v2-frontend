@@ -30,9 +30,12 @@ import { EditAgentSkillConfigModal } from '@/components/admin/EditAgentSkillConf
 import { TestAgentSkillModal } from '@/components/admin/TestAgentSkillModal'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import { SkillStatusBadge } from '@/components/skills/SkillStatusBadge'
+import { McpProvidersSection } from './McpProvidersSection'
+import { ConnectorTogglesSection } from './ConnectorTogglesSection'
 import { useToast } from '@/hooks/useToast'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useAuth } from '@/contexts/AuthContext'
-import { isOryonStaff } from '@/lib/roleHelpers'
+import { isOryonStaff, isOwnerTier } from '@/lib/roleHelpers'
 import { cn } from '@/lib/utils'
 import { useTamanhoDeToque } from './pagina/useToque'
 
@@ -51,6 +54,8 @@ interface Props {
 export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
   const { user } = useAuth()
   const staff = isOryonStaff(user?.role)
+  const owner = isOwnerTier(user?.role)
+  const conectoresVisiveis = useFeatureVisibility().isFeatureVisible('connectorsSelfService')
   const navigate = useNavigate()
   const [rows, setRows] = useState<AgentSkillWithTemplate[]>([])
   const [loading, setLoading] = useState(true)
@@ -125,28 +130,36 @@ export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-surface-400">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando skills…
-      </div>
+      <>
+        <div className="flex items-center justify-center py-16 text-surface-400">
+          <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando skills…
+        </div>
+        <ConnectorTogglesSection agentId={agentId} />
+        <McpProvidersSection agentId={agentId} />
+      </>
     )
   }
 
   // ── Initial load error (no data at all) ─────────────────────────────────
   if (loadError && rows.length === 0) {
     return (
-      <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
-        <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-danger font-medium mb-1">Erro ao carregar skills</p>
-          <p className="text-surface-400 break-words">{loadError}</p>
+      <>
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+          <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-danger font-medium mb-1">Erro ao carregar skills</p>
+            <p className="text-surface-400 break-words">{loadError}</p>
+          </div>
+          <button
+            onClick={reload}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium flex-shrink-0"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Tentar novamente
+          </button>
         </div>
-        <button
-          onClick={reload}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium flex-shrink-0"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Tentar novamente
-        </button>
-      </div>
+        <ConnectorTogglesSection agentId={agentId} />
+        <McpProvidersSection agentId={agentId} />
+      </>
     )
   }
 
@@ -165,27 +178,40 @@ export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
       if (tenantId) params.set('tenant', tenantId)
       params.set('agent', agentId)
       return (
-        <EmptyState
-          icon={Sparkles}
-          title="Nenhuma skill atribuída a este agente"
-          hint="Atribua um template do catálogo para dar uma nova capacidade a este agente."
-          action={{
-            label: 'Atribuir skill',
-            onClick: () => navigate(`/admin/skills/assign?${params.toString()}`),
-          }}
-        />
+        <>
+          <EmptyState
+            icon={Sparkles}
+            title="Nenhuma skill atribuída a este agente"
+            hint="Atribua um template do catálogo para dar uma nova capacidade a este agente."
+            action={{
+              label: 'Atribuir skill',
+              onClick: () => navigate(`/admin/skills/assign?${params.toString()}`),
+            }}
+          />
+          <ConnectorTogglesSection agentId={agentId} />
+          <McpProvidersSection agentId={agentId} />
+        </>
       )
     }
     return (
-      <EmptyState
-        icon={Sparkles}
-        title="Nenhuma skill ativada para este agente"
-        hint="Sua equipe Oryon pode ativar capacidades específicas para o seu negócio (marcar consulta, consultar pedido, etc). Fale com seu gerente para liberar."
-        action={{
-          label: 'Falar com a Oryon',
-          href: 'mailto:contato@oryonsolutions.com?subject=Quero+ativar+skills+no+meu+agente',
-        }}
-      />
+      <>
+        <EmptyState
+          icon={Sparkles}
+          title="Nenhuma skill ativada para este agente"
+          hint={
+            !conectoresVisiveis
+              ? 'Sua equipe Oryon pode ativar capacidades específicas para o seu negócio (marcar consulta, consultar pedido, etc). Fale com seu gerente para liberar.'
+              : owner
+                ? 'Instale uma integração em Configurações → Conectores e depois ative aqui pra este agente — sem precisar falar com a Oryon.'
+                : 'Só o dono da conta pode instalar uma nova integração, em Configurações.'
+          }
+          action={!conectoresVisiveis
+            ? { label: 'Falar com a Oryon', href: 'mailto:contato@oryonsolutions.com?subject=Quero+ativar+skills+no+meu+agente' }
+            : owner ? { label: 'Ir para Conectores', onClick: () => navigate('/settings/connectors') } : undefined}
+        />
+        <ConnectorTogglesSection agentId={agentId} />
+        <McpProvidersSection agentId={agentId} />
+      </>
     )
   }
 
@@ -273,6 +299,9 @@ export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
           onClose={() => setTesting(null)}
         />
       )}
+
+      <ConnectorTogglesSection agentId={agentId} />
+      <McpProvidersSection agentId={agentId} />
     </div>
   )
 }

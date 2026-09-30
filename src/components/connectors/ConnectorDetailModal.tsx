@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { Tabs } from '@/components/ui/Tabs'
 import { ConnectorStatusChip, ConnectorComingSoonChip } from './ConnectorBadges'
-import type { Connector } from './connectorsMock'
+import type { Connector } from './connectorView'
 
 type TabId = 'overview' | 'how' | 'requirements'
 
@@ -98,7 +98,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
 
           <div className="flex-1 min-h-0 overflow-y-auto mt-[18px] text-xs">
             {comingSoon ? (
-              <FichaRow label="Fila" value={`${connector.requestCount ?? 0} clientes pediram`} />
+              connector.requestCount != null && <FichaRow label="Fila" value={`${connector.requestCount} clientes pediram`} />
             ) : (
               <>
                 {connector.auth && <FichaRow label="Autenticação" value={connector.auth} />}
@@ -153,7 +153,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
             )}
             {comingSoon && (
               <Banner variant="neutral">
-                Ainda não construída. Ao priorizar, você recebe um aviso quando ficar disponível — e o pedido conta na nossa fila.
+                Ainda não construída. Ao priorizar, o seu pedido entra na fila que a Oryon usa para decidir o que construir primeiro.
               </Banner>
             )}
 

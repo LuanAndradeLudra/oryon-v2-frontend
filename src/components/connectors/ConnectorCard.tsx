@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { ConnectorStatusChip, ConnectorComingSoonChip } from './ConnectorBadges'
 import { ConnectorTile } from './ConnectorTile'
-import type { Connector } from './connectorsMock'
+import type { Connector } from './connectorView'
 
 const STATUS_BADGE: Partial<Record<Connector['status'], { label: string; tone: 'success' | 'warning'; icon?: typeof Check }>> = {
   installed: { label: 'Instalado', tone: 'success', icon: Check },
@@ -26,8 +26,9 @@ export function ConnectorCard({ connector, onOpen }: ConnectorCardProps) {
     return { label: 'Conectar', variant: 'primary' as const }
   })()
 
+  // Regra 6: sem número da API, sem métrica (nada de "0 agentes" inventado).
   const metric = connector.status === 'installed'
-    ? `${connector.agentsUsing ?? 0} agente${connector.agentsUsing === 1 ? '' : 's'}`
+    ? (connector.agentsUsing != null ? `${connector.agentsUsing} agente${connector.agentsUsing === 1 ? '' : 's'}` : undefined)
     : comingSoon
       ? (connector.requestCount != null ? `${connector.requestCount} pedidos` : undefined)
       : undefined

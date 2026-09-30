@@ -15,6 +15,7 @@ import {
   PanelLeft,
   Handshake,
   Calendar,
+  Inbox,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -342,6 +343,21 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
                   label="Agentes (cross-tenant)"
                   active={activeHref.startsWith('/admin/agents')}
                 />
+                {/* "Conectores" (ciclo de vida do catálogo, /admin/connectors)
+                    tirado deste menu em 2026-09-15 — decisão de produto: essa
+                    entrada estava duplicando a confusão com o item homônimo
+                    do menu de Configurações (hub de instalação, outra tela,
+                    outro propósito). A rota continua acessível por URL
+                    direta, mesmo padrão do flag `oryonStaffSidebar` acima. */}
+                {/* D12 — some com a flag connectorsSelfService desligada. */}
+                {isFeatureVisible('connectorsSelfService') && (
+                  <SidebarLink
+                    href="/admin/connector-requests"
+                    icon={<Inbox className="w-[16.5px] h-[16.5px]" />}
+                    label="Solicitações de conector"
+                    active={activeHref === '/admin/connector-requests'}
+                  />
+                )}
                 <SidebarLink
                   href="/admin/audit"
                   icon={<Activity className="w-[16.5px] h-[16.5px]" />}

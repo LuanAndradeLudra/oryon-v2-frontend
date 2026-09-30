@@ -8,7 +8,7 @@
 import { useState, useMemo } from 'react'
 import { Play, AlertCircle, CheckCircle2, ChevronDown, Copy, Beaker, ClipboardList } from 'lucide-react'
 import { testSkillTemplate } from '@/services/skillTemplatesApi'
-import { DynamicSchemaFormFields } from './DynamicSchemaFormFields'
+import { DynamicSchemaFormFields } from '@/components/shared/DynamicSchemaFormFields'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import type { SkillTemplate, TesterResult, JsonSchemaObject } from '@/types/skills'

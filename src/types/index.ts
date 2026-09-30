@@ -1268,6 +1268,10 @@ export interface PlanModuleAccess {
   nexus: boolean              // internal chat
   apiAccess: boolean
   webhooks: boolean
+  /** SCRUM-1071/1084 — conectores self-service (Skills do catálogo) e
+   *  servidores MCP anexados a um agente. Mesma régua de business+ que
+   *  apiAccess/webhooks já seguem. */
+  integrations: boolean
   advancedAnalytics: boolean
   customReports: boolean
   prioritySupport: boolean

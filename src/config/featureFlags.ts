@@ -102,6 +102,14 @@ export const FEATURE_FLAGS = {
   //
   // Reativar = trocar para `true`. Uma linha.
   processPipelines: false,
+  // Conectores self-service (SCRUM-1071). D12 (release 2026-09-29): o código
+  // entra na release escondido — some o item de Configurações, a URL direta
+  // volta, a seção "Conectores"/"Servidores MCP" some da aba Skills e o link
+  // de staff sai do menu. O agent-server responde 404 nas mesmas rotas com
+  // FF_CONNECTORS_SELF_SERVICE desligada. Ligar só depois dos itens de
+  // segurança da T6 (segredos cifrados, teto do motor de rascunho, SSRF,
+  // tenantPlan, piloto do Feegow).
+  connectorsSelfService: false,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS
@@ -152,6 +160,9 @@ const ROUTE_FLAGS: Array<[string, FeatureFlag]> = [
   ['/settings/ad-accounts', 'settingsAdAccounts'],
   ['/settings/vertical', 'settingsVertical'],
   ['/settings/billing', 'settingsBilling'],
+  ['/settings/connectors', 'connectorsSelfService'],
+  ['/admin/connectors', 'connectorsSelfService'],
+  ['/admin/connector-requests', 'connectorsSelfService'],
   ['/settings', 'settings'],
 ]
 

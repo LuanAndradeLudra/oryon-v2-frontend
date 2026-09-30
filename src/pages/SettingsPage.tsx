@@ -48,11 +48,13 @@ const VALID_SECTIONS = [
   // não havia NENHUMA forma de configurar campos pela interface. Ganha rota
   // canônica aqui, junto do resto do CRM.
   'custom-fields',
-  // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
+  // Redesign 2026-09-14 (SCRUM-1071): hub de conectores — instala a
+  // credencial 1x por tenant aqui; qual agente usa é um toggle na aba
+  // Skills de cada agente, não mais um formulário duplicado por agente.
   'connectors',
 ]
 
-const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
+const OWNER_ONLY_SECTIONS = new Set<string>(['billing', 'connectors'])
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
 // bloquear (usuario pode acessar mas com aviso).
@@ -150,6 +152,10 @@ export function SettingsPage() {
   if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
     return <Navigate to={preservarVolta('/settings/account', searchParams)} replace />
   }
+  // D12 — Conectores escondidos: a URL direta também fecha.
+  if (section === 'connectors' && !isFeatureVisible('connectorsSelfService')) {
+    return <Navigate to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
+  }
   if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
     return <Navigate to={preservarVolta('/settings/company', searchParams)} replace />
   }
@@ -160,7 +166,7 @@ export function SettingsPage() {
   const blockLabel = HARD_BLOCK_LABELS[section]
 
   return (
-    <SettingsLayout currentRole={user?.role ?? 'admin'} multiPipeline={multiPipeline}>
+    <SettingsLayout currentRole={user?.role ?? 'admin'} multiPipeline={multiPipeline} fullWidth={section === 'connectors'}>
       {/* Faixa de retorno — só aparece para quem chegou de um contexto de
           trabalho (`?voltarPara=`). Quem entrou por Configurações não vê nada:
           ali a tela É o destino, e um "voltar" apontando para lugar nenhum

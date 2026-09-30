@@ -29,7 +29,7 @@ import {
   listAvailableTemplates,
   type BatchAttachResult,
 } from '@/services/agentSkillsApi'
-import { DynamicSchemaFormFields } from '@/components/admin/DynamicSchemaFormFields'
+import { DynamicSchemaFormFields } from '@/components/shared/DynamicSchemaFormFields'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import type { SkillTemplate, JsonSchemaObject } from '@/types/skills'
 import { cn } from '@/lib/utils'
