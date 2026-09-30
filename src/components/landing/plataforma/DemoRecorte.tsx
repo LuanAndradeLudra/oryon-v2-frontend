@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { Bandeja } from '../stage/hero/HeroSatelites'
 import { HeroFoco, medirNoIframe, useFocoDaDemo } from '../stage/hero/HeroFoco'
 import { useHeroTimeline, type HeroCue } from '../stage/hero/useHeroTimeline'
-import type { HeroCena, HeroState } from '../stage/hero/heroStory'
+import { HERO_ROTAS, type HeroCena, type HeroState } from '../stage/hero/heroStory'
 
 /**
  * O RECORTE — um "plano de detalhe" da Oryon real, para as seções da página.
@@ -179,7 +179,7 @@ function PosterDaDemo({ rota }: { rota: string }) {
 }
 
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
+  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, pausado = false, manterMontado = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
 }: {
   titulo: string
   /** Rota em que o app nasce. */
@@ -195,6 +195,11 @@ export function DemoRecorte({
   /** A base da região some num degradê — para regiões que cortam uma lista
    *  (o funil): o card que continua embaixo lê como "tem mais", não como erro. */
   esmaecerBase?: boolean
+  /** A história fica parada (aba escondida): o app continua montado e pronto. */
+  pausado?: boolean
+  /** Não desmonta ao sair da tela: as abas de "Como funciona" (30/09) trocam
+   *  de história no MESMO app — remontar custava ~1,3 s por troca. */
+  manterMontado?: boolean
   /** A largura máxima da moldura (px) para este viewport — o pai compõe a grade com ela. */
   onLimite?: (px: number) => void
   /** Altura da tela reservada ao que fica fora do recorte (cabeçalho, frase do
@@ -212,7 +217,10 @@ export function DemoRecorte({
   // ── Montar perto da tela, UM POR VEZ (filaDeMontagem); desmontar depois que sai ─
   const [montar, setMontar] = useState(() => typeof IntersectionObserver === 'undefined')
   const [pronta, setPronta] = useState(false)
+  const [trocando, setTrocando] = useState(false)
   const pedidoRef = useRef<number | null>(null)
+  const manterRef = useRef(manterMontado)
+  manterRef.current = manterMontado
   useEffect(() => {
     const el = hostRef.current
     if (!el || typeof IntersectionObserver === 'undefined') return
@@ -230,6 +238,7 @@ export function DemoRecorte({
         pedidoRef.current = pedirMontagem(false, () => { montado = true; setMontar(true) })
       } else {
         if (!montado && pedidoRef.current !== null) { cancelarMontagem(pedidoRef.current); pedidoRef.current = null; return }
+        if (manterRef.current) return
         sair = setTimeout(() => {
           if (pedidoRef.current !== null) cancelarMontagem(pedidoRef.current)
           pedidoRef.current = null
@@ -256,6 +265,7 @@ export function DemoRecorte({
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== location.origin || !iframeRef.current || e.source !== iframeRef.current.contentWindow) return
       const d = e.data as { canal?: string; tipo?: string }
+      if (d?.canal === CANAL && d.tipo === 'pintou') setTrocando(false)
       if (d?.canal === CANAL && d.tipo === 'pronta') {
         setPronta(true)
         // A montagem terminou: libera a vez para o próximo recorte.
@@ -269,7 +279,7 @@ export function DemoRecorte({
 
   // ── A mini-história do bloco ───────────────────────────────────────────────
   const { state, composition, index } = useHeroTimeline<HeroState, HeroCena>({
-    cues, tailMs: 900, hostRef, staticIndex: cues.length - 1, enabled: pronta,
+    cues, tailMs: 900, hostRef, staticIndex: cues.length - 1, enabled: pronta && !pausado,
   })
   useEffect(() => {
     if (pronta) iframeRef.current?.contentWindow?.postMessage({ canal: CANAL, tipo: 'passo', estado: state, cena: composition }, location.origin)
@@ -328,7 +338,38 @@ export function DemoRecorte({
   }, [])
   const escala = tela > 0 ? tela / regiao.w : 0.7
 
-  const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}`)
+  // TROCA DE HISTÓRIA no mesmo app (abas): o recorte muda na hora, mas a tela
+  // nova ainda está navegando lá dentro — um apagar curto esconde o quadro
+  // intermediário (a tela anterior no enquadramento novo). Volta quando o app
+  // avisa que pintou a rota nova, ou em 450 ms (mesma rota: não há aviso).
+  const chaveHistoria = `${recorte.x},${recorte.y},${recorte.w},${recorte.h}|${cues[0]?.composition ?? ''}`
+  const historiaAnterior = useRef(chaveHistoria)
+  useEffect(() => {
+    if (historiaAnterior.current === chaveHistoria) return
+    historiaAnterior.current = chaveHistoria
+    setTrocando(true)
+    // A tela nova aparece assim que a rota dela está no app (medido: 200–300 ms
+    // depois do clique, no build de produção) e o texto já mudou; teto de 600 ms.
+    const cena = cues[0]?.composition
+    const alvo = cena && cena !== 'reinicio' ? new URL(HERO_ROTAS[cena], 'http://x').pathname : null
+    const inicio = performance.now()
+    const textoAntes = iframeRef.current?.contentDocument?.body?.innerText ?? ''
+    let quadro = 0
+    const checar = () => {
+      const w = iframeRef.current?.contentWindow as (Window & { __demoRota?: () => string }) | null | undefined
+      const rota = w?.__demoRota ? new URL(w.__demoRota(), 'http://x').pathname : null
+      const texto = iframeRef.current?.contentDocument?.body?.innerText ?? ''
+      const chegou = (!alvo || rota === alvo) && texto !== textoAntes
+      if (chegou || performance.now() - inicio > 600) { setTrocando(false); return }
+      quadro = requestAnimationFrame(checar)
+    }
+    quadro = requestAnimationFrame(checar)
+    return () => cancelAnimationFrame(quadro)
+  }, [chaveHistoria])
+
+  // `modo=recorte`: o app das abas troca para QUALQUER tela também no celular
+  // (no Hero, o celular só navega entre conversa e negócio).
+  const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}&modo=recorte`)
 
   return (
     <div className={cn('w-full', className)} style={style}>
@@ -346,11 +387,11 @@ export function DemoRecorte({
                   src={src}
                   title={`Oryon em demonstração: ${titulo}`}
                   tabIndex={-1}
-                  className="absolute left-0 top-0 border-0 origin-top-left transition-opacity duration-500"
+                  className="absolute left-0 top-0 border-0 origin-top-left transition-opacity duration-150"
                   style={{
                     width: app.w, height: app.h,
                     transform: `translate(${-regiao.x * escala}px, ${-regiao.y * escala}px) scale(${escala})`,
-                    opacity: pronta ? 1 : 0,
+                    opacity: pronta && !trocando ? 1 : 0,
                     colorScheme: 'normal',
                   }}
                 />

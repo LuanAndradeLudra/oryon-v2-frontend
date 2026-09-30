@@ -125,7 +125,10 @@ function emitirTransicao(de: HeroState, para: HeroState) {
  */
 function rotaDa(cena: Exclude<HeroCena, 'reinicio'>): string | null {
   const celular = window.innerWidth < 768
-  if (!celular) return HERO_ROTAS[cena]
+  // Recortes da landing (30/09: um app só atende as seis abas de "Como
+  // funciona"): cada aba pede a sua tela, inclusive no celular.
+  const recorte = new URLSearchParams(location.search).get('modo') === 'recorte'
+  if (!celular || (recorte && cena !== 'funil')) return HERO_ROTAS[cena]
   if (cena === 'conversa') return HERO_ROTAS.conversa
   if (cena === 'funil') return `${HERO_ROTAS.funil}?deal=demo-deal-0`
   return null

@@ -423,7 +423,7 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
   )
 }
 
-function ArtigoRecurso({ b, n, registrar, semRotulo = false }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void; semRotulo?: boolean }) {
+function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = false }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void; semRotulo?: boolean; manterMontado?: boolean }) {
   const h = HISTORIAS[b.id]
   const arranjo = COMPOSICAO[b.id]
   const ref = useRef<HTMLElement | null>(null)
@@ -479,6 +479,15 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false }: { b: Bloco; n: nu
   const passoSemTela: HeroState = b.id === 'funil' ? 'avanco' : h.estado
   // O passo da mini-história da tela — os cartões ao lado reagem a ele.
   const [passo, setPasso] = useState<HeroState>(h.estado)
+  // Outra etapa no mesmo artigo (abas da home): a mini-história recomeça.
+  const blocoAnterior = useRef(b.id)
+  useEffect(() => {
+    if (blocoAnterior.current === b.id) return
+    blocoAnterior.current = b.id
+    setPasso(h.estado)
+    setCiclo(0)
+    setCenaAtual(h.cues[0].composition ?? 'conversa')
+  }, [b.id, h])
   const [ciclo, setCiclo] = useState(0)
   const [cenaAtual, setCenaAtual] = useState<HeroCena>(h.cues[0].composition ?? 'conversa')
   const onPasso = useCallback((estado: HeroState, cena: HeroCena, indice: number) => {
@@ -521,12 +530,15 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false }: { b: Bloco; n: nu
       <div ref={composicaoRef} data-composicao-recurso className="grid shrink-0 gap-4 sm:gap-5"
         style={{ width: largura || '100%', zoom: escala, ...(colunas ? { gridTemplateColumns: colunas, gap: VAO } : {}) }}>
         {/* A operação, na tela. */}
-        {!semTela && (
-        <Revelar atraso={0.1} className="min-w-0 self-start">
+        {/* Com manterMontado (abas da home), a tela nunca sai da árvore: nas
+            etapas sem tela (celular) ela só fica escondida e parada — o MESMO
+            app atende as seis abas, e sair dele custaria remontá-lo (~1,3 s). */}
+        {(!semTela || manterMontado) && (
+        <Revelar atraso={0.1} className={cn('min-w-0 self-start', semTela && 'hidden')}>
           {/* Embaixo, a tela nunca passa do tamanho real do app (1×) nem de
               1000 px: com só o teto de 1000 px, o funil (região estreita) saía
               a 1,3× — maior e mais cortado que as outras telas da página. */}
-          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto' : undefined} style={arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} esmaecerBase={b.id === 'funil'} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
+          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto' : undefined} style={arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} esmaecerBase={b.id === 'funil'} pausado={semTela} manterMontado={manterMontado} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
             foraDoRecorte={aoLado ? 330 : 170} />
         </Revelar>
         )}
@@ -798,9 +810,14 @@ export function SecaoComoFunciona() {
           ))}
         </div>
 
-        {/* Remonta ao trocar de aba: a demonstração da etapa recomeça. */}
+        {/* Troca de aba SEM remontar (30/09, PO): o artigo é um só e a
+            demonstração dentro dele é o mesmo app — trocar de etapa é mandar
+            outra história para ele (troca de rota lá dentro, como um clique no
+            menu). Antes cada aba montava o app do zero (~1,3 s de espera, medido
+            no build de produção), e carregar as seis juntas custaria ~6× a
+            memória de uma demonstração. */}
         <div id="etapa-painel" role="tabpanel" aria-labelledby={`etapa-aba-${b.id}`} className="mt-8">
-          <ArtigoRecurso key={b.id} b={b} n={idx + 1} registrar={NOOP_REGISTRO} semRotulo />
+          <ArtigoRecurso b={b} n={idx + 1} registrar={NOOP_REGISTRO} semRotulo manterMontado />
           {pagina && (
             <Link to={rotaPlataforma(pagina.slug)} className="mt-6 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
               {home.comoFunciona.saibaMais}: {pagina.menu} <ArrowRight className="h-3.5 w-3.5" aria-hidden />

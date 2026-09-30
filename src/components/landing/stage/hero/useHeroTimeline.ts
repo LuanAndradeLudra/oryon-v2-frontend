@@ -141,7 +141,7 @@ export function useHeroTimeline<S extends string, C extends string>(
   const restante = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!running) return
+    if (!running || index >= cues.length) return
     const atual = cues[index]
     const proximo = cues[index + 1]
     const cheio = Math.max(120, (proximo ? proximo.t - atual.t : total - atual.t))
@@ -163,6 +163,17 @@ export function useHeroTimeline<S extends string, C extends string>(
   // Trocar de cue por outro caminho (replay) descarta qualquer saldo pendente.
   useEffect(() => { restante.current = null }, [runId])
 
+  // HISTÓRIA NOVA com o mesmo relógio (30/09: uma demonstração só para as
+  // abas de "Como funciona"): outra lista de cues recomeça do primeiro.
+  const cuesAnteriores = useRef(cues)
+  useEffect(() => {
+    if (cuesAnteriores.current === cues) return
+    cuesAnteriores.current = cues
+    restante.current = null
+    setIndex(0)
+    setRunId((n) => n + 1)
+  }, [cues])
+
   const togglePause = useCallback(() => setPaused((p) => !p), [])
   const restart = useCallback(() => { restante.current = null; setIndex(0); setPaused(false); setRunId((n) => n + 1) }, [])
   const irPara = useCallback((i: number) => {
@@ -171,7 +182,9 @@ export function useHeroTimeline<S extends string, C extends string>(
     setRunId((n) => n + 1)
   }, [cues.length])
 
-  const efetivo = canAnimate ? index : staticIndex
+  // Limitado à lista atual: no render em que a história troca, o índice da
+  // anterior ainda não foi zerado.
+  const efetivo = Math.min(canAnimate ? index : staticIndex, cues.length - 1)
 
   /**
    * Cada camada vale até ser trocada: o cue que move só a câmera não mexe no
