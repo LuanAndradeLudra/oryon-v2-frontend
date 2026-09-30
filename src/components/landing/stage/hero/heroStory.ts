@@ -144,7 +144,7 @@ export const HERO_CAPITULOS: readonly HeroCapitulo[] = [
   },
   {
     id: 'funil',
-    titulo: 'Funil em dia',
+    titulo: 'A venda avança',
     valor: 'A IA move o negócio para a próxima etapa, e a equipe acompanha tudo no quadro.',
     cue: idx((c) => c.composition === 'funil'),
   },
@@ -187,7 +187,7 @@ export function batidaDe(estado: HeroState, cena: HeroCena): string {
     case 'demanda': return 'A Marina pede um horário com a Dra. Helena'
     case 'resposta': return 'A IA responde com valor, convênio e horários usando os dados da clínica'
     case 'confirma': return 'A Marina escolhe quinta às 14h30'
-    case 'situacao': return 'A IA atualiza a situação da Marina no CRM'
+    case 'situacao': return 'A IA atualiza a situação da Marina no cadastro'
     case 'etiqueta': return 'A IA adiciona a etiqueta "retorno" à conversa'
     case 'avanco': return 'O atendimento já está em Agendado'
     case 'pedido': return 'Marina pede ajuda para conseguir um encaixe'
