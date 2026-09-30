@@ -325,13 +325,15 @@ export const resposta = {
 
 export const implantacao = {
   eyebrow: 'Implantação',
-  title: 'Sua operação no ar em até 7 dias.',
-  titleCinza: 'O prazo começa depois que a Meta libera o número.',
+  // Ciclo noturno (30/09): a objeção de quem não é de tecnologia vem primeiro;
+  // o prazo continua com a ressalva da Meta.
+  title: 'Você não precisa entender de tecnologia.',
+  titleCinza: 'Nossa equipe configura a Oryon com você, em até 7 dias depois que a Meta libera o número.',
   passos: [
     {
       quem: 'Você',
-      titulo: 'Prepare o número de atendimento',
-      texto: 'Você informa o número e conclui a autorização na Meta. A Oryon se conecta pela API oficial do WhatsApp Business.',
+      titulo: 'Escolha o número',
+      texto: 'Você escolhe o número de WhatsApp que vai atender e conclui a liberação na Meta, a empresa dona do WhatsApp.',
       entregas: [
         'Número que será usado no atendimento',
         'Conta aprovada pela Meta para a API oficial',
@@ -341,7 +343,7 @@ export const implantacao = {
     {
       quem: 'Nós',
       titulo: 'Configuramos a Oryon',
-      texto: 'Nossa equipe configura a plataforma de acordo com o jeito que sua empresa vende e atende.',
+      texto: 'Cadastramos suas informações, montamos as etapas de venda e definimos quando o agente chama a sua equipe.',
       entregas: [
         'Agentes IA com instruções, conhecimento e catálogo',
         'Funis com as etapas do seu atendimento',
@@ -350,8 +352,8 @@ export const implantacao = {
     },
     {
       quem: 'Juntos',
-      titulo: 'Teste antes de ativar',
-      texto: 'Você conversa com o agente no chat de teste, ajusta o que for preciso e só então ativa o atendimento no seu número.',
+      titulo: 'Teste antes de ligar',
+      texto: 'Você conversa com o agente como se fosse um cliente, pede os ajustes e só então ele passa a atender no seu número.',
       entregas: [
         'Cenários de teste antes da ativação',
         'Respostas e capacidades ajustadas com a sua equipe',
@@ -385,7 +387,7 @@ export const implantacao = {
 export const perguntas = {
   eyebrow: 'Perguntas',
   title: 'Dúvidas comuns antes de começar.',
-  titleCinza: 'Respostas sobre implantação, IA e WhatsApp.',
+  titleCinza: 'Respostas diretas.',
   // A página já demonstra boa parte do produto. O FAQ fica restrito às dez
   // objeções residuais que alguém precisa resolver antes de avançar.
   grupos: [
@@ -519,7 +521,7 @@ export const home = {
   /** A faixa de fatos logo depois do Hero — só o que dá para afirmar hoje. */
   fatos: [
     { key: 'oficial', titulo: 'WhatsApp oficial para empresas', texto: 'Conexão fornecida pela Meta, dona do WhatsApp.' },
-    { key: 'prazo', titulo: 'No ar em até 7 dias', texto: 'Nossa equipe configura tudo com você.' },
+    { key: 'prazo', titulo: 'No ar em até 7 dias', texto: 'Depois que a Meta libera o seu número.' },
     { key: 'controle', titulo: 'Sua equipe no comando', texto: 'Você define o que a IA faz e quando uma pessoa assume.' },
   ],
   /** A dor e a virada (ciclo noturno, 30/09): o que acontece hoje no WhatsApp
