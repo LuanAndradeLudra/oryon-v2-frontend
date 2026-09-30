@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { AuthBrandMark, AuthBrandPanel } from './AuthBrandPanel'
 import { RotatingWord } from './RotatingWord'
-import { ThemeToggleButton } from './ThemeToggleButton'
+import { useSomenteEscuro } from '@/hooks/useSomenteEscuro'
 
 /**
  * Moldura das telas de autenticação (login, esqueci, redefinir).
@@ -10,15 +10,16 @@ import { ThemeToggleButton } from './ThemeToggleButton'
  *    formulário de 480px à direita.
  *  - <lg : coluna única, marca em cima e o formulário num card; SEM palco (o
  *    componente nem monta — nada de chunk do palco no celular).
- * Só tokens: o tema vem das variáveis, não de ternário. O toggle de tema fica no
- * canto SUPERIOR direito (o pill inferior colidia com o teclado do celular).
+ * Só tokens: o tema vem das variáveis, não de ternário.
+ * 30/09 (PO): as telas de acesso são SÓ ESCURAS, como a landing — sem o botão
+ * de alternar tema.
  */
 export function AuthLayout({ children }: { children: ReactNode }) {
+  useSomenteEscuro()
   const isLarge = useMediaQuery('(min-width: 1024px)')
   return (
     <div className="min-h-[100dvh] w-full flex bg-surface-950">
       <h1 className="sr-only">Oryon</h1>
-      <ThemeToggleButton className="fixed z-50 top-[calc(0.75rem+env(safe-area-inset-top))] right-3" />
 
       {isLarge && <AuthBrandPanel />}
 
