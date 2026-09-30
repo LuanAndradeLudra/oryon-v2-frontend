@@ -98,7 +98,7 @@ export function ContactProfileHeader({
           onClick={onBack}
           title={backLabel}
           aria-label={backLabel}
-          className="mt-0.5 p-2 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0 cursor-pointer"
+          className="mt-0.5 p-2 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -108,7 +108,7 @@ export function ContactProfileHeader({
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           {/* Linha 1 — identidade */}
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h1 className={cn('font-display font-semibold text-surface-50 truncate', compact ? 'text-base' : 'text-xl')}>
+            <h1 className="font-display text-base font-bold tracking-[-0.01em] text-surface-50 truncate">
               {contact.displayName || contact.waId}
             </h1>
             {onStageChanged ? (
@@ -196,7 +196,7 @@ export function ContactProfileHeader({
           {window24h && (
             <span
               title={window24h.detail}
-              className="color-chip hidden sm:inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+              className="color-chip-soft hidden sm:inline-flex items-center gap-1 rounded-xs border px-2 py-0.5 text-[11px] font-semibold"
               style={{ ['--chip']: WINDOW_CHIP[window24h.state] } as React.CSSProperties}
             >
               <MessageCircle className="w-3 h-3" />
@@ -207,7 +207,7 @@ export function ContactProfileHeader({
               O acento de marca com sombra colorida pesava demais para uma ação
               que convive com "Conversar" e com o menu de funis: as três agora
               são sóbrias, e a hierarquia fica na ordem, não na cor. */}
-          <Button size="sm" variant="secondary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
+          <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
             Conversar
           </Button>
           {/* A3 (SCRUM-925): ação primária da ficha — criar negócio deixa de
@@ -216,7 +216,7 @@ export function ContactProfileHeader({
           {salesPipeline && (
             <Button
               size="sm"
-              variant="secondary"
+              variant="neutral"
               leftIcon={<Handshake className="w-3.5 h-3.5" />}
               onClick={() => addToPipeline.requestAdd({
                 contactId: contact.id,
@@ -238,11 +238,11 @@ export function ContactProfileHeader({
           {addToPipeline.dialogs}
           {!compact && (
             <>
-              <Button size="sm" variant="secondary" leftIcon={<StickyNote className="w-3.5 h-3.5" />} onClick={onAddNote}>
+              <Button size="sm" variant="neutral" leftIcon={<StickyNote className="w-3.5 h-3.5" />} onClick={onAddNote}>
                 Nota
               </Button>
               {onAddTask && (
-                <Button size="sm" variant="secondary" leftIcon={<CalendarClock className="w-3.5 h-3.5" />} onClick={onAddTask}>
+                <Button size="sm" variant="neutral" leftIcon={<CalendarClock className="w-3.5 h-3.5" />} onClick={onAddTask}>
                   Tarefa
                 </Button>
               )}
@@ -258,9 +258,9 @@ export function ContactProfileHeader({
                 aria-label="Mais ações"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="p-2 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all cursor-pointer"
+                className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all cursor-pointer"
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <MoreHorizontal className="w-[15px] h-[15px]" />
               </button>
             }
           >
@@ -289,7 +289,8 @@ export function ContactProfileHeader({
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => { setConfirmDelete(false); void onDelete() }}
         title="Excluir contato"
-        description={`Esta ação é irreversível. O contato "${contact.displayName || contact.waId}" e todo o seu histórico serão excluídos permanentemente.`}
+        impact={{ label: `O contato "${contact.displayName || contact.waId}" e todo o seu histórico serão excluídos permanentemente`, tone: 'danger' }}
+        description="Esta ação é irreversível."
         confirmLabel="Excluir contato"
         danger
       />

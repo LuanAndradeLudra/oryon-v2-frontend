@@ -6,18 +6,21 @@ import { appLogger } from '@/services/appLogger'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Drawer } from '@/components/ui/Drawer'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
 import { api } from '@/services/api'
+import { useAuth } from '@/contexts/AuthContext'
+import { isOwnerTier } from '@/lib/roleHelpers'
 
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Equipe Oryon',
-  business_admin: 'Business Admin',
+  business_admin: 'Dono',
   admin:      'Administrador',
   supervisor: 'Supervisor',
-  agent:      'Usuário',
+  agent:      'Agente',
 }
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -61,7 +64,7 @@ function Stepper({ current }: { current: number }) {
             <div className="flex items-center gap-1.5">
               <div className={cn(
                 'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-colors',
-                active ? 'bg-brand-600 text-surface-950' : done ? 'bg-brand-900/40 text-brand-400' : 'bg-surface-800 text-surface-600',
+                active ? 'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)]' : done ? 'bg-accent-soft text-accent-dark' : 'bg-surface-800 text-surface-600',
               )}>
                 {done ? <Check className="w-2.5 h-2.5" /> : n}
               </div>
@@ -80,6 +83,10 @@ function Stepper({ current }: { current: number }) {
 
 export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerProps) {
   const [step, setStep] = useState(1)
+  // O backend só aceita `role` no convite vindo do dono; um admin que o
+  // enviava (sempre, com padrão "agent") recebia 403 no fim dos 3 passos.
+  const { user: autor } = useAuth()
+  const podeDefinirPapel = isOwnerTier(autor?.role)
   const [departments, setDepartments] = useState<Department[]>([])
 
   const [s1, setS1] = useState<Step1Data>({ firstName: '', lastName: '', email: '', departmentId: '' })
@@ -91,12 +98,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // ESC to close
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    if (open) document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
 
   // Load departments
   useEffect(() => {
@@ -171,7 +172,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
         firstName:    s1.firstName.trim(),
         lastName:     s1.lastName.trim(),
         email:        s1.email.trim(),
-        role:         s2.role,
+        ...(podeDefinirPapel ? { role: s2.role } : {}),
         departmentId: s1.departmentId || undefined,
       })
       appLogger.logWizardEvent({
@@ -208,49 +209,38 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     }
   }
 
+  // Com algo digitado, Esc e clique fora não fecham (antes o Esc no
+  // document descartava o formulário inteiro): sai-se pelo Cancelar.
+  const sujo = !!(s1.firstName.trim() || s1.lastName.trim() || s1.email.trim() || s1.departmentId)
+
   // Review helpers
   const deptName = departments.find((d) => d.id === s1.departmentId)?.name ?? '—'
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 z-40"
-            onClick={onClose}
-          />
-
-          {/* Drawer panel */}
-          <motion.div
-            key="drawer"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-[520px] bg-surface-950 border-l overlay-frame z-50 flex flex-col"
-          >
+    // Primitivo Drawer: entra na pilha do useLayer (z-index e Esc em ordem de
+    // montagem), role="dialog" e foco devolvido ao fechar — antes era um
+    // fixed z-40/z-50 feito à mão, fora da pilha.
+    <Drawer
+      open={open}
+      onClose={onClose}
+      side="right"
+      dismissible={!sujo}
+      ariaLabel="Criar usuário"
+      className="w-full max-w-[520px] bg-surface-950"
+    >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-surface-700 flex-shrink-0">
               <div>
                 <h2 className="text-base font-semibold text-surface-100">Criar usuário</h2>
                 <p className="text-xs text-surface-400 mt-0.5">Um convite por e-mail será enviado automaticamente</p>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 text-surface-500 hover:text-surface-200 hover:bg-surface-800 rounded-lg transition-colors"
-              >
+              <Button variant="ghost" size="sm" iconOnly onClick={onClose} aria-label="Fechar">
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
 
             {/* Stepper */}
-            <div className="px-6 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="px-6 py-4 border-b border-surface-700 flex-shrink-0">
               <Stepper current={step} />
             </div>
 
@@ -347,14 +337,20 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                   >
                     {/* Role */}
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500 mb-3">Papel (Role)</p>
-                      <div className="flex flex-col gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500 mb-3">Papel</p>
+                      {!podeDefinirPapel && (
+                        <p className="text-sm text-surface-300 leading-relaxed">
+                          O convidado entra como <strong className="text-surface-100">{ROLE_LABELS.agent}</strong> ({ROLE_DESCRIPTIONS.agent.toLowerCase()}).
+                          Só o dono do negócio escolhe outro papel.
+                        </p>
+                      )}
+                      {podeDefinirPapel && <div className="flex flex-col gap-2">
                         {(['admin', 'supervisor', 'agent'] as UserRole[]).map((role) => (
                           <label
                             key={role}
                             className={cn(
-                              'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors',
-                              s2.role === role ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-800 hover:border-surface-700',
+                              'flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors',
+                              s2.role === role ? 'border-brand-500 bg-accent-soft' : 'border-surface-700 hover:bg-[var(--rowhover)]',
                             )}
                           >
                             <input
@@ -370,7 +366,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                             </div>
                           </label>
                         ))}
-                      </div>
+                      </div>}
                     </div>
                   </motion.div>
                 )}
@@ -388,7 +384,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Revisão</p>
 
                     {/* User data summary */}
-                    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
+                    <div className="border-y border-surface-700 py-4">
                       <p className="text-xs font-semibold text-surface-500 mb-3">Dados do usuário</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -407,11 +403,11 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     </div>
 
                     {/* Role summary */}
-                    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
+                    <div className="border-y border-surface-700 py-4">
                       <p className="text-xs font-semibold text-surface-500 mb-3">Acesso</p>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-surface-500">Papel</p>
-                        <p className="text-sm text-surface-100 mt-0.5">{ROLE_LABELS[s2.role]}</p>
+                        <p className="text-sm text-surface-100 mt-0.5">{ROLE_LABELS[podeDefinirPapel ? s2.role : 'agent']}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -421,7 +417,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             </div>
 
             {/* Footer */}
-            <div className="border-t border-surface-800 flex-shrink-0">
+            <div className="border-t border-surface-700 flex-shrink-0">
               {submitError && step === 3 && (
                 <p role="alert" className="px-6 pt-3 text-xs text-danger">{submitError}</p>
               )}
@@ -453,9 +449,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
               )}
               </div>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </Drawer>
   )
 }

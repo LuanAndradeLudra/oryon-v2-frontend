@@ -2,15 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Brain, Bot, BarChart2, Sparkles,
   Globe, Instagram, Facebook, Linkedin, Twitter, Phone,
-  UploadCloud, FileText, FileImage, File, X, Loader2, CheckCircle2, AlertCircle, RefreshCw,
+  UploadCloud, FileText, FileImage, File, X, CheckCircle2, AlertCircle, RefreshCw,
 } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
+import { Textarea } from '@/components/ui/Textarea'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast, showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -55,7 +55,7 @@ function PillToggle({ label, selected, onClick }: { label: string; selected: boo
       onClick={onClick}
       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
         selected
-          ? 'bg-brand-600 border-brand-500 text-surface-950 shadow-sm shadow-brand-900/40'
+          ? 'bg-accent-soft border-brand-500/40 text-accent-dark'
           : 'bg-surface-800 border-surface-700 text-surface-300 hover:border-surface-600 hover:text-surface-100'
       }`}
     >
@@ -69,11 +69,11 @@ function UsedByBadges() {
     <div className="flex items-center flex-wrap gap-2">
       <span className="text-xs text-surface-500">Alimenta automaticamente:</span>
       {[
-        { icon: Sparkles,  label: 'Copilot',       color: 'text-brand-400 bg-brand-500/10 border-brand-500/25' },
-        { icon: Bot,       label: 'Agent Builder', color: 'text-status-active bg-status-active-bg border-status-active-border' },
-        { icon: BarChart2, label: 'CRM Setup',     color: 'text-status-pending bg-status-pending-bg border-status-pending-border' },
-      ].map(({ icon: Icon, label, color }) => (
-        <span key={label} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${color}`}>
+        { icon: Sparkles,  label: 'Copilot',       chip: 'var(--color-brand-500)' },
+        { icon: Bot,       label: 'Agent Builder', chip: 'var(--color-success)' },
+        { icon: BarChart2, label: 'CRM Setup',     chip: 'var(--color-warning)' },
+      ].map(({ icon: Icon, label, chip }) => (
+        <span key={label} className="color-chip-soft inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[11px] font-medium border" style={{ ['--chip']: chip } as React.CSSProperties}>
           <Icon className="w-3 h-3" />{label}
         </span>
       ))}
@@ -132,7 +132,7 @@ function AnalysisProgress() {
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1 bg-surface-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-brand-600 to-brand-400 rounded-full transition-all duration-1000 ease-out"
+            className="h-full bg-brand-500 rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -246,10 +246,13 @@ function BrandFilesSection({
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onClick={() => inputRef.current?.click()}
-        className={`flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
+        // Eixo 10: surface-800 é branco no claro — a 40/70% de opacidade a
+        // zona quase some contra o fundo da página. --sf2/--rowhover têm
+        // valor dedicado nos dois temas.
+        className={`flex items-center gap-3 rounded-md border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
           dragOver
-            ? 'border-brand-500 bg-brand-500/8'
-            : 'border-surface-700 bg-surface-800/40 hover:border-surface-600 hover:bg-surface-800/70'
+            ? 'border-brand-500 bg-accent-soft'
+            : 'border-surface-700 bg-[var(--sf2)] hover:border-surface-600 hover:bg-[var(--rowhover)]'
         }`}
       >
         <input ref={inputRef} type="file" multiple accept={ACCEPTED_ATTR} className="sr-only" onChange={handleInput} />
@@ -269,7 +272,7 @@ function BrandFilesSection({
         <div className="mt-3 space-y-2">
           {entries.map(({ file, status, error: fileError }) => (
             <div key={file.id}>
-              <div className="flex items-start gap-3 rounded-xl bg-surface-800/60 border border-surface-700/60 px-3 py-2.5">
+              <div className="flex items-start gap-3 rounded-sm border border-surface-700 px-3 py-2.5">
                 <div className="flex-shrink-0 mt-0.5">{fileIcon(file.mimeType)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -301,14 +304,14 @@ function BrandFilesSection({
                         else { setEditingId(file.id); setEditText(file.extractedText ?? '') }
                       }}
                       title="Ver/Editar texto"
-                      className="p-1 rounded-lg text-surface-600 hover:text-brand-400 hover:bg-surface-700 transition"
+                      className="p-1 rounded-sm text-surface-600 hover:text-brand-400 hover:bg-[var(--rowhover)] transition"
                     >
                       {editingId === file.id ? <X className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
                     </button>
                     <button
                       type="button"
                       onClick={() => setRemoveTarget(file.id)}
-                      className="p-1 rounded-lg text-surface-600 hover:text-red-400 hover:bg-surface-700 transition"
+                      className="p-1 rounded-sm text-surface-600 hover:text-danger hover:bg-[var(--rowhover)] transition"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -350,6 +353,7 @@ function BrandFilesSection({
         onClose={() => setRemoveTarget(null)}
         onConfirm={remove}
         title="Remover arquivo da marca"
+        impact={{ label: `Arquivo ${entries.find(e => e.file.id === removeTarget)?.file.name ?? ''}`.trim(), tone: 'danger' }}
         description="O arquivo será removido do contexto da empresa. Salve para confirmar a remoção permanente."
         confirmLabel="Remover arquivo"
         danger
@@ -362,7 +366,7 @@ function BrandFilesSection({
 
 export function CompanyBrain() {
   const { user } = useAuth()
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const [form, setForm] = useState<CompanyHubData>({ ...DEFAULT_HUB })
   const [fetching, setFetching] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -419,10 +423,10 @@ export function CompanyBrain() {
       />
 
       {/* Status banner */}
-      <div className={`flex items-center gap-3 rounded-xl px-4 py-3 mb-4 border ${
-        hasContent ? 'bg-status-active-bg border-status-active-border' : 'bg-brand-950/50 border-brand-500/20'
+      <div className={`flex items-center gap-3 rounded-sm px-4 py-3 mb-4 border ${
+        hasContent ? 'bg-status-active-bg border-status-active-border' : 'bg-accent-soft border-brand-500/30'
       }`}>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+        <div className={`w-7 h-7 rounded-xs flex items-center justify-center flex-shrink-0 ${
           hasContent ? 'bg-status-active-bg' : 'bg-brand-500/20'
         }`}>
           <Brain className={`w-3.5 h-3.5 ${hasContent ? 'text-status-active' : 'text-brand-400'}`} />
@@ -492,12 +496,12 @@ export function CompanyBrain() {
               label="O que você faz?"
               hint="Missão, público-alvo e principais diferenciais."
             >
-              <textarea
+              <Textarea
                 value={form.description}
                 onChange={e => patch({ description: e.target.value })}
                 placeholder="Ex: Plataforma de atendimento via WhatsApp para PMEs. Centralizamos conversas, automatizamos follow-ups e ajudamos equipes a fechar mais negócios..."
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+                className="resize-none"
               />
             </FormField>
 
@@ -505,12 +509,12 @@ export function CompanyBrain() {
               label="Produtos e serviços"
               hint="Liste o que você vende, com preços e detalhes para atendimento."
             >
-              <textarea
+              <Textarea
                 value={form.productsServices}
                 onChange={e => patch({ productsServices: e.target.value })}
                 placeholder={`Plano Starter — R$199/mês (até 3 usuários)\nPlano Pro — R$499/mês (usuários ilimitados)\nImplementação — a partir de R$2.000`}
                 rows={4}
-                className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+                className="resize-none"
               />
             </FormField>
         </div>
@@ -549,7 +553,7 @@ export function CompanyBrain() {
         description="PDFs, DOCX, imagens e textos são lidos pela IA e o conteúdo alimenta o Copilot e os agentes."
       >
         <div className="flex justify-end mb-2">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 font-medium">Analisado por IA</span>
+          <span className="color-chip-soft text-[10px] px-2 py-0.5 rounded-xs border font-medium" style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}>Analisado por IA</span>
         </div>
         <BrandFilesSection
           files={form.brandFiles ?? []}
@@ -580,7 +584,6 @@ export function CompanyBrain() {
         <Button onClick={save} loading={loading} disabled={fetching}>Salvar contexto</Button>
       </div>
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

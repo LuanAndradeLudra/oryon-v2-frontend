@@ -16,6 +16,7 @@ import {
   User as UserIcon,
   Bell,
   Handshake,
+  Calendar,
   type LucideIcon,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -49,6 +50,7 @@ const SECTIONS: Section[] = [
       { href: '/team', label: 'Nexus', description: 'Chat interno da equipe', Icon: MessagesSquare },
       { href: '/dashboard', label: 'Dashboard', description: 'KPIs e relatorios', Icon: BarChart3 },
       { href: '/campaigns', label: 'Disparos', description: 'Campanhas em massa', Icon: Send },
+      { href: '/schedule', label: 'Agendamentos', description: 'Agenda semanal (exemplo)', Icon: Calendar },
       { href: '/marketing', label: 'Marketing', description: 'Meta Ads e funil', Icon: Megaphone },
       { href: '/automations', label: 'Automacoes', description: 'Fluxos automaticos', Icon: Workflow },
       { href: '/agents', label: 'Agentes IA', description: 'Assistentes autonomos', Icon: Bot },
@@ -76,7 +78,7 @@ function ItemRow({ item }: { item: Item }) {
   return (
     <Link
       to={item.href}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-surface-900 transition-colors"
+      className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors"
     >
       <div className="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
         <item.Icon className="w-5 h-5 text-surface-300" />
@@ -121,7 +123,7 @@ export function MorePage() {
       <div className="flex-1 overflow-y-auto">
         {/* User card */}
         {user && (
-          <div className="px-4 py-4 border-b border-surface-800">
+          <div className="px-4 py-4 border-b border-surface-700">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0">
                 <UserIcon className="w-6 h-6 text-surface-950" />
@@ -138,7 +140,7 @@ export function MorePage() {
 
         {/* Sections */}
         {visibleSections.map((section) => (
-          <div key={section.label} className="border-b border-surface-800/60 py-1">
+          <div key={section.label} className="border-b border-surface-700 py-1">
             <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
               {section.label}
             </p>
@@ -151,13 +153,13 @@ export function MorePage() {
         ))}
 
         {/* Settings rapidas + logout */}
-        <div className="border-b border-surface-800/60 py-1">
+        <div className="border-b border-surface-700 py-1">
           <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
             Voce
           </p>
           <Link
             to="/settings/notifications"
-            className="flex items-center gap-3 px-4 py-3 hover:bg-surface-900 transition-colors"
+            className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors"
           >
             <div className="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
               <Bell className="w-5 h-5 text-surface-300" />

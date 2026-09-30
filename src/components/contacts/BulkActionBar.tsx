@@ -10,6 +10,9 @@ import type { Contact, Tag } from '@/types'
 
 interface BulkActionBarProps {
   count: number
+  /** Total do filtro atual (servidor). Deixa claro que a seleção cobre só o
+   *  que está carregado — P7: alcance honesto em ação de massa. */
+  total?: number
   selectedContacts: Contact[]
   tags: Tag[]
   onMoveStage: (stage: string) => void
@@ -18,12 +21,17 @@ interface BulkActionBarProps {
   onCreateCampaign?: () => void
   onDelete?: () => void
   onClear: () => void
+  /** CONT-FOOTER-02 (spec/1c-contatos.GAPS.md): renderiza como uma linha
+   *  dentro do rodapé da tabela (40px) em vez da pílula flutuante — mesmas
+   *  ações, só sem `fixed`/sombra/borda própria (o rodapé já tem as dele). */
+  inline?: boolean
 }
 
 type HoveredSub = 'addTag' | 'removeTag' | null
 
 export function BulkActionBar({
   count,
+  total,
   selectedContacts,
   tags,
   onMoveStage,
@@ -32,6 +40,7 @@ export function BulkActionBar({
   onCreateCampaign,
   onDelete,
   onClear,
+  inline = false,
 }: BulkActionBarProps) {
   const { stages } = useCRMConfig()
   const [stageMenuOpen, setStageMenuOpen] = useState(false)
@@ -129,20 +138,27 @@ export function BulkActionBar({
 
   return (
     <motion.div
-      initial={{ y: 60, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 60, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      initial={inline ? false : { y: 60, opacity: 0 }}
+      animate={inline ? false : { y: 0, opacity: 1 }}
+      exit={inline ? undefined : { y: 60, opacity: 0 }}
+      transition={inline ? undefined : { type: 'spring', stiffness: 400, damping: 30 }}
       className={cn(
-        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-        'overlay-surface border rounded-xl',
-        'flex items-center gap-2 pl-4 pr-2 py-2',
+        'flex items-center gap-2',
+        inline
+          ? 'text-xs text-surface-400'
+          : 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-xl pl-4 pr-2 py-2',
       )}
     >
-      <div className="text-sm text-surface-200">
-        <span className="font-semibold text-brand-300">{count}</span>
+      <div className={inline ? 'text-xs text-surface-100 font-semibold' : 'text-sm text-surface-200'}>
+        {!inline && <span className="font-semibold text-brand-300">{count}</span>}
+        {inline && <>{count}</>}
         {' '}
         {count === 1 ? 'selecionado' : 'selecionados'}
+        {/* PL-2-2 (P7): "selecionar todos" marca só o que está carregado. Dizer o
+            total do filtro evita a ação em massa parecer maior do que é. */}
+        {typeof total === 'number' && total > count && (
+          <span className="text-surface-500"> de {total.toLocaleString('pt-BR')} no filtro</span>
+        )}
       </div>
 
       <div className="h-5 w-px bg-surface-700" />

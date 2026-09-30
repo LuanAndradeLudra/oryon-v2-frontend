@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Columns, SlidersHorizontal, Workflow, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { StagesManager } from '@/components/settings/sections/crm/StagesManager'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
@@ -58,7 +58,7 @@ export function CRMConfigDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40"
+            className="fixed inset-0 bg-[var(--color-scrim-soft)]"
             style={{ zIndex }}
             onClick={onClose}
           />
@@ -73,14 +73,15 @@ export function CRMConfigDrawer({
             style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-base font-semibold text-surface-50">Configurar CRM</h2>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Configurar CRM</h2>
                 <p className="text-xs text-surface-500 mt-0.5">Situação do contato e campos personalizados</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                aria-label="Fechar"
+                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -98,7 +99,7 @@ export function CRMConfigDrawer({
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         active
-                          ? 'bg-surface-700 text-surface-50 shadow-sm'
+                          ? 'bg-surface-900 text-surface-50'
                           : 'text-surface-400 hover:text-surface-200'
                       }`}
                     >
@@ -128,13 +129,14 @@ export function CRMConfigDrawer({
                       é só em Configurações.
                     </p>
                   </div>
-                  <Link
+                  <LinkComVolta
                     to="/settings/pipeline-stages"
+                    rotulo="Voltar para Leads"
                     onClick={onClose}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
                   >
                     Ir para Configurações → Funis <ArrowUpRight className="w-3.5 h-3.5" />
-                  </Link>
+                  </LinkComVolta>
                 </div>
               )}
               {currentTab === 'fields' && <CustomFieldsManager />}

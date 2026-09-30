@@ -102,6 +102,7 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
           checked={!!pipeline.allowMultipleOpen}
           onChange={handleMultipleChange}
           disabled={!canManage || savingMultiple}
+          aria-label="Várias propostas abertas por contato"
         />
       </div>
 

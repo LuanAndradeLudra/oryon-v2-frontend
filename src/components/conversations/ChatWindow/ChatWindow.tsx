@@ -7,13 +7,14 @@ import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
 import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed, SocketMediaReady, SocketMessageStatus } from '@/types'
+import { msRestantesDaJanela } from '@/lib/whatsappWindow'
 
 interface ChatWindowProps {
   conversation: Conversation | null
   allTags: Tag[]
   allUsers: User[]
   /** F10 (SCRUM-882): `dealOutcome` chega junto com `resolved` quando o atendente registrou o desfecho. */
-  onStatusChange: (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | Promise<void>
+  onStatusChange: (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | boolean | Promise<void | boolean>
   onToggleInfo: () => void
   infoOpen: boolean
   onAddTag: (convId: string, tag: Tag) => void
@@ -28,6 +29,8 @@ interface ChatWindowProps {
   /** Phase 34 — "Intervir agora": pause using the agent's configured handoff
    *  window (duration resolved server-side). */
   onInterveneAi?: (convId: string) => Promise<void> | void
+  /** 28/09 — "Assumir" único (botão e tecla R), vindo da página. */
+  onAssumir?: () => void
   /** Phase 27 — invoked when the backend emits 'conversation:ai-pause-updated'. */
   onAiPauseSocketEvent?: (payload: SocketAiPauseUpdated) => void
   /**
@@ -52,7 +55,7 @@ export function ChatWindow({
   onStatusChange, onToggleInfo, infoOpen,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
   onAssign, onTransfer, onArchive,
-  onSetAiPause, onInterveneAi, onAiPauseSocketEvent,
+  onSetAiPause, onInterveneAi, onAiPauseSocketEvent, onAssumir,
   onSendError, sendBlockedReason,
   onBack,
 }: ChatWindowProps) {
@@ -81,8 +84,6 @@ export function ChatWindow({
     const socket = getSocket()
     const handleNew = (payload: SocketMessageNew) => {
       if (payload.conversationId === conversation.id && payload.message) {
-        // Temporary: log incoming message type to aid debugging (can be removed after reaction support is validated)
-        console.debug('[socket:message:new]', { type: payload.message.type, wamid: payload.message.wamid, payload })
         addIncomingMessage(payload.message)
       }
     }
@@ -123,12 +124,31 @@ export function ChatWindow({
   const handleStatusChange = async (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => {
     if (!conversation) return
     if (conversation.status === status) return
-    await onStatusChange(conversation.id, status, dealOutcome)
+    return onStatusChange(conversation.id, status, dealOutcome)
   }
 
-  const windowOpen = conversation
-    ? Date.now() - new Date(conversation.lastMessageAt).getTime() < 86_400_000
-    : false
+  // Janela de 24h do WhatsApp contada da última mensagem DO CLIENTE (28/09 —
+  // antes era de `lastMessageAt`, de qualquer remetente: prazo inflado quando a
+  // IA falava depois do cliente, e texto livre liberado logo após um modelo,
+  // que a Meta recusa). O relógio anda a cada minuto: a janela fecha sozinha
+  // com o chat aberto.
+  const [agora, setAgora] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setAgora(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
+  const windowLeftMs = conversation
+    ? msRestantesDaJanela({
+        conversationId: conversation.id,
+        mensagens: messages,
+        carregando: loading,
+        temMais: hasMore,
+        lastMessageAt: conversation.lastMessageAt,
+        lastMessageSenderKind: conversation.lastMessageSenderKind,
+        now: agora,
+      })
+    : 0
+  const windowOpen = windowLeftMs > 0
 
   if (!conversation) {
     // Estado vazio como CENTRO DE COMANDO — o espaço morto vira onboarding
@@ -137,26 +157,26 @@ export function ChatWindow({
     const shortcuts = [
       { keys: ['J', 'K'], label: 'navegar na fila' },
       { keys: ['E'],      label: 'resolver e pular p/ a próxima' },
-      { keys: ['R'],      label: 'atribuir a mim' },
+      { keys: ['R'],      label: 'assumir (atribui a você e pausa a IA)' },
       { keys: ['/'],      label: 'respostas rápidas ao digitar' },
     ]
     return (
       <div className="chat-shell-bg flex-1 flex flex-col items-center justify-center gap-6 px-8">
-        <div className="w-16 h-16 rounded-2xl bg-brand-600/10 ring-1 ring-brand-500/15 flex items-center justify-center">
-          <MessageSquare className="w-8 h-8 text-brand-500/70" />
+        <div className="w-12 h-12 rounded-xl bg-accent-soft flex items-center justify-center">
+          <MessageSquare className="w-6 h-6 text-accent-dark" />
         </div>
         <div className="text-center">
-          <p className="text-surface-100 font-display font-bold text-lg">Pronto para atender</p>
-          <p className="text-surface-500 text-sm mt-1">
+          <p className="text-surface-100 font-display font-bold text-[15px] tracking-[-0.01em]">Pronto para atender</p>
+          <p className="text-surface-400 text-xs leading-[1.5] mt-1">
             Escolha uma conversa na lista — ou triage direto pelo teclado
           </p>
         </div>
         <div className="hidden md:grid grid-cols-2 gap-x-8 gap-y-2.5">
           {shortcuts.map((s) => (
-            <div key={s.label} className="flex items-center gap-2.5 text-xs text-surface-500">
+            <div key={s.label} className="flex items-center gap-2.5 text-xs text-surface-400">
               <span className="flex items-center gap-1">
                 {s.keys.map((k) => (
-                  <kbd key={k} className="min-w-[22px] px-1.5 py-1 rounded-md bg-surface-800 border border-surface-700 text-surface-300 font-mono text-[11px] text-center leading-none">
+                  <kbd key={k} className="min-w-[22px] px-1.5 py-1 rounded-xs bg-[var(--sf2)] border border-[var(--bd2)] text-surface-300 font-mono text-[11px] text-center leading-none">
                     {k}
                   </kbd>
                 ))}
@@ -191,6 +211,7 @@ export function ChatWindow({
         onArchive={() => onArchive(conversation.id)}
         onSetAiPause={(until) => onSetAiPause(conversation.id, until)}
         onInterveneAi={onInterveneAi ? () => onInterveneAi(conversation.id) : undefined}
+        onAssumir={onAssumir}
         onBack={onBack}
       />
       {/* 2px peripheral status strip — emerald when AI is responding, amber
@@ -204,11 +225,17 @@ export function ChatWindow({
         hasMore={hasMore}
         onLoadMore={fetchMore}
         onReply={setReplyTo}
+        contact={conversation.contact}
       />
+      {/* key por conversa (28/09): sem ela o rascunho, os anexos e o
+          "modelo enviado" sobreviviam à troca de conversa — digitar em A,
+          apertar J e Enviar mandava o texto para B. */}
       <MessageInput
+        key={conversation.id}
         onSend={handleSendWithErrorReporting}
         contactId={conversation.contact.id}
         windowOpen={windowOpen}
+        windowHoursLeft={Math.max(1, Math.ceil(windowLeftMs / 3_600_000))}
         blockedReason={sendBlockedReason}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}

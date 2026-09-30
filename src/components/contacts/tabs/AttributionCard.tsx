@@ -40,7 +40,7 @@ export function AttributionCard({ contact }: Props) {
   if (!meta && !google) return null
 
   return (
-    <div className="rounded-xl border overflow-hidden"
+    <div className="rounded-lg border overflow-hidden"
       style={{ borderColor: meta ? '#1877f230' : '#EA433530' }}>
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-2.5"

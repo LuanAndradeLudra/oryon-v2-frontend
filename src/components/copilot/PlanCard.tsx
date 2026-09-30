@@ -39,7 +39,7 @@ function PlanCardImpl({ plan, toolCalls }: PlanCardProps) {
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="my-3 rounded-xl border border-surface-700/60 bg-surface-900/40 p-2 text-sm"
+      className="my-3 rounded-lg border border-surface-700/60 bg-surface-900/40 p-2 text-sm"
     >
       {/* Outer header — rationale + counter + toggle */}
       <button

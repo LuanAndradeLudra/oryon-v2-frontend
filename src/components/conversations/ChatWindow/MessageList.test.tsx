@@ -38,7 +38,7 @@ function renderList(messages: Message[]) {
   return render(
     <ContextMenuProvider>
       <MediaViewerProvider>
-        <MessageList messages={messages} loading={false} hasMore={false} onLoadMore={() => {}} />
+        <MessageList messages={messages} loading={false} hasMore={false} onLoadMore={() => {}} contact={{ displayName: 'Maria' }} />
       </MediaViewerProvider>
     </ContextMenuProvider>,
   )

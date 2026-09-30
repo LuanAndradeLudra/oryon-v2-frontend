@@ -1,0 +1,10 @@
+/*
+ * iOS aumenta a página ao focar um campo com fonte menor que 16 px. Enquanto a
+ * página do agente (ou a lista) estiver aberta no celular, todo campo usa 16 px
+ * — inclusive os dos modais, que são renderizados fora da página.
+ */
+@media (max-width: 767px) {
+  body:has(.pagina-agente) :is(input:not([type='checkbox']):not([type='radio']):not([type='file']), textarea, select) {
+    font-size: 16px;
+  }
+}

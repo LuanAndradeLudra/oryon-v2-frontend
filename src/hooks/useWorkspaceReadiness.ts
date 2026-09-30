@@ -47,11 +47,22 @@ let cachedSnapshot: WorkspaceReadinessSnapshot | null = null
 let inFlight: Promise<WorkspaceReadinessSnapshot> | null = null
 const subscribers = new Set<() => void>()
 
+/** O backend manda `/settings/pipelines`, que não é seção de Configurações
+ *  (caía calado na primeira seção). A seção dos funis é `pipeline-stages`.
+ *  Corrigir também no backend (SCRUM-1161). */
+const LINKS_CORRIGIDOS: Record<string, string> = { '/settings/pipelines': '/settings/pipeline-stages' }
+function corrigirLinks(snap: WorkspaceReadinessSnapshot): WorkspaceReadinessSnapshot {
+  return {
+    ...snap,
+    checks: snap.checks.map((c) => (c.cta && LINKS_CORRIGIDOS[c.cta.href] ? { ...c, cta: { ...c.cta, href: LINKS_CORRIGIDOS[c.cta.href] } } : c)),
+  }
+}
+
 async function fetchSnapshot(): Promise<WorkspaceReadinessSnapshot> {
   if (inFlight) return inFlight
   inFlight = api.get<WorkspaceReadinessSnapshot>('/workspace/readiness')
     .then((r) => {
-      cachedSnapshot = r.data ?? EMPTY_SNAPSHOT
+      cachedSnapshot = corrigirLinks(r.data ?? EMPTY_SNAPSHOT)
       subscribers.forEach((fn) => fn())
       return cachedSnapshot
     })

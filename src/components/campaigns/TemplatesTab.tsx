@@ -1,5 +1,6 @@
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Eye, Pencil, Trash2, Clock, CheckCircle2, XCircle, PauseCircle, AlertCircle, Loader2, RefreshCw, Copy, FileText } from 'lucide-react'
+import { Plus, Search, Eye, Pencil, Trash2, AlertCircle, Loader2, RefreshCw, Copy, FileText } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -9,10 +10,10 @@ import { cn } from '@/lib/utils'
 import { templatesApi } from '@/services/api'
 import { TemplateCreator } from './TemplateCreator'
 import { TemplatePreview } from './TemplatePreview'
-import { CATEGORY_LABELS } from './constants'
-import { ConfirmModal } from '@/components/ui/Modal'
+import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
+import { ConfirmModal, Modal } from '@/components/ui/Modal'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
-import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
 import { AssignWabaModal } from '@/components/common/AssignWabaModal'
 import { DuplicateTemplateModal } from '@/components/common/DuplicateTemplateModal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
@@ -20,12 +21,24 @@ import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequ
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { WhatsAppTemplate, TemplateStatus } from '@/types'
 
-const STATUS_CONFIG: Record<TemplateStatus, { label: string; chip: string; icon: React.ComponentType<{ className?: string }> }> = {
-  PENDING:  { label: 'Em análise',  chip: 'var(--color-status-pending)',  icon: Clock },
-  APPROVED: { label: 'Aprovado',    chip: 'var(--color-status-active)', icon: CheckCircle2 },
-  REJECTED: { label: 'Rejeitado',   chip: 'var(--color-danger)', icon: XCircle },
-  PAUSED:   { label: 'Pausado',     chip: 'var(--color-status-muted)', icon: PauseCircle },
-  DISABLED: { label: 'Desativado',  chip: 'var(--color-danger)', icon: AlertCircle },
+// `chip`/`icon` por status saíram junto com o `.color-chip` sólido — o chip
+// virou STATUS_CHIP_CLASS (TPL-05), sem ícone.
+const STATUS_CONFIG: Record<TemplateStatus, { label: string }> = {
+  PENDING:  { label: 'Em análise' },
+  APPROVED: { label: 'Aprovado' },
+  REJECTED: { label: 'Rejeitado' },
+  PAUSED:   { label: 'Pausado' },
+  DISABLED: { label: 'Desativado' },
+}
+
+// TPL-05 (spec 2c): chip suave (fundo tinta + texto colorido), sem ícone —
+// mesmo padrão do statusChip de CampaignsTab.tsx, chip "Aprovado · Meta".
+const STATUS_CHIP_CLASS: Record<TemplateStatus, string> = {
+  APPROVED: 'color-chip-soft border [--chip:var(--color-status-active)]',
+  PENDING:  'color-chip-soft border [--chip:var(--color-status-pending)]',
+  REJECTED: 'color-chip-soft border [--chip:var(--color-danger)]',
+  PAUSED:   'bg-surface-900 border border-surface-700 text-surface-400',
+  DISABLED: 'color-chip-soft border [--chip:var(--color-danger)]',
 }
 
 const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
@@ -36,14 +49,19 @@ const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
   { value: 'PAUSED',   label: 'Pausados' },
 ]
 
-export function TemplatesTab() {
+const lerStatusModelo = lerUmDe(['all', 'PENDING', 'APPROVED', 'REJECTED', 'PAUSED', 'DISABLED'] as const, 'all')
+
+export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) => void } = {}) {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<TemplateStatus | 'all'>('all')
+  // Busca, status, linha e o modelo em prévia na URL (regra do PO).
+  const [search, setSearch] = useEstadoNaUrl<string>('busca', { padrao: '' })
+  const [statusFilter, setStatusFilter] = useEstadoNaUrl<TemplateStatus | 'all'>('status', { padrao: 'all', ler: lerStatusModelo })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<WhatsAppTemplate | null>(null)
-  const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null)
+  const [previewId, setPreviewId] = useEstadoNaUrl<string>('modelo', { padrao: '' })
+  const previewTemplate = previewId ? templates.find((t) => t.id === previewId) ?? null : null
+  const setPreviewTemplate = (t: WhatsAppTemplate | null) => setPreviewId(t?.id ?? '')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [metaLoadWarning, setMetaLoadWarning] = useState<string | null>(null)
@@ -54,7 +72,13 @@ export function TemplatesTab() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [assignWabaTarget, setAssignWabaTarget] = useState<WhatsAppTemplate | null>(null)
   const [duplicateTarget, setDuplicateTarget] = useState<WhatsAppTemplate | null>(null)
-  const [lineFilter, setLineFilter] = useState<LineFilterValue>('all')
+  const [lineFilter, setLineFilter] = useEstadoNaUrl<LineFilterValue>('linha', { padrao: 'all' })
+  // Responsivo: o painel de detalhe (abaixo) só aparece a partir de `lg`
+  // (1024px, mesmo breakpoint do `hidden lg:block` dele). Abaixo disso não
+  // sobra NENHUM jeito de ver a prévia do modelo — o modal de prévia antigo
+  // saiu junto com o redesenho da lista+painel — então essa media query
+  // decide quando abrir a mesma <TemplateDetail> dentro de um Modal.
+  const belowLg = useMediaQuery('(max-width: 1023px)')
   // Show the "duplicate to line" action only in multi-WABA tenants —
   // single-line tenants have nowhere else to clone to.
   const { numbers: waLines, loading: waLoading } = useWorkspaceNumber()
@@ -89,6 +113,9 @@ export function TemplatesTab() {
   }, [])
 
   useEffect(() => { fetchTemplates() }, [fetchTemplates])
+
+  // SCRUM-1106 (tela 2c): contagem no rótulo da aba, no CampaignsPage.
+  useEffect(() => { onCountChange?.(templates.length) }, [templates.length, onCountChange])
 
   const handleSync = async () => {
     setSyncing(true)
@@ -149,6 +176,20 @@ export function TemplatesTab() {
     return true
   })
 
+  // Compartilhado entre o painel fixo (≥lg) e o Modal (<lg, abaixo) — mesmo
+  // componente, mesmas props, só o contêiner muda por viewport.
+  const detailContent = (
+    <TemplateDetail
+      template={previewTemplate}
+      canEdit={previewTemplate ? canEditTemplate(previewTemplate) : false}
+      onEdit={() => { if (previewTemplate) { setEditing(previewTemplate); setDrawerOpen(true) } }}
+      onDelete={() => { if (previewTemplate) setDeleteTarget(previewTemplate.id) }}
+      onAssignWaba={() => { if (previewTemplate) setAssignWabaTarget(previewTemplate) }}
+      onDuplicate={waLines.length > 1 && previewTemplate ? () => setDuplicateTarget(previewTemplate) : undefined}
+      deleting={!!previewTemplate && deleting === previewTemplate.id}
+    />
+  )
+
   return (
     <div className="flex flex-col h-full">
       {/* WhatsApp gate banner */}
@@ -162,15 +203,18 @@ export function TemplatesTab() {
         <Banner variant="warning" className="mx-5 mt-4">{metaLoadWarning}</Banner>
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
-        <div className="relative flex-1 max-w-xs">
+      {/* Toolbar. flex-wrap (mesmo achado do KpiGrid.tsx/SCRUM-1070): busca +
+          SegmentedControl + LineFilterChip + 2 botões não cabem em 390px sem
+          quebrar linha — sem isto o container cortava o botão fora da tela
+          em vez de rolar. */}
+      <div className="flex items-center gap-3 flex-wrap px-5 py-4 border-b border-surface-700 flex-shrink-0">
+        <div className="relative flex-1 max-w-xs min-w-[160px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar template..."
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-3 text-xs text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
           />
         </div>
 
@@ -204,63 +248,72 @@ export function TemplatesTab() {
         </Button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5">
-        {loading ? (
-          <SkeletonList items={4} />
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="Nenhum template encontrado"
-            action={
-              templates.length === 0 && hasWhatsappLine
-                ? { label: 'Criar primeiro template', onClick: () => { setEditing(null); setDrawerOpen(true) } }
-                : undefined
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 gap-3">
-            {filtered.map((tpl) => (
-              <TemplateCard
-                key={tpl.id}
-                template={tpl}
-                onPreview={() => setPreviewTemplate(tpl)}
-                onEdit={() => { setEditing(tpl); setDrawerOpen(true) }}
-                canEdit={canEditTemplate(tpl)}
-                onDelete={() => setDeleteTarget(tpl.id)}
-                onAssignWaba={() => setAssignWabaTarget(tpl)}
-                onDuplicate={waLines.length > 1 ? () => setDuplicateTarget(tpl) : undefined}
-                deleting={deleting === tpl.id}
+      {/* Conteúdo — lista + detalhe (SCRUM-1097, 22/09).
+          A grade de 4 cards saiu: os gerenciadores de modelo do mercado
+          (Twilio Content Template Builder, WhatsApp Manager da própria Meta)
+          são LISTA com busca e filtros, não mosaico de prévias. A prévia não
+          se perde — ganha um painel fixo à direita, que mostra o modelo
+          inteiro em vez do pedaço que cabia dentro do card. */}
+      <div className="flex-1 flex min-h-0">
+        <div className="flex-1 min-w-0 overflow-y-auto">
+          {loading ? (
+            <div className="p-5"><SkeletonList items={6} /></div>
+          ) : filtered.length === 0 ? (
+            <div className="p-5">
+              <EmptyState
+                icon={FileText}
+                title={templates.length === 0 ? 'Nenhum modelo ainda' : 'Nenhum modelo com esses filtros'}
+                hint={templates.length === 0
+                  ? 'Modelos são as mensagens aprovadas pela Meta que você pode disparar a qualquer momento.'
+                  : 'Ajuste a busca, o status ou a linha para ver mais.'}
+                action={
+                  templates.length === 0 && hasWhatsappLine
+                    ? { label: 'Criar primeiro modelo', onClick: () => { setEditing(null); setDrawerOpen(true) } }
+                    : templates.length > 0
+                      ? { label: 'Limpar filtros', onClick: () => { setSearch(''); setStatusFilter('all'); setLineFilter('all') } }
+                      : undefined
+                }
               />
-            ))}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div role="list">
+              {filtered.map((tpl) => (
+                <TemplateRow
+                  key={tpl.id}
+                  template={tpl}
+                  selecionado={previewTemplate?.id === tpl.id}
+                  onSelect={() => setPreviewTemplate(tpl)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Painel de detalhe. Ponto de quebra em `lg` (1024), não `xl`: medi
+            em 1240px — largura de notebook comum — e com `xl` o painel sumia
+            e, como o modal de prévia saiu, NÃO sobrava jeito nenhum de ver o
+            modelo. Abaixo de 1024 o painel vira Modal (ver `belowLg` abaixo
+            — achado da responsividade, R2/T7). */}
+        <div className="hidden lg:block w-[360px] xl:w-[392px] flex-none border-l border-surface-700 overflow-y-auto bg-surface-900">
+          {detailContent}
+        </div>
       </div>
 
-      {/* Template Preview Modal */}
-      {previewTemplate && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-          onClick={() => setPreviewTemplate(null)}
-        >
-          <div
-            className="bg-surface-900 rounded-2xl border border-surface-800 p-6 max-w-sm w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-surface-100">{previewTemplate.name}</h3>
-              <button
-                onClick={() => setPreviewTemplate(null)}
-                aria-label="Fechar"
-                className="p-1 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
-              >
-                ×
-              </button>
-            </div>
-            <TemplatePreview template={previewTemplate} />
-          </div>
-        </div>
-      )}
+      {/* Abaixo de lg não há painel lateral (some via `hidden lg:block` acima)
+          — sem isto, tablet/celular não tinham NENHUM jeito de ver a prévia
+          do modelo (o antigo modal de prévia foi removido no redesenho da
+          lista+painel). Mesmo <TemplateDetail>, sem mudar o visual dele —
+          só o contêiner muda de painel fixo pra modal. */}
+      <Modal
+        open={belowLg && !!previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        title={<span className="sr-only">Detalhe do modelo</span>}
+        aria-label="Detalhe do modelo"
+        bodyClassName="p-0"
+        className="max-w-md"
+      >
+        {detailContent}
+      </Modal>
 
       {deleteError && (
         <Banner variant="danger" className="mx-5 mb-2">{deleteError}</Banner>
@@ -272,6 +325,10 @@ export function TemplatesTab() {
         onConfirm={handleDelete}
         title="Excluir template"
         description="O template será removido do Oryon e da Meta (quando possível). Campanhas que já usaram este template não são afetadas retroativamente."
+        impact={(() => {
+          const tpl = templates.find((t) => t.id === deleteTarget)
+          return tpl ? { label: `Template "${tpl.name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Excluir template"
         danger
         loading={!!deleting}
@@ -305,117 +362,144 @@ export function TemplatesTab() {
   )
 }
 
-function TemplateCard({
-  template,
-  onPreview,
-  onEdit,
-  onDelete,
-  onAssignWaba,
-  onDuplicate,
-  canEdit,
-  deleting,
-}: {
+/** Trecho do corpo em uma linha — ajuda a reconhecer o modelo sem abri-lo,
+ *  que era a única vantagem real da grade de prévias. */
+function resumoCorpo(body: string): string {
+  return body.replace(/\*(.*?)\*/g, '$1').replace(/\s+/g, ' ').trim()
+}
+
+function TemplateRow({ template, selecionado, onSelect }: {
   template: WhatsAppTemplate
-  onPreview: () => void
+  selecionado: boolean
+  onSelect: () => void
+}) {
+  const cfg = STATUS_CONFIG[template.status]
+  return (
+    <button
+      role="listitem"
+      onClick={onSelect}
+      aria-current={selecionado}
+      className={cn(
+        'w-full flex items-center gap-2.5 h-11 px-4 border-b border-surface-700 text-left transition-colors',
+        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500 focus-visible:-outline-offset-1',
+        selecionado ? 'bg-[var(--rowhover)]' : 'hover:bg-[var(--rowhover)]',
+      )}
+    >
+      {/* Barra de seleção: ocupa lugar sempre, para o texto não deslocar. */}
+      <span className={cn('w-[2px] h-5 rounded-full flex-none', selecionado ? 'bg-brand-500' : 'bg-transparent')} />
+      <TemplateCategoryTile category={template.category} size={22} />
+      {/* Medido ao vivo em 390px: max-w-210px fixo deixava só 22px pro
+          resumo (invisível na prática). Abaixo de sm o nome cede espaço
+          (55% da linha) pro resumo aparecer; a partir de sm volta aos
+          210px de sempre. */}
+      <span className="text-[12.5px] font-semibold text-surface-100 truncate max-w-[55%] sm:max-w-[210px] flex-none">
+        {template.name}
+      </span>
+      {/* Medido ao vivo: em 390px quem não cabe não é o nome (195px, já
+          abaixo do teto) — é o resumo, sem espaço sobrando ao lado do chip
+          de 74px. Opção (a) escolhida: resumo é reforço de reconhecimento,
+          a mensagem inteira já aparece no painel/Modal de detalhe. */}
+      <span className="hidden sm:block text-xs text-surface-500 truncate flex-1 min-w-0">{resumoCorpo(template.body)}</span>
+      {template.needsWabaAssignment && (
+        <AlertCircle className="w-3.5 h-3.5 text-warning flex-none" aria-label="Sem linha WhatsApp atribuída" />
+      )}
+      {/* Responsivo: idioma e data somem abaixo de `sm` (640) — nada de
+          fixo pra encolher sobrava na linha em 390px (soma das larguras
+          fixas passava de 300px antes mesmo do nome). Nome + resumo +
+          chip de status continuam sempre visíveis (o essencial). */}
+      <span className="hidden sm:block text-[11px] text-surface-500 tabular-nums flex-none w-12 text-right">{template.language}</span>
+      <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none w-[74px] justify-center', STATUS_CHIP_CLASS[template.status])}>
+        {cfg.label}
+      </span>
+      <span className="hidden sm:block text-[11px] text-surface-600 tabular-nums flex-none w-[62px] text-right">
+        {new Date(template.createdAt).toLocaleDateString('pt-BR')}
+      </span>
+    </button>
+  )
+}
+
+function LinhaMeta({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-3 py-1.5 border-t border-surface-700 first:border-t-0">
+      <span className="text-[11px] text-surface-500 w-[72px] flex-none">{rotulo}</span>
+      <span className="text-xs text-surface-200 min-w-0 truncate">{children}</span>
+    </div>
+  )
+}
+
+function TemplateDetail({ template, canEdit, onEdit, onDelete, onAssignWaba, onDuplicate, deleting }: {
+  template: WhatsAppTemplate | null
+  canEdit: boolean
   onEdit: () => void
   onDelete: () => void
   onAssignWaba: () => void
-  /** Only set in multi-WABA tenants — undefined hides the button. */
   onDuplicate?: () => void
-  canEdit: boolean
   deleting: boolean
 }) {
+  if (!template) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-2 px-6 text-center">
+        <Eye className="w-5 h-5 text-surface-600" />
+        <p className="text-xs text-surface-500">Selecione um modelo para ver como ele chega no WhatsApp.</p>
+      </div>
+    )
+  }
+  const cat = TEMPLATE_CATEGORIES[template.category]
   const cfg = STATUS_CONFIG[template.status]
-  const StatusIcon = cfg.icon
-
   return (
-    <div className="flex items-start gap-4 p-4 bg-surface-800/50 hover:bg-surface-800 border border-surface-800 rounded-xl transition-all group">
-      {/* Main info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-sm font-medium text-surface-100 font-mono">{template.name}</span>
-          <span
-            className="color-chip border flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
-            style={{ ['--chip']: cfg.chip } as React.CSSProperties}
-          >
-            <StatusIcon className="w-3 h-3" />
-            {cfg.label}
-          </span>
-          <span className="text-[11px] text-surface-500 bg-surface-700 px-2 py-0.5 rounded-full">
-            {CATEGORY_LABELS[template.category]}
-          </span>
-          <span className="text-[11px] text-surface-600">{template.language}</span>
-          {template.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
-          <WhatsappLineChip whatsappNumberId={template.whatsappNumberId} />
+    <div className="flex flex-col">
+      <div className="px-4 py-3.5 border-b border-surface-700 flex items-start gap-2.5">
+        <TemplateCategoryTile category={template.category} size={34} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold text-surface-50 truncate">{template.name}</p>
+          <p className="text-[11px] text-surface-500">{cat.label} · {template.language}</p>
         </div>
-
-        <p className="text-xs text-surface-400 line-clamp-2 mt-1">
-          {template.body}
-        </p>
-
-        {template.status === 'REJECTED' && template.rejectionReason && (
-          <p className="text-[11px] text-danger mt-1.5 flex items-start gap-1">
-            <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-            {template.rejectionReason}
-          </p>
-        )}
-
-        <div className="flex items-center gap-3 mt-2">
-          {template.bodyVariables && template.bodyVariables.length > 0 && (
-            <span className="text-[11px] text-surface-500">
-              {template.bodyVariables.length} variáve{template.bodyVariables.length === 1 ? 'l' : 'is'}
-            </span>
-          )}
-          {template.buttons && template.buttons.length > 0 && (
-            <span className="text-[11px] text-surface-500">
-              {template.buttons.length} botã{template.buttons.length === 1 ? 'o' : 'oes'}
-            </span>
-          )}
-          <span className="text-[11px] text-surface-600">
-            {new Date(template.createdAt).toLocaleDateString('pt-BR')}
-          </span>
-        </div>
+        <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none', STATUS_CHIP_CLASS[template.status])}>
+          {cfg.label}
+        </span>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        <button
-          onClick={onPreview}
-          aria-label="Preview"
-          className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-          title="Preview"
-        >
-          <Eye className="w-3.5 h-3.5" />
-        </button>
-        {canEdit && (
-          <button
-            onClick={onEdit}
-            aria-label="Editar"
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-            title="Editar"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
+      {template.status === 'REJECTED' && template.rejectionReason && (
+        <Banner variant="danger" className="mx-4 mt-3">{template.rejectionReason}</Banner>
+      )}
+
+      <div className="px-4 py-3">
+        <TemplatePreview template={template} />
+      </div>
+
+      <div className="px-4 pb-3">
+        <LinhaMeta rotulo="Categoria">{cat.label}</LinhaMeta>
+        <LinhaMeta rotulo="Idioma">{template.language}</LinhaMeta>
+        <LinhaMeta rotulo="Linha">
+          <WhatsappLineChip whatsappNumberId={template.whatsappNumberId} />
+        </LinhaMeta>
+        {template.bodyVariables && template.bodyVariables.length > 0 && (
+          <LinhaMeta rotulo="Variáveis">{template.bodyVariables.join(' · ')}</LinhaMeta>
+        )}
+        {template.buttons && template.buttons.length > 0 && (
+          <LinhaMeta rotulo="Botões">{template.buttons.map((b) => b.text).join(' · ')}</LinhaMeta>
+        )}
+        <LinhaMeta rotulo="Criado">{new Date(template.createdAt).toLocaleDateString('pt-BR')}</LinhaMeta>
+      </div>
+
+      <div className="px-4 pb-4 flex flex-wrap items-center gap-2">
+        {canEdit && <Button size="sm" variant="neutral" onClick={onEdit} leftIcon={<Pencil className="w-3.5 h-3.5" />}>Editar</Button>}
+        {template.needsWabaAssignment && (
+          <Button size="sm" variant="secondary" onClick={onAssignWaba} leftIcon={<FileText className="w-3.5 h-3.5" />}>Atribuir linha</Button>
         )}
         {onDuplicate && (
-          <button
-            onClick={onDuplicate}
-            aria-label="Duplicar para outra linha"
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-            title="Duplicar para outra linha"
-          >
-            <Copy className="w-3.5 h-3.5" />
-          </button>
+          <Button size="sm" variant="secondary" onClick={onDuplicate} leftIcon={<Copy className="w-3.5 h-3.5" />}>Duplicar</Button>
         )}
-        <button
+        <Button
+          size="sm"
+          variant="ghost"
+          className="ml-auto text-danger"
           onClick={onDelete}
           disabled={deleting}
-          aria-label="Excluir"
-          className="p-1.5 rounded-lg text-surface-500 hover:text-danger hover:bg-danger/10 transition-all"
-          title="Excluir"
+          leftIcon={deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
         >
-          {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-        </button>
+          Excluir
+        </Button>
       </div>
     </div>
   )

@@ -1,9 +1,11 @@
-import { Briefcase, Plus } from 'lucide-react'
+import { useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { Button } from '@/components/ui/Button'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { pipelineKindOf, defaultSalesPipeline, pipelineNoun } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
@@ -26,7 +28,19 @@ import type { Deal, Pipeline } from '@/types'
  * move o contato para OUTRO funil (desabilita os que ele já está, com "já
  * está · <etapa>"), então não some assim que existe 1 negócio.
  */
-export function DealsSummaryCard({ contactId, contactName }: { contactId: string; contactName: string }) {
+export function DealsSummaryCard({
+  contactId, contactName, onCountChange,
+}: {
+  contactId: string
+  contactName: string
+  /** Reauditoria de fidelidade (item 3, "Negócios N" na aba) — este card já
+   *  é o único lugar que busca os funis do contato na Visão Geral; em vez de
+   *  `ContactDetailPanel` chamar `useContactPipelines` de novo (subscrição
+   *  duplicada: fetch, socket `deal:changed` e listener de
+   *  `DEALS_INVALIDATE_EVENT`, tudo em dobro), ele só reporta a contagem pra
+   *  cima quando muda. */
+  onCountChange?: (count: number) => void
+}) {
   const { vocab } = useTenantVocab()
   const multiPipeline = useMultiPipeline()
   // Overview precisa mostrar algo mesmo no tenant legado de funil único —
@@ -34,6 +48,10 @@ export function DealsSummaryCard({ contactId, contactName }: { contactId: string
   const { enabled, deals, open, pipelines, pipelineOf } = useContactPipelines(contactId, contactName, { requireMultiPipeline: false })
   const addToPipeline = useAddToPipeline({ onCreated: () => {} })
   const salesPipeline = defaultSalesPipeline(pipelines)
+
+  useEffect(() => {
+    if (deals) onCountChange?.(deals.length)
+  }, [deals, onCountChange])
 
   if (!enabled) return null
 
@@ -85,14 +103,8 @@ export function DealsSummaryCard({ contactId, contactName }: { contactId: string
   ) : null
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-4">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
-          <Briefcase className="w-4 h-4 text-surface-400" />
-          <h4 className="text-sm font-semibold text-surface-100">{vocab.deals}</h4>
-        </div>
-        {addAction}
-      </div>
+    <>
+    <CollapsibleSection title={vocab.deals} storageKey="contact-drawer.deals" actions={addAction} className="border-t border-surface-700">
       {deals === null ? (
         <p className="text-xs text-surface-600">Carregando…</p>
       ) : isEmpty ? (
@@ -129,7 +141,8 @@ export function DealsSummaryCard({ contactId, contactName }: { contactId: string
           )}
         </div>
       )}
+    </CollapsibleSection>
       {addToPipeline.dialogs}
-    </div>
+    </>
   )
 }

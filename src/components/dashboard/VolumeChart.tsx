@@ -1,10 +1,12 @@
 import { memo } from 'react'
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
+  Tooltip,
 } from 'recharts'
 import { useChartColors } from '@/hooks/useChartColors'
-import type { VolumeDataPoint } from '@/types/dashboard'
+import type { DateRange, VolumeDataPoint } from '@/types/dashboard'
+import { baldeDeHoje, ESCOPO, volumeSeguePeriodo } from '@/lib/periodoDoPainel'
+import { EscopoDoCartao } from './EscopoDoCartao'
 
 function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null
@@ -24,36 +26,71 @@ function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 // memo + isAnimationActive={false}: sem isso o gráfico re-anima (~1s) a cada
 // re-render do DashboardPage, mesmo quando os dados não mudaram.
-export const VolumeChart = memo(function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
+//
+// SCRUM-1104 (tela 1b, "Conversas por hora"): o mock mostra colunas
+// empilhadas por hora com quebra Humano/IA — dado que este widget não tem
+// (o backend só expõe volume por dia, Recebidas/Enviadas). Portamos o
+// VOCABULÁRIO visual (header 40px, legenda com quadradinho de 8px, colunas
+// empilhadas) sobre o dado real existente, sem inventar granularidade nova.
+/** "2026-09-14" → "14/09": o eixo mostrava a data ISO crua. */
+function diaMes(iso: string): string {
+  return /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : iso
+}
+
+export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
+  data: VolumeDataPoint[]
+  /**
+   * O período da página (28/09: o seletor próprio do cartão saiu — eram dois
+   * controles para o mesmo estado). O backend manda sempre os últimos 7 dias:
+   * "Hoje" filtra aqui; 30 dias e "Este mês" mostram os 7 dias e dizem isso.
+   */
+  range?: DateRange
+}) {
   const C = useChartColors()
+  const chartData = range === 'today' ? data.filter((d) => d.date === baldeDeHoje()) : data
+  // R2-DASH-09 (canvas 1b, valores exatos): card sem padding próprio; header
+  // h40 px14 gap16 border-b; legenda gap14 11.5 --tx2; segmentado raio 6 borda --bd
+  // com células h24 px9 11.5/600 (ativa --sf2/--tx, demais --tx2 + border-left);
+  // corpo h170 padding 14/14/8.
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <p className="text-sm font-semibold text-surface-100">Volume de Mensagens</p>
-        <div className="flex items-center gap-4 text-xs text-surface-400">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 rounded inline-block" style={{ backgroundColor: C.brand }} />
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden h-full flex flex-col">
+      <div className="flex items-center h-10 px-3.5 gap-4 border-b border-surface-700 flex-shrink-0">
+        <p className="text-[13px] font-semibold text-surface-100">Volume de Mensagens</p>
+        <div className="flex items-center gap-3.5 text-[11.5px] text-surface-400">
+          <span className="inline-flex items-center gap-[5px]">
+            <span className="w-2 h-2 rounded-[2px] inline-block" style={{ backgroundColor: C.brand }} />
             Recebidas
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 rounded inline-block" style={{ backgroundColor: C.online }} />
+          <span className="inline-flex items-center gap-[5px]">
+            <span className="w-2 h-2 rounded-[2px] inline-block bg-[var(--bd2)]" />
             Enviadas
           </span>
         </div>
+        {!volumeSeguePeriodo(range) && <EscopoDoCartao className="ml-auto">{ESCOPO.seteDias}</EscopoDoCartao>}
       </div>
-      <div className="flex-1 min-h-0">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: C.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
-          <Tooltip content={<SimpleTooltip />} />
-          <Area type="monotone" dataKey="inbound" name="Recebidas" isAnimationActive={false}
-            stroke={C.brand} fill={C.brand} fillOpacity={0.08} strokeWidth={2} dot={false} />
-          <Area type="monotone" dataKey="outbound" name="Enviadas" isAnimationActive={false}
-            stroke={C.online} fill={C.online} fillOpacity={0.08} strokeWidth={2} dot={false} />
-        </AreaChart>
-      </ResponsiveContainer>
+      {/* Altura FIXA (26/09): com `flex-1` num cartão de altura indefinida, os
+          100% do ResponsiveContainer resolviam para zero e o gráfico sumia —
+          medido na demonstração da landing, mesmo layout do app. */}
+      <div className="h-[170px] flex-shrink-0 pt-3.5 px-3.5 pb-2">
+        {chartData.length === 0 ? (
+          // P6: gráfico vazio não desenha eixos em branco — "Hoje" pode não
+          // ter mensagem nenhuma ainda (dia começando, fora do horário).
+          <div className="h-full flex items-center justify-center text-[11.5px] text-surface-500">
+            Sem mensagens hoje ainda
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barGap={2}>
+              <XAxis dataKey="date" tickFormatter={diaMes} tick={{ fill: C.axis, fontSize: 10.5 }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip content={<SimpleTooltip />} cursor={{ fill: C.surface8, fillOpacity: 0.5 }} />
+              <Bar dataKey="inbound" name="Recebidas" stackId="volume" isAnimationActive={false}
+                fill={C.brand} radius={[0, 0, 0, 0]} maxBarSize={18} />
+              <Bar dataKey="outbound" name="Enviadas" stackId="volume" isAnimationActive={false}
+                fill="var(--bd2)" radius={[2, 2, 0, 0]} maxBarSize={18} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   )

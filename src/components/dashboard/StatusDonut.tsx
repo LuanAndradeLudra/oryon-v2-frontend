@@ -3,8 +3,10 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { chartTooltipProps } from './utils'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { StatusDistribution } from '@/types/dashboard'
+import { EscopoDoCartao } from './EscopoDoCartao'
 
-export const StatusDonut = memo(function StatusDonut({ data }: { data: StatusDistribution }) {
+/** `escopo`: o recorte, quando o cartão está numa tela com seletor de período. */
+export const StatusDonut = memo(function StatusDonut({ data, escopo }: { data: StatusDistribution; escopo?: string }) {
   const C = useChartColors()
   const SLICES = [
     { key: 'pending' as const,   label: 'Em Fila',     color: C.away    },
@@ -16,8 +18,11 @@ export const StatusDonut = memo(function StatusDonut({ data }: { data: StatusDis
   const total = slices.reduce((s, x) => s + x.value, 0)
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 h-full flex flex-col">
-      <p className="text-sm font-semibold text-surface-100 mb-3">Status das Conversas</p>
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
+      <div className="flex items-center gap-2 mb-3">
+        <p className="text-sm font-semibold text-surface-100">Status das Conversas</p>
+        {escopo && <EscopoDoCartao className="ml-auto">{escopo}</EscopoDoCartao>}
+      </div>
 
       <div className="relative flex-shrink-0">
         <ResponsiveContainer width="100%" height={160}>
@@ -41,7 +46,7 @@ export const StatusDonut = memo(function StatusDonut({ data }: { data: StatusDis
 
       <div className="flex flex-col gap-2 mt-3">
         {slices.map((s) => {
-          const pct = total > 0 ? ((s.value / total) * 100).toFixed(1) : '0.0'
+          const pct = total > 0 ? ((s.value / total) * 100).toFixed(1).replace('.', ',') : '0,0'
           return (
             <div key={s.name} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">

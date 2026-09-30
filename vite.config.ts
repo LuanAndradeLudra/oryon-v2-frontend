@@ -183,6 +183,38 @@ export default defineConfig({
     // to browsers — devs without Sentry don't accidentally serve sourcemaps
     // from the public dist.
     sourcemap: sentryAuthToken ? 'hidden' : false,
+    rollupOptions: {
+      // D13 (release 2026-09-29): a demonstração da landing (demo.html) fica
+      // fora desta release — só a entrada do app.
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
+      output: {
+        // O pedaço de ENTRADA do app (main-*.js) roda o bootstrap ao ser
+        // importado: monta o App inteiro no #root. O Rollup içava para ele
+        // módulos que o main.tsx/App.tsx importam direto (lib/emojiText, o
+        // modal do AdminMobileBlock…) — e as páginas preguiçosas (Disparos,
+        // Agentes IA…) passavam a importar main-*.js. No app é inofensivo (já
+        // carregou); na DEMONSTRAÇÃO, abrir Disparos subia o app real por cima
+        // e o Hero mostrava a Home. Medido no build de produção em 26/09.
+        // Regra: o que main.tsx/App.tsx importam direto vai para um pedaço
+        // próprio — a entrada fica só com o bootstrap.
+        manualChunks(id, { getModuleInfo }) {
+          const norm = id.replace(/\\/g, '/')
+          // Gráficos (recharts + d3) num pedaço só deles: o Rollup os juntava a
+          // utilitários comuns e a landing/demo avaliavam ~300 kB de gráfico
+          // em telas sem gráfico nenhum (medido no perfil da demo, 26/09).
+          if (/\/node_modules\/(recharts|victory-vendor|d3-[a-z-]+|internmap|decimal\.js-light|react-smooth|recharts-scale)\//.test(norm)) return 'graficos'
+          if (norm.endsWith('/src/main.tsx') || norm.endsWith('/src/App.tsx')) return undefined
+          const info = getModuleInfo(id)
+          const doBoot = info?.importers.some((i) => {
+            const n = i.replace(/\\/g, '/')
+            return n.endsWith('/src/main.tsx') || n.endsWith('/src/App.tsx')
+          })
+          return doBoot ? 'app-base' : undefined
+        },
+      },
+    },
   },
   server: {
     port: 3005,

@@ -73,7 +73,7 @@ export function TagPickerContent({
       {/* Search / header */}
       {!creating && (
         <div className="p-2 border-b border-surface-700 flex items-center gap-1.5">
-          <div className="flex items-center gap-2 bg-surface-900 rounded-lg px-2.5 py-1.5 flex-1">
+          <div className="flex items-center gap-2 bg-surface-900 rounded-sm px-2.5 py-1.5 flex-1">
             <Search className="w-3.5 h-3.5 text-surface-500" />
             <input
               value={search}
@@ -90,7 +90,7 @@ export function TagPickerContent({
           {onCreate && (
             <button
               onClick={() => setCreating(true)}
-              className="w-7 h-7 rounded-lg bg-brand-600 hover:bg-brand-500 flex items-center justify-center flex-shrink-0 transition-colors"
+              className="w-7 h-7 rounded-sm bg-brand-600 hover:bg-brand-500 flex items-center justify-center flex-shrink-0 transition-colors"
               title="Nova etiqueta"
             >
               <Plus className="w-3.5 h-3.5 text-surface-950" />
@@ -102,7 +102,7 @@ export function TagPickerContent({
       {/* Create new tag form */}
       {creating && (
         <div className="p-3 border-b border-surface-700">
-          <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wide mb-2">
+          <p className="text-3xs font-semibold text-surface-500 uppercase tracking-wide mb-2">
             Nova etiqueta
           </p>
           <input
@@ -112,7 +112,7 @@ export function TagPickerContent({
             onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setCreating(false) }}
             placeholder="Nome da etiqueta..."
             maxLength={30}
-            className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 outline-none focus:border-brand-500 transition-colors"
+            className="w-full bg-surface-900 border border-surface-700 rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 outline-none focus:border-brand-500 transition-colors"
           />
 
           {/* Color picker — curated swatches + custom hex */}
@@ -123,7 +123,7 @@ export function TagPickerContent({
           {/* Preview */}
           {newName && (
             <div className="flex items-center gap-2 mt-2.5">
-              <span className="text-[10px] text-surface-500">Prévia:</span>
+              <span className="text-3xs text-surface-500">Prévia:</span>
               <span
                 className="color-chip inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border"
                 style={{ ['--chip']: newColor } as React.CSSProperties}
@@ -137,7 +137,7 @@ export function TagPickerContent({
           <div className="flex gap-2 mt-3">
             <button
               onClick={() => setCreating(false)}
-              className="flex-1 py-1.5 rounded-lg text-xs text-surface-400 hover:bg-surface-700 transition-all"
+              className="flex-1 py-1.5 rounded-sm text-xs text-surface-400 hover:bg-surface-700 transition-all"
             >
               Cancelar
             </button>
@@ -145,7 +145,7 @@ export function TagPickerContent({
               onClick={handleCreate}
               disabled={!newName.trim() || saving}
               className={cn(
-                'flex-1 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5',
+                'flex-1 py-1.5 rounded-sm text-xs font-medium transition-all flex items-center justify-center gap-1.5',
                 newName.trim()
                   ? 'bg-brand-600 text-surface-950 hover:bg-brand-500'
                   : 'bg-surface-700 text-surface-500 cursor-not-allowed'
@@ -164,7 +164,7 @@ export function TagPickerContent({
           {selectedTags.map((tag) => (
             <span
               key={tag.id}
-              className="color-chip inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium border"
+              className="color-chip inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded-full font-medium border"
               style={{ ['--chip']: tag.color } as React.CSSProperties}
             >
               {tag.name}

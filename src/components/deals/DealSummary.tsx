@@ -249,7 +249,8 @@ function OpenDensity(props: OpenDealProps) {
     return (
       <article
         key={deal.id}
-        className="relative flex flex-col gap-1 -mx-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-surface-800/40 focus-within:bg-surface-800/40"
+        // canvas 1d (Negócios do painel): mini-card com borda --bd, raio 6, padding 8/10.
+        className="relative flex flex-col gap-1 px-2.5 py-2 rounded-xs border border-surface-700 transition-colors hover:bg-[var(--rowhover)] focus-within:bg-[var(--rowhover)]"
         data-testid={`${testIdPrefix}-${testIdKey}`}
       >
         {/* Alvo esticado: um botão de verdade cobrindo o bloco, ATRÁS dos
@@ -262,16 +263,24 @@ function OpenDensity(props: OpenDealProps) {
           type="button"
           onClick={onOpen}
           aria-label={`Abrir ${pipeline!.name}${stage ? ` · ${stage.label}` : ''}`}
-          className="absolute inset-0 z-0 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+          className="absolute inset-0 z-0 rounded-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
           data-testid={`${testIdPrefix}-board-${testIdKey}`}
         />
-        <div className="relative z-10 flex items-center gap-1.5 min-w-0 pointer-events-none">
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline!.color }} />
-          <span className="text-xs text-surface-200 truncate">{pipeline!.name}</span>
-          <KindIcon className="w-3 h-3 text-surface-500 flex-shrink-0" aria-label={kind.label} />
+        {/* Linha 1 do mini-card: título do negócio (600) + valor à direita. O funil
+            (nome + tipo) desce para a linha de meta, abaixo. */}
+        <div className="relative z-10 flex items-start justify-between gap-2 min-w-0 pointer-events-none">
+          <span className="text-[12.5px] font-semibold text-surface-100 truncate" title={`${pipeline!.name} · ${kind.label}`}>
+            {title || pipeline!.name}
+          </span>
+          {showsMoney && (
+            <span className="text-[12.5px] font-semibold text-surface-100 tabular-nums flex-shrink-0">{formatBRL(deal.amountCents)}</span>
+          )}
         </div>
-        {meta && <p className="relative z-10 text-[10px] text-surface-600 truncate pl-3.5 pointer-events-none">{meta}</p>}
-        <div className="relative z-10 flex items-center gap-1 pl-3.5 w-fit">
+        <p className="relative z-10 text-[10px] text-surface-500 truncate pointer-events-none">
+          <span className="w-1.5 h-1.5 rounded-full inline-block mr-1 align-middle" style={{ backgroundColor: pipeline!.color }} />
+          {pipeline!.name}{meta ? ` · ${meta}` : ''}
+        </p>
+        <div className="relative z-10 flex items-center gap-1 w-fit">
           {targets && (
             <Dropdown
               open={moveOpen}
@@ -283,16 +292,19 @@ function OpenDensity(props: OpenDealProps) {
                   type="button"
                   onClick={onToggleMove}
                   disabled={busy}
-                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 h-6 px-1.5 -ml-1.5 rounded-xs text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 transition-colors"
                   data-testid={`${testIdPrefix}-move-${testIdKey}`}
                   aria-haspopup="menu"
                   aria-expanded={moveOpen}
                   aria-label={stage ? `Mover etapa — atual: ${stage.label}` : undefined}
                 >
                   {stage ? (
-                    <span className="truncate max-w-[9rem]" data-testid={`${testIdPrefix}-stage-${testIdKey}`}>
-                      {stage.label}
-                    </span>
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} aria-hidden />
+                      <span className="truncate max-w-[9rem]" data-testid={`${testIdPrefix}-stage-${testIdKey}`}>
+                        {stage.label}
+                      </span>
+                    </>
                   ) : (
                     'Mover etapa'
                   )}
@@ -314,7 +326,7 @@ function OpenDensity(props: OpenDealProps) {
               type="button"
               onClick={onOpenBoard}
               title="Abrir o quadro deste funil com a ficha em cima — sai desta tela"
-              className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+              className="inline-flex items-center gap-1 h-6 px-1.5 rounded-xs text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               data-testid={`${testIdPrefix}-goboard-${testIdKey}`}
             >
               <ExternalLink className="w-3 h-3" /> No funil
@@ -329,7 +341,7 @@ function OpenDensity(props: OpenDealProps) {
   return (
     <article
       key={deal.id}
-      className="bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex flex-col gap-2"
+      className="bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 flex flex-col gap-2"
       data-testid={`${testIdPrefix}-open-${testIdKey}`}
     >
       <div className="flex items-center gap-2 min-w-0">
@@ -389,7 +401,7 @@ function OpenDensity(props: OpenDealProps) {
           <button
             type="button"
             onClick={onOpen}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
             data-testid={`${testIdPrefix}-board-${testIdKey}`}
           >
             <KanbanSquare className="w-3.5 h-3.5" /> Abrir negócio

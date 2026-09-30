@@ -246,7 +246,7 @@ function ContextMenuItem({
       {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
       <span className="flex-1 truncate">{entry.label}</span>
       {entry.shortcut && (
-        <span className="text-[11px] text-surface-500 font-mono flex-shrink-0">
+        <span className="text-2xs text-surface-500 font-mono flex-shrink-0">
           {entry.shortcut}
         </span>
       )}

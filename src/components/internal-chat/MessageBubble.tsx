@@ -71,7 +71,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
 
   const senderInitial = isCopilot ? 'C' : message.senderName.charAt(0).toUpperCase()
   const avatarClass = isCopilot
-    ? 'bg-gradient-to-br from-blue-500 to-blue-700'
+    ? 'bg-blue-600'
     : avatarColor(message.senderName)
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
@@ -128,7 +128,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
       <div className={cn('relative max-w-[72%] flex flex-col', displayAsOwn ? 'items-end' : 'items-start')}>
         <div
           className={cn(
-            'relative px-3 py-2 rounded-2xl shadow-sm',
+            'relative px-3 py-2 rounded-xl',
             displayAsOwn
               ? 'bg-bubble-out text-bubble-out-fg rounded-br-sm'
               : 'bg-bubble-in text-surface-100 rounded-bl-sm',

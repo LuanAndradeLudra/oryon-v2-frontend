@@ -89,14 +89,15 @@ export function AssignWabaModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/60 cru.
+      className="fixed inset-0 bg-[var(--color-scrim-soft)] z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-900 rounded-2xl border border-surface-700/60 w-full max-w-md overflow-hidden"
+        className="bg-surface-800 rounded-xl border border-[var(--bd2)] w-full max-w-md overflow-hidden"
       >
-        <div className="flex items-start justify-between px-5 py-4 border-b border-surface-800/60">
+        <div className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-surface-100">{title}</h2>
             {resourceName && (
@@ -104,10 +105,12 @@ export function AssignWabaModal({
             )}
             <p className="text-[11px] text-surface-500 mt-1.5">{subtitle}</p>
           </div>
+          {/* hover:bg-surface-800 era invisível contra o painel, que É
+              surface-800. */}
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+            className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -122,11 +125,14 @@ export function AssignWabaModal({
                   type="button"
                   onClick={() => setPicked(n.id)}
                   disabled={saving}
+                  // Eixo 10: mesmo padrão órfão de bg-brand-500/10 já
+                  // corrigido em DataTable/Dropdown (ui/) -> --rowhover; o
+                  // Check já distingue o item escolhido, sem perder nada.
                   className={cn(
                     'w-full flex items-center gap-2.5 px-5 py-3 text-left transition-colors',
                     isPicked
-                      ? 'bg-brand-500/10 text-surface-100'
-                      : 'text-surface-300 hover:bg-surface-800/60',
+                      ? 'bg-[var(--rowhover)] text-surface-100'
+                      : 'text-surface-300 hover:bg-[var(--rowhover)]',
                   )}
                 >
                   <Phone className="w-4 h-4 text-surface-500 flex-shrink-0" />
@@ -163,7 +169,7 @@ export function AssignWabaModal({
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-800/60 bg-surface-950/30">
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-700 bg-surface-950/30">
           <Button
             type="button"
             variant="ghost"

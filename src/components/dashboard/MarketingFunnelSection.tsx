@@ -45,7 +45,7 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const convRate = impressions > 0 ? ((customers / impressions) * 100).toFixed(3) : '0'
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-surface-100">Funil de Conversão</p>
@@ -62,7 +62,7 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
         {stages.map((stage, i) => {
           const widthPct = Math.max(20, (stage.value / max) * 100)
           const nextConv = i < stages.length - 1 && stages[i].value > 0
-            ? ((stages[i + 1].value / stages[i].value) * 100).toFixed(1)
+            ? ((stages[i + 1].value / stages[i].value) * 100).toFixed(1).replace('.', ',')
             : null
           return (
             <div key={stage.label} className="flex-1 flex flex-col items-center gap-1.5">
@@ -162,15 +162,15 @@ function AdCampaignsTable({
   ]
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-surface-800">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-700">
         <p className="text-sm font-semibold text-surface-100">Campanhas Pagas</p>
         <p className="text-xs text-surface-400 mt-0.5">Performance com conversão no CRM</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-surface-800">
+            <tr className="border-b border-surface-700">
               <th className="text-left px-5 py-3 text-surface-400 font-medium">Campanha</th>
               {cols.map((c) => (
                 <th key={c.key}
@@ -187,9 +187,12 @@ function AdCampaignsTable({
           <tbody>
             {sorted.map((camp) => (
               <>
+                {/* Eixo 10 (tema claro): mesmo achado do ActivityFeed —
+                    hover:bg-surface-800/30 sobre o card surface-800 é
+                    invisível no claro. --rowhover. */}
                 <tr
                   key={camp.platformCampaignId}
-                  className="border-b border-surface-800/50 hover:bg-surface-800/30 transition-colors cursor-pointer"
+                  className="border-b border-surface-700 hover:bg-[var(--rowhover)] transition-colors cursor-pointer"
                   onClick={() => setExpanded(expanded === camp.platformCampaignId ? null : camp.platformCampaignId)}
                 >
                   <td className="px-5 py-3">
@@ -222,7 +225,7 @@ function AdCampaignsTable({
                     </span>
                   </td>
                   <td className="px-3 py-3 text-right text-surface-300 tabular-nums">
-                    {camp.conversionRate.toFixed(1)}%
+                    {camp.conversionRate.toFixed(1).replace('.', ',')}%
                   </td>
                   <td className="px-3 py-3 text-right">
                     {expanded === camp.platformCampaignId
@@ -231,7 +234,7 @@ function AdCampaignsTable({
                   </td>
                 </tr>
                 {expanded === camp.platformCampaignId && (
-                  <tr key={`${camp.platformCampaignId}-expanded`} className="border-b border-surface-800/50">
+                  <tr key={`${camp.platformCampaignId}-expanded`} className="border-b border-surface-700">
                     <td colSpan={8} className="px-5 py-3 bg-surface-800/20">
                       <div className="flex items-center gap-3 flex-wrap">
                         {camp.funnelBreakdown.map((stage, i) => (
@@ -291,7 +294,10 @@ function TotalsStrip({ totals }: { totals: MarketingFunnelTotals }) {
     {
       label: 'ROAS Médio',
       value: `${totals.avgRoas.toFixed(1)}x`,
-      icon: <BarChart2 className="w-4 h-4" />,
+      // BarChart2 não tem versão desenhada da casa — strokeWidth explícito
+      // (DECISOES-PENDENTES #18). Componente ainda não montado no Dashboard
+      // (endpoint não existe), corrigido por consistência de qualquer forma.
+      icon: <BarChart2 className="w-4 h-4" strokeWidth={1.75} />,
       color: C.online,
     },
   ]
@@ -299,7 +305,7 @@ function TotalsStrip({ totals }: { totals: MarketingFunnelTotals }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {items.map((item) => (
-        <div key={item.label} className="bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex items-center gap-3">
+        <div key={item.label} className="bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: item.color + '1a', color: item.color }}>
             {item.icon}
@@ -346,9 +352,9 @@ export function MarketingFunnelSection({ dateRange }: { dateRange: DateRange }) 
         {loading ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[1,2,3,4].map((i) => <div key={i} className="h-16 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />)}
+              {[1,2,3,4].map((i) => <div key={i} className="h-16 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />)}
             </div>
-            <div className="h-64 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
+            <div className="h-64 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
           </div>
         ) : (
           <>

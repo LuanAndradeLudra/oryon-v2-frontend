@@ -5,7 +5,6 @@ import {
   Pencil, Copy, Trash2, CopyPlus, Phone, X,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSearchParams } from 'react-router-dom'
 
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
@@ -20,10 +19,13 @@ import { automationsApi } from '@/services/api'
 import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { AssignWabaModal } from '@/components/common/AssignWabaModal'
+import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
 import { useContextMenuCtx } from '@/components/ui/contextMenuCore'
+import { useEstadoNaUrl, lerUmDe, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Button } from '@/components/ui/Button'
 import { DataTable, type DataTableColumn, type DataTableSort } from '@/components/ui/DataTable'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/Switch'
@@ -74,10 +76,13 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
+        // Eixo 10: mesma medida do LineFilterChip.tsx (h-7/rounded-sm/--bd2)
+        // — as duas são o mesmo componente (gatilho de filtro), medidas
+        // diferentes antes desta correção.
         className={cn(
-          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
-          'bg-surface-800 border border-surface-700/60 text-surface-200 hover:border-surface-600',
-          open && 'border-brand-500/40 ring-2 ring-brand-500/10',
+          'flex items-center gap-1.5 h-7 px-2.5 rounded-sm text-xs font-medium transition-colors',
+          'bg-surface-800 border border-[var(--bd2)] text-surface-200 hover:bg-[var(--rowhover)]',
+          open && 'border-brand-500',
         )}
       >
         <ListFilter className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
@@ -91,13 +96,13 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
               const isActive = value === opt.value
               return (
                 <li key={opt.value}>
-                  {i === 1 && <div className="mx-3 my-1 border-t border-surface-800/60" />}
+                  {i === 1 && <div className="mx-3 my-1 border-t border-surface-700" />}
                   <button
                     type="button"
                     onClick={() => { onChange(opt.value); setOpen(false) }}
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
-                      isActive ? 'bg-brand-500/10 text-surface-100' : 'text-surface-300 hover:bg-surface-800',
+                      isActive ? 'bg-brand-500/10 text-surface-100' : 'text-surface-300 hover:bg-[var(--rowhover)]',
                     )}
                   >
                     <span className="flex-1 font-medium">{opt.label}</span>
@@ -117,83 +122,54 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
 
 interface Counts { total: number; active: number; inactive: number; draft: number; totalExec: number }
 
-// ── Delete confirm ────────────────────────────────────────────────────────────
-
-function DeleteConfirm({ automation, onConfirm, onCancel }: {
-  automation: Automation; onConfirm: () => void; onCancel: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 overlay-frame border rounded-2xl w-full max-w-sm p-6 text-center"
-      >
-        <div className="w-12 h-12 rounded-2xl bg-danger/10 border border-danger/20 flex items-center justify-center mx-auto mb-4">
-          <Trash2 className="w-5 h-5 text-danger" />
-        </div>
-        <h3 className="text-sm font-semibold text-surface-100 mb-1">Excluir automação?</h3>
-        <p className="text-xs text-surface-500 mb-5">
-          "<span className="text-surface-300">{automation.name}</span>" será removida permanentemente.
-        </p>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
-            Cancelar
-          </button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors">
-            Excluir
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
-function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
-  automation: Automation
+function DuplicateToLineModal({ open, automation, lines, onPick, onCancel }: {
+  open: boolean
+  automation: Automation | null
   lines: { id: string; label?: string; displayPhoneNumber: string }[]
   onPick: (lineId: string) => void
   onCancel: () => void
 }) {
+  // ui/Modal (SCRUM-1097): role/aria-modal, foco + devolução, trap de Tab, Esc
+  // pela pilha de camadas, portal e scrim do token — o corpo é só o conteúdo.
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 overlay-frame border rounded-2xl w-full max-w-sm p-5"
-      >
-        <h3 className="text-sm font-semibold text-surface-100 mb-1">Duplicar para outra linha</h3>
-        <p className="text-xs text-surface-500 mb-4">
-          Cria uma cópia de "<span className="text-surface-300">{automation.name}</span>" como rascunho na linha escolhida.
-        </p>
-        <div className="space-y-1.5 max-h-72 overflow-y-auto">
-          {lines.map((l) => {
-            const isCurrent = l.id === automation.whatsappNumberId
-            return (
-              <button
-                key={l.id}
-                onClick={() => onPick(l.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-surface-800 bg-surface-900 hover:border-brand-500/40 hover:bg-surface-800 transition-colors text-left"
-              >
-                <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
-                <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
-                {isCurrent && <span className="text-[10px] text-surface-500 flex-shrink-0">atual</span>}
-              </button>
-            )
-          })}
-        </div>
-        <button onClick={onCancel} className="w-full mt-4 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
-          Cancelar
-        </button>
-      </motion.div>
-    </div>
+    <Modal
+      open={open}
+      onClose={onCancel}
+      title="Duplicar para outra linha"
+      className="max-w-[400px]"
+      footer={<Button variant="neutral" className="w-full" onClick={onCancel}>Cancelar</Button>}
+    >
+      {automation && (
+        <>
+          <p className="text-xs text-surface-500 mb-4">
+            Cria uma cópia de "<span className="text-surface-300">{automation.name}</span>" como rascunho na linha escolhida.
+          </p>
+          <div className="space-y-1.5 max-h-72 overflow-y-auto">
+            {lines.map((l) => {
+              const isCurrent = l.id === automation.whatsappNumberId
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => onPick(l.id)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-[var(--rowhover)] transition-colors text-left"
+                >
+                  <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
+                  <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
+                  {isCurrent && <span className="text-[10px] text-surface-500 flex-shrink-0">atual</span>}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </Modal>
   )
 }
 
-// Barra de ações em massa — enxuta (Ativar/Desativar/Excluir), com confirmação
-// inline pra exclusão. Kill-switch de incidente: pausar tudo de uma linha ruim.
+// Barra de ações em massa — enxuta (Ativar/Desativar/Excluir). A exclusão só
+// PEDE confirmação (onDelete): o ConfirmModal mora na página, com o alcance
+// (N automações) em destaque. Kill-switch de incidente: pausar tudo de uma
+// linha ruim.
 function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
   count: number
   onActivate: () => void
@@ -201,7 +177,6 @@ function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
   onDelete: () => void
   onClear: () => void
 }) {
-  const [confirming, setConfirming] = useState(false)
   const btn = 'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors'
   return (
     <motion.div
@@ -209,36 +184,23 @@ function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-xl flex items-center gap-1 pl-4 pr-2 py-2"
     >
-      {confirming ? (
-        <>
-          <span className="text-sm text-surface-200">Excluir <span className="font-semibold text-danger">{count}</span> {count === 1 ? 'automação' : 'automações'}?</span>
-          <div className="h-5 w-px bg-surface-700 mx-1" />
-          <button onClick={() => setConfirming(false)} className={cn(btn, 'text-surface-300 hover:bg-surface-700')}>Cancelar</button>
-          <button onClick={() => { onDelete(); setConfirming(false) }} className={cn(btn, 'text-white bg-danger hover:bg-danger/90')}>
-            <Trash2 className="w-3.5 h-3.5" /> Excluir
-          </button>
-        </>
-      ) : (
-        <>
-          <div className="text-sm text-surface-200 pr-1">
-            <span className="font-semibold text-brand-300">{count}</span> {count === 1 ? 'selecionada' : 'selecionadas'}
-          </div>
-          <div className="h-5 w-px bg-surface-700 mx-1" />
-          <button onClick={onActivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
-            <ToggleRight className="w-4 h-4 text-status-active" /> Ativar
-          </button>
-          <button onClick={onDeactivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
-            <ToggleLeft className="w-4 h-4 text-surface-400" /> Desativar
-          </button>
-          <div className="h-5 w-px bg-surface-700 mx-1" />
-          <button onClick={() => setConfirming(true)} className={cn(btn, 'text-danger hover:bg-danger/10')}>
-            <Trash2 className="w-3.5 h-3.5" /> Excluir
-          </button>
-          <button onClick={onClear} aria-label="Limpar seleção" className="p-1.5 ml-1 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-lg transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </>
-      )}
+      <div className="text-sm text-surface-200 pr-1">
+        <span className="font-semibold text-brand-300">{count}</span> {count === 1 ? 'selecionada' : 'selecionadas'}
+      </div>
+      <div className="h-5 w-px bg-surface-700 mx-1" />
+      <button onClick={onActivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
+        <ToggleRight className="w-4 h-4 text-status-active" /> Ativar
+      </button>
+      <button onClick={onDeactivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
+        <ToggleLeft className="w-4 h-4 text-surface-400" /> Desativar
+      </button>
+      <div className="h-5 w-px bg-surface-700 mx-1" />
+      <button onClick={onDelete} className={cn(btn, 'text-danger hover:bg-danger/10')}>
+        <Trash2 className="w-3.5 h-3.5" /> Excluir
+      </button>
+      <button onClick={onClear} aria-label="Limpar seleção" className="p-1.5 ml-1 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-lg transition-colors">
+        <X className="w-4 h-4" />
+      </button>
     </motion.div>
   )
 }
@@ -252,29 +214,47 @@ const STATUS_OPTIONS_BASE: { value: AutomationStatus | 'all'; label: string }[] 
   { value: 'draft',    label: 'Rascunho'  },
 ]
 
+const lerStatus = lerUmDe(['all', 'active', 'inactive', 'draft'] as const, 'all')
+const lerTipo = lerUmDe(['all', 'boas_vindas', 'follow_up', 'fora_horario', 'triagem_keyword', 'estagio_crm', 'inatividade', 'custom'] as const, 'all')
+const lerOrdem = lerUmDe(['atividade', 'nome'] as const, 'atividade')
+const lerDirecao = lerUmDe(['desc', 'asc'] as const, 'desc')
+
 export function AutomationsPage() {
   const isMobile = useIsMobile()
   const { numbers: whatsappLines, loading: waLoading } = useWorkspaceNumber()
   const hasWhatsappLine = whatsappLines.length > 0
   const multiLine = whatsappLines.length > 1
   const { open: openContextMenu } = useContextMenuCtx()
-  const [searchParams, setSearchParams] = useSearchParams()
   const { open: openCopilot } = useCopilotContext()
 
   const [automations, setAutomations]   = useState<Automation[]>([])
   const [loading, setLoading]           = useState(true)
-  const [search, setSearch]             = useState('')
-  const [statusFilter, setStatusFilter] = useState<AutomationStatus | 'all'>('all')
-  const [typeFilter, setTypeFilter]     = useState<AutomationType | 'all'>('all')
-  const [lineFilter, setLineFilter]     = useState<LineFilterValue>('all')
-  const [attentionOnly, setAttentionOnly] = useState(false)
-  const [sort, setSort]                 = useState<DataTableSort>({ key: 'atividade', dir: 'desc' })
-  const [selectedId, setSelectedId]     = useState<string | null>(null)
+  // Estado de tela na URL (regra do PO): busca, filtros, ordem e a automação
+  // aberta sobrevivem ao F5, ao "voltar" e ao link colado. `?automation=` e
+  // `?atencao=1` (links de notificação) seguem valendo — antes eram lidos uma
+  // vez e a query inteira era apagada.
+  const [search, setSearch]             = useEstadoNaUrl<string>('busca', { padrao: '' })
+  const [statusFilter, setStatusFilter] = useEstadoNaUrl<AutomationStatus | 'all'>('status', { padrao: 'all', ler: lerStatus })
+  const [typeFilter, setTypeFilter]     = useEstadoNaUrl<AutomationType | 'all'>('tipo', { padrao: 'all', ler: lerTipo })
+  const [lineFilter, setLineFilter]     = useEstadoNaUrl<LineFilterValue>('linha', { padrao: 'all' })
+  const [attentionOnly, setAttentionOnly] = useEstadoNaUrl<boolean>('atencao', { padrao: false, ler: lerBool, escrever: escreverBool })
+  const [ordemChave, setOrdemChave]     = useEstadoNaUrl<'atividade' | 'nome'>('ordem', { padrao: 'atividade', ler: lerOrdem })
+  const [ordemDir, setOrdemDir]         = useEstadoNaUrl<'asc' | 'desc'>('direcao', { padrao: 'desc', ler: lerDirecao })
+  const sort = useMemo<DataTableSort>(() => ({ key: ordemChave, dir: ordemDir }), [ordemChave, ordemDir])
+  const setSort = (s: DataTableSort) => {
+    setOrdemChave(s.key === 'nome' ? 'nome' : 'atividade')
+    setOrdemDir(s.dir)
+  }
+  // Abrir uma automação entra no histórico: o "voltar" do navegador fecha.
+  const [selectedIdUrl, setSelectedIdUrl] = useEstadoNaUrl<string>('automacao', { padrao: '', aliases: ['automation'], historico: 'push' })
+  const setSelectedId = (id: string | null) => setSelectedIdUrl(id ?? '')
+  const selectedId: string | null = selectedIdUrl || null
 
   const [wizardOpen, setWizardOpen]         = useState(false)
   const [editTarget, setEditTarget]         = useState<Automation | null>(null)
   const [editSection, setEditSection]       = useState<AutomationBuilderSection | undefined>(undefined)
   const [deleteTarget, setDeleteTarget]     = useState<Automation | null>(null)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [assignWabaTarget, setAssignWabaTarget] = useState<Automation | null>(null)
   const [dupToLineTarget, setDupToLineTarget]   = useState<Automation | null>(null)
 
@@ -289,16 +269,6 @@ export function AutomationsPage() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  // Deep-link: /automations?automation=:id abre o detalhe; ?atencao=1 filtra.
-  // Consumido uma vez e limpo da URL (padrão ContactsPage).
-  useEffect(() => {
-    const autoParam = searchParams.get('automation')
-    const atencaoParam = searchParams.get('atencao')
-    if (!autoParam && atencaoParam !== '1') return
-    if (autoParam) setSelectedId(autoParam)
-    if (atencaoParam === '1') setAttentionOnly(true)
-    setSearchParams({}, { replace: true })
-  }, [searchParams, setSearchParams])
 
   const handleToggle = async (automation: Automation) => {
     try {
@@ -408,25 +378,32 @@ export function AutomationsPage() {
   }
 
   useRegisterTopBarActions(
+    // Eixo 10 (achado ao vivo do usuário): a barra tinha 4 alturas (28/29,7/33)
+    // e 2 raios diferentes — todo controle feito à mão com py-1.5+rounded-lg
+    // em vez da altura fixa h-7+rounded-sm que o resto da casa usa (a pílula
+    // Buscar do TopBar, na mesma tela, é a régua: h28/raio7). Trocado pelos
+    // dois pelo primitivo Button (size="sm" já é exatamente h-7/rounded-sm).
     <div className="flex items-center gap-2">
-      <button
+      <Button
+        variant="neutral"
+        size="sm"
         onClick={() => openCopilot('Quero criar uma automação. Objetivo: ')}
         disabled={!hasWhatsappLine}
         title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar automações' : undefined}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-600 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        leftIcon={<Sparkles className="w-3.5 h-3.5" />}
       >
-        <Sparkles className="w-3.5 h-3.5" />
         Descrever com IA
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="primary"
+        size="sm"
         onClick={openNew}
         disabled={!hasWhatsappLine}
         title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar automações' : undefined}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-brand-600"
+        leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}
       >
-        <Plus className="w-3.5 h-3.5" />
         Nova automação
-      </button>
+      </Button>
     </div>,
     [hasWhatsappLine],
   )
@@ -517,7 +494,7 @@ export function AutomationsPage() {
           return (
             <div className="flex items-center gap-3 min-w-0 max-w-[280px]">
               <span
-                className="color-chip w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                className="color-chip-soft w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
                 style={{ ['--chip']: accent } as React.CSSProperties}
                 title={TYPE_CONFIG[a.type]?.label}
               >
@@ -527,7 +504,7 @@ export function AutomationsPage() {
                 <div className="flex items-center gap-1.5 min-w-0">
                   <p className="text-sm font-medium text-surface-100 truncate min-w-0">{a.name}</p>
                   {a.status === 'draft' && (
-                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+                    <span className="color-chip-soft px-1.5 py-0.5 rounded-xs text-[9px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
                       Rascunho
                     </span>
                   )}
@@ -619,11 +596,13 @@ export function AutomationsPage() {
           <div className="flex items-center gap-3 px-6 py-3 flex-shrink-0">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+              {/* Eixo 10: h-7 (não py-1.5 ≈ 33px), bg-surface-800/--bd2 —
+                  mesma medida dos outros controles da barra. */}
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar automação..."
-                className="w-full bg-surface-900 border border-surface-700 rounded-xl pl-8 pr-3 py-1.5 text-sm text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
+                className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-3 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
               />
             </div>
             <SegmentedControl label="Filtrar por status" options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
@@ -633,11 +612,13 @@ export function AutomationsPage() {
             {attentionK > 0 && (
               <button
                 onClick={() => setAttentionOnly(v => !v)}
+                // Eixo 10: h-7/rounded-sm, mesma medida dos outros gatilhos
+                // da barra (só a cor de estado muda entre ativo/inativo).
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                  'flex items-center gap-1.5 h-7 px-2.5 rounded-sm text-xs font-semibold border transition-colors',
                   attentionOnly
                     ? 'bg-warning/15 border-warning/40 text-warning'
-                    : 'bg-surface-800 border-surface-700/60 text-surface-300 hover:border-warning/40 hover:text-warning',
+                    : 'bg-surface-800 border-[var(--bd2)] text-surface-300 hover:border-warning/40 hover:text-warning',
                 )}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -669,7 +650,7 @@ export function AutomationsPage() {
           />
         ) : (
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col px-4 py-3">
-            <div className="flex-1 min-h-0 flex flex-col rounded-xl border border-surface-800 overflow-hidden bg-surface-900/20">
+            <div className="flex-1 min-h-0 flex flex-col rounded-lg border border-surface-700 overflow-hidden bg-[var(--sf2)]">
               <DataTable
                 columns={columns}
                 rows={sortedRows}
@@ -701,14 +682,14 @@ export function AutomationsPage() {
               key="detail-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 bg-black/40 z-[39]"
+              className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[39]"
               onClick={() => setSelectedId(null)}
             />
             <motion.div
               key="detail-panel"
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[34rem] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[34rem] z-40 bg-surface-800 border-l overlay-frame flex flex-col"
             >
               <AutomationDetail
                 automation={selected}
@@ -747,11 +728,16 @@ export function AutomationsPage() {
       )}
 
       {/* Delete confirm */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <DeleteConfirm automation={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
-        )}
-      </AnimatePresence>
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Excluir automação?"
+        description="Ela será removida permanentemente."
+        impact={deleteTarget ? { label: `Automação "${deleteTarget.name}"`, tone: 'danger' } : undefined}
+        confirmLabel="Excluir"
+        danger
+      />
 
       {/* Assign-WABA */}
       {assignWabaTarget && (
@@ -766,16 +752,29 @@ export function AutomationsPage() {
       )}
 
       {/* Duplicar para outra linha */}
-      <AnimatePresence>
-        {dupToLineTarget && (
-          <DuplicateToLineModal
-            automation={dupToLineTarget}
-            lines={whatsappLines}
-            onPick={(lineId) => handleDuplicateToLine(dupToLineTarget, lineId)}
-            onCancel={() => setDupToLineTarget(null)}
-          />
-        )}
-      </AnimatePresence>
+      <DuplicateToLineModal
+        open={!!dupToLineTarget}
+        automation={dupToLineTarget}
+        lines={whatsappLines}
+        onPick={(lineId) => { if (dupToLineTarget) handleDuplicateToLine(dupToLineTarget, lineId) }}
+        onCancel={() => setDupToLineTarget(null)}
+      />
+
+      {/* Exclusão em massa — confirmação com o alcance (N) em destaque */}
+      <ConfirmModal
+        open={bulkDeleteOpen && selCount > 0}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={() => { setBulkDeleteOpen(false); void bulkDelete() }}
+        title={`Excluir ${selCount} ${selCount === 1 ? 'automação' : 'automações'}?`}
+        description="Esta ação não pode ser desfeita."
+        impact={{
+          count: selCount,
+          label: selCount === 1 ? 'automação será excluída permanentemente' : 'automações serão excluídas permanentemente',
+          tone: 'danger',
+        }}
+        confirmLabel="Excluir"
+        danger
+      />
 
       {/* Ações em massa */}
       <AnimatePresence>
@@ -784,7 +783,7 @@ export function AutomationsPage() {
             count={selCount}
             onActivate={() => bulkSetActive(true)}
             onDeactivate={() => bulkSetActive(false)}
-            onDelete={bulkDelete}
+            onDelete={() => setBulkDeleteOpen(true)}
             onClear={clearSelection}
           />
         )}

@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import {
   X, KanbanSquare, CheckCircle2, XCircle, MoreHorizontal,
-  Trash2, ArrowRightLeft, Calendar, Percent,
+  Trash2, ArrowRightLeft, Calendar,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { UserPicker } from '@/components/ui/UserPicker'
@@ -15,13 +15,45 @@ import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { formatBRL } from '@/utils/money'
-import { cn, formatRelativeTime, hexToRgba } from '@/lib/utils'
+import { cn, formatRelativeTime } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { originInfo, humanDuration, timeInStage } from '@/lib/dealCard'
 import { moveTargets } from '@/lib/contactPipelines'
 import { dealProbability } from '@/lib/dealProbability'
+import { formatPhone } from '@/lib/phone'
 import { DealProgress } from './DealProgress'
 import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage, User } from '@/types'
+
+/**
+ * Valor livre da ficha, salvo ao SAIR do campo. O `MoneyInput` avisa a cada
+ * tecla (2 → 20 → 200…) e cada aviso virava um PATCH — cada PATCH emite
+ * `deal:changed` e o quadro inteiro recarregava por tecla (R3 · SCRUM-1161).
+ * O rascunho acompanha o valor do servidor enquanto o campo não está em uso.
+ */
+function ValorDoNegocio({ amountCents, noun, onSave }: { amountCents: number; noun: string; onSave: (cents: number) => void }) {
+  const [rascunho, setRascunho] = useState(amountCents)
+  const [editando, setEditando] = useState(false)
+  // Valor novo do servidor (tempo real, outra aba) com o campo fora de uso:
+  // o rascunho acompanha. Ajuste durante a renderização, sem efeito.
+  const [base, setBase] = useState(amountCents)
+  if (base !== amountCents && !editando) {
+    setBase(amountCents)
+    setRascunho(amountCents)
+  }
+  return (
+    <MoneyInput
+      value={rascunho}
+      onChange={setRascunho}
+      onFocus={() => setEditando(true)}
+      onBlur={() => {
+        setEditando(false)
+        if (rascunho !== amountCents) onSave(rascunho)
+      }}
+      aria-label={`Valor do ${noun}`}
+      className="h-11 !text-2xl font-display font-bold text-surface-50 w-48"
+    />
+  )
+}
 
 interface DealDetailHeaderProps {
   deal: Deal
@@ -39,6 +71,9 @@ interface DealDetailHeaderProps {
   onClose?: () => void
   /** Leva ao QUADRO do funil com a ficha em cima. Ausente = já está lá. */
   onOpenBoard?: () => void
+  /** De quem é o negócio — nome e telefone logo abaixo do título. */
+  contato?: { id: string; name: string; phone: string | null } | null
+  onOpenContact?: (contactId: string) => void
 }
 
 function InlineEditTitle({ value, onSave }: { value: string; onSave: (v: string) => Promise<void> }) {
@@ -83,6 +118,7 @@ function InlineEditTitle({ value, onSave }: { value: string; onSave: (v: string)
 
 export function DealDetailHeader({
   deal, pipeline, pipelines, users, lastMovedLabel, history, onPatch, onMoveToStage, onTransferPipeline, onDelete, onClose, onOpenBoard,
+  contato, onOpenContact,
 }: DealDetailHeaderProps) {
   const [ownerPickerOpen, setOwnerPickerOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -140,14 +176,24 @@ export function DealDetailHeader({
   }
 
   return (
-    <div className="px-5 py-4 border-b border-surface-800 flex-shrink-0 flex flex-col gap-3">
+    <div className="px-[18px] pt-3.5 pb-3 flex-shrink-0 flex flex-col gap-3">
       {/* Linha 1 — título + fechar/expandir */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <InlineEditTitle value={deal.title} onSave={(title) => onPatch({ title })} />
+          {contato && (
+            <p className="mt-0.5 text-[12.5px] text-surface-400 truncate" data-testid="deal-contact-line">
+              {onOpenContact ? (
+                <button type="button" onClick={() => onOpenContact(contato.id)} className="font-medium text-surface-200 hover:text-brand-400 transition-colors">
+                  {contato.name}
+                </button>
+              ) : <span className="font-medium text-surface-200">{contato.name}</span>}
+              {contato.phone && <span className="tabular-nums"> · {formatPhone(contato.phone)}</span>}
+            </p>
+          )}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface-800 border border-surface-700 text-surface-300"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[5px] bg-surface-800 border border-surface-700 text-surface-300"
               title={kindOption.description}
             >
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
@@ -161,12 +207,8 @@ export function DealDetailHeader({
                 etapa, lado a lado. */}
             {stage && deal.status === 'open' && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-                style={{
-                  color: stage.color,
-                  borderColor: hexToRgba(stage.color, 0.4),
-                  backgroundColor: hexToRgba(stage.color, 0.12),
-                }}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[5px] border color-chip-soft"
+                style={{ '--chip': stage.color } as React.CSSProperties}
                 data-testid="deal-current-stage"
                 title={`Etapa atual${tempoNaEtapa ? ` — ${tempoNaEtapa}` : ''}`}
               >
@@ -175,8 +217,8 @@ export function DealDetailHeader({
             )}
             {deal.status !== 'open' && (
               <span className={cn(
-                'inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
-                deal.status === 'won' ? 'text-status-active border-status-active/40 bg-status-active-bg' : 'text-surface-400 border-surface-700 bg-surface-800',
+                'inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[5px] border',
+                deal.status === 'won' ? 'color-chip-soft [--chip:var(--color-status-active)]' : 'text-surface-400 border-surface-700 bg-surface-800',
               )}>
                 {deal.status === 'won' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                 {deal.status === 'won' ? labels.won : labels.lost}
@@ -184,7 +226,7 @@ export function DealDetailHeader({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {/* "Abrir como página" saiu (10/09) e deu lugar a "Ver no funil".
 
               O expandir levava à MESMA ficha, só que ocupando a tela — mais
@@ -194,19 +236,49 @@ export function DealDetailHeader({
               a ficha sozinha não responde. É a mesma decisão que a B2 já tinha
               tomado no painel do contato, onde "No funil" convive com a ficha. */}
           {onOpenBoard && (
-            <button
+            <Button
               type="button"
+              size="sm"
+              variant="neutral"
               onClick={onOpenBoard}
               title="Abrir o quadro deste funil com a ficha em cima — sai desta tela"
               aria-label="Ver no funil"
               data-testid="deal-open-board"
-              className="inline-flex items-center gap-1.5 h-7 px-2 rounded-lg text-xs font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-all"
+              leftIcon={<KanbanSquare className="w-3.5 h-3.5" />}
             >
-              <KanbanSquare className="w-3.5 h-3.5" /> No funil
-            </button>
+              No funil
+            </Button>
           )}
+          <Dropdown
+            open={moreOpen}
+            onClose={() => setMoreOpen(false)}
+            align="right"
+            className="w-52"
+            anchor={
+              <button
+                type="button"
+                onClick={() => setMoreOpen((v) => !v)}
+                title="Mais ações"
+                aria-label="Mais ações"
+                data-testid="deal-more-button"
+                className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+              >
+                <MoreHorizontal className="w-[15px] h-[15px]" />
+              </button>
+            }
+          >
+            <div className="px-1 py-1 flex flex-col gap-0.5">
+              <DropdownItem onClick={() => { setMoreOpen(false); setTransferOpen(true) }} disabled={otherPipelines.length === 0}>
+                <ArrowRightLeft className="w-3.5 h-3.5" /> Transferir de funil
+              </DropdownItem>
+              <DropdownSeparator />
+              <DropdownItem onClick={() => { setMoreOpen(false); setConfirmDelete(true) }} danger>
+                <Trash2 className="w-3.5 h-3.5" /> Excluir
+              </DropdownItem>
+            </div>
+          </Dropdown>
           {onClose && (
-            <button type="button" onClick={onClose} title="Fechar" aria-label="Fechar" className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+            <button type="button" onClick={onClose} title="Fechar" aria-label="Fechar" className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -223,7 +295,7 @@ export function DealDetailHeader({
       <div className="flex items-end gap-4 flex-wrap" data-testid="deal-hero">
         {isSales ? (
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">
+            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
               Valor do {noun}
             </span>
             {itemCount > 0 ? (
@@ -237,18 +309,17 @@ export function DealDetailHeader({
               </>
             ) : (
               <div data-testid="deal-amount">
-                <MoneyInput
-                  value={deal.amountCents}
-                  onChange={(cents) => void onPatch({ amountCents: cents, updateAmount: false })}
-                  aria-label={`Valor do ${noun}`}
-                  className="h-11 !text-2xl font-display font-bold text-surface-50 w-48"
+                <ValorDoNegocio
+                  amountCents={deal.amountCents}
+                  noun={noun}
+                  onSave={(cents) => void onPatch({ amountCents: cents, updateAmount: false })}
                 />
               </div>
             )}
           </div>
         ) : (
           <div className="flex flex-col gap-0.5 min-w-0" data-testid="deal-age">
-            <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">
+            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
               {deal.status === 'open' ? 'Aberto há' : 'Encerrado'}
             </span>
             <span className="font-display text-3xl font-bold text-surface-50 tracking-tight leading-none">
@@ -300,7 +371,7 @@ export function DealDetailHeader({
               }
             />
 
-            <span className="w-px h-3 bg-surface-800 shrink-0" aria-hidden />
+            <span className="w-px h-3 bg-surface-700 shrink-0" aria-hidden />
 
             <span className="inline-flex items-center gap-1.5 shrink-0" title="Previsão de fechamento">
               <Calendar className="w-3.5 h-3.5 text-surface-500" />
@@ -314,7 +385,7 @@ export function DealDetailHeader({
               />
             </span>
 
-            <span className="w-px h-3 bg-surface-800 shrink-0" aria-hidden />
+            <span className="w-px h-3 bg-surface-700 shrink-0" aria-hidden />
 
             {/* "movido por" e "atualizado há" saíram do texto e viraram `title`:
                 cabiam na linha antiga, que era larga, e não cabem nesta sem
@@ -342,7 +413,7 @@ export function DealDetailHeader({
                     onChange={(e) => setProbDraft(e.target.value)}
                     onBlur={handleProbabilitySave}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleProbabilitySave(); if (e.key === 'Escape') setProbEditing(false) }}
-                    className="w-14 bg-surface-800 border border-brand-500/50 rounded px-1.5 py-0.5 text-xs text-surface-100"
+                    className="w-14 bg-surface-800 border border-brand-500/50 rounded-sm px-1.5 py-0.5 text-xs text-surface-100"
                   />
                 ) : (
                   <button
@@ -389,15 +460,16 @@ export function DealDetailHeader({
           palavras, o que fazer com ela. Instrução curta uma vez vale mais que
           um tooltip que só aparece depois da dúvida. */}
       {deal.status === 'open' && (
-        <div className="flex flex-col gap-1.5 rounded-xl border border-surface-700 bg-surface-900/60 px-3 py-2.5" data-testid="deal-progress-band">
-          <span className="text-3xs font-semibold uppercase tracking-wider text-surface-500">
+        <div className="flex flex-col gap-1.5 rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5" data-testid="deal-progress-band">
+          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
             Etapa <span className="font-normal normal-case tracking-normal text-surface-600">· clique para mover</span>
           </span>
           <DealProgress pipeline={pipeline} deal={deal} history={history} onMoveToStage={onMoveToStage} tempoNaEtapa={tempoNaEtapa} />
         </div>
       )}
 
-      {/* Linha 6 — ações */}
+      {/* Linha 6 — fechar o negócio (o "···" subiu pro topo, como no drawer de contato) */}
+      {deal.status === 'open' && (wonStage || lostStage) && (
       <div className="flex items-center gap-2">
         {/* O menu "Mover ▾" saiu (10/09): a própria trilha/linha do tempo logo
             acima já move — clicar numa etapa chama o mesmo `onMoveToStage`.
@@ -415,55 +487,31 @@ export function DealDetailHeader({
             gesto. */}
 
         {deal.status === 'open' && wonStage && (
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant="neutral"
             onClick={() => onMoveToStage(wonStage)}
             data-testid="deal-mark-won"
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-status-active hover:bg-status-active-bg transition-colors"
+            leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-success" />}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" /> Marcar {labels.won.toLowerCase()}
-          </button>
+            Marcar {labels.won.toLowerCase()}
+          </Button>
         )}
         {deal.status === 'open' && lostStage && (
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant="ghost"
             onClick={() => onMoveToStage(lostStage)}
             data-testid="deal-mark-lost"
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+            leftIcon={<XCircle className="w-3.5 h-3.5" />}
           >
-            <XCircle className="w-3.5 h-3.5" /> Marcar {labels.lost.toLowerCase()}
-          </button>
+            Marcar {labels.lost.toLowerCase()}
+          </Button>
         )}
-
-        <Dropdown
-          open={moreOpen}
-          onClose={() => setMoreOpen(false)}
-          align="right"
-          className="w-52"
-          anchor={
-            <button
-              type="button"
-              onClick={() => setMoreOpen((v) => !v)}
-              title="Mais ações"
-              aria-label="Mais ações"
-              data-testid="deal-more-button"
-              className="ml-auto p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-all"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-          }
-        >
-          <div className="px-1 py-1 flex flex-col gap-0.5">
-            <DropdownItem onClick={() => { setMoreOpen(false); setTransferOpen(true) }} disabled={otherPipelines.length === 0}>
-              <ArrowRightLeft className="w-3.5 h-3.5" /> Transferir de funil
-            </DropdownItem>
-            <DropdownSeparator />
-            <DropdownItem onClick={() => { setMoreOpen(false); setConfirmDelete(true) }} danger>
-              <Trash2 className="w-3.5 h-3.5" /> Excluir
-            </DropdownItem>
-          </div>
-        </Dropdown>
       </div>
+      )}
 
       <TransferPipelineModal
         open={transferOpen}
@@ -477,7 +525,8 @@ export function DealDetailHeader({
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => { setConfirmDelete(false); onDelete() }}
         title="Excluir negócio"
-        description={`Tem certeza que deseja excluir "${deal.title}"? Esta ação não pode ser desfeita.`}
+        impact={{ label: `"${deal.title}" será excluído permanentemente`, tone: 'danger' }}
+        description="Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
       />

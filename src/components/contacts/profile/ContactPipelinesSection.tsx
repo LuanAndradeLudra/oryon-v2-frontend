@@ -53,11 +53,11 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
 
   return (
     <section
-      className={cn('rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden', className)}
+      className={cn('rounded-2xl border border-surface-700 bg-surface-900 overflow-hidden', className)}
       aria-label="Funis do contato"
       data-testid="contact-pipelines-section"
     >
-      <header className="flex items-center justify-between px-4 py-2.5 border-b border-surface-800">
+      <header className="flex items-center justify-between px-4 py-2.5 border-b border-surface-700">
         <h3 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
           <KanbanSquare className="w-4 h-4 text-surface-400" />
           Funis
@@ -67,7 +67,7 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
         </h3>
       </header>
 
-      <div className="flex flex-col divide-y divide-surface-800">
+      <div className="flex flex-col divide-y divide-surface-700">
         {error && <p className="px-4 py-3 text-xs text-danger" role="alert">{error}</p>}
         {deals !== null && open.length === 0 && !error && (
           <div className="px-4 py-3 flex flex-wrap items-center gap-3">

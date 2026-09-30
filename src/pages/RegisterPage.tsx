@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, EyeOff, Zap, Loader2, Building2, Sun, Moon, CheckCircle2 } from 'lucide-react'
+import { Eye, EyeOff, Zap, Building2, Sun, Moon, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { useTheme } from '@/hooks/useTheme'
 import { PhoneField } from '@/components/ui/PhoneField'
@@ -46,7 +47,7 @@ function PasswordStrength({ password }: { password: string }) {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-colors ${i < score ? colors[score] : 'bg-surface-700'}`}
+            className={`h-1 flex-1 rounded-full transition-colors ${i < score ? colors[score] : 'bg-surface-900'}`}
           />
         ))}
       </div>
@@ -122,7 +123,7 @@ export function RegisterPage() {
       <button
         onClick={toggle}
         title={isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-900 hover:bg-surface-800 transition-colors shadow-lg"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors"
       >
         <div className="relative w-8 h-4 rounded-full bg-surface-700 flex-shrink-0">
           <motion.div
@@ -151,7 +152,7 @@ export function RegisterPage() {
 
         {/* Card */}
         {successMessage ? (
-          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-8 shadow-2xl text-center">
+          <div className="bg-surface-800 border border-surface-700 rounded-lg p-8 text-center">
             <CheckCircle2 className="w-12 h-12 text-status-active mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-surface-100">Entraremos em contato</h2>
             <p className="text-sm text-surface-400 mt-2">{successMessage}</p>
@@ -159,8 +160,8 @@ export function RegisterPage() {
         ) : (
           <form
           onSubmit={handleSubmit}
-          className="bg-surface-900 border border-surface-800 rounded-2xl p-5 flex flex-col gap-3 shadow-2xl"
-          >
+          className="bg-surface-800 border border-surface-700 rounded-lg p-5 flex flex-col gap-3"
+        >
           {/* Section: company */}
           <div className="flex items-center gap-2">
             <Building2 className="w-3.5 h-3.5 text-brand-400" />
@@ -181,9 +182,9 @@ export function RegisterPage() {
           </Field>
 
           {/* Divider */}
-          <div className="border-t border-surface-800 -mx-1" />
+          <div className="border-t border-surface-700 -mx-1" />
 
-          <div className="flex items-center gap-2 p-2 border border-surface-800 rounded-lg">
+          <div className="flex items-center gap-2 p-2 border border-surface-700 rounded-lg">
             <Zap className="w-3.5 h-3.5 text-surface-500" />
             <span className="text-[11px] font-bold text-surface-500 uppercase tracking-wider">
               Admin da conta
@@ -274,13 +275,7 @@ export function RegisterPage() {
           )}
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading || !isValid}
-            className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Criar conta'}
-          </button>
+          <Button type="submit" variant="primary" size="lg" loading={loading} disabled={loading || !isValid} className="w-full mt-1">Criar conta</Button>
           </form>
         )}
 
@@ -329,4 +324,4 @@ function Field({
 }
 
 const inputClass =
-  'w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors'
+  'w-full h-9 bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 text-[13px] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500 transition-colors'

@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { PipelinePage } from './PipelinePage'
+import { TopBarActionsProvider, useTopBarActions } from '@/contexts/TopBarActionsContext'
 import { pipelinesApi } from '@/services/api'
 import type { Pipeline } from '@/types'
 
@@ -18,8 +19,10 @@ vi.mock('@/services/api', () => ({
 const { openDeal } = vi.hoisted(() => ({ openDeal: vi.fn() }))
 vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/components/deals/PipelineBoardTab', () => ({
-  PipelineBoardTab: ({ pipeline, search, novoNegocioEtapaId }: { pipeline: Pipeline; search?: string; novoNegocioEtapaId?: string | null }) => (
+  PipelineBoardTab: ({ pipeline, search, novoNegocioEtapaId, toolbarLead, toolbarTrail }: { pipeline: Pipeline; search?: string; novoNegocioEtapaId?: string | null; toolbarLead?: import('react').ReactNode; toolbarTrail?: import('react').ReactNode }) => (
     <div data-testid="board-tab">
+      {/* a barra única do funil (visão + busca + Etapas) é entregue pela página */}
+      <div>{toolbarLead}{toolbarTrail}</div>
       board de {pipeline.name}
       <span data-testid="board-search-recebida">{search ?? ''}</span>
       <span data-testid="board-nova-etapa">{novoNegocioEtapaId ?? ''}</span>
@@ -34,7 +37,10 @@ vi.mock('@/components/deals/FunnelsConfigDrawer', () => ({
     open ? <div data-testid="funnels-config-drawer">config</div> : null,
 }))
 vi.mock('@/components/deals/reports/PipelineReportsTab', () => ({
-  PipelineReportsTab: ({ pipeline }: { pipeline: Pipeline }) => <div data-testid="reports-tab">relatórios de {pipeline.name}</div>,
+  // A barra do funil (visão + Etapas) agora vem DENTRO da aba de relatórios.
+  PipelineReportsTab: ({ pipeline, toolbarLead, toolbarTrail }: { pipeline: Pipeline; toolbarLead?: import('react').ReactNode; toolbarTrail?: import('react').ReactNode }) => (
+    <div data-testid="reports-tab"><div>{toolbarLead}{toolbarTrail}</div>relatórios de {pipeline.name}</div>
+  ),
 }))
 
 const pipeline = (over: Partial<Pipeline>): Pipeline => ({
@@ -47,10 +53,18 @@ function Sonda({ testid = 'destino' }: { testid?: string }) {
   return <div data-testid={testid}>{`${loc.pathname}${loc.search}`}</div>
 }
 
+/** A TopBar real não monta aqui — este host renderiza o que a página registra nela (seletor de funil e "Novo negócio"). */
+function TopBarHost() {
+  const { pageSubtitle, pageActions } = useTopBarActions()
+  return <div data-testid="topbar-host">{pageSubtitle}{pageActions}</div>
+}
+
 function renderAt(path: string, pipelines: Pipeline[]) {
   vi.mocked(pipelinesApi.list).mockResolvedValue({ data: pipelines } as never)
   return render(
     <MemoryRouter initialEntries={[path]}>
+      <TopBarActionsProvider>
+      <TopBarHost />
       <Routes>
         <Route path="/pipelines/:id" element={<><Sonda testid="rota-atual" /><PipelinePage /></>} />
         <Route path="/home" element={<div data-testid="home-page">home</div>} />
@@ -58,6 +72,7 @@ function renderAt(path: string, pipelines: Pipeline[]) {
             querystring — é ela que carrega o funil e o caminho de volta. */}
         <Route path="/settings/:section" element={<Sonda />} />
       </Routes>
+      </TopBarActionsProvider>
     </MemoryRouter>,
   )
 }
@@ -97,7 +112,7 @@ describe('PipelinePage — navegação (D2/SCRUM-935)', () => {
     expect(screen.getByTestId('board-search-recebida')).toHaveTextContent('mariana')
 
     // Relatórios agregam por etapa e período — o campo não teria o que filtrar.
-    fireEvent.click(screen.getByRole('button', { name: /Relatórios/ }))
+    fireEvent.click(screen.getByRole('tab', { name: /Relatórios/ }))
     await waitFor(() => expect(screen.queryByTestId('board-search')).toBeNull())
   })
 
@@ -153,7 +168,7 @@ describe('PipelinePage — navegação (D2/SCRUM-935)', () => {
   it('a aba "Relatórios" troca o conteúdo (via querystring, linkável)', async () => {
     renderAt('/pipelines/p1', [pipeline({ id: 'p1', name: 'Vendas' })])
     await waitFor(() => screen.getByTestId('board-tab'))
-    fireEvent.click(screen.getByRole('button', { name: /Relatórios/ }))
+    fireEvent.click(screen.getByRole('tab', { name: /Relatórios/ }))
     await waitFor(() => expect(screen.getByTestId('reports-tab')).toHaveTextContent('relatórios de Vendas'))
     expect(screen.queryByTestId('board-tab')).toBeNull()
   })
@@ -197,11 +212,13 @@ describe('PipelinePage — tipo do funil no cabecalho', () => {
 // "onde este negócio está no meu funil". A ficha abre POR CIMA do quadro: as
 // duas respostas de uma vez.
 describe('PipelinePage — chegada com ?deal=', () => {
-  it('abre a ficha do negócio pedida na URL', async () => {
+  // R4 (SCRUM-1161): a ficha aberta mora na URL e quem a abre é o
+  // DealPanelProvider global, lendo o parâmetro. A página não consome mais o
+  // `?deal=` — consumir apagava o id antes de o quadro destacar o card.
+  it('deixa o ?deal= na URL para o painel global e o quadro usarem', async () => {
     renderAt('/pipelines/p1?deal=d9', [pipeline({})])
-    await waitFor(() => expect(openDeal).toHaveBeenCalledWith('d9'))
-    // O quadro continua sendo o que a página mostra — a ficha vem por cima.
     await waitFor(() => expect(screen.getByTestId('board-tab')).toBeInTheDocument())
+    expect(openDeal).not.toHaveBeenCalled()
   })
 
   it('sem o parâmetro, nada é aberto', async () => {

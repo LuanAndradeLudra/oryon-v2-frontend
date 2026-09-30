@@ -186,24 +186,27 @@ export function inlineActionFor(n: AppNotification): InlineAction | null {
     case 'mention': {
       const convId = meta?.channelId
       if (!convId) return null
-      return { label: 'Responder', href: `/team-chat?channel=${convId}`, variant: 'primary' }
+      return { label: 'Responder', href: `/team?channel=${convId}`, variant: 'primary' }
     }
     case 'team_message': {
       const convId = meta?.channelId
       if (!convId) return null
-      return { label: 'Abrir', href: `/team-chat?channel=${convId}` }
+      return { label: 'Abrir', href: `/team?channel=${convId}` }
     }
     case 'campaign_complete':
     case 'campaign_failed': {
       const cid = meta?.campaignId
       if (!cid) return null
-      return { label: 'Ver relatório', href: `/campaigns/${cid}`, variant: 'primary' }
+      // /campaigns/:id NÃO existe no router (cai no `*` → /home). O relatório
+      // abre por estado da CampaignsTab, sem deep-link — então leva à lista.
+      return { label: 'Ver campanhas', href: '/campaigns', variant: 'primary' }
     }
     case 'automation_executed':
     case 'automation_note': {
       const aid = meta?.automationId
       if (!aid) return null
-      return { label: 'Ver automação', href: `/automations` }
+      // AutomationsPage consome ?automation=:id e abre o detalhe.
+      return { label: 'Ver automação', href: `/automations?automation=${aid}` }
     }
     case 'whatsapp_integration_error':
       return { label: 'Ver integração', href: '/settings/numbers', variant: 'primary' }
@@ -250,4 +253,23 @@ export function emptyStateFor(
 export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined' || !window.matchMedia) return false
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/**
+ * O backend ainda emite dois links para rotas que não existem no router
+ * (auditoria do Cartógrafo, 23/09): `/team-chat?channel=…` (rota real é
+ * `/team`) e `/campaigns/:id` (só existe `/campaigns`; o relatório abre por
+ * `?report=`). Enquanto o backend não for corrigido, normalizamos aqui —
+ * a única porta de entrada dos links de servidor é o popover/página.
+ */
+export function normalizeNotificationLink(link: string): string {
+  const t = link.trim()
+  if (t.startsWith('/team-chat')) return '/team' + t.slice('/team-chat'.length)
+  const camp = t.match(/^\/campaigns\/([^/?#]+)(\?[^#]*)?$/)
+  if (camp) {
+    const q = new URLSearchParams(camp[2] ?? '')
+    q.set('report', camp[1])
+    return `/campaigns?${q.toString()}`
+  }
+  return t
 }

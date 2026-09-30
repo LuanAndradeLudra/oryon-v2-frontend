@@ -7,12 +7,16 @@
 // while this one zooms into the AI agent runtime itself.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, Search, RotateCcw } from 'lucide-react'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
+import { Search, RotateCcw } from 'lucide-react'
 import {
   fetchChatExecutions,
   type ChatExecutionRow,
 } from '@/services/adminAiObservabilityApi'
 import { ChatExecutionDrillModal } from '@/components/admin/ChatExecutionDrillModal'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -28,7 +32,7 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'max_turns',    label: 'max_turns' },
 ]
 
-// Holds a chip color (token) rendered as a filled .color-chip.
+// Holds a chip color (token) rendered as a soft .color-chip-soft (status chip).
 const STATUS_STYLE: Record<string, string> = {
   answered:     'var(--color-status-active)',
   aborted_loop: 'var(--color-danger)',
@@ -37,11 +41,12 @@ const STATUS_STYLE: Record<string, string> = {
 }
 
 export function AiExecutionsPage() {
-  const [tenantId, setTenantId] = useState('')
-  const [agentId, setAgentId] = useState('')
-  const [finalStatus, setFinalStatus] = useState('')
-  const [since, setSince] = useState(defaultSince())
-  const [until, setUntil] = useState('')
+  // Filtros na URL (regra do PO). O "desde" padrão (7 dias) fica fora dela.
+  const [tenantId, setTenantId] = useEstadoNaUrl<string>('tenant', { padrao: '' })
+  const [agentId, setAgentId] = useEstadoNaUrl<string>('agente', { padrao: '' })
+  const [finalStatus, setFinalStatus] = useEstadoNaUrl<string>('status', { padrao: '' })
+  const [since, setSince] = useEstadoNaUrl<string>('de', { padrao: defaultSince(), ler: (v) => v || defaultSince() })
+  const [until, setUntil] = useEstadoNaUrl<string>('ate', { padrao: '' })
 
   const [rows, setRows] = useState<ChatExecutionRow[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
@@ -115,7 +120,7 @@ export function AiExecutionsPage() {
         subtitle="Cada linha é uma chamada POST /chat — clique para ver input, output, tools e RAG."
       />
 
-      <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
+      <div className="px-6 py-3 border-b border-r border-surface-700 flex flex-wrap items-end gap-3">
         <Field label="tenantId" value={tenantId} onChange={setTenantId} placeholder="opcional — UUID" wide />
         <Field label="agentId" value={agentId} onChange={setAgentId} placeholder="opcional — UUID" wide />
         <SelectField
@@ -126,19 +131,20 @@ export function AiExecutionsPage() {
         />
         <Field label="since (date)" value={since} onChange={setSince} placeholder="YYYY-MM-DD" />
         <Field label="until (date)" value={until} onChange={setUntil} placeholder="YYYY-MM-DD" />
-        <button
+        <Button
+          size="sm"
+          variant="primary"
           onClick={() => void load()}
           disabled={loading}
-          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs disabled:opacity-50 inline-flex items-center gap-1.5"
+          leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
         >
-          <RotateCcw className="w-3.5 h-3.5" />
           Atualizar
-        </button>
+        </Button>
       </div>
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-5 gap-3 border-b border-r border-surface-700">
+        <div className="px-6 py-4 border-b border-r border-surface-700"><div className="grid grid-cols-2 md:grid-cols-5 gap-px rounded-lg border border-surface-700 bg-surface-700 overflow-hidden">
           <KpiCard label="Execuções" value={totals.exec.toLocaleString('pt-BR')} />
           <KpiCard label="Custo total" value={`$${totals.cost.toFixed(4)}`} />
           <KpiCard label="Input tokens" value={fmtCompact(totals.input)} />
@@ -148,6 +154,7 @@ export function AiExecutionsPage() {
             value={totals.errors.toLocaleString('pt-BR')}
             hint={totals.exec > 0 ? `${((totals.errors / totals.exec) * 100).toFixed(1)}% das execuções` : undefined}
           />
+        </div>
         </div>
 
         <section className="px-6 py-4">
@@ -171,37 +178,37 @@ export function AiExecutionsPage() {
           )}
 
           {rows.length > 0 && (
-            <div className="rounded-xl border border-surface-700 bg-surface-900 overflow-hidden">
+            <div className="border-y border-surface-700">
               <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead className="bg-surface-900 text-surface-500 text-left border-b border-surface-700">
+                <thead className="text-surface-500 text-left border-b border-surface-700">
                   <tr>
-                    <th className="px-3 py-2 font-medium">Quando</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 font-medium">Agente</th>
-                    <th className="px-3 py-2 font-medium">Tenant</th>
-                    <th className="px-3 py-2 font-medium text-right">Turns</th>
-                    <th className="px-3 py-2 font-medium text-right">Tools</th>
-                    <th className="px-3 py-2 font-medium text-right">Tokens (in/out)</th>
-                    <th className="px-3 py-2 font-medium text-right">Custo</th>
-                    <th className="px-3 py-2 font-medium text-right">Latência</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Quando</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Agente</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Tenant</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Turns</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Tools</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Tokens (in/out)</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Custo</th>
+                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Latência</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-surface-800">
+                <tbody className="divide-y divide-surface-700">
                   {rows.map(r => {
                     const statusChip = STATUS_STYLE[r.final_status] ?? 'var(--color-status-muted)'
                     return (
                       <tr
                         key={r.id}
                         onClick={() => setSelected(r)}
-                        className="cursor-pointer hover:bg-surface-800/40"
+                        className="cursor-pointer hover:bg-[var(--rowhover)]"
                       >
                         <td className="px-3 py-2 text-surface-300 font-mono">
                           {new Date(r.created_at).toLocaleString('pt-BR', { hour12: false })}
                         </td>
                         <td className="px-3 py-2">
                           <span
-                            className="color-chip border px-1.5 py-0.5 rounded text-[11px] font-medium"
+                            className="color-chip-soft border px-1.5 py-px rounded-xs text-[11px] font-medium"
                             style={{ ['--chip']: statusChip } as React.CSSProperties}
                           >
                             {r.final_status}
@@ -235,15 +242,10 @@ export function AiExecutionsPage() {
               </div>
 
               {nextCursor && (
-                <div className="border-t border-surface-800 px-3 py-2 flex justify-center">
-                  <button
-                    onClick={() => void loadMore()}
-                    disabled={loadingMore}
-                    className="px-3 py-1.5 rounded bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs disabled:opacity-50 inline-flex items-center gap-1.5"
-                  >
-                    {loadingMore ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <div className="border-t border-surface-700 px-3 py-2 flex justify-center">
+                  <Button size="sm" variant="neutral" onClick={() => void loadMore()} loading={loadingMore}>
                     Carregar mais
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -288,14 +290,12 @@ function Field({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <input
+      <Input
+        size="sm"
         value={value}
         placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        className={
-          'px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 ' +
-          (wide ? 'w-72' : 'w-36')
-        }
+        className={wide ? 'w-72' : 'w-36'}
       />
     </label>
   )
@@ -312,22 +312,18 @@ function SelectField({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 w-44"
-      >
+      <Select size="sm" value={value} onChange={e => onChange(e.target.value)} className="w-44">
         {options.map(o => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </Select>
     </label>
   )
 }
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
+    <div className="bg-[var(--sf)] px-3.5 py-3">
       <p className="text-[11px] uppercase tracking-wider text-surface-400">{label}</p>
       <p className="mt-1 text-lg font-semibold text-surface-100">{value}</p>
       {hint && <p className="text-[11px] text-surface-500 mt-0.5">{hint}</p>}

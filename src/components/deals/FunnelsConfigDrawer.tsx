@@ -49,7 +49,8 @@ export function FunnelsConfigDrawer({ open, onClose }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40 z-[39]"
+            // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/40 cru.
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[39]"
             onClick={onClose}
           />
           <motion.div
@@ -64,26 +65,26 @@ export function FunnelsConfigDrawer({ open, onClose }: Props) {
             aria-label="Configurar funis"
             data-testid="funnels-config-drawer"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-base font-semibold text-surface-50">Configurar funis</h2>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Configurar funis</h2>
                 <p className="text-xs text-surface-500 mt-0.5">Etapas, motivos de desfecho e acesso por setor</p>
               </div>
               <button
                 onClick={onClose}
                 title="Fechar"
                 aria-label="Fechar"
-                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-5">
+            <div className="flex-1 overflow-y-auto px-[18px] py-4">
               <FunnelsSettings />
             </div>
 
-            <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
+            <div className="px-[18px] py-3 border-t border-surface-700 flex-shrink-0">
               <Link
                 to={telaCheia}
                 onClick={onClose}

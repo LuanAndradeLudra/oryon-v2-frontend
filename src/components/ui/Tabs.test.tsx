@@ -64,33 +64,42 @@ describe('Tabs', () => {
   })
 })
 
-// Fase 5a — accent categórico, só na aba ativa (AgentDetail.tsx).
-describe('Tabs — accent (Fase 5a)', () => {
+// Accent categórico, só na aba ativa (AgentDetail.tsx). Contrato visual da
+// spec/1a-primitivos.md TABS-03 (SCRUM-1097): o sublinhado é
+// `inset 0 -2px 0 currentColor` — acompanha a cor do texto, então o accent
+// só precisa trocar a cor; a inativa herda --tx2 do tablist e não tem
+// sublinhado nem peso 600.
+const UNDERLINE = 'shadow-[inset_0_-2px_0_currentColor]'
+
+describe('Tabs — accent', () => {
   const ACCENT_TABS: TabOption<Section>[] = [
-    { id: 'overview', label: 'Visão geral' }, // sem accent — fica na cor da marca
+    { id: 'overview', label: 'Visão geral' }, // sem accent — fica na cor do texto (--tx)
     { id: 'prompt', label: 'System Prompt', accent: 'violet' },
     { id: 'metrics', label: 'Métricas', accent: 'blue' },
   ]
 
-  it('aba ativa com accent usa a classe do tom informado, não a cor da marca', () => {
+  it('aba ativa com accent usa a classe do tom informado; o sublinhado segue via currentColor', () => {
     render(<Tabs tabs={ACCENT_TABS} value="prompt" onChange={vi.fn()} label="Seções de teste" />)
     const active = screen.getByRole('tab', { name: 'System Prompt' })
     expect(active.className).toContain('text-accent-violet')
-    expect(active.className).toContain('border-accent-violet')
-    expect(active.className).not.toContain('border-brand-500')
+    expect(active.className).toContain(UNDERLINE)
+    expect(active.className).not.toContain('border-accent')
+    expect(active.className).not.toContain('brand-500')
   })
 
-  it('aba ativa SEM accent mantém o default (cor da marca) — não quebra quem não usa a prop', () => {
+  it('aba ativa SEM accent mantém o default (cor do texto, --tx) — não quebra quem não usa a prop', () => {
     render(<Tabs tabs={ACCENT_TABS} value="overview" onChange={vi.fn()} label="Seções de teste" />)
     const active = screen.getByRole('tab', { name: 'Visão geral' })
-    expect(active.className).toContain('border-brand-500')
-    expect(active.className).toContain('text-surface-50')
+    expect(active.className).toContain('text-surface-100')
+    expect(active.className).toContain(UNDERLINE)
+    expect(active.className).not.toContain('text-accent')
   })
 
-  it('aba INATIVA com accent configurado continua neutra — a cor só aparece quando ativa', () => {
+  it('aba INATIVA com accent configurado continua neutra — sem cor, sem sublinhado, sem peso', () => {
     render(<Tabs tabs={ACCENT_TABS} value="overview" onChange={vi.fn()} label="Seções de teste" />)
     const inactive = screen.getByRole('tab', { name: 'System Prompt' })
     expect(inactive.className).not.toContain('accent-violet')
-    expect(inactive.className).toContain('text-surface-500')
+    expect(inactive.className).not.toContain(UNDERLINE)
+    expect(inactive.className).not.toContain('font-semibold')
   })
 })

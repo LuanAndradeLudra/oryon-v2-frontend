@@ -6,13 +6,17 @@ import {
 import { chartTooltipProps } from './utils'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { TagVolume } from '@/types/dashboard'
+import { EscopoDoCartao } from './EscopoDoCartao'
 
-export const TagsChart = memo(function TagsChart({ data }: { data: TagVolume[] }) {
+export const TagsChart = memo(function TagsChart({ data, escopo }: { data: TagVolume[]; escopo?: string }) {
   const C = useChartColors()
   const sorted = [...data].sort((a, b) => b.count - a.count).slice(0, 8)
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 h-full">
-      <p className="text-sm font-semibold text-surface-100 mb-4">Tags Mais Usadas</p>
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full">
+      <div className="flex items-center gap-2 mb-4">
+        <p className="text-sm font-semibold text-surface-100">Tags Mais Usadas</p>
+        {escopo && <EscopoDoCartao className="ml-auto">{escopo}</EscopoDoCartao>}
+      </div>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={sorted} layout="vertical" margin={{ left: 4, right: 20, top: 4, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={C.grid} horizontal={false} />

@@ -16,10 +16,14 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   X, ChevronRight, ChevronLeft, Check, Search, Loader2, Calendar,
   Users, Tag as TagIcon, BarChart2, UserCheck, SlidersHorizontal, Info,
-  Sparkles, MessageCircle, Send, Clock,
+  Sparkles, MessageCircle, Send, Clock, AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { getReadableTextColor } from '@/lib/colorPalette'
 import { Emoji } from '@/lib/emojiText'
@@ -28,7 +32,7 @@ import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { TemplatePreview } from './TemplatePreview'
-import { CATEGORY_LABELS } from './constants'
+import { SummaryRow } from './SummaryRow'
 import type {
   Campaign, Contact, ContactIntent, ContactSource, ContactSentiment,
   WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
@@ -51,18 +55,7 @@ interface CampaignWizardProps {
 
 type Step = 1 | 2 | 3 | 4 | 5
 
-const STEP_LABELS = ['Template', 'Segmento', 'Variáveis', 'Agendar', 'Revisão']
-
-// Um acento categórico por etapa — só para orientação visual dentro do
-// wizard (não carrega o mesmo significado do accent-rose em CampaignReport,
-// que marca resultado negativo de campanha).
-const STEP_ACCENTS: { icon: typeof Sparkles; color: string }[] = [
-  { icon: Sparkles,          color: 'var(--color-accent-blue)' },
-  { icon: Users,             color: 'var(--color-accent-green)' },
-  { icon: SlidersHorizontal, color: 'var(--color-accent-violet)' },
-  { icon: Calendar,          color: 'var(--color-accent-amber)' },
-  { icon: Check,             color: 'var(--color-accent-rose)' },
-]
+const STEP_LABELS = ['Template', 'Público', 'Variáveis', 'Agendamento', 'Revisão']
 
 const CONTACT_FIELDS = [
   { value: 'displayName', label: 'Nome do contato' },
@@ -160,6 +153,11 @@ export function CampaignWizard({
   const smartDefault = useSmartLineDefault()
   const [waNumbers, setWaNumbers]             = useState<Array<{ id: string; displayPhoneNumber: string; label?: string }>>([])
   const [whatsappNumberId, setWhatsappNumberId] = useState('')
+  // Limite diário de mensagens por linha (banner âmbar da Revisão, tela 2c) —
+  // fetch à parte do Promise.all principal: é só decoração da etapa 5, não
+  // deve bloquear o carregamento de templates/contatos se `/whatsapp/numbers`
+  // falhar (não-admin pode receber 403 nesse endpoint em alguns tenants).
+  const [messagingLimits, setMessagingLimits] = useState<Record<string, string>>({})
 
   // Submit
   const [saving, setSaving]                   = useState(false)
@@ -225,9 +223,24 @@ export function CampaignWizard({
         setLoadingContacts(false)
       }
     })
+    whatsappNumbersApi.listDetailed().then(({ data }) => {
+      if (staleRef.current) return
+      setMessagingLimits(Object.fromEntries(data.filter((n) => n.messagingLimit).map((n) => [n.id, n.messagingLimit as string])))
+    }).catch(() => { if (!staleRef.current) setMessagingLimits({}) })
 
     return () => { staleRef.current = true }
   }, [open])
+
+  // Esc fecha o wizard — mesmo comportamento do X e do backdrop (nenhum dos
+  // dois pede confirmação hoje; Esc ficar de fora era a mesma falha "Esc
+  // vaza" já registrada em outras telas do produto, não uma proteção
+  // deliberada contra perda de dado).
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
 
   // ── Init variable mappings when template changes ────────────────────────────
 
@@ -421,7 +434,7 @@ export function CampaignWizard({
             key="wizard-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/60 z-[49]"
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[49]"
             onClick={onClose}
           />
 
@@ -434,13 +447,14 @@ export function CampaignWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-surface-900 overlay-frame border rounded-2xl w-full max-w-3xl pointer-events-auto flex flex-col max-h-[90vh]"
+              className="bg-surface-800 overlay-frame border rounded-xl w-full max-w-[760px] pointer-events-auto flex flex-col max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
-                <h2 className="text-base font-semibold text-surface-50">Nova campanha</h2>
-                <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+              {/* Header — CAMP-WIZ-03/04/06: sem border-b (o breadcrumb logo
+                  abaixo já separa visualmente), título 15px/700, X mais sutil. */}
+              <div className="flex items-center justify-between px-5 pt-4 pb-0 flex-shrink-0">
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-100">Nova campanha</h2>
+                <button onClick={onClose} aria-label="Fechar" className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -454,8 +468,12 @@ export function CampaignWizard({
                 />
               </div>
 
-              {/* Progress */}
-              <div className="border-b border-surface-800 flex-shrink-0">
+              {/* Progress — breadcrumb já mostra o nome da etapa atual (tela
+                  2c), então não repetimos ícone+título acima do conteúdo
+                  (era redundante, removido). px-5 py-3 iguala o padding do
+                  header/footer do modal — o componente novo não traz padding
+                  próprio (era o antigo, mais alto, que trazia). */}
+              <div className="px-5 py-3.5 border-b border-surface-700 flex-shrink-0">
                 <WizardProgress
                   steps={STEP_LABELS}
                   currentStep={step}
@@ -464,21 +482,7 @@ export function CampaignWizard({
               </div>
 
               {/* Step content */}
-              <div className="flex-1 overflow-y-auto p-5">
-                {(() => {
-                  const { icon: StepIcon, color } = STEP_ACCENTS[step - 1]
-                  return (
-                    <div className="flex items-center gap-2 mb-4">
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
-                      >
-                        <StepIcon className="w-4 h-4" />
-                      </div>
-                      <h3 className="text-sm font-semibold text-surface-100">{STEP_LABELS[step - 1]}</h3>
-                    </div>
-                  )
-                })()}
+              <div className="flex-1 overflow-y-auto px-5 py-[18px]">
                 {step === 1 && (
                   <>
                     <Step1
@@ -568,6 +572,10 @@ export function CampaignWizard({
                     scheduleMode={scheduleMode}
                     scheduledAt={scheduledAt}
                     campaignName={campaignName}
+                    onEditStep={(s) => setStep(s)}
+                    messagingLimit={messagingLimits[whatsappNumberId]}
+                    lineLabel={waNumbers.find((n) => n.id === whatsappNumberId)?.label
+                      ?? waNumbers.find((n) => n.id === whatsappNumberId)?.displayPhoneNumber}
                   />
                 )}
                 {error && (
@@ -575,9 +583,12 @@ export function CampaignWizard({
                 )}
               </div>
 
-              {/* Footer */}
-              <div className="flex items-center justify-between px-5 py-4 border-t border-surface-800 flex-shrink-0">
-                <button
+              {/* Footer — CAMP-WIZ-26/27/29: padding/borda ajustados, botões
+                  viram Button do sistema (ghost/primary) em vez de invertido
+                  neutro artesanal com raio 10. */}
+              <div className="flex items-center justify-between px-5 pt-3.5 pb-4 gap-2 border-t border-surface-700 flex-shrink-0">
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     const { userId, tenantId } = readSession()
                     appLogger.logWizardEvent({
@@ -588,17 +599,15 @@ export function CampaignWizard({
                     setStep((s) => Math.max(1, s - 1) as Step)
                   }}
                   disabled={step === 1}
-                  className={cn(
-                    'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all',
-                    step === 1 ? 'invisible' : 'text-surface-400 hover:text-surface-200'
-                  )}
+                  className={step === 1 ? 'invisible' : undefined}
+                  leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
-                  <ChevronLeft className="w-4 h-4" />
                   Voltar
-                </button>
+                </Button>
 
                 {step < 5 ? (
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={() => {
                       const { userId, tenantId } = readSession()
                       appLogger.logWizardEvent({
@@ -614,36 +623,22 @@ export function CampaignWizard({
                       !canAdvance && step === 3 ? 'Preencha o mapeamento de todas as variáveis para continuar' :
                       undefined
                     }
-                    /* Avanço/criação do assistente em `neutral` (10/09) — o teal
-                       aqui só dizia "botão", e o estado desabilitado já é quem
-                       carrega a informação real (pode ou não avançar). */
-                    className={cn(
-                      'flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium transition-all',
-                      canAdvance
-                        ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
-                        : 'bg-surface-700 text-surface-500 cursor-not-allowed'
-                    )}
+                    rightIcon={<ChevronRight className="w-4 h-4" />}
                   >
                     Próximo
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={handleSubmit}
                     disabled={saving || (waNumbers.length > 1 && !whatsappNumberId)}
                     title={waNumbers.length > 1 && !whatsappNumberId ? 'Escolha a linha WhatsApp antes de criar' : undefined}
-                    className={cn(
-                      'flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium transition-all',
-                      !saving && !(waNumbers.length > 1 && !whatsappNumberId)
-                        ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
-                        : 'bg-surface-700 text-surface-500 cursor-not-allowed'
-                    )}
+                    loading={saving}
                   >
-                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                     {scheduleMode === 'later'
                       ? 'Agendar campanha'
                       : saving ? 'Enviando...' : 'Criar e enviar agora'}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -651,6 +646,39 @@ export function CampaignWizard({
         </>
       )}
     </AnimatePresence>
+  )
+}
+
+// ─── Faixa (direção C) ───────────────────────────────────────────────────────
+// Mesmo layout do `Section` de TemplateCreator.tsx (irmão neste diretório,
+// comentário próprio: "Direção C, aprovada 22/09"). Os CAMPOS em si usam os
+// primitivos Input/Select/Textarea (md 36px, FIELD-03) — minha 1ª versão
+// copiou um `campo()` a mão que era, ele mesmo, um erro do TemplateCreator
+// (32px, fora da régua sm 28/md 36/lg 44; já corrigido lá pra primitivo).
+// Regra: referência sendo código do próprio autor não dispensa checar se ELE
+// usa primitivo — se não usa, aponta, não copia (mesmo reflexo que já apliquei
+// ao não mexer no WizardProgress).
+
+function Faixa({ label, required, hint, right, children }: {
+  label: string
+  required?: boolean
+  hint?: React.ReactNode
+  right?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="grid grid-cols-[104px_1fr] gap-x-4 py-4 border-t border-surface-700 first:border-t-0 first:pt-0">
+      <div className="pt-1.5">
+        <h3 className="text-[12.5px] font-bold text-surface-100 tracking-[-0.01em] leading-tight">
+          {label}{required && <span className="text-surface-500 font-normal"> *</span>}
+        </h3>
+        {hint && <p className="text-[11px] text-surface-500 mt-0.5 leading-snug">{hint}</p>}
+      </div>
+      <div className="min-w-0">
+        {right && <div className="flex justify-end text-[11px] text-surface-500 mb-1.5">{right}</div>}
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -673,9 +701,9 @@ function Step1({
   )
 
   return (
-    <div className="space-y-5">
+    <div>
       {/* Info banner */}
-      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-500/5 border border-brand-500/20 rounded-xl">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-500/5 border border-brand-500/20 rounded-lg mb-1">
         <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
         <p className="text-[11px] text-surface-400 leading-relaxed">
           Apenas templates com status <strong className="text-brand-300">Aprovado</strong> pela Meta podem ser usados em campanhas.
@@ -684,73 +712,72 @@ function Step1({
       </div>
 
       <div>
-        <label className="text-xs font-medium text-surface-400 mb-1.5 block">
-          Nome da campanha <span className="text-danger">*</span>
-        </label>
-        <input
-          value={campaignName}
-          onChange={(e) => onNameChange(e.target.value)}
-          placeholder="Ex: Campanha Black Friday 2026"
-          className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
-        />
-        <p className="text-[11px] text-surface-600 mt-1">Use um nome descritivo para identificar a campanha no histórico.</p>
-      </div>
-
-      <div>
-        <label className="text-xs font-medium text-surface-400 mb-2 block">
-          Selecione o template <span className="text-danger">*</span>
-        </label>
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome ou conteúdo..."
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+        <Faixa label="Nome" required hint="descreva a campanha para achá-la depois no histórico">
+          <Input
+            size="md"
+            value={campaignName}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Ex: Campanha Black Friday 2026"
           />
-        </div>
+        </Faixa>
 
-        {loading ? (
-          <div className="flex items-center justify-center h-24">
-            <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
+        <Faixa label="Template" required right={`${filtered.length} de ${templates.length}`}>
+          <div className="relative mb-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+            <Input
+              size="sm"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou conteúdo..."
+              className="pl-8"
+            />
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-sm text-surface-500">Nenhum template aprovado no Oryon</p>
-            <p className="text-xs text-surface-600 max-w-xs mx-auto">
-              Abra a aba Templates e use Sincronizar para importar os modelos ativos da Meta.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {filtered.map((tpl) => (
-              <button
-                key={tpl.id}
-                onClick={() => onSelect(tpl)}
-                className={cn(
-                  'w-full text-left p-3 rounded-xl border transition-all',
-                  selected?.id === tpl.id
-                    ? 'border-brand-500 bg-brand-500/10'
-                    : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
-                )}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium font-mono text-surface-100">{tpl.name}</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded">{tpl.category}</span>
-                    <span className="text-[11px] text-surface-600">{tpl.language}</span>
-                  </div>
-                </div>
-                <p className="text-xs text-surface-500 line-clamp-1">{tpl.body.replace(/\n/g, ' ')}</p>
-                {tpl.bodyVariables && tpl.bodyVariables.length > 0 && (
-                  <p className="text-[11px] text-brand-400/70 mt-1">
-                    {tpl.bodyVariables.length} variáve{tpl.bodyVariables.length === 1 ? 'l' : 'is'}: {tpl.bodyVariables.map((v, i) => `{{${i + 1}}} ${v}`).join(', ')}
-                  </p>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+
+          {loading ? (
+            <div className="flex items-center justify-center h-24">
+              <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-surface-500">Nenhum template aprovado no Oryon</p>
+              <p className="text-xs text-surface-600 max-w-xs mx-auto">
+                Abra a aba Templates e use Sincronizar para importar os modelos ativos da Meta.
+              </p>
+            </div>
+          ) : (
+            <div className="max-h-64 overflow-y-auto -mx-1 divide-y divide-surface-700/60">
+              {filtered.map((tpl) => {
+                const isSelected = selected?.id === tpl.id
+                return (
+                  <button
+                    key={tpl.id}
+                    onClick={() => onSelect(tpl)}
+                    className="w-full text-left px-1 py-2 flex items-start gap-2.5 hover:bg-[var(--rowhover)] transition-colors"
+                  >
+                    <Check className={cn('w-3.5 h-3.5 mt-0.5 flex-shrink-0', isSelected ? 'text-brand-400' : 'text-transparent')} strokeWidth={2.5} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn('text-[13px] font-mono text-surface-100', isSelected && 'font-semibold')}>{tpl.name}</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className="text-[11px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded-2xs">{tpl.category}</span>
+                          <span className="text-[11px] text-surface-600">{tpl.language}</span>
+                          {/* Direção C: "mesma peça, mesma medida" — 3ª linha
+                              listando variáveis cortada (repetia o que a
+                              Etapa 3 já mostra uma a uma), virou marcador
+                              inline sem alterar a altura da linha. */}
+                          {tpl.bodyVariables && tpl.bodyVariables.length > 0 && (
+                            <span className="text-[11px] text-surface-600">· {tpl.bodyVariables.length} var.</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-surface-500 line-clamp-1 mt-0.5">{tpl.body.replace(/\n/g, ' ')}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </Faixa>
       </div>
     </div>
   )
@@ -835,63 +862,75 @@ function Step2({
     c.waId.includes(contactSearch)
   )
 
-  const chipBase = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all'
+  // PL-C2-CAR-eixo10: altura vinha de padding (py-1.5 + texto), não de h-*
+  // explícito — mesmo defeito já achado em Automações (Farol) e Funis. Receita
+  // igual à pílula de tipo de cabeçalho do TemplateCreator.tsx (irmão neste
+  // diretório, direção C aprovada): h-7/rounded-sm/px-2.5/11.5px.
+  const chipBase = 'flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-[11.5px] font-medium transition-colors'
   const chipOn   = 'border-transparent text-white'
-  const chipOff  = 'border-surface-700 text-surface-400 hover:border-surface-500 hover:text-surface-200'
+  const chipOff  = 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]'
+  // Seleção genérica (sem cor de dado por trás, ex. sim/não, fonte, engajamento):
+  // direção C pede quase nenhuma cor — contraste por peso/fundo neutro (mesma
+  // combinação da pílula ativa do TemplateCreator), não pelo brilho de marca.
+  // Cor real (tag/estágio/intenção/sentimento) continua colorida porque ali a
+  // cor É o dado, não é o estado de seleção.
+  const chipOnNeutral = 'border-[var(--bd2)] bg-surface-800 text-surface-50 font-semibold'
 
   return (
-    <div className="space-y-4">
-      {/* Segment type cards */}
-      <div>
-        <label className="text-xs font-medium text-surface-400 mb-2 block">Como definir os destinatários?</label>
-        <div className="grid grid-cols-1 gap-1.5">
+    <div>
+      {/* Segment type — direção C: sem cartão, lista de faixas com hairline;
+          seleção mostrada por peso da fonte + risco à esquerda, não por ring
+          nem por cartão colorido. */}
+      <Faixa label="Destinatários">
+        <div role="radiogroup" aria-label="Como definir os destinatários">
           {SEGMENT_OPTIONS.map((opt) => {
             const Icon = opt.icon
+            const isSelected = segmentType === opt.value
             return (
               <button
                 key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
                 onClick={() => onSegmentType(opt.value)}
                 className={cn(
-                  'w-full text-left px-3 py-2.5 rounded-xl border transition-all flex items-center gap-3',
-                  segmentType === opt.value
-                    ? 'border-brand-500 bg-brand-500/10'
-                    : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
+                  'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
+                  isSelected ? 'border-brand-500' : 'border-transparent hover:border-surface-600',
                 )}
               >
                 <div className={cn(
                   'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
-                  segmentType === opt.value ? 'border-brand-500' : 'border-surface-600'
+                  isSelected ? 'border-brand-500' : 'border-surface-600'
                 )}>
-                  {segmentType === opt.value && <div className="w-2 h-2 rounded-full bg-brand-500" />}
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-brand-500" />}
                 </div>
-                <Icon className={cn('w-4 h-4 flex-shrink-0', segmentType === opt.value ? 'text-brand-400' : 'text-surface-500')} />
+                <Icon className="w-4 h-4 flex-shrink-0 text-surface-500" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-surface-100">{opt.label}</p>
+                  <p className={cn('text-sm text-surface-100', isSelected && 'font-semibold')}>{opt.label}</p>
                   <p className="text-[11px] text-surface-500">{opt.description}</p>
                 </div>
               </button>
             )
           })}
         </div>
-      </div>
+      </Faixa>
 
       {/* Reach estimate */}
       {estimatedReach !== null && (
-        <Banner variant={estimatedReach === 0 ? 'danger' : 'success'}>
-          {estimatedReach === 0
-            ? 'Nenhum contato corresponde aos filtros selecionados'
-            : `Alcance estimado: ${estimatedReach} contato${estimatedReach === 1 ? '' : 's'}`}
-        </Banner>
+        <div className="border-t border-surface-700 py-4">
+          <Banner variant={estimatedReach === 0 ? 'danger' : 'success'}>
+            {estimatedReach === 0
+              ? 'Nenhum contato corresponde aos filtros selecionados'
+              : `Alcance estimado: ${estimatedReach} contato${estimatedReach === 1 ? '' : 's'}`}
+          </Banner>
+        </div>
       )}
 
       {/* Tag picker */}
       {segmentType === 'tag' && (
-        <div>
-          <label className="text-xs font-medium text-surface-400 mb-2 block">
-            Selecione as tags <span className="text-[11px] text-surface-600">(contatos com qualquer uma serão incluídos)</span>
-          </label>
+        <Faixa label="Tags" hint="contatos com qualquer uma serão incluídos">
           {tags.length === 0 ? (
-            <p className="text-xs text-surface-600 py-2">Nenhuma tag cadastrada.</p>
+            <p className="text-xs text-surface-600">Nenhuma tag cadastrada.</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
@@ -907,17 +946,14 @@ function Step2({
               ))}
             </div>
           )}
-        </div>
+        </Faixa>
       )}
 
       {/* Stage picker */}
       {segmentType === 'stage' && (
-        <div>
-          <label className="text-xs font-medium text-surface-400 mb-2 block">
-            Selecione os estágios <span className="text-[11px] text-surface-600">(contatos em qualquer um serão incluídos)</span>
-          </label>
+        <Faixa label="Estágios" hint="contatos em qualquer um serão incluídos">
           {stages.length === 0 ? (
-            <p className="text-xs text-surface-600 py-2">Nenhum estágio configurado no CRM.</p>
+            <p className="text-xs text-surface-600">Nenhum estágio configurado no CRM.</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {stages.map((stage) => (
@@ -933,29 +969,27 @@ function Step2({
               ))}
             </div>
           )}
-        </div>
+        </Faixa>
       )}
 
       {/* Manual contact picker */}
       {segmentType === 'manual' && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-medium text-surface-400">
-              Buscar e selecionar contatos
-            </label>
-            {selectedContactIds.length > 0 && (
-              <button onClick={() => onContactIds([])} className="text-[11px] text-surface-500 hover:text-surface-300 transition-colors">
-                Limpar seleção ({selectedContactIds.length})
-              </button>
-            )}
-          </div>
+        <Faixa
+          label="Contatos"
+          right={selectedContactIds.length > 0 && (
+            <button onClick={() => onContactIds([])} className="hover:text-surface-300 transition-colors">
+              Limpar seleção ({selectedContactIds.length})
+            </button>
+          )}
+        >
           <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-            <input
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+            <Input
+              size="sm"
               value={contactSearch}
               onChange={(e) => setContactSearch(e.target.value)}
               placeholder="Buscar por nome ou número..."
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+              className="pl-8"
             />
           </div>
           {loadingContacts ? (
@@ -965,7 +999,7 @@ function Step2({
           ) : filteredContacts.length === 0 ? (
             <p className="text-xs text-surface-600 text-center py-6">Nenhum contato encontrado</p>
           ) : (
-            <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+            <div className="max-h-56 overflow-y-auto -mx-1">
               {filteredContacts.map((contact) => {
                 const selected = selectedContactIds.includes(contact.id)
                 const stageDef = stages.find((s) => s.key === contact.stage)
@@ -973,10 +1007,7 @@ function Step2({
                   <button
                     key={contact.id}
                     onClick={() => toggleContact(contact.id)}
-                    className={cn(
-                      'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all text-left',
-                      selected ? 'border-brand-500/50 bg-brand-500/8' : 'border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/60'
-                    )}
+                    className="w-full flex items-center gap-2.5 px-1 py-1.5 rounded-sm text-left hover:bg-[var(--rowhover)] transition-colors"
                   >
                     <div className={cn(
                       'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
@@ -1001,7 +1032,7 @@ function Step2({
                         </span>
                       )}
                       {contact.tags && contact.tags.length > 0 && (
-                        <span className="text-[10px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                           {contact.tags[0].name}
                           {contact.tags.length > 1 && ` +${contact.tags.length - 1}`}
                         </span>
@@ -1017,13 +1048,13 @@ function Step2({
               {filteredContacts.length} de {contacts.length} contatos · {selectedContactIds.length} selecionados
             </p>
           )}
-        </div>
+        </Faixa>
       )}
 
       {/* Advanced filter */}
       {segmentType === 'filter' && (
-        <div className="space-y-4">
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-xl">
+        <div className="border-t border-surface-700 py-4">
+          <div className="flex items-start gap-2 px-2.5 py-2.5 border border-[var(--bd2)] rounded-sm mb-1">
             <Info className="w-3.5 h-3.5 text-surface-400 mt-0.5 flex-shrink-0" />
             <p className="text-[11px] text-surface-400 leading-relaxed">
               Os critérios marcados são combinados com <strong className="text-surface-300">E</strong> —
@@ -1032,6 +1063,7 @@ function Step2({
             </p>
           </div>
 
+          <div className="divide-y divide-surface-700">
           {/* Filter: stages */}
           {stages.length > 0 && (
             <FilterGroup label="Estágio do CRM">
@@ -1096,12 +1128,7 @@ function Step2({
                 <button
                   key={opt.value}
                   onClick={() => toggleFilterSource(opt.value)}
-                  className={cn(
-                    chipBase,
-                    filterSource.includes(opt.value)
-                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
-                      : chipOff
-                  )}
+                  className={cn(chipBase, filterSource.includes(opt.value) ? chipOnNeutral : chipOff)}
                 >
                   {opt.label}
                 </button>
@@ -1120,12 +1147,7 @@ function Step2({
                 <button
                   key={String(opt.value)}
                   onClick={() => onFilterOptIn(opt.value)}
-                  className={cn(
-                    chipBase,
-                    filterOptIn === opt.value
-                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
-                      : chipOff
-                  )}
+                  className={cn(chipBase, filterOptIn === opt.value ? chipOnNeutral : chipOff)}
                 >
                   {opt.label}
                 </button>
@@ -1159,11 +1181,12 @@ function Step2({
           <FilterGroup label={<span className="flex items-center gap-1.5"><Search className="w-3 h-3 text-brand-400" />Busca por contato</span>}>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
-              <input
+              <Input
+                size="sm"
                 value={filterContactSearch}
                 onChange={(e) => onFilterContactSearch(e.target.value)}
                 placeholder="Buscar por nome ou número..."
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg pl-7 pr-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+                className="pl-7"
               />
             </div>
             <p className="text-[10px] text-surface-600 mt-1">Inclui contatos cujo nome ou número de WhatsApp correspondam à busca.</p>
@@ -1180,28 +1203,26 @@ function Step2({
                 <button
                   key={String(opt.value)}
                   onClick={() => onFilterHasConversations(opt.value)}
-                  className={cn(
-                    chipBase,
-                    filterHasConversations === opt.value
-                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
-                      : chipOff
-                  )}
+                  className={cn(chipBase, filterHasConversations === opt.value ? chipOnNeutral : chipOff)}
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
           </FilterGroup>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
+// Direção C: sem cartão — rótulo em negrito numa faixa própria, hairline entre
+// grupos (o pai injeta divide-y). Era bg/border/uppercase, agora é só peso.
 function FilterGroup({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-800/40 border border-surface-700/60 rounded-xl p-3 space-y-2">
-      <p className="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">{label}</p>
+    <div className="py-4 space-y-2">
+      <p className="text-[12.5px] font-bold text-surface-100">{label}</p>
       {children}
     </div>
   )
@@ -1235,11 +1256,15 @@ function Step3({
     previewVars[String(m.position)] = val || `{{${m.position}}}`
   })
 
+  const SOURCE_LABELS: Record<CampaignVariableMapping['source'], string> = {
+    contact_field: 'Campo do contato', custom_field: 'Campo personalizado', literal: 'Valor fixo',
+  }
+
   return (
     <div className="flex gap-5">
-      <div className="flex-1 space-y-4">
+      <div className="flex-1">
         {/* Explanation */}
-        <div className="flex items-start gap-2.5 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-xl">
+        <div className="flex items-start gap-2.5 px-2.5 py-2.5 border border-[var(--bd2)] rounded-sm mb-1">
           <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
           <div className="text-[11px] text-surface-400 space-y-1 leading-relaxed">
             <p>Configure como cada <strong className="text-brand-300">variável numérica</strong> do template será preenchida para cada destinatário no momento do envio.</p>
@@ -1249,77 +1274,78 @@ function Step3({
           </div>
         </div>
 
-        {mappings.map((m) => (
-          <div key={m.position} className="bg-surface-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded">{`{{${m.position}}}`}</span>
-              <span className="text-sm font-medium text-surface-200">{m.variableName}</span>
-            </div>
+        {/* PL-C2-CAR-eixo10: passo 3 não tinha nenhuma faixa própria (Nome/
+            Template/Destinatários dos passos 1-2 ficam alinhados em x=275,
+            este passo ficava só com o rótulo do segmentado) — quebrava o
+            ritmo. Uma faixa "Variáveis" cobrindo a lista inteira já resolve;
+            repetir o título por variável seria redundante com o {{n}} de
+            cada linha. */}
+        <Faixa label="Variáveis">
+        <div className="divide-y divide-surface-700">
+          {mappings.map((m) => (
+            <div key={m.position} className="py-4 first:pt-0">
+              <div className="flex items-baseline gap-1.5 mb-2">
+                <span className="text-[12.5px] font-bold text-surface-100">{`{{${m.position}}}`}</span>
+                <span className="text-[12.5px] text-surface-400">{m.variableName}</span>
+              </div>
 
-            <div className="flex items-center gap-2">
-              {(['contact_field', 'custom_field', 'literal'] as const)
-                .filter((src) => src !== 'custom_field' || fieldDefs.length > 0)
-                .map((src) => (
-                <button
-                  key={src}
-                  onClick={() => onUpdate(m.position, { source: src })}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
-                    m.source === src
-                      ? 'border-brand-500 bg-brand-500/10 text-brand-300'
-                      : 'border-surface-700 text-surface-500 hover:border-surface-600'
-                  )}
-                >
-                  {src === 'contact_field' ? 'Campo do contato' :
-                   src === 'custom_field'  ? 'Campo personalizado' : 'Valor fixo'}
-                </button>
-              ))}
-            </div>
-
-            {m.source === 'contact_field' && (
-              <select
-                value={m.contactField ?? 'displayName'}
-                onChange={(e) => onUpdate(m.position, { contactField: e.target.value })}
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
-              >
-                {CONTACT_FIELDS.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            )}
-
-            {m.source === 'custom_field' && (
-              fieldDefs.length > 0 ? (
-                <select
-                  value={m.customFieldKey ?? ''}
-                  onChange={(e) => onUpdate(m.position, { customFieldKey: e.target.value })}
-                  className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
-                >
-                  <option value="" disabled>Selecione um campo…</option>
-                  {fieldDefs.map((f) => (
-                    <option key={f.key} value={f.key}>{f.label}</option>
-                  ))}
-                </select>
-              ) : (
-                <div className="flex items-start gap-2 px-3 py-2.5 bg-accent-amber/10 border border-accent-amber/25 rounded-xl">
-                  <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />
-                  <p className="text-[11px] text-surface-300 leading-relaxed">
-                    Nenhum campo personalizado cadastrado. Crie um em Configurações → CRM.
-                  </p>
-                </div>
-              )
-            )}
-
-            {m.source === 'literal' && (
-              <input
-                value={m.literal ?? ''}
-                onChange={(e) => onUpdate(m.position, { literal: e.target.value })}
-                placeholder="Digite o valor fixo para todos os destinatários..."
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+              <SegmentedControl
+                label={`Origem do valor de {{${m.position}}}`}
+                size="sm"
+                className="mb-2"
+                value={m.source}
+                onChange={(src) => onUpdate(m.position, { source: src })}
+                options={(['contact_field', 'custom_field', 'literal'] as const)
+                  .filter((src) => src !== 'custom_field' || fieldDefs.length > 0)
+                  .map((src) => ({ value: src, label: SOURCE_LABELS[src] }))}
               />
-            )}
-          </div>
-        ))}
+
+              {m.source === 'contact_field' && (
+                <Select
+                  size="md"
+                  value={m.contactField ?? 'displayName'}
+                  onChange={(e) => onUpdate(m.position, { contactField: e.target.value })}
+                >
+                  {CONTACT_FIELDS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </Select>
+              )}
+
+              {m.source === 'custom_field' && (
+                fieldDefs.length > 0 ? (
+                  <Select
+                    size="md"
+                    value={m.customFieldKey ?? ''}
+                    onChange={(e) => onUpdate(m.position, { customFieldKey: e.target.value })}
+                  >
+                    <option value="" disabled>Selecione um campo…</option>
+                    {fieldDefs.map((f) => (
+                      <option key={f.key} value={f.key}>{f.label}</option>
+                    ))}
+                  </Select>
+                ) : (
+                  <div className="flex items-start gap-2 px-2.5 py-2.5 border border-accent-amber/25 rounded-sm">
+                    <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />
+                    <p className="text-[11px] text-surface-300 leading-relaxed">
+                      Nenhum campo personalizado cadastrado. Crie um em Configurações → CRM.
+                    </p>
+                  </div>
+                )
+              )}
+
+              {m.source === 'literal' && (
+                <Input
+                  size="md"
+                  value={m.literal ?? ''}
+                  onChange={(e) => onUpdate(m.position, { literal: e.target.value })}
+                  placeholder="Digite o valor fixo para todos os destinatários..."
+                />
+              )}
+            </div>
+          ))}
+        </div>
+        </Faixa>
       </div>
 
       <div className="w-[220px] flex-shrink-0">
@@ -1343,78 +1369,106 @@ function Step4({
   onScheduledAt: (v: string) => void
 }) {
   return (
-    <div className="space-y-5">
-      {/* Schedule */}
-      <div>
-        <label className="text-xs font-medium text-surface-400 mb-2 block">Quando enviar?</label>
-        <div className="grid grid-cols-2 gap-2">
+    <div>
+      {/* Schedule — mesma vocabulário do "Destinatários" (Etapa 2): faixa de
+          linhas com risco à esquerda + peso da fonte, sem cartão/ring. */}
+      <Faixa label="Envio">
+        <div role="radiogroup" aria-label="Quando enviar">
           {([
-            { value: 'now',   label: 'Enviar agora',  icon: <Send className="w-4 h-4" />, desc: 'Disparo imediato após criar' },
-            { value: 'later', label: 'Agendar',        icon: <Clock className="w-4 h-4" />, desc: 'Escolha data e hora do envio' },
-          ] as const).map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => onScheduleMode(opt.value)}
-              className={cn(
-                'p-3 rounded-xl border text-left transition-colors',
-                scheduleMode === opt.value
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
-              )}
-            >
-              <span className="text-surface-400">{opt.icon}</span>
-              <p className="text-sm font-medium text-surface-100 mt-1">{opt.label}</p>
-              <p className="text-[11px] text-surface-500">{opt.desc}</p>
-            </button>
-          ))}
+            { value: 'now',   label: 'Enviar agora', icon: Send,  desc: 'Disparo imediato após criar' },
+            { value: 'later', label: 'Agendar',       icon: Clock, desc: 'Escolha data e hora do envio' },
+          ] as const).map((opt) => {
+            const isSelected = scheduleMode === opt.value
+            const Icon = opt.icon
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                onClick={() => onScheduleMode(opt.value)}
+                className={cn(
+                  'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
+                  isSelected ? 'border-brand-500' : 'border-transparent hover:border-surface-600',
+                )}
+              >
+                <div className={cn(
+                  'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                  isSelected ? 'border-brand-500' : 'border-surface-600'
+                )}>
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-brand-500" />}
+                </div>
+                <Icon className="w-4 h-4 flex-shrink-0 text-surface-500" />
+                <div className="flex-1">
+                  <p className={cn('text-sm text-surface-100', isSelected && 'font-semibold')}>{opt.label}</p>
+                  <p className="text-[11px] text-surface-500">{opt.desc}</p>
+                </div>
+              </button>
+            )
+          })}
         </div>
+      </Faixa>
 
-        {scheduleMode === 'later' && (
-          <div className="mt-3">
-            <label className="text-xs font-medium text-surface-400 mb-1.5 block">Data e hora do envio</label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
-              <input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => onScheduledAt(e.target.value)}
-                min={(() => {
-                  // toISOString() é UTC — subtrai o offset para obter hora local
-                  const now = new Date()
-                  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
-                  return local.toISOString().slice(0, 16)
-                })()}
-                className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
-              />
-            </div>
-            <p className="text-[11px] text-surface-600 mt-1.5">
-              Dica: envios nas terças e quartas, entre 9h–11h, tendem a ter maiores taxas de abertura.
-            </p>
+      {scheduleMode === 'later' && (
+        <Faixa label="Data e hora">
+          <div className="relative">
+            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
+            <Input
+              size="md"
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => onScheduledAt(e.target.value)}
+              min={(() => {
+                // toISOString() é UTC — subtrai o offset para obter hora local
+                const now = new Date()
+                const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+                return local.toISOString().slice(0, 16)
+              })()}
+              className="pl-8"
+            />
           </div>
-        )}
-      </div>
+          <p className="text-[11px] text-surface-600 mt-1.5">
+            Dica: envios nas terças e quartas, entre 9h–11h, tendem a ter maiores taxas de abertura.
+          </p>
+        </Faixa>
+      )}
 
       {/* Warning for large reach */}
       {estimatedReach !== null && estimatedReach > 100 && (
-        <Banner variant="warning">
-          Campanhas grandes podem impactar o <strong>limite de conversas</strong> do seu plano e a qualidade do número WhatsApp.
-          Verifique seu saldo antes de enviar.
-        </Banner>
+        <div className="border-t border-surface-700 py-4">
+          <Banner variant="warning">
+            Campanhas grandes podem impactar o <strong>limite de conversas</strong> do seu plano e a qualidade do número WhatsApp.
+            Verifique seu saldo antes de enviar.
+          </Banner>
+        </div>
       )}
     </div>
   )
 }
 
-function SummaryRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-surface-500">{label}</span>
-      <span className={cn('text-xs text-surface-200', mono && 'font-mono')}>{value}</span>
-    </div>
-  )
+// ─── Step 5: Review ────────────────────────────────────────────────────────────
+
+// CAMP-WIZ-19 (spec 2c): chip "Aprovado · Meta" na linha Template do resumo —
+// mesmo padrão suave (fundo tinta + texto colorido) do statusChip de
+// CampaignsTab.tsx/TemplatesTab.tsx.
+const TEMPLATE_STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Em análise', APPROVED: 'Aprovado', REJECTED: 'Rejeitado', PAUSED: 'Pausado', DISABLED: 'Desativado',
+}
+const TEMPLATE_STATUS_CLASS: Record<string, string> = {
+  APPROVED: 'color-chip-soft border [--chip:var(--color-status-active)]',
+  PENDING:  'color-chip-soft border [--chip:var(--color-status-pending)]',
+  REJECTED: 'color-chip-soft border [--chip:var(--color-danger)]',
+  PAUSED:   'bg-surface-900 border border-surface-700 text-surface-400',
+  DISABLED: 'color-chip-soft border [--chip:var(--color-danger)]',
 }
 
-// ─── Step 5: Review ────────────────────────────────────────────────────────────
+function EditLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="text-[11.5px] font-semibold text-accent-dark hover:opacity-80 transition-opacity">
+      Editar
+    </button>
+  )
+}
 
 function Step5({
   template, mappings, fieldDefs, segmentType,
@@ -1422,7 +1476,7 @@ function Step5({
   selectedTagIds, selectedStages, selectedContactIds,
   filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
   filterSentiment, filterContactSearch, filterHasConversations,
-  estimatedReach, scheduleMode, scheduledAt, campaignName,
+  estimatedReach, scheduleMode, scheduledAt, campaignName, onEditStep, messagingLimit, lineLabel,
 }: {
   template: WhatsAppTemplate
   mappings: CampaignVariableMapping[]
@@ -1446,6 +1500,16 @@ function Step5({
   scheduleMode: 'now' | 'later'
   scheduledAt: string
   campaignName: string
+  /** SCRUM-1106 (tela 2c) — link "Editar" por linha, volta pra etapa de origem. */
+  onEditStep: (step: 1 | 2 | 4) => void
+  /** `WhatsAppNumberDetailed.messagingLimit` da linha escolhida (tier Meta,
+   *  ex. "1K"/"10K"/"100K"/"Unlimited") — indisponível = sem banner, não
+   *  inventamos um número. */
+  messagingLimit?: string
+  /** Rótulo/telefone da linha WhatsApp resolvida — a linha não é editável
+   *  nesta etapa (o seletor fica sempre visível no topo do wizard, fora do
+   *  fluxo por etapas), então essa linha do resumo não tem "Editar". */
+  lineLabel?: string
 }) {
   const [showContactsModal, setShowContactsModal] = useState(false)
 
@@ -1497,72 +1561,63 @@ function Step5({
   const scheduleDisplay = scheduleMode === 'now'
     ? 'Imediatamente após criar'
     : scheduledAt
-      ? new Date(scheduledAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      // CAMP-WIZ-22: "Qua, 17 set · 10:00" em vez do dd/mm/yy hh:mm cru.
+      ? new Date(scheduledAt).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).replace('.', '') + ' · ' + new Date(scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       : '—'
+
+  // R2-CAMP-01 (mock 2c): a linha Público descreve o recorte — "2.318 contatos ·
+  // Situação = Qualificado, Proposta" — com os dados reais que o wizard já tem
+  // (tags/etapas/filtros escolhidos), em vez de só o tipo ("Filtro avançado").
+  const segmentDescription =
+    segmentType === 'tag' && selectedTagIds.length > 0
+      ? tags.filter((t) => selectedTagIds.includes(t.id)).map((t) => t.name).join(', ')
+      : segmentType === 'stage' && selectedStages.length > 0
+        ? stages.filter((st) => selectedStages.includes(st.key)).map((st) => st.label).join(', ')
+        : segmentType === 'filter' && filterPills.length > 0
+          ? filterPills.map((pill) => pill.label).join(' · ')
+          : segmentType === 'manual' && selectedContactIds.length > 0
+            ? `Seleção manual (${selectedContactIds.length})`
+            : segmentLabels[segmentType]
+  const publicLabel = estimatedReach !== null
+    ? <><b className="text-surface-100">{estimatedReach.toLocaleString('pt-BR')} contato{estimatedReach === 1 ? '' : 's'}</b> · {segmentDescription}</>
+    : segmentDescription
 
   return (
     <div className="flex gap-5">
-      {/* Left column */}
-      <div className="flex-1 space-y-4">
-        {/* Card: Campaign info */}
-        <div className="bg-surface-800/50 border border-surface-700 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-bold text-surface-300 uppercase tracking-wider">Campanha</p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-surface-500">Nome</span>
-              <span className="text-xs font-medium text-surface-100">{campaignName}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-surface-500">Template</span>
-              <span className="text-xs font-mono text-brand-300 bg-brand-400/10 px-2 py-0.5 rounded">{template.name}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-surface-500">Categoria</span>
-              <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{CATEGORY_LABELS[template.category] ?? template.category}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-surface-500">Envio</span>
-              <span className="text-xs text-surface-300">{scheduleDisplay}</span>
-            </div>
-            {mappings.length > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-surface-500">Variáveis</span>
-                <span className="text-xs text-surface-300">{mappings.length} variáve{mappings.length === 1 ? 'l' : 'is'} mapeada{mappings.length === 1 ? '' : 's'}</span>
-              </div>
-            )}
-          </div>
+      {/* Left column — lista plana com hairline entre linhas (tela 2c,
+          CAMP-WIZ-15): sem caixa/card nem eyebrow de grupo em volta, 1 lista
+          só (Nome·Template·Público·Linha·Envio — Custo estimado não existe,
+          sem dado de preço por mensagem no frontend). */}
+      <div className="flex-1">
+        <div>
+          <SummaryRow label="Nome" strong value={campaignName} action={<EditLink onClick={() => onEditStep(1)} />} />
+          <SummaryRow
+            label="Template"
+            value={
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="font-mono text-[11.5px] truncate">{template.name}</span>
+                <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0', TEMPLATE_STATUS_CLASS[template.status] ?? TEMPLATE_STATUS_CLASS.PENDING)}>
+                  {TEMPLATE_STATUS_LABEL[template.status] ?? template.status} · Meta
+                </span>
+              </span>
+            }
+            action={<EditLink onClick={() => onEditStep(1)} />}
+          />
+          <SummaryRow label="Público" wrap value={publicLabel} action={<EditLink onClick={() => onEditStep(2)} />} />
+          {lineLabel && <SummaryRow label="Linha" value={lineLabel} />}
+          <SummaryRow label="Envio" value={scheduleDisplay} action={<EditLink onClick={() => onEditStep(4)} />} />
         </div>
 
-        {/* Card: Segment info */}
-        <div className="bg-surface-800/50 border border-surface-700 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-bold text-surface-300 uppercase tracking-wider">Segmento</p>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-surface-500">Tipo</span>
-            <span className="text-xs text-surface-300">{segmentLabels[segmentType]}</span>
-          </div>
-          {estimatedReach !== null && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-surface-500">Alcance estimado</span>
-              <span className={cn(
-                'text-xs font-semibold px-2 py-0.5 rounded-full',
-                estimatedReach === 0
-                  ? 'text-danger bg-danger/10'
-                  : 'text-status-active bg-status-active-bg'
-              )}>
-                {estimatedReach} contato{estimatedReach === 1 ? '' : 's'}
-              </span>
-            </div>
-          )}
-
+        <div className="mt-3">
           {/* Manual contacts preview */}
           {segmentType === 'manual' && selectedContactIds.length > 0 && (
-            <div>
+            <div className="mt-3">
               <p className="text-[11px] text-surface-500 mb-1.5">Contatos selecionados:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedContactIds.slice(0, 5).map((id) => {
                   const c = contacts.find((ct) => ct.id === id)
                   return (
-                    <span key={id} className="text-[10px] text-surface-300 bg-surface-700 px-1.5 py-0.5 rounded">
+                    <span key={id} className="text-[10px] text-surface-300 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                       {c?.displayName ?? id}
                     </span>
                   )
@@ -1576,7 +1631,7 @@ function Step5({
 
           {/* Tag segment */}
           {segmentType === 'tag' && selectedTagIds.length > 0 && (
-            <div>
+            <div className="mt-3">
               <p className="text-[11px] text-surface-500 mb-1.5">Tags:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedTagIds.map((id) => {
@@ -1593,7 +1648,7 @@ function Step5({
 
           {/* Stage segment */}
           {segmentType === 'stage' && selectedStages.length > 0 && (
-            <div>
+            <div className="mt-3">
               <p className="text-[11px] text-surface-500 mb-1.5">Estágios:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedStages.map((key) => {
@@ -1610,15 +1665,21 @@ function Step5({
 
           {/* Filter pills */}
           {segmentType === 'filter' && filterPills.length > 0 && (
-            <div>
+            <div className="mt-3">
               <p className="text-[11px] text-surface-500 mb-1.5">{filterPills.length} filtro{filterPills.length === 1 ? '' : 's'} ativo{filterPills.length === 1 ? '' : 's'}:</p>
               <div className="flex flex-wrap gap-1.5">
                 {filterPills.map((pill, i) => (
                   <span
                     key={i}
-                    className="text-[10px] px-2 py-0.5 rounded font-medium"
+                    className={cn(
+                      'text-[10px] px-2 py-0.5 rounded font-medium',
+                      pill.color ? 'color-chip' : undefined,
+                    )}
                     style={pill.color
-                      ? { backgroundColor: pill.color, color: '#fff' }
+                      // .color-chip escurece a cor 15% antes de aplicar texto
+                      // branco (color-mix), em vez de branco cru sobre a cor
+                      // do dado - uma tag/estágio claro perderia contraste.
+                      ? ({ ['--chip']: pill.color } as React.CSSProperties)
                       : { backgroundColor: 'color-mix(in srgb, var(--color-accent-violet) 15%, transparent)', color: 'var(--color-accent-violet)', border: '1px solid color-mix(in srgb, var(--color-accent-violet) 30%, transparent)' }
                     }
                   >
@@ -1633,18 +1694,33 @@ function Step5({
           {estimatedReach !== null && estimatedReach > 0 && (
             <button
               onClick={() => setShowContactsModal(true)}
-              className="w-full mt-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-surface-600 text-xs text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
+              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-surface-600 text-[12px] text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
             >
               <Users className="w-3.5 h-3.5" />
               Verificar lista de contatos ({estimatedReach} contato{estimatedReach === 1 ? '' : 's'})
             </button>
           )}
         </div>
+
+        {/* Banner de limite diário (tela 2c) — só quando o dado real da
+            linha (messagingLimit, tier Meta) está disponível. CAMP-WIZ-24:
+            `Banner variant="warning"` é sólido laranja ([orq], ui/Banner.tsx)
+            — o mock quer âmbar suave, então monto inline em vez de editar o
+            primitivo. */}
+        {messagingLimit && (
+          <div className="flex items-start gap-2 mt-3 px-2.5 py-[9px] rounded-xs bg-status-pending-bg text-status-pending text-xs leading-[1.45]">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-px" strokeWidth={2} />
+            <span>
+              Limite diário de mensagens desta linha: <strong>{messagingLimit}</strong>. Campanhas grandes podem
+              ultrapassar o limite e ter parte do envio adiada para o próximo dia.
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Right column: message preview */}
-      <div className="w-[240px] flex-shrink-0">
-        <p className="text-xs text-surface-500 mb-3 text-center">Prévia da mensagem</p>
+      {/* Right column: message preview — CAMP-WIZ-25. */}
+      <div className="w-[250px] flex-shrink-0">
+        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-1.5">Prévia no WhatsApp</p>
         <TemplatePreview template={template} variables={previewVars} compact />
       </div>
 
@@ -1701,6 +1777,12 @@ function ContactListModal({
 }) {
   const [search, setSearch] = useState('')
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   const segmented = useMemo(() => {
     if (segmentType === 'all') return contacts
     if (segmentType === 'tag')
@@ -1737,37 +1819,39 @@ function ContactListModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.15 }}
-        className="relative bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg flex flex-col max-h-[80vh]"
+        className="relative bg-surface-900 overlay-frame border rounded-xl w-full max-w-lg flex flex-col max-h-[80vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
           <div>
             <h3 className="text-sm font-semibold text-surface-50">Lista de contatos</h3>
             <p className="text-xs text-surface-500 mt-0.5">{segmented.length} contato{segmented.length === 1 ? '' : 's'} na segmentação</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+            aria-label="Fechar"
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="px-4 py-3 border-b border-surface-800 flex-shrink-0">
+        <div className="px-4 py-3 border-b border-surface-700 flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-            <input
+            <Input
+              size="sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar nesta lista..."
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+              className="pl-8"
             />
           </div>
         </div>
@@ -1781,7 +1865,7 @@ function ContactListModal({
               {displayed.map((c) => {
                 const stageDef = stages.find((s) => s.key === c.stage)
                 return (
-                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-surface-800/50 transition-colors">
+                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-[var(--rowhover)] transition-colors">
                     <div className="w-8 h-8 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
                       {c.displayName.slice(0, 1).toUpperCase()}
                     </div>
@@ -1796,7 +1880,7 @@ function ContactListModal({
                         </span>
                       )}
                       {c.tags && c.tags.length > 0 && (
-                        <span className="text-[10px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                           {c.tags[0].name}{c.tags.length > 1 ? ` +${c.tags.length - 1}` : ''}
                         </span>
                       )}
@@ -1809,10 +1893,10 @@ function ContactListModal({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
+        <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
           <button
             onClick={onClose}
-            className="w-full py-2 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 text-sm font-medium transition-all"
+            className="w-full py-2 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-110 text-[var(--color-btn-primary-fg)] text-sm font-medium transition-all"
           >
             Fechar e continuar
           </button>

@@ -28,21 +28,22 @@ export function WhatsappLineChip({
 
   const line = whatsappNumberId ? numbers.find((n) => n.id === whatsappNumberId) : null
 
+  // Achado ao vivo (Fase D, CampaignsTab): o chip solid verde-marca gritava
+  // mais que o chip de status ao lado e não existe no mock — vira neutro
+  // suave, mesmo vocabulário do chip "Rascunho" (--sf2/--bd/--tx2), só com
+  // o conteúdo (telefone × "sem linha") mudando.
   const base = size === 'sm'
-    ? 'text-[10px] px-1.5 py-0.5 gap-1'
+    ? 'h-5 text-[11px] font-semibold px-1.5 gap-1'
     : 'text-xs px-2 py-1 gap-1.5'
+  const neutral = 'bg-[var(--sf2)] border-surface-700 text-surface-400'
 
   if (!line) {
     return (
       <span
-        className={cn(
-          'inline-flex items-center rounded-md border bg-surface-800/40 border-surface-700/40 text-surface-500',
-          base,
-          className,
-        )}
+        className={cn('inline-flex items-center rounded-md border', neutral, base, className)}
         title="Recurso sem linha WhatsApp atribuída"
       >
-        <Phone className={cn(size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3')} />
+        <Phone className={cn(size === 'sm' ? 'w-3 h-3' : 'w-3 h-3')} />
         <span className="uppercase tracking-wide">sem linha</span>
       </span>
     )
@@ -51,15 +52,10 @@ export function WhatsappLineChip({
   const label = line.label || formatPhone(line.displayPhoneNumber)
   return (
     <span
-      className={cn(
-        'color-chip inline-flex items-center rounded-md border',
-        base,
-        className,
-      )}
-      style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
+      className={cn('inline-flex items-center rounded-md border', neutral, base, className)}
       title={line.label ? formatPhone(line.displayPhoneNumber) : label}
     >
-      <Phone className={cn(size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3')} />
+      <Phone className={cn(size === 'sm' ? 'w-3 h-3' : 'w-3 h-3')} />
       <span className="truncate max-w-[140px] font-medium">{label}</span>
     </span>
   )

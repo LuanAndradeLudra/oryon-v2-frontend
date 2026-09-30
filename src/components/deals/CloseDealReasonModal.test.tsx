@@ -25,15 +25,23 @@ const DEAL: Deal = { id: 'd', contactId: 'c', title: 'x', status: 'open', pipeli
 const options = () => Array.from((screen.getByRole('combobox', { name: 'Motivo do desfecho' }) as HTMLSelectElement).options).map((o) => o.value)
 
 describe('CloseDealReasonModal (F8)', () => {
-  it('terminal Ganho: lista só motivos won/any; confirmar fica desabilitado até escolher; envia outcome+reason+note', async () => {
+  it('terminal Ganho: lista só motivos won/any; confirmar sem motivo mostra o erro e não envia; com motivo envia outcome+reason+note', async () => {
     const onConfirm = vi.fn(async () => {})
     const onClose = vi.fn()
     render(<CloseDealReasonModal open onClose={onClose} deal={DEAL} stage={WON} pipeline={PIPE} onConfirm={onConfirm} />)
-    expect(screen.getByText('Confirmado — motivo')).toBeInTheDocument()
+    // DEAL-MODAL-13 (spec/1e-funis.GAPS.md): o botão repete o mesmo verbo do
+    // título ("Mover para X" nos dois) — por isso o título é lido pelo papel
+    // de heading, não por texto solto (colidiria com o botão, que diz o mesmo).
+    expect(screen.getByRole('heading', { name: 'Mover para Confirmado' })).toBeInTheDocument()
     expect(options()).toEqual(['', 'concluido', 'outro'])
     const confirm = screen.getByTestId('close-deal-confirm')
-    expect(confirm).toBeDisabled()
-    expect(confirm).toHaveTextContent('Marcar como Concluído')
+    // Decisão do PO (27/09, D6): o botão não nasce desabilitado — tentar sem
+    // motivo mostra o erro no campo e não chama onConfirm.
+    expect(confirm).toBeEnabled()
+    expect(confirm).toHaveTextContent('Mover para Confirmado')
+    fireEvent.click(confirm)
+    expect(await screen.findByText('Escolha um motivo.')).toBeInTheDocument()
+    expect(onConfirm).not.toHaveBeenCalled()
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'concluido' } })
     fireEvent.change(screen.getByPlaceholderText(/paciente confirmou/), { target: { value: 'por telefone' } })
@@ -43,10 +51,10 @@ describe('CloseDealReasonModal (F8)', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 
-  it('terminal Perdido: motivos lost/any, botão de perigo "Marcar como Cancelado"', () => {
+  it('terminal Perdido: motivos lost/any, botão de perigo "Mover para Não confirmou"', () => {
     render(<CloseDealReasonModal open onClose={vi.fn()} deal={DEAL} stage={LOST} pipeline={PIPE} onConfirm={vi.fn(async () => {})} />)
     expect(options()).toEqual(['', 'cancelado_pelo_cliente', 'nao_compareceu', 'outro'])
-    expect(screen.getByTestId('close-deal-confirm')).toHaveTextContent('Marcar como Cancelado')
+    expect(screen.getByTestId('close-deal-confirm')).toHaveTextContent('Mover para Não confirmou')
   })
 
   it('erro do backend aparece no formulário e o modal continua aberto', async () => {

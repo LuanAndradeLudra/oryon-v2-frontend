@@ -103,7 +103,7 @@ function TrilhaDoFunil({ pipeline, deal, onMoveToStage, disabled, tempoNaEtapa }
       {/* Fio separando o contador da trilha: com a faixa cortada no limite, a
           última etapa visível encosta no contador e os dois viram um bloco só
           de texto. A linha diz onde uma coisa acaba e a outra começa. */}
-      <span className="w-px h-3.5 bg-surface-800 shrink-0" aria-hidden />
+      <span className="w-px h-3.5 bg-surface-700 shrink-0" aria-hidden />
       <span className="text-[10.5px] text-surface-500 whitespace-nowrap shrink-0 tabular-nums" data-testid="deal-stage-position">
         {posicao > 0 ? `${posicao} de ${caminho.length}` : `${caminho.length} etapas`}
         {tempoNaEtapa && <span className="text-surface-600"> · {tempoNaEtapa}</span>}
@@ -174,7 +174,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                   />
                 )
               )}
-              {!ultimo && <span className="w-px flex-1 min-h-[20px] my-1 bg-surface-800" aria-hidden />}
+              {!ultimo && <span className="w-px flex-1 min-h-[20px] my-1 bg-surface-700" aria-hidden />}
             </span>
 
             {/* A etapa atual é um BLOCO, não uma linha mais escura: fundo

@@ -4,16 +4,17 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
+import { useEstadoNaUrl, lerPaginaUrl, escreverPaginaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import type { AgentMetrics } from '@/types/dashboard'
 
 // Helper text for each column header. Kept in one place so updating the
 // definition propagates to every place the table is rendered, and so the
 // product team can iterate on copy without hunting through JSX.
 const COLUMN_TOOLTIPS: Record<string, string> = {
-  conversations:  'Quantidade de conversas atualmente abertas atribuídas ao atendente.',
-  resolved:       'Conversas que o atendente marcou como resolvidas no dia de hoje.',
-  responseTime:   'TMR — Tempo Médio de Resposta. Quanto o atendente leva, em média, para enviar a primeira resposta após o cliente abrir a conversa.',
-  resolutionTime: 'Tempo médio entre o início da conversa e o momento em que ela foi marcada como resolvida.',
+  conversations:  'Conversas abertas atribuídas ao atendente agora (não segue o período).',
+  resolved:       'Conversas que o atendente resolveu no período escolhido.',
+  responseTime:   'TMR — Tempo Médio de Resposta. Quanto o atendente leva, em média, para enviar a primeira resposta após o cliente abrir a conversa. Média de todo o histórico (não segue o período).',
+  resolutionTime: 'Tempo médio entre o início da conversa e o momento em que ela foi marcada como resolvida. Média de todo o histórico (não segue o período).',
   csat:           'Satisfação do cliente (CSAT) — média das avaliações recebidas em uma escala de 0 a 5. Disponível quando a pesquisa de satisfação estiver ativa.',
   sla:            'Cumprimento do SLA — porcentagem de conversas em que a primeira resposta foi enviada dentro do tempo-alvo (atualmente 5 minutos).',
   utilization:    'Utilização da capacidade do atendente. 100% indica saturação (a partir de 20 conversas abertas simultâneas).',
@@ -54,12 +55,21 @@ function utilizationColor(v: number): string {
 
 const PAGE_SIZE = 10
 
+const lerDir = lerUmDe(['desc', 'asc'] as const, 'desc')
+
 export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
-    key: 'conversationsToday', dir: 'desc',
-  })
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
+  // Ordem, busca e página na URL (prefixo `agentes` para não colidir com os
+  // parâmetros do resto do Dashboard).
+  const [ordemChave, setOrdemChave] = useEstadoNaUrl<string>('agentesOrdem', { padrao: 'conversationsToday' })
+  const [ordemDir, setOrdemDir] = useEstadoNaUrl<SortDir>('agentesDir', { padrao: 'desc', ler: lerDir })
+  const sort = useMemo(() => ({ key: ordemChave as SortKey, dir: ordemDir }), [ordemChave, ordemDir])
+  const setSort = (fn: (prev: { key: SortKey; dir: SortDir }) => { key: SortKey; dir: SortDir }) => {
+    const next = fn(sort)
+    setOrdemChave(String(next.key))
+    setOrdemDir(next.dir)
+  }
+  const [search, setSearch] = useEstadoNaUrl<string>('agentesBusca', { padrao: '' })
+  const [page, setPage] = useEstadoNaUrl<number>('agentesPag', { padrao: 1, ler: lerPaginaUrl, escrever: escreverPaginaUrl })
 
   const query = search.trim().toLowerCase()
   const filtered = query
@@ -123,8 +133,8 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   )
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-surface-800 flex items-center justify-between">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-surface-100">Performance da Equipe</p>
           <p className="text-xs text-surface-400 mt-0.5">Métricas individuais do período</p>
@@ -153,7 +163,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-surface-800">
+            <tr className="border-b border-surface-700">
               <Th label="Agente"         sortKey="name"               />
               <Th label="Status"         sortKey="isOnline"           />
               <Th label="Conversas"      sortKey="conversationsToday" tooltip={COLUMN_TOOLTIPS.conversations}  />
@@ -165,7 +175,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               <Th label="Utilização"     sortKey="utilization"        tooltip={COLUMN_TOOLTIPS.utilization}    />
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-800">
+          <tbody className="divide-y divide-surface-700">
             {sorted.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-xs text-surface-500">
@@ -174,12 +184,12 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               </tr>
             )}
             {paged.map((agent) => (
-              <tr key={agent.userId} className="hover:bg-surface-800/50 transition-colors">
+              <tr key={agent.userId} className="hover:bg-[var(--rowhover)] transition-colors">
                 {/* Agent */}
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar name={agent.name} size="sm" online={agent.isOnline} />
+                      <Avatar name={agent.name} size="sm" online={agent.isOnline} kind="operator" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-surface-100">{agent.name}</p>
@@ -220,7 +230,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                 <td className="px-4 py-3.5">
                   {agent.csat > 0 ? (
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-semibold text-surface-100 tabular-nums">{agent.csat.toFixed(1)}</span>
+                      <span className="text-sm font-semibold text-surface-100 tabular-nums">{agent.csat.toFixed(1).replace('.', ',')}</span>
                       <span className="text-xs text-away">★</span>
                     </div>
                   ) : <span className="text-xs text-surface-600">—</span>}
@@ -246,17 +256,20 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
       </div>
 
       {sorted.length > 0 && (
-        <div className="px-5 py-3 border-t border-surface-800 flex items-center justify-between flex-wrap gap-2">
+        <div className="px-5 py-3 border-t border-surface-700 flex items-center justify-between flex-wrap gap-2">
           <p className="text-xs text-surface-500">
             Mostrando {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} de {sorted.length} agente{sorted.length === 1 ? '' : 's'}
           </p>
           <div className="flex items-center gap-1">
+            {/* Eixo 10: hover:bg-surface-800 sobre o card, que É
+                surface-800 — invisível nos dois temas (cor idêntica, não
+                só o claro). --rowhover. */}
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage <= 1}
               aria-label="Página anterior"
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -268,7 +281,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
               aria-label="Próxima página"
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>

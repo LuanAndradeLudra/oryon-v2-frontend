@@ -6,10 +6,11 @@
 // the exact envelope sent.
 
 import { useState, useMemo } from 'react'
-import { Loader2, Play, AlertCircle, CheckCircle2, ChevronDown, Copy, Beaker, ClipboardList } from 'lucide-react'
+import { Play, AlertCircle, CheckCircle2, ChevronDown, Copy, Beaker, ClipboardList } from 'lucide-react'
 import { testSkillTemplate } from '@/services/skillTemplatesApi'
 import { DynamicSchemaFormFields } from './DynamicSchemaFormFields'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import type { SkillTemplate, TesterResult, JsonSchemaObject } from '@/types/skills'
 import { cn } from '@/lib/utils'
 
@@ -123,19 +124,15 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs }: 
         <p className="text-xs text-surface-500 hidden sm:block">
           Dispara um POST assinado com HMAC contra <code className="font-mono text-surface-300">{template.webhook_path}</code>.
         </p>
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={handleRunClick}
-          disabled={running}
-          className={cn(
-            'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ml-auto',
-            'bg-brand-600 text-surface-950 hover:bg-brand-500',
-            running && 'opacity-60 cursor-not-allowed',
-          )}
+          loading={running}
+          leftIcon={running ? undefined : <Play className="w-4 h-4" />}
+          className="ml-auto"
         >
-          {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
           {running ? 'Disparando…' : 'Disparar'}
-        </button>
+        </Button>
       </div>
 
       {/* ── Top-level error (network/4xx from /test endpoint) ──────────── */}
@@ -180,7 +177,7 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs }: 
           </div>
 
           {/* Tool result preview */}
-          <div className="bg-surface-900 border border-surface-700 rounded-lg p-3">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-md p-3">
             <div className="flex items-center gap-1.5 mb-2 text-xs text-surface-400 uppercase tracking-wide">
               <ClipboardList className="w-3.5 h-3.5" />
               Texto que a IA receberia
@@ -230,7 +227,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+    <section className="bg-surface-800 border border-surface-700 rounded-lg p-5">
       <header className="mb-4">
         <h2 className="text-base font-semibold text-surface-100 mb-0.5 flex items-center gap-2">
           <Beaker className="w-4 h-4 text-brand-400" /> {title}
@@ -253,7 +250,7 @@ function CollapsibleJson({ title, data }: { title: string; data: unknown }) {
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-lg overflow-hidden">
+    <div className="bg-[var(--sf2)] border border-surface-700 rounded-md overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((s) => !s)}
@@ -264,13 +261,15 @@ function CollapsibleJson({ title, data }: { title: string; data: unknown }) {
       </button>
       {open && (
         <div className="border-t border-surface-700 relative">
-          <button
-            type="button"
+          <Button
+            variant="neutral"
+            size="sm"
             onClick={(e) => { e.stopPropagation(); copy() }}
-            className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] text-surface-300 bg-surface-800 hover:bg-surface-700 transition-colors"
+            leftIcon={<Copy className="w-3 h-3" />}
+            className="absolute top-2 right-2"
           >
-            <Copy className="w-3 h-3" /> Copiar
-          </button>
+            Copiar
+          </Button>
           <pre className="text-[11px] text-surface-200 font-mono p-3 overflow-x-auto whitespace-pre">
             {text}
           </pre>

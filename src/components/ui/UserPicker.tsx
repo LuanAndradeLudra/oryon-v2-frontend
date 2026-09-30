@@ -36,8 +36,8 @@ export function UserPicker({
     <Dropdown open={open} onClose={onClose} anchor={anchor} align={align} className="w-72">
       {/* Header */}
       <div className="px-3 pt-2.5 pb-2 border-b border-surface-700">
-        <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wide mb-2">{label}</p>
-        <div className="flex items-center gap-2 bg-surface-900 rounded-lg px-2.5 py-1.5">
+        <p className="text-2xs font-semibold text-surface-500 uppercase tracking-wide mb-2">{label}</p>
+        <div className="flex items-center gap-2 bg-surface-900 rounded-sm px-2.5 py-1.5">
           <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
           <input
             autoFocus
@@ -84,7 +84,7 @@ export function UserPicker({
                   <p className={cn('text-sm font-medium', isSelected ? 'text-brand-300' : 'text-surface-200')}>
                     {user.firstName} {user.lastName}
                   </p>
-                  <p className="text-[11px] text-surface-500 truncate">
+                  <p className="text-2xs text-surface-500 truncate">
                     {roleLabel[user.role]} · {user.email}
                   </p>
                 </div>

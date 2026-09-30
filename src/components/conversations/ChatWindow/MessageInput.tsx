@@ -1,34 +1,28 @@
 import { useCallback, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import {
   Send, Paperclip, AlertTriangle, Zap, Image, FileText, Video, ChevronDown,
-  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2, Info,
+  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2, Settings2,
 } from 'lucide-react'
-import { cn, getApiErrorMessage } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { Banner } from '@/components/ui/Banner'
-import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
-import { templateVariableSlots, variablesComplete, variablesToArray } from '@/lib/templateVariables'
-import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
+import { TemplateSendModal } from '@/components/templates/TemplateSendModal'
+import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
 import { inferMessageType } from '@/lib/inferMessageType'
 import { renderPdfThumbnail } from '@/lib/renderPdfThumbnail'
+import { useAuth } from '@/contexts/AuthContext'
+import { Link } from 'react-router-dom'
+import { useComVolta } from '@/hooks/useComVolta'
+import { isAdminTier } from '@/lib/roleHelpers'
+import { PainelDeConfiguracao } from '@/components/settings/PainelDeConfiguracao'
+import { QuickReplies } from '@/components/settings/sections/QuickReplies'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
-
-// Rótulos + acento dos chips de metadados no modal de revisão de template.
-const TEMPLATE_CATEGORY_META: Record<WhatsAppTemplate['category'], { label: string; dot: string }> = {
-  MARKETING:      { label: 'Marketing',    dot: 'bg-brand-400' },
-  UTILITY:        { label: 'Utilidade',    dot: 'bg-[#3B82F6]' },
-  AUTHENTICATION: { label: 'Autenticação', dot: 'bg-warning' },
-}
-const TEMPLATE_HEADER_LABEL: Record<NonNullable<WhatsAppTemplate['headerType']>, string> = {
-  TEXT: 'Texto', IMAGE: 'Imagem', VIDEO: 'Vídeo', DOCUMENT: 'Documento',
-}
 
 /** Um anexo "em espera" no input: fica no preview até o operador clicar em
  *  Enviar (UX estilo Claude/ChatGPT). `id` serve de key de render/remoção;
@@ -75,6 +69,8 @@ interface MessageInputProps {
    *  contactsApi.sendTemplate — a real WhatsApp template, not a text message. */
   contactId: string
   windowOpen: boolean
+  /** Horas restantes da janela de 24h (só pra o aviso do rodapé do composer). */
+  windowHoursLeft?: number
   disabled?: boolean
   /**
    * When set, the input is locked with a clear explanation instead of
@@ -129,8 +125,8 @@ function QuickReplyPicker({
       ref={listRef}
       className="absolute bottom-full left-0 right-0 mb-2 z-50 overlay-surface border rounded-xl overflow-hidden max-h-56 overflow-y-auto"
     >
-      <div className="px-3 py-2 border-b border-surface-700/60 flex items-center gap-1.5 sticky top-0 overlay-bg z-10">
-        <Zap className="w-3 h-3 text-brand-400" />
+      <div className="px-3 py-2 border-b border-surface-700 flex items-center gap-1.5 sticky top-0 overlay-bg z-10">
+        <Zap className="w-3 h-3 text-accent-dark" />
         <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wide">
           Respostas rápidas {query ? `— /${query}` : ''}
         </span>
@@ -141,12 +137,12 @@ function QuickReplyPicker({
           ref={i === activeIndex ? activeRef : null}
           onClick={() => onSelect(r)}
           className={cn(
-            'w-full text-left px-3 py-2.5 transition-colors border-b border-surface-700/40 last:border-0',
-            i === activeIndex ? 'bg-brand-600/20' : 'hover:bg-surface-700/60'
+            'w-full text-left px-3 py-2.5 transition-colors border-b border-surface-700 last:border-0',
+            i === activeIndex ? 'bg-accent-soft' : 'hover:bg-[var(--rowhover)]'
           )}
         >
           <div className="flex items-baseline gap-2">
-            <code className="text-[11px] font-mono text-brand-400 bg-brand-900/30 px-1.5 py-0.5 rounded flex-shrink-0">
+            <code className="text-[11px] font-mono text-accent-dark bg-accent-soft px-1.5 py-0.5 rounded flex-shrink-0">
               /{r.shortcut}
             </code>
             <span className="text-xs font-medium text-surface-200 truncate">{r.title}</span>
@@ -160,8 +156,15 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
+export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const { toast } = useToast()
+  // Respostas rápidas se gerenciam aqui mesmo, num painel ao lado (mesma
+  // seção de Configurações): a necessidade nasce escrevendo a mensagem.
+  // Criar/editar é só admin+ (o mesmo gate da seção).
+  const { user: autor } = useAuth()
+  const podeGerenciarRespostas = isAdminTier(autor?.role)
+  const [gerenciandoRespostas, setGerenciandoRespostas] = useState(false)
+  const irCom = useComVolta()
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
   const [allResponses, setAllResponses] = useState<CannedResponse[]>([])
@@ -269,17 +272,26 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
           requestAnimationFrame(() => textareaRef.current?.focus())
         },
       },
+      ...(podeGerenciarRespostas
+        ? [{ label: 'Gerenciar respostas rápidas', icon: Settings2, onClick: () => setGerenciandoRespostas(true) }]
+        : []),
     ]
-  }, [])
+  }, [podeGerenciarRespostas])
 
   const { onContextMenu: onInputContextMenu } = useContextMenu(buildInputContextMenu)
   const videoInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
 
-  // Load canned responses once
-  useEffect(() => {
+  // Carrega as respostas rápidas — e de novo ao fechar o painel de gerenciar,
+  // para a resposta recém-criada já aparecer nos atalhos e no "/".
+  const carregarRespostas = useCallback(() => {
     cannedResponsesApi.fetchAll().then(setAllResponses).catch(() => {})
   }, [])
+  useEffect(() => { carregarRespostas() }, [carregarRespostas])
+  const fecharGerenciarRespostas = useCallback(() => {
+    setGerenciandoRespostas(false)
+    carregarRespostas()
+  }, [carregarRespostas])
 
   // Close attach menu when clicking outside. We MUST check that the click
   // wasn't on the menu (or its toggle), otherwise a mousedown on one of the
@@ -312,6 +324,9 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
           r.shortcut.toLowerCase().startsWith(query) ||
           r.title.toLowerCase().includes(query)
       )
+      // Código anterior à extração do modal de template: o React Compiler passou a analisar este componente
+      // (o IIFE do modal saiu) e aponta o padrão; filtrar+abrir o picker ao digitar '/' é intencional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPickerResponses(filtered)
       setPickerActive(filtered.length > 0)
       setActiveIndex(0)
@@ -436,23 +451,6 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
   // Selecting a template opens a review modal (below) instead of sending
   // immediately, so the operator can inspect the full structure first.
   const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null)
-  const [sendingTemplate, setSendingTemplate] = useState(false)
-  // SCRUM-807 — valores das variáveis {{n}} do template em revisão, digitados
-  // pelo operador (chaves "1","2"… — o formato que o <TemplatePreview> lê para o
-  // preview ao vivo). Resetados a cada template escolhido. O envio fica
-  // bloqueado enquanto houver variável vazia: o WhatsApp rejeita a contagem
-  // errada e um {{1}} cru chegaria ao cliente.
-  const [templateVars, setTemplateVars] = useState<Record<string, string>>({})
-  const [templateError, setTemplateError] = useState<string | null>(null)
-  const templateSlots = previewTemplate ? templateVariableSlots(previewTemplate) : []
-  const templateReady = variablesComplete(templateSlots, templateVars)
-  const templateMissing = templateSlots.filter((s) => !(templateVars[s.key] ?? '').trim()).length
-  const closeTemplateModal = () => {
-    setPreviewTemplate(null)
-    setTemplateVars({})
-    setTemplateError(null)
-  }
-
   const toggleTemplatePicker = () => {
     if (!templatePickerOpen && templates.length === 0 && !loadingTemplates) {
       setLoadingTemplates(true)
@@ -464,42 +462,11 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
     setTemplatePickerOpen((v) => !v)
   }
 
-  // Step 1 — pick a template: open the review modal (no send yet).
+  // Step 1 — pick a template: open the review modal (no send yet). O passo 2
+  // (variáveis + prévia + envio real) vive em <TemplateSendModal>.
   const handleSelectTemplate = (tpl: WhatsAppTemplate) => {
     setTemplatePickerOpen(false)
-    setTemplateVars({})
-    setTemplateError(null)
     setPreviewTemplate(tpl)
-  }
-
-  // Step 2 — confirm in the modal: send via the REAL WhatsApp template API
-  // (contactsApi.sendTemplate), not a plain-text message. Sending `tpl.body`
-  // as text (the old behavior) failed outside the 24h window — exactly when
-  // this picker is shown. `previewTemplate` is the template chosen in step 1.
-  const handleConfirmSendTemplate = async () => {
-    if (!previewTemplate || sendingTemplate || !templateReady) return
-    setSendingTemplate(true)
-    setTemplateError(null)
-    try {
-      // Meta template flow (R10/SCRUM-807): real WhatsApp template API with
-      // positional variables — not plain-text `tpl.body` (fails outside 24h).
-      await contactsApi.sendTemplate(
-        contactId,
-        previewTemplate.name,
-        previewTemplate.language,
-        variablesToArray(templateSlots, templateVars),
-      )
-      onCancelReply?.()
-      setTemplateSent(true)
-      closeTemplateModal()
-    } catch (err) {
-      // Mantém o modal aberto para corrigir e tentar de novo. A mensagem já vem
-      // classificada do backend (contagem de variáveis, template não aprovado,
-      // códigos da Meta) — mostrada aqui, junto do formulário, não só no toast.
-      setTemplateError(getApiErrorMessage(err, 'Não foi possível enviar o template. Tente novamente.'))
-    } finally {
-      setSendingTemplate(false)
-    }
   }
 
   // Mantém uma referência viva dos anexos para revogar as objectURLs no
@@ -548,7 +515,7 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
         setAttachments((prev) => prev.map((a) => (a.id === id ? { ...a, thumbnailUrl } : a)))
       })
     }
-  }, [])
+  }, [toast])
 
   const removeAttachment = useCallback((id: string) => {
     setAttachments((prev) => {
@@ -597,16 +564,21 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
   if (blockedReason) {
     return (
       <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
+        {/* Sem sombra: banner inline (nunca overlay), mesma regra do composer.
+            Eixo 10: currentColor herda o --chip do Banner (suave, 12%) —
+            border-white/bg-white/text-white ficava sem contraste no claro
+            (mesma família do achado em Departments.tsx). */}
         <Banner
           variant="warning"
-          className="shadow-lg"
           action={blockedReason.ctaHref && blockedReason.ctaLabel && (
-            <a
-              href={blockedReason.ctaHref}
-              className="text-xs font-semibold border border-white/25 bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-lg transition-colors"
+            // Link da SPA (o <a href> recarregava o app e perdia a inbox) e com
+            // o caminho de volta para esta conversa.
+            <Link
+              to={irCom(blockedReason.ctaHref, 'Voltar para a conversa')}
+              className="text-xs font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-3 py-1.5 rounded-lg transition-colors"
             >
               {blockedReason.ctaLabel}
-            </a>
+            </Link>
           )}
         >
           <p className="text-xs font-semibold">Não é possível enviar mensagens agora</p>
@@ -619,7 +591,7 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
   if (!windowOpen) {
     return (
       <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
-        <div className="card-24h rounded-xl px-4 py-3 shadow-lg">
+        <div className="card-24h rounded-lg px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="card-24h-accent w-4 h-4 text-brand-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
@@ -662,11 +634,11 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
                     <button
                       key={tpl.id}
                       onClick={() => handleSelectTemplate(tpl)}
-                      className="w-full text-left p-2.5 rounded-lg border border-surface-700/50 bg-surface-800/40 hover:bg-surface-800 hover:border-surface-600 transition-colors"
+                      className="w-full text-left p-2.5 rounded-lg border border-surface-700 bg-[var(--sf2)] hover:bg-[var(--rowhover)] hover:border-surface-600 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-xs font-semibold text-surface-200 truncate">{tpl.name}</span>
-                        <span className="text-[9px] font-medium text-surface-500 bg-surface-700/50 px-1.5 py-0.5 rounded flex-shrink-0">
+                        <span className="text-[9px] font-medium text-surface-500 bg-[var(--sf2)]/70 px-1.5 py-0.5 rounded flex-shrink-0">
                           {tpl.language}
                         </span>
                       </div>
@@ -679,117 +651,19 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
           )}
         </div>
 
-        {/* Template review modal — opened by handleSelectTemplate. Renders the
-            full structure (header / body / footer / buttons) so the operator can
-            validate before sending. Confirm → handleConfirmSendTemplate. */}
-        <Modal
-          open={!!previewTemplate}
-          onClose={() => { if (!sendingTemplate) closeTemplateModal() }}
-          title="Revisar template"
-          className="max-w-2xl"
-          footer={
-            <div className="flex items-center justify-end gap-2">
-              {templateError && (
-                <p role="alert" className="mr-auto text-xs text-red-400 leading-snug min-w-0">{templateError}</p>
-              )}
-              <button
-                type="button"
-                onClick={closeTemplateModal}
-                disabled={sendingTemplate}
-                className="px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:bg-surface-800 disabled:opacity-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSendTemplate}
-                disabled={sendingTemplate || !templateReady}
-                title={templateReady ? undefined : 'Preencha todas as variáveis para enviar'}
-                style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
-                className="color-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border hover:brightness-110 disabled:opacity-60 transition"
-              >
-                {sendingTemplate ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {sendingTemplate ? 'Enviando…' : 'Enviar template'}
-              </button>
-            </div>
-          }
-        >
-          {previewTemplate && (() => {
-            const cat = TEMPLATE_CATEGORY_META[previewTemplate.category]
-            const btnCount = previewTemplate.buttons?.length ?? 0
-            const chip = 'inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700'
-            return (
-              <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
-                {/* Metadata + variables */}
-                <div className="order-2 md:order-1 min-w-0 space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="font-display text-lg font-semibold text-surface-50 leading-tight break-words">{previewTemplate.name}</h3>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={chip}>
-                        <span className={cn('w-1.5 h-1.5 rounded-full', cat?.dot ?? 'bg-surface-500')} />
-                        {cat?.label ?? previewTemplate.category}
-                      </span>
-                      <span className={cn(chip, 'uppercase tracking-wide')}>{previewTemplate.language}</span>
-                      {previewTemplate.headerType && (
-                        <span className={chip}>Cabeçalho: {TEMPLATE_HEADER_LABEL[previewTemplate.headerType]}</span>
-                      )}
-                      {btnCount > 0 && (
-                        <span className={chip}>{btnCount} {btnCount === 1 ? 'botão' : 'botões'}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* SCRUM-807 — um campo por variável do CORPO; o preview ao lado
-                      reflete o que o operador digita e o envio só libera com tudo
-                      preenchido. Antes era só um aviso e o template ia sem
-                      parâmetros ({{1}} cru / rejeição da Meta). */}
-                  {templateSlots.length > 0 ? (
-                    <div className="rounded-xl border border-surface-700 bg-surface-900/60 p-3 space-y-2.5">
-                      <p className="text-[11px] font-semibold text-surface-200">
-                        Preencha {templateSlots.length === 1 ? 'a variável' : `as ${templateSlots.length} variáveis`} do template
-                      </p>
-                      {templateSlots.map((slot) => (
-                        <label key={slot.key} className="block min-w-0">
-                          <span className="flex items-center gap-2 text-[11px] mb-1">
-                            <code className="text-brand-600 bg-brand-500/10 border border-brand-500/20 px-1.5 py-0.5 rounded font-mono shrink-0">{slot.placeholder}</code>
-                            <span className="text-surface-300 truncate">{slot.label}</span>
-                          </span>
-                          <input
-                            type="text"
-                            value={templateVars[slot.key] ?? ''}
-                            onChange={(e) => setTemplateVars((prev) => ({ ...prev, [slot.key]: e.target.value }))}
-                            placeholder={`Valor para ${slot.placeholder}`}
-                            maxLength={1024}
-                            disabled={sendingTemplate}
-                            aria-label={`Variável ${slot.placeholder} — ${slot.label}`}
-                            className="w-full rounded-lg bg-surface-800 border border-surface-700 px-2.5 py-1.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 disabled:opacity-60"
-                          />
-                        </label>
-                      ))}
-                      {!templateReady && (
-                        <p className="text-[11px] text-surface-400 leading-snug flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5 shrink-0" />
-                          {templateMissing === 1 ? 'Falta 1' : `Faltam ${templateMissing}`} de {templateSlots.length}{' '}
-                          {templateSlots.length === 1 ? 'variável' : 'variáveis'} para liberar o envio.
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-surface-500 leading-snug">Template sem variáveis — pronto para envio.</p>
-                  )}
-                </div>
-
-                {/* WhatsApp preview */}
-                <div className="order-1 md:order-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Pré-visualização</p>
-                  <div className="rounded-2xl bg-surface-950 border border-surface-800 p-4 flex items-center justify-center">
-                    <TemplatePreview template={previewTemplate} variables={templateVars} />
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
-        </Modal>
+        {/* Template review modal — opened by handleSelectTemplate. Estrutura
+            completa + variáveis + prévia antes de enviar (componente
+            compartilhado com o "Iniciar conversa" dos Leads). */}
+        <TemplateSendModal
+          template={previewTemplate}
+          contactId={contactId}
+          onClose={() => setPreviewTemplate(null)}
+          onSent={() => {
+            onCancelReply?.()
+            setTemplateSent(true)
+            setPreviewTemplate(null)
+          }}
+        />
       </div>
     )
   }
@@ -797,7 +671,11 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
   const slashQuery = text.match(/^\/(\S*)$/)?.[1] ?? ''
 
   return (
-    <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
+    // min-w-0: item de um flex column (ChatWindow) — sem isto o `min-width:
+    // auto` padrão deixa este bloco crescer até caber a fileira de respostas
+    // rápidas inteira (ela tem overflow-x-auto própria, mas só rola dentro de
+    // uma largura já contida) e a fileira vazava a coluna do chat inteira.
+    <div className="px-4 pt-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex-shrink-0 min-w-0 bg-transparent">
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker
@@ -809,10 +687,10 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
         )}
 
         {replyTo && (
-          <div className="mb-2 flex items-center gap-2 rounded-lg bg-surface-800/70 border-l-2 border-brand-500 px-3 py-2">
-            <CornerUpLeft className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
+          <div className="mb-2 flex items-center gap-2 rounded-lg bg-[var(--sf2)] border-l-2 border-brand-500 px-3 py-2">
+            <CornerUpLeft className="w-3.5 h-3.5 text-accent-dark flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium text-brand-300">
+              <p className="text-[11px] font-medium text-accent-dark">
                 Respondendo {replyTo.direction === 'outbound' ? '· sua mensagem' : '· cliente'}
               </p>
               <p className="text-xs text-surface-400 truncate">{replyPreview(replyTo)}</p>
@@ -822,7 +700,7 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
               onClick={onCancelReply}
               title="Cancelar resposta"
               aria-label="Cancelar resposta"
-              className="w-6 h-6 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors flex-shrink-0"
+              className="w-6 h-6 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -835,25 +713,27 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
           onDrop={handleDrop}
           className={cn(
             // msg-composer traz bg/border via tokens que acompanham o tema
-            // (ver index.css) — por isso a cor base não vem de bg-surface-800/
-            // border-surface-700 aqui. `relative` é necessário pro overlay
-            // absolute do dropzone (abaixo) se posicionar contra este container.
-            'relative msg-composer rounded-2xl px-3 py-2.5 transition-all shadow-lg',
-            'border focus-within:border-brand-500/50 focus-within:shadow-brand-500/20',
+            // (ver index.css — --color-composer-border já é --bd2, CONV-CHAT-32).
+            // `relative` é necessário pro overlay absolute do dropzone
+            // (abaixo) se posicionar contra este container.
+            // CONV-CHAT-32/41 (spec/1d-conversas.GAPS.md): sem sombra — o mock
+            // é explícito ("Composer não tem sombra").
+            'relative msg-composer rounded-lg px-3 pt-2.5 pb-2 transition-all',
+            'border focus-within:border-brand-500/50',
             dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
           {/* Dropzone: feedback "solte aqui" durante o arraste (SCRUM-275) */}
           {dragOver && (
-            <div className="absolute inset-0 z-10 rounded-2xl bg-brand-950/50 border-2 border-dashed border-brand-500 flex items-center justify-center pointer-events-none">
-              <span className="text-xs font-semibold text-brand-200">Solte para anexar</span>
+            <div className="absolute inset-0 z-10 rounded-lg bg-accent-soft border-2 border-dashed border-brand-500 flex items-center justify-center pointer-events-none">
+              <span className="text-xs font-semibold text-accent-dark">Solte para anexar</span>
             </div>
           )}
 
           {/* Preview dos anexos em espera (staging). Fica dentro da caixa, acima
               da textarea — o operador confere/remove antes de enviar. */}
           {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2.5 pb-2.5 border-b border-surface-700/60">
+            <div className="flex flex-wrap gap-2 mb-2.5 pb-2.5 border-b border-surface-700">
               {attachments.map((att) => {
                 const Icon = fileIcon(att.file)
                 const isUploading = att.id === uploadingId
@@ -861,7 +741,7 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
                   <div
                     key={att.id}
                     className={cn(
-                      'flex items-center gap-2 bg-surface-700/60 border border-surface-600 rounded-lg pl-2 pr-1.5 py-1.5 max-w-[220px]',
+                      'flex items-center gap-2 bg-[var(--sf2)]/80 border border-surface-600 rounded-lg pl-2 pr-1.5 py-1.5 max-w-[220px]',
                       isUploading && 'opacity-80'
                     )}
                   >
@@ -903,8 +783,6 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
             </div>
           )}
 
-          {/* Linha de composição (anexar · textarea · emoji · enviar) */}
-          <div className="flex items-center gap-2">
           {/* Hidden file inputs — `multiple` lets the operator pick a whole
               batch in one go; handleFileSelect stages them (preview) and
               handleSend dispatches one POST per file, so each gets its own
@@ -934,57 +812,10 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
             onChange={handleFileSelect}
           />
 
-          {/* Attachments menu */}
-          <div className="relative">
-            <button
-              ref={attachButtonRef}
-              onClick={() => setShowAttachMenu(!showAttachMenu)}
-              className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
-              title="Anexar arquivo"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
-
-            {showAttachMenu && (
-              <div
-                ref={attachMenuRef}
-                className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-xl overflow-hidden z-50"
-              >
-                <button
-                  onClick={() => {
-                    imageInputRef.current?.click()
-                    setShowAttachMenu(false)
-                  }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
-                >
-                  <Image className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm text-surface-200">Imagem</span>
-                </button>
-                <button
-                  onClick={() => {
-                    documentInputRef.current?.click()
-                    setShowAttachMenu(false)
-                  }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
-                >
-                  <FileText className="w-4 h-4 text-green-400" />
-                  <span className="text-sm text-surface-200">Documento</span>
-                </button>
-                <button
-                  onClick={() => {
-                    videoInputRef.current?.click()
-                    setShowAttachMenu(false)
-                  }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
-                >
-                  <Video className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm text-surface-200">Vídeo</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Textarea */}
+          {/* CONV-CHAT-35/36 (spec/1d-conversas.GAPS.md): composer em 2
+              partes — texto numa linha própria, barra de ações (anexar ·
+              contador · emoji · enviar) embaixo, em vez de tudo espremido
+              numa linha só. */}
           <textarea
             ref={textareaRef}
             value={text}
@@ -993,55 +824,118 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
             onInput={handleInput}
             onContextMenu={onInputContextMenu}
             onPaste={handlePaste}
-            placeholder="Digite uma mensagem ou / para respostas rápidas..."
+            placeholder="Escreva uma mensagem… / para respostas rápidas"
             aria-label="Mensagem"
             rows={1}
             maxLength={WA_TEXT_LIMIT}
             disabled={disabled}
             className={cn(
-              'flex-1 bg-transparent text-sm text-surface-100 placeholder:text-surface-500',
+              'w-full bg-transparent text-sm text-surface-100 placeholder:text-surface-500',
               'resize-none outline-none leading-relaxed',
               'min-h-[24px] max-h-[120px]'
             )}
           />
 
-          {/* Contador de caracteres — só aparece perto do limite do WhatsApp
-              (4096); antes disso é ruído. Âmbar ao se aproximar, vermelho no teto. */}
-          {text.length >= WA_TEXT_LIMIT - 300 && (
-            <span
-              aria-live="polite"
-              className={cn(
-                'self-end pb-1 text-[10px] tabular-nums flex-shrink-0',
-                text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
+          <div className="flex items-center gap-1 mt-2.5 -mx-1">
+            {/* Attachments menu */}
+            <div className="relative">
+              <button
+                ref={attachButtonRef}
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-[6px] flex items-center justify-center text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
+                title="Anexar arquivo"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+
+              {showAttachMenu && (
+                <div
+                  ref={attachMenuRef}
+                  className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-lg p-1 z-50 w-40"
+                >
+                  <button
+                    onClick={() => {
+                      imageInputRef.current?.click()
+                      setShowAttachMenu(false)
+                    }}
+                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
+                  >
+                    <Image className="w-4 h-4 text-surface-400" />
+                    <span className="text-[13px] text-surface-100">Imagem</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      documentInputRef.current?.click()
+                      setShowAttachMenu(false)
+                    }}
+                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
+                  >
+                    <FileText className="w-4 h-4 text-surface-400" />
+                    <span className="text-[13px] text-surface-100">Documento</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      videoInputRef.current?.click()
+                      setShowAttachMenu(false)
+                    }}
+                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
+                  >
+                    <Video className="w-4 h-4 text-surface-400" />
+                    <span className="text-[13px] text-surface-100">Vídeo</span>
+                  </button>
+                </div>
               )}
-            >
-              {text.length}/{WA_TEXT_LIMIT}
-            </span>
-          )}
+            </div>
 
-          {/* Emoji */}
-          <EmojiPickerButton
-            textareaRef={textareaRef}
-            onEmojiInsert={(newValue) => setText(newValue)}
-            className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
-          />
+            {/* Contador de caracteres — só aparece perto do limite do WhatsApp
+                (4096); antes disso é ruído. Âmbar ao se aproximar, vermelho no teto. */}
+            {text.length >= WA_TEXT_LIMIT - 300 && (
+              <span
+                aria-live="polite"
+                className={cn(
+                  'text-[10px] tabular-nums flex-shrink-0',
+                  text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
+                )}
+              >
+                {text.length}/{WA_TEXT_LIMIT}
+              </span>
+            )}
 
-          {/* Send — aparece com texto E/OU anexos em espera */}
-          {(text.trim() || attachments.length > 0) && (
-            <button
-              onClick={handleSend}
-              disabled={disabled}
-              aria-label="Enviar mensagem"
-              className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          )}
+            <div className="ml-auto flex items-center gap-2">
+              {windowHoursLeft !== undefined && (
+                <span className="hidden lg:inline text-[11px] text-surface-500 whitespace-nowrap" data-testid="window-notice">
+                  Janela de 24h aberta · fecha em {windowHoursLeft} h
+                </span>
+              )}
+              {/* Emoji — raio/hover (CONV-CHAT-36) já vêm do primitivo. */}
+              <EmojiPickerButton
+                textareaRef={textareaRef}
+                onEmojiInsert={(newValue) => setText(newValue)}
+                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
+              />
+
+              {/* Send — aparece com texto E/OU anexos em espera. O envio é
+                  otimista (developer, 23/09): o botão não espera o anterior. */}
+              {(text.trim() || attachments.length > 0) && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={handleSend}
+                  disabled={disabled}
+                  aria-label="Enviar mensagem"
+                  leftIcon={<Send className="w-3.5 h-3.5" />}
+                  className="[@media(pointer:coarse)]:h-11"
+                >
+                  Enviar
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      {/* Quick reply shortcut chips */}
-      {allResponses.length > 0 && !pickerActive && (
+      {/* Quick reply shortcut chips — com o atalho de gerenciar no fim (admin+).
+          Sem nenhuma resposta, o admin vê só o convite para criar a primeira. */}
+      {(allResponses.length > 0 || podeGerenciarRespostas) && !pickerActive && (
         <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
           {allResponses.slice(0, 8).map((r) => (
             <button
@@ -1049,12 +943,34 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
               type="button"
               onClick={() => handleSelectResponse(r)}
               title={r.title}
-              className="flex-shrink-0 text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+              className="flex-shrink-0 text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
             >
               /{r.shortcut}
             </button>
           ))}
+          {podeGerenciarRespostas && (
+            <button
+              type="button"
+              onClick={() => setGerenciandoRespostas(true)}
+              className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+            >
+              <Settings2 className="w-3 h-3" />
+              {allResponses.length > 0 ? 'Gerenciar' : 'Criar resposta rápida'}
+            </button>
+          )}
         </div>
+      )}
+
+      {podeGerenciarRespostas && (
+        <PainelDeConfiguracao
+          open={gerenciandoRespostas}
+          onClose={fecharGerenciarRespostas}
+          titulo="Respostas rápidas"
+          secao="quick-replies"
+          rotuloDeVolta="Voltar para a conversa"
+        >
+          <QuickReplies buscaNaUrl={false} />
+        </PainelDeConfiguracao>
       )}
     </div>
   )

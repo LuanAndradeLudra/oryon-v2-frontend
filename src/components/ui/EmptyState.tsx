@@ -1,10 +1,16 @@
 // ─── Empty State ───────────────────────────────────────────────────────────
 // Replaces three near-duplicates that lived inline in SkillsTab,
-// SkillTemplatesPage and AssignSkillPage. Keeps the same dashed-border card
-// look the project already used; just hoists the props and the action area
-// so each caller stays declarative.
+// SkillTemplatesPage and AssignSkillPage.
+//
+// SCRUM-1097 — spec/1a-primitivos.md EMPTY-01..05 (HTML do canvas, README e
+// os dois PNGs concordam): moldura TRACEJADA `--bd2`, raio 8, padding 18/16,
+// alinhado à ESQUERDA (não centrado), gap 6px; ícone 20px stroke 1.75 em
+// --tx3; título 13/600; dica 12px --tx2; CTA = Button `neutral sm`
+// ("deliberadamente não teal"). Uma leitura anterior da referência tinha
+// descrito "sem moldura, botão secondary" — estava errada; EMPTY-06.
 
 import type { LucideIcon } from 'lucide-react'
+import { Button } from './Button'
 import { cn } from '@/lib/utils'
 
 type Action =
@@ -32,39 +38,26 @@ export function EmptyState({ icon: Icon, title, hint, action, className, iconSty
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center text-center',
-        'py-16 px-6 rounded-xl bg-surface-900/40 border border-dashed border-surface-700',
+        'mt-3 flex flex-col items-start gap-1.5 py-[18px] px-4 rounded-lg border border-dashed border-[var(--bd2)]',
         className,
       )}
     >
-      <Icon className="w-10 h-10 text-surface-600 mb-3" style={iconStyle} strokeWidth={1.5} />
-      <p className="text-surface-300 font-medium mb-1">{title}</p>
-      {hint && <p className="text-sm text-surface-500 max-w-md">{hint}</p>}
+      <Icon className="w-5 h-5 text-surface-500" style={iconStyle} strokeWidth={1.75} />
+      <p className="text-[13px] font-semibold text-surface-100">{title}</p>
+      {hint && <p className="text-xs text-surface-400 leading-normal max-w-md">{hint}</p>}
       {action && (
-        <div className="mt-4">
+        <div className="mt-1">
           {'href' in action && action.href ? (
             <a
               href={action.href}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium transition-colors"
+              className="inline-flex items-center justify-center h-7 px-2.5 text-xs gap-1.5 rounded-sm bg-surface-800 text-surface-100 font-semibold border border-[var(--bd2)] hover:bg-[var(--rowhover)] transition-all"
             >
               {action.label}
             </a>
           ) : (
-            /* `neutral`, não teal (10/09): o CTA de um estado vazio é a mesma
-               classe de botão do "Novo negócio" do cabeçalho, e os dois
-               apareciam lado a lado na mesma tela com cores diferentes.
-
-               É a continuação da conversão que tirou o teal dos botões de
-               confirmação: aqui o teal não marcava importância, marcava
-               "botão" — e num estado vazio, onde ele é o único elemento
-               interativo, não precisava marcar nada. */
-            <button
-              type="button"
-              onClick={action.onClick}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-semibold transition-colors"
-            >
+            <Button type="button" variant="neutral" size="sm" onClick={action.onClick}>
               {action.label}
-            </button>
+            </Button>
           )}
         </div>
       )}

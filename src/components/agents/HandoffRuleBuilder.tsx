@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect, useId, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import {
-  Sparkles, Send, X, Plus, Trash2, Edit3, GripVertical,
-  ArrowRight, Check, Loader2, Users, ExternalLink, MessageSquare,
-  Zap, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, AlertCircle,
+  Sparkles, Send, X, Plus, Trash2, Edit3, ArrowUp, ArrowDown,
+  ArrowRightLeft, Check, Users, ExternalLink, MessageSquare,
+  Zap, ChevronDown,
   Tag, Layers, FileText, AlignLeft, Heart,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { ConfirmModal } from '@/components/ui/Modal'
+import { ConfirmModal, Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { Switch } from '@/components/ui/Switch'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   generateHandoffRule,
   type HandoffRule,
@@ -19,6 +21,7 @@ import {
   type HandoffTemplateVariants,
   type HandoffKeywordTiers,
 } from '@/services/agentsApi'
+import { useTamanhoDeToque } from './pagina/useToque'
 
 // ─── Rule Modal shell ─────────────────────────────────────────────────────────
 
@@ -41,59 +44,34 @@ function RuleModal({
   tall?: boolean
   children: React.ReactNode
 }) {
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [open, onClose])
-
-  if (!open) return null
-
-  // Render via portal so the modal escapes any transformed parent (e.g. the
-  // wizard's framer-motion wrapper) and stays anchored to the viewport.
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        transition={{ duration: 0.15 }}
-        onClick={e => e.stopPropagation()}
-        className={cn(
-          'relative z-10 bg-surface-900 overlay-frame border rounded-2xl flex flex-col w-full',
-          wide ? 'max-w-2xl' : 'max-w-lg',
-          tall ? 'h-[78vh]' : 'max-h-[80vh]',
-        )}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+  // Casca migrada pro ui/Modal (SCRUM-1097): herda role="dialog"/aria-modal,
+  // foco inicial + devolução, trap de Tab, Esc pela pilha de camadas
+  // (LayerContext), portal e scrim do token. Aqui só o que é específico:
+  // cabeçalho com ícone + subtítulo (title como nó => aria-label), largura
+  // e altura, e corpo sem recuo (os formulários já trazem o próprio).
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      aria-label={title}
+      title={
+        <div className="flex-1 min-w-0 flex items-center gap-3 pb-3">
           {icon && (
             <div className="w-8 h-8 rounded-xl bg-brand-600/15 ring-1 ring-brand-500/25 flex items-center justify-center flex-shrink-0">
               {icon}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-semibold text-surface-100">{title}</h2>
+            <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">{title}</h2>
             {subtitle && <p className="text-xs text-surface-500 mt-0.5">{subtitle}</p>}
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-500 hover:bg-surface-800 hover:text-surface-200 transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {children}
-        </div>
-      </motion.div>
-    </div>,
-    document.body,
+      }
+      className={cn(wide ? 'max-w-2xl' : 'max-w-lg', tall && 'h-[78vh]')}
+      bodyClassName="p-0"
+    >
+      {children}
+    </Modal>
   )
 }
 
@@ -182,16 +160,23 @@ const INPUT = 'w-full bg-surface-800 border border-surface-700 rounded-xl px-3 p
 function RuleCard({
   rule,
   index,
+  total,
   onToggle,
   onEdit,
   onDelete,
+  onMove,
 }: {
   rule: HandoffRule
   index: number
+  total: number
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
+  /** Troca de lugar com a vizinha (-1 = sobe, 1 = desce). A ordem decide
+   *  qual regra vale quando duas casam. */
+  onMove: (delta: -1 | 1) => void
 }) {
+  const tam = useTamanhoDeToque()
   const [expanded, setExpanded] = useState(false)
   const actionCfg = ACTION_OPTIONS.find(a => a.value === rule.action)
 
@@ -199,69 +184,61 @@ function RuleCard({
     <motion.div
       layout
       className={cn(
-        'bg-surface-900 border rounded-xl overflow-hidden transition-colors',
-        rule.enabled ? 'border-surface-700' : 'border-surface-800/40 opacity-60',
+        'rounded-lg border border-surface-700 bg-[var(--sf2)] overflow-hidden transition-opacity',
+        !rule.enabled && 'opacity-70',
       )}
     >
-      {/* Header row */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Priority badge + drag handle */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <GripVertical className="w-3.5 h-3.5 text-surface-700 cursor-grab" />
-          <span className="w-5 h-5 rounded-md bg-surface-800 border border-surface-700 flex items-center justify-center text-[10px] font-bold text-surface-500">
-            {index + 1}
-          </span>
-        </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-3">
+        <span className="w-6 h-6 rounded-sm bg-surface-800 border border-surface-700 flex items-center justify-center text-2xs font-bold tabular-nums text-surface-400 flex-shrink-0" aria-label={`Ordem ${index + 1}`}>
+          {index + 1}
+        </span>
 
-        {/* Name + action badge */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn('text-sm font-semibold', rule.enabled ? 'text-surface-100' : 'text-surface-500')}>
-              {rule.name}
-            </span>
+            <span className="text-sm font-semibold text-surface-100">{rule.name}</span>
             <span
-              className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md border font-medium"
-              style={{ ['--chip']: ACTION_CHIP[rule.action] } as React.CSSProperties}
+              className="inline-flex items-center gap-1 h-5 px-[7px] rounded-xs border text-2xs font-semibold"
+              style={{
+                color: ACTION_CHIP[rule.action],
+                backgroundColor: `color-mix(in srgb, ${ACTION_CHIP[rule.action]} 12%, transparent)`,
+                borderColor: `color-mix(in srgb, ${ACTION_CHIP[rule.action]} 25%, transparent)`,
+              }}
             >
               {actionCfg?.icon}
               {ACTION_LABEL[rule.action]}
             </span>
             {rule.aiGenerated && (
-              <span
-                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md border"
-                style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
-              >
-                <Sparkles className="w-2.5 h-2.5" /> IA
+              <span className="inline-flex items-center gap-1 h-5 px-[7px] rounded-xs text-2xs font-semibold bg-accent-soft text-accent-dark">
+                <Sparkles className="w-3 h-3" aria-hidden /> Sugerida pela IA
               </span>
             )}
           </div>
-          <p className="text-xs text-surface-500 truncate mt-0.5">
-            {rule.keywords.slice(0, 4).join(' · ')}
-            {rule.keywords.length > 4 && <span className="text-surface-600"> +{rule.keywords.length - 4}</span>}
+          <p className="text-xs text-surface-400 truncate mt-0.5">
+            {rule.keywords.slice(0, 5).join(' · ')}
+            {rule.keywords.length > 5 && <span className="text-surface-500"> +{rule.keywords.length - 5}</span>}
           </p>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={onToggle} title={rule.enabled ? 'Desativar' : 'Ativar'} aria-label={rule.enabled ? 'Desativar regra' : 'Ativar regra'}
-            className="p-1 rounded-lg hover:bg-surface-800 transition text-surface-500 hover:text-surface-200">
-            {rule.enabled
-              ? <ToggleRight className="w-5 h-5 text-status-active" />
-              : <ToggleLeft  className="w-5 h-5" />}
-          </button>
-          <button onClick={onEdit} aria-label="Editar regra" className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-500 hover:text-surface-200 transition">
+        <div className="flex w-full items-center justify-end gap-0.5 flex-shrink-0 border-t border-surface-700 pt-2 sm:w-auto sm:border-t-0 sm:pt-0">
+          <Button variant="ghost" size={tam} iconOnly aria-label="Subir regra" title="Subir" disabled={index === 0} onClick={() => onMove(-1)}>
+            <ArrowUp className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size={tam} iconOnly aria-label="Descer regra" title="Descer" disabled={index === total - 1} onClick={() => onMove(1)}>
+            <ArrowDown className="w-3.5 h-3.5" />
+          </Button>
+          <Switch checked={rule.enabled} onChange={onToggle} className="mx-1.5" />
+          <Button variant="ghost" size={tam} iconOnly aria-label={`Editar ${rule.name}`} onClick={onEdit}>
             <Edit3 className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onDelete} aria-label="Excluir regra" className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition">
+          </Button>
+          <Button variant="ghost" size={tam} iconOnly aria-label={`Excluir ${rule.name}`} onClick={onDelete}>
             <Trash2 className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => setExpanded(v => !v)} className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-600 hover:text-surface-300 transition">
-            {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
+          </Button>
+          <Button variant="ghost" size={tam} iconOnly aria-label={expanded ? 'Recolher detalhes' : 'Ver detalhes'} aria-expanded={expanded} onClick={() => setExpanded(v => !v)}>
+            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
+          </Button>
         </div>
       </div>
 
-      {/* Expanded detail */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -269,53 +246,20 @@ function RuleCard({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="overflow-hidden border-t border-surface-800/60"
+            className="overflow-hidden border-t border-surface-700"
           >
-            <div className="px-4 py-3 space-y-3">
-              {/* Keywords */}
-              <div>
-                <p className="text-[10px] text-surface-600 uppercase tracking-wide mb-1.5">Palavras-chave ({rule.matchMode === 'any_keyword' ? 'qualquer' : rule.matchMode === 'all_keywords' ? 'todas' : 'exata'})</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {rule.keywords.map(kw => (
-                    <span key={kw} className="text-xs px-2 py-0.5 rounded-lg bg-surface-800 border border-surface-700 text-surface-300 font-mono">
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Template */}
-              {rule.template && (
-                <div>
-                  <p className="text-[10px] text-surface-600 uppercase tracking-wide mb-1.5">Template de resposta</p>
-                  <pre className="text-xs text-surface-300 whitespace-pre-wrap font-sans bg-surface-950/60 rounded-lg px-3 py-2 leading-relaxed">
-                    {rule.template}
-                  </pre>
-                </div>
-              )}
-
-              {/* Redirect URL */}
-              {rule.redirectUrl && (
-                <div className="flex items-center gap-2 text-xs">
-                  <ExternalLink className="w-3.5 h-3.5 text-surface-600" />
-                  <span className="text-surface-500">Redirect:</span>
-                  <span className="text-violet-400 font-mono">{rule.redirectUrl}</span>
-                </div>
-              )}
-
-              {/* Department */}
-              {rule.department && (
-                <div className="flex items-center gap-2 text-xs">
-                  <Users className="w-3.5 h-3.5 text-surface-600" />
-                  <span className="text-surface-500">Departamento:</span>
-                  <span className="text-surface-300">{rule.department}</span>
-                </div>
-              )}
-
-              {rule.description && (
-                <p className="text-xs text-surface-600 italic">{rule.description}</p>
-              )}
-            </div>
+            <dl className="px-3.5 py-3 grid grid-cols-1 gap-x-3 gap-y-1 text-xs sm:grid-cols-[130px_1fr] sm:gap-y-2">
+              <dt className="text-surface-500">Palavras ({rule.matchMode === 'any_keyword' ? 'qualquer uma' : rule.matchMode === 'all_keywords' ? 'todas' : 'frase exata'})</dt>
+              <dd className="flex flex-wrap gap-1">
+                {rule.keywords.map(kw => (
+                  <span key={kw} className="px-1.5 h-5 inline-flex items-center rounded-xs bg-surface-800 border border-surface-700 text-surface-200 font-mono">{kw}</span>
+                ))}
+              </dd>
+              {rule.template && (<><dt className="text-surface-500">Resposta</dt><dd className="text-surface-200 whitespace-pre-wrap leading-relaxed">{rule.template}</dd></>)}
+              {rule.redirectUrl && (<><dt className="text-surface-500 inline-flex items-center gap-1"><ExternalLink className="w-3 h-3" aria-hidden />Redireciona para</dt><dd className="text-surface-200 font-mono break-all">{rule.redirectUrl}</dd></>)}
+              {rule.department && (<><dt className="text-surface-500 inline-flex items-center gap-1"><Users className="w-3 h-3" aria-hidden />Setor</dt><dd className="text-surface-200">{rule.department}</dd></>)}
+              {rule.description && (<><dt className="text-surface-500">Observação</dt><dd className="text-surface-300">{rule.description}</dd></>)}
+            </dl>
           </motion.div>
         )}
       </AnimatePresence>
@@ -354,8 +298,8 @@ function TemplateVariantPicker({
               : 'bg-surface-800 border-surface-700 text-surface-500 hover:border-surface-600 hover:text-surface-300',
           )}
         >
-          <span className="text-[11px] font-medium">{VARIANT_LABELS[key].label}</span>
-          <span className="text-[9px] opacity-70">{VARIANT_LABELS[key].desc}</span>
+          <span className="text-2xs font-medium">{VARIANT_LABELS[key].label}</span>
+          <span className="text-3xs opacity-70">{VARIANT_LABELS[key].desc}</span>
         </button>
       ))}
     </div>
@@ -409,12 +353,12 @@ function KeywordTiersView({
           <div key={tier}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <span
-                className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded border"
+                className="color-chip text-3xs font-medium px-1.5 py-0.5 rounded border"
                 style={{ ['--chip']: meta.chip } as React.CSSProperties}
               >
                 {meta.label}
               </span>
-              <span className="text-[10px] text-surface-600">{meta.tip}</span>
+              <span className="text-3xs text-surface-600">{meta.tip}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {kws.map(kw => (
@@ -429,7 +373,7 @@ function KeywordTiersView({
                 >
                   {kw}
                   {flatKeywords.includes(kw) && (
-                    <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="opacity-60 hover:opacity-100 hover:text-red-400 transition">
+                    <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="opacity-60 hover:opacity-100 hover:text-danger transition">
                       <X className="w-3 h-3" />
                     </button>
                   )}
@@ -443,12 +387,12 @@ function KeywordTiersView({
       {/* Manually added keywords */}
       {manualKws.length > 0 && (
         <div>
-          <span className="text-[10px] text-surface-600 uppercase tracking-wide">Adicionadas manualmente</span>
+          <span className="text-3xs text-surface-600 uppercase tracking-wide">Adicionadas manualmente</span>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {manualKws.map(kw => (
               <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
                 {kw}
-                <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-red-400 transition">
+                <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-danger transition">
                   <X className="w-3 h-3" />
                 </button>
               </span>
@@ -463,15 +407,14 @@ function KeywordTiersView({
           value={kwInput}
           onChange={e => setKwInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword() } }}
-          placeholder="Adicionar keyword e pressionar Enter..."
+          placeholder="Adicionar palavra-chave e pressionar Enter..."
           className={INPUT}
         />
-        <button type="button" onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave"
-          className="px-3 rounded-xl bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
+        <Button type="button" variant="neutral" iconOnly onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave">
           <Plus className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
-      <p className="text-[10px] text-surface-700">Total: {flatKeywords.length} keyword(s) ativas</p>
+      <p className="text-2xs text-surface-500">{flatKeywords.length} {flatKeywords.length === 1 ? 'palavra-chave ativa' : 'palavras-chave ativas'}</p>
     </div>
   )
 }
@@ -512,7 +455,7 @@ function DraftEditor({
   }
 
   return (
-    <div className="space-y-4 bg-surface-900/80 border border-surface-800 rounded-2xl p-4">
+    <div className="space-y-4 rounded-lg border border-surface-700 bg-[var(--sf2)] p-3 sm:p-4">
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-brand-400" />
         <p className="text-sm font-semibold text-surface-100">Revisar e salvar regra</p>
@@ -532,14 +475,14 @@ function DraftEditor({
       {/* Action selector */}
       <div>
         <label className="block text-xs font-medium text-surface-400 mb-2">Ação ao detectar</label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
           {ACTION_OPTIONS.map(opt => (
             <button
               key={opt.value}
               type="button"
               onClick={() => onChange({ ...draft, action: opt.value })}
               className={cn(
-                'flex items-start gap-2.5 p-3 rounded-xl border text-left transition-all',
+                'flex items-start gap-2.5 p-3 rounded-lg border text-left transition-all',
                 draft.action === opt.value
                   ? 'ring-1'
                   : 'bg-surface-800 border-surface-700 hover:border-surface-600',
@@ -549,7 +492,7 @@ function DraftEditor({
               <span className={draft.action === opt.value ? '' : 'text-surface-500 mt-0.5'}>{opt.icon}</span>
               <div>
                 <p className="text-xs font-medium text-surface-200">{opt.label}</p>
-                <p className="text-[10px] text-surface-500 leading-tight mt-0.5">{opt.desc}</p>
+                <p className="text-3xs text-surface-500 leading-tight mt-0.5">{opt.desc}</p>
               </div>
             </button>
           ))}
@@ -598,7 +541,7 @@ function DraftEditor({
               {draft.keywords.map(kw => (
                 <span key={kw} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
                   {kw}
-                  <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-red-400 transition">
+                  <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-danger transition">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -612,10 +555,9 @@ function DraftEditor({
                 placeholder="Adicionar palavra-chave e pressionar Enter..."
                 className={INPUT}
               />
-              <button type="button" onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave"
-                className="px-3 rounded-xl bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
+              <Button type="button" variant="neutral" iconOnly onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave">
                 <Plus className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -643,29 +585,26 @@ function DraftEditor({
             placeholder="Mensagem que será enviada ao lead..."
           />
           {draft.templateVariants && (
-            <p className="text-[10px] text-surface-600 mt-1">Edite o texto acima para personalizar esta variante.</p>
+            <p className="text-3xs text-surface-600 mt-1">Edite o texto acima para personalizar esta variante.</p>
           )}
         </div>
       )}
 
       {/* Buttons */}
       <div className="flex items-center gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition"
-        >
+        <Button type="button" variant="neutral" className="flex-1" onClick={onCancel}>
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          className="flex-1"
           onClick={onSave}
-          disabled={!draft.name.trim() || draft.keywords.length === 0 || saving}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-surface-100 hover:bg-surface-50 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition inline-flex items-center justify-center gap-2"
+          disabled={!draft.name.trim() || draft.keywords.length === 0}
+          loading={saving}
+          leftIcon={<Check className="w-4 h-4" />}
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-          {saving ? 'Salvando…' : 'Salvar regra'}
-        </button>
+          Salvar regra
+        </Button>
       </div>
     </div>
   )
@@ -718,7 +657,7 @@ function HandoffGeneratingCard() {
         <div className="w-5 h-5 rounded-lg bg-brand-600/20 flex items-center justify-center flex-shrink-0">
           <Sparkles className="w-3 h-3 text-brand-400" />
         </div>
-        <span className="text-[11px] font-medium text-surface-400">Gerando regra de handoff</span>
+        <span className="text-2xs font-medium text-surface-400">Gerando regra de handoff</span>
         <div className="ml-auto flex gap-1">
           {[0, 1, 2].map(i => (
             <span
@@ -754,7 +693,7 @@ function HandoffGeneratingCard() {
               initial={{ opacity: 0, scale: 0.75 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-              className="px-2 py-0.5 rounded-md bg-surface-700 border border-surface-600 text-[11px] text-surface-300"
+              className="px-2 py-0.5 rounded-md bg-surface-800 border border-[var(--bd2)] text-2xs text-surface-300"
             >
               {kw}
             </motion.span>
@@ -787,6 +726,7 @@ function AIRuleBuilder({
   onRuleCreated: (draft: HandoffRuleDraft) => void
   onCancel: () => void
 }) {
+  const tam = useTamanhoDeToque()
   const uid = useId()
   const [messages, setMessages] = useState<BuilderMessage[]>([
     {
@@ -926,14 +866,9 @@ function AIRuleBuilder({
         {/* Regenerate button */}
         {editingDraft && draft && !savingDraft && (
           <div className="flex justify-center">
-            <button
-              onClick={handleRegenerate}
-              disabled={generating}
-              className="inline-flex items-center gap-1.5 text-xs text-surface-500 hover:text-brand-400 transition"
-            >
-              {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-              Regenerar sugestão
-            </button>
+            <Button variant="ghost" size={tam} onClick={handleRegenerate} loading={generating} leftIcon={<Sparkles className="w-3.5 h-3.5" />}>
+              Gerar outra sugestão
+            </Button>
           </div>
         )}
 
@@ -951,7 +886,7 @@ function AIRuleBuilder({
 
       {/* Input */}
       {!editingDraft && (
-        <div className="flex-shrink-0 border-t border-surface-800 px-4 py-3">
+        <div className="flex-shrink-0 border-t border-surface-700 px-4 py-3">
           <div className="flex items-end gap-2">
             <textarea
               ref={inputRef}
@@ -964,16 +899,11 @@ function AIRuleBuilder({
               className="flex-1 bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition leading-relaxed disabled:opacity-50"
               style={{ maxHeight: '100px' }}
             />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || generating}
-              aria-label="Enviar descrição da regra"
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all bg-surface-100 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950"
-            >
+            <Button iconOnly onClick={handleSend} disabled={!input.trim() || generating} aria-label="Enviar descrição da regra">
               <Send className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
-          <p className="text-[10px] text-surface-700 mt-1">Enter para enviar · Shift+Enter para nova linha</p>
+          <p className="text-2xs text-surface-500 mt-1">Enter envia · Shift+Enter quebra a linha</p>
         </div>
       )}
     </div>
@@ -1036,6 +966,7 @@ export function HandoffRulesPanel({
   businessContext,
   onChange,
 }: HandoffRulesPanelProps) {
+  const tam = useTamanhoDeToque()
   const [modal, setModal] = useState<ModalMode>(null)
   const [editingRule, setEditingRule] = useState<HandoffRule | null>(null)
 
@@ -1077,6 +1008,14 @@ export function HandoffRulesPanel({
     close()
   }
 
+  const moveRule = (index: number, delta: -1 | 1) => {
+    const alvo = index + delta
+    if (alvo < 0 || alvo >= rules.length) return
+    const next = [...rules]
+    ;[next[index], next[alvo]] = [next[alvo], next[index]]
+    onChange(next.map((r, i) => ({ ...r, priority: i + 1, updatedAt: new Date().toISOString() })))
+  }
+
   const toggleRule = (id: string) =>
     onChange(rules.map(r => r.id === id ? { ...r, enabled: !r.enabled, updatedAt: new Date().toISOString() } : r))
 
@@ -1099,80 +1038,50 @@ export function HandoffRulesPanel({
     <div className="flex flex-col h-full min-h-0">
       {/* Always-visible list */}
       <div className="flex flex-col h-full min-h-0">
-        {/* Header */}
-        <div className="flex items-center justify-between px-1 mb-3 flex-shrink-0">
-          <p className="text-xs text-surface-500">
+        {rules.length > 0 && <div className="flex flex-col gap-2 mb-3 flex-shrink-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <p className="text-xs text-surface-400">
             {rules.length === 0
-              ? 'Nenhuma regra configurada'
-              : `${rules.filter(r => r.enabled).length} de ${rules.length} regra(s) ativa(s) — avaliadas em ordem`}
+              ? 'Nenhuma regra ainda'
+              : `${rules.filter(r => r.enabled).length} de ${rules.length} ligadas · avaliadas de cima para baixo, a primeira que casar vale`}
           </p>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setModal('manual')}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-surface-700 text-surface-400 text-xs hover:text-surface-200 hover:border-surface-600 transition"
-            >
-              <Plus className="w-3 h-3" />
-              Manual
-            </button>
-            <button
-              onClick={() => setModal('ai_builder')}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-medium ring-1 ring-brand-500/25 transition"
-            >
-              <Sparkles className="w-3 h-3" />
-              Criar com IA
-            </button>
-          </div>
-        </div>
+          {rules.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Button variant="neutral" size={tam} leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setModal('manual')}>
+                Escrever regra
+              </Button>
+              <Button variant="secondary" size={tam} leftIcon={<Sparkles className="w-3.5 h-3.5" />} onClick={() => setModal('ai_builder')}>
+                Criar com IA
+              </Button>
+            </div>
+          )}
+        </div>}
 
-        {/* Rules list */}
         <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
           {rules.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-12 border border-dashed border-surface-800 rounded-xl">
-              <div className="w-12 h-12 rounded-2xl bg-brand-600/10 ring-1 ring-brand-500/20 flex items-center justify-center">
-                <ArrowRight className="w-6 h-6 text-brand-500" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-surface-400 font-medium">Nenhuma regra de encaminhamento</p>
-                <p className="text-xs text-surface-600 mt-1 max-w-[260px]">
-                  Crie regras para que o agente encaminhe automaticamente quando detectar palavras-chave específicas.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setModal('manual')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-surface-700 text-surface-400 text-xs hover:text-surface-200 hover:border-surface-600 transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Criar manualmente
-                </button>
-                <button
-                  onClick={() => setModal('ai_builder')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-medium transition"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Criar com IA
-                </button>
-              </div>
+            <div>
+              <EmptyState
+                icon={ArrowRightLeft}
+                title="Nenhuma regra de transferência"
+                hint="Diga em que situações a IA deve chamar uma pessoa, redirecionar ou responder algo fixo. Descreva o caso e a IA monta a regra."
+                action={{ label: 'Criar com IA', onClick: () => setModal('ai_builder') }}
+              />
+              <Button variant="ghost" size={tam} className="mt-2" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setModal('manual')}>
+                Ou escrever a regra à mão
+              </Button>
             </div>
           ) : (
-            <>
-              <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-900 border border-surface-700 rounded-xl">
-                <AlertCircle className="w-3.5 h-3.5 text-surface-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-surface-600">
-                  As regras são avaliadas em ordem — a primeira que corresponder é executada.
-                </p>
-              </div>
-              {rules.map((rule, i) => (
-                <RuleCard
-                  key={rule.id}
-                  rule={rule}
-                  index={i}
-                  onToggle={() => toggleRule(rule.id)}
-                  onEdit={() => openEdit(rule.id)}
-                  onDelete={() => setDeleteRuleTarget(rule.id)}
-                />
-              ))}
-            </>
+            rules.map((rule, i) => (
+              <RuleCard
+                key={rule.id}
+                rule={rule}
+                index={i}
+                total={rules.length}
+                onToggle={() => toggleRule(rule.id)}
+                onEdit={() => openEdit(rule.id)}
+                onDelete={() => setDeleteRuleTarget(rule.id)}
+                onMove={(d) => moveRule(i, d)}
+              />
+            ))
           )}
         </div>
       </div>
@@ -1183,67 +1092,65 @@ export function HandoffRulesPanel({
         onConfirm={deleteRule}
         title="Excluir regra de handoff"
         description="Esta ação é irreversível. A regra será removida e não será mais aplicada nas conversas do agente."
+        impact={(() => {
+          const rule = rules.find(r => r.id === deleteRuleTarget)
+          return rule ? { label: `Regra "${rule.name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Excluir regra"
         danger
       />
 
+      {/* Os 3 modais ficam montados com `open` dirigido pelo estado: o
+          AnimatePresence interno do ui/Modal cuida da saída, e o conteúdo só
+          existe enquanto aberto (formulários nascem zerados a cada abertura). */}
+
       {/* ── Modal: AI Builder ──────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {modal === 'ai_builder' && (
-          <RuleModal
-            open
-            onClose={close}
-            title="Criar regra com IA"
-            subtitle="Descreva o cenário em linguagem natural"
-            icon={<Sparkles className="w-4 h-4 text-brand-400" />}
-            wide
-            tall
-          >
-            <AIRuleBuilder
-              businessContext={businessContext}
-              onRuleCreated={handleRuleCreated}
-              onCancel={close}
-            />
-          </RuleModal>
-        )}
-      </AnimatePresence>
+      <RuleModal
+        open={modal === 'ai_builder'}
+        onClose={close}
+        title="Criar regra com IA"
+        subtitle="Descreva o cenário em linguagem natural"
+        icon={<Sparkles className="w-4 h-4 text-brand-400" />}
+        wide
+        tall
+      >
+        <AIRuleBuilder
+          businessContext={businessContext}
+          onRuleCreated={handleRuleCreated}
+          onCancel={close}
+        />
+      </RuleModal>
 
       {/* ── Modal: Manual Form ─────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {modal === 'manual' && (
-          <RuleModal
-            open
-            onClose={close}
-            title="Nova regra manual"
-            subtitle="Configure palavras-chave, ação e template"
-            icon={<Plus className="w-4 h-4 text-surface-300" />}
-          >
-            <ManualRuleForm
-              onCreated={handleRuleCreated}
-              onCancel={close}
-            />
-          </RuleModal>
-        )}
-      </AnimatePresence>
+      <RuleModal
+        open={modal === 'manual'}
+        onClose={close}
+        title="Nova regra manual"
+        subtitle="Configure palavras-chave, ação e template"
+        icon={<Plus className="w-4 h-4 text-surface-300" />}
+      >
+        <ManualRuleForm
+          onCreated={handleRuleCreated}
+          onCancel={close}
+        />
+      </RuleModal>
 
       {/* ── Modal: Edit Rule ───────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {modal === 'edit' && editingRule && (
-          <RuleModal
-            open
-            onClose={close}
-            title={`Editar: ${editingRule.name}`}
-            subtitle="Ajuste palavras-chave, ação e template"
-            icon={<Edit3 className="w-4 h-4 text-surface-300" />}
-          >
-            <EditRuleForm
-              rule={editingRule}
-              onSaved={handleRuleEdited}
-              onCancel={close}
-            />
-          </RuleModal>
+      <RuleModal
+        open={modal === 'edit' && !!editingRule}
+        onClose={close}
+        title={`Editar: ${editingRule?.name ?? ''}`}
+        subtitle="Ajuste palavras-chave, ação e template"
+        icon={<Edit3 className="w-4 h-4 text-surface-300" />}
+      >
+        {editingRule && (
+          <EditRuleForm
+            rule={editingRule}
+            onSaved={handleRuleEdited}
+            onCancel={close}
+          />
         )}
-      </AnimatePresence>
+      </RuleModal>
     </div>
   )
 }

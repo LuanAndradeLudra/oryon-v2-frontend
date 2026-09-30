@@ -12,6 +12,24 @@ export interface TenantVocabulary {
   pipeline:  string   // "Funil" | "Agenda" | "Pipeline"
   company:   string   // "Empresa" | "Clínica" | "Escritório"
   jobTitle:  string   // "Cargo" | "Especialidade" | "Área"
+  // Campos opcionais (SCRUM-1108, Leva 10) — ausentes em vocabulários salvos
+  // antes desta leva; toda leitura usa fallback (ex.: `vocab.dealGender ??
+  // 'masculino'`), nunca assume presença.
+  /** Gênero gramatical do termo de registro do funil — concorda "novo/nova", "ganho/ganha". */
+  dealGender?: 'masculino' | 'feminino'
+  /** Como chamar quem escreve (contato/cliente/paciente…). */
+  personWrites?: string
+  /** Como chamar quem atende (atendente/agente/recepcionista…). */
+  personAttends?: string
+  /** Rótulos de fechamento POSITIVO/NEGATIVO por tipo de funil — sobrescreve
+   *  `PIPELINE_KIND_OPTIONS` (src/lib/pipelineKinds.ts) só na TELA de
+   *  vocabulário; ainda não alimenta `pipelineKindOf`/`terminalLabelsOf`
+   *  (função protegida, ver DESIGN-SYSTEM.md §17) — editável aqui como
+   *  preparação para quando o backend expuser isso por tenant. */
+  salesWonLabel?: string
+  salesLostLabel?: string
+  processWonLabel?: string
+  processLostLabel?: string
 }
 
 export interface VerticalTemplateSuggestedStage {
@@ -279,6 +297,10 @@ export interface Deal {
    *  Resolvida na leitura por `src/lib/dealProbability.ts`, nunca persistida
    *  calculada — só este campo cru é gravado. */
   probability?: number | null
+  /** O mesmo override, com o nome que a LISTAGEM DO QUADRO usa (`GET /deals?pipelineId=`):
+   *  lá o backend remove `probability` e manda `probabilityOverride` (A6 · SCRUM-927).
+   *  Ler só `probability` fazia o ponderado da coluna ignorar o ajuste (R2 · SCRUM-1161). */
+  probabilityOverride?: number | null
   closedAt?: string | null
   lineItems?: DealLineItem[]
   createdAt?: string
@@ -943,6 +965,8 @@ export interface Tag {
   id: string
   name: string
   color: string
+  /** Quantas conversas usam a tag — só o `GET /tags` traz (create/update não). */
+  usageCount?: number
 }
 
 export interface WhatsAppNumber {
@@ -1290,13 +1314,17 @@ export interface Tenant {
   createdAt: string
 }
 
+/** `GET /whatsapp/numbers` hoje NÃO devolve wabaId, wabaName, messagingLimit
+ *  nem connectedAt (lista fechada em settings-compat.controller): opcionais
+ *  para a tela não contar com eles. Pedido no SCRUM-1161. */
 export interface WhatsAppNumberDetailed extends WhatsAppNumber {
-  wabaId: string
-  wabaName: string
+  wabaId?: string
+  wabaName?: string
+  verifiedName?: string
   phoneNumberId: string
   qualityRating: 'green' | 'yellow' | 'red' | 'unknown'
-  messagingLimit: string
-  connectedAt: string
+  messagingLimit?: string
+  connectedAt?: string
   agentId?: string | null
   agentName?: string | null
 }

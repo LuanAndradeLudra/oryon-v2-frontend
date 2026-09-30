@@ -93,6 +93,22 @@ export function formatFullTime(date: string | Date): string {
   return format(new Date(date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
 }
 
+/** Telefone BR em "+55 11 98765-4321" — `waId` chega cru (só dígitos, com
+ *  DDI). Formatos que não batem com o padrão BR de 12/13 dígitos (DDI 55 +
+ *  DDD + número) voltam como vieram, sem inventar separador. */
+export function formatPhoneBR(waId: string | undefined | null): string {
+  if (!waId) return '—'
+  const digits = waId.replace(/\D/g, '')
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    const ddd = digits.slice(2, 4)
+    const rest = digits.slice(4)
+    const mid = rest.length === 9 ? rest.slice(0, 5) : rest.slice(0, 4)
+    const end = rest.length === 9 ? rest.slice(5) : rest.slice(4)
+    return `+55 ${ddd} ${mid}-${end}`
+  }
+  return waId
+}
+
 export function getInitials(name: string): string {
   return name
     .split(' ')

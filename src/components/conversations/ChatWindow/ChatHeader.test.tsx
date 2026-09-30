@@ -1,8 +1,5 @@
-// O PR #102 (auditoria de UX) tinha somado um botão "Resolver" de 1 clique
-// ao lado do dropdown de status; ele foi REMOVIDO a pedido do PO — duas
-// affordances para a mesma ação, na tela mais usada do produto. O que ficou
-// daquele PR é a ordem do grupo de ações (status antes do HandoffChip), e é
-// isso que estes testes fixam: resolver é uma coisa só, e vem pelo dropdown.
+// Rodada 2 (SCRUM-1097): o mock 1d tem controle → Assumir → Resolver → ···; o
+// botão "Resolver" voltou (o dropdown de status foi pro menu ···).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ChatHeader } from './ChatHeader'
@@ -53,30 +50,43 @@ function baseProps(overrides: Partial<Conversation> = {}) {
 
 beforeEach(() => vi.clearAllMocks())
 
-describe('ChatHeader — resolver é uma affordance só', () => {
-  it('não existe botão "Resolver" ao lado do status — resolver mora no dropdown', () => {
+describe('ChatHeader — controle · Assumir · Resolver · ··· (mock 1d, R2-1D-HDR)', () => {
+  it('com a IA no controle mostra "Assumir" e "Resolver" como botões', () => {
     render(<ChatHeader {...baseProps()} />)
-    expect(screen.queryByRole('button', { name: 'Resolver' })).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Resolver conversa')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Assumir' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Resolver' })).toBeInTheDocument()
   })
 
-  it('resolver pelo dropdown chama onStatusChange (multiPipeline off = sem popover de desfecho)', () => {
+  it('"Assumir" chama a intervenção do servidor', () => {
+    const props = baseProps()
+    render(<ChatHeader {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Assumir' }))
+    expect(props.onInterveneAi).toHaveBeenCalled()
+  })
+
+  it('"Resolver" chama onStatusChange (multiPipeline off = sem popover de desfecho)', () => {
     const onStatusChange = vi.fn()
     render(<ChatHeader {...baseProps()} onStatusChange={onStatusChange} />)
-
-    fireEvent.click(screen.getByTitle('Alterar status'))
-    fireEvent.click(screen.getByText('Resolvidas'))
+    fireEvent.click(screen.getByRole('button', { name: 'Resolver' }))
     expect(onStatusChange).toHaveBeenCalledWith('resolved', undefined)
   })
 
-  it('ordem no DOM: o status vem ANTES do HandoffChip (o reorder do PR #102 fica)', () => {
+  it('status e arquivar continuam acessíveis no menu ···', () => {
+    const onStatusChange = vi.fn()
+    render(<ChatHeader {...baseProps()} onStatusChange={onStatusChange} />)
+    fireEvent.click(screen.getByLabelText('Mais ações'))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Pendentes' }))
+    expect(onStatusChange).toHaveBeenCalledWith('pending')
+    fireEvent.click(screen.getByLabelText('Mais ações'))
+    expect(screen.getByRole('menuitem', { name: /Arquivar conversa/ })).toBeInTheDocument()
+  })
+
+  it('ordem no DOM: o controle (Assumir) vem ANTES de Resolver', () => {
     render(<ChatHeader {...baseProps()} />)
-    const statusBtn = screen.getByTitle('Alterar status')
-    const intervirBtn = screen.getByRole('button', { name: /Intervir agora/ })
-    // DOCUMENT_POSITION_FOLLOWING = o nó de comparação (intervirBtn) vem
-    // DEPOIS de statusBtn na árvore — é a checagem estrutural do reorder.
+    const assumir = screen.getByRole('button', { name: 'Assumir' })
+    const resolver = screen.getByRole('button', { name: 'Resolver' })
     // eslint-disable-next-line no-bitwise
-    expect(statusBtn.compareDocumentPosition(intervirBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(assumir.compareDocumentPosition(resolver) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })
 

@@ -1,17 +1,16 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { comVolta } from '@/lib/voltarPara'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send,
-  Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2,
-  Smartphone, CreditCard, UserPlus, Zap, X, Tag, Clock,
-  Filter, Download, PlusCircle, ArrowRight, ChevronRight,
-  LayoutGrid, KanbanSquare, FileText, Inbox,
-  Globe, Users2, BellRing, Plug, BookOpen,
-  AlertCircle, AtSign, Megaphone as MegaphoneIcon, ShieldAlert, UserCheck,
+  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, BookOpen, Megaphone as MegaphoneIcon, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { NotificationItem, Kbd } from '@/components/notifications/NotificationItem'
+import { CATEGORY_CHIPS, iconFor } from '@/components/notifications/notificationsMeta'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLayer } from '@/contexts/LayerContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useTopBarActions } from '@/contexts/TopBarActionsContext'
 import { TopBarReadinessIndicator } from './TopBarReadinessIndicator'
@@ -22,21 +21,19 @@ import {
   type NotificationMetaKnown,
   type NotificationSourceKind,
 } from '@/hooks/useNotifications'
-import { cn } from '@/lib/utils'
-import { isAdminTier } from '@/lib/roleHelpers'
+import { cn, getInitials } from '@/lib/utils'
+import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
 import { isRouteVisible } from '@/config/featureFlags'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
+import { useTheme, type Theme } from '@/hooks/useTheme'
+import { Avatar } from '@/components/ui/Avatar'
+import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import {
   categoryOf,
   CATEGORY_STYLE,
-  priorityOf,
-  PRIORITY_STYLE,
-  avatarColorFor,
-  initialsOf,
-  contactSubject,
-  formatListTime,
-  inlineActionFor,
   emptyStateFor,
+  normalizeNotificationLink,
 } from '@/lib/notificationsUx'
 
 // ── Page title map ─────────────────────────────────────────────────────────────
@@ -44,10 +41,11 @@ import {
 const PAGE_TITLES: Record<string, string> = {
   '/home': 'Home',
   '/conversations': 'Conversas',
-  '/dashboard': 'Relatórios',
+  '/dashboard': 'Dashboard',
   '/contacts': 'Contatos',
   '/pipelines': 'Funis',
   '/campaigns': 'Disparos',
+  '/schedule': 'Agendamentos',
   '/marketing': 'Marketing',
   '/automations': 'Automações',
   '/agents': 'Agentes IA',
@@ -63,12 +61,13 @@ const PAGE_TITLES: Record<string, string> = {
 const PAGE_SUBTITLES: Record<string, string> = {
   '/home': 'Seu dia num relance',
   '/conversations': 'Chat com clientes',
-  '/dashboard': 'Relatórios e análises',
+  '/dashboard': 'A operação agora e os relatórios',
   // O funil saiu daqui (D2 · SCRUM-935): virou /pipelines, com página e
   // subtítulo próprios. Prometer "pipeline" nesta tela virou promessa falsa.
   '/contacts': 'Base de clientes',
   '/pipelines': 'Negócios por etapa',
   '/campaigns': 'Campanhas em massa',
+  '/schedule': 'Agenda semanal (exemplo)',
   '/marketing': 'Estratégia e canais',
   '/automations': 'Fluxos automáticos',
   '/agents': 'Construtor de IA',
@@ -97,7 +96,7 @@ const SEARCH_INDEX = ([
   // ── Páginas principais
   { type: 'page', label: 'Home', description: 'Visão geral e atalhos rápidos', href: '/home', Icon: Home, keywords: ['início', 'painel', 'overview'] },
   { type: 'page', label: 'Conversas', description: 'Atendimento via WhatsApp', href: '/conversations', Icon: MessageSquare, keywords: ['whatsapp', 'chat', 'atendimento', 'mensagens'] },
-  { type: 'page', label: 'Relatórios', description: 'Métricas, análises e KPIs', href: '/dashboard', Icon: BarChart3, keywords: ['dashboard', 'métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
+  { type: 'page', label: 'Dashboard', description: 'Fila ao vivo, equipe e relatórios', href: '/dashboard', Icon: BarChart3, keywords: ['relatórios', 'fila', 'painel', 'métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
   { type: 'page', label: 'Contatos', description: 'CRM e situação dos contatos', href: '/contacts', Icon: Users, keywords: ['crm', 'leads', 'clientes', 'base'] },
   // 'pipeline'/'kanban'/'funil' migraram de Contatos para cá junto com a tela
   // (D2 · SCRUM-935): quem busca por essas palavras quer o quadro, e ele não
@@ -149,16 +148,20 @@ const SEARCH_INDEX = ([
   { type: 'action', label: 'Métricas de conversas', description: 'Volume, tempo de resposta e CSAT', href: '/dashboard', Icon: BarChart3, keywords: ['volume', 'csat', 'tempo', 'resposta'] },
 
   // ── Configurações
+  // Todo href aqui precisa ser uma seção real de /settings (VALID_SECTIONS em
+  // SettingsPage): antes /settings/team, /whatsapp, /hours e /integrations não
+  // existiam e caíam calados na primeira seção. Teste: TopBar.searchSettings.test.
   { type: 'settings', label: 'Minha conta', description: 'Perfil pessoal e senha', href: '/settings/account', Icon: Settings, keywords: ['perfil', 'senha', 'conta', 'pessoal'] },
 
-  { type: 'settings', label: 'Equipe', description: 'Membros, funções, setores e permissões', href: '/settings/team', Icon: Users, keywords: ['membros', 'usuários', 'permissões', 'funções', 'setores', 'departamentos', 'grupos', 'times'] },
-  { type: 'settings', label: 'WhatsApp — Números', description: 'Números de WhatsApp conectados', href: '/settings/whatsapp', Icon: Smartphone, keywords: ['numero', 'numeros', 'waba', 'meta', 'business', 'telefone', 'chip', 'conectar'] },
+  { type: 'settings', label: 'Usuários', description: 'Membros da equipe e papéis', href: '/settings/agents', Icon: Users, keywords: ['membros', 'usuários', 'permissões', 'funções', 'setores', 'departamentos', 'grupos', 'times'] },
+  { type: 'settings', label: 'Setores', description: 'Equipes, linha de atendimento e acesso a funis', href: '/settings/departments', Icon: Users2, keywords: ['setores', 'departamentos', 'grupos', 'times'] },
+  { type: 'settings', label: 'Respostas rápidas', description: 'Atalhos de texto para as conversas', href: '/settings/quick-replies', Icon: MessagesSquare, keywords: ['atalho', 'resposta pronta', 'modelo de texto', 'barra'] },
+  { type: 'settings', label: 'Números WhatsApp', description: 'Linha conectada e agente de IA', href: '/settings/numbers', Icon: Smartphone, keywords: ['numero', 'numeros', 'waba', 'meta', 'business', 'telefone', 'chip', 'conectar'] },
   { type: 'settings', label: 'Plano e cobrança', description: 'Assinatura, limites e faturas', href: '/settings/billing', Icon: CreditCard, keywords: ['plano', 'fatura', 'assinatura', 'pagamento', 'upgrade', 'limite', 'mensalidade'] },
   { type: 'settings', label: 'Etiquetas', description: 'Gerenciar tags de conversas', href: '/settings/tags', Icon: Tag, keywords: ['tags', 'etiquetas', 'labels', 'marcadores'] },
-  { type: 'settings', label: 'Horários de atendimento', description: 'Definir horários e expediente', href: '/settings/hours', Icon: Clock, keywords: ['horario', 'expediente', 'disponibilidade', 'fora do horario', 'funcionamento'] },
   { type: 'settings', label: 'Notificações', description: 'Preferências de alertas', href: '/settings/notifications', Icon: BellRing, keywords: ['alertas', 'avisos', 'push', 'email'] },
-  { type: 'settings', label: 'Integrações', description: 'Webhooks e APIs externas', href: '/settings/integrations', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
-  { type: 'settings', label: 'Empresa', description: 'Dados, setores e configurações da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
+  { type: 'settings', label: 'Conectores', description: 'Integrações com sistemas externos', href: '/settings/connectors', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
+  { type: 'settings', label: 'Perfil da empresa', description: 'Nome e e-mail de contato da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
 ] as SearchItem[])
 
 // ── Notification types ─────────────────────────────────────────────────────────
@@ -169,46 +172,6 @@ const SEARCH_INDEX = ([
 // every row show a yellow warning icon. Fixed here by using the real type
 // strings as keys and falling back to a neutral Bell for unknown types.
 
-const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  new_message: MessageSquare,
-  conversation_assigned: UserCheck,
-  conversation_transferred: UserCheck,
-  agent_handoff: Bot,
-  agent_ai_response: Sparkles,
-  conversation_waiting: Clock,
-  team_message: MessagesSquare,
-  mention: AtSign,
-  campaign_complete: Send,
-  campaign_failed: AlertCircle,
-  automation_executed: Workflow,
-  automation_note: Zap,
-  whatsapp_integration_error: Plug,
-  security_alert: ShieldAlert,
-}
-
-function iconFor(type: string): React.ComponentType<{ className?: string }> {
-  return TYPE_ICON[type] ?? Bell
-}
-
-/** Groups notifications by relative-date bucket (Hoje / Ontem / Esta semana / Anteriores). */
-function groupByDate(items: AppNotification[]): Array<{ label: string; items: AppNotification[] }> {
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const startOfYesterday = startOfToday - 86_400_000
-  const startOfWeek = startOfToday - 6 * 86_400_000
-
-  const buckets: Record<string, AppNotification[]> = { Hoje: [], Ontem: [], 'Esta semana': [], Anteriores: [] }
-  for (const n of items) {
-    const t = new Date(n.createdAt).getTime()
-    if (t >= startOfToday) buckets['Hoje'].push(n)
-    else if (t >= startOfYesterday) buckets['Ontem'].push(n)
-    else if (t >= startOfWeek) buckets['Esta semana'].push(n)
-    else buckets['Anteriores'].push(n)
-  }
-  return Object.entries(buckets)
-    .filter(([, arr]) => arr.length > 0)
-    .map(([label, items]) => ({ label, items }))
-}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -334,7 +297,7 @@ function SearchDropdown({
                   onMouseEnter={() => onHover(flatIdx)}
                   className={cn(
                     'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
-                    isActive ? 'bg-surface-800' : 'hover:bg-surface-800/60',
+                    isActive ? 'bg-surface-800' : 'hover:bg-[var(--rowhover)]',
                   )}
                 >
                   <div className={cn(
@@ -362,13 +325,13 @@ function SearchDropdown({
 
         {/* Contact search fallback */}
         {trimmed && (
-          <div className="border-t border-surface-800 mt-1 pt-1">
+          <div className="border-t border-surface-700 mt-1 pt-1">
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); onHover(flatItems.length) }}
               className={cn(
                 'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
-                activeIndex === flatItems.length ? 'bg-surface-800' : 'hover:bg-surface-800/60',
+                activeIndex === flatItems.length ? 'bg-surface-800' : 'hover:bg-[var(--rowhover)]',
               )}
               onMouseEnter={() => onHover(flatItems.length)}
             >
@@ -409,191 +372,6 @@ function timeAgo(dateStr: string) {
  *   - Hover actions: mark-unread, archive
  *   - Keyboard focus ring when active via J/K navigation
  */
-function NotificationItem({
-  n,
-  onClick,
-  onArchive,
-  onMarkUnread,
-  onCategoryClick,
-  isFocused = false,
-}: {
-  n: AppNotification
-  onClick: () => void
-  onArchive?: () => void
-  onMarkUnread?: () => void
-  onCategoryClick?: (types: string[]) => void
-  isFocused?: boolean
-}) {
-  const navigate = useNavigate()
-  const category = categoryOf(n.type)
-  const style = CATEGORY_STYLE[category]
-  const priority = priorityOf(n)
-  const priorityStyle = PRIORITY_STYLE[priority]
-  const Icon = iconFor(n.type)
-  const subject = contactSubject(n)
-  const action = inlineActionFor(n)
-
-  const handleInlineAction = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!action) return
-    navigate(action.href)
-  }
-
-  const handleCategoryChip = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onCategoryClick?.([n.type])
-  }
-
-  return (
-    <div
-      onClick={onClick}
-      role="listitem"
-      aria-label={`${n.title}. ${n.isRead ? 'Lida' : 'Não lida'}. ${formatListTime(n.createdAt)}`}
-      className={cn(
-        'group relative flex items-start gap-3 pl-3 pr-4 py-3 border-l-[3px] cursor-pointer transition-colors',
-        // Phase 20 V1: left accent strip by category
-        style.stripClass,
-        // Phase 20 V3: stronger unread treatment
-        !n.isRead ? 'bg-brand-600/[0.04]' : 'bg-transparent',
-        // Hover + keyboard focus state
-        'hover:bg-surface-800/50',
-        isFocused && 'bg-surface-800/60 ring-1 ring-brand-600/40',
-        // Phase 20 V2: priority visual
-        priorityStyle.containerClass,
-        // Touch targets — min-h bump on coarse pointers (R2)
-        '[@media(pointer:coarse)]:min-h-[72px]',
-      )}
-    >
-      {/* Avatar + icon overlay. Contact-centric notifications show the
-          contact's avatar; others show the plain category icon. */}
-      {subject ? (
-        <div className="relative flex-shrink-0 mt-0.5">
-          <div
-            className={cn(
-              'w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold text-white',
-              avatarColorFor(subject.name),
-            )}
-            aria-hidden
-          >
-            {initialsOf(subject.name)}
-          </div>
-          <div
-            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-surface-900 bg-white"
-          >
-            <Icon className="w-2.5 h-2.5 text-surface-950" />
-          </div>
-        </div>
-      ) : (
-        <div
-          style={{ ['--chip']: style.chip } as React.CSSProperties}
-          className="color-chip w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border"
-          aria-hidden
-        >
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-      )}
-
-      <div className="flex-1 min-w-0">
-        {/* Title + unread emphasis via weight */}
-        <div className="flex items-start gap-2">
-          <p
-            className={cn(
-              'text-xs leading-snug flex-1 min-w-0',
-              !n.isRead ? 'font-semibold text-surface-50' : 'font-medium text-surface-200',
-            )}
-          >
-            {n.title}
-          </p>
-          {priority === 'urgent' && (
-            <span
-              style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
-              className={cn(
-                'color-chip shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border',
-                priorityStyle.showPulse && 'animate-pulse',
-              )}
-            >
-              urgente
-            </span>
-          )}
-        </div>
-
-        {n.description && (
-          <p
-            className={cn(
-              'text-xs mt-0.5 line-clamp-2',
-              !n.isRead ? 'text-surface-300' : 'text-surface-500',
-            )}
-          >
-            {n.description}
-          </p>
-        )}
-
-        {/* Meta row: category chip + contextual time + inline action on hover */}
-        <div className="flex items-center gap-2 mt-1.5">
-          {onCategoryClick && (
-            <button
-              onClick={handleCategoryChip}
-              style={{ ['--chip']: style.chip } as React.CSSProperties}
-              className="color-chip text-3xs font-medium px-1.5 py-0.5 rounded border transition-[filter] hover:brightness-125"
-              title="Filtrar por este tipo"
-            >
-              {style.label}
-            </button>
-          )}
-          <span className="text-3xs text-surface-600">{formatListTime(n.createdAt)}</span>
-          {action && (
-            <button
-              onClick={handleInlineAction}
-              className={cn(
-                'ml-auto text-3xs font-medium px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity',
-                action.variant === 'primary'
-                  ? 'bg-brand-600 text-surface-950 hover:bg-brand-500'
-                  : 'text-brand-300 hover:bg-brand-600/20',
-              )}
-            >
-              {action.label} →
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Right-side hover actions (mark unread, archive) */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-start mt-1">
-        {onMarkUnread && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onMarkUnread() }}
-            className="p-1.5 rounded text-surface-500 hover:text-surface-200 hover:bg-surface-800 [@media(pointer:coarse)]:p-2"
-            title="Marcar como não lida (U)"
-            aria-label="Marcar como não lida"
-          >
-            <div className="w-3 h-3 rounded-full border-2 border-current" />
-          </button>
-        )}
-        {onArchive && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onArchive() }}
-            className="p-1.5 rounded text-surface-500 hover:text-surface-200 hover:bg-surface-800 [@media(pointer:coarse)]:p-2"
-            title="Arquivar (E)"
-            aria-label="Arquivar"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        )}
-      </div>
-
-      {/* Unread indicator — bigger than before */}
-      {!n.isRead && (
-        <div
-          className="absolute right-2 top-3 w-2 h-2 rounded-full bg-brand-cta"
-          aria-hidden
-        />
-      )}
-    </div>
-  )
-}
-
-// Phase 18: metadata keys already rendered by dedicated UI blocks — hidden
-// from the advanced details section so we don't duplicate them.
 const HANDLED_META_KEYS = new Set([
   'contacts',
   'affectedCount',
@@ -836,7 +614,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-3 sm:px-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--color-scrim-soft)] backdrop-blur-sm px-3 sm:px-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -848,7 +626,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
         className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-2xl overlay-frame border bg-surface-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b border-surface-800">
+        <div className="flex items-start gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b border-surface-700">
           <div
             className="w-10 h-10 rounded-xl color-chip border flex items-center justify-center flex-shrink-0"
             style={{ ['--chip']: catStyle.chip } as React.CSSProperties}
@@ -876,13 +654,13 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
               description line so we don't duplicate info. Keys on the left,
               values on the right. Scannable in < 1 second. */}
           {flow && flow.length > 0 ? (
-            <dl className="rounded-xl border border-surface-800 bg-surface-950/40 overflow-hidden">
+            <dl className="rounded-xl border border-surface-700 bg-surface-950/40 overflow-hidden">
               {flow.map((step, i) => (
                 <div
                   key={step.label}
                   className={cn(
                     'flex items-baseline gap-3 px-3.5 py-2.5',
-                    i !== flow.length - 1 && 'border-b border-surface-800/60',
+                    i !== flow.length - 1 && 'border-b border-surface-700',
                   )}
                 >
                   <dt className="text-3xs font-semibold uppercase tracking-wider text-surface-500 w-20 shrink-0">
@@ -900,7 +678,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
           {/* Grouped contacts list — name first, phone formatted and smaller. */}
           {groupedContacts && groupedContacts.length > 0 && (
-            <div className="rounded-xl border border-surface-800 bg-surface-950/40 p-3">
+            <div className="rounded-xl border border-surface-700 bg-surface-950/40 p-3">
               <p className="text-3xs font-semibold uppercase tracking-wide text-surface-500 mb-2">
                 {pluralize(affectedTotal, 'Contato afetado', 'Contatos afetados')} ({affectedTotal})
               </p>
@@ -908,7 +686,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
                 {groupedContacts.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center gap-2.5 p-2 rounded-lg bg-surface-800/40"
+                    className="flex items-center gap-2.5 p-2 rounded-lg bg-[var(--sf2)]"
                   >
                     <div className="w-7 h-7 rounded-full bg-success/15 flex items-center justify-center shrink-0">
                       <UserPlus className="w-3.5 h-3.5 text-success" />
@@ -947,7 +725,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
           {/* Advanced details — collapsed by default, stripped of UUIDs. */}
           {techEntries.length > 0 && (
-            <div className="rounded-xl border border-surface-800 bg-surface-950/30">
+            <div className="rounded-xl border border-surface-700 bg-surface-950/30">
               <button
                 type="button"
                 onClick={() => setShowTech((v) => !v)}
@@ -973,7 +751,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
           {isValidLink(n.link) && (
             <button
-              onClick={() => { navigate(n.link!); onClose() }}
+              onClick={() => { navigate(normalizeNotificationLink(n.link!)); onClose() }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-colors [@media(pointer:coarse)]:py-3"
             >
               Abrir <ArrowRight className="w-3.5 h-3.5" />
@@ -1019,16 +797,10 @@ type NotifFilter = 'all' | 'unread'
 
 // Phase 19: category chips — maps UI label to the set of notification
 // types the backend filters on.
-const CATEGORY_CHIPS: Array<{ key: string; label: string; types: string[] }> = [
-  { key: 'all', label: 'Todas', types: [] },
-  { key: 'conversations', label: 'Conversas', types: ['new_message', 'conversation_assigned', 'conversation_transferred', 'agent_handoff', 'agent_ai_response', 'conversation_waiting'] },
-  { key: 'team', label: 'Equipe', types: ['team_message', 'mention'] },
-  { key: 'campaigns', label: 'Campanhas', types: ['campaign_complete', 'campaign_failed'] },
-  { key: 'automations', label: 'Automações', types: ['automation_executed', 'automation_note'] },
-  { key: 'security', label: 'Segurança', types: ['whatsapp_integration_error', 'security_alert'] },
-]
 
 function NotificationsPanel() {
+  // Localização do roteador: as preferências voltam para a tela de onde o sino foi aberto.
+  const location = useLocation()
   const {
     notifications,
     markAsRead,
@@ -1039,14 +811,12 @@ function NotificationsPanel() {
     loadingMore,
     hasMore,
     loadMore,
-    setFilterTypes,
     showArchived,
     setShowArchived,
   } = useNotifications()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<NotifFilter>('unread')
   const [detail, setDetail] = useState<AppNotification | null>(null)
-  const [activeCategory, setActiveCategory] = useState<string>('all')
   const [focusedIndex, setFocusedIndex] = useState<number>(-1)
   const [ariaAnnouncement, setAriaAnnouncement] = useState<string>('')
   const panelRef = useRef<HTMLDivElement>(null)
@@ -1072,30 +842,37 @@ function NotificationsPanel() {
       .map((x) => x.n)
   }, [visible])
 
-  const groups = groupByDate(sortedVisible)
-  const flatItems = useMemo(() => groups.flatMap((g) => g.items), [groups])
+  // Direção A (23/09): seções por CATEGORIA (Conversas, Equipe, Campanhas,
+  // Automações, Segurança), recolhíveis, com contagem de não lidas — o ritmo
+  // visual vem das seções; dentro de cada uma, urgentes primeiro e depois
+  // ordem de chegada. O estado de recolhimento persiste em localStorage.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('oryon:notif:collapsed') || '{}') } catch { return {} }
+  })
+  const toggleSection = useCallback((key: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      try { localStorage.setItem('oryon:notif:collapsed', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+  const groups = useMemo(() => {
+    const ordem = CATEGORY_CHIPS.filter((c) => c.key !== 'all')
+    return ordem
+      .map((c) => ({ key: c.key, label: c.label, items: sortedVisible.filter((x) => c.types.includes(x.type)) }))
+      .concat([{ key: 'outros', label: 'Outras', items: sortedVisible.filter((x) => !ordem.some((c) => c.types.includes(x.type))) }])
+      .filter((g) => g.items.length > 0)
+  }, [sortedVisible])
+  const flatItems = useMemo(() => groups.flatMap((g) => (collapsed[g.key] ? [] : g.items)), [groups, collapsed])
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
-  const handleCategoryClick = useCallback((chip: typeof CATEGORY_CHIPS[number]) => {
-    setActiveCategory(chip.key)
-    setFilterTypes(chip.types)
-    setFocusedIndex(-1)
-  }, [setFilterTypes])
-
-  // Phase 20 I5: clicking a category chip inside a notification item filters
-  // the whole list by that single type. Fast drill-down.
-  const handleItemCategoryClick = useCallback((types: string[]) => {
-    setActiveCategory('custom')
-    setFilterTypes(types)
-    setFocusedIndex(-1)
-  }, [setFilterTypes])
 
   const handleItemClick = useCallback((n: AppNotification) => {
     if (!n.isRead) markAsRead(n.id)
     if (n.metadata && Object.keys(n.metadata).length > 0) {
       setDetail(n)
     } else if (isValidLink(n.link)) {
-      navigate(n.link!)
+      navigate(normalizeNotificationLink(n.link!))
     }
   }, [markAsRead, navigate])
 
@@ -1146,7 +923,8 @@ function NotificationsPanel() {
     return () => clearTimeout(t)
   }, [notifications])
 
-  const empty = emptyStateFor(activeCategory, filter, showArchived)
+  // Direção A: sem filtro de categoria (as seções categorizam) — só 'all'.
+  const empty = emptyStateFor('all', filter, showArchived)
 
   // Scroll focused item into view when keyboard nav moves past viewport.
   useEffect(() => {
@@ -1163,63 +941,74 @@ function NotificationsPanel() {
         {ariaAnnouncement}
       </div>
 
-      <div className="absolute top-full right-0 mt-2 w-[26rem] max-w-[calc(100vw-1rem)] overlay-surface border rounded-2xl z-50 overflow-hidden animate-slide-in-right">
-        <div className="px-4 py-3 border-b border-surface-700/60 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-surface-100">Notificações</span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowArchived(!showArchived)}
-                className={cn(
-                  'text-2xs transition-colors',
-                  showArchived ? 'text-brand-300' : 'text-surface-500 hover:text-surface-300',
-                )}
-                title={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
-              >
-                {showArchived ? '← ativas' : 'arquivadas'}
-              </button>
-              {unreadCount > 0 && !showArchived && (
-                <button
-                  onClick={() => markAllAsRead()}
-                  className="text-2xs text-brand-400 hover:text-brand-300 transition-colors"
-                  title="Marcar todas como lidas (A)"
-                >
-                  Marcar todas como lidas
-                </button>
-              )}
-            </div>
-          </div>
-
+      {/* Painel — SCRUM-1097 (23/09), direção C. Referências: Linear Inbox
+          (prioridade separada, uma linha de filtros), Smashing/Courier
+          ("quem, o quê, por quê em 2 s"; ações em massa; preferências por
+          tipo). Antes: cabeçalho de 111px com três alturas de controle
+          (16/24/21) e chips de 10px; itens de 101px. Agora: cabeçalho de
+          44px com ações como botões de ícone 28×28, uma linha de filtros com
+          SegmentedControl sm + categoria em Dropdown, item de ~64px. */}
+      <div className="absolute top-full right-0 mt-2 w-[400px] max-w-[calc(100vw-1rem)] overlay-surface border rounded-lg z-50 overflow-hidden animate-slide-in-right">
+        <div className="h-11 px-3 flex items-center gap-2 border-b border-surface-700">
+          <span className="text-[13px] font-bold text-surface-50 tracking-[-0.01em]">Notificações</span>
           {!showArchived && (
-            <div className="flex items-center gap-1">
-              <FilterTab active={filter === 'unread'} onClick={() => setFilter('unread')} count={unreadCount}>Não lidas</FilterTab>
-              <FilterTab active={filter === 'all'} onClick={() => setFilter('all')}>Todas</FilterTab>
-            </div>
+            <span className="text-[11px] text-surface-500 tabular-nums">
+              {unreadCount > 0 ? `${unreadCount} não lida${unreadCount === 1 ? '' : 's'}` : 'em dia'}
+            </span>
           )}
-
-          {/* Phase 19: category chips — narrows the server-side type filter. */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-0.5 -mx-0.5 px-0.5 scrollbar-hide">
-            {CATEGORY_CHIPS.map((chip) => (
+          {showArchived && <span className="text-[11px] text-surface-500">arquivadas</span>}
+          <div className="ml-auto flex items-center gap-0.5">
+            {!showArchived && (
               <button
-                key={chip.key}
-                onClick={() => handleCategoryClick(chip)}
-                style={activeCategory === chip.key
-                  ? ({ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties)
-                  : undefined}
+                type="button"
+                onClick={() => setFilter(filter === 'unread' ? 'all' : 'unread')}
+                title={filter === 'unread' ? 'Mostrando só não lidas — clique para ver todas' : 'Mostrar só não lidas'}
+                aria-label="Só não lidas"
+                aria-pressed={filter === 'unread'}
                 className={cn(
-                  'px-2 py-0.5 rounded-md text-3xs font-medium border shrink-0 transition-colors',
-                  activeCategory === chip.key
-                    ? 'color-chip'
-                    : 'bg-surface-800/40 border-surface-700 text-surface-400 hover:text-surface-200',
+                  'w-7 h-7 rounded-xs flex items-center justify-center transition-colors hover:bg-[var(--rowhover)]',
+                  filter === 'unread' ? 'text-surface-100 bg-[var(--sf2)]' : 'text-surface-500 hover:text-surface-100',
                 )}
               >
-                {chip.label}
+                <span className={cn('w-2.5 h-2.5 rounded-full border-2 border-current', filter === 'unread' && 'bg-current')} />
               </button>
-            ))}
+            )}
+            {unreadCount > 0 && !showArchived && (
+              <button
+                type="button"
+                onClick={() => markAllAsRead()}
+                title="Marcar todas como lidas (A)"
+                aria-label="Marcar todas como lidas"
+                className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowArchived(!showArchived)}
+              title={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
+              aria-label={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
+              aria-pressed={showArchived}
+              className={cn(
+                'w-7 h-7 rounded-xs flex items-center justify-center transition-colors hover:bg-[var(--rowhover)]',
+                showArchived ? 'text-surface-100 bg-[var(--sf2)]' : 'text-surface-500 hover:text-surface-100',
+              )}
+            >
+              <Archive className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(comVolta('/settings/notifications', `${location.pathname}${location.search}`))}
+              title="Preferências de notificação"
+              aria-label="Preferências de notificação"
+              className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
-
-        <div ref={panelRef} className="max-h-[28rem] overflow-y-auto" role="list">
+        <div ref={panelRef} className="max-h-[28rem] overflow-y-auto py-1" role="list">
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -1231,12 +1020,19 @@ function NotificationsPanel() {
               {/* Phase 20 X2: animated list. AnimatePresence handles enter/exit
                   for new and archived items. Reduced-motion disables transitions. */}
               {groups.map((g) => (
-                <div key={g.label}>
-                  <div className="px-4 pt-2.5 pb-2 text-3xs font-semibold uppercase tracking-wider text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700/50 sticky top-0 z-10">
-                    {g.label}
-                  </div>
+                <div key={g.key}>
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(g.key)}
+                    aria-expanded={!collapsed[g.key]}
+                    className="w-full h-8 px-4 flex items-center gap-1.5 text-[11px] font-semibold text-surface-400 hover:text-surface-200 bg-[var(--color-overlay)] sticky top-0 z-10 transition-colors"
+                  >
+                    <span>{g.label}</span>
+                    <span className="font-medium text-surface-500 tabular-nums">· {g.items.filter((x) => !x.isRead).length || g.items.length}</span>
+                    <ChevronDown className={cn('ml-auto w-3 h-3 text-surface-500 transition-transform', collapsed[g.key] && '-rotate-90')} />
+                  </button>
                   <AnimatePresence initial={false}>
-                    {g.items.map((n) => {
+                    {!collapsed[g.key] && g.items.map((n) => {
                       const flatIdx = flatItems.findIndex((it) => it.id === n.id)
                       return (
                         <motion.div
@@ -1253,7 +1049,6 @@ function NotificationsPanel() {
                             onClick={() => handleItemClick(n)}
                             onArchive={!showArchived ? () => archive(n.id) : undefined}
                             onMarkUnread={!showArchived && n.isRead ? () => markAsUnread(n.id) : undefined}
-                            onCategoryClick={handleItemCategoryClick}
                             isFocused={focusedIndex === flatIdx}
                           />
                         </motion.div>
@@ -1263,14 +1058,10 @@ function NotificationsPanel() {
                 </div>
               ))}
               {hasMore && (
-                <div className="py-3 text-center">
-                  <button
-                    onClick={() => loadMore()}
-                    disabled={loadingMore}
-                    className="text-2xs text-brand-400 hover:text-brand-300 disabled:opacity-50 transition-colors"
-                  >
+                <div className="py-2 flex justify-center border-t border-surface-700">
+                  <Button size="sm" variant="ghost" onClick={() => loadMore()} disabled={loadingMore}>
                     {loadingMore ? 'Carregando…' : 'Carregar mais'}
-                  </button>
+                  </Button>
                 </div>
               )}
             </>
@@ -1280,12 +1071,12 @@ function NotificationsPanel() {
         {/* Phase 20 X1: keyboard shortcuts hint bar. Discoverable without
             being in the way. */}
         {sortedVisible.length > 0 && (
-          <div className="hidden sm:flex items-center justify-center gap-3 px-3 py-1.5 border-t border-surface-800 bg-surface-950/50 text-[9px] text-surface-600">
-            <Kbd>J</Kbd><Kbd>K</Kbd> navegar
-            <Kbd>↵</Kbd> abrir
-            <Kbd>E</Kbd> arquivar
-            <Kbd>U</Kbd> lida/não
-            <Kbd>A</Kbd> todas
+          <div className="hidden sm:flex items-center justify-center gap-3 h-8 px-3 border-t border-surface-700 bg-[var(--sf2)] text-[11px] text-surface-500">
+            <span className="inline-flex items-center gap-1"><Kbd>J</Kbd><Kbd>K</Kbd> navegar</span>
+            <span className="inline-flex items-center gap-1"><Kbd>↵</Kbd> abrir</span>
+            <span className="inline-flex items-center gap-1"><Kbd>E</Kbd> arquivar</span>
+            <span className="inline-flex items-center gap-1"><Kbd>U</Kbd> lida</span>
+            <span className="inline-flex items-center gap-1"><Kbd>A</Kbd> todas</span>
           </div>
         )}
       </div>
@@ -1296,38 +1087,145 @@ function NotificationsPanel() {
   )
 }
 
-/** Kbd chip for the shortcut hints bar. */
-function Kbd({ children }: { children: React.ReactNode }) {
+
+// ── User menu ──────────────────────────────────────────────────────────────────
+//
+// SCRUM-1100 (Leva 2 · handoff 3.13 "Shell final"): Configurações e avatar
+// saíram do rodapé da NavSidebar — este menu é a nova porta de entrada.
+// `/settings` continua sendo a rota real; o menu só oferece outro caminho até
+// ela. Tema e Sair reaproveitam a MESMA lógica que já existia na sidebar
+// (useTheme / useAuth().logout) — só a UI foi realocada.
+
+const THEME_OPTIONS: { value: Theme; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'light', label: 'Claro' },
+  { value: 'dark', label: 'Escuro' },
+]
+
+/** Avatar de 28px `rounded-[30%]` do gatilho do menu — o componente `Avatar`
+ *  compartilhado só tem tamanhos fixos (24/32/40/48px, ver Avatar.tsx), então
+ *  o gatilho replica seu visual "operador" (mesmas classes/tokens) no tamanho
+ *  exato pedido pelo handoff. O header do menu (32px) já usa `Avatar` direto. */
+function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: string; active: boolean }) {
   return (
-    <span className="px-1 py-0.5 rounded border border-surface-700 bg-surface-900 text-surface-400 font-mono text-[9px] leading-none">
-      {children}
+    <span
+      className="relative inline-flex flex-shrink-0 w-7 h-7 rounded-[30%] overflow-hidden transition-shadow duration-150"
+      // Anel teal — único estado em que o avatar recebe cor, sinaliza "menu aberto" (handoff 3.13).
+      // SHELL-TOPBAR-07: camada interna do anel na cor da TopBar (--sf).
+      style={active ? { boxShadow: '0 0 0 2px var(--color-topbar), 0 0 0 4px var(--color-accent)' } : undefined}
+    >
+      {imageUrl ? (
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <span className="avatar-operador w-full h-full flex items-center justify-center text-2xs font-semibold">
+          {getInitials(name)}
+        </span>
+      )}
     </span>
   )
 }
 
-function FilterTab({ active, onClick, count, children }: {
-  active: boolean
-  onClick: () => void
-  count?: number
-  children: React.ReactNode
-}) {
+function UserMenu() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
+  const [open, setOpen] = useState(false)
+
+  const name = user ? `${user.firstName} ${user.lastName}` : ''
+  const settingsVisible = isRouteVisible('/settings', user?.email ?? null)
+
+  const close = () => setOpen(false)
+  const go = (href: string) => { navigate(href); close() }
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-2xs font-medium transition-colors',
-        active
-          ? 'bg-surface-800 text-surface-100'
-          : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/50',
-      )}
+    <Dropdown
+      open={open}
+      onClose={close}
+      align="right"
+      className="w-60"
+      anchor={
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          title="Menu do usuário"
+          aria-label="Menu do usuário"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          className="flex items-center justify-center w-7 h-7 rounded-sm hover:bg-[var(--rowhover)] transition-colors"
+        >
+          <UserMenuTrigger name={name} imageUrl={user?.avatarUrl} active={open} />
+        </button>
+      }
     >
-      {children}
-      {count !== undefined && count > 0 && (
-        <span className="rounded-full bg-brand-cta text-surface-950 text-[9px] font-semibold px-1.5 min-w-4 text-center">
-          {count > 99 ? '99+' : count}
-        </span>
+      {/* Header: avatar 32px + nome + e-mail · papel — SHELL-USERMENU-02:
+          8 8 10, gap 10, mb 4, nome 13px. */}
+      <div className="flex items-center gap-2.5 px-2 pt-2 pb-2.5 mb-1">
+        <Avatar name={name} imageUrl={user?.avatarUrl} size="sm" kind="operator" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold text-surface-100 truncate">{name}</p>
+          <p className="text-[11px] text-surface-500 truncate">
+            {user?.email}{user?.role ? ` · ${roleLabel(user.role)}` : ''}
+          </p>
+        </div>
+      </div>
+
+      <DropdownItem icon={User} onClick={() => go('/settings/account')}>
+        Meu perfil
+      </DropdownItem>
+
+      {settingsVisible && (
+        <DropdownItem icon={Settings} onClick={() => go('/settings')}>
+          <span className="flex-1">Configurações</span>
+          <kbd className="font-mono text-2xs text-surface-500">⌘,</kbd>
+        </DropdownItem>
       )}
-    </button>
+
+      {/* Tema — único item que NÃO fecha o menu ao interagir (handoff 3.13).
+          Não é um DropdownItem: o SegmentedControl é interativo por dentro,
+          e DropdownItem é um <button> — não dá para aninhar botão em botão. */}
+      <div role="none" className="px-3 py-2.5 flex items-center justify-between gap-3">
+        <span className="text-[12.5px] text-surface-200">Tema</span>
+        <SegmentedControl
+          label="Tema"
+          size="sm"
+          value={theme}
+          onChange={setTheme}
+          options={THEME_OPTIONS}
+        />
+      </div>
+
+      <DropdownSeparator />
+
+      {/* Linha de workspace — produto hoje é single-tenant por login (não há
+          troca de workspace implementada em nenhum outro lugar da UI); o link
+          fica desabilitado em vez de simular uma ação que não existe. */}
+      <div role="none" className="px-3 py-2.5 flex items-center gap-2.5">
+        <span
+          className="w-5 h-5 rounded-[6px] flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-dark))' }}
+          aria-hidden
+        />
+        <span className="text-sm text-surface-200 truncate flex-1">Meu workspace</span>
+        <button
+          type="button"
+          disabled
+          title="Troca de workspace ainda não disponível"
+          className="text-2xs font-medium text-surface-600 cursor-not-allowed flex-shrink-0"
+        >
+          Trocar ›
+        </button>
+      </div>
+
+      <DropdownSeparator />
+
+      <DropdownItem icon={LogOut} danger onClick={handleLogout}>
+        Sair
+      </DropdownItem>
+    </Dropdown>
   )
 }
 
@@ -1344,7 +1242,7 @@ export function TopBar() {
     [userEmail],
   )
   const { open: openCopilot } = useCopilotContext()
-  const { pageActions } = useTopBarActions()
+  const { pageActions, pageSubtitle: dynamicSubtitle } = useTopBarActions()
   const { unreadCount } = useNotifications()
 
   const [query,       setQuery]       = useState('')
@@ -1359,7 +1257,9 @@ export function TopBar() {
   // Derived
   const segment      = '/' + location.pathname.split('/')[1]
   const pageTitle    = PAGE_TITLES[segment] ?? ''
-  const pageSubtitle = PAGE_SUBTITLES[segment] ?? ''
+  // Subtítulo dinâmico registrado pela página (useRegisterTopBarSubtitle)
+  // vence o fixo da rota — TOPBAR-02 / DASH-HEADER-01.
+  const pageSubtitle = dynamicSubtitle ?? PAGE_SUBTITLES[segment] ?? ''
 
   // Global "/" shortcut to pop the search palette open. Skip while the user
   // is typing in any input/textarea so the slash stays usable as a literal
@@ -1418,6 +1318,12 @@ export function TopBar() {
     return () => document.removeEventListener('mousedown', handler)
   }, [dropOpen])
 
+  // Esc fecha o popover pelo LayerContext (só quando é o overlay do topo —
+  // o modal de detalhe aberto por cima fecha primeiro). Achado da auditoria
+  // a11y: o sino era a única camada sem Esc.
+  const closeNotif = useCallback(() => setNotifOpen(false), [])
+  useLayer(notifOpen, closeNotif)
+
   // Click outside — notifications
   useEffect(() => {
     if (!notifOpen) return
@@ -1472,23 +1378,20 @@ export function TopBar() {
   }
 
   return (
-    <div className="conv-surface h-12 flex-shrink-0 bg-surface-950 border-b border-surface-800/60 px-4 flex items-center gap-3">
+    <div className="conv-surface h-12 flex-shrink-0 bg-[var(--color-topbar)] border-b border-surface-700 px-4 flex items-center gap-3">
+      {/* SHELL-TOPBAR-01/02 (spec shell.md): 48px em --sf com hairline --bd;
+          título 14/700 -.01em; subtítulo 12px --tx2, sem bullet. */}
 
-      {/* Left: page title + subtitle (inline with "·" bullet separator).
-          Subtitle hidden on small viewports so the row stays single-line
-          on phones. Title stays bold; bullet + subtitle use the muted
-          surface-500/600 ramp so the secondary copy doesn't compete. */}
+      {/* Left: page title + subtitle. Subtitle hidden on small viewports so
+          the row stays single-line on phones. */}
       <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-sm font-display font-bold text-surface-50 flex-shrink-0 truncate">
+        <span className="text-sm font-display font-bold tracking-[-0.01em] text-surface-50 flex-shrink-0 truncate">
           {pageTitle}
         </span>
         {pageSubtitle && (
-          <>
-            <span className="text-sm text-surface-600 hidden md:inline flex-shrink-0">·</span>
-            <span className="text-sm text-surface-500 hidden md:inline truncate">
-              {pageSubtitle}
-            </span>
-          </>
+          <span className="text-xs text-surface-400 hidden md:inline truncate">
+            {pageSubtitle}
+          </span>
         )}
       </div>
 
@@ -1520,11 +1423,12 @@ export function TopBar() {
           onClick={() => setDropOpen(true)}
           title="Buscar (atalho /)"
           aria-label="Abrir busca"
-          className="hidden md:inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-surface-700/60 hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors w-[160px] flex-shrink-0"
+          // SHELL-TOPBAR-04: 28px, raio 7, fundo --sf2, borda --bd, 200px; kbd só borda --bd2.
+          className="hidden md:inline-flex items-center gap-2 px-2.5 h-7 rounded-sm border border-surface-700 hover:border-[var(--bd2)] bg-[var(--sf2)] text-xs text-surface-400 hover:text-surface-200 transition-colors w-[200px] flex-shrink-0"
         >
           <Search className="w-3.5 h-3.5 flex-shrink-0" />
           <span className="flex-1 text-left truncate">Buscar</span>
-          <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-3xs text-surface-400 font-medium flex-shrink-0">
+          <kbd className="px-1 rounded-[4px] border border-[var(--bd2)] text-3xs text-surface-500 font-medium flex-shrink-0 leading-4">
             /
           </kbd>
         </button>
@@ -1533,7 +1437,7 @@ export function TopBar() {
           onClick={() => setDropOpen(true)}
           title="Buscar"
           aria-label="Abrir busca"
-          className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+          className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
         >
           <Search className="w-4 h-4" />
         </button>
@@ -1546,7 +1450,7 @@ export function TopBar() {
             onClick={() => openCopilot()}
             title="Abrir Copilot"
             aria-label="Abrir Copilot"
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-brand-400 hover:text-brand-300 hover:bg-surface-800 transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-sm text-brand-400 hover:text-brand-300 hover:bg-[var(--rowhover)] transition-colors"
           >
             <Sparkles className="w-4 h-4" />
           </button>
@@ -1557,12 +1461,16 @@ export function TopBar() {
           <button
             onClick={() => setNotifOpen((v) => !v)}
             title="Notificações"
+            aria-haspopup="dialog"
+            aria-expanded={notifOpen}
             aria-label={unreadCount > 0 ? `Notificações (${unreadCount > 9 ? '9+' : unreadCount} não lidas)` : 'Notificações'}
-            className="relative flex items-center justify-center w-8 h-8 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+            className="relative flex items-center justify-center w-7 h-7 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 flex items-center justify-center">
+              /* PL-5-4: canvas 7a põe o contador DENTRO do alvo (top 2 / right 0),
+                 14px e min-width 14 — não pendurado 2px fora do botão a 16px. */
+              <span className="absolute top-0.5 right-0 min-w-[14px] h-3.5 px-[3px] rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 flex items-center justify-center">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -1575,6 +1483,10 @@ export function TopBar() {
             </>
           )}
         </div>
+
+        {/* User menu — última coisa à direita (handoff 3.13). Configurações
+            e avatar vieram da NavSidebar; ver `UserMenu` acima. */}
+        <UserMenu />
       </div>
 
       {/* Command palette overlay — portal-rendered so it covers the whole
@@ -1594,7 +1506,7 @@ export function TopBar() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: 'easeOut' }}
             >
-              <div className="absolute inset-0 bg-black/70" />
+              <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" />
               <motion.div
                 ref={searchRef}
                 className="relative z-10 w-full max-w-xl bg-surface-900 overlay-frame border rounded-2xl overflow-hidden"
@@ -1604,7 +1516,7 @@ export function TopBar() {
                 exit={{ opacity: 0, y: -4, scale: 0.98 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
               >
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-800">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-700">
                   <Search className="w-4 h-4 text-surface-500 flex-shrink-0" />
                   <input
                     ref={inputRef}

@@ -14,6 +14,7 @@ import { showToast } from '@/hooks/useToast'
 import { saveHub, loadHub, type CompanyHubData, type BrandFile, DEFAULT_HUB } from '@/services/companyContextService'
 import { extractBrandFile } from '@/services/agentsApi'
 import { onboardingApi } from '@/services/api'
+import { Textarea } from '@/components/ui/Textarea'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { WhatsAppNumbers } from '@/components/settings/sections/WhatsAppNumbers'
 import { Departments } from '@/components/settings/sections/Departments'
@@ -97,7 +98,7 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onClick={() => inputRef.current?.click()}
-        className={`flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
+        className={`flex items-center gap-3 rounded-lg border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
           dragOver ? 'border-brand-500 bg-brand-500/8' : 'border-surface-700 bg-surface-800/40 hover:border-surface-600 hover:bg-surface-800/70'
         }`}
       >
@@ -115,7 +116,7 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
       {entries.length > 0 && (
         <div className="space-y-2">
           {entries.map(({ file, status, error }) => (
-            <div key={file.id} className="flex items-start gap-3 rounded-xl bg-surface-800/60 border border-surface-700/60 px-3 py-2.5">
+            <div key={file.id} className="flex items-start gap-3 rounded-lg bg-surface-800/60 border border-surface-700/60 px-3 py-2.5">
               <div className="flex-shrink-0 mt-0.5">{fileIcon(file.mimeType)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -128,7 +129,7 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
               </div>
               {status !== 'analyzing' && (
                 <button type="button" onClick={() => setEntries(prev => prev.filter(e => e.file.id !== file.id))}
-                  className="flex-shrink-0 p-1 rounded-lg text-surface-600 hover:text-surface-300 hover:bg-surface-700 transition">
+                  className="flex-shrink-0 p-1 rounded-lg text-surface-600 hover:text-surface-300 hover:bg-[var(--rowhover)] transition">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -164,7 +165,7 @@ function PillToggle({ label, selected, onClick }: { label: string; selected: boo
       onClick={onClick}
       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
         selected
-          ? 'bg-brand-600 border-brand-500 text-surface-950'
+          ? 'bg-accent-soft border-brand-500/40 text-accent-dark'
           : 'bg-surface-800 border-surface-700 text-surface-300 hover:border-surface-500 hover:text-surface-100'
       }`}
     >
@@ -173,7 +174,7 @@ function PillToggle({ label, selected, onClick }: { label: string; selected: boo
   )
 }
 
-const INPUT = 'w-full px-3 py-2.5 rounded-xl bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors'
+const INPUT = 'w-full h-9 px-2.5 rounded-sm bg-surface-800 border border-[var(--bd2)] text-[13px] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500 transition-colors'
 const SELECT = `${INPUT} cursor-pointer`
 
 // ─── Chrome comum dos passos ──────────────────────────────────────────────────
@@ -208,7 +209,7 @@ function StepChrome({
 }) {
   return (
     <div className="h-full flex overflow-hidden">
-      <div className="w-80 flex-shrink-0 border-r border-surface-800/60 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
+      <div className="w-80 flex-shrink-0 border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
         <div className="flex items-center gap-3 mb-8">
           <motion.img
             src="/oryon-logo.svg"
@@ -251,7 +252,7 @@ function StepChrome({
 
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex-1 overflow-y-auto px-10 py-8">{children}</div>
-        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-800/60">
+        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-700">
           {onBack ? (
             <button
               type="button"
@@ -277,7 +278,7 @@ function StepChrome({
               type="button"
               onClick={onContinue}
               data-testid="setup-continue"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
             >
               {continueLabel} <ArrowRight className="w-4 h-4" />
             </button>
@@ -391,7 +392,7 @@ function HubStep({
   return (
     <div className="h-full flex overflow-hidden">
       {/* Left panel */}
-      <div className="w-80 flex-shrink-0 border-r border-surface-800/60 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
+      <div className="w-80 flex-shrink-0 border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
         {/* Brand */}
         <div className="flex items-center gap-3 mb-8">
           <motion.img
@@ -516,12 +517,12 @@ function HubStep({
                 <label className="block text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">
                   O que você faz?
                 </label>
-                <textarea
+                <Textarea
                   value={form.description}
                   onChange={e => onChange({ description: e.target.value })}
                   placeholder="Descreva sua empresa, público-alvo e principais diferenciais. A IA usará isso para representar bem sua marca..."
                   rows={3}
-                  className={`${INPUT} resize-none`}
+                  className="resize-none"
                 />
               </div>
 
@@ -554,7 +555,7 @@ function HubStep({
             </div>
 
             {/* Right col — brand files */}
-            <div className="w-72 flex-shrink-0 border-l border-surface-800/60 pl-8 flex flex-col gap-5">
+            <div className="w-72 flex-shrink-0 border-l border-surface-700 pl-8 flex flex-col gap-5">
               <div>
                 <label className="block text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">
                   Arquivos da marca <span className="normal-case text-surface-600 font-normal">(opcional)</span>
@@ -569,7 +570,7 @@ function HubStep({
               </div>
 
               {/* Tips card */}
-              <div className="rounded-xl bg-surface-800/50 border border-surface-700/60 p-4">
+              <div className="rounded-lg bg-surface-800/50 border border-surface-700/60 p-4">
                 <p className="text-xs font-semibold text-surface-300 mb-3">Bons arquivos para começar</p>
                 <div className="space-y-2.5">
                   {[
@@ -595,7 +596,7 @@ function HubStep({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-800/60">
+        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-700">
           <button
             type="button"
             onClick={onBack}
@@ -618,7 +619,7 @@ function HubStep({
               onClick={onContinue}
               disabled={!canContinue}
               data-testid="setup-continue"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
             >
               Concluir <ArrowRight className="w-4 h-4" />
             </button>
@@ -655,7 +656,7 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.15 }}
-          className="w-20 h-20 rounded-3xl bg-status-active-bg ring-1 ring-status-active-border flex items-center justify-center"
+          className="w-20 h-20 rounded-lg bg-status-active-bg ring-1 ring-status-active-border flex items-center justify-center"
         >
           <CheckCircle2 className="w-10 h-10 text-status-active" />
         </motion.div>
@@ -668,7 +669,7 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
           {multiPipeline && (
             <p
               data-testid="setup-done-pipeline"
-              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-900 border border-surface-800 text-xs text-surface-300"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-900 border border-surface-700 text-xs text-surface-300"
             >
               <GitBranch className="w-3.5 h-3.5 text-brand-400" />
               Seu primeiro funil, <strong className="font-semibold text-surface-100">Vendas</strong>, já está pronto.
@@ -679,14 +680,14 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
         <div className="flex flex-col gap-3 w-full">
           <button
             onClick={() => goTo('/agents')}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
           >
             <Bot className="w-4 h-4" />
             Criar meu primeiro agente de IA
           </button>
           <button
             onClick={() => goTo('/home')}
-            className="w-full px-6 py-2.5 rounded-xl border border-surface-700 text-sm text-surface-300 hover:text-surface-100 hover:border-surface-600 transition-all"
+            className="w-full px-6 py-2.5 rounded-lg border border-surface-700 text-sm text-surface-300 hover:text-surface-100 hover:border-surface-600 transition-all"
           >
             Explorar a plataforma
           </button>

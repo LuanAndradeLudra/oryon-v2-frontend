@@ -1,10 +1,11 @@
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, BarChart3, TrendingUp, Users, MessageCircle, ShoppingCart,
   AlertTriangle, CheckCircle2, Sparkles, ChevronRight,
-  ThumbsDown, Target, Zap, Megaphone, Globe, Crown, Filter, ExternalLink,
+  Target, Zap, Megaphone, Globe, Crown, Filter, ExternalLink,
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -12,6 +13,7 @@ import {
 } from 'recharts'
 import { cn } from '@/lib/utils'
 import { Spinner } from '@/components/ui/Spinner'
+import { StatStrip } from './StatStrip'
 import { campaignsApi } from '@/services/api'
 import { generateCampaignInsights } from '@/services/copilotService'
 import { useChartColors } from '@/hooks/useChartColors'
@@ -36,23 +38,6 @@ function fmtDate(iso: string) {
 /** Tint temático — alpha via color-mix (funciona com var() e hex, nos dois temas). */
 function tint(color: string, pctVal: number) {
   return `color-mix(in srgb, ${color} ${pctVal}%, transparent)`
-}
-
-// ── KPI Card ─────────────────────────────────────────────────────────────────
-
-function KpiCard({ label, value, sub, color, icon }: {
-  label: string; value: string | number; sub?: string; color: string; icon: React.ReactNode
-}) {
-  return (
-    <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 flex flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-surface-500">
-        <span style={{ color }} className="opacity-70">{icon}</span>
-        <span className="text-3xs font-medium">{label}</span>
-      </div>
-      <p className="text-lg font-bold" style={{ color }}>{value}</p>
-      {sub && <p className="text-3xs text-surface-600">{sub}</p>}
-    </div>
-  )
 }
 
 // ── Conversion type config ────────────────────────────────────────────────────
@@ -138,7 +123,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
       </div>
 
       {!generated && !loading && (
-        <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-surface-700 rounded-xl">
+        <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-surface-700 rounded-lg">
           <Sparkles className="w-6 h-6 text-surface-600" />
           <p className="text-xs text-surface-500 text-center max-w-xs">
             Clique em "Gerar análise" para que a IA avalie conversões, churn e engajamento desta campanha.
@@ -162,7 +147,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
             {insights.map((ins) => (
               <div
                 key={ins.id}
-                className="p-3 rounded-xl border"
+                className="p-3 rounded-lg border"
                 style={{ backgroundColor: INSIGHT_BG[ins.type], borderColor: tint(INSIGHT_COLORS[ins.type], 19) }}
               >
                 <div className="flex items-start gap-2">
@@ -185,7 +170,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
                     'text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0',
                     ins.priority === 'high' ? 'bg-danger/20 text-danger' :
                     ins.priority === 'medium' ? 'bg-status-pending-bg text-status-pending' :
-                    'bg-surface-700 text-surface-400',
+                    'bg-[var(--sf2)] text-surface-400',
                   )}>
                     {ins.priority === 'high' ? 'ALTA' : ins.priority === 'medium' ? 'MÉD' : 'BAIXA'}
                   </span>
@@ -238,15 +223,18 @@ interface CampaignReportProps {
   onClose: () => void
 }
 
+const lerAbaRelatorio = lerUmDe(['overview', 'conversions', 'churn', 'attribution', 'conversations'] as const, 'overview')
+
 export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const navigate = useNavigate()
   const C = useChartColors()
   const [analytics, setAnalytics] = useState<CampaignAnalytics | null>(null)
   const [conversations, setConversations] = useState<CampaignConversationSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<Tab>('overview')
-  const [outcomeFilter, setOutcomeFilter] = useState<string>('all')
-  const [sentimentFilter, setSentimentFilter] = useState<string>('all')
+  // Aba e filtros do relatório na URL (limpos junto com ?report= ao fechar).
+  const [tab, setTab] = useEstadoNaUrl<Tab>('relatorioAba', { padrao: 'overview', ler: lerAbaRelatorio })
+  const [outcomeFilter, setOutcomeFilter] = useEstadoNaUrl<string>('resultado', { padrao: 'all' })
+  const [sentimentFilter, setSentimentFilter] = useEstadoNaUrl<string>('sentimento', { padrao: 'all' })
 
   // Os contadores do `/analytics` são lidos AGORA; `campaign.stats` vem da lista e
   // pode estar velho (delivered/read sobem depois, por webhook, e a aba não recarrega).
@@ -311,7 +299,9 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/70" onClick={onClose} />
+      {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/70 cru — preto
+          cru fica pesado demais no tema claro (MODAL-07). */}
+      <div className="fixed inset-0 z-40 bg-[var(--color-scrim-soft)]" onClick={onClose} />
 
       {/* Drawer */}
       <motion.div
@@ -320,8 +310,11 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
         className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[600px] bg-surface-950 border-l overlay-frame flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
+          {/* Eixo 10: rounded-lg (8px), não rounded-xl (10px) — mesma medida
+              do ícone 32px de cabeçalho de drawer em CampaignLeadsDrawer.tsx
+              e AttributionTab.tsx (mesma tela T7). */}
+          <div className="w-8 h-8 rounded-lg bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
             <BarChart3 className="w-4 h-4 text-brand-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -330,7 +323,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
               Relatório de desempenho · {stats.total} contatos · {campaign.sentAt ? fmtDate(campaign.sentAt) : ''}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -342,14 +335,15 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
           </div>
         ) : (
           <>
-            {/* KPI Strip */}
-            <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
-              <div className="grid grid-cols-4 gap-2">
-                <KpiCard label="Lidas"        value={`${readRate}%`}  sub={`${stats.read} de ${stats.sent}`}      color="var(--color-accent-amber)" icon={<BarChart3 className="w-3.5 h-3.5" />} />
-                <KpiCard label="Responderam"  value={`${replyRate}%`} sub={`${stats.replied ?? 0} respostas`}       color="var(--color-accent-violet)" icon={<MessageCircle className="w-3.5 h-3.5" />} />
-                <KpiCard label="Conversões"   value={`${convRate}%`}  sub={`${stats.conversions ?? 0} confirmadas`} color="var(--color-accent-green)" icon={<ShoppingCart className="w-3.5 h-3.5" />} />
-                <KpiCard label="Churn"        value={totalChurn}      sub={`${pct(totalChurn, stats.sent)} do total`} color="var(--color-accent-rose)" icon={<ThumbsDown className="w-3.5 h-3.5" />} />
-              </div>
+            {/* KPI Strip — direção C: número grande + rótulo miúdo, linha de
+                1px entre eles, sem cartão por item. */}
+            <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
+              <StatStrip items={[
+                { label: 'Lidas',       value: `${readRate}%`,  sub: `${stats.read} de ${stats.sent}`,          color: 'var(--color-accent-amber)' },
+                { label: 'Responderam', value: `${replyRate}%`, sub: `${stats.replied ?? 0} respostas`,         color: 'var(--color-accent-violet)' },
+                { label: 'Conversões',  value: `${convRate}%`,  sub: `${stats.conversions ?? 0} confirmadas`,   color: 'var(--color-accent-green)' },
+                { label: 'Churn',       value: totalChurn,      sub: `${pct(totalChurn, stats.sent)} do total`, color: 'var(--color-accent-rose)' },
+              ]} />
               {stats.engagementScore !== undefined && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-3xs text-surface-500">Score de engajamento</span>
@@ -370,7 +364,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
             </div>
 
             {/* Tab bar */}
-            <div className="flex items-center gap-1 px-5 py-2 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center gap-1 px-5 py-2 border-b border-surface-700 flex-shrink-0">
               {tabs.map((t) => (
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
@@ -511,20 +505,11 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                   {tab === 'conversions' && analytics && (
                     <>
                       {/* Stats row */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-emerald-400">{stats.conversions ?? 0}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Total de conversões</p>
-                        </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-brand-400">{convRate}%</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Taxa (lidas → converteu)</p>
-                        </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-amber-400">{pct(stats.conversions ?? 0, stats.sent)}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Taxa sobre enviadas</p>
-                        </div>
-                      </div>
+                      <StatStrip items={[
+                        { label: 'Total de conversões',    value: stats.conversions ?? 0, color: 'var(--color-accent-green)' },
+                        { label: 'Taxa (lidas → converteu)', value: `${convRate}%`,        color: 'var(--color-brand-400)' },
+                        { label: 'Taxa sobre enviadas',    value: pct(stats.conversions ?? 0, stats.sent), color: 'var(--color-accent-amber)' },
+                      ]} />
 
                       {/* Conversion type breakdown */}
                       <div>
@@ -553,33 +538,32 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         </div>
                       </div>
 
-                      {/* Events table */}
+                      {/* Events table — direção C: faixa com linha de 1px
+                          entre eventos, não um cartão por evento. */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-2">Eventos de conversão</p>
-                        <div className="space-y-1.5">
-                          {analytics.conversionEvents.map((ev, i) => {
-                            const cfg = CONV_CONFIG[ev.type]
-                            return (
-                              <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface-800 border border-surface-700 rounded-xl">
-                                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                                  style={{ backgroundColor: tint(C[cfg.color], 12), color: C[cfg.color] }}>
-                                  {cfg.icon}
+                        {analytics.conversionEvents.length === 0 ? (
+                          <p className="text-xs text-surface-500 text-center py-6">Nenhum evento de conversão registrado</p>
+                        ) : (
+                          <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
+                            {analytics.conversionEvents.map((ev, i) => {
+                              const cfg = CONV_CONFIG[ev.type]
+                              return (
+                                <div key={i} className="flex items-center gap-3 px-3 py-2">
+                                  <span style={{ color: C[cfg.color] }} className="flex-shrink-0">{cfg.icon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium text-surface-200">{ev.contactName}</p>
+                                    {ev.detail && <p className="text-3xs text-surface-500">{ev.detail}</p>}
+                                  </div>
+                                  <div className="flex-shrink-0 text-right">
+                                    <p className="text-3xs font-medium" style={{ color: C[cfg.color] }}>{cfg.label}</p>
+                                    <p className="text-[9px] text-surface-600">{fmtDate(ev.convertedAt)}</p>
+                                  </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-surface-200">{ev.contactName}</p>
-                                  {ev.detail && <p className="text-3xs text-surface-500">{ev.detail}</p>}
-                                </div>
-                                <div className="flex-shrink-0 text-right">
-                                  <p className="text-3xs font-medium" style={{ color: C[cfg.color] }}>{cfg.label}</p>
-                                  <p className="text-[9px] text-surface-600">{fmtDate(ev.convertedAt)}</p>
-                                </div>
-                              </div>
-                            )
-                          })}
-                          {analytics.conversionEvents.length === 0 && (
-                            <p className="text-xs text-surface-500 text-center py-6">Nenhum evento de conversão registrado</p>
-                          )}
-                        </div>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -593,8 +577,10 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         if (!best) return null
                         const cfg = getPlatformCfg(best.source)
                         return (
-                          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border"
-                            style={{ backgroundColor: tint(cfg.color, 7), borderColor: tint(cfg.color, 19) }}>
+                          // Direção C: quase nenhuma cor de fundo — o destaque
+                          // vem do peso da tipografia; a cor fica só no ícone
+                          // e no rótulo, que já identificam a origem.
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-sm border border-surface-700">
                             <Crown className="w-4 h-4 flex-shrink-0" style={{ color: cfg.color }} />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold" style={{ color: cfg.color }}>Melhor origem: {cfg.label}</p>
@@ -673,7 +659,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {/* Comparison table */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-2">Tabela comparativa</p>
-                        <div className="overflow-x-auto rounded-xl border border-surface-700">
+                        <div className="overflow-x-auto rounded-lg border border-surface-700">
                           <table className="w-full text-2xs">
                             <thead>
                               <tr className="border-b border-surface-700 bg-surface-800">
@@ -690,7 +676,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                 const cfg = getPlatformCfg(ab.source)
                                 const isLast = i === analytics.attributionBreakdown.length - 1
                                 return (
-                                  <tr key={ab.source} className={cn('transition-colors hover:bg-surface-800/50', !isLast && 'border-b border-surface-800')}>
+                                  <tr key={ab.source} className={cn('transition-colors hover:bg-[var(--rowhover)]', !isLast && 'border-b border-surface-700')}>
                                     <td className="px-3 py-2">
                                       <div className="flex items-center gap-1.5">
                                         <span style={{ color: cfg.color }}>{cfg.icon}</span>
@@ -722,27 +708,13 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {conversations.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-surface-300 mb-3">Distribuição por resultado</p>
-                          <div className="grid grid-cols-4 gap-2">
-                            {Object.entries(OUTCOME_CONFIG).map(([key, cfg]) => {
-                              const count = conversations.filter((c) => c.outcome === key).length
-                              return (
-                                <button
-                                  key={key}
-                                  onClick={() => setOutcomeFilter(outcomeFilter === key ? 'all' : key)}
-                                  className={cn(
-                                    'rounded-xl p-2.5 border text-center transition-all',
-                                    outcomeFilter === key
-                                      ? 'border-current'
-                                      : 'bg-surface-800 border-surface-700 hover:border-surface-600',
-                                  )}
-                                  style={outcomeFilter === key ? { backgroundColor: tint(cfg.color, 9), borderColor: tint(cfg.color, 38), color: cfg.color } : undefined}
-                                >
-                                  <p className="text-base font-bold" style={{ color: cfg.color }}>{count}</p>
-                                  <p className="text-[9px] text-surface-500 mt-0.5 leading-tight">{cfg.label}</p>
-                                </button>
-                              )
-                            })}
-                          </div>
+                          <StatStrip items={Object.entries(OUTCOME_CONFIG).map(([key, cfg]) => ({
+                            label: cfg.label,
+                            value: conversations.filter((c) => c.outcome === key).length,
+                            color: cfg.color,
+                            active: outcomeFilter === key,
+                            onClick: () => setOutcomeFilter(outcomeFilter === key ? 'all' : key),
+                          }))} />
                         </div>
                       )}
 
@@ -757,8 +729,8 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                             className={cn(
                               'px-2 py-0.5 rounded-full text-3xs font-medium border transition-all',
                               sentimentFilter === s
-                                ? 'bg-surface-700 border-surface-500 text-surface-200'
-                                : 'border-surface-800 text-surface-500 hover:text-surface-300',
+                                ? 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-200'
+                                : 'border-surface-700 text-surface-500 hover:text-surface-300',
                             )}
                           >
                             {s === 'all' ? 'Todos' : SENTIMENT_CONFIG[s]?.label ?? s}
@@ -767,27 +739,28 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         {(outcomeFilter !== 'all' || sentimentFilter !== 'all') && (
                           <button
                             onClick={() => { setOutcomeFilter('all'); setSentimentFilter('all') }}
-                            className="ml-auto text-3xs text-brand-400 hover:text-brand-300 transition-colors"
+                            className="ml-auto text-3xs text-accent-dark hover:opacity-80 transition-colors"
                           >
                             Limpar filtros
                           </button>
                         )}
                       </div>
 
-                      {/* Conversation list */}
-                      <div className="space-y-2">
-                        {filteredConvs.length === 0 && (
-                          <div className="flex flex-col items-center py-8 gap-2 text-surface-500">
-                            <MessageCircle className="w-6 h-6" />
-                            <p className="text-xs">Nenhuma conversa encontrada com esses filtros</p>
-                          </div>
-                        )}
+                      {/* Conversation list — direção C: faixa com linha de
+                          1px entre conversas, não um cartão por conversa. */}
+                      {filteredConvs.length === 0 ? (
+                        <div className="flex flex-col items-center py-8 gap-2 text-surface-500">
+                          <MessageCircle className="w-6 h-6" />
+                          <p className="text-xs">Nenhuma conversa encontrada com esses filtros</p>
+                        </div>
+                      ) : (
+                      <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
                         {filteredConvs.map((conv) => {
                           const outcomeCfg = OUTCOME_CONFIG[conv.outcome] ?? { label: conv.outcome, color: 'var(--color-status-muted)' }
                           const sentimentCfg = SENTIMENT_CONFIG[conv.sentiment] ?? { label: conv.sentiment, color: 'var(--color-status-muted)' }
                           const adCfg = conv.adSource ? getPlatformCfg(conv.adSource) : null
                           return (
-                            <div key={conv.contactId} className="px-3 py-2.5 bg-surface-800 border border-surface-700 rounded-xl space-y-1.5">
+                            <div key={conv.contactId} className="px-3 py-2.5 space-y-1.5">
                               <div className="flex items-start gap-2">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -814,7 +787,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   <span className="text-[9px] text-surface-600">{fmtDate(conv.lastMessageAt)}</span>
                                   <button
                                     onClick={() => { onClose(); navigate(`/contacts?contact=${conv.contactId}`) }}
-                                    className="text-[9px] text-brand-400 hover:text-brand-300 transition-colors flex items-center gap-0.5"
+                                    className="text-[9px] text-accent-dark hover:opacity-80 transition-colors flex items-center gap-0.5"
                                   >
                                     <ExternalLink className="w-2.5 h-2.5" />
                                     CRM
@@ -825,24 +798,22 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           )
                         })}
                       </div>
+                      )}
 
                       {/* Sentiment summary chart */}
                       {conversations.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-surface-300 mb-3">Sentimento geral</p>
-                          <div className="flex gap-2">
-                            {Object.entries(SENTIMENT_CONFIG).map(([key, cfg]) => {
-                              const count = conversations.filter((c) => c.sentiment === key).length
-                              const pctVal = Math.round((count / conversations.length) * 100)
-                              return (
-                                <div key={key} className="flex-1 bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                                  <p className="text-lg font-bold" style={{ color: cfg.color }}>{pctVal}%</p>
-                                  <p className="text-3xs text-surface-500 mt-0.5">{cfg.label}</p>
-                                  <p className="text-3xs text-surface-600">{count} conversa{count !== 1 ? 's' : ''}</p>
-                                </div>
-                              )
-                            })}
-                          </div>
+                          <StatStrip items={Object.entries(SENTIMENT_CONFIG).map(([key, cfg]) => {
+                            const count = conversations.filter((c) => c.sentiment === key).length
+                            const pctVal = Math.round((count / conversations.length) * 100)
+                            return {
+                              label: cfg.label,
+                              value: `${pctVal}%`,
+                              sub: `${count} conversa${count !== 1 ? 's' : ''}`,
+                              color: cfg.color,
+                            }
+                          })} />
                         </div>
                       )}
                     </>
@@ -852,20 +823,11 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                   {tab === 'churn' && analytics && (
                     <>
                       {/* Summary */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-danger">{totalChurn}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Total churn</p>
-                        </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-amber-400">{pct(totalChurn, stats.sent)}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Taxa de churn</p>
-                        </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-surface-300">{pct(stats.optedOut ?? analytics.churnBreakdown.optOut + analytics.churnBreakdown.blocked, stats.sent)}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Descadastraram</p>
-                        </div>
-                      </div>
+                      <StatStrip items={[
+                        { label: 'Total churn',      value: totalChurn,                     color: 'var(--color-danger)' },
+                        { label: 'Taxa de churn',    value: pct(totalChurn, stats.sent),     color: 'var(--color-accent-amber)' },
+                        { label: 'Descadastraram',   value: pct(stats.optedOut ?? analytics.churnBreakdown.optOut + analytics.churnBreakdown.blocked, stats.sent) },
+                      ]} />
 
                       {/* Pie + breakdown */}
                       {churnPieData.length > 0 && (
@@ -896,8 +858,9 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         </div>
                       )}
 
-                      {/* Interpretation */}
-                      <div className="bg-surface-800 border border-surface-700 rounded-xl p-4 space-y-2.5">
+                      {/* Interpretation — direção C: linha de 1px no topo em
+                          vez de cartão com fundo. */}
+                      <div className="border-t border-surface-700 pt-3 space-y-2.5">
                         <p className="text-3xs font-semibold text-surface-400 uppercase tracking-wider">Interpretação dos motivos</p>
                         {analytics.churnBreakdown.optOut > 0 && (
                           <div className="flex gap-2">

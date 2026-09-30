@@ -16,12 +16,13 @@
 //
 // Two rendering variants:
 //   - 'inline'   (default) minimal subline for approval cards.
-//   - 'callout'  highlighted box for wizards — makes the target line the
+//   - 'callout'  soft Banner for wizards — makes the target line the
 //                first thing the operator notices above every field.
 
-import type { CSSProperties } from 'react'
-import { Info, Phone } from 'lucide-react'
+import { Phone } from 'lucide-react'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
+import { Banner } from '@/components/ui/Banner'
+import { Select } from '@/components/ui/Select'
 
 function formatPhone(raw?: string | null): string {
   if (!raw) return '—'
@@ -57,55 +58,47 @@ export function WhatsappLineRow({
   const line = findById(whatsappNumberId)
 
   if (variant === 'callout') {
-    // Padrão canônico saturado (.color-chip): fundo SÓLIDO da cor semântica +
-    // texto/ícone branco nos dois temas — igual aos badges/banners. "Linha não
-    // definida" é aviso (warning/laranja); "criando na linha" confirma o alvo
-    // (brand/teal). O select embutido vira um controle branco translúcido,
-    // legível sobre o fundo cheio. O aviso segue sendo a primeira coisa que o
-    // operador nota, evitando o incidente `novos_clientes` de 2026-04-20.
-    const chip = line ? 'var(--color-brand-500)' : 'var(--color-warning)'
-    return (
-      <div
-        className="color-chip flex items-center gap-3 px-4 py-3 rounded-lg border"
-        style={{ ['--chip']: chip } as CSSProperties}
+    // SCRUM-1097 (spec 1a MODAL-03 / vocabulário do handoff): banner SUAVE
+    // (12% da cor + texto na cor), nunca fundo sólido — o bloco laranja cheio
+    // com select branco translúcido era a maior divergência do wizard de
+    // campanha contra o mock. Mantém a função: "linha não definida" é aviso
+    // (warning) e a primeira coisa que o operador vê acima dos campos;
+    // "criando na linha" confirma o alvo (success). O select é o primitivo
+    // `Select` sm (28px) como ação à direita do banner.
+    const select = onLineChange ? (
+      <Select
+        size="sm"
+        aria-label="Linha do WhatsApp"
+        value={whatsappNumberId ?? ''}
+        onChange={(e) => onLineChange(e.target.value)}
+        className="min-w-[200px] max-w-[280px]"
       >
-        <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-semibold uppercase tracking-wide opacity-90">
-            {line ? 'Criando na linha' : 'Linha não definida'}
-          </div>
-          {line ? (
-            <div className="text-sm font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
-              {line.label || formatPhone(line.displayPhoneNumber)}
-              {line.label && (
-                <span className="text-[11px] opacity-80 font-normal">
-                  ({formatPhone(line.displayPhoneNumber)})
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="text-[11px] opacity-90 mt-0.5">
-              Este tenant tem {numbers.length} linhas ativas. Escolha uma antes de salvar.
-            </div>
-          )}
-        </div>
-
-        {onLineChange && (
-          <select
-            value={whatsappNumberId ?? ''}
-            onChange={(e) => onLineChange(e.target.value)}
-            className="flex-shrink-0 min-w-[200px] max-w-[280px] rounded-lg px-3.5 py-2.5 text-sm font-medium text-white bg-white/15 border-2 border-white/25 hover:bg-white/25 hover:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 cursor-pointer transition-colors"
-          >
-            <option value="" className="bg-surface-900 text-surface-200">Selecione a linha...</option>
-            {numbers.map((n) => (
-              <option key={n.id} value={n.id} className="bg-surface-900 text-surface-200">
-                {n.label || formatPhone(n.displayPhoneNumber)}
-                {n.isPrimary ? ' • Primária' : ''}
-              </option>
-            ))}
-          </select>
+        <option value="">Selecione a linha...</option>
+        {numbers.map((n) => (
+          <option key={n.id} value={n.id}>
+            {n.label || formatPhone(n.displayPhoneNumber)}
+            {n.isPrimary ? ' • Primária' : ''}
+          </option>
+        ))}
+      </Select>
+    ) : undefined
+    return (
+      <Banner variant={line ? 'success' : 'warning'} action={select}>
+        {line ? (
+          <>
+            <span className="font-semibold">Criando na linha</span>{' '}
+            <span className="font-medium">{line.label || formatPhone(line.displayPhoneNumber)}</span>
+            {line.label && (
+              <span className="opacity-80"> ({formatPhone(line.displayPhoneNumber)})</span>
+            )}
+          </>
+        ) : (
+          <>
+            <span className="font-semibold">Linha não definida.</span>{' '}
+            Este tenant tem {numbers.length} linhas ativas. Escolha uma antes de salvar.
+          </>
         )}
-      </div>
+      </Banner>
     )
   }
 

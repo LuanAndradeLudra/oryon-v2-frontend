@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import {
-  Megaphone, Wrench, ShieldCheck,
+  Megaphone, Bell, KeyRound,
   CornerDownLeft, ExternalLink, Phone, GitBranch, Copy,
 } from 'lucide-react'
 import type { TemplateCategoryType, TemplateHeaderType, TemplateButtonType } from '@/types'
@@ -28,8 +28,8 @@ export const SUBCATEGORY_LABELS: Record<SubCategory, string> = {
 // and an OTP button — should stay flagged until the flow is implemented.
 export const CATEGORIES: { value: TemplateCategoryType; label: string; description: string; icon: ComponentType<{ className?: string }>; comingSoon?: boolean }[] = [
   { value: 'MARKETING',      label: 'Marketing',    icon: Megaphone,   description: 'Promoções, ofertas, boas‑vindas e conteúdo de engajamento' },
-  { value: 'UTILITY',        label: 'Utilidade',    icon: Wrench,      description: 'Confirmações, lembretes e alertas transacionais' },
-  { value: 'AUTHENTICATION', label: 'Autenticação', icon: ShieldCheck, description: 'Senhas de uso único (OTP) e verificações de conta', comingSoon: true },
+  { value: 'UTILITY',        label: 'Utilidade',    icon: Bell,        description: 'Confirmações, lembretes e alertas transacionais' },
+  { value: 'AUTHENTICATION', label: 'Autenticação', icon: KeyRound,    description: 'Senhas de uso único (OTP) e verificações de conta', comingSoon: true },
 ]
 
 export const SUBCATEGORIES: Record<TemplateCategoryType, { value: SubCategory; label: string; description: string }[]> = {

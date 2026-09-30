@@ -68,7 +68,7 @@ export function ExpandableTextarea({
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="inline-flex items-center gap-1 text-3xs text-surface-400 hover:text-brand-300 transition-colors"
+            className="inline-flex items-center gap-1 text-3xs text-surface-400 hover:text-accent-dark transition-colors"
             aria-label="Abrir editor em tela cheia"
           >
             <Maximize2 className="h-3 w-3" />
@@ -129,8 +129,8 @@ function ExpandedEditorModal({
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="relative flex h-[88vh] w-[min(96vw,1100px)] flex-col overflow-hidden rounded-2xl border border-surface-700/60 bg-surface-900 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-surface-800 px-5 py-3">
+      <div className="relative flex h-[88vh] w-[min(96vw,1100px)] flex-col overflow-hidden rounded-xl border border-surface-700/60 bg-surface-900 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-surface-700 px-5 py-3">
           <h3 className="text-sm font-medium text-surface-100">{label}</h3>
           <div className="flex items-center gap-3">
             <span className="text-xs tabular-nums text-surface-400">
@@ -153,7 +153,7 @@ function ExpandedEditorModal({
           autoFocus
           className={`flex-1 resize-none bg-surface-900 px-6 py-4 text-surface-100 placeholder:text-surface-600 focus:outline-none ${fontClass}`}
         />
-        <div className="flex items-center justify-between border-t border-surface-800 px-5 py-2.5 text-2xs text-surface-500">
+        <div className="flex items-center justify-between border-t border-surface-700 px-5 py-2.5 text-2xs text-surface-500">
           <span>Esc para fechar. As alterações já estão salvas no card.</span>
           <button
             type="button"
@@ -361,7 +361,7 @@ export function SystemPromptApprovalPreview({
   return (
     <div className="space-y-3">
       {/* Agent reference */}
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
       </div>
@@ -476,7 +476,7 @@ export function KnowledgeDocApprovalPreview({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         {docId && (
@@ -627,7 +627,7 @@ export function HandoffRuleApprovalPreview({
   if (isRemove) {
     return (
       <div className="space-y-2.5">
-        <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+        <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
           <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
           <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         </div>
@@ -674,7 +674,7 @@ export function HandoffRuleApprovalPreview({
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
       </div>
@@ -780,7 +780,7 @@ export function AgentConfigApprovalPreview({
   return (
     <div className="space-y-2.5">
       {!isCreate && (
-        <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+        <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
           <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
           <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
         </div>
@@ -861,7 +861,7 @@ export function AgentFaqApprovalPreview({
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
       </div>
@@ -928,7 +928,7 @@ export function AgentToolHttpApprovalPreview({
 }: ApprovalPreviewProps) {
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
       </div>
@@ -1034,7 +1034,7 @@ export function CompanyBrainApprovalPreview({
             minRows={6} maxRows={20}
           />
           {input.documents !== undefined && (
-            <div className="rounded-lg border border-surface-800 bg-surface-900/40 px-3 py-2 text-2xs text-surface-400">
+            <div className="rounded-lg border border-surface-700 bg-surface-900/40 px-3 py-2 text-2xs text-surface-400">
               {Array.isArray(input.documents) ? `${(input.documents as unknown[]).length} documento(s) na payload` : 'documents incluído'}
             </div>
           )}

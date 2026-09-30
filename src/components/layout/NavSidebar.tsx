@@ -3,9 +3,6 @@ import {
   MessageSquare,
   Users,
   BarChart3,
-  Settings,
-  LogOut,
-  Zap,
   Home,
   Send,
   Megaphone,
@@ -15,18 +12,13 @@ import {
   ShieldCheck,
   Activity,
   LineChart,
-  Sun,
-  Moon,
-  Pin,
-  PinOff,
+  PanelLeft,
   Handshake,
+  Calendar,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
-import { cn } from '@/lib/utils'
-import { useTheme } from '@/hooks/useTheme'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Avatar } from '@/components/ui/Avatar'
+import { useLocation } from 'react-router-dom'
 import { Sidebar, SidebarBody, SidebarLink, SidebarSectionLabel, useSidebar } from '@/components/ui/sidebar'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff as isOryonStaffHelper } from '@/lib/roleHelpers'
@@ -36,10 +28,10 @@ import { useInternalChat } from '@/contexts/InternalChatContext'
 import { conversationsApi } from '@/services/api'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { AiCreditsIndicator } from './AiCreditsIndicator'
 
 interface NavSidebarProps {
   totalUnread?: number
-  currentUser?: { firstName: string; lastName: string; avatarUrl?: string }
   /**
    * When true, renders fully expanded (no hover-collapse) and overrides the
    * primitive's fixed width to fill the parent. Used by AppShell to embed the
@@ -48,16 +40,49 @@ interface NavSidebarProps {
   forceExpanded?: boolean
 }
 
-function LogoSection() {
+function LogoSection({ onToggle }: { onToggle?: () => void }) {
   const { open, animate } = useSidebar()
+  const collapsed = animate && !open
+  const toggleTitle = open ? 'Recolher navegação (Ctrl+B)' : 'Abrir navegação (Ctrl+B)'
   return (
-    <div className="flex items-center gap-3 px-3 mb-2 flex-shrink-0">
-      <img
-        src="/oryon-logo.svg"
-        alt="Oryon"
-        className="w-9 h-9 flex-shrink-0 select-none"
-        draggable={false}
-      />
+    <div className="group/logo flex items-center h-9 gap-[9px] px-1.5 mb-2 flex-shrink-0">
+      {/* SHELL-SIDEBAR-02/06 (spec shell.md): header 36px, gap 9, padding 6;
+          logo 26px (o mock usa um tile-placeholder; mantemos a marca real no
+          tamanho da spec). Nome do workspace à direita = [!] (campo do tenant
+          a confirmar). */}
+      {/* Recolhida, o LOGO é o botão (padrão do Claude): em repouso mostra a
+          marca; no hover/foco da linha a marca dá lugar ao ícone PanelLeft.
+          Aberta, a marca é só marca e o botão vai para a ponta direita da
+          mesma linha — nunca uma linha só para ele (PO, 23/09). */}
+      {onToggle && collapsed ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label="Abrir navegação"
+          aria-expanded={false}
+          title={toggleTitle}
+          className="relative w-[26px] h-[26px] flex-shrink-0 rounded-sm flex items-center justify-center cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+        >
+          <img
+            src="/oryon-logo.svg"
+            alt=""
+            className="w-[26px] h-[26px] select-none transition-opacity duration-100 group-hover/logo:opacity-0 group-focus-within/logo:opacity-0"
+            draggable={false}
+          />
+          <PanelLeft
+            className="absolute inset-0 m-auto w-3.5 h-3.5 text-surface-300 opacity-0 transition-opacity duration-100 group-hover/logo:opacity-100 group-focus-within/logo:opacity-100"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+        </button>
+      ) : (
+        <img
+          src="/oryon-logo.svg"
+          alt="Oryon"
+          className="w-[26px] h-[26px] flex-shrink-0 select-none"
+          draggable={false}
+        />
+      )}
       <AnimatePresence>
         {(!animate || open) && (
           <motion.img
@@ -71,139 +96,60 @@ function LogoSection() {
             // (branca→preta) no tema claro, mas a sidebar agora é sempre
             // escura — a wordmark original (branca) precisa ficar como está
             // nos dois temas, senão fica preta sobre fundo escuro.
-            className="h-[27px] w-auto select-none"
+            className="h-5 w-auto select-none"
             draggable={false}
           />
         )}
       </AnimatePresence>
-    </div>
-  )
-}
-
-function UserFooter({
-  currentUser,
-  onLogout,
-}: {
-  currentUser?: NavSidebarProps['currentUser']
-  onLogout: () => void
-}) {
-  const { open, animate } = useSidebar()
-  const { user } = useAuth()
-  const { theme, toggle } = useTheme()
-
-  const name = currentUser
-    ? `${currentUser.firstName} ${currentUser.lastName}`
-    : user
-      ? `${user.firstName} ${user.lastName}`
-      : ''
-
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="mx-3 mb-2 border-t border-surface-800/60" />
-
-      {/* Theme toggle */}
-      <button
-        onClick={toggle}
-        title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-        aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-        className="w-full text-left"
-      >
-        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-white hover:bg-white/10">
-          <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
-            {theme === 'dark' ? <Sun className="w-[14.7px] h-[14.7px]" /> : <Moon className="w-[14.7px] h-[14.7px]" />}
-          </span>
-          <AnimatePresence>
-            {(!animate || open) && (
-              <motion.span
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.15 }}
-                className="text-sm font-medium whitespace-pre overflow-hidden"
-              >
-                {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
-      </button>
-
-      {/* Logout */}
-      <button
-        onClick={onLogout}
-        aria-label="Sair da conta"
-        className="w-full text-left"
-      >
-        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-danger hover:bg-danger/10">
-          <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
-            <LogOut className="w-[18.4px] h-[18.4px]" />
-          </span>
-          <AnimatePresence>
-            {(!animate || open) && (
-              <motion.span
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.15 }}
-                className="text-sm font-medium whitespace-pre overflow-hidden"
-              >
-                Sair
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
-      </button>
-
-      {/* User profile */}
-      {name && (
-        <div className="flex items-center gap-3 px-3 py-3 mt-1">
-          <Avatar
-            name={name}
-            imageUrl={currentUser?.avatarUrl}
-            size="sm"
-            kind="operator"
-          />
-          <AnimatePresence>
-            {(!animate || open) && (
-              <motion.div
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.15 }}
-                className="flex flex-col min-w-0 overflow-hidden"
-              >
-                <span className="text-xs font-semibold text-surface-200 truncate whitespace-pre">
-                  {name}
-                </span>
-                {user?.email && (
-                  <span className="text-[10px] text-surface-600 truncate whitespace-pre">
-                    {user.email}
-                  </span>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+      {onToggle && open && (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label="Recolher navegação"
+          aria-expanded
+          title={toggleTitle}
+          className="ml-auto w-6 h-6 rounded-sm flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-white/10 transition-colors cursor-pointer flex-shrink-0"
+        >
+          <PanelLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+        </button>
       )}
     </div>
   )
 }
 
-export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false }: NavSidebarProps) {
-  const [open, setOpen] = useState(false)
+const NOOP = () => {}
+
+export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSidebarProps) {
+  // Estado da navegação: RECOLHIDA (62px) ou ABERTA (228px), escolhido por
+  // clique e persistido — hover NÃO expande mais (PO, 23/09: o mouse
+  // encostava no canto e a tela inteira refluía por acidente). Referência:
+  // Claude/Linear/Slack — hover informa (tooltip), clique decide. Ctrl/⌘+B.
   const [pinned, setPinned] = useState(() => {
     try { return localStorage.getItem('oryon:sidebar-pinned') === '1' } catch { return false }
   })
-  const togglePinned = () => setPinned((p) => {
+  const togglePinned = useCallback(() => setPinned((p) => {
     const next = !p
     try { localStorage.setItem('oryon:sidebar-pinned', next ? '1' : '0') } catch { /* ignore */ }
     return next
-  })
+  }), [])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.key.toLowerCase() !== 'b') return
+      const el = e.target as HTMLElement | null
+      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return
+      e.preventDefault()
+      togglePinned()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [togglePinned])
   const [whatsappUnread, setWhatsappUnread] = useState(totalUnread)
   const location = useLocation()
-  const navigate = useNavigate()
   const activeHref = '/' + location.pathname.split('/')[1]
-  const { user, organizationConfigured, logout } = useAuth()
+  // Configurações e logout saíram da sidebar (SCRUM-1100 · rodapé agora é só
+  // o consumo de créditos de IA) — `useAuth` aqui só precisa do usuário/flags
+  // que ainda decidem quais itens de navegação aparecem.
+  const { user, organizationConfigured } = useAuth()
   const { isRouteVisible, isFeatureVisible } = useFeatureVisibility()
   const { checklist } = useSetupChecklist(user?.id)
   const { vocab } = useTenantVocab()
@@ -240,16 +186,11 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
     }
   }, [refreshUnread])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login', { replace: true })
-  }
-
   const geralItems = [
     { icon: <Home className="w-[16.5px] h-[16.5px]" />,          label: 'Home',       href: '/home' },
     {
       icon: <BarChart3 className="w-[16.5px] h-[16.5px]" />,
-      label: 'Relatórios',
+      label: 'Dashboard',
       href: '/dashboard',
       nudge: !checklist.dashboard ? 'Novo' : undefined,
     },
@@ -269,7 +210,10 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
     // daqui. Gate SCRUM-498: mesmo flag de tenant que já esconde o board
     // de dentro de /contacts.
     ...(multiPipeline ? [{
-      icon: <Handshake className="w-[16.5px] h-[16.5px]" />,
+      // PL-5-2: Handshake não existe no set da casa (`src/lib/icons.tsx`) e cai
+      // no lucide-react de verdade, cujo traço padrão é 2 — mais pesado que o
+      // 1.75 dos 11 vizinhos desta mesma barra. Mesmo motivo do LineChart abaixo.
+      icon: <Handshake className="w-[16.5px] h-[16.5px]" strokeWidth={1.75} />,
       label: 'Funis',
       href: '/pipelines',
     }] : []),
@@ -282,6 +226,9 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
       href: '/campaigns',
       nudge: !checklist.campaigns ? 'Novo' : undefined,
     },
+    // SCRUM-1107: casca visual da tela de Agendamentos (rota+flag já
+    // existiam, só faltava o item de menu).
+    { icon: <Calendar className="w-[16.5px] h-[16.5px]" />, label: 'Agendamentos', href: '/schedule' },
     { icon: <Megaphone className="w-[16.5px] h-[16.5px]" />, label: 'Marketing',   href: '/marketing' },
     { icon: <Workflow className="w-[16.5px] h-[16.5px]" />,   label: 'Automações',  href: '/automations' },
     { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
@@ -296,7 +243,6 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
     badge: internalUnread > 0 ? internalUnread : undefined,
   }
   const internalChatVisible = isRouteVisible(internalChatItem.href)
-  const settingsVisible = isRouteVisible('/settings')
   // Oryon staff only — never shown to a customer's business_admin even if
   // they discover the URL (the route guard + agent-server gate also block them).
   const isOryonStaff = isOryonStaffHelper(user?.role)
@@ -310,37 +256,25 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   // padrão re-layouta a tela a cada passagem do mouse (jank acumulado). O pin
   // persiste em localStorage e reaproveita o caminho do forceExpanded.
   const expanded = forceExpanded || pinned
-  const sidebarOpen = expanded ? true : open
-  const sidebarSetOpen = expanded ? () => {} : setOpen
-  const sidebarAnimate = !expanded
+  const sidebarOpen = expanded
+  // Sem hover-expand: o primitivo ainda chama setOpen no mouseenter/leave,
+  // mas aqui é no-op — só o botão/atalho muda o estado.
+  const sidebarSetOpen = NOOP
+  const sidebarAnimate = !forceExpanded
 
   const body = (
     <Sidebar open={sidebarOpen} setOpen={sidebarSetOpen} animate={sidebarAnimate}>
       <SidebarBody className="justify-between">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
           <div className="relative">
-            <LogoSection />
-            {/* Pin — visível só com a sidebar aberta (hover ou fixada) */}
-            {!forceExpanded && sidebarOpen && (
-              <button
-                onClick={togglePinned}
-                aria-label={pinned ? 'Soltar navegação' : 'Fixar navegação'}
-                title={pinned ? 'Soltar navegação (expande no hover)' : 'Fixar navegação expandida'}
-                className={cn(
-                  'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center transition-colors cursor-pointer',
-                  pinned ? 'text-brand-400 hover:text-brand-300' : 'text-surface-600 hover:text-surface-300',
-                )}
-              >
-                {pinned ? <Pin className="w-3.5 h-3.5" /> : <PinOff className="w-3.5 h-3.5" />}
-              </button>
-            )}
+            <LogoSection onToggle={forceExpanded ? undefined : togglePinned} />
           </div>
 
           {/* GERAL */}
           {geralItems.length > 0 && (
             <>
               <SidebarSectionLabel label="Geral" />
-              <nav className="flex flex-col gap-0.5 px-1.5">
+              <nav className="flex flex-col gap-0.5">
                 {geralItems.map((item) => (
                   <SidebarLink
                     key={item.href}
@@ -358,7 +292,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
 
           {/* Chat Interno */}
           {internalChatVisible && (
-            <nav className="flex flex-col gap-0.5 px-1.5 mb-1">
+            <nav className="flex flex-col gap-0.5 mb-1">
               <SidebarLink
                 href={internalChatItem.href}
                 icon={internalChatItem.icon}
@@ -373,7 +307,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
           {ferramentasItems.length > 0 && (
             <>
               <SidebarSectionLabel label="Ferramentas" />
-              <nav className="flex flex-col gap-0.5 px-1.5">
+              <nav className="flex flex-col gap-0.5">
                 {ferramentasItems.map((item) => (
                   <SidebarLink
                     key={item.href}
@@ -395,7 +329,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
           {isOryonStaff && isFeatureVisible('oryonStaffSidebar') && (
             <>
               <SidebarSectionLabel label="Oryon" />
-              <nav className="flex flex-col gap-0.5 px-1.5">
+              <nav className="flex flex-col gap-0.5">
                 <SidebarLink
                   href="/admin/skill-templates"
                   icon={<ShieldCheck className="w-[16.5px] h-[16.5px]" />}
@@ -416,7 +350,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
                 />
                 <SidebarLink
                   href="/admin/ai-observability"
-                  icon={<LineChart className="w-[16.5px] h-[16.5px]" />}
+                  icon={<LineChart className="w-[16.5px] h-[16.5px]" strokeWidth={1.75} />}
                   label="AI Observability"
                   active={activeHref === '/admin/ai-observability'}
                 />
@@ -430,25 +364,14 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
             </>
           )}
 
-          {/* CONFIGURAÇÕES */}
-          {settingsVisible && (
-            <>
-              <SidebarSectionLabel label="Configurações" />
-              <nav className="flex flex-col gap-0.5 px-1.5">
-                <SidebarLink
-                  href="/settings"
-                  icon={<Settings className="w-[16.5px] h-[16.5px]" />}
-                  label="Configurações"
-                  active={activeHref === '/settings'}
-                  nudge={(!checklist.company || !checklist.profile) ? 'Setup' : undefined}
-                />
-              </nav>
-            </>
-          )}
+          {/* Configurações saiu da sidebar (SCRUM-1100 · 3.13): agora é item
+              do menu do usuário na TopBar, que navega para a mesma rota
+              `/settings` — o contrato de URL não muda, só a porta de entrada. */}
         </div>
 
-        {/* User footer */}
-        <UserFooter currentUser={currentUser} onLogout={handleLogout} />
+        {/* Rodapé: só o consumo de créditos de IA (SCRUM-1100 · 3.12).
+            Configurações e avatar saíram para o menu do usuário na TopBar. */}
+        <AiCreditsIndicator />
       </SidebarBody>
     </Sidebar>
   )

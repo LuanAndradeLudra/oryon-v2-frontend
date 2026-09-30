@@ -53,6 +53,7 @@ import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { DealPanelProvider } from '@/contexts/DealPanelContext'
 import { LayerProvider } from '@/contexts/LayerContext'
 import { AppShell } from '@/components/layout/AppShell'
+import { PageTransition, sectionKeyOf } from '@/components/layout/PageTransition'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 
@@ -72,11 +73,11 @@ const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').t
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
 const RegisterPage       = lazyRoute(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
 const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
+const SchedulePage      = lazyRoute(() => import('@/pages/SchedulePage').then(m => ({ default: m.SchedulePage })))
 const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
 const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
 const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
 const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
-const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m => ({ default: m.PricingPage })))
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
@@ -139,7 +140,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     <RequireAuth>
       <OnboardingGate>
         <AppShell>
-          {children}
+          <PageTransition>{children}</PageTransition>
         </AppShell>
       </OnboardingGate>
     </RequireAuth>
@@ -156,16 +157,19 @@ function RequireGuest({ children }: { children: ReactNode }) {
 
 // ── Animated routes ───────────────────────────────────────────────────────────
 
+/** Rotas fora do AppShell (login, cadastro, onboarding, páginas públicas). */
+const SHELL_LESS_SECTIONS = new Set([
+  '/', '/login', '/register', '/forgot-password', '/reset-password', '/activate',
+  '/set-password', '/setup', '/canva',
+])
+
 function AnimatedRoutes() {
   const location = useLocation()
-  const segments = location.pathname.split('/')
-  // Por padrão a chave é o 1º segmento (transição por seção). Exceção: o
-  // perfil do contato (/contacts/:id) ganha chave própria para que o drawer
-  // aberto na lista faça crossfade suave ao "Expandir" para a página — e
-  // vice-versa no voltar.
-  const routeKey = segments[1] === 'contacts' && segments[2]
-    ? '/contacts/:id'
-    : '/' + segments[1]
+  // Todas as seções COM shell compartilham UMA chave ('shell'): trocar de
+  // seção não desmonta o AppShell (a transição é do PageTransition). O fade do
+  // wrapper de fora só acontece entre "com shell" e "sem shell" (login ↔ app).
+  const section = sectionKeyOf(location.pathname)
+  const routeKey = SHELL_LESS_SECTIONS.has(section) ? section : 'shell'
 
   return (
     <AnimatePresence initial={false}>
@@ -238,6 +242,11 @@ function AnimatedRoutes() {
           <Route path="/campaigns" element={
             <ProtectedRoute><CampaignsPage /></ProtectedRoute>
           } />
+          {/* Leva 9 (SCRUM-1107) — casca visual de Agendamentos, dado de
+              exemplo fixo, sem integração real de agenda por trás. */}
+          <Route path="/schedule" element={
+            <ProtectedRoute><SchedulePage /></ProtectedRoute>
+          } />
           {/* Raiz de settings = hub navegável (mapa das configurações) */}
           <Route path="/settings" element={
             <ProtectedRoute><SettingsPage /></ProtectedRoute>
@@ -258,6 +267,10 @@ function AnimatedRoutes() {
             <ProtectedRoute><TeamChatPage /></ProtectedRoute>
           } />
           <Route path="/agents" element={
+            <ProtectedRoute><AgentsPage /></ProtectedRoute>
+          } />
+          {/* Direção D (27/09): cada agente é uma página, a seção na URL. */}
+          <Route path="/agents/:agentId/:secao?" element={
             <ProtectedRoute><AgentsPage /></ProtectedRoute>
           } />
 
@@ -290,8 +303,6 @@ function AnimatedRoutes() {
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de agentes"><AdminAgentEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
 
-          {/* Public pricing */}
-          <Route path="/pricing" element={<PricingPage />} />
 
           {/* Canva OAuth callback — public, opened as popup */}
           <Route path="/canva/callback" element={<CanvaCallbackPage />} />

@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Loader2, Search, Filter, X, Activity, ShieldCheck, Plug, Workflow,
+  Search, Filter, X, Activity, ShieldCheck, Plug, Workflow,
 } from 'lucide-react'
 import {
   listAuditFeed,
@@ -36,6 +36,9 @@ import {
   type AutomationRunsQuery,
 } from '@/services/adminAuditApi'
 import { AuditDrillModal } from '@/components/admin/AuditDrillModal'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -74,7 +77,7 @@ export function AuditPage() {
         subtitle={TABS.find(t => t.id === tab)?.hint}
       />
 
-      <nav className="px-6 border-b border-surface-700 bg-surface-900/40 flex gap-1">
+      <nav className="px-6 border-b border-surface-700 flex gap-1">
         {TABS.map(t => {
           const Icon = t.icon
           const active = t.id === tab
@@ -85,8 +88,8 @@ export function AuditPage() {
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-t-md border-b-2 transition-colors',
                 active
-                  ? 'border-brand-500 text-brand-200 bg-brand-700/10'
-                  : 'border-transparent text-surface-400 hover:text-surface-200 hover:bg-surface-800/40',
+                  ? 'border-brand-500 text-surface-50 font-semibold'
+                  : 'border-transparent text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
               )}
             >
               <Icon className="w-4 h-4" />
@@ -110,7 +113,7 @@ export function AuditPage() {
 const ACTOR_TYPE_OPTIONS: AuditActorType[] = ['user', 'system', 'agent', 'webhook', 'job']
 const SEVERITY_OPTIONS: AuditSeverity[] = ['info', 'warn', 'error']
 
-// Maps now hold a chip color (token/hex) rendered as a filled .color-chip.
+// Maps now hold a chip color (token/hex) rendered as a soft .color-chip-soft (status chip).
 const SEVERITY_STYLE: Record<AuditSeverity, string> = {
   info:  'var(--color-status-muted)',
   warn:  'var(--color-status-pending)',
@@ -196,27 +199,27 @@ function ActivityFeedTab() {
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
+          <div className="border-y border-surface-700 overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
+              <thead className="text-surface-500 border-b border-surface-700">
                 <tr>
                   <Th>Quando</Th><Th>Tipo</Th><Th>Ação</Th><Th>Actor</Th><Th>Descrição</Th><Th>Drill</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-800">
+              <tbody className="divide-y divide-surface-700">
                 {rows.map(r => (
-                  <tr key={r.id} className="hover:bg-surface-800/30">
+                  <tr key={r.id} className="hover:bg-[var(--rowhover)]">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
                       <span
-                        className="color-chip border inline-block px-2 py-0.5 rounded text-xs font-medium"
+                        className="color-chip-soft border inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
                         style={{ ['--chip']: ACTOR_TYPE_STYLE[r.actorType] } as React.CSSProperties}
                       >
                         {r.actorType}
                       </span>
                       {r.severity !== 'info' && (
                         <span
-                          className="color-chip border ml-1 inline-block px-2 py-0.5 rounded text-xs font-medium"
+                          className="color-chip-soft border ml-1 inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
                           style={{ ['--chip']: SEVERITY_STYLE[r.severity] } as React.CSSProperties}
                         >
                           {r.severity}
@@ -230,7 +233,7 @@ function ActivityFeedTab() {
                       {r.correlationId ? (
                         <button
                           onClick={() => setDrillCid(r.correlationId)}
-                          className="text-brand-300 hover:text-brand-200 text-xs underline-offset-2 hover:underline"
+                          className="text-accent-dark text-xs underline-offset-2 hover:underline"
                           title={r.correlationId}
                         >
                           {r.correlationId.slice(0, 8)}…
@@ -329,20 +332,20 @@ function AuthEventsTab() {
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
+          <div className="border-y border-surface-700 overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
+              <thead className="text-surface-500 border-b border-surface-700">
                 <tr>
                   <Th>Quando</Th><Th>Evento</Th><Th>userId</Th><Th>IP</Th><Th>User-Agent</Th><Th>Tenant</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-800">
+              <tbody className="divide-y divide-surface-700">
                 {rows.map(r => (
-                  <tr key={r.id} className="hover:bg-surface-800/30">
+                  <tr key={r.id} className="hover:bg-[var(--rowhover)]">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
                       <span
-                        className="color-chip border inline-block px-2 py-0.5 rounded text-xs font-medium"
+                        className="color-chip-soft border inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
                         style={{ ['--chip']: AUTH_EVENT_STYLE[r.event] ?? 'var(--color-status-muted)' } as React.CSSProperties}
                       >
                         {r.event}
@@ -441,20 +444,20 @@ function IntegrationEventsTab() {
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
+          <div className="border-y border-surface-700 overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
+              <thead className="text-surface-500 border-b border-surface-700">
                 <tr>
                   <Th>Quando</Th><Th>Severidade</Th><Th>Origem</Th><Th>Código</Th><Th>Mensagem</Th><Th>Resolvido</Th><Th>Tenant</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-800">
+              <tbody className="divide-y divide-surface-700">
                 {rows.map(r => (
-                  <tr key={r.id} className="hover:bg-surface-800/30">
+                  <tr key={r.id} className="hover:bg-[var(--rowhover)]">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
                       <span
-                        className="color-chip border inline-block px-2 py-0.5 rounded text-xs font-medium"
+                        className="color-chip-soft border inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
                         style={{ ['--chip']: INTEGRATION_SEVERITY_STYLE[r.severity] } as React.CSSProperties}
                       >
                         {r.severity}
@@ -550,20 +553,20 @@ function AutomationRunsTab() {
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
+          <div className="border-y border-surface-700 overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
+              <thead className="text-surface-500 border-b border-surface-700">
                 <tr>
                   <Th>Quando</Th><Th>Status</Th><Th>Trigger</Th><Th>automationId</Th><Th>Duração</Th><Th>Erro</Th><Th>Tenant</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-800">
+              <tbody className="divide-y divide-surface-700">
                 {rows.map(r => (
-                  <tr key={r.id} className="hover:bg-surface-800/30">
+                  <tr key={r.id} className="hover:bg-[var(--rowhover)]">
                     <Td>{new Date(r.startedAt).toLocaleString('pt-BR')}</Td>
                     <Td>
                       <span
-                        className="color-chip border inline-block px-2 py-0.5 rounded text-xs font-medium"
+                        className="color-chip-soft border inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
                         style={{ ['--chip']: AUTOMATION_STATUS_STYLE[r.status] } as React.CSSProperties}
                       >
                         {r.status}
@@ -623,24 +626,20 @@ function FilterBar<T extends { tenantId?: string; limit?: number }>({
   const hasFilters = Object.entries(draft).some(([k, v]) => k !== 'limit' && v !== undefined && v !== '')
 
   return (
-    <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
+    <div className="px-6 py-3 border-b border-r border-surface-700 flex flex-wrap items-end gap-3">
       <div className="flex items-center gap-2 text-xs text-surface-400">
         <Filter className="w-4 h-4" /> Filtros
       </div>
       {children(draft, set)}
       <div className="flex gap-2 ml-auto">
         {hasFilters && (
-          <button onClick={clear} className="px-3 py-1.5 rounded bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs flex items-center gap-1">
-            <X className="w-3 h-3" /> Limpar
-          </button>
+          <Button size="sm" variant="neutral" onClick={clear} leftIcon={<X className="w-3 h-3" />}>
+            Limpar
+          </Button>
         )}
-        <button
-          onClick={apply}
-          disabled={loading}
-          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs disabled:opacity-50"
-        >
+        <Button size="sm" variant="primary" onClick={apply} disabled={loading}>
           Aplicar
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -658,12 +657,13 @@ function FilterInput({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <input
+      <Input
+        size="sm"
         type={type}
         value={value}
         placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        className="px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 w-44"
+        className="w-44"
       />
     </label>
   )
@@ -680,15 +680,11 @@ function FilterSelect({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 min-w-[110px]"
-      >
+      <Select size="sm" value={value} onChange={e => onChange(e.target.value)} className="min-w-[110px]">
         {options.map(o => (
           <option key={o || 'all'} value={o}>{o || 'todos'}</option>
         ))}
-      </select>
+      </Select>
     </label>
   )
 }
@@ -697,20 +693,15 @@ function LoadMoreButton({ show, loading, onClick }: { show: boolean; loading: bo
   if (!show) return null
   return (
     <div className="mt-4 flex justify-center">
-      <button
-        onClick={onClick}
-        disabled={loading}
-        className="px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-100 text-sm disabled:opacity-50"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
+      <Button size="sm" variant="neutral" onClick={onClick} loading={loading}>
         Carregar mais
-      </button>
+      </Button>
     </div>
   )
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="text-left px-4 py-2.5 font-medium">{children}</th>
+  return <th className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">{children}</th>
 }
 
 function Td({ children, className, title }: { children: React.ReactNode; className?: string; title?: string }) {

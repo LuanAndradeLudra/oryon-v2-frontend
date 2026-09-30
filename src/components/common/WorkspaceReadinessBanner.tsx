@@ -15,6 +15,7 @@
 // render nothing — readiness is a nudge, not a hard gate.
 
 import { Link } from 'react-router-dom'
+import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { AlertTriangle, AlertCircle, CheckCircle, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
@@ -71,19 +72,24 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
       className={cn('rounded-none border-x-0 border-t-0', className)}
       action={
         <div className="flex items-center gap-2">
+          {/* Eixo 10: sem cor fixa — Banner é suave (12% da cor semântica) e
+              currentColor herda o --chip do próprio Banner; border-white/
+              bg-white/text-white ficavam sem contraste nenhum sobre um fundo
+              quase transparente no claro (mesma família do achado em
+              Departments.tsx). */}
           {primary.cta && (
-            <Link
+            <LinkComVolta
               to={primary.cta.href}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold border border-white/25 bg-white/15 hover:bg-white/25 text-white px-2.5 py-1 rounded-md transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-2.5 py-1 rounded-md transition-colors"
             >
               {primary.cta.label}
               <ChevronRight className="w-3 h-3" />
-            </Link>
+            </LinkComVolta>
           )}
           {remaining > 0 && (
             <Link
               to="/home"
-              className="text-[11px] text-white/80 hover:text-white underline underline-offset-2"
+              className="text-[11px] text-current opacity-80 hover:opacity-100 underline underline-offset-2"
               title="Ver lista completa de pendências na Home"
             >
               +{remaining} pendente{remaining > 1 ? 's' : ''}
@@ -126,7 +132,7 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
   return (
     <div
       className={cn(
-        'rounded-xl border bg-surface-900/40 p-5',
+        'rounded-lg border bg-surface-800 p-5',
         hasBlockers ? 'border-danger/30' : 'border-surface-700',
         className,
       )}
@@ -134,7 +140,7 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
       <div className="flex items-start gap-3">
         {hasBlockers ? (
           <span
-            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 color-chip"
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 color-chip-soft border"
             style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
           >
             <AlertTriangle className="w-5 h-5" />
@@ -157,7 +163,10 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
 function ChecklistItem({ check }: { check: WorkspaceCheck }) {
   const isBlocker = check.severity === 'blocker'
   return (
-    <li className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-surface-900/40 border border-surface-800">
+    // Eixo 10: surface-900 no claro é quase idêntico ao branco do card por
+    // trás (bg-surface-800) — a 40% de opacidade a linha some. --sf2 tem
+    // valor dedicado nos dois temas.
+    <li className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--sf2)] border border-surface-700">
       <span
         className="mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0 color-chip border"
         style={{ ['--chip']: isBlocker ? 'var(--color-danger)' : 'var(--color-warning)' } as React.CSSProperties}
@@ -169,18 +178,18 @@ function ChecklistItem({ check }: { check: WorkspaceCheck }) {
         <p className="text-[11px] text-surface-500 mt-0.5">{check.description}</p>
       </div>
       {check.cta && (
-        <Link
+        <LinkComVolta
           to={check.cta.href}
           className={cn(
             'flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border',
             isBlocker
               ? 'text-danger hover:text-white hover:bg-danger border-danger/40'
-              : 'text-surface-300 hover:text-white bg-surface-800 hover:bg-surface-700 border-surface-700',
+              : 'text-surface-300 hover:text-surface-100 bg-surface-800 hover:bg-surface-700 border-surface-700',
           )}
         >
           {check.cta.label}
           <ChevronRight className="w-3 h-3" />
-        </Link>
+        </LinkComVolta>
       )}
     </li>
   )

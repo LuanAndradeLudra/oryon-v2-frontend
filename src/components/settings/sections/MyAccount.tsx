@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Camera, Bell, UserCircle } from 'lucide-react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { Eye, EyeOff, Bell, UserCircle } from 'lucide-react'
+import { LinkDeConfiguracao as Link } from '../LinkDeConfiguracao'
+import { AnimatePresence } from 'framer-motion'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Switch } from '@/components/ui/Switch'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { TipCard } from '@/components/ui/TipCard'
 import type { User } from '@/types'
-import { api } from '@/services/api'
+import { api, UNAUTHORIZED_IS_BUSINESS } from '@/services/api'
 
 
 const ROLE_LABELS: Record<string, string> = {
@@ -28,7 +28,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export function MyAccount() {
   const { toast } = useToast()
-  const { user: authUser } = useAuth()
+  const { user: authUser, updateSessionUser } = useAuth()
   const { checklist, markDone } = useSetupChecklist(authUser?.id)
   const [user, setUser] = useState<User | null>(null)
   const [form, setForm] = useState({ firstName: '', lastName: '' })
@@ -54,6 +54,9 @@ export function MyAccount() {
     setSavingProfile(true)
     try {
       await api.patch('/settings/account', form)
+      // O nome do topo (TopBar) e dos menus vem da sessão: atualiza já.
+      updateSessionUser({ firstName: form.firstName, lastName: form.lastName })
+      setUser((u) => (u ? { ...u, firstName: form.firstName, lastName: form.lastName } : u))
       toast('Perfil atualizado com sucesso.', 'success')
       markDone('profile')
     } catch {
@@ -74,11 +77,14 @@ export function MyAccount() {
     }
     setSavingPw(true)
     try {
-      await api.patch('/settings/password', { currentPassword: pwForm.current, newPassword: pwForm.next })
+      // O 401 aqui é "senha atual errada", não sessão vencida: sem a marca,
+      // o interceptor tratava como sessão morta e mandava para o login.
+      await api.patch('/settings/password', { currentPassword: pwForm.current, newPassword: pwForm.next }, { ...UNAUTHORIZED_IS_BUSINESS })
       setPwForm({ current: '', next: '', confirm: '' })
       toast('Senha alterada com sucesso.', 'success')
-    } catch {
-      toast('Senha atual incorreta.', 'error')
+    } catch (e) {
+      const status = (e as { response?: { status?: number } })?.response?.status
+      toast(status === 401 ? 'Senha atual incorreta.' : 'Não foi possível alterar a senha. Tente de novo.', 'error')
     } finally {
       setSavingPw(false)
     }
@@ -114,7 +120,7 @@ export function MyAccount() {
           <TipCard
             icon={<UserCircle className="w-4 h-4 text-brand-400" />}
             title="Complete seu perfil"
-            description="Seu nome e cargo aparecem nas conversas, relatórios e para os clientes no atendimento."
+            description="Seu nome aparece nas conversas, relatórios e para os clientes no atendimento."
             className="mb-6"
           >
             <button
@@ -134,22 +140,18 @@ export function MyAccount() {
         description="Seu nome aparece nas conversas, relatórios e para os clientes."
       >
         <div className="flex items-center gap-5 mb-6">
-          <div className="relative group cursor-pointer">
-            <Avatar name={`${user.firstName} ${user.lastName}`} size="lg" kind="operator" />
-            <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Camera className="w-4 h-4 text-white" />
-            </div>
-          </div>
+          {/* Sem a câmera no hover: não há envio de foto (o clique não fazia nada). */}
+          <Avatar name={`${user.firstName} ${user.lastName}`} size="lg" kind="operator" />
           <div>
             <p className="font-semibold text-surface-100">{user.firstName} {user.lastName}</p>
             <p className="text-sm text-surface-400">{user.email}</p>
-            <span className="mt-1 inline-flex px-2 py-0.5 bg-brand-900/40 text-brand-300 rounded-full text-xs font-semibold">
+            <span className="mt-1 inline-flex px-1.5 py-px bg-accent-soft text-accent-dark border border-brand-500/25 rounded-xs text-[11px] font-semibold">
               {ROLE_LABELS[user.role] ?? user.role}
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <FormField label="Nome" required>
             <Input
               value={form.firstName}
@@ -179,7 +181,7 @@ export function MyAccount() {
         title="Alterar senha"
         description="Use no mínimo 8 caracteres. Você continuará conectado nesta sessão."
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {(['current', 'next', 'confirm'] as const).map((field) => {
             const labels = { current: 'Senha atual', next: 'Nova senha', confirm: 'Confirmar nova senha' }
             const placeholders = { current: '••••••••', next: 'Mín. 8 caracteres', confirm: 'Repita a nova senha' }
@@ -196,6 +198,7 @@ export function MyAccount() {
                   <button
                     type="button"
                     onClick={() => setShowPw((s) => ({ ...s, [field]: !s[field] }))}
+                    aria-label={showPw[field] ? 'Ocultar senha' : 'Mostrar senha'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-200"
                   >
                     {showPw[field] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -223,13 +226,13 @@ export function MyAccount() {
         title="Notificações"
         description="Eventos que geram alerta para você e som de notificação."
       >
-        <a
-          href="/settings/notifications"
+        <Link
+          to="/settings/notifications"
           className="inline-flex items-center gap-2 text-sm text-brand-300 hover:text-brand-200 transition-colors"
         >
           <Bell className="w-4 h-4" />
           Abrir preferências de notificação →
-        </a>
+        </Link>
       </SettingsSection>
     </div>
   )

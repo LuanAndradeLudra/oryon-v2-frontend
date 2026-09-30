@@ -53,7 +53,7 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
   it('renderiza uma linha por registro aberto, com funil e etapa', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO_ABERTO, VENDA_ABERTA] })
     renderPanel()
-    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('2 em aberto'))
+    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('· 2'))
     const suporte = screen.getByTestId('panel-pipeline-p')
     expect(suporte).toHaveTextContent('Suporte')
     expect(screen.getByTestId('panel-pipeline-stage-p')).toHaveTextContent('Em atendimento')
@@ -86,7 +86,7 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
   it('sem nenhum registro de venda, a faixa de dinheiro some (processo não vira zero)', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
     renderPanel()
-    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('1 em aberto'))
+    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('· 1'))
     expect(screen.queryByTestId('panel-pipelines-money')).not.toBeInTheDocument()
   })
 
@@ -104,7 +104,7 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
     api.list.mockResolvedValue({ data: [{ ...PROCESSO_ABERTO, id: 'd-fechado', status: 'won', closedAt: '2026-09-01T10:00:00Z' }] })
     renderPanel()
     expect(await screen.findByTestId('panel-pipelines')).toBeInTheDocument()
-    expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('0 em aberto')
+    expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('· 0')
   })
 
   it('o menu abre com a etapa atual destacada no topo, fora da lista de destinos', async () => {

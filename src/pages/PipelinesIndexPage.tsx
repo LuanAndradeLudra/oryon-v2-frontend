@@ -3,13 +3,14 @@
 // funil padrão do tenant. Mantém a entrada de nav estática (1 clique) sem
 // precisar pré-carregar pipelines no NavSidebar/BottomTabBar/MorePage.
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import { pipelinesApi } from '@/services/api'
 import { getDefaultPipeline } from '@/lib/utils'
 import type { Pipeline } from '@/types'
 
 export function PipelinesIndexPage() {
+  const location = useLocation()
   const [pipelines, setPipelines] = useState<Pipeline[] | null>(null)
   const [error, setError] = useState(false)
 
@@ -39,5 +40,6 @@ export function PipelinesIndexPage() {
   }
 
   const target = getDefaultPipeline(pipelines)
-  return <Navigate to={target ? `/pipelines/${target.id}` : '/contacts'} replace />
+  // Leva a query junto (?deal=, voltarPara…) — antes ela se perdia aqui.
+  return <Navigate to={`${target ? `/pipelines/${target.id}` : '/contacts'}${location.search}`} replace />
 }

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 import { Monitor } from 'lucide-react'
 import { SetupWizard } from '@/components/onboarding/SetupWizard'
@@ -24,9 +25,11 @@ export function SetupPage() {
   // ilegível — mesma decisão que já valia no overlay antigo.
   if (isMobile) {
     return (
-      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center px-6 text-center gap-4">
+      // Eixo 10: bg-surface-950 (não bg-black cru) — mesmo token do irmão
+      // MobileFeatureGate.tsx, que resolve certo nos dois temas.
+      <div className="h-screen w-screen bg-surface-950 flex flex-col items-center justify-center px-6 text-center gap-4">
         <div
-          className="w-16 h-16 rounded-2xl color-chip border flex items-center justify-center"
+          className="w-16 h-16 rounded-lg color-chip-soft border flex items-center justify-center"
           style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
         >
           <Monitor className="w-8 h-8" />
@@ -37,13 +40,7 @@ export function SetupPage() {
           integrações. Abra o Oryon no seu computador para configurar sua
           empresa. Depois disso, o app mobile fica liberado para uso operacional.
         </p>
-        <button
-          type="button"
-          onClick={() => navigator.clipboard.writeText(window.location.origin).catch(() => {})}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-900 border border-surface-700 text-sm text-surface-200 hover:bg-surface-800 transition-colors"
-        >
-          Copiar link do Oryon
-        </button>
+        <Button variant="neutral" className="mt-4" onClick={() => navigator.clipboard.writeText(window.location.origin).catch(() => {})}>Copiar link do Oryon</Button>
       </div>
     )
   }

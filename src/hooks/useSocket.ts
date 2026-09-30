@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { connectSocket, disconnectSocket, getSocket } from '@/services/socket'
-import { attemptRefresh, clearSessionAndRedirect } from '@/services/api'
+import { renovarSessao, clearSessionAndRedirect } from '@/services/api'
 import type {
   SocketAiPauseUpdated,
   SocketConversationStatusUpdated,
@@ -98,7 +98,7 @@ export function useSocket(handlers: SocketHandlers = {}) {
     socket.on('auth:expired', () => {
       console.warn('[socket] Token expired — refreshing session and reconnecting')
       socket.disconnect()
-      attemptRefresh().then((ok) => {
+      renovarSessao().then((ok) => {
         if (ok) socket.connect()
         else clearSessionAndRedirect()
       })

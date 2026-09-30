@@ -250,8 +250,8 @@ const PanelCode = memo(function PanelCode({ lang, content }: { lang: string; con
   const [copied, setCopied] = useState(false)
   const copy = () => navigator.clipboard.writeText(content).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
   return (
-    <div className="rounded-xl overflow-hidden border border-surface-700/50 bg-surface-950 my-3">
-      <div className="flex items-center justify-between px-4 py-2 bg-surface-900 border-b border-surface-800">
+    <div className="rounded-lg overflow-hidden border border-surface-700/50 bg-surface-950 my-3">
+      <div className="flex items-center justify-between px-4 py-2 bg-surface-900 border-b border-surface-700">
         <div className="flex items-center gap-2">
           <Code2 className="w-3.5 h-3.5 text-surface-500" />
           <span className="text-2xs font-semibold text-surface-400 font-mono">{lang}</span>
@@ -270,8 +270,8 @@ const PanelCode = memo(function PanelCode({ lang, content }: { lang: string; con
 
 const PanelPlan = memo(function PanelPlan({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-xl overflow-hidden border border-brand-500/15 bg-surface-900/40 my-3">
-      <div className="flex items-center gap-2 px-4 py-3 bg-surface-900/60 border-b border-surface-800/60">
+    <div className="rounded-lg overflow-hidden border border-brand-500/15 bg-surface-900/40 my-3">
+      <div className="flex items-center gap-2 px-4 py-3 bg-surface-900/60 border-b border-surface-700">
         <ListOrdered className="w-4 h-4 text-brand-400" />
         <span className="text-sm font-semibold text-surface-200">{title}</span>
         <span className="text-2xs text-surface-500 ml-1">· {items.length} etapas</span>
@@ -292,8 +292,8 @@ const PanelPlan = memo(function PanelPlan({ title, items }: { title: string; ite
 
 const PanelTable = memo(function PanelTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
-    <div className="rounded-xl overflow-hidden border border-surface-700/50 bg-surface-900/40 my-3">
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-900/60 border-b border-surface-800/60">
+    <div className="rounded-lg overflow-hidden border border-surface-700/50 bg-surface-900/40 my-3">
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-900/60 border-b border-surface-700">
         <Table2 className="w-3.5 h-3.5 text-surface-400" />
         <span className="text-2xs font-semibold text-surface-300">Tabela</span>
         <span className="text-3xs text-surface-500">· {rows.length} linhas</span>
@@ -311,7 +311,7 @@ const PanelTable = memo(function PanelTable({ headers, rows }: { headers: string
           </thead>
           <tbody>
             {rows.map((row, ri) => (
-              <tr key={ri} className={cn('border-b border-surface-800/40 last:border-0', ri % 2 === 1 && 'bg-surface-800/20')}>
+              <tr key={ri} className={cn('border-b border-surface-700 last:border-0', ri % 2 === 1 && 'bg-surface-800/20')}>
                 {row.map((cell, ci) => (
                   <td key={ci} className="px-4 py-3 text-surface-300 leading-snug">{stripInline(cell)}</td>
                 ))}
@@ -697,7 +697,7 @@ function FullscreenOverlay({ content, title, type, onClose }: { content: string;
       transition={{ duration: 0.18 }}
     >
       {/* Minimal top bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-surface-950/90 border-b border-surface-800/60 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 bg-surface-950/90 border-b border-surface-700 flex-shrink-0">
         <span className="text-xs font-medium text-surface-400 truncate">{title}</span>
         <button
           onClick={onClose}
@@ -971,12 +971,12 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
           animate={{ width: 792, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-          className="flex-shrink-0 flex flex-col bg-surface-950 border-l border-surface-800 overflow-hidden"
+          className="flex-shrink-0 flex flex-col bg-surface-950 border-l border-surface-700 overflow-hidden"
           style={{ minWidth: 0 }}
         >
           <div className="flex flex-col flex-1 min-h-0">
             {/* Header */}
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-surface-800/60 flex-shrink-0">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-surface-700 flex-shrink-0">
               {artifact.type !== 'document' && (
                 <div className="w-7 h-7 rounded-lg bg-surface-800/80 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
                   <TypeIcon type={artifact.type} className="w-3.5 h-3.5 text-brand-400" />
@@ -990,7 +990,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                     onClick={() => setSwitcherOpen((v) => !v)}
                     className="flex items-center gap-1.5 max-w-full group"
                   >
-                    <p className="text-sm font-semibold text-surface-100 truncate group-hover:text-brand-300 transition-colors">
+                    <p className="text-sm font-semibold text-surface-100 truncate group-hover:text-accent-dark transition-colors">
                       {artifact.title}
                     </p>
                     <ChevronDown className={cn(
@@ -1148,7 +1148,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                           'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors',
                           slidesValid
                             ? 'text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 border-surface-700/50 hover:border-surface-600'
-                            : 'text-surface-600 border-surface-800 cursor-not-allowed',
+                            : 'text-surface-600 border-surface-700 cursor-not-allowed',
                         )}
                         title={slidesValid ? 'Baixar como PPTX' : 'Aguardando geração completa…'}
                       >

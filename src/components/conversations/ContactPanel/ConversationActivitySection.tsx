@@ -60,7 +60,7 @@ function formatTime(iso: string): string {
 /** Discriminated union normalising the two backend shapes (agent and user)
  *  to a common timeline entry. Anything the row component reads must live
  *  on every branch; the `kind` discriminator picks the icon and accent. */
-type TimelineEntry =
+export type TimelineEntry =
   | {
       kind: 'agent'
       id: string
@@ -106,11 +106,21 @@ export interface ActivityInvalidateDetail {
  *  pick up anything new, but the operator never sees a 2-second blank. */
 const timelineCache = new Map<string, TimelineEntry[]>()
 
-export function ConversationActivitySection({ conversationId }: { conversationId: string }) {
+export function ConversationActivitySection({ conversationId, entries: injected }: {
+  conversationId: string
+  /**
+   * Eventos vindos de FORA, em vez de buscados. Quando presente, a seção não
+   * chama a API nem escuta socket/invalidações — renderiza exatamente o que
+   * recebeu. Existe para superfícies sem sessão que reaproveitam este painel
+   * de verdade (o Hero da landing): antes, a busca voltava 401 e o próprio
+   * componente estampava "Request failed with status code 401" na tela.
+   */
+  entries?: TimelineEntry[]
+}) {
   const [entries, setEntries] = useState<TimelineEntry[] | null>(
-    () => timelineCache.get(conversationId) ?? null,
+    () => injected ?? timelineCache.get(conversationId) ?? null,
   )
-  const [loading, setLoading] = useState(() => !timelineCache.has(conversationId))
+  const [loading, setLoading] = useState(() => (injected ? false : !timelineCache.has(conversationId)))
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -167,6 +177,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
   //   3. Either way, currentIdRef gates late responses so swapping fast
   //      between A → B → C never lets B clobber C.
   useEffect(() => {
+    if (injected) { setEntries(injected); setLoading(false); return }
     const cached = timelineCache.get(conversationId)
     if (cached) {
       setEntries(cached)
@@ -179,7 +190,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
     void loadActivity(conversationId).finally(() => {
       if (currentIdRef.current === conversationId) setLoading(false)
     })
-  }, [conversationId, loadActivity])
+  }, [conversationId, loadActivity, injected])
 
   // Two complementary realtime channels — both refetch with a small debounce
   // so a burst of mutations doesn't fire several /activity calls in a row.
@@ -193,6 +204,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
   //     conversation:ai-pause-updated) and pick up writes from other
   //     operators / agents in real time across tabs and devices.
   useEffect(() => {
+    if (injected) return
     let pending: ReturnType<typeof setTimeout> | null = null
     const refetchSoon = (eventConvId?: string) => {
       if (eventConvId && eventConvId !== currentIdRef.current) return
@@ -235,7 +247,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
       socket.off('message:new', handleMessageNew)
       socket.off('deal:changed', handleDealChanged)
     }
-  }, [loadActivity])
+  }, [loadActivity, injected])
 
   // Close filter dropdown on outside click
   useEffect(() => {
@@ -253,7 +265,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
 
   if (loading && entries === null) {
     return (
-      <div className="panel-divider px-4 py-3 border-t border-surface-800 flex items-center gap-2 text-xs text-surface-500">
+      <div className="panel-divider px-4 py-3 border-t border-surface-700 flex items-center gap-2 text-xs text-surface-500">
         <Loader2 className="w-3 h-3 animate-spin" />
         Carregando histórico…
       </div>
@@ -262,7 +274,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
 
   if (error) {
     return (
-      <div className="panel-divider px-4 py-3 border-t border-surface-800 text-xs text-status-error-400 flex items-center gap-2">
+      <div className="panel-divider px-4 py-3 border-t border-surface-700 text-xs text-status-error-400 flex items-center gap-2">
         <AlertCircle className="w-3 h-3" />
         {error}
       </div>
@@ -280,7 +292,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
 
   return (
     <>
-      <div className="panel-divider px-4 pt-4 pb-3 border-t border-surface-800">
+      <div className="panel-divider px-4 pt-4 pb-3 border-t border-surface-700">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-surface-200">Timeline</p>
@@ -288,7 +300,12 @@ export function ConversationActivitySection({ conversationId }: { conversationId
             <button
               type="button"
               onClick={() => setFilterOpen(v => !v)}
-              className="flex items-center gap-1 text-xs text-surface-400 hover:text-surface-200 bg-surface-800 hover:bg-surface-700 border border-surface-700 rounded-lg px-2.5 py-1 transition-colors"
+              /* PL-6-2 (eixo 10): era a TERCEIRA geometria de botão pequeno do
+                 mesmo painel de 308px — raio 10, `py-1` (25,7px de altura) e
+                 borda `--bd` — ao lado de "Ver contato"/"Novo negócio". Agora
+                 usa o recipe `neutral sm` do `Button`: h-7, px-2.5, raio 7,
+                 borda `--bd2`. */
+              className="flex items-center gap-1 h-7 text-xs text-surface-400 hover:text-surface-200 bg-surface-800 hover:bg-surface-700 border border-[var(--bd2)] rounded-sm px-2.5 transition-colors"
             >
               {FILTER_LABELS[filter]}
               <ChevronDown className={cn('w-3 h-3 transition-transform', filterOpen && 'rotate-180')} />
@@ -592,6 +609,17 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
     case 'message_sent':
       return { label: 'Enviou uma mensagem', Icon: Send,
                chip: 'var(--color-accent-cyan)' }
+    // As duas ferramentas abaixo caíam no `default` — ponto CINZA na linha do
+    // tempo. Justamente as duas que a IA usa para justificar e executar um
+    // avanço de negócio: a linha que confirma o clímax era a mais apagada da
+    // coluna. Achado numa revisão do palco do Hero em 24/09, mas a correção
+    // vale para a Timeline real do app, que é quem desenha isto.
+    case 'search_catalog':
+      return { label: 'Consultou o catálogo', Icon: FileText,
+               chip: 'var(--color-accent-cyan)' }
+    case 'manage_deal_pipeline':
+      return { label: 'Atualizou o negócio no funil', Icon: MoveRight,
+               chip: 'var(--color-accent-violet)' }
     case 'contact_updated':
       return { label: 'Atualizou contato', Icon: UserCog,
                chip: 'var(--color-accent-violet)' }

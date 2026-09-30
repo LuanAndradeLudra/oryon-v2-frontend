@@ -20,18 +20,21 @@ export interface DealProbability {
 }
 
 export function effectiveProbability(
-  deal: Pick<Deal, 'status' | 'probability'>,
+  deal: Pick<Deal, 'status' | 'probability' | 'probabilityOverride'>,
   stage: Pick<PipelineStage, 'isWon' | 'isLost' | 'probability'> | null | undefined,
 ): number | null {
   if (stage?.isWon || deal.status === 'won') return 100
   if (stage?.isLost || deal.status === 'lost') return 0
-  if (deal.probability != null && Number.isFinite(deal.probability)) return deal.probability
+  // A ficha (`GET /deals/:id`) traz o override em `probability`; o quadro, em
+  // `probabilityOverride` (R2 · SCRUM-1161).
+  const override = deal.probability ?? deal.probabilityOverride
+  if (override != null && Number.isFinite(override)) return override
   if (stage?.probability != null && Number.isFinite(stage.probability)) return stage.probability
   return null
 }
 
 export function dealProbability(
-  deal: Pick<Deal, 'status' | 'probability' | 'amountCents'>,
+  deal: Pick<Deal, 'status' | 'probability' | 'probabilityOverride' | 'amountCents'>,
   stage: Pick<PipelineStage, 'isWon' | 'isLost' | 'probability'> | null | undefined,
 ): DealProbability {
   const effective = effectiveProbability(deal, stage)

@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Check, X, Copy, Tag as TagIcon } from 'lucide-rea
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
@@ -16,14 +17,12 @@ import { isAdminTier } from '@/lib/roleHelpers'
 import type { Tag } from '@/types'
 
 
-// Simulated usage count
-const TAG_USAGE: Record<string, number> = {
-  tag1: 8, tag2: 5, tag3: 3, tag4: 7, tag5: 2, tag6: 4,
-}
 
 interface TagCardProps {
   tag: Tag
-  usageCount: number
+  /** Conversas com a tag, do GET /tags. Antes vinha de um mapa fixo
+   *  (tag1…tag6) e toda tag real mostrava "0 usos". */
+  usageCount?: number
   onEdit: (tag: Tag) => void
   onDelete: (tag: Tag) => void
   /** When false, the card stays visible but the edit/delete affordances
@@ -58,7 +57,7 @@ function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps)
     // separada por hairline (divide-y no container), hover sutil.
     <div
       onContextMenu={onContextMenu}
-      className="group flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-900/60 transition-colors"
+      className="group flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors"
     >
       <div className="flex items-center gap-3">
         <div
@@ -71,20 +70,26 @@ function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps)
         </div>
         <div>
           <p className="text-sm font-semibold text-surface-100">{tag.name}</p>
-          <p className="text-xs text-surface-500">{usageCount} uso{usageCount !== 1 ? 's' : ''}</p>
+          {usageCount !== undefined && (
+            <p className="text-xs text-surface-500">{usageCount === 0 ? 'Nenhuma conversa' : `${usageCount.toLocaleString('pt-BR')} conversa${usageCount !== 1 ? 's' : ''}`}</p>
+          )}
         </div>
       </div>
       {canManage && (
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(tag)}
-            className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
+            aria-label={`Editar tag ${tag.name}`}
+            title="Editar"
+            className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(tag)}
-            className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
+            aria-label={`Excluir tag ${tag.name}`}
+            title="Excluir"
+            className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -190,15 +195,15 @@ export function TagsSettings() {
 
       {/* Create form */}
       {creating && (
-        <div className="bg-surface-900 border border-brand-600/40 rounded-2xl p-5 mb-4">
+        <div className="border-y border-surface-700 py-5 mb-4">
           <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest mb-3">Nova tag</p>
           <div className="flex flex-col gap-3">
-            <input
+            <Input
               autoFocus
+              aria-label="Nome da tag"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Nome da tag"
-              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
             <ColorPicker value={newColor} onChange={setNewColor} />
@@ -219,19 +224,19 @@ export function TagsSettings() {
 
       {/* Edit form */}
       {editTarget && (
-        <div className="bg-surface-900 border border-brand-600/40 rounded-2xl p-5 mb-4">
+        <div className="border-y border-surface-700 py-5 mb-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest">Editar tag</p>
-            <button onClick={() => setEditTarget(null)} className="text-surface-500 hover:text-surface-300">
+            <Button variant="ghost" size="sm" iconOnly onClick={() => setEditTarget(null)} aria-label="Fechar">
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
           <div className="flex flex-col gap-3">
-            <input
+            <Input
               autoFocus
+              aria-label="Nome da tag"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
             />
             <ColorPicker value={editColor} onChange={setEditColor} />
             <div className="flex justify-end gap-2">
@@ -250,12 +255,12 @@ export function TagsSettings() {
       )}
 
       {/* Tags list */}
-      <div className="divide-y divide-surface-800/60">
+      <div className="divide-y divide-surface-700">
         {tags.map((tag) => (
           <TagCard
             key={tag.id}
             tag={tag}
-            usageCount={TAG_USAGE[tag.id] ?? 0}
+            usageCount={tag.usageCount}
             onEdit={handleEdit}
             onDelete={setDeleteTarget}
             canManage={canManageTags}
@@ -277,7 +282,8 @@ export function TagsSettings() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Excluir tag"
-        description={`Tem certeza que deseja excluir a tag "${deleteTarget?.name}"? Ela será removida de todas as conversas.`}
+        impact={{ label: `Tag ${deleteTarget?.name ?? ''}${deleteTarget?.usageCount ? ` — em ${deleteTarget.usageCount.toLocaleString('pt-BR')} conversa${deleteTarget.usageCount !== 1 ? 's' : ''}` : ''}`.trim(), tone: 'danger' }}
+        description="Ela será removida de todas as conversas. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
       />

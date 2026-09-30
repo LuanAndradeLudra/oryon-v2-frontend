@@ -210,7 +210,7 @@ export function SessionChat({
   return (
     <div className="relative flex flex-col h-full">
       {/* Chat header — session title */}
-      <div className="relative z-10 flex-shrink-0 border-b border-surface-800/50 px-6 py-3 flex items-center justify-center">
+      <div className="relative z-10 flex-shrink-0 border-b border-surface-700 px-6 py-3 flex items-center justify-center">
         <AnimatePresence mode="wait">
           <motion.h2
             key={sessionTitle}
@@ -274,7 +274,7 @@ export function SessionChat({
       </div>
 
       {/* Input */}
-      <div className="relative z-10 px-4 py-4 border-t border-surface-800/60">
+      <div className="relative z-10 px-4 py-4 border-t border-surface-700">
         <div className="max-w-4xl mx-auto">
           <GlassChatInput
             value={input}

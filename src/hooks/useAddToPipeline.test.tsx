@@ -163,8 +163,9 @@ describe('useAddToPipeline — conflito I1', () => {
     await irAoConflito()
     fireEvent.click(screen.getByTestId('conflict-close_and_new'))
     fireEvent.click(screen.getByTestId('conflict-confirm'))
-    // modal de motivo (catálogo do funil, só motivos de perda)
-    await waitFor(() => expect(screen.getByText('Cancelado — motivo')).toBeInTheDocument())
+    // modal de motivo (catálogo do funil, só motivos de perda) — heading, não
+    // texto solto: o botão de confirmar repete o mesmo "Mover para Cancelado".
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mover para Cancelado' })).toBeInTheDocument())
     fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'cancelado_pelo_cliente' } })
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     await waitFor(() => expect(api.setStatus).toHaveBeenCalledWith('d-old', { status: 'lost', closeReason: 'cancelado_pelo_cliente', closeNote: undefined }))
@@ -179,7 +180,7 @@ describe('useAddToPipeline — conflito I1', () => {
     await irAoConflito()
     fireEvent.click(screen.getByTestId('conflict-close_and_new'))
     fireEvent.click(screen.getByTestId('conflict-confirm'))
-    await waitFor(() => expect(screen.getByText('Cancelado — motivo')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mover para Cancelado' })).toBeInTheDocument())
     fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'cancelado_pelo_cliente' } })
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     // A mensagem do servidor ganha do texto genérico do hook — `getApiErrorMessage`

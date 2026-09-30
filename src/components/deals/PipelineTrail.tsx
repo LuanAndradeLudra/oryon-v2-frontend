@@ -189,7 +189,7 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
         )
       }
     >
-      <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-800">
+      <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-700">
         <p className="text-xs font-semibold text-surface-200">Etapa</p>
         <p className="mt-0.5 text-[11px] leading-snug text-surface-500">
           Coluna do quadro em que o registro nasce.
@@ -217,7 +217,7 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
   // ─── Degrau 4 ────────────────────────────────────────────────────────────
   if (compact) {
     return (
-      <nav aria-label="Etapa de entrada" className={cn('flex items-center gap-2.5 px-4 py-2.5 bg-surface-950 border-b border-surface-800', className)}>
+      <nav aria-label="Etapa de entrada" className={cn('flex items-center gap-2.5 px-4 py-2.5 bg-surface-950 border-b border-surface-700', className)}>
         <span className="text-3xs font-mono uppercase tracking-wider text-surface-500 shrink-0">Etapas</span>
         <span className="w-px h-3 bg-surface-800 shrink-0" aria-hidden />
         {listaCompleta}
@@ -243,7 +243,7 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
 
        Com os dois, o pior caso vira um rótulo cortado — e cortado tem quem o
        leia: é exatamente para isso que o balão carrega o nome inteiro. */
-    <nav aria-label="Etapa de entrada" className={cn('flex items-center min-w-0 overflow-hidden px-4 py-3 bg-surface-950 border-b border-surface-800', className)}>
+    <nav aria-label="Etapa de entrada" className={cn('flex items-center min-w-0 overflow-hidden px-4 py-3 bg-surface-950 border-b border-surface-700', className)}>
       {/* Diz de que eixo a faixa fala. O cabeçalho logo acima nomeia o funil,
           então aqui basta o substantivo. */}
       <span className="flex items-center gap-2.5 shrink-0 mr-2.5">

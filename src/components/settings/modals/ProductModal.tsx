@@ -221,32 +221,28 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
                 <button
                   type="button"
                   onClick={() => removeVariation(i)}
-                  className="p-2 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all flex-shrink-0"
+                  className="p-2 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-all flex-shrink-0"
                   aria-label="Remover variação"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
-            <button
-              type="button"
-              onClick={addVariation}
-              className="flex items-center gap-1 self-start px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" /> Adicionar variação
-            </button>
+            <Button type="button" size="sm" variant="neutral" className="self-start" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={addVariation}>
+              Adicionar variação
+            </Button>
             {variations.length === 0 && (
               <p className="text-xs text-danger">Adicione ao menos uma variação de preço.</p>
             )}
           </div>
         </FormField>
 
-        <div className="flex items-center justify-between py-2 border-t border-surface-800">
+        <div className="flex items-center justify-between py-2 border-t border-surface-700">
           <div>
             <p className="text-sm font-medium text-surface-200">Produto ativo</p>
             <p className="text-xs text-surface-500 mt-0.5">Produtos inativos não são oferecidos pela IA</p>
           </div>
-          <Switch checked={active} onChange={setActive} />
+          <Switch checked={active} onChange={setActive} aria-label="Produto ativo" />
         </div>
 
         <div className="flex gap-2 justify-end pt-1">

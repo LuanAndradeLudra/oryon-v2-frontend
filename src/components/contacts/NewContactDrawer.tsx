@@ -317,7 +317,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40"
+            className="fixed inset-0 bg-[var(--color-scrim-soft)]"
             style={{ zIndex }}
             onClick={onClose}
           />
@@ -332,15 +332,15 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-base font-semibold text-surface-50">Novo contato</h2>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Novo contato</h2>
                 <p className="text-xs text-surface-500 mt-0.5">Preencha as informações do novo lead</p>
               </div>
               <button
                 onClick={onClose}
                 aria-label="Fechar"
-                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -630,11 +630,11 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-end gap-2 px-[18px] py-3.5 border-t border-surface-700 flex-shrink-0">
               <button
                 onClick={onClose}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all disabled:opacity-50"
               >
                 Cancelar
               </button>

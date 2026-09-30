@@ -22,6 +22,7 @@ import {
 import { listAgentSkills, updateAgentSkill, detachSkill } from '@/services/agentSkillsApi'
 import type { AgentSkillWithTemplate } from '@/types/skills'
 import { Switch } from '@/components/ui/Switch'
+import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
@@ -33,6 +34,7 @@ import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
 import { cn } from '@/lib/utils'
+import { useTamanhoDeToque } from './pagina/useToque'
 
 interface Props {
   agentId: string
@@ -42,9 +44,11 @@ interface Props {
    * JWT tenantId is used by the backend.
    */
   tenantId?: string
+  /** Na página do agente o bloco já tem título e explicação: só as contagens. */
+  semCabecalho?: boolean
 }
 
-export function SkillsTab({ agentId, tenantId }: Props) {
+export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
   const { user } = useAuth()
   const staff = isOryonStaff(user?.role)
   const navigate = useNavigate()
@@ -190,8 +194,8 @@ export function SkillsTab({ agentId, tenantId }: Props) {
     <div>
       {/* Hero — explain + at-a-glance counters */}
       <header className="mb-5">
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <h2 className="text-sm font-semibold text-surface-100">Capacidades do agente</h2>
+        {!semCabecalho && <><div className="flex items-center gap-1.5 mb-1.5">
+          <h2 className="text-sm font-semibold text-surface-100">Skills do agente</h2>
           <Tooltip
             content="As configurações detalhadas (tokens, IDs, regras de cada integração) são gerenciadas pela equipe Oryon. Você pode pausar e retomar qualquer capacidade aqui."
             side="top"
@@ -202,8 +206,8 @@ export function SkillsTab({ agentId, tenantId }: Props) {
           </Tooltip>
         </div>
         <p className="text-xs text-surface-500 mb-3">
-          O que esse agente sabe fazer durante as conversas. Pause uma capacidade para suspender o uso temporariamente.
-        </p>
+          O que esse agente sabe fazer durante as conversas. Pause uma skill para suspender o uso temporariamente.
+        </p></>}
         <Stats active={stats.active} paused={stats.paused} mutates={stats.mutates} />
       </header>
 
@@ -254,8 +258,9 @@ export function SkillsTab({ agentId, tenantId }: Props) {
         onConfirm={handleRemove}
         title="Remover skill do agente?"
         description={removing
-          ? `"${removing.template_name}" será removida deste agente imediatamente. Essa ação não pode ser desfeita — o histórico do agent_skills é apagado (hard delete). Para reatribuir depois, use a tela de Atribuir skill.`
+          ? 'A skill sai deste agente na hora, com o histórico de uso dela. Isso não pode ser desfeito — para voltar a usar, atribua de novo.'
           : ''}
+        impact={removing ? { label: `Skill "${removing.template_name}"`, tone: 'danger' } : undefined}
         confirmLabel="Remover"
         danger
         loading={removingPending}
@@ -343,6 +348,7 @@ function SkillRow({
   onRemove: () => void
   onTest: () => void
 }) {
+  const tam = useTamanhoDeToque()
   const description = row.llm_description_override?.trim() || row.template_llm_description
   const disabled = toggling || !row.template_enabled
 
@@ -354,13 +360,13 @@ function SkillRow({
       animate={toggling ? { scale: [1, 1.005, 1] } : { scale: 1 }}
       transition={{ duration: 0.25 }}
       className={cn(
-        'group relative grid grid-cols-[44px_1fr_auto] items-start gap-4 p-4 rounded-xl border transition-colors',
+        'group relative grid grid-cols-[44px_1fr_auto] items-start gap-4 p-4 rounded-lg border transition-colors',
         // Left accent only when active. Border colour comes from the same
         // status-active token used in the header chip — visual continuity.
         'border-l-2',
         row.enabled
-          ? 'bg-surface-900 border-surface-700 border-l-status-active hover:border-surface-600'
-          : 'bg-surface-900/40 border-surface-800 border-l-transparent opacity-80',
+          ? 'bg-[var(--sf2)] border-surface-700 border-l-status-active'
+          : 'bg-[var(--sf2)] border-surface-700 border-l-transparent opacity-80',
       )}
     >
       <CategoryIcon
@@ -391,11 +397,11 @@ function SkillRow({
             quiet inline hint communicates the resting state without
             looking broken. */}
         {row.enabled ? (
-          <p className="text-[11px] text-surface-600 mt-2">
-            Capacidade disponível durante as conversas
+          <p className="text-2xs text-surface-500 mt-2">
+            Disponível durante as conversas
           </p>
         ) : (
-          <p className="text-[11px] text-surface-600 mt-2">
+          <p className="text-2xs text-surface-500 mt-2">
             Pausada — não será usada nas conversas
           </p>
         )}
@@ -405,37 +411,19 @@ function SkillRow({
         {staff && (
           <div className="flex items-center gap-1">
             <Tooltip content="Testar skill" side="top">
-              <button
-                type="button"
-                onClick={onTest}
-                disabled={toggling}
-                aria-label="Testar skill"
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-brand-300 hover:bg-surface-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+              <Button variant="ghost" size={tam} iconOnly onClick={onTest} disabled={toggling} aria-label="Testar skill">
                 <Beaker className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </Tooltip>
             <Tooltip content="Editar configuração" side="top">
-              <button
-                type="button"
-                onClick={onEdit}
-                disabled={toggling}
-                aria-label="Editar configuração"
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+              <Button variant="ghost" size={tam} iconOnly onClick={onEdit} disabled={toggling} aria-label="Editar configuração">
                 <Pencil className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </Tooltip>
-            <Tooltip content="Remover skill (hard delete)" side="top">
-              <button
-                type="button"
-                onClick={onRemove}
-                disabled={toggling}
-                aria-label="Remover skill (hard delete)"
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-danger hover:bg-danger/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+            <Tooltip content="Remover skill" side="top">
+              <Button variant="ghost" size={tam} iconOnly onClick={onRemove} disabled={toggling} aria-label="Remover skill">
                 <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </Tooltip>
           </div>
         )}
@@ -445,7 +433,7 @@ function SkillRow({
           disabled={disabled}
         />
         {toggling && (
-          <span className="text-[10px] text-surface-500 inline-flex items-center gap-1">
+          <span className="text-3xs text-surface-500 inline-flex items-center gap-1">
             <Loader2 className="w-2.5 h-2.5 animate-spin" /> salvando
           </span>
         )}

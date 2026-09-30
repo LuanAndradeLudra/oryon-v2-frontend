@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, Package } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { SectionHeader } from '@/components/settings/SectionHeader'
 import { Switch } from '@/components/ui/Switch'
 import { ProductModal } from '@/components/settings/modals/ProductModal'
 import { useToast } from '@/hooks/useToast'
@@ -104,37 +106,32 @@ export function ProductsManager() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-surface-100">Produtos</h3>
-          <p className="text-xs text-surface-500 mt-0.5">
-            Cadastre produtos/serviços e seus preços. É a fonte única que a IA usa para informar valores.
-          </p>
-        </div>
-        {canManage && (
-          <button
-            onClick={() => {
-              setEditProduct(null)
-              setModalOpen(true)
-            }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
+      <SectionHeader
+        title="Produtos"
+        description="Cadastre produtos/serviços e seus preços. É a fonte única que a IA usa para informar valores."
+        action={canManage ? (
+          <Button
+            size="sm"
+            variant="primary"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            onClick={() => { setEditProduct(null); setModalOpen(true) }}
           >
-            <Plus className="w-3.5 h-3.5" /> Novo produto
-          </button>
-        )}
-      </div>
+            Novo produto
+          </Button>
+        ) : undefined}
+      />
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="border-y border-surface-700">
         {products.length === 0 ? (
           <p className="text-sm text-surface-500 text-center py-10">Nenhum produto cadastrado.</p>
         ) : (
-          <ul className="divide-y divide-surface-800">
+          <ul className="divide-y divide-surface-700">
             {products.map((p) => {
               const isActive = pendingActive[p.id] ?? p.active
               return (
                 <li
                   key={p.id}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-800/30 transition-colors group"
+                  className="flex items-center gap-3 px-1 py-3 hover:bg-[var(--rowhover)] transition-colors group"
                 >
                   <Package className="w-4 h-4 text-surface-700 flex-shrink-0" />
 
@@ -142,12 +139,12 @@ export function ProductsManager() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-surface-100 truncate">{p.name}</span>
                       {p.category && (
-                        <span className="text-[10px] text-surface-400 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                        <span className="text-[10px] text-surface-400 bg-[var(--sf2)] border border-surface-700 px-1.5 py-0.5 rounded-xs whitespace-nowrap">
                           {p.category}
                         </span>
                       )}
                       {!isActive && (
-                        <span className="text-[10px] text-surface-500 border border-surface-700 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[10px] text-surface-500 border border-surface-700 px-1.5 py-0.5 rounded-xs">
                           Inativo
                         </span>
                       )}
@@ -164,6 +161,7 @@ export function ProductsManager() {
                     checked={isActive}
                     onChange={() => handleToggleActive(p)}
                     disabled={!canManage}
+                    aria-label={`${p.name} ativo`}
                   />
 
                   {canManage && (
@@ -173,13 +171,13 @@ export function ProductsManager() {
                           setEditProduct(p)
                           setModalOpen(true)
                         }}
-                        className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
+                        className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteProduct(p)}
-                        className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
+                        className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -207,7 +205,8 @@ export function ProductsManager() {
         onClose={() => setDeleteProduct(null)}
         onConfirm={handleDelete}
         title="Excluir produto"
-        description={`Tem certeza que deseja excluir "${deleteProduct?.name}"? Ele sairá do catálogo.`}
+        impact={{ label: `Produto ${deleteProduct?.name ?? ''}`.trim(), tone: 'danger' }}
+        description="O produto sairá do catálogo. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

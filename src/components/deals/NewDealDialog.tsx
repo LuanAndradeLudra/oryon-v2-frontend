@@ -363,7 +363,7 @@ export function NewDealDialog({
               <button
                 type="button"
                 onClick={() => { setPickedContact({ id: c.id, name: c.displayName }); setResults([]); setError('') }}
-                className="w-full min-h-11 px-3 py-2 text-left text-sm text-surface-100 hover:bg-surface-700 transition-colors"
+                className="w-full min-h-11 px-3 py-2 text-left text-sm text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
                 {c.displayName}
                 {(c.email || c.waId) && (
@@ -457,7 +457,7 @@ export function NewDealDialog({
   const FunilIcon = selectedPipeline ? pipelineKindOption(pipelineKindOf(selectedPipeline)).icon : Wallet
 
   const avatarDono = (
-    <span className="w-4 h-4 rounded-full bg-surface-700 text-surface-200 text-[8px] font-semibold grid place-items-center shrink-0" aria-hidden>
+    <span className={`w-4 h-4 rounded-[30%] text-[8px] font-semibold grid place-items-center shrink-0 ${donoUser ? 'avatar-operador' : 'bg-avatar-surface text-avatar-initials'}`} aria-hidden>
       {ownerUserId === null ? '–' : (donoUser ? iniciais(nomeDe(donoUser)) : '?')}
     </span>
   )
@@ -466,7 +466,7 @@ export function NewDealDialog({
     <div className="flex flex-col gap-3">
       {!semFunis && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Funil</span>
+          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Funil</span>
           <AttributeChip
             label="Funil"
             value={selectedPipeline?.name}
@@ -492,7 +492,7 @@ export function NewDealDialog({
       )}
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Dono</span>
+        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Dono</span>
         <AttributeChip
           label="Dono"
           value={donoValor}
@@ -516,7 +516,7 @@ export function NewDealDialog({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Previsão</span>
+        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Previsão</span>
         <AttributeChip
           label="Previsão"
           value={expectedCloseAt ? dataCurta(expectedCloseAt) : null}
@@ -550,7 +550,7 @@ export function NewDealDialog({
                 <button
                   type="button"
                   onClick={fechar}
-                  className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer"
+                  className="text-xs font-semibold text-accent-dark hover:opacity-80 transition-colors cursor-pointer"
                 >
                   Pronto
                 </button>
@@ -573,7 +573,7 @@ export function NewDealDialog({
         initial={semMovimento ? false : { height: 0, opacity: 0 }}
         animate={{ height: 'auto', opacity: 1 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col gap-3 rounded-xl border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))] overflow-hidden">
+        className="flex flex-col gap-3 rounded-lg border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))] overflow-hidden">
         {/* O número só existe quando há o que mostrar: itens lançados ou um
             valor digitado. Bloco recém-aberto e vazio mostra os botões de
             adicionar, e mais nada — era o campo em branco no topo que fazia o
@@ -581,14 +581,14 @@ export function NewDealDialog({
         {(hasItems || mostraCampoValor) && (
           <div className="flex flex-col gap-1.5">
             <div className="flex items-end justify-between gap-3">
-              <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">
+              <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
                 Valor do {noun}
               </span>
               <span className="text-[11px] leading-snug text-right text-surface-500">
                 {hasItems && !amountTouched
-                  ? <>= soma de <b className="font-semibold text-brand-400">{items.length} {items.length === 1 ? 'item' : 'itens'}</b></>
+                  ? <>= soma de <b className="font-semibold text-accent-dark">{items.length} {items.length === 1 ? 'item' : 'itens'}</b></>
                   : hasItems && diverges
-                    ? <>digitado<br /><b className="font-semibold text-brand-400">difere dos itens</b></>
+                    ? <>digitado<br /><b className="font-semibold text-accent-dark">difere dos itens</b></>
                     : 'digitado'}
               </span>
             </div>
@@ -616,7 +616,7 @@ export function NewDealDialog({
         <div className="flex flex-col gap-1.5">
           {/* Sem `FormField` em volta: o contexto dele injeta o mesmo id em todos
               os campos descendentes e quebra os rótulos das linhas (A1/153). */}
-          <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Itens</span>
+          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Itens</span>
           <DealItemsEditor
             value={items}
             onChange={(next) => { setItems(next); setError('') }}
@@ -630,7 +630,7 @@ export function NewDealDialog({
           <button
             type="button"
             onClick={() => setValorManual(true)}
-            className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 rounded"
+            className="self-start text-xs font-semibold text-accent-dark hover:opacity-80 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 rounded"
           >
             {hasItems ? 'Informar outro valor' : 'Informar valor sem itens'}
           </button>
@@ -645,7 +645,7 @@ export function NewDealDialog({
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
               onClick={() => { setAmountCents(itemsTotal); setAmountTouched(true) }}
-              className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 min-h-11 sm:min-h-0 cursor-pointer"
+              className="self-start text-xs font-semibold text-accent-dark hover:opacity-80 min-h-11 sm:min-h-0 cursor-pointer"
             >
               Usar a soma dos itens ({formatBRL(itemsTotal)})
             </motion.button>
@@ -656,7 +656,7 @@ export function NewDealDialog({
       <button
         type="button"
         onClick={() => setValorAberto(true)}
-        className="flex items-center gap-2 rounded-xl border border-dashed border-surface-700 px-3.5 py-4 text-sm text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+        className="flex items-center gap-2 rounded-lg border border-dashed border-[var(--bd2)] px-3.5 py-4 text-sm text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
       >
         <Plus className="w-4 h-4" aria-hidden />
         Adicionar valor ou itens
@@ -665,16 +665,16 @@ export function NewDealDialog({
   )
 
   const footer = (
-    <div className="flex flex-col gap-2 border-t border-surface-800 bg-surface-950 px-4 py-3.5">
+    <div className="flex flex-col gap-2 border-t border-surface-700 bg-surface-950 px-4 py-3.5">
       {error && error !== 'Escolha o contato do negócio.' && (
         <p role="alert" className="text-xs text-danger">{error}</p>
       )}
       <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-between')}>
         {!isMobile && (
           <span className="text-[11px] text-surface-500">
-            <kbd className="rounded border border-surface-700 px-1 py-0.5 font-mono text-[10px]">⌘</kbd>
+            <kbd className="rounded-2xs border border-surface-700 px-1 py-0.5 font-mono text-[10px]">⌘</kbd>
             {' '}
-            <kbd className="rounded border border-surface-700 px-1 py-0.5 font-mono text-[10px]">↵</kbd>
+            <kbd className="rounded-2xs border border-surface-700 px-1 py-0.5 font-mono text-[10px]">↵</kbd>
             {' '}{diverges ? 'não decide' : 'cria'}
           </span>
         )}
@@ -739,7 +739,7 @@ export function NewDealDialog({
           {identidade}
           {blocoValor}
         </div>
-        <div className="flex flex-col gap-3 p-4 bg-surface-950 border-t sm:border-t-0 sm:border-l border-surface-800">
+        <div className="flex flex-col gap-3 p-4 bg-surface-950 border-t sm:border-t-0 sm:border-l border-surface-700">
           {propriedades}
         </div>
       </div>
@@ -760,7 +760,7 @@ export function NewDealDialog({
         <HeadIcon className="w-4 h-4 text-surface-300" aria-hidden />
       </span>
       <span className="flex flex-col min-w-0">
-        <span className="text-base font-display font-semibold text-surface-50 leading-tight">{headingText}</span>
+        <span className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50 leading-tight">{headingText}</span>
         {contextoLinha && (
           <span className="text-xs text-surface-400 truncate leading-tight mt-0.5">{contextoLinha}</span>
         )}
@@ -780,7 +780,7 @@ export function NewDealDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={heading} className="max-w-2xl" bodyClassName="p-0">
+    <Modal open={open} onClose={onClose} title={heading} aria-label={headingText} className="max-w-2xl" bodyClassName="p-0">
       {body}
     </Modal>
   )

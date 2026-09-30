@@ -174,7 +174,7 @@ export function AddSharedContactModal({
           <Banner variant="warning">
             <p className="text-sm">Este contato já está no CRM.</p>
           </Banner>
-          <div className="flex items-center gap-2.5 rounded-lg bg-surface-800/60 px-3 py-2.5">
+          <div className="flex items-center gap-2.5 rounded-lg bg-[var(--sf2)] px-3 py-2.5">
             <div className="w-9 h-9 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0">
               <User className="w-4.5 h-4.5 text-surface-300" />
             </div>

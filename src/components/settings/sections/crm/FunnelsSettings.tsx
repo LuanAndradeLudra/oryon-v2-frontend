@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Archive, ArchiveRestore, Star, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
+import { FormField } from '@/components/ui/FormField'
+import { SectionHeader } from '@/components/settings/SectionHeader'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { CreatePipelineModal, type CreatePipelineData } from '@/components/deals/CreatePipelineModal'
 import { PipelineStagesManager } from './PipelineStagesManager'
@@ -12,7 +16,7 @@ import { useToast } from '@/hooks/useToast'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { getApiErrorMessage, getDefaultPipeline, cn } from '@/lib/utils'
+import { getApiErrorMessage, getDefaultPipeline } from '@/lib/utils'
 import { pipelinesApi } from '@/services/api'
 import { pipelineKindOption, pipelineKindOf } from '@/lib/pipelineKinds'
 
@@ -159,30 +163,28 @@ export function FunnelsSettings() {
 
   return (
     <>
-      <SettingsSection
+      <SectionHeader
         title="Funis"
         description="Cada funil tem etapas, motivos de fechamento e acesso por setor próprios."
+      />
+
+      <SettingsSection
+        title="Funil"
+        description="Escolha o funil que será configurado abaixo."
       >
         <div className="flex items-end gap-2 flex-wrap">
-          <div>
-            <label className="text-xs font-semibold text-surface-400 mb-1.5 block">Funil</label>
-            <div className="relative w-full sm:w-72">
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-2 pl-3 pr-8 text-sm text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
-              >
-                {pipelines.length === 0 && <option value="">Nenhum funil ainda</option>}
-                {pipelines.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}{p.isArchived ? ' (arquivado)' : ''}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <FormField label="Funil" className="w-full sm:w-72">
+            <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+              {pipelines.length === 0 && <option value="">Nenhum funil ainda</option>}
+              {pipelines.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}{p.isArchived ? ' (arquivado)' : ''}</option>
+              ))}
+            </Select>
+          </FormField>
 
           {selected && (
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full mb-0.5 bg-surface-800 border border-surface-700 text-surface-300"
+              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-xs mb-0.5 bg-[var(--sf2)] border border-surface-700 text-surface-300"
               title={kindOption.description}
             >
               <kindOption.icon className="w-3 h-3" /> {kindOption.label}
@@ -190,7 +192,7 @@ export function FunnelsSettings() {
           )}
           {selected?.isArchived && (
             <span
-              className="text-[10px] font-semibold px-2 py-1 rounded-full mb-0.5 color-chip border"
+              className="text-[10px] font-semibold px-2 py-1 rounded-xs mb-0.5 color-chip border"
               style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
             >
               Arquivado
@@ -200,12 +202,9 @@ export function FunnelsSettings() {
           {canManage && (
             <div className="flex items-center gap-2 flex-wrap">
               {selected && (
-                <button
-                  onClick={() => setEditOpen(true)}
-                  className={cn('flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-all')}
-                >
-                  <Pencil className="w-3.5 h-3.5" /> Renomear / cor
-                </button>
+                <Button size="sm" variant="neutral" leftIcon={<Pencil className="w-3.5 h-3.5" />} onClick={() => setEditOpen(true)}>
+                  Renomear / cor
+                </Button>
               )}
               {/* Achado do Auditor: o pencil "Renomear / cor" fica visualmente
                   perto de "Novo funil" e tem cara de "editar tudo" — quem
@@ -216,45 +215,35 @@ export function FunnelsSettings() {
               {selected && (
                 <a
                   href="#etapas"
-                  className="flex items-center gap-1 px-2 py-2 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors"
+                  className="flex items-center gap-1 px-2 py-2 text-xs font-medium text-accent-dark hover:opacity-80 transition-colors"
                 >
                   Editar etapas <ArrowRight className="w-3.5 h-3.5" />
                 </a>
               )}
               {selected && !selected.isDefault && (
-                <button
-                  onClick={handleSetDefault}
-                  disabled={settingDefault}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 disabled:opacity-50 transition-all"
-                >
-                  <Star className="w-3.5 h-3.5" />
+                <Button size="sm" variant="neutral" leftIcon={<Star className="w-3.5 h-3.5" />} onClick={handleSetDefault} disabled={settingDefault}>
                   {settingDefault ? 'Salvando...' : 'Tornar padrão'}
-                </button>
+                </Button>
               )}
               {selected && (
-                <button
+                <Button
+                  size="sm"
+                  variant="neutral"
+                  leftIcon={selected.isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
                   onClick={handleToggleArchive}
                   disabled={archiving}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 disabled:opacity-50 transition-all"
                 >
-                  {selected.isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
                   {archiving ? 'Salvando...' : selected.isArchived ? 'Desarquivar' : 'Arquivar'}
-                </button>
+                </Button>
               )}
               {selected && !selected.isDefault && (
-                <button
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-red-400 hover:bg-red-900/20 transition-all"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Excluir
-                </button>
+                <Button size="sm" variant="neutral" className="text-danger" leftIcon={<Trash2 className="w-3.5 h-3.5" />} onClick={() => setDeleteConfirmOpen(true)}>
+                  Excluir
+                </Button>
               )}
-              <button
-                onClick={() => setCreateOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" /> Novo funil
-              </button>
+              <Button size="sm" variant="primary" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setCreateOpen(true)}>
+                Novo funil
+              </Button>
             </div>
           )}
         </div>
@@ -289,7 +278,8 @@ export function FunnelsSettings() {
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
         title="Excluir funil"
-        description={`Tem certeza que deseja excluir "${selected?.name}"? Só é possível excluir funis sem negócios.`}
+        impact={{ label: `Funil ${selected?.name ?? ''}`.trim(), tone: 'danger' }}
+        description="Só é possível excluir funis sem negócios. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

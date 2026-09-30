@@ -8,44 +8,59 @@ import { ConversationList } from '@/components/conversations/ConversationList/Co
 import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
+import { ConversationsTopBarSlot } from '@/components/layout/ConversationsTopBarSlot'
+import { NewConversationModal } from '@/components/conversations/NewConversationModal'
 import { Fab } from '@/components/common/Fab'
+import { donoDoEvento, estadoDaIA, type EventoDeAtribuicao } from '@/lib/conversationSignals'
+import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
+import { chaveDosFiltros, ehFila, escreverFiltros, lerFiltros } from '@/lib/filtrosDaInbox'
+import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
+import { pedirResolver } from '@/lib/conversationActions'
 import { useConversations } from '@/hooks/useConversations'
+import { useConversationFromUrl } from '@/hooks/useConversationFromUrl'
 import { useSocket } from '@/hooks/useSocket'
-import { joinConversation, leaveConversation } from '@/services/socket'
-import { conversationsApi } from '@/services/api'
+import { connectSocket, joinConversation, leaveConversation } from '@/services/socket'
+import { contactsApi, conversationsApi } from '@/services/api'
 import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
-import { useContacts } from '@/hooks/useContacts'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useListScrollMemory } from '@/hooks/useListScrollMemory'
 import { useAuth } from '@/contexts/AuthContext'
+import { getApiErrorMessage } from '@/lib/utils'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { resolveRange } from '@/lib/dateRange'
 import type {
   Conversation, ConversationFilters,
-  SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, SocketUnreadUpdate,
+  SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew,
   Tag, User, DealOutcomeInput } from '@/types'
 
-const CURRENT_USER = { firstName: 'Admin', lastName: 'Oryon', avatarUrl: undefined }
 
 export function ConversationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
   const [infoOpen, setInfoOpen]     = useState(false)
-  // Default to "today" (BRT) on every mount — the operator opens the page
-  // and sees only the conversations with activity from 00:00 São Paulo today.
-  // The chip stays clickable for other presets and persists only within the
-  // session; on reload we always reset to "today" by design.
-  const [filters, setFilters]       = useState<ConversationFilters>(() => {
-    const today = resolveRange('today')
-    return { status: 'all', startDate: today.startDate, endDate: today.endDate }
-  })
-  const [totalUnread, setTotalUnread] = useState(0)
+  const [newConversationOpen, setNewConversationOpen] = useState(false)
+  const openNewConversation = useCallback(() => setNewConversationOpen(true), [])
+  // PL-1-1 (P12/P14): a caixa de entrada abria com o período "Hoje" ligado por
+  // padrão — um filtro que o operador não escolheu e que esconde tudo que
+  // chegou ontem. Num tenant sem mensagem hoje, a inbox nasce vazia. Intercom,
+  // Front e Zendesk abrem a caixa com as conversas em aberto, sem recorte de
+  // data; o chip de período continua disponível para quem quiser recortar.
+  // 28/09 — aba e filtros vivem na URL (regra do PO): recarregar ou voltar
+  // devolve a mesma lista. A chave só muda com os filtros, não com o `?id=`
+  // da conversa aberta — abrir uma conversa não relê a lista.
+  const chaveFiltros = chaveDosFiltros(searchParams)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const filters = useMemo(() => lerFiltros(searchParams), [chaveFiltros])
+  const setFilters = useCallback((up: ConversationFilters | ((f: ConversationFilters) => ConversationFilters)) => {
+    setSearchParams((prev) => {
+      const atual = lerFiltros(prev)
+      return escreverFiltros(prev, typeof up === 'function' ? up(atual) : up)
+    }, { replace: true })
+  }, [setSearchParams])
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
-  const { contacts: allContacts } = useContacts({}, { withDealsSummary: false })
   const { toast } = useToast()
   const isMobile = useIsMobile()
   const { user } = useAuth()
@@ -67,11 +82,24 @@ export function ConversationsPage() {
   const openedViaPushRef = useRef(false)
 
   const {
-    conversations, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
-    handleNewMessage, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
+    conversations, filaIncompleta, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
+    error: erroDaLista, refetch: recarregarLista,
+    handleNewMessage, handleAssigned, handleResolved, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
   } = useConversations(filters)
+  const linhasDaIA = useLinhasDaIA()
+
+  // Ações que os atalhos globais chamam: a referência é trocada a cada render
+  // (o ouvinte do teclado é registrado uma vez e leria versões velhas).
+  const assumirRef = useRef<((conv: Conversation) => void) | null>(null)
+  const activeIdParaPular = activeConversation?.id
+  useEffect(() => {
+    if (pularAposResolverRef.current && pularAposResolverRef.current.id !== activeIdParaPular) pularAposResolverRef.current = null
+  }, [activeIdParaPular])
+  // Tecla E: resolve PELO MESMO fluxo do botão (pede o desfecho) e, quando a
+  // resolução acontecer, vai para a conversa que era a próxima ao apertar.
+  const pularAposResolverRef = useRef<{ id: string; proximaId: string | null } | null>(null)
 
   // Sticky active conversation — keep the OPEN conversation in the list even
   // after its status stops matching the active tab (e.g. moved to "Pendente"
@@ -92,9 +120,12 @@ export function ConversationsPage() {
     // off-filter). Use the freshest copy from the list if still loaded, else
     // the activeConversation state itself — so it persists even if the list
     // was refetched without it.
+    // 28/09: vale para QUALQUER filtro, não só status — em "Fila", assumir
+    // (R) tirava a conversa aberta da lista e o J/K perdia a posição. Só não
+    // entra a conversa que cabe no filtro e apenas não foi carregada ainda.
     if (active && !list.some((c) => c.id === active.id)) {
       const row = conversations.find((c) => c.id === active.id) ?? active
-      if (!matches(row)) {
+      if (!matches(row) || !conversationMatchesFilters(row, filters, (user ?? null) as User | null)) {
         offFilterId = active.id
         const origIdx = conversations.findIndex((c) => c.id === active.id)
         if (origIdx >= 0) {
@@ -105,16 +136,18 @@ export function ConversationsPage() {
         }
       }
     }
+    // Fila (decisão do PO, 28/09): quem espera há mais tempo primeiro. A espera
+    // conta da última mensagem (o "esperando desde" exato é o P1 do SCRUM-1161).
+    if (ehFila(filters)) {
+      list.sort((a, b) => new Date(a.lastMessageAt).getTime() - new Date(b.lastMessageAt).getTime())
+    }
     return { visibleConversations: list, offFilterId }
-  }, [conversations, filters.status, activeConversation])
+  }, [conversations, filters, activeConversation, user])
 
   // ── Socket.IO real-time ────────────────────────────────────────────────────
   useSocket({
     onMessageNew: useCallback((payload: SocketMessageNew) => {
       handleNewMessage(payload)
-      if (payload.conversationId !== activeConversation?.id) {
-        setTotalUnread((p) => p + 1)
-      }
       // Phase 32 — outbound human messages now carry aiPausedUntil +
       // assignedUser via the same event. Mirror onto activeConversation so
       // the header pill flips state without a refetch.
@@ -141,30 +174,27 @@ export function ConversationsPage() {
       }
     }, [handleNewMessage, activeConversation?.id]),
 
-    onUnreadUpdate: useCallback((payload: SocketUnreadUpdate) => {
-      setTotalUnread(payload.total)
-    }, []),
 
     onConversationResolved: useCallback((payload: { conversationId: string }) => {
+      handleResolved(payload)
       if (activeConversation?.id === payload.conversationId) {
         setActiveConversation((prev) => prev ? { ...prev, status: 'resolved' } : null)
       }
-    }, [activeConversation?.id]),
+    }, [handleResolved, activeConversation?.id]),
 
-    onConversationAssigned: useCallback((payload: { conversationId: string; assignedTo: User }) => {
-      if (activeConversation?.id === payload.conversationId) {
+    onConversationAssigned: useCallback((payload: EventoDeAtribuicao) => {
+      handleAssigned(payload)
+      const dono = donoDoEvento(payload)
+      if (dono !== undefined && activeConversation?.id === payload.conversationId) {
         setActiveConversation((prev) =>
-          prev ? { ...prev, assignedUser: payload.assignedTo } : null
+          prev ? { ...prev, assignedUser: dono ?? undefined } : null
         )
       }
-    }, [activeConversation?.id]),
+    }, [handleAssigned, activeConversation?.id]),
 
     // Sidebar updates (conversation:updated replaces tenant-wide message:new for list)
     onConversationUpdated: useCallback((payload: SocketMessageNew) => {
       handleNewMessage(payload)
-      if (payload.conversationId !== activeConversation?.id) {
-        setTotalUnread((p) => p + 1)
-      }
       // Phase 32 — same as onMessageNew: keep activeConversation in lockstep
       // with the latest pause + assignment so the header pill is correct.
       if (activeConversation?.id === payload.conversationId) {
@@ -221,6 +251,25 @@ export function ConversationsPage() {
     setActiveConversation((prev) => prev?.id === id ? { ...prev, ...patch } : prev)
   }, [])
 
+  // O backend avisa `contact:updated` quando a situação ou as etiquetas do
+  // contato mudam (inclusive pelo Agente IA). Sem ouvir o evento, a ficha da
+  // conversa aberta seguia com a situação antiga até recarregar a página.
+  const activeContactId = activeConversation?.contact?.id
+  useEffect(() => {
+    if (!activeContactId) return
+    const socket = connectSocket()
+    const onContactUpdated = (p: { contactId?: string }) => {
+      if (p?.contactId !== activeContactId) return
+      contactsApi.get(activeContactId).then((res) => {
+        setActiveConversation((prev) => prev?.contact?.id === activeContactId
+          ? { ...prev, contact: { ...prev.contact, ...res.data } }
+          : prev)
+      }).catch(() => { /* a ficha segue com o último dado conhecido */ })
+    }
+    socket.on('contact:updated', onContactUpdated)
+    return () => { socket.off('contact:updated', onContactUpdated) }
+  }, [activeContactId])
+
   // ── Actions ────────────────────────────────────────────────────────────────
 
   // Join/leave WebSocket rooms when active conversation changes
@@ -242,14 +291,19 @@ export function ConversationsPage() {
     // sobrepoe o chat; deve aparecer so quando o usuario aciona via menu.
     if (!isMobile) setInfoOpen(true)
     markAsRead(conv.id)
-    if (conv.unreadCount > 0) setTotalUnread((p) => Math.max(0, p - conv.unreadCount))
     // No mobile, lista e chat são telas alternadas — abrir uma conversa
     // precisa empilhar uma entrada de histórico própria (replace: false),
     // senão o gesto/botão de voltar do navegador pula direto pra tela
     // anterior à lista (ex. Home) em vez de fechar o chat primeiro. No
     // desktop lista+chat convivem na mesma tela, então mantém replace
     // (comportamento inalterado).
-    setSearchParams({ id: conv.id }, { replace: !isMobile })
+    // 28/09: troca só o `id` — antes `setSearchParams({ id })` apagava os
+    // outros parâmetros (filtros, e o `?deal=` da ficha de negócio aberta).
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('id', conv.id)
+      return next
+    }, { replace: !isMobile })
     openedViaPushRef.current = isMobile
   }
 
@@ -272,52 +326,28 @@ export function ConversationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations])
 
-  // Restore active conversation from URL on load. Two cases:
-  //   1. Conversation is already in the loaded list → just select it.
-  //   2. Conversation is NOT in the list (most commonly: an external link
-  //      from the CRM "Abrir conversa" button points at a conversation
-  //      whose lastMessageAt falls outside the active period filter, so
-  //      it was excluded from /conversations). Fetch it directly and
-  //      clear the period filter so the operator sees it in the list too.
-  const restoredRef = useRef(false)
-  useEffect(() => {
-    if (restoredRef.current) return
-    const urlId = searchParams.get('id')
-    if (!urlId) return
+  // Conversa aberta ↔ `?id=` (hook): link externo, reload e navegação interna
+  // (ex.: "Nova conversa" → `/conversations?id=<id>` estando nesta página). Se a
+  // conversa não está na lista (fora do filtro de período, ou recém-criada),
+  // busca por id e limpa o filtro de período para ela aparecer na lista também.
+  useConversationFromUrl({
+    urlId: searchParams.get('id'),
+    conversations,
+    loading,
+    activeId: activeConversation?.id ?? null,
+    onFoundInList: (match) => {
+      setActiveConversation(match)
+      if (!isMobile) setInfoOpen(true)
+    },
+    onFetched: (conv) => {
+      setActiveConversation(conv)
+      if (!isMobile) setInfoOpen(true)
+      setFilters((f) => ({ ...f, startDate: undefined, endDate: undefined }))
+    },
+    fetchById: (id) => conversationsApi.get(id).then((r) => r.data),
+  })
 
-    // Case 1: already in the list
-    if (conversations.length > 0) {
-      const match = conversations.find((c) => c.id === urlId)
-      if (match) {
-        setActiveConversation(match)
-        if (!isMobile) setInfoOpen(true)
-        restoredRef.current = true
-        return
-      }
-    }
-
-    // Case 2: wait for the initial fetch to finish before deciding it's
-    // missing. Without this, we'd fire the fallback fetch while the list
-    // is still loading and end up duplicating work.
-    if (loading) return
-
-    // Not in the list — pull it directly. Clear the period filter so the
-    // newly-loaded conversation also surfaces in the list (otherwise the
-    // operator opens a chat but the left column reads "Nenhuma conversa").
-    restoredRef.current = true
-    conversationsApi.get(urlId)
-      .then((r) => {
-        setActiveConversation(r.data)
-        if (!isMobile) setInfoOpen(true)
-        setFilters((f) => ({ ...f, startDate: undefined, endDate: undefined }))
-      })
-      .catch(() => {
-        // Invalid id or no permission — leave the restoredRef true so we
-        // don't retry on every render, and let the empty state explain.
-      })
-  }, [conversations, searchParams, isMobile, loading])
-
-  // Symmetric to the restore effect above: whenever `?id` is gone from the
+  // Symmetric to the URL sync above: whenever `?id` is gone from the
   // URL — via the mobile back gesture/browser-back button (popstate) or the
   // header's back button (navigate(-1), see handleMobileBack) — close the
   // open conversation to match. This is what makes "voltar" a single code
@@ -342,15 +372,49 @@ export function ConversationsPage() {
     )
   }, [])
 
-  const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => {
-    await updateStatus(id, status, dealOutcome)
+  /** Devolve `false` quando falha (o popover de desfecho fica aberto). */
+  const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput): Promise<boolean> => {
+    const rawBefore = conversations.find((c) => c.id === id)?.status
+    // 'abandoned' não é um destino do seletor: só desfazemos entre os 3 do fluxo.
+    const statusBefore = rawBefore === 'open' || rawBefore === 'pending' || rawBefore === 'resolved' ? rawBefore : undefined
+    // 28/09: falha avisa (antes a tecla E virava rejeição sem tratamento).
+    try {
+      await updateStatus(id, status, dealOutcome)
+    } catch (err) {
+      if (pularAposResolverRef.current?.id === id) pularAposResolverRef.current = null
+      toast(getApiErrorMessage(err, 'Não foi possível mudar o status da conversa.'), 'error')
+      return false
+    }
     syncActive(id, { status })
     invalidateActivity(id)
+    const pular = pularAposResolverRef.current
+    if (status === 'resolved' && pular?.id === id) {
+      pularAposResolverRef.current = null
+      const proxima = pular.proximaId ? shortcutsRef.current.conversations.find((c) => c.id === pular.proximaId) : null
+      if (proxima) handleSelectConversation(proxima)
+    }
     const msg =
       status === 'resolved' ? (dealOutcome ? 'Conversa resolvida · desfecho registrado ✓' : 'Conversa resolvida ✓')
         : status === 'pending' ? 'Conversa marcada como pendente'
           : 'Conversa marcada como aberta'
+    // PL-3-2 (P7): mudar status é reversível e de 1 clique (ou 1 tecla, "E"),
+    // então não confirma — mas precisa de saída. O board de Funis já usa este
+    // padrão em `PipelineBoardTab`; aqui o toast só informava. Sem "Desfazer"
+    // quando houve desfecho de negócio: aí a reversão não é só de status.
+    const previous = statusBefore
+    if (!dealOutcome && previous && previous !== status) {
+      toast(msg, 'success', {
+        label: 'Desfazer',
+        onClick: () => {
+          void updateStatus(id, previous)
+            .then(() => { syncActive(id, { status: previous }); invalidateActivity(id) })
+            .catch(() => toast('Não foi possível desfazer.', 'error'))
+        },
+      }, 8000)
+      return true
+    }
     toast(msg, 'success')
+    return true
   }
 
   const handleAssign = async (convId: string, user: User | null) => {
@@ -426,20 +490,25 @@ export function ConversationsPage() {
 
       if (key === 'e') {
         e.preventDefault()
-        if (active.status !== 'resolved') void handleStatusChange(active.id, 'resolved')
-        // Pula para a próxima da fila — o operador segue triando sem o mouse.
         const next = list[idx + 1] ?? list[idx - 1]
-        if (next && next.id !== active.id) {
-          handleSelectConversation(next)
-          scrollToConv(next.id)
+        const proximaId = next && next.id !== active.id ? next.id : null
+        if (active.status === 'resolved') {
+          // Já resolvida: só segue para a próxima.
+          if (next && proximaId) { handleSelectConversation(next); scrollToConv(next.id) }
+          return
         }
+        // 28/09 (decisão do PO): E pede o desfecho do negócio como o botão
+        // Resolver — antes resolvia direto e pulava o desfecho.
+        pularAposResolverRef.current = { id: active.id, proximaId }
+        pedirResolver(active.id)
         return
       }
 
       if (key === 'r') {
         e.preventDefault()
-        const me = allUsers.find((u) => u.id === user?.id)
-        if (me && active.assignedUser?.id !== me.id) void handleAssign(active.id, me)
+        // 28/09 (decisão do PO): R = Assumir (atribui a mim e pausa a IA),
+        // a mesma ação do botão — antes R só atribuía.
+        assumirRef.current?.(active)
       }
     }
 
@@ -462,7 +531,12 @@ export function ConversationsPage() {
   }
 
   const handleAddTag = async (convId: string, tag: Tag) => {
-    await addTag(convId, tag)
+    try {
+      await addTag(convId, tag)
+    } catch (err) {
+      toast(getApiErrorMessage(err, 'Não foi possível adicionar a etiqueta.'), 'error')
+      return
+    }
     setActiveConversation((prev) => {
       if (!prev || prev.id !== convId) return prev
       const existing = prev.tags ?? []
@@ -474,7 +548,12 @@ export function ConversationsPage() {
   }
 
   const handleRemoveTag = async (convId: string, tagId: string) => {
-    await removeTag(convId, tagId)
+    try {
+      await removeTag(convId, tagId)
+    } catch (err) {
+      toast(getApiErrorMessage(err, 'Não foi possível remover a etiqueta.'), 'error')
+      return
+    }
     setActiveConversation((prev) => {
       if (!prev || prev.id !== convId) return prev
       return { ...prev, tags: (prev.tags ?? []).filter((t) => t.id !== tagId) }
@@ -510,13 +589,33 @@ export function ConversationsPage() {
   const handleInterveneAi = async (convId: string) => {
     try {
       const until = await interveneAi(convId)
-      syncActive(convId, { aiPausedUntil: until })
+      // O backend atribui a quem pausou (Phase 32): mostra já, sem esperar o socket.
+      const me = allUsers.find((u) => u.id === user?.id)
+      syncActive(convId, me ? { aiPausedUntil: until, assignedUser: me } : { aiPausedUntil: until })
       invalidateActivity(convId)
-      toast('IA pausada para esta conversa', 'info')
+      toast('Conversa assumida · IA pausada', 'info')
     } catch {
-      toast('Não foi possível atualizar a IA — tente de novo', 'error')
+      toast('Não foi possível assumir a conversa — tente de novo', 'error')
     }
   }
+
+  /**
+   * "Assumir" (28/09, decisão do PO): atribui a conversa a quem clicou e pausa
+   * a IA, num clique — o mesmo para o botão do cabeçalho e para a tecla R.
+   * Pausar já atribui no backend; em linha sem IA não há o que pausar, então
+   * só atribui. Com a IA já pausada, quem assume é pelo "Transferir".
+   */
+  const handleAssumir = (conv: Conversation) => {
+    const estado = estadoDaIA(conv, linhasDaIA)
+    if (estado === 'pausada') return
+    if (estado === 'sem-ia') {
+      const me = allUsers.find((u) => u.id === user?.id)
+      if (me && conv.assignedUser?.id !== me.id) void handleAssign(conv.id, me)
+      return
+    }
+    void handleInterveneAi(conv.id)
+  }
+  assumirRef.current = handleAssumir
 
   // Phase 29 — page-level handler for send-message failures bubbling up
   // from MessageInput. Reads the human-readable `message` that the backend's
@@ -553,7 +652,11 @@ export function ConversationsPage() {
     if (openedViaPushRef.current) {
       navigate(-1)
     } else {
-      setSearchParams({}, { replace: true })
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('id')
+        return next
+      }, { replace: true })
     }
   }, [navigate, setSearchParams])
 
@@ -564,6 +667,9 @@ export function ConversationsPage() {
 
   return (
     <>
+      {/* CONV-HDR (spec 1d): contagens + chip da linha + "Nova conversa" na TopBar do Shell. */}
+      {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} onNewConversation={openNewConversation} />}
+
       {/* 1 — Conversation list. Mobile and desktop render the SAME list with
           the same props — only the outer wrapper differs (mobile adds the
           page header + flex column). Props are extracted into `listProps` so
@@ -582,11 +688,13 @@ export function ConversationsPage() {
           offFilterId,
           filters,
           allTags,
-          allContacts,
           allUsers,
           onSelectConversation: handleSelectConversation,
           onFiltersChange: setFilters,
           scrollPositionRef: listScrollPosRef,
+          aviso: filaIncompleta ? 'A Fila tem mais de 500 conversas: a ordem por espera vale para as 500 mais recentes.' : null,
+          erro: erroDaLista,
+          onTentarDeNovo: () => { void recarregarLista() },
         }
         return isMobile ? (
           <div className="flex flex-col flex-1 min-h-0 w-full">
@@ -604,7 +712,7 @@ export function ConversationsPage() {
             <div className="chat-shell-bg flex items-center justify-center gap-3 px-3 py-1.5 text-[10px] text-surface-600 select-none flex-shrink-0">
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">J</kbd>/<kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">K</kbd> navegar</span>
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">E</kbd> resolver</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> p/ mim</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> assumir</span>
             </div>
           </div>
         )
@@ -628,6 +736,7 @@ export function ConversationsPage() {
           onArchive={handleArchive}
           onSetAiPause={handleSetAiPause}
           onInterveneAi={handleInterveneAi}
+          onAssumir={() => { if (activeConversation) handleAssumir(activeConversation) }}
           onAiPauseSocketEvent={(p) => {
             handleAiPauseUpdated(p)
             // Mirror onto the currently-open conversation in case another
@@ -663,7 +772,7 @@ export function ConversationsPage() {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.18 }}
                     onClick={() => setInfoOpen(false)}
-                    className="fixed inset-0 bg-black/60 z-[60]"
+                    className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[60]"
                   />
                   <motion.aside
                     key="info-pn"
@@ -709,16 +818,18 @@ export function ConversationsPage() {
           )}
 
       {/* Toast notifications */}
-      {/* Mobile FAB: nova conversa — abre /contacts para escolher um destinatario.
-          So mostra quando lista esta visivel; durante chat ativo, FAB seria
-          ruido. Picker dedicado em bottom sheet fica para PR seguinte. */}
+      {/* Mobile FAB: nova conversa — abre o NewConversationModal (tela cheia no
+          mobile). So mostra quando a lista esta visivel; durante chat ativo,
+          FAB seria ruido. */}
       {showList && !activeConversation && (
         <Fab
           icon={<MessageSquarePlus className="w-6 h-6" />}
           label="Nova conversa"
-          onClick={() => navigate('/contacts')}
+          onClick={openNewConversation}
         />
       )}
+
+      <NewConversationModal open={newConversationOpen} onClose={() => setNewConversationOpen(false)} />
     </>
   )
 }

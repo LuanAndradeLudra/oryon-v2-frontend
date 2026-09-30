@@ -71,7 +71,7 @@ export function PendingApprovalBar({ messages, onResolveBatch }: PendingApproval
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.18 }}
-          className="w-full cursor-pointer rounded-xl border border-brand-500/30 bg-gradient-to-br from-brand-500/10 to-brand-500/5 px-4 py-3 text-left shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.4)] ring-1 ring-brand-500/10 backdrop-blur-sm transition-all hover:border-brand-400/50 hover:from-brand-500/15 hover:to-brand-500/10"
+          className="w-full cursor-pointer rounded-lg border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-left ring-1 ring-brand-500/10 transition-all hover:border-brand-400/50 hover:from-brand-500/15 hover:to-brand-500/10"
           aria-label="Abrir painel de aprovação"
         >
           <BarContent tc={current} extraCount={pending.length - 1} />
@@ -160,7 +160,7 @@ function BarContent({ tc, extraCount }: { tc: ToolCallRecord; extraCount: number
           )}
         </div>
       </div>
-      <span className="flex-shrink-0 rounded-md bg-brand-500 px-2.5 py-1 text-[11px] font-semibold text-surface-950 shadow-sm">
+      <span className="flex-shrink-0 rounded-md bg-brand-500 px-2.5 py-1 text-[11px] font-semibold text-surface-950">
         Revisar
       </span>
     </div>
@@ -206,13 +206,13 @@ function ApprovalModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.96, opacity: 0 }}
         transition={{ duration: 0.18 }}
-        className="relative flex h-[88vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl border border-surface-700/60 shadow-2xl"
+        className="relative flex h-[88vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-xl border border-surface-700/60 shadow-2xl"
       >
         {/* Close button in the top-right — does not decide, just dismisses */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 rounded-lg bg-surface-800/80 p-1.5 text-surface-400 backdrop-blur-sm transition-colors hover:bg-surface-700 hover:text-surface-100"
+          className="absolute right-3 top-3 z-10 rounded-lg bg-surface-800/80 p-1.5 text-surface-400 transition-colors hover:bg-surface-700 hover:text-surface-100"
           aria-label="Fechar (sem decidir)"
         >
           <X className="h-4 w-4" />

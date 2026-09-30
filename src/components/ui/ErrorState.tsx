@@ -2,8 +2,13 @@
 // Contraparte do EmptyState para falhas de carregamento. Uma falha de fetch
 // NUNCA deve ser silenciada (`.catch(() => {})`) — o usuário precisa saber que
 // houve erro (e não "0 resultados") e ter um caminho de recuperação.
+//
+// SCRUM-1097: mesmo vocabulário do EmptyState (spec 1a EMPTY-01..05) —
+// moldura tracejada --bd2, raio 8, alinhado à esquerda, ícone 20px, 13/600,
+// dica 12px --tx2, CTA Button neutral sm.
 
 import { AlertTriangle } from 'lucide-react'
+import { Button } from './Button'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -29,23 +34,20 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        'flex flex-col items-center justify-center text-center rounded-xl',
-        'bg-surface-900/40 border border-dashed border-surface-700',
-        compact ? 'py-6 px-4' : 'py-16 px-6',
+        'mt-3 flex flex-col items-start gap-1.5 px-4 rounded-lg border border-dashed border-[var(--bd2)]',
+        compact ? 'py-3' : 'py-[18px]',
         className,
       )}
     >
-      <AlertTriangle className={cn('text-warning mb-3', compact ? 'w-6 h-6' : 'w-10 h-10')} strokeWidth={1.5} />
-      <p className={cn('text-surface-300 font-medium mb-1', compact && 'text-sm')}>{title}</p>
-      {hint && <p className={cn('text-surface-500 max-w-md', compact ? 'text-xs' : 'text-sm')}>{hint}</p>}
+      <AlertTriangle className="w-5 h-5 text-warning" strokeWidth={1.75} />
+      <p className="text-[13px] font-semibold text-surface-100">{title}</p>
+      {hint && <p className="text-xs text-surface-400 leading-normal max-w-md">{hint}</p>}
       {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium transition-colors"
-        >
-          {retryLabel}
-        </button>
+        <div className="mt-1">
+          <Button type="button" variant="neutral" size="sm" onClick={onRetry}>
+            {retryLabel}
+          </Button>
+        </div>
       )}
     </div>
   )

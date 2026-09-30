@@ -3,7 +3,7 @@
 //     Cancelado, chip de origem, quem moveu, tempo na etapa e telefone
 //   * sales: renderiza exatamente como antes (título, valor, ganho/perdido)
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react'
 
 vi.mock('@/hooks/useIsMobile', () => ({ useIsMobile: () => false }))
 
@@ -68,7 +68,9 @@ describe('DealsBoard — funil de PROCESSO (F8)', () => {
   it('registro fechado mostra "fechado há …" a partir de closedAt', () => {
     const closed = deal({ status: 'won', stageId: 's3', closedAt: new Date(NOW - 2 * 3_600_000).toISOString() })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s3: [closed] }} onMoveStage={vi.fn()} pipeline={PROCESS} />)
-    expect(screen.getByTestId('process-card-time')).toHaveTextContent('fechado há 2 h')
+    // Direção C: fechados viram linha compacta na coluna terminal; em
+    // processo (sem valor) a linha diz quando fechou.
+    expect(screen.getByTestId('closed-row-meta')).toHaveTextContent('fechado há 2 h')
   })
 })
 
@@ -82,7 +84,9 @@ describe('DealsBoard — funil de VENDA continua como antes (regressão)', () =>
     expect(screen.getByText('ganho')).toBeInTheDocument()
     expect(screen.getByText('perdido')).toBeInTheDocument()
     expect(screen.queryByTestId('process-card-title')).toBeNull()
-    expect(within(screen.getByText('Mariana Souza').closest('button')!).getByText('ver contato')).toBeInTheDocument()
+    // DEAL-CARD-06 (Fase C): a linha de contato saiu do rodapé e virou a
+    // linha secundária logo abaixo do título ("ver", não mais "ver contato").
+    expect(within(screen.getByText('Mariana Souza').closest('button')!).getByText('ver')).toBeInTheDocument()
     expect(screen.getAllByText('Nenhum negócio').length).toBeGreaterThan(0)
   })
 
@@ -104,9 +108,10 @@ describe('DealsBoard — card de VENDA com dono, previsão, tempo na etapa e ori
       originKind: 'manual',
     })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} users={USERS} />)
-    expect(screen.getByTestId('sales-card-owner')).toHaveTextContent('Ana Souza')
+    // R2-1E-CARD-02: nome do dono e origem viram tooltip (o rodapé do canvas só tem avatar).
+    expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Ana Souza')
     expect(screen.getByTestId('sales-card-forecast')).toHaveTextContent('20/09')
-    expect(screen.getByTestId('sales-card-origin')).toHaveTextContent('Manual')
+    expect(screen.getByTestId('sales-card-origin')).toHaveAttribute('title', 'Origem: Manual')
     expect(screen.getByTestId('sales-card-time')).toHaveTextContent('3 h na etapa')
   })
 
@@ -122,18 +127,16 @@ describe('DealsBoard — card de VENDA com dono, previsão, tempo na etapa e ori
     expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Ana Souza')
     expect(screen.getByTestId('sales-card-origin')).toHaveAttribute('title', 'Origem: Manual')
 
-    // Se os dois ícones voltarem a ser o mesmo, a ambiguidade volta com eles.
-    const svgDono = screen.getByTestId('sales-card-owner').querySelector('svg')
-    const svgOrigem = screen.getByTestId('sales-card-origin').querySelector('svg')
-    expect(svgDono?.innerHTML).toBeTruthy()
-    expect(svgOrigem?.innerHTML).not.toEqual(svgDono?.innerHTML)
+    // DEAL-CARD-12: o dono é o avatar real (iniciais do `owner` resolvido).
+    expect(within(screen.getByTestId('sales-card-owner')).getByText('AS')).toBeInTheDocument()
   })
 
   it('sem dono/previsão: "Sem dono" e "sem previsão" — nada inventado', () => {
     const sales = deal({ pipelineId: 'ps', ownerUserId: undefined, expectedCloseAt: undefined })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} />)
-    expect(screen.getByTestId('sales-card-owner')).toHaveTextContent('Sem dono')
-    expect(screen.getByTestId('sales-card-forecast')).toHaveTextContent('sem previsão')
+    expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Sem dono')
+    // sem previsão o chip da previsão nem aparece (nada inventado)
+    expect(screen.queryByTestId('sales-card-forecast')).toBeNull()
   })
 })
 
@@ -162,8 +165,11 @@ describe('DealsBoard — "Mover ▾" por toque e clique no card (F-FUNIL-09)', (
     const sales = deal({ pipelineId: 'ps', stageId: 's1' })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={onMoveStage} pipeline={SALES} />)
     fireEvent.click(screen.getByRole('button', { name: /Mover .* para outra etapa/ }))
-    // "Confirmado" aparece 2x (cabeçalho da coluna + opção do menu) — a opção é um <button>.
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmado' }))
+    // PL-C2-CAR-2: o menu agora é o `Dropdown` primitivo (portal + useLayer,
+    // em vez do <div absolute> à mão que ficava cortado pelo overflow da
+    // coluna) — o item é `DropdownItem`, role="menuitem". "Confirmado"
+    // aparece 2x (cabeçalho da coluna + opção do menu).
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Confirmado' }))
     expect(onMoveStage).toHaveBeenCalledWith(sales, 's3')
   })
 
@@ -217,5 +223,57 @@ describe('DealsBoard — "Mover ▾" por toque e clique no card (F-FUNIL-09)', (
     fireEvent.click(screen.getByText('Mariana Souza').closest('button')!)
     expect(onOpenContact).toHaveBeenCalledWith('c')
     expect(onOpenDeal).not.toHaveBeenCalled()
+  })
+})
+
+describe('DealsBoard — coluna terminal única (R2-1E-COL)', () => {
+  it('etapas isWon/isLost ficam empilhadas na coluna terminal; as abertas fora dela', () => {
+    render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} pipeline={SALES} />)
+    const terminal = screen.getByTestId('board-terminal-column')
+    expect(within(terminal).getByText('Confirmado')).toBeInTheDocument()
+    expect(within(terminal).getByText('Não confirmou')).toBeInTheDocument()
+    expect(within(terminal).queryByText('Enviado')).toBeNull()
+    expect(terminal).toHaveTextContent('Solte para Ganho')
+    expect(terminal).toHaveTextContent('Solte para Perdido')
+  })
+
+  it('soltar um card na etapa terminal continua chamando onMoveStage (o modal de motivo abre no pai)', async () => {
+    const onMoveStage = vi.fn()
+    const d = deal({ id: 'dd', pipelineId: 'ps' })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [d] }} onMoveStage={onMoveStage} pipeline={SALES} />)
+    fireEvent.dragStart(screen.getByText('Título do registro').closest('[draggable]')!, { dataTransfer: { effectAllowed: '' } })
+    const perdido = within(screen.getByTestId('board-terminal-column')).getByText('Não confirmou').closest('div[class*="flex-col"]')!
+    // o id do card arrastado entra em setTimeout(0): repete o drop até o estado assentar
+    await waitFor(() => {
+      fireEvent.drop(perdido)
+      expect(onMoveStage).toHaveBeenCalledWith(expect.objectContaining({ id: 'dd' }), 's4')
+    })
+  })
+})
+
+describe('DealsBoard — direção C (Quadro + lentes, 27/09)', () => {
+  it('cabeçalho da coluna mostra a soma e o ponderado visíveis', () => {
+    const st = [stage('s1', 'Enviado', { probability: 50 }), ...STAGES.slice(1)]
+    render(<DealsBoard stages={st} dealsByStage={{ s1: [deal({ pipelineId: 'ps', amountCents: 20_000 })] }} onMoveStage={vi.fn()} pipeline={SALES} />)
+    const soma = screen.getByTestId('coluna-soma-s1')
+    expect(soma).toHaveTextContent('R$ 200,00')
+    expect(soma).toHaveTextContent('pond. R$ 100,00')
+  })
+
+  it('recolher uma coluna vira faixa estreita e expandir volta', () => {
+    localStorage.clear()
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [deal({ pipelineId: 'ps' })] }} onMoveStage={vi.fn()} pipeline={SALES} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Recolher a coluna Enviado' }))
+    expect(screen.getByTestId('coluna-recolhida-s1')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Expandir a coluna Enviado' }))
+    expect(screen.queryByTestId('coluna-recolhida-s1')).toBeNull()
+  })
+
+  it('fechados: coluna diz a janela de 30 dias e oferece ver os escondidos', () => {
+    const onToggle = vi.fn()
+    render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} pipeline={SALES} closedWindow={{ allClosed: false, hidden: 3, onToggle }} />)
+    expect(screen.getByTestId('board-closed-window')).toHaveTextContent('Fechados · 30 dias')
+    fireEvent.click(screen.getByTestId('board-closed-toggle'))
+    expect(onToggle).toHaveBeenCalled()
   })
 })

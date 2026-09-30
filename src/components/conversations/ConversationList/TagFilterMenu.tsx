@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Tag as TagIcon, Check, X } from 'lucide-react'
+import { ChevronDown, Check, X, Tag as TagIcon } from 'lucide-react'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
 import type { ConversationFilters, Tag } from '@/types'
@@ -33,7 +33,7 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
     <Dropdown
       open={open}
       onClose={() => setOpen(false)}
-      align="right"
+      align="left"
       className="w-56"
       anchor={
         <button
@@ -42,24 +42,25 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
           aria-label="Filtrar por etiqueta"
           title={selectedTags.length ? `Etiquetas: ${selectedTags.map((t) => t.name).join(', ')}` : 'Filtrar por etiqueta'}
           className={cn(
-            'relative flex items-center justify-center w-9 h-9 rounded-lg transition-all border flex-shrink-0',
+            // Mesmo vocabulário dos chips (Opção A, PO 23/09): tinta invertida
+            // quando há etiqueta selecionada ou o menu está aberto; fundo neutro no resto.
+            'inline-flex items-center gap-1 h-6 px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer',
             selectedTags.length || open
-              ? 'bg-surface-700 text-surface-100 border-surface-600'
-              : 'bg-surface-800 text-surface-400 border-surface-700 hover:bg-surface-700 hover:text-surface-200',
+              ? 'border-transparent bg-[var(--ink-bg)] text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)]'
+              : 'border-surface-700 bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100',
           )}
         >
-          <TagIcon className="w-4 h-4" />
           {selectedTags.length === 1 && (
-            <span
-              className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ring-2 ring-surface-950"
-              style={{ backgroundColor: selectedTags[0].color }}
-            />
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedTags[0].color }} />
           )}
-          {selectedTags.length > 1 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-surface-600 text-surface-50 text-[10px] font-semibold flex items-center justify-center ring-2 ring-surface-950">
-              {selectedTags.length}
-            </span>
-          )}
+          {/* PO, 23/09: na linha única (chips à esquerda, Minhas/Fila/Todas à
+              direita) a palavra "Etiqueta" não cabe em 335px; em repouso vira
+              só o ícone (aria-label/title continuam), e com seleção mostra o
+              nome ou a contagem. */}
+          {selectedTags.length === 0
+            ? <TagIcon className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} aria-hidden />
+            : selectedTags.length === 1 ? selectedTags[0].name : `Etiqueta · ${selectedTags.length}`}
+          <ChevronDown className="w-3 h-3 flex-shrink-0" />
         </button>
       }
     >

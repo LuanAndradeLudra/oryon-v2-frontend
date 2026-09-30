@@ -25,7 +25,7 @@ export function SkeletonText({ lines = 3, className }: { lines?: number; classNa
 /** Card padrão — título + linhas de conteúdo. */
 export function SkeletonCard({ className, lines = 3 }: { className?: string; lines?: number }) {
   return (
-    <div className={cn('bg-surface-900 border border-surface-800 rounded-xl p-5', className)} aria-hidden="true">
+    <div className={cn('bg-surface-900 border border-surface-700 rounded-lg p-3.5', className)} aria-hidden="true">
       <div className="h-4 w-1/3 animate-pulse rounded bg-surface-800 mb-4" />
       <SkeletonText lines={lines} />
     </div>
@@ -60,7 +60,7 @@ export function SkeletonList({ items = 6, className }: { items?: number; classNa
           <div className="w-9 h-9 animate-pulse rounded-full bg-surface-800 flex-shrink-0" />
           <div className="flex-1 space-y-2">
             <div className="h-3.5 w-1/3 animate-pulse rounded bg-surface-800" />
-            <div className="h-3 w-2/3 animate-pulse rounded bg-surface-800/70" />
+            <div className="h-3 w-2/3 animate-pulse rounded bg-[var(--sf2)]" />
           </div>
         </div>
       ))}

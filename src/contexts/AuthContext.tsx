@@ -6,7 +6,7 @@ import { disconnectSocket } from '@/services/socket'
 import { isNativePlatform } from '@/config/env'
 import { setTokens, clearTokens, getRefreshToken } from '@/services/auth-storage'
 import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBackend } from '@/services/push-registration'
-import { SKIP_AUTH_REFRESH } from '@/services/api'
+import { SKIP_AUTH_REFRESH, renovarSessao } from '@/services/api'
 import { resetBillingState } from '@/hooks/useBilling'
 
 // Ensure ALL axios requests send httpOnly cookies
@@ -66,6 +66,9 @@ interface AuthContextValue {
   logout: () => void
   completePasswordChange: (newPassword: string, currentPassword?: string) => Promise<void>
   completeOnboarding: () => void
+  /** Atualiza campos do usuário da sessão (ex.: nome salvo em Minha conta)
+   *  para o resto da tela refletir sem recarregar. */
+  updateSessionUser: (patch: Partial<User>) => void
 }
 
 function loadSession(): AuthSession | null {
@@ -261,10 +264,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(updated)
   }, [session])
 
+  const updateSessionUser = useCallback((patch: Partial<User>) => {
+    setSession((prev) => {
+      if (!prev) return prev
+      const updated: AuthSession = { ...prev, user: { ...prev.user, ...patch } }
+      saveSession(updated)
+      return updated
+    })
+  }, [])
+
   // ── Validate session on app load ────────────────────────────────────────
   useEffect(() => {
     if (!session?.user) return
-    axios.get<{ featureFlags?: string[] }>(`${API}/auth/me`, { withCredentials: true, ...SKIP_AUTH_REFRESH })
+    const me = () => axios.get<{ featureFlags?: string[] }>(`${API}/auth/me`, { withCredentials: true, ...SKIP_AUTH_REFRESH })
+    // 29/09: o token de acesso dura pouco. Ao abrir/recarregar o app depois
+    // que ele venceu, o /auth/me respondia 401 e a pessoa era deslogada na
+    // hora — com o cookie de renovação ainda válido. Agora: no 401, renova e
+    // confere de novo; só desloga se a renovação também falhar.
+    me()
+      .catch(async (err) => {
+        if (err?.response?.status !== 401) throw err
+        if (!(await renovarSessao())) throw err
+        return me()
+      })
       // Sessão válida: aproveita a mesma resposta para (re)hidratar as flags
       // por tenant — é aqui que um flag ligado/desligado no banco chega à UI
       // sem novo build (SCRUM-498).
@@ -316,6 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       completePasswordChange,
       completeOnboarding,
+      updateSessionUser,
     }}>
       {children}
     </AuthContext.Provider>

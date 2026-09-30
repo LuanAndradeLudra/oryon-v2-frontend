@@ -4,12 +4,16 @@
 // tenantId from the JWT — no cross-tenant leakage possible.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Search, AlertCircle, Filter, X } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select as SelectField } from '@/components/ui/Select'
 import { ActorChip } from '@/components/ui/ActorChip'
 import { formatActivity } from '@/components/dashboard/activityFormatter'
 import {
@@ -43,18 +47,54 @@ const ENTITY_BUCKETS: Array<{ value: string; label: string }> = [
 
 const SEVERITY_OPTIONS = ['', 'info', 'warn', 'error'] as const
 
-const SEVERITY_STYLE: Record<string, string> = {
-  info:  'var(--color-status-muted)',
-  warn:  'var(--color-status-pending)',
-  error: 'var(--color-danger)',
+// Chips suaves (fundo claro + texto colorido), não sólidos — vocabulário 2e.
+const SEVERITY_CLASS: Record<string, string> = {
+  info:  'bg-[var(--sf2)] text-surface-400 border-surface-700',
+  warn:  'bg-status-pending-bg text-status-pending border-status-pending-border',
+  error: 'bg-status-failed-bg text-status-failed border-status-failed/40',
 }
 
+const DEFAULT_AUDIT_QUERY: TenantAuditQuery = { limit: 30 }
+
+// Filtros aplicados na URL (regra do PO) — o rascunho do FilterBar segue local
+// até "Aplicar". Nomes em português.
+const CHAVES_AUDITORIA: [keyof TenantAuditQuery, string][] = [
+  ['actorId', 'quem'], ['action', 'acao'], ['entityType', 'entidade'], ['severity', 'gravidade'], ['since', 'desde'],
+]
+function lerFiltrosAuditoria(sp: URLSearchParams): TenantAuditQuery {
+  const q: TenantAuditQuery = { ...DEFAULT_AUDIT_QUERY }
+  for (const [campo, chave] of CHAVES_AUDITORIA) {
+    const v = sp.get(chave)
+    if (!v) continue
+    if (campo === 'severity') { if (v === 'info' || v === 'warn' || v === 'error') q.severity = v }
+    else (q as Record<string, unknown>)[campo] = v
+  }
+  return q
+}
+function escreverFiltrosAuditoria(prev: URLSearchParams, q: TenantAuditQuery): URLSearchParams {
+  const p = new URLSearchParams(prev)
+  for (const [campo, chave] of CHAVES_AUDITORIA) {
+    const v = q[campo]
+    if (v) p.set(chave, String(v))
+    else p.delete(chave)
+  }
+  return p
+}
+const chaveAuditoria = (sp: URLSearchParams) => CHAVES_AUDITORIA.map(([, k]) => sp.get(k) ?? '').join('|')
+
 export function AuditTrail() {
-  const [filters, setFilters] = useState<TenantAuditQuery>({ limit: 30 })
+  const [searchParams, setSearchParams] = useSearchParams()
+  const chave = chaveAuditoria(searchParams)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const filters = useMemo(() => lerFiltrosAuditoria(searchParams), [chave])
+  const setFilters = (q: TenantAuditQuery) => setSearchParams((prev) => escreverFiltrosAuditoria(prev, q), { replace: true })
   const [rows, setRows] = useState<TenantAuditRow[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // PL-C2-BUS-3: força o FilterBar a reinicializar seu rascunho quando a
+  // ação do EmptyState limpa os filtros por fora dele.
+  const [filterBarKey, setFilterBarKey] = useState(0)
 
   const load = useCallback(async (q: TenantAuditQuery, append = false) => {
     setLoading(true); setError(null)
@@ -62,18 +102,21 @@ export function AuditTrail() {
       const res = await listTenantAuditFeed(q)
       setRows(prev => (append ? [...prev, ...res.data] : res.data))
       setNextCursor(res.nextCursor)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar atividades')
+    } catch {
+      // Texto próprio: o err.message do axios ("Request failed…") não diz nada ao admin.
+      setError('Não foi possível carregar as atividades.')
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { void load(filters, false) /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [])
+  // Recarrega quando os filtros da URL mudam (aplicar, limpar, "voltar", link colado).
+  useEffect(() => { void load(filters, false) /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [chave])
 
   const onApply = (next: TenantAuditQuery) => {
-    setFilters(next)
-    void load(next, false)
+    // Mesmos filtros de antes: a URL não muda, então recarrega direto.
+    if (chaveAuditoria(escreverFiltrosAuditoria(new URLSearchParams(), next)) === chave) void load(next, false)
+    else setFilters(next)
   }
 
   const onLoadMore = () => {
@@ -82,16 +125,17 @@ export function AuditTrail() {
   }
 
   return (
-    <div className="px-6 py-6">
+    <div>
       <SectionHeader
         title="Auditoria da equipe"
         description="Tudo que sua equipe fez na plataforma — criação, edição e remoção de contatos, campanhas, templates, automações e mais. Apenas leitura."
       />
 
-      <FilterBar filters={filters} onApply={onApply} loading={loading} />
+      {/* A chave inclui os filtros da URL: "voltar" ou link colado refazem o rascunho. */}
+      <FilterBar key={`${filterBarKey}|${chave}`} filters={filters} onApply={onApply} loading={loading} />
 
       {error && rows.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-sm border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
@@ -105,19 +149,31 @@ export function AuditTrail() {
         <SkeletonTable rows={6} cols={4} />
       )}
 
-      {!loading && rows.length === 0 && !error && (
-        <EmptyState
-          icon={Search}
-          title="Nenhuma atividade no período"
-          hint="Ajuste o filtro ou amplie a janela. Apenas ações de membros da equipe (não jobs internos) aparecem aqui."
-        />
-      )}
+      {!loading && rows.length === 0 && !error && (() => {
+        // PL-C2-BUS-3 [S2] (P6): "Nenhuma atividade no período" não dizia
+        // se havia filtro ativo nem como sair dele — só "ajuste", sem ação.
+        const hasActiveFilters = !!(filters.actorId || filters.action || filters.entityType || filters.severity || filters.since)
+        return (
+          <EmptyState
+            icon={Search}
+            title={hasActiveFilters ? 'Nenhuma atividade com esses filtros' : 'Nenhuma atividade no período'}
+            hint="Apenas ações de membros da equipe (não jobs internos) aparecem aqui."
+            action={hasActiveFilters ? {
+              label: 'Limpar filtros',
+              onClick: () => {
+                setFilters(DEFAULT_AUDIT_QUERY)
+                setFilterBarKey((k) => k + 1)
+              },
+            } : undefined}
+          />
+        )
+      })()}
 
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-surface-400 text-xs uppercase tracking-wider">
-              <tr className="border-b border-surface-800/60">
+            <thead className="text-surface-500 text-[10px] font-bold uppercase" style={{ letterSpacing: '.14em' }}>
+              <tr className="border-b border-surface-700">
                 <th className="text-left pl-0 pr-4 py-2.5 font-medium">Quando</th>
                 <th className="text-left px-4 py-2.5 font-medium">Quem</th>
                 <th className="text-left px-4 py-2.5 font-medium">Ação</th>
@@ -125,7 +181,7 @@ export function AuditTrail() {
                 <th className="text-left px-4 py-2.5 font-medium">Detalhes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800/60">
+            <tbody className="divide-y divide-surface-700">
               {rows.map(r => (
                 <Row key={r.id} row={r} />
               ))}
@@ -136,14 +192,10 @@ export function AuditTrail() {
 
       {nextCursor && (
         <div className="mt-4 flex justify-center">
-          <button
-            onClick={onLoadMore}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-100 text-sm disabled:opacity-50"
-          >
+          <Button variant="neutral" onClick={onLoadMore} disabled={loading}>
             {loading ? <Spinner className="w-4 h-4 inline mr-2" /> : null}
             Carregar mais
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -169,7 +221,7 @@ function Row({ row }: { row: TenantAuditRow }) {
     details: row.details,
   })
   return (
-    <tr className="hover:bg-surface-800/30">
+    <tr className="hover:bg-[var(--rowhover)]">
       <td className="pl-0 pr-4 py-2.5 whitespace-nowrap text-surface-300 text-xs">
         {new Date(row.createdAt).toLocaleString('pt-BR')}
       </td>
@@ -185,7 +237,7 @@ function Row({ row }: { row: TenantAuditRow }) {
         <div className="flex items-center gap-2">
           <span className="text-surface-100 text-sm">{verb}</span>
           {row.severity !== 'info' && (
-            <span className={cn('color-chip inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border')} style={{ ['--chip']: SEVERITY_STYLE[row.severity] } as React.CSSProperties}>
+            <span className={cn('inline-block px-1.5 py-px rounded-xs text-[11px] font-semibold border', SEVERITY_CLASS[row.severity] ?? SEVERITY_CLASS.info)}>
               {row.severity}
             </span>
           )}
@@ -344,7 +396,7 @@ function FilterBar({
   )
 
   return (
-    <div className="mb-4 pb-4 border-b border-surface-800/60 flex flex-wrap items-end gap-3">
+    <div className="mb-4 pb-4 border-b border-surface-700 flex flex-wrap items-end gap-3">
       <div className="flex items-center gap-2 text-xs text-surface-400">
         <Filter className="w-4 h-4" /> Filtros
       </div>
@@ -365,17 +417,13 @@ function FilterBar({
       <Field label="Desde" type="datetime-local" value={toLocalInput(draft.since)} onChange={v => set('since', fromLocalInput(v))} />
       <div className="flex gap-2 ml-auto">
         {hasFilters && (
-          <button onClick={clear} className="px-3 py-1.5 rounded bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs flex items-center gap-1">
-            <X className="w-3 h-3" /> Limpar
-          </button>
+          <Button size="sm" variant="neutral" onClick={clear} leftIcon={<X className="w-3 h-3" />}>
+            Limpar
+          </Button>
         )}
-        <button
-          onClick={apply}
-          disabled={loading}
-          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs disabled:opacity-50"
-        >
+        <Button size="sm" variant="primary" onClick={apply} disabled={loading}>
           Aplicar
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -393,12 +441,13 @@ function Field({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <input
+      <Input
+        size="sm"
         type={type}
         value={value}
         placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        className="px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 w-44"
+        className="w-44"
       />
     </label>
   )
@@ -415,15 +464,15 @@ function Select({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <select
+      <SelectField
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 min-w-[140px]"
+        className="min-w-[140px]"
       >
         {options.map(o => (
           <option key={o.value || 'all'} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </SelectField>
     </label>
   )
 }

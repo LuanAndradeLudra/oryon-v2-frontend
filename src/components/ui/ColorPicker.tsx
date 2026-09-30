@@ -105,7 +105,7 @@ export function ColorPicker({ value, onChange, swatchesOnly = false, className }
       </div>
 
       {!swatchesOnly && customOpen && (
-        <div className="flex flex-col gap-2 p-2 rounded-lg border border-surface-700 bg-surface-900/60 w-fit">
+        <div className="flex flex-col gap-2 p-2 rounded-md border border-surface-700 bg-[var(--sf2)] w-fit">
           {/* react-colorful saturation/hue board + the global CSS we keep
               minimal — its default 200px square fits the modal width. */}
           <HexColorPicker
@@ -126,7 +126,7 @@ export function ColorPicker({ value, onChange, swatchesOnly = false, className }
                 placeholder="6366f1"
                 maxLength={6}
                 spellCheck={false}
-                className="w-full pl-5 pr-2 py-1.5 text-xs font-mono bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder-surface-600 outline-none focus:border-brand-500 transition-colors uppercase"
+                className="w-full pl-5 pr-2 py-1.5 text-xs font-mono bg-surface-800 border border-surface-700 rounded-sm text-surface-100 placeholder-surface-600 outline-none focus:border-brand-500 transition-colors uppercase"
               />
             </div>
           </div>

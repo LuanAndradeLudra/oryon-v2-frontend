@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AlertTriangle, Wallet, Scale3d, Trophy, Percent, Timer } from 'lucide-react'
 import { pipelineAnalyticsApi, usersApi } from '@/services/api'
-import { resolveRange, type DateRangePreset } from '@/lib/dateRange'
+import { REPORT_PERIODS, reportPeriodRange, type ReportPeriod } from '@/lib/reportPeriods'
+import type { OwnerFilter } from '@/lib/boardFilters'
+import { BoardFilterBar } from '@/components/deals/BoardFilterBar'
+import { StageFlowTable } from './StageFlowTable'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
 import { isMoneyBucket } from '@/types/pipelineAnalytics'
 import type { PipelineOverview } from '@/types/pipelineAnalytics'
 import type { Pipeline, User } from '@/types'
-import { cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { StageFunnelChart } from './StageFunnelChart'
 import { WonLostReasonChart } from './WonLostReasonChart'
 import { WonLostTimeSeriesChart } from './WonLostTimeSeriesChart'
@@ -16,22 +19,19 @@ function brl(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-const PERIOD_OPTIONS: { value: DateRangePreset | 'all'; label: string }[] = [
-  { value: 'today', label: 'Hoje' },
-  { value: 'yesterday', label: 'Ontem' },
-  { value: 'last7', label: 'Últimos 7 dias' },
-  { value: 'all', label: 'Todo o período' },
-]
+
 
 function StatCard({ icon: Icon, label, value, hint }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; hint?: string }) {
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-2">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4 flex flex-col gap-2">
       <div className="flex items-center gap-2 text-surface-400">
         <Icon className="w-4 h-4" />
         <span className="text-xs font-medium">{label}</span>
       </div>
       <div className="text-xl font-bold text-surface-50 tabular-nums font-display">{value}</div>
-      {hint && <p className="text-[11px] text-surface-500">{hint}</p>}
+      {/* PL-C2-CAR-3 (P8): piso de 12px pra texto informativo — este hint
+          estava em 11px. */}
+      {hint && <p className="text-xs text-surface-500">{hint}</p>}
     </div>
   )
 }
@@ -43,10 +43,30 @@ function StatCard({ icon: Icon, label, value, hint }: { icon: React.ComponentTyp
  * Sem números fictícios (P14): tudo aqui vem da resposta real do backend —
  * estado vazio honesto quando o período não tem dados.
  */
-export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
+interface PipelineReportsTabProps {
+  pipeline: Pipeline
+  /**
+   * Período e responsável CONTROLADOS por quem mostra (a página guarda os
+   * dois na URL; o responsável é o MESMO `?resp=` do quadro, então filtrar
+   * lá e abrir Relatórios mantém o recorte). Ausentes = estado local.
+   */
+  period?: ReportPeriod
+  onPeriodChange?: (p: ReportPeriod) => void
+  owner?: OwnerFilter
+  onOwnerChange?: (o: OwnerFilter) => void
+  /** Barra única do funil: a página entrega o início (visão) e o fim (Etapas). */
+  toolbarLead?: ReactNode
+  toolbarTrail?: ReactNode
+}
+
+export function PipelineReportsTab({ pipeline, period: periodProp, onPeriodChange, owner: ownerProp, onOwnerChange, toolbarLead, toolbarTrail }: PipelineReportsTabProps) {
   const isProcess = pipelineKindOf(pipeline) === 'process'
-  const [period, setPeriod] = useState<DateRangePreset | 'all'>('last7')
-  const [ownerFilter, setOwnerFilter] = useState<string>('all')
+  const [periodLocal, setPeriodLocal] = useState<ReportPeriod>('last7')
+  const period = periodProp ?? periodLocal
+  const setPeriod = onPeriodChange ?? setPeriodLocal
+  const [ownerLocal, setOwnerLocal] = useState<OwnerFilter>('all')
+  const ownerFilter = ownerProp ?? ownerLocal
+  const setOwnerFilter = onOwnerChange ?? setOwnerLocal
   const [users, setUsers] = useState<User[]>([])
   const [overview, setOverview] = useState<PipelineOverview | null>(null)
   const [loading, setLoading] = useState(true)
@@ -56,11 +76,9 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
     usersApi.list().then((r) => setUsers(r.data)).catch(() => setUsers([]))
   }, [])
 
-  const range = useMemo(
-    () => (period === 'all' ? { startDate: undefined, endDate: undefined } : resolveRange(period)),
-    [period],
-  )
-  const ownerUserId = ownerFilter === 'all' ? undefined : ownerFilter
+  const range = useMemo(() => reportPeriodRange(period), [period])
+  // O quadro chama "sem responsável" de `none`; a analítica, de `unassigned`.
+  const ownerUserId = ownerFilter === 'all' ? undefined : ownerFilter === 'none' ? 'unassigned' : ownerFilter
 
   useEffect(() => {
     let alive = true
@@ -74,12 +92,23 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
     return () => { alive = false }
   }, [pipeline.id, range.startDate, range.endDate, ownerUserId])
 
+  // Uma barra só (antes eram duas: a do funil e, embaixo, a dos filtros da
+  // aba), com o MESMO chip de responsável do quadro.
+  const barra = (
+    <BoardFilterBar users={users} owner={ownerFilter} onOwnerChange={setOwnerFilter} lead={toolbarLead} trail={toolbarTrail}>
+      <SegmentedControl label="Período" size="sm" value={period} onChange={setPeriod} options={REPORT_PERIODS} />
+    </BoardFilterBar>
+  )
+
   if (error) {
     return (
+      <>
+      {barra}
       <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400 py-16">
         <AlertTriangle className="w-8 h-8 text-red-400" />
         <p className="text-sm">Não foi possível carregar os relatórios deste funil.</p>
       </div>
+      </>
     )
   }
 
@@ -91,37 +120,9 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
   const cycle = overview?.cycle.closedCohort
 
   return (
+    <>
+    {barra}
     <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center rounded-xl bg-surface-900 border border-surface-800 p-0.5 gap-0.5">
-          {PERIOD_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setPeriod(opt.value)}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                period === opt.value ? 'bg-brand-600 text-surface-950' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800',
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        <select
-          value={ownerFilter}
-          onChange={(e) => setOwnerFilter(e.target.value)}
-          aria-label="Filtrar por dono"
-          className="text-xs px-3 py-1.5 rounded-xl bg-surface-900 border border-surface-800 text-surface-300 focus:outline-none focus:border-brand-500"
-        >
-          <option value="all">Todos os donos</option>
-          <option value="unassigned">Sem dono</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>{u.firstName} {u.lastName ?? ''}</option>
-          ))}
-        </select>
-      </div>
 
       {loading || !overview ? (
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
@@ -133,6 +134,14 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
         <>
           {/* Cards de resumo */}
           <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+            {/* PL-C2-CAR-3 (P6): este card é o único que NÃO obedece o filtro
+                de Período — é a contagem atual, não a do período escolhido
+                (tipo do backend já documenta: "Em aberto, HOJE — não
+                filtrado pelo período"). Trocar pra "Ontem"/"7 dias" e ver o
+                número de aberto igual, sem explicação, lia como filtro
+                quebrado. O hint agora diz isso, em vez de repetir o valor
+                (funil de processo mostrava "X negócios" duas vezes: no valor
+                e no hint, com "hoje" sugerindo um recorte que não existe). */}
             <StatCard
               icon={Wallet}
               label="Em aberto"
@@ -141,7 +150,11 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
                   ? brl(openBucket!.amountCents)
                   : `${openBucket!.count} ${openBucket!.count === 1 ? 'negócio' : 'negócios'}`
               }
-              hint={`${openBucket!.count} negócio${openBucket!.count === 1 ? '' : 's'} hoje`}
+              hint={
+                isMoneyBucket(openBucket!)
+                  ? `${openBucket!.count} negócio${openBucket!.count === 1 ? '' : 's'} · não filtra por período`
+                  : 'Não filtra por período'
+              }
             />
             {!isProcess && isMoneyBucket(openBucket!) && (
               <StatCard icon={Scale3d} label="Ponderado" value={brl(openBucket!.weightedAmountCents)} hint="Valor × probabilidade da etapa" />
@@ -164,12 +177,13 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
             <StatCard
               icon={Timer}
               label="Ciclo médio"
-              value={cycle?.avgDaysToClose == null ? '—' : `${cycle.avgDaysToClose.toFixed(1)} dias`}
+              value={cycle?.avgDaysToClose == null ? '—' : `${cycle.avgDaysToClose.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} dias`}
               hint={cycle && cycle.closedCount > 0 ? `${cycle.closedCount} fechado${cycle.closedCount === 1 ? '' : 's'} no período` : 'Sem fechamentos no período'}
             />
           </div>
 
           <StageFunnelChart stages={overview.stages} />
+          <StageFlowTable conversion={overview.conversion ?? []} durations={overview.cycle.perStageCohort ?? []} />
           <WonLostReasonChart won={overview.closed.won.byReason} lost={overview.closed.lost.byReason} />
           <WonLostTimeSeriesChart
             pipelineId={pipeline.id}
@@ -181,5 +195,6 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
         </>
       )}
     </div>
+    </>
   )
 }

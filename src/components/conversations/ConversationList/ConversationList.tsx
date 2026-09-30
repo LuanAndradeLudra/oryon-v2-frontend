@@ -2,12 +2,14 @@ import { useRef, useEffect, useCallback, useState, useLayoutEffect, type Mutable
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, MessageSquareOff } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
 import { QuickFiltersMenu } from './QuickFiltersMenu'
-import { TagFilterMenu } from './TagFilterMenu'
 import { cn } from '@/lib/utils'
-import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
+import { semFiltros } from '@/lib/filtrosDaInbox'
+import type { Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
 
 interface ConversationListProps {
   conversations: Conversation[]
@@ -28,7 +30,6 @@ interface ConversationListProps {
   offFilterId?: string | null
   filters: ConversationFilters
   allTags: Tag[]
-  allContacts: Contact[]
   /** Team roster — drives the "Equipe" filter dropdown. Optional so
    *  callers that don't surface the assignment filter (e.g. embedded
    *  previews) can omit it; the dropdown then only shows "Sem atribuição". */
@@ -46,6 +47,13 @@ interface ConversationListProps {
    *  rolagem nativa do navegador só respeita o arredondamento do elemento
    *  que de fato rola — um wrapper por fora não a recorta. */
   roundedBottomRight?: boolean
+  /** Aviso no topo da lista (ex.: a Fila passou do limite de carga). */
+  aviso?: string | null
+  /** A leitura da lista falhou (backend fora, rede). Sem conversas carregadas,
+   *  vira o estado de erro no lugar de "Nenhuma conversa" — antes, com o
+   *  backend fora do ar, a tela dizia que não havia conversas. */
+  erro?: string | null
+  onTentarDeNovo?: () => void
 }
 
 export function ConversationList({
@@ -53,7 +61,7 @@ export function ConversationList({
   statusCounts, needsReviewCount = 0,
   activeId, offFilterId = null, filters, allTags, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
-  scrollPositionRef, roundedBottomRight = false,
+  scrollPositionRef, roundedBottomRight = false, aviso = null, erro = null, onTentarDeNovo,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
@@ -82,7 +90,11 @@ export function ConversationList({
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0
     if (scrollPositionRef) scrollPositionRef.current = 0
-  }, [filters.status, filters.search, filters.assignedTo, filters.tagId, filters.contactId, scrollPositionRef])
+  // 28/09: todos os filtros — antes Não lidas, IA, verificação, sem etiqueta e
+  // período mantinham a rolagem da lista anterior na lista nova.
+  }, [filters.status, filters.search, filters.assignedTo, filters.tagId, filters.contactId,
+    filters.unreadOnly, filters.aiHandling, filters.needsReview, filters.untagged, filters.awaitingReply,
+    filters.startDate, filters.endDate, filters.whatsappNumberId, scrollPositionRef])
 
   // Infinite scroll — trigger `onLoadMore` when the user scrolls within 200px
   // of the bottom. Replaced an IntersectionObserver-based sentinel that wasn't
@@ -122,6 +134,21 @@ export function ConversationList({
 
   const handleSelect = useCallback((conv: Conversation) => onSelectConversation(conv), [onSelectConversation])
 
+  // PL-1-2: rótulos dos filtros ativos, para o estado vazio dizer o que filtra.
+  const activeFilterLabels = [
+    filters.search ? `busca "${filters.search}"` : null,
+    filters.status && filters.status !== 'all' ? ({ open: 'abertas', pending: 'pendentes', resolved: 'resolvidas' } as Record<string, string>)[filters.status] ?? null : null,
+    filters.assignedTo === 'me' ? 'minhas' : filters.assignedTo === 'unassigned' ? 'fila' : null,
+    filters.unreadOnly ? 'não lidas' : null,
+    filters.aiHandling === 'active' ? 'com IA' : filters.aiHandling === 'paused' ? 'IA pausada' : null,
+    filters.awaitingReply ? 'aguardando resposta' : null,
+    filters.untagged ? 'sem etiqueta' : null,
+    filters.needsReview ? 'precisam de verificação' : null,
+    filters.tagId?.length ? 'etiqueta' : null,
+    filters.startDate ? 'período' : null,
+  ].filter(Boolean) as string[]
+
+
   // Tab badges read straight from the backend-provided counts. The previous
   // implementation derived them from `conversations.length` filtered by status,
   // which broke with pagination — once only 50 of N rows were loaded, the
@@ -131,53 +158,46 @@ export function ConversationList({
     ? { ...statusCounts }
     : { all: 0, open: 0, pending: 0, resolved: 0 }
 
-  // Painel da lista (desktop): largura responsiva — a CONVERSA é o foco
-  // absoluto do Inbox, então a lista cede espaço em telas menores
-  // (360px em laptops, 420px em xl, 480px só em 2xl+). A lane interna fica
-  // em max-w-[440px] + mx-auto, então segue centralizada em qualquer largura.
+  // Painel da lista (desktop): 360px fixo em toda largura (RODADA-2 —
+  // decisão do usuário; era 420/480px por breakpoint, a comentário desatualizado
+  // descrevia o esquema antigo). A lane interna fica em max-w-[440px] + mx-auto,
+  // então segue centralizada mesmo com 360px de painel.
   return (
     <div className={cn(
-      'conv-surface flex flex-col h-full w-full sm:w-[360px] xl:w-[420px] 2xl:w-[480px] bg-surface-950 border-r border-surface-800 flex-shrink-0',
+      'conv-surface flex flex-col h-full w-full sm:w-[360px] bg-surface-800 border-r border-surface-700 flex-shrink-0',
       roundedBottomRight && 'overflow-hidden rounded-br-lg',
     )}>
       {/* Search header */}
-      <div className="px-3 pt-3 pb-3 border-b border-surface-800">
+      <div className="px-3 pt-2.5 pb-0">
         <div className="flex items-center gap-2">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <ConversationSearch
               value={filters.search ?? ''}
               onChange={(search) => onFiltersChange({ ...filters, search })}
             />
           </div>
           {loading && <Loader2 className="w-4 h-4 text-surface-400 animate-spin flex-shrink-0" />}
-
-          {/* O filtro "Precisam de verificação" vive só no menu de filtros
-              (com o contador ao lado do item) — o botão dedicado que ficava
-              aqui, entre a busca e as etiquetas, foi removido a pedido do PO
-              para desafogar o cabeçalho. */}
-          <TagFilterMenu
-            filters={filters}
-            onFiltersChange={onFiltersChange}
-            allTags={allTags}
-          />
-
+          {/* PO, 23/09: o menu de filtros mora ao lado da busca, na mesma linha. */}
           <QuickFiltersMenu
             filters={filters}
             onFiltersChange={onFiltersChange}
             allUsers={allUsers}
             needsReviewCount={needsReviewCount}
+            counts={counts}
           />
+
         </div>
       </div>
 
       {/* Filters */}
-      <div className="pt-2">
+      <div className="border-b border-surface-700">
         <ConversationFiltersBar
           filters={filters}
           onFiltersChange={onFiltersChange}
           counts={counts}
           allTags={allTags}
           allUsers={allUsers}
+          needsReviewCount={needsReviewCount}
         />
       </div>
 
@@ -185,25 +205,54 @@ export function ConversationList({
       <div
         ref={listRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overscroll-y-contain"
+        // pb no celular: o botão flutuante "Nova conversa" cobria a última linha.
+        className="flex-1 overflow-y-auto overscroll-y-contain pb-24 md:pb-0"
         style={{ contain: 'layout style', willChange: 'transform' }}
       >
+        {aviso && (
+          <p role="status" className="mx-3 mt-2 mb-1 px-2.5 py-1.5 rounded-sm border border-status-pending-border bg-status-pending-bg text-[11.5px] text-status-pending">
+            {aviso}
+          </p>
+        )}
+        {/* Falha ao atualizar com a lista já na tela: avisa sem apagar o que existe. */}
+        {erro && conversations.length > 0 && (
+          <p role="alert" className="mx-3 mt-2 mb-1 px-2.5 py-1.5 rounded-sm border border-danger/40 bg-danger/10 text-[11.5px] text-danger flex items-center justify-between gap-2">
+            <span>Não foi possível atualizar a lista.</span>
+            {onTentarDeNovo && (
+              <button type="button" onClick={onTentarDeNovo} className="font-semibold underline underline-offset-2 hover:opacity-80">Tentar de novo</button>
+            )}
+          </p>
+        )}
         {loading && conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2">
             <Loader2 className="w-5 h-5 text-surface-400 animate-spin" />
             <span className="text-xs text-surface-500">Carregando...</span>
           </div>
+        ) : erro && conversations.length === 0 ? (
+          <div className="px-3">
+            <ErrorState
+              compact
+              title="Não foi possível carregar as conversas"
+              hint="O servidor não respondeu. As conversas continuam salvas."
+              onRetry={onTentarDeNovo}
+            />
+          </div>
         ) : conversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-3 px-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-surface-800 flex items-center justify-center">
-              <MessageSquareOff className="w-6 h-6 text-surface-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-surface-300">Nenhuma conversa</p>
-              <p className="text-xs text-surface-500 mt-1">
-                {filters.search ? 'Tente outro termo de busca' : 'Nenhuma conversa com esses filtros'}
-              </p>
-            </div>
+          /* PL-1-2 (P6): "sem resultados" agora DIZ qual filtro está ativo e traz
+             a ação de limpar — era um bloco local, centrado, sem ação. */
+          <div className="px-3">
+            <EmptyState
+              icon={MessageSquareOff}
+              title={activeFilterLabels.length > 0 ? 'Nenhuma conversa com esses filtros' : 'Nenhuma conversa'}
+              hint={
+                activeFilterLabels.length > 0
+                  ? `Filtros ativos: ${activeFilterLabels.join(' · ')}.`
+                  : 'Quando alguém escrever pelo WhatsApp, a conversa aparece aqui.'
+              }
+              action={activeFilterLabels.length > 0
+                ? { label: 'Limpar filtros', onClick: () => onFiltersChange(semFiltros(filters)) }
+                : undefined}
+            />
           </div>
         ) : (
           <>
@@ -222,7 +271,10 @@ export function ConversationList({
                 }}
                 className="overflow-hidden"
               >
-                <div className={cn('pb-1.5', newConvIds.has(conv.id) && 'animate-conv-in')}>
+                {/* README 3.3: linha cheia — hairline entre itens em vez do
+                    gap (que, junto com a borda por item, produzia o
+                    vocabulário de "card" que o resto do reestilo tirou). */}
+                <div className={cn('border-b border-surface-700', newConvIds.has(conv.id) && 'animate-conv-in')}>
                   <ConversationItem
                     conversation={conv}
                     isActive={conv.id === activeId}

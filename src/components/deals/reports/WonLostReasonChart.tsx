@@ -41,7 +41,7 @@ export const WonLostReasonChart = memo(function WonLostReasonChart({
 
   if (data.length === 0) {
     return (
-      <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+      <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
         <p className="text-sm font-semibold text-surface-100 mb-2">Ganho × perdido por motivo</p>
         <EmptyState icon={Scale} title="Nenhum negócio fechado no período" className="py-8" />
       </div>
@@ -49,7 +49,7 @@ export const WonLostReasonChart = memo(function WonLostReasonChart({
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
       <p className="text-sm font-semibold text-surface-100 mb-4">Ganho × perdido por motivo</p>
       <ResponsiveContainer width="100%" height={Math.max(180, data.length * 40)}>
         <BarChart data={data} layout="vertical" margin={{ left: 4, right: 20, top: 4, bottom: 4 }}>

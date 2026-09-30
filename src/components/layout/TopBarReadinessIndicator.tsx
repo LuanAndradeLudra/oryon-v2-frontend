@@ -18,7 +18,7 @@
 // Home checklist mode).
 
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { AlertTriangle, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -60,13 +60,13 @@ export function TopBarReadinessIndicator() {
           {issue.label}
         </span>
         {issue.cta && (
-          <Link
+          <LinkComVolta
             to={issue.cta.href}
             className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-[11px] font-semibold transition-colors flex-shrink-0 border border-warning/40 text-warning hover:bg-warning hover:text-white"
           >
             {issue.cta.label}
             <ChevronRight className="w-3 h-3" />
-          </Link>
+          </LinkComVolta>
         )}
       </div>
     )
@@ -95,7 +95,7 @@ export function TopBarReadinessIndicator() {
       )}
       {open && (
         <div className="absolute right-0 top-full mt-2 z-50 w-[360px] overlay-surface border rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
               <h3 className="text-sm font-semibold text-surface-100">
@@ -106,7 +106,7 @@ export function TopBarReadinessIndicator() {
               type="button"
               onClick={() => setOpen(false)}
               title="Fechar"
-              className="w-6 h-6 rounded-md flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+              className="w-6 h-6 rounded-md flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -124,7 +124,7 @@ export function TopBarReadinessIndicator() {
 
 function IssueCard({ issue, onAction }: { issue: WorkspaceCheck; onAction: () => void }) {
   return (
-    <div className="rounded-xl border border-surface-800 bg-surface-900/40 p-3 flex items-start gap-3">
+    <div className="rounded-xl border border-surface-700 bg-[var(--sf2)] p-3 flex items-start gap-3">
       <span
         className="mt-0.5 w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 color-chip border"
         style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
@@ -135,14 +135,14 @@ function IssueCard({ issue, onAction }: { issue: WorkspaceCheck; onAction: () =>
         <p className="text-xs font-semibold leading-snug text-surface-200">{issue.label}</p>
         <p className="text-[11px] mt-0.5 leading-relaxed text-surface-500">{issue.description}</p>
         {issue.cta && (
-          <Link
+          <LinkComVolta
             to={issue.cta.href}
             onClick={onAction}
             className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border text-warning hover:text-white hover:bg-warning border-warning/40"
           >
             {issue.cta.label}
             <ChevronRight className="w-3 h-3" />
-          </Link>
+          </LinkComVolta>
         )}
       </div>
     </div>

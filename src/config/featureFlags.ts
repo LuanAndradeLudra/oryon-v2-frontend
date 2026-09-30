@@ -9,6 +9,11 @@ export const FEATURE_FLAGS = {
   contacts: true,
   nexus: false,
   campaigns: true,
+  // Leva 9 (SCRUM-1107) — casca visual de Agendamentos, ainda sem
+  // integração real de agenda. Rota/flag ligados; o item de menu na
+  // NavSidebar/BottomTabBar (fora do escopo desta leva) é adicionado à
+  // parte pelo Maestro.
+  schedule: true,
   // Ocultos por enquanto, a pedido do PO (02/09) — some do menu, rota e
   // backend seguem intactos.
   marketing: false,
@@ -57,6 +62,12 @@ export const FEATURE_FLAGS = {
   // acontece e o layout colapsa naturalmente. Reativar = trocar para true.
   // Mesmo padrão reativável do crmAiInsights / aiContextCard.
   dashboardAiInsights: false,
+  // Card "Insights da Oryon AI" na Home — chamava generateInsights() (Haiku no
+  // agent-server) a cada abertura da Home e a cada "Atualizar". Desligado a
+  // pedido do PO (29/09): o texto saía em tom de ordem e o custo não se pagava.
+  // Quando false: o card não é montado, então NENHUMA chamada de API acontece.
+  // Reativar = trocar para true (rever antes a instrução em insights.ts, SCRUM-1161 H6).
+  homeAiInsights: false,
   // Painel "Análise de Conversão IA" no sidebar de contato dentro de uma
   // conversa (botão "Analisar conversa com IA" + telas de resultado).
   // Quando false, o painel inteiro fica oculto — análises já feitas também
@@ -133,6 +144,7 @@ const ROUTE_FLAGS: Array<[string, FeatureFlag]> = [
   ['/contacts', 'contacts'],
   ['/team', 'nexus'],
   ['/campaigns', 'campaigns'],
+  ['/schedule', 'schedule'],
   ['/marketing', 'marketing'],
   ['/automations', 'automations'],
   ['/agents', 'agents'],

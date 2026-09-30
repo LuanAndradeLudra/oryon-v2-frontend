@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { SkeletonTable } from './Skeleton'
 import { EmptyState } from './EmptyState'
 import { ErrorState } from './ErrorState'
+import { Checkbox } from './Checkbox'
 
 export interface DataTableColumn<Row> {
   key: string
@@ -42,7 +43,11 @@ interface DataTableProps<Row> {
   emptyHint?: string
   sort?: DataTableSort | null
   onSortChange?: (sort: DataTableSort) => void
-  onRowClick?: (row: Row) => void
+  /** 2º argumento (MouseEvent) é aditivo — quem já usa `(row) => ...` sem ler
+   *  o evento continua funcionando igual. Necessário pra callers que
+   *  precisam de `e.ctrlKey`/`e.metaKey` (ex.: alternar seleção com o
+   *  clique em vez de abrir o painel). */
+  onRowClick?: (row: Row, e: React.MouseEvent<HTMLTableRowElement>) => void
   /** Menu de contexto por linha (integrar com useContextMenu no caller). */
   onRowContextMenu?: (row: Row, e: React.MouseEvent) => void
   /** Seleção múltipla opcional. */
@@ -54,6 +59,15 @@ interface DataTableProps<Row> {
   className?: string
   /** Densidade: default (py-2.5) ou compact (py-1.5). */
   dense?: boolean
+  /** Altura da linha: `sm` 36px (padrão) ou `md` 44px — linha com subtítulo
+   *  (nome + telefone) precisa de 44 para uma linha de texto por célula. */
+  rowHeight?: 'sm' | 'md'
+  /** Checkbox e elementos marcados com `data-row-action` só aparecem no hover/
+   *  foco da linha (Linear/Attio). Em ponteiro grosso ficam sempre visíveis. */
+  revealOnHover?: boolean
+  /** Rolagem do contêiner (o DataTable é o único scroll container, V+H) —
+   *  scroll infinito escuta aqui, não num invólucro externo. */
+  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void
 }
 
 export function DataTable<Row>({
@@ -63,7 +77,7 @@ export function DataTable<Row>({
   sort, onSortChange,
   onRowClick, onRowContextMenu,
   selectedKeys, onToggleSelect, onToggleSelectAll,
-  activeKey, className, dense,
+  activeKey, className, dense, rowHeight = 'sm', revealOnHover = false, onScroll,
 }: DataTableProps<Row>) {
   const selectable = !!(selectedKeys && onToggleSelect)
   const allSelected = selectable && rows.length > 0 && rows.every((r) => selectedKeys.has(rowKey(r)))
@@ -84,18 +98,31 @@ export function DataTable<Row>({
     a === 'right' ? 'text-right' : a === 'center' ? 'text-center' : 'text-left'
 
   return (
-    <div className={cn('overflow-x-auto overflow-y-auto', className)}>
-      <table className="w-full text-sm border-collapse">
+    <div
+      onScroll={onScroll}
+      className={cn(
+        'overflow-x-auto overflow-y-auto',
+        // revealOnHover: esconde até hover/foco da linha; checkbox marcado e
+        // ação com menu aberto (`data-row-action-open`) permanecem visíveis.
+        revealOnHover && [
+          '[@media(hover:hover)]:[&_tbody_tr:not(:hover):not(:focus-within)_.ui-checkbox:not(:checked)]:opacity-0',
+          '[@media(hover:hover)]:[&_tbody_tr:not(:hover):not(:focus-within)_[data-row-action]:not([data-row-action-open])]:opacity-0',
+        ],
+        className,
+      )}
+    >
+      {/* TABLE-10/23 (spec 1a): números tabulares na tabela inteira. */}
+      <table className="w-full text-sm border-collapse tabular-nums">
         <thead className="sticky top-0 z-10 bg-surface-900">
-          <tr className="border-b border-surface-800">
+          {/* TABLE-02/03/04 (spec 1a): hairlines em --bd (surface-700); cabeçalho
+              faixa --sf2 30px, 11px/600 --tx2, SEM uppercase/tracking. */}
+          <tr className="border-b border-surface-700">
             {selectable && (
-              <th className="w-10 px-3 py-2.5">
-                <input
-                  type="checkbox"
-                  aria-label="Selecionar todos"
+              <th className="w-10 px-3 h-8">
+                <Checkbox
+                  aria-label="Selecionar todos os itens carregados"
                   checked={allSelected}
                   onChange={onToggleSelectAll}
-                  className="accent-brand-500 cursor-pointer"
                 />
               </th>
             )}
@@ -103,7 +130,7 @@ export function DataTable<Row>({
               <th
                 key={col.key}
                 className={cn(
-                  'px-3 py-2.5 text-[11px] font-medium text-surface-500 uppercase tracking-wide whitespace-nowrap',
+                  'px-3 h-8 text-2xs font-semibold text-surface-400 whitespace-nowrap',
                   alignClass(col.align),
                   col.widthClass,
                   col.responsiveClass,
@@ -131,26 +158,24 @@ export function DataTable<Row>({
             return (
               <tr
                 key={key}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onClick={onRowClick ? (e) => onRowClick(row, e) : undefined}
                 onContextMenu={onRowContextMenu ? (e) => onRowContextMenu(row, e) : undefined}
                 className={cn(
-                  'border-b border-surface-800/60 transition-colors',
+                  'border-b border-surface-700 transition-colors',
                   onRowClick && 'cursor-pointer',
                   activeKey === key
-                    ? 'bg-brand-500/15 [&>td:first-child]:shadow-[inset_3px_0_0_0_var(--color-brand-500)]'
+                    ? 'bg-[var(--rowhover)] [&>td:first-child]:shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
                     : selected
-                      ? 'bg-surface-800/60'
-                      : 'hover:bg-surface-800/40',
+                      ? 'bg-[var(--sel)]'
+                      : 'hover:bg-[var(--rowhover)]',
                 )}
               >
                 {selectable && (
                   <td className="w-10 px-3" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       aria-label="Selecionar linha"
                       checked={selected}
                       onChange={() => onToggleSelect(key)}
-                      className="accent-brand-500 cursor-pointer"
                     />
                   </td>
                 )}
@@ -159,8 +184,9 @@ export function DataTable<Row>({
                     key={col.key}
                     className={cn(
                       'px-3 text-surface-300',
-                      dense ? 'py-1.5' : 'py-2.5',
+                      dense ? 'py-1' : rowHeight === 'md' ? 'h-11 py-0' : 'h-9 py-0',
                       alignClass(col.align),
+                      col.align === 'right' && 'tabular-nums',
                       col.responsiveClass,
                     )}
                   >

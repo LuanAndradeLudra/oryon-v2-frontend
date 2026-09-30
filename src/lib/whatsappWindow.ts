@@ -34,11 +34,13 @@ function fmtHoursLeft(h: number): string {
 export function computeWhatsAppWindow(opts: {
   lastMessageAt?: string | null
   lastMessageSenderKind?: SenderKind
+  /** Relógio de quem chama (o Dashboard recalcula a cada 30 s). */
+  now?: number
 }): WhatsAppWindow | null {
-  const { lastMessageAt, lastMessageSenderKind } = opts
+  const { lastMessageAt, lastMessageSenderKind, now = Date.now() } = opts
   if (!lastMessageAt) return null
 
-  const ageH = (Date.now() - new Date(lastMessageAt).getTime()) / 3_600_000
+  const ageH = (now - new Date(lastMessageAt).getTime()) / 3_600_000
   if (!Number.isFinite(ageH) || ageH < 0) return null
 
   // Sem atividade há >= 24h: janela certamente fechada (independe do remetente).
@@ -78,4 +80,59 @@ export function computeWhatsAppWindow(opts: {
     label: 'Janela ativa',
     detail: 'Conversa ativa nas últimas 24h. O fechamento exato depende da última mensagem do cliente.',
   }
+}
+
+// ── Janela no composer, pela última mensagem do CLIENTE (28/09) ─────────────
+// A API não expõe `lastInboundAt` (P5 do SCRUM-1161), mas com a conversa
+// aberta as mensagens estão carregadas: a última entrada é a resposta exata.
+// Antes o composer contava de `lastMessageAt` (de qualquer remetente) e errava
+// nos dois sentidos — "fecha em 24 h" quando faltava 1 h (a IA falou depois do
+// cliente) e texto livre liberado logo após um modelo, que a Meta recusa.
+
+const JANELA_MS = WINDOW_HOURS * 3_600_000
+
+interface MensagemDaJanela {
+  conversationId: string
+  direction: 'inbound' | 'outbound'
+  sentAt: string
+}
+
+/**
+ * Milissegundos que restam na janela de 24h da conversa aberta (≤ 0 =
+ * fechada). Na dúvida, fechada: o atendente ainda pode mandar um modelo, e
+ * texto livre fora da janela é recusado pela Meta.
+ */
+export function msRestantesDaJanela(opts: {
+  conversationId: string
+  mensagens: ReadonlyArray<MensagemDaJanela>
+  /** As mensagens desta conversa ainda estão chegando. */
+  carregando: boolean
+  /** Há mensagens mais antigas que as carregadas. */
+  temMais: boolean
+  lastMessageAt: string
+  lastMessageSenderKind?: SenderKind
+  now?: number
+}): number {
+  const { conversationId, carregando, temMais, lastMessageAt, lastMessageSenderKind, now = Date.now() } = opts
+  const restante = (iso: string) => JANELA_MS - (now - new Date(iso).getTime())
+
+  // A última mensagem foi do cliente: exato, sem precisar das mensagens.
+  if (lastMessageSenderKind === 'client') return restante(lastMessageAt)
+
+  const daConversa = opts.mensagens.filter((m) => m.conversationId === conversationId)
+  let ultimaEntrada: number | null = null
+  for (const m of daConversa) {
+    if (m.direction !== 'inbound') continue
+    const t = new Date(m.sentAt).getTime()
+    if (Number.isFinite(t) && (ultimaEntrada === null || t > ultimaEntrada)) ultimaEntrada = t
+  }
+  if (ultimaEntrada !== null) return JANELA_MS - (now - ultimaEntrada)
+
+  // Sem as mensagens ainda: vale o que se sabe pela conversa até elas chegarem.
+  if (carregando || (daConversa.length === 0 && temMais)) return restante(lastMessageAt)
+
+  // Mensagens carregadas e nenhuma do cliente entre elas: ou o cliente nunca
+  // escreveu, ou escreveu antes da mais antiga carregada. Nos dois casos a
+  // janela não pode ser afirmada — fechada.
+  return 0
 }

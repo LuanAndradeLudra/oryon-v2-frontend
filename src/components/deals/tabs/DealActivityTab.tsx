@@ -23,10 +23,10 @@ export function DealActivityTab({ deal, pipeline, history }: DealActivityTabProp
   const terminalLabels = terminalLabelsOf(pipeline)
 
   return (
-    <div className="flex flex-col gap-4 px-5 py-5">
+    <div className="flex flex-col gap-4 px-[18px] py-4">
       {deal.status !== 'open' && (
         <div
-          className="flex items-start gap-2 rounded-xl border px-3.5 py-3"
+          className="flex items-start gap-2 rounded-lg border px-3.5 py-3"
           style={deal.status === 'won'
             ? { borderColor: 'var(--color-status-active-border, #16a34a55)', backgroundColor: 'var(--color-status-active-bg, #16a34a14)' }
             : { borderColor: 'var(--color-surface-700)', backgroundColor: 'var(--color-surface-900)' }}
@@ -113,7 +113,7 @@ const JUDGE_SKIP_REASON_LABELS: Record<string, string> = {
 /**
  * B6 (SCRUM-941) — decisões do CRM Judge sobre a conversa de origem deste
  * negócio, incluindo o que ele decidiu NÃO fazer (skip_reason). Fetch
- * próprio (mount-time, sem realtime v1) — mesmo padrão de AgentActivitySection.
+ * próprio (mount-time, sem realtime v1) — mesmo padrão de ConversationActivitySection.
  * `deal.originConversationId` é o escopo hoje disponível; um negócio tocado
  * pelo Judge em MAIS de uma conversa só mostra a de origem (limitação
  * conhecida — a rota do agent-server é por conversa, não por negócio).
@@ -136,7 +136,7 @@ function JudgeDecisionsSection({ conversationId }: { conversationId: string | nu
   if (!conversationId || (decisions !== null && decisions.length === 0 && !error)) return null
 
   return (
-    <div className="border-t border-surface-800 pt-4">
+    <div className="border-t border-surface-700 pt-4">
       <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5 mb-2">
         <Gavel className="w-3 h-3" />
         Decisões do CRM Judge
