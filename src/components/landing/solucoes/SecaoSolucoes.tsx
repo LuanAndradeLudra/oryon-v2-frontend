@@ -69,7 +69,8 @@ function Simulacao({ area }: { area: AreaSolucao }) {
           <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold landing-selo">{sim.agente}</span>
         </div>
         <MediaViewerProvider>
-          <div className="relative min-h-0 flex-1 overflow-hidden">
+          {/* As mensagens mais antigas saem pelo topo com um degradê, não com um corte seco. */}
+          <div className="relative min-h-0 flex-1 overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_36px)]">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={ciclo}
@@ -87,9 +88,10 @@ function Simulacao({ area }: { area: AreaSolucao }) {
                   {mensagens.map((m, i) => (
                     <motion.div
                       key={m.id}
-                      className="overflow-hidden"
-                      initial={semMovimento ? false : { height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
+                      // O recorte só vale DURANTE a entrada: o avatar e o ícone da IA
+                      // ficam um pouco para fora da bolha e saíam cortados (30/09, PO).
+                      initial={semMovimento ? false : { height: 0, opacity: 0, overflow: 'hidden' }}
+                      animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
                       transition={{ height: { duration: 0.38, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 0.3, delay: 0.08 } }}
                     >
                       <motion.div
@@ -106,10 +108,11 @@ function Simulacao({ area }: { area: AreaSolucao }) {
                   {digitando && (
                     <motion.div
                       key="digitando"
-                      className="overflow-hidden"
-                      initial={semMovimento ? false : { height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0, transition: { duration: 0.18 } }}
+                      // O recorte só vale DURANTE a entrada: o avatar e o ícone da IA
+                      // ficam um pouco para fora da bolha e saíam cortados (30/09, PO).
+                      initial={semMovimento ? false : { height: 0, opacity: 0, overflow: 'hidden' }}
+                      animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+                      exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: { duration: 0.18 } }}
                       transition={{ height: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 0.25 } }}
                     >
                       <div className="flex justify-end pr-2 pb-1"><TypingIndicator /></div>
