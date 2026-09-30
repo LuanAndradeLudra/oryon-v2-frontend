@@ -9,12 +9,12 @@ const ICONES = { horario: Moon, repeticao: Repeat, organizacao: Shuffle } as con
  * diz em palavras simples o que acontece hoje no WhatsApp de quem vai comprar —
  * e o que muda com a Oryon. Sem números: o problema se reconhece, não se mede.
  */
-export function SecaoDor() {
+export function SecaoDor({ numero }: { numero?: string } = {}) {
   const { dor } = home
   return (
     <section data-section="dor" className="relative border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
-        <Cabecalho eyebrow={dor.eyebrow} titulo={dor.titulo} cinza={dor.cinza} />
+        <Cabecalho numero={numero} eyebrow={dor.eyebrow} titulo={dor.titulo} cinza={dor.cinza} />
 
         <ul className="mt-9 grid gap-4 lg:grid-cols-3">
           {dor.itens.map((d, i) => {

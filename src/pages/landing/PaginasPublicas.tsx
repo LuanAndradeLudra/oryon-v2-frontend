@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react'
 import { LandingLayout } from '@/components/landing/LandingLayout'
 import { Trust } from '@/components/landing/sections'
 import { BotaoLanding } from '@/components/landing/ui/BotaoLanding'
+import { Capitulo } from '@/components/landing/plataforma/SecoesVenda'
 import { home, LANDING_ROUTES, paginasPlataforma, rotaPlataforma, solucoes } from '@/components/landing/landingCopy'
 
 /**
@@ -27,8 +28,8 @@ function TopoDaPagina({ eyebrow, titulo, cinza, lead }: { eyebrow: string; titul
   return (
     <section data-section="topo" className="bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_420px)] pb-12 pt-14 sm:pb-14 sm:pt-20">
       <div className="landing-container">
-        <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{eyebrow}</p>
-        <h1 className="mt-4 max-w-[52rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.9rem,3.6vw,3rem)] text-balance">
+        <Capitulo rotulo={eyebrow} />
+        <h1 className="mt-6 max-w-[52rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.9rem,3.6vw,3rem)] text-balance">
           <span className="text-surface-50">{titulo}</span>{' '}
           <span className="text-surface-500">{cinza}</span>
         </h1>

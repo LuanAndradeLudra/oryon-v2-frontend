@@ -3,6 +3,7 @@ import { AnimatePresence, animate, motion, useReducedMotion } from 'framer-motio
 import { ArrowRight, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { Capitulo } from './SecoesVenda'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
@@ -645,10 +646,8 @@ export function SecaoPlataforma() {
         {/* Cabeçalho da seção — alinhado à coluna dos artigos. */}
         <div className="min-w-0 xl:border-l xl:border-[var(--landing-borda)] xl:pl-[clamp(20px,1.8vw,32px)]">
         <Revelar className="max-w-[64rem]">
-          <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">
-            {plataforma.eyebrow}
-          </p>
-          <h2 id="plataforma-titulo" className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
+          <Capitulo rotulo={plataforma.eyebrow} />
+          <h2 id="plataforma-titulo" className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
             <span className="text-surface-50">{plataforma.title}</span>{' '}
             <span className="text-surface-500">{plataforma.titleCinza}</span>
           </h2>
@@ -765,7 +764,7 @@ export function SecaoCapitulos({ ids }: { ids: readonly string[] }) {
  * artigos empilhados (6.580 px na página antiga). Cada aba leva à página de
  * produto que a aprofunda.
  */
-export function SecaoComoFunciona() {
+export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
   const [ativo, setAtivo] = useState<string>(plataforma.blocos[0].id)
   const idx = Math.max(0, plataforma.blocos.findIndex((b) => b.id === ativo))
   const b = plataforma.blocos[idx]
@@ -774,10 +773,8 @@ export function SecaoComoFunciona() {
     <section id="como-funciona" data-section="como-funciona" aria-labelledby="como-funciona-titulo" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
       <div className="landing-container">
         <Revelar className="max-w-[64rem]">
-          <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">
-            {home.comoFunciona.eyebrow}
-          </p>
-          <h2 id="como-funciona-titulo" className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.6rem,2.8vw,2.3rem)] text-balance">
+          <Capitulo numero={numero} rotulo={home.comoFunciona.eyebrow} />
+          <h2 id="como-funciona-titulo" className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance">
             <span className="text-surface-50">{home.comoFunciona.titulo}</span>{' '}
             <span className="text-surface-500">{home.comoFunciona.cinza}</span>
           </h2>

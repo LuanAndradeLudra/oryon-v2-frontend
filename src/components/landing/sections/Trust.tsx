@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Plug, SlidersHorizontal, PhoneForwarded, Hand, BadgeCheck, History } from 'lucide-react'
 import { home, rotaPlataforma, trust } from '../landingCopy'
 import { DemoRecorte } from '../plataforma/DemoRecorte'
+import { Capitulo } from '../plataforma/SecoesVenda'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '../stage/hero/heroStory'
 import type { HeroCue } from '../stage/hero/useHeroTimeline'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -59,7 +60,7 @@ function Item({ k, i }: { k: (typeof trust.items)[number]; i: number }) {
  * na narrativa anterior, por isso não são repetidos aqui.
  */
 /** `compacto` (home de venda): só os quatro limites, sem a tela, e o link para a página de Atendimento com IA. */
-export function Trust({ compacto = false }: { compacto?: boolean }) {
+export function Trust({ compacto = false, numero }: { compacto?: boolean; numero?: string }) {
   const semMovimento = useReducedMotion()
   const desktop = useMediaQuery('(min-width: 1024px)') && !compacto
   return (
@@ -70,14 +71,13 @@ export function Trust({ compacto = false }: { compacto?: boolean }) {
     >
       <div className="landing-container">
         <motion.div
-          className="max-w-[64rem]"
           initial={semMovimento ? false : { opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-12% 0px' }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         >
-          <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{trust.eyebrow}</p>
-          <h2 className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.08] text-[clamp(1.6rem,2.8vw,2.3rem)] text-balance">
+          <Capitulo numero={numero} rotulo={trust.eyebrow} />
+          <h2 className="mt-6 max-w-[64rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance">
             <span className="text-surface-50">{trust.title}</span>{' '}
             <span className="text-surface-500">{trust.titleCinza}</span>
           </h2>

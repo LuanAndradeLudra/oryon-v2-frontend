@@ -2,7 +2,7 @@
 /* SCRUM-1097 (Leva 0): sai o par Satoshi (display) + Inter (corpo) — entra
  * Plus Jakarta Sans como família única pra display e corpo. JetBrains Mono
  * permanece para IDs, timestamps técnicos e nomes de template. */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap');
 @import "tailwindcss";
 
 /* ── Design System: Workspace Glow · Teal ──────────────────────────────────
@@ -1806,6 +1806,27 @@ h1, h2, h3 {
    um pastel lavado no tema claro. Contraste do texto ≥ 4,5:1 nos dois temas
    (#CCFBF1 sobre #115E59 ≈ 6,8:1; branco sobre #0F766E ≈ 5,5:1). A aba ativa
    segue o botão principal: branca no escuro, preta no claro. */
+/* Landing · TIPOGRAFIA COM VOZ (auditoria anti-genérico, 30/09, aprovada pelo PO):
+   os títulos das páginas públicas usam Bricolage Grotesque; o corpo continua
+   Plus Jakarta; a mono (já carregada) vira a voz dos carimbos, números de
+   capítulo e rótulos. Só dentro de [data-landing-root] — o app não muda. */
+[data-landing-root] {
+  --font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif;
+}
+/* O capítulo: número em mono teal, rótulo em mono caixa-alta, régua até a
+   margem. Substitui a pílula de eyebrow em todas as seções. */
+@utility landing-capitulo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--color-surface-400);
+  & > [data-numero] { letter-spacing: .04em; color: var(--landing-destaque); }
+  &::after { content: ''; flex: 1 1 auto; height: 1px; background: var(--landing-borda); }
+}
 @utility landing-selo {
   background-color: #115E59;
   color: #CCFBF1;

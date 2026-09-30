@@ -99,13 +99,13 @@ function Simulacao({ area }: { area: AreaSolucao }) {
   )
 }
 
-export function SecaoSolucoes({ completa = false }: { completa?: boolean }) {
+export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean; numero?: string }) {
   const [ativa, setAtiva] = useState<string>(solucoes.areas[0].id)
   const area = solucoes.areas.find((a) => a.id === ativa) ?? solucoes.areas[0]
   return (
     <section id="solucoes" data-section="solucoes" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
-        {!completa && <Cabecalho eyebrow={solucoes.eyebrow} titulo={solucoes.titulo} cinza={solucoes.cinza} />}
+        {!completa && <Cabecalho numero={numero} eyebrow={solucoes.eyebrow} titulo={solucoes.titulo} cinza={solucoes.cinza} />}
         <Revelar atraso={0.1}>
           <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px] text-pretty">{solucoes.lead}</p>
         </Revelar>

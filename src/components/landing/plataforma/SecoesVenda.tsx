@@ -47,11 +47,23 @@ function BotaoContato({ className, longo = true }: { className?: string; longo?:
   )
 }
 
-export function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string; cinza: string }) {
+/** O CAPÍTULO (30/09, auditoria anti-genérico): número em mono + rótulo + régua.
+ *  Na home cada seção tem número (a página é um roteiro); nas páginas internas
+ *  só rótulo e régua. */
+export function Capitulo({ numero, rotulo, className }: { numero?: string; rotulo: string; className?: string }) {
   return (
-    <Revelar className="max-w-[64rem]">
-      <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{eyebrow}</p>
-      <h2 className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.08] text-[clamp(1.6rem,2.8vw,2.3rem)] text-balance">
+    <p className={cn('landing-capitulo', className)}>
+      {numero && <span data-numero>{numero}</span>}
+      <span>{rotulo}</span>
+    </p>
+  )
+}
+
+export function Cabecalho({ eyebrow, titulo, cinza, numero }: { eyebrow: string; titulo: string; cinza: string; numero?: string }) {
+  return (
+    <Revelar>
+      <Capitulo numero={numero} rotulo={eyebrow} />
+      <h2 className="mt-6 max-w-[64rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance">
         <span className="text-surface-50">{titulo}</span>{' '}
         <span className="text-surface-500">{cinza}</span>
       </h2>
@@ -65,12 +77,12 @@ const ICONES_PASSO = [Smartphone, Settings2, Rocket]
 const ICONES_DEPOIS = { ajuste: PencilLine, crescer: Layers, acompanhar: LayoutDashboard } as const
 
 /** `compacta` (home de venda): só os três passos — o "depois da implantação" fica na página. */
-export function SecaoImplantacao({ compacta = false }: { compacta?: boolean }) {
+export function SecaoImplantacao({ compacta = false, numero }: { compacta?: boolean; numero?: string }) {
   const semMovimento = useReducedMotion()
   return (
     <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20 lg:py-14">
       <div className="landing-container">
-        <Cabecalho eyebrow={implantacao.eyebrow} titulo={implantacao.title} cinza={implantacao.titleCinza} />
+        <Cabecalho numero={numero} eyebrow={implantacao.eyebrow} titulo={implantacao.title} cinza={implantacao.titleCinza} />
 
         <div className="relative mt-10 sm:mt-12">
           {/* A linha do tempo que se desenha ao entrar na tela (desktop). */}
@@ -182,7 +194,7 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
  * `limite` (home de venda): só as primeiras perguntas, sem grupos, com o link
  * para a página completa. `comoPagina`: o título vira o H1 da página.
  */
-export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number; comoPagina?: boolean }) {
+export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?: number; comoPagina?: boolean; numero?: string }) {
   const todas: ReadonlyArray<{ pergunta: string; resposta: string }> = perguntas.grupos.flatMap((g): ReadonlyArray<{ pergunta: string; resposta: string }> => g.itens)
   // Na home, as objeções escolhidas em perguntas.naHome, na ordem delas.
   const naHome = perguntas.naHome.map((p) => todas.find((q) => q.pergunta === p)).filter((q): q is (typeof todas)[number] => !!q)
@@ -193,14 +205,14 @@ export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number
         <div className="lg:sticky lg:top-24 lg:self-start">
           {comoPagina ? (
             <Revelar>
-              <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{perguntas.eyebrow}</p>
-              <h1 className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
+              <Capitulo rotulo={perguntas.eyebrow} />
+              <h1 className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
                 <span className="text-surface-50">{perguntas.title}</span>{' '}
                 <span className="text-surface-500">{perguntas.titleCinza}</span>
               </h1>
             </Revelar>
           ) : (
-            <Cabecalho eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
+            <Cabecalho numero={numero} eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
           )}
           <Revelar atraso={0.2} className="mt-8 flex flex-wrap gap-3">
             <BotaoContato longo={false} />

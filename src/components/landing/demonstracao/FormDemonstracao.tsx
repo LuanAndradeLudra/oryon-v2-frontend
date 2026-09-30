@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { apiBaseUrl } from '@/config/env'
 import { formDemo } from '../landingCopy'
-import { Cabecalho, Revelar } from '../plataforma/SecoesVenda'
+import { Cabecalho, Capitulo, Revelar } from '../plataforma/SecoesVenda'
 
 /**
  * O PEDIDO DE DEMONSTRAÇÃO (30/09) — a conversão da landing enquanto o
@@ -145,7 +145,7 @@ export function FormDemonstracao({ origem }: { origem: string }) {
 }
 
 /** A seção de fecho: o convite e o formulário lado a lado. */
-export function SecaoDemonstracao({ origem, comoPagina = false }: { origem: string; comoPagina?: boolean }) {
+export function SecaoDemonstracao({ origem, comoPagina = false, numero }: { origem: string; comoPagina?: boolean; numero?: string }) {
   return (
     <section id="demonstracao" data-section="demonstracao" className="relative scroll-mt-20 overflow-hidden border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
       <div
@@ -157,14 +157,14 @@ export function SecaoDemonstracao({ origem, comoPagina = false }: { origem: stri
         <div>
           {comoPagina ? (
             <Revelar>
-              <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{formDemo.eyebrow}</p>
-              <h1 className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
+              <Capitulo rotulo={formDemo.eyebrow} />
+              <h1 className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
                 <span className="text-surface-50">{formDemo.titulo}</span>{' '}
                 <span className="text-surface-500">{formDemo.cinza}</span>
               </h1>
             </Revelar>
           ) : (
-            <Cabecalho eyebrow={formDemo.eyebrow} titulo={formDemo.titulo} cinza={formDemo.cinza} />
+            <Cabecalho numero={numero} eyebrow={formDemo.eyebrow} titulo={formDemo.titulo} cinza={formDemo.cinza} />
           )}
           <Revelar atraso={0.1}>
             <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px]">{formDemo.lead}</p>
