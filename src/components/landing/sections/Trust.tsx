@@ -1,21 +1,13 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Plug, SlidersHorizontal, PhoneForwarded, Hand, BadgeCheck, History } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { home, rotaPlataforma, trust } from '../landingCopy'
 import { DemoRecorte } from '../plataforma/DemoRecorte'
 import { Capitulo } from '../plataforma/SecoesVenda'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '../stage/hero/heroStory'
 import type { HeroCue } from '../stage/hero/useHeroTimeline'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-
-const ICONS = {
-  conexao: Plug,
-  permissoes: SlidersHorizontal,
-  chamada: PhoneForwarded,
-  controle: Hand,
-  venda: BadgeCheck,
-  historico: History,
-} as const
 
 /**
  * A aba Capacidades do Agente Vendas, na tela real: primeiro o holofote em
@@ -32,23 +24,36 @@ const CUES: readonly HeroCue<HeroState, HeroCena>[] = [
 // Página do agente em 1280×720: navegação + seção Capacidades (direção D).
 const RECORTE = { x: 62, y: 48, w: 1218, h: 672 }
 
-function Item({ k, i }: { k: (typeof trust.items)[number]; i: number }) {
+/**
+ * Uma COLUNA da tabela "pode / só uma pessoa" (P7 da auditoria anti-genérico,
+ * 30/09): no lugar de quatro cartões com ícone, duas listas lado a lado, com
+ * o ponto colorido do produto — teal = ação da IA, âmbar = ação de uma pessoa.
+ */
+function Coluna({ quem, i }: { quem: 'ia' | 'pessoa'; i: number }) {
   const semMovimento = useReducedMotion()
-  const Icon = ICONS[k.key]
+  const col = trust.pode[quem]
+  const ia = quem === 'ia'
   return (
-    <motion.li
-      className="bg-[var(--landing-cartao)] p-5 sm:p-6 lg:p-4"
-      initial={semMovimento ? false : { opacity: 0, y: 16 }}
+    <motion.div
+      className={cn('p-5 sm:p-6', i > 0 && 'border-t border-[var(--landing-borda)] sm:border-l sm:border-t-0')}
+      initial={semMovimento ? false : { opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-10% 0px' }}
-      transition={{ duration: 0.7, delay: 0.1 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.7, delay: 0.1 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
     >
-      <span className="flex h-[26px] w-[26px] items-center justify-center rounded-xl bg-surface-900 text-[var(--landing-destaque)] ring-1 ring-surface-700">
-        <Icon className="h-[13px] w-[13px]" strokeWidth={1.8} aria-hidden />
-      </span>
-      <h3 className="mt-2.5 font-display text-[15px] font-semibold tracking-[-0.01em] text-surface-50">{k.title}</h3>
-      <p className="mt-2 max-w-[44ch] text-[14px] leading-relaxed text-surface-400">{k.text}</p>
-    </motion.li>
+      <h3 className={cn('flex items-center gap-2.5 font-mono text-[11.5px] uppercase tracking-[.14em]', ia ? 'text-[var(--landing-destaque)]' : 'text-[#F5B544]')}>
+        <span aria-hidden className={cn('h-[7px] w-[7px] rounded-full', ia ? 'bg-[var(--landing-destaque)]' : 'bg-[#F5B544]')} />
+        {col.titulo}
+      </h3>
+      <ul className="mt-3">
+        {col.itens.map((it) => (
+          <li key={it.texto} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-t border-[var(--landing-borda)] py-3">
+            <span className={cn('text-[15px] leading-snug', ia ? 'text-surface-100' : 'font-medium text-surface-50')}>{it.texto}</span>
+            <span className="font-mono text-[11px] tracking-[.02em] text-surface-500">{it.nota}</span>
+          </li>
+        ))}
+      </ul>
+    </motion.div>
   )
 }
 
@@ -92,9 +97,17 @@ export function Trust({ compacto = false, numero }: { compacto?: boolean; numero
               </div>
             </div>
           )}
-          <ul className={compacto ? 'grid gap-px overflow-hidden rounded-2xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] sm:grid-cols-2 lg:col-span-2 lg:grid-cols-4' : 'grid gap-px overflow-hidden rounded-2xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] sm:grid-cols-2'}>
-            {trust.items.map((k, i) => <Item key={k.key} k={k} i={i} />)}
-          </ul>
+          <div className={cn('min-w-0 self-start', compacto && 'lg:col-span-2')}>
+            <div className="grid border border-[var(--landing-borda)] sm:grid-cols-2">
+              <Coluna quem="ia" i={0} />
+              <Coluna quem="pessoa" i={1} />
+            </div>
+            <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11.5px] tracking-[.02em] text-surface-500">
+              <span className="inline-flex items-center gap-2"><span aria-hidden className="h-[7px] w-[7px] rounded-full bg-[var(--landing-destaque)]" />{trust.pode.legendaIa}</span>
+              <span className="inline-flex items-center gap-2"><span aria-hidden className="h-[7px] w-[7px] rounded-full bg-[#F5B544]" />{trust.pode.legendaPessoa}</span>
+              <span>· {trust.pode.legendaNota}</span>
+            </p>
+          </div>
         </div>
         {compacto && (
           <Link to={rotaPlataforma('atendimento-ia')} className="mt-5 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">

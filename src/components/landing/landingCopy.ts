@@ -99,30 +99,33 @@ export const trust = {
   /** A frase que prepara a tela real (aba Capacidades do agente). */
   lead: 'A IA pode errar. Por isso, você escolhe o que ela pode fazer, vê tudo o que ela fez e assume a conversa quando quiser.',
   tela: 'Oryon · Agentes IA',
-  items: [
-    {
-      key: 'permissoes',
-      title: 'Escolha o que o agente pode fazer',
-      text: 'Ligue só o que faz sentido para a sua operação: organizar os contatos, avançar a venda de etapa ou chamar a equipe.',
+  /** As duas colunas (P7 da auditoria anti-genérico, 30/09): o que a IA pode
+   *  fazer quando você liga, e o que só uma pessoa faz. Cada linha é um fato
+   *  do produto (auditoria de capacidades, 25/09); a nota é o detalhe que
+   *  prova. Cores do produto: teal = IA, âmbar = pessoa. */
+  pode: {
+    ia: {
+      titulo: 'A IA pode, se você ligar',
+      itens: [
+        { texto: 'Responder com o que você cadastrou', nota: 'instruções · documentos · serviços' },
+        { texto: 'Marcar a situação e as etiquetas do cliente', nota: 'fica no registro' },
+        { texto: 'Avançar a venda para a próxima etapa', nota: 'nunca a última' },
+        { texto: 'Chamar a sua equipe', nota: 'encaixes · urgências · fora do escopo' },
+      ],
     },
-    {
-      key: 'venda',
-      title: 'Só uma pessoa fecha a venda',
-      text: 'A IA pode avançar o atendimento, mas marcar a venda como ganha ou perdida é sempre decisão da sua equipe.',
+    pessoa: {
+      titulo: 'Só uma pessoa',
+      itens: [
+        { texto: 'Fechar a venda como ganha ou perdida', nota: 'bloqueado para a IA' },
+        { texto: 'Assumir a conversa', nota: 'a IA pausa na hora' },
+        { texto: 'Definir o que a IA pode fazer', nota: 'por agente' },
+        { texto: 'Ligar o agente no número oficial', nota: 'depois do teste' },
+      ],
     },
-    {
-      key: 'chamada',
-      title: 'Você decide o que exige uma pessoa',
-      text: 'Encaixes, urgências, assuntos delicados: você define quando o agente chama a equipe. Quem assume recebe a conversa inteira.',
-    },
-    {
-      // Ciclo noturno (30/09): o cartão da conexão oficial repetia a faixa de
-      // fatos, palavra por palavra. No lugar, a prova de que dá para conferir.
-      key: 'historico',
-      title: 'Tudo fica registrado',
-      text: 'Cada resposta e cada ação do agente ficam no histórico da conversa, com data e hora. Você confere quando quiser.',
-    },
-  ],
+    legendaIa: 'ação da IA',
+    legendaPessoa: 'ação de uma pessoa',
+    legendaNota: 'o mesmo código de cor do app',
+  },
 } as const
 
 export const footer = {
