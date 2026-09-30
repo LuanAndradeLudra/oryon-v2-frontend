@@ -53,5 +53,6 @@ describe('R4 — duração em segundos', () => {
     expect(formatKpiValue(45, 'seconds')).toBe('45s')
     expect(formatKpiValue(3 * 3600 + 600, 'seconds')).toBe('3h 10m')
     expect(formatKpiValue(222102, 'seconds')).toBe('2d 14h')
+    expect(formatKpiValue(172000, 'seconds')).toBe('2d')
   })
 })
