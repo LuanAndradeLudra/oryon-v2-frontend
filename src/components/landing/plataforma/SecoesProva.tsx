@@ -52,7 +52,7 @@ export function SecaoArea() {
       <div className="landing-container">
         <Cabecalho eyebrow={area.eyebrow} titulo={area.title} cinza={area.titleCinza} />
         <Revelar atraso={0.1}>
-          <p className="mt-3 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{area.lead}</p>
+          <p className="mt-3 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{area.lead}</p>
         </Revelar>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-[1.3fr_1fr] lg:gap-4">
@@ -187,7 +187,7 @@ export function SecaoEquipe() {
       <div className="landing-container">
         <Cabecalho eyebrow={equipe.eyebrow} titulo={equipe.title} cinza={equipe.titleCinza} />
         <Revelar atraso={0.1}>
-          <p className="mt-3 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{equipe.lead}</p>
+          <p className="mt-3 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{equipe.lead}</p>
         </Revelar>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {equipe.cartoes.map((c, i) => (
@@ -313,7 +313,7 @@ export function SecaoResposta() {
       <div className="landing-container">
         <Cabecalho eyebrow={resposta.eyebrow} titulo={resposta.title} cinza={resposta.titleCinza} />
         <Revelar atraso={0.1}>
-          <p className="mt-3 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{resposta.lead}</p>
+          <p className="mt-3 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{resposta.lead}</p>
         </Revelar>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {resposta.cartoes.map((c, i) => (

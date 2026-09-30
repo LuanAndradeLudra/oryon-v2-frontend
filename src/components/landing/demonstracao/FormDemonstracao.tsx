@@ -167,7 +167,7 @@ export function SecaoDemonstracao({ origem, comoPagina = false }: { origem: stri
             <Cabecalho eyebrow={formDemo.eyebrow} titulo={formDemo.titulo} cinza={formDemo.cinza} />
           )}
           <Revelar atraso={0.1}>
-            <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-surface-400">{formDemo.lead}</p>
+            <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px]">{formDemo.lead}</p>
           </Revelar>
           {/* O que acontece depois (ciclo noturno, 30/09): quem vai deixar os
               dados quer saber o próximo passo antes de enviar. */}

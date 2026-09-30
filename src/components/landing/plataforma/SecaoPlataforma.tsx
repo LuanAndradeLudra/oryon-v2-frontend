@@ -523,7 +523,7 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
         <h4 className={cn(!semRotulo && 'mt-2.5', ' font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
           {b.destaque}
         </h4>
-        <p className="mt-2.5 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
+        <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
       </Revelar></div>
 
       <div className="mt-6 flex justify-start" data-composicao-envelope>

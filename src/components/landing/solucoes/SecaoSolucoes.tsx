@@ -57,7 +57,7 @@ function Simulacao({ area }: { area: AreaSolucao }) {
   return (
     <div ref={ref} aria-hidden inert className="pointer-events-none grid select-none gap-3 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
       {/* A conversa: as bolhas reais do chat da Oryon. */}
-      <div className="flex min-h-[340px] flex-col overflow-hidden rounded-xl bg-surface-950 ring-1 ring-surface-700">
+      <div className="flex h-[400px] flex-col overflow-hidden rounded-xl bg-surface-950 ring-1 ring-surface-700">
         <div className="flex items-center gap-2 border-b border-surface-700 px-3 py-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-800 text-[10px] font-bold text-surface-200">
             {sim.contato.split(' ').map((n) => n[0]).join('')}
@@ -66,7 +66,7 @@ function Simulacao({ area }: { area: AreaSolucao }) {
           <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold landing-selo">{sim.agente}</span>
         </div>
         <MediaViewerProvider>
-          <div className="flex flex-1 flex-col justify-end gap-1 px-2 py-2">
+          <div className="flex min-h-0 flex-1 flex-col justify-end gap-1 overflow-hidden px-2 py-2">
             <AnimatePresence initial={false}>
               {mensagens.map((m, i) => (
                 <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
@@ -79,8 +79,21 @@ function Simulacao({ area }: { area: AreaSolucao }) {
         </MediaViewerProvider>
       </div>
       {/* O que o CRM registra: a linha do tempo real da conversa. */}
-      <div className="overflow-hidden rounded-xl bg-surface-900 px-3 pb-2 ring-1 ring-surface-700">
-        <ConversationActivitySection conversationId={`sim-${area.id}`} entries={linha} />
+      {/* O cabeçalho do app ("Timeline" e o filtro de período) sai: na landing, o
+          painel diz em português o que é, e começa explicando o que vai
+          aparecer em vez de "Nenhum evento registrado" (ciclo noturno, 30/09). */}
+      <div className="flex flex-col overflow-hidden rounded-xl bg-surface-900 ring-1 ring-surface-700">
+        <div className="border-b border-surface-700 px-4 py-2.5">
+          <p className="text-[12px] font-semibold text-surface-100">{solucoes.registroTitulo}</p>
+          <p className="text-[11px] text-surface-500">{solucoes.registroSub}</p>
+        </div>
+        {linha.length === 0 ? (
+          <p className="flex flex-1 items-center justify-center px-5 py-8 text-center text-[12.5px] leading-relaxed text-surface-500">{solucoes.registroVazio}</p>
+        ) : (
+          <div className="px-3 pb-2 [&_.panel-divider>div:first-child]:hidden [&_.panel-divider]:border-t-0">
+            <ConversationActivitySection conversationId={`sim-${area.id}`} entries={linha} />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -94,7 +107,7 @@ export function SecaoSolucoes({ completa = false }: { completa?: boolean }) {
       <div className="landing-container">
         {!completa && <Cabecalho eyebrow={solucoes.eyebrow} titulo={solucoes.titulo} cinza={solucoes.cinza} />}
         <Revelar atraso={0.1}>
-          <p className="mt-3 max-w-[64ch] text-[14px] leading-relaxed text-surface-400 sm:text-[15px] text-pretty">{solucoes.lead}</p>
+          <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px] text-pretty">{solucoes.lead}</p>
         </Revelar>
 
         <div role="tablist" aria-label={solucoes.abasLabel} className="-mx-1.5 mt-6 flex gap-2 overflow-x-auto px-1.5 py-2 [scrollbar-width:none]">

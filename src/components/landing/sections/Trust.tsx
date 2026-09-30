@@ -81,7 +81,7 @@ export function Trust({ compacto = false }: { compacto?: boolean }) {
             <span className="text-surface-50">{trust.title}</span>{' '}
             <span className="text-surface-500">{trust.titleCinza}</span>
           </h2>
-          <p className="mt-3 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{trust.lead}</p>
+          <p className="mt-3 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{trust.lead}</p>
         </motion.div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,550px)_minmax(340px,1fr)] lg:gap-4">
