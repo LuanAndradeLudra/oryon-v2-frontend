@@ -45,3 +45,13 @@ describe('Dashboard onda 1 — montarSnapshot', () => {
     expect(KPI_CATALOG.filter((k) => k.hasData === false)).toEqual([])
   })
 })
+
+describe('R4 — duração em segundos', () => {
+  it('negativo ou zero vira "—"; horas e dias legíveis', () => {
+    expect(formatKpiValue(-222102, 'seconds')).toBe('—')
+    expect(formatKpiValue(0, 'seconds')).toBe('—')
+    expect(formatKpiValue(45, 'seconds')).toBe('45s')
+    expect(formatKpiValue(3 * 3600 + 600, 'seconds')).toBe('3h 10m')
+    expect(formatKpiValue(222102, 'seconds')).toBe('2d 14h')
+  })
+})

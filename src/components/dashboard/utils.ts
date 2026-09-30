@@ -8,7 +8,13 @@ export function formatKpiValue(value: number | null, unit: KpiUnit): string {
     case 'percent':
       return `${value.toFixed(1).replace('.', ',')}%` // pt-BR: 71,0%
     case 'seconds': {
-      if (value === 0) return '—'
+      // R4: 0 ou negativo (dado inconsistente) é "sem dado", nunca "-222102s".
+      if (value <= 0) return '—'
+      if (value >= 86400) {
+        const d = Math.floor(value / 86400)
+        const h = Math.round((value % 86400) / 3600)
+        return h > 0 ? `${d}d ${h}h` : `${d}d`
+      }
       if (value < 60) return `${Math.round(value)}s`
       if (value < 3600) {
         const m = Math.floor(value / 60)
