@@ -8,7 +8,6 @@ import { VolumeChart }      from './VolumeChart'
 import { SalesFunnelCard }  from './SalesFunnelCard'
 import { StatusDonut }      from './StatusDonut'
 import { TagsChart }        from './TagsChart'
-import { CsatChart }        from './CsatChart'
 import { PeakHoursHeatmap } from './PeakHoursHeatmap'
 import { AgentTable }       from './AgentTable'
 import { ActivityFeed }     from './ActivityFeed'
@@ -198,10 +197,8 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <TagsChart data={snapshot.tagVolumes} escopo={ESCOPO.historico} />
-          <CsatChart data={snapshot.csatChart} />
-        </div>
+        {/* D4: o gráfico de CSAT saiu (sem pesquisa de satisfação no backend). */}
+        <TagsChart data={snapshot.tagVolumes} escopo={ESCOPO.historico} />
 
         <PeakHoursHeatmap data={snapshot.heatmap} escopo={ESCOPO.seteDias} />
 

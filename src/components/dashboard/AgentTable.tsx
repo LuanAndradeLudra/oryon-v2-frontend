@@ -151,12 +151,14 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               className="w-44 bg-surface-950 border border-surface-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-online" />
-            <span className="text-xs text-surface-400">
-              {agents.filter((a) => a.isOnline).length} de {agents.length} online
-            </span>
-          </div>
+          {agents.some((a) => a.isOnline !== null) && (
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-online" />
+              <span className="text-xs text-surface-400">
+                {agents.filter((a) => a.isOnline).length} de {agents.length} online
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -170,15 +172,12 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               <Th label="Resolvidas"     sortKey="resolvedToday"      tooltip={COLUMN_TOOLTIPS.resolved}       />
               <Th label="TMR"            sortKey="avgResponseTime"    tooltip={COLUMN_TOOLTIPS.responseTime}   />
               <Th label="Resolução"      sortKey="avgResolutionTime"  tooltip={COLUMN_TOOLTIPS.resolutionTime} />
-              <Th label="CSAT"           sortKey="csat"               tooltip={COLUMN_TOOLTIPS.csat}           />
-              <Th label="SLA"            sortKey="slaCompliance"      tooltip={COLUMN_TOOLTIPS.sla}            />
-              <Th label="Utilização"     sortKey="utilization"        tooltip={COLUMN_TOOLTIPS.utilization}    />
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-700">
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-xs text-surface-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-xs text-surface-500">
                   Nenhum agente encontrado{query ? ` para "${search.trim()}"` : ''}.
                 </td>
               </tr>
@@ -189,7 +188,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar name={agent.name} size="sm" online={agent.isOnline} kind="operator" />
+                      <Avatar name={agent.name} size="sm" online={agent.isOnline ?? undefined} kind="operator" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-surface-100">{agent.name}</p>
@@ -200,9 +199,11 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
 
                 {/* Status */}
                 <td className="px-4 py-3.5">
-                  {agent.isOnline
-                    ? <span className="text-xs text-online font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-online" />Online</span>
-                    : <span className="text-xs text-surface-500 font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-surface-600" />Offline</span>
+                  {agent.isOnline === null
+                    ? <span className="text-xs text-surface-600" title="Presença ainda não é medida">—</span>
+                    : agent.isOnline
+                      ? <span className="text-xs text-online font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-online" />Online</span>
+                      : <span className="text-xs text-surface-500 font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-surface-600" />Offline</span>
                   }
                 </td>
 
@@ -226,29 +227,6 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                   {agent.avgResolutionTime ? formatKpiValue(agent.avgResolutionTime, 'seconds') : '—'}
                 </td>
 
-                {/* CSAT */}
-                <td className="px-4 py-3.5">
-                  {agent.csat > 0 ? (
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-semibold text-surface-100 tabular-nums">{agent.csat.toFixed(1).replace('.', ',')}</span>
-                      <span className="text-xs text-away">★</span>
-                    </div>
-                  ) : <span className="text-xs text-surface-600">—</span>}
-                </td>
-
-                {/* SLA */}
-                <td className="px-4 py-3.5">
-                  {agent.slaCompliance > 0
-                    ? <MiniBar value={agent.slaCompliance} color={slaColor(agent.slaCompliance)} />
-                    : <span className="text-xs text-surface-600">—</span>}
-                </td>
-
-                {/* Utilization */}
-                <td className="px-4 py-3.5">
-                  {agent.utilization > 0
-                    ? <MiniBar value={agent.utilization} color={utilizationColor(agent.utilization)} />
-                    : <span className="text-xs text-surface-600">—</span>}
-                </td>
               </tr>
             ))}
           </tbody>

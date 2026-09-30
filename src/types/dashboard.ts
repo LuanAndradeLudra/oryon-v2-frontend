@@ -38,7 +38,8 @@ export interface KpiDefinition {
 }
 
 export interface KpiMetric extends KpiDefinition {
-  value: number
+  /** `null` = sem dado (mostra "—"), nunca um 0 inventado (regra 6). */
+  value: number | null
   trend: number    // % change vs previous period
   sparkline: number[] // 7 data points (oldest → newest)
 }
@@ -79,8 +80,9 @@ export interface AgentMetrics {
   userId: string
   name: string
   role: string
-  departmentName: string
-  isOnline: boolean
+  departmentName: string | null
+  /** `null` = sem rastreio de presença ainda (mostra "—", não "Offline"). */
+  isOnline: boolean | null
   conversationsToday: number
   resolvedToday: number
   avgResponseTime: number   // seconds
@@ -156,53 +158,38 @@ export const EMPTY_REALTIME_STATUS: RealtimeStatus = {
 
 // ── KPI Catalog ───────────────────────────────────────────────────────────────
 
+// K13-FE / K15 (release 2026-09-29): saíram do catálogo os indicadores sem
+// fonte no backend e os que a D4 tirou (CSAT, NPS, SLA global, Ads, CTR,
+// opt-out, utilização). Slots salvos com esses ids são ignorados (loadSlots).
 export const KPI_CATALOG: KpiDefinition[] = [
   { id: 'total_conversations',  label: 'Total de Conversas',      category: 'Atendimento', unit: 'count',      trendIsGood: 'up'     },
   { id: 'active_conversations', label: 'Conversas Ativas',        category: 'Atendimento', unit: 'count',      trendIsGood: 'neutral'},
   { id: 'queued',               label: 'Em Fila',                  category: 'Atendimento', unit: 'count',      trendIsGood: 'down'   },
   { id: 'resolved',             label: 'Resolvidas',               category: 'Atendimento', unit: 'count',      trendIsGood: 'up'     },
-  { id: 'abandoned',            label: 'Abandonadas',              category: 'Atendimento', unit: 'count',      trendIsGood: 'down',   hasData: false },
+  { id: 'abandoned',            label: 'Abandonadas',              category: 'Atendimento', unit: 'count',      trendIsGood: 'down' },
   { id: 'resolution_rate',      label: 'Taxa de Resolução',        category: 'Atendimento', unit: 'percent',    trendIsGood: 'up'     },
-  { id: 'abandon_rate',         label: 'Taxa de Abandono',         category: 'Atendimento', unit: 'percent',    trendIsGood: 'down',   hasData: false },
+  { id: 'abandon_rate',         label: 'Taxa de Abandono',         category: 'Atendimento', unit: 'percent',    trendIsGood: 'down' },
   { id: 'first_response_time',  label: 'TMR (1ª Resposta)',        category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down'   },
-  { id: 'avg_resolution_time',  label: 'Tempo Médio Resolução',    category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',   hasData: false },
-  { id: 'sla_compliance',       label: 'SLA Compliance',           category: 'Velocidade',  unit: 'percent',    trendIsGood: 'up',     hasData: false },
-  { id: 'csat',                 label: 'Satisfação (CSAT)',        category: 'Qualidade',   unit: 'csat_score', trendIsGood: 'up',     hasData: false },
-  { id: 'nps',                  label: 'NPS',                      category: 'Qualidade',   unit: 'nps_score',  trendIsGood: 'up',     hasData: false },
-  { id: 'recontact_rate',       label: 'Taxa de Recontato',        category: 'Qualidade',   unit: 'percent',    trendIsGood: 'down',   hasData: false },
+  { id: 'avg_resolution_time',  label: 'Tempo Médio Resolução',    category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down' },
+  { id: 'recontact_rate',       label: 'Taxa de Recontato',        category: 'Qualidade',   unit: 'percent',    trendIsGood: 'down' },
   { id: 'msgs_received',        label: 'Msgs Recebidas',           category: 'Volume',      unit: 'count',      trendIsGood: 'neutral'},
   { id: 'msgs_sent',            label: 'Msgs Enviadas',            category: 'Volume',      unit: 'count',      trendIsGood: 'neutral'},
   { id: 'new_contacts',         label: 'Novos Contatos',           category: 'Volume',      unit: 'count',      trendIsGood: 'up'     },
-  { id: 'bot_deflection',       label: 'Deflexão do Bot',          category: 'Bot',         unit: 'percent',    trendIsGood: 'up',     hasData: false },
-  { id: 'bot_resolved',         label: 'Resolvidas pelo Bot',      category: 'Bot',         unit: 'count',      trendIsGood: 'up',     hasData: false },
+  { id: 'bot_deflection',       label: 'Deflexão do Bot',          category: 'Bot',         unit: 'percent',    trendIsGood: 'up' },
+  { id: 'bot_resolved',         label: 'Resolvidas pelo Bot',      category: 'Bot',         unit: 'count',      trendIsGood: 'up' },
   { id: 'agents_online',        label: 'Agentes Online',           category: 'Equipe',      unit: 'count',      trendIsGood: 'neutral'},
-  { id: 'team_utilization',     label: 'Utilização da Equipe',     category: 'Equipe',      unit: 'percent',    trendIsGood: 'neutral', hasData: false },
   // ── Campanhas (Meta WhatsApp Business API) ──────────────────────────────────
   // Signals available via status webhooks (sent/delivered/read/failed) and
   // Meta's template analytics endpoint (clicks, replies, opt-outs).
   // PL-C2-FAR-3: nenhum destes 8 é lido em `DashboardPage.fetchDashboard`
   // hoje (fica em `hasData: false` até o webhook/endpoint existir).
-  { id: 'campaign_sent',          label: 'Msgs Enviadas (Disparos)',  category: 'Disparos',   unit: 'count',      trendIsGood: 'up',     hasData: false },
-  { id: 'campaign_delivery_rate', label: 'Taxa de Entrega',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',     hasData: false },
-  { id: 'campaign_read_rate',     label: 'Taxa de Leitura',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',     hasData: false },
-  { id: 'campaign_reply_rate',    label: 'Taxa de Resposta',          category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',     hasData: false },
-  { id: 'campaign_ctr',           label: 'Click-through Rate (CTR)',  category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',     hasData: false },
-  { id: 'campaign_fail_rate',     label: 'Taxa de Falha',             category: 'Disparos',   unit: 'percent',    trendIsGood: 'down',   hasData: false },
-  { id: 'campaign_optout_rate',   label: 'Taxa de Opt-out',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'down',   hasData: false },
-  { id: 'campaigns_active',       label: 'Disparos Ativos',           category: 'Disparos',   unit: 'count',      trendIsGood: 'neutral', hasData: false },
-  { id: 'campaigns_total',        label: 'Total de Disparos',         category: 'Disparos',   unit: 'count',      trendIsGood: 'up',     hasData: false },
-  { id: 'campaign_reach',         label: 'Alcance Total (Disparos)',  category: 'Disparos',   unit: 'count',      trendIsGood: 'up',     hasData: false },
+  { id: 'campaign_sent',          label: 'Msgs Enviadas (Disparos)',  category: 'Disparos',   unit: 'count',      trendIsGood: 'up' },
+  { id: 'campaign_delivery_rate', label: 'Taxa de Entrega',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'up' },
+  { id: 'campaign_read_rate',     label: 'Taxa de Leitura',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'up' },
+  { id: 'campaign_reply_rate',    label: 'Taxa de Resposta',          category: 'Disparos',   unit: 'percent',    trendIsGood: 'up' },
   // ── Marketing (Meta Ads + Google Ads) ──────────────────────────────────────
   // PL-C2-FAR-3: nenhum destes 8 tem fonte hoje (Meta/Google Ads não
   // integrados no backend do Dashboard ainda).
-  { id: 'ads_leads_meta',         label: 'Leads (Meta Ads)',          category: 'Marketing',   unit: 'count',      trendIsGood: 'up',     hasData: false },
-  { id: 'ads_leads_google',       label: 'Leads (Google Ads)',        category: 'Marketing',   unit: 'count',      trendIsGood: 'up',     hasData: false },
-  { id: 'ads_total_spend',        label: 'Investimento Total',        category: 'Marketing',   unit: 'currency',   trendIsGood: 'neutral', hasData: false },
-  { id: 'ads_avg_cpl',            label: 'CPL Médio',                 category: 'Marketing',   unit: 'currency',   trendIsGood: 'down',   hasData: false },
-  { id: 'ads_avg_roas',           label: 'ROAS Médio',                category: 'Marketing',   unit: 'count',      trendIsGood: 'up',     hasData: false },
-  { id: 'ads_conversion_rate',    label: 'Taxa de Conversão (Ads)',   category: 'Marketing',   unit: 'percent',    trendIsGood: 'up',     hasData: false },
-  { id: 'ads_qualified_rate',     label: 'Taxa de Qualificação',      category: 'Marketing',   unit: 'percent',    trendIsGood: 'up',     hasData: false },
-  { id: 'ads_customer_rate',      label: 'Taxa de Fechamento',        category: 'Marketing',   unit: 'percent',    trendIsGood: 'up',     hasData: false },
   // ── Clínica (agentes de WhatsApp: agendar/cancelar consulta) ────────────────
   { id: 'appointments_scheduled', label: 'Agendamentos Marcados',     category: 'Clínica',    unit: 'count',      trendIsGood: 'up'     },
   { id: 'appointments_cancelled', label: 'Cancelamentos',             category: 'Clínica',    unit: 'count',      trendIsGood: 'down'   },

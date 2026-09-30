@@ -47,18 +47,11 @@ describe('Personalizar indicadores', () => {
     expect(screen.getByRole('button', { name: 'Tirar Resolvidas da faixa' })).toBeDisabled()
   })
 
-  it('indicador sem dado fica num grupo recolhido e não pode ser adicionado', () => {
+  it('K13-FE/D4: não há indicador sem dado para oferecer (NPS/CSAT saíram do catálogo)', () => {
     montar()
-    expect(screen.queryByTestId('kpi-sem-dado')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: /Ainda sem dado/ }))
-    expect(within(screen.getByTestId('kpi-sem-dado')).getByText('NPS')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Adicionar NPS' })).toBeNull()
-  })
-
-  it('buscando, o grupo sem dado abre sozinho', () => {
-    montar()
+    expect(screen.queryByRole('button', { name: /Ainda sem dado/ })).toBeNull()
     fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar indicador' }), { target: { value: 'NPS' } })
-    expect(within(screen.getByTestId('kpi-sem-dado')).getByText('NPS')).toBeInTheDocument()
+    expect(screen.queryByText('NPS')).toBeNull()
   })
 
   it('filtra o catálogo por categoria e Salvar fica desligado sem mudança', () => {
