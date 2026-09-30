@@ -12,7 +12,7 @@ export function Footer() {
             <img src="/oryon-logo.svg" alt="" className="w-6 h-6 select-none" draggable={false} />
             <img src="/oryon-wordmark.png" alt={footer.homeLabel} className="oryon-wordmark h-[12px] w-auto select-none" draggable={false} />
           </Link>
-          <span className="text-xs text-surface-400">{footer.legal}</span>
+          <p className="max-w-[34ch] text-[13px] leading-relaxed text-surface-400">{footer.frase}</p>
         </div>
         {rodape.grupos.map((g) => (
           <nav key={g.titulo} aria-label={g.titulo}>
@@ -27,13 +27,19 @@ export function Footer() {
           </nav>
         ))}
       </div>
-      <div className="landing-container flex justify-end border-t border-surface-800 py-4">
-        <Link
-          to={LANDING_ROUTES.login}
-          className="text-[13px] font-medium text-surface-300 hover:text-surface-50 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          {footer.cta}
-        </Link>
+      {/* © à esquerda e a entrada de quem já é cliente à direita, na mesma barra
+          (ciclo noturno, 30/09: o Entrar sozinho parecia sobra). */}
+      <div className="landing-container flex flex-wrap items-center justify-between gap-3 border-t border-surface-800 py-4">
+        <span className="text-xs text-surface-500">{footer.legal}</span>
+        <span className="text-[13px] text-surface-500">
+          {footer.jaCliente}{' '}
+          <Link
+            to={LANDING_ROUTES.login}
+            className="text-[13px] font-medium text-surface-300 hover:text-surface-50 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          >
+            {footer.cta}
+          </Link>
+        </span>
       </div>
     </footer>
   )

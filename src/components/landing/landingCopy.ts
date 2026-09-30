@@ -127,6 +127,9 @@ export const footer = {
   homeLabel: 'Oryon',
   /** Único número da página: o ano do direito autoral. */
   legal: '© 2026 Oryon',
+  /** O que a Oryon é, em uma frase, para quem chega ao fim da página. */
+  frase: 'Atendimento com IA e organização de vendas no WhatsApp da sua empresa.',
+  jaCliente: 'Já é cliente?',
   cta: 'Entrar',
 } as const
 
