@@ -109,7 +109,10 @@ export function RecipientsTab({ campaignId, failures }: { campaignId: string; fa
                   <p className="text-3xs text-surface-500 truncate" title={`Código ${r.errorCode}`}>{motivo.get(r.errorCode) ?? `Código ${r.errorCode}`}</p>
                 )}
               </div>
-              <span className={cn('text-2xs font-semibold flex-shrink-0', STATUS_COLOR[r.status])}>{STATUS_LABEL[r.status]}</span>
+              {/* R3: resposta prova entrega — em `sent` com resposta, "Respondeu". */}
+              {r.status === 'sent' && r.replyText
+                ? <span className={cn('text-2xs font-semibold flex-shrink-0', STATUS_COLOR.delivered)}>Respondeu</span>
+                : <span className={cn('text-2xs font-semibold flex-shrink-0', STATUS_COLOR[r.status])}>{STATUS_LABEL[r.status]}</span>}
               <span className="text-3xs text-surface-500 w-24 text-right flex-shrink-0">
                 {fmt(r.readAt ?? r.deliveredAt ?? r.failedAt ?? r.sentAt)}
               </span>

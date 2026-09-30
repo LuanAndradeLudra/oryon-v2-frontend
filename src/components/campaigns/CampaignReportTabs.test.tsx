@@ -38,6 +38,19 @@ describe('RecipientsTab (T2 + D9)', () => {
   })
 })
 
+describe('RecipientsTab — R3', () => {
+  it('enviada que respondeu aparece como "Respondeu"', async () => {
+    getRecipients.mockResolvedValueOnce({
+      data: { data: [{ id: 'r5', contactId: 'c5', contactName: 'Eva', status: 'sent', errorCode: null, replyText: 'Confirmo',
+        sentAt: '2026-09-29T12:00:00Z', deliveredAt: null, readAt: null, failedAt: null }], total: 1, page: 1, limit: 50 },
+    })
+    render(<MemoryRouter><RecipientsTab campaignId="c1" failures={[]} /></MemoryRouter>)
+    await waitFor(() => expect(screen.getByText('Eva')).toBeTruthy())
+    expect(screen.getByText('Respondeu')).toBeTruthy()
+    expect(screen.queryByText('Enviada')).toBeNull()
+  })
+})
+
 describe('RepliesTab', () => {
   it('sem respostas: estado vazio honesto', () => {
     render(<RepliesTab replies={[]} />)
