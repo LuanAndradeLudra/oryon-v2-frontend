@@ -22,6 +22,9 @@ import { HeroNarracao } from './HeroNarracao'
 const FOCOS_SATELITE: Partial<Record<HeroState, { satelite: string; texto: string; inteira?: boolean; noArMs?: number }>> = {
   situacao: { satelite: 'linhaDoTempo', texto: 'Em agendamento' },
   etiqueta: { satelite: 'linhaDoTempo', texto: 'etiqueta "retorno"' },
+  // De volta à conversa depois do funil: a legenda diz que o atendimento já
+  // está em Agendado — a prova é a linha do tempo, onde a IA registrou o avanço.
+  avanco: { satelite: 'linhaDoTempo', texto: 'Avaliação para Agendado' },
   assumido: { satelite: 'notificacoes', texto: 'pediu transferência' },
   // O fechamento ilumina a JANELA inteira do negócio (não só uma linha) e fica
   // no ar até o fim do passo — é o resultado da história toda.

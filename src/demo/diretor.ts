@@ -169,7 +169,7 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
       // O palco espera este aviso para acender (sem ele, o recomeço do laço
       // ficava escuro até o teto de 3 s e a cena de Disparos passava apagada).
       avisarQuandoPintar(rota, cena)
-      const alvo = FOCOS_CENA[cena]
+      const alvo = alvoAoChegar(estado, cena)
       if (alvo) focarAlvo(alvo, cena === 'funil' ? 0 : 500, cena === 'funil' ? 7500 : FOCO_NO_AR_MS, cena === 'funil')
     }
     return
@@ -184,7 +184,7 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
         avisarPai({ canal: CANAL, tipo: 'rota', rota })
         avisarQuandoPintar(rota, cena)
       }
-      const alvo = FOCOS_CENA[cena]
+      const alvo = alvoAoChegar(estado, cena)
       // A cena precisa montar (e a gaveta do relatório, deslizar) antes da medida.
       if (alvo) focarAlvo(alvo, cena === 'funil' ? 0 : 500, cena === 'funil' ? 7500 : FOCO_NO_AR_MS, cena === 'funil')
     }
@@ -302,13 +302,19 @@ type Alvo = {
 // linha do tempo e no sino — janelas da landing, focadas pelo próprio
 // `HeroPalco`. (A ficha passou a reler a situação em `contact:updated`; a
 // etiqueta da CONVERSA ainda não chega ao vivo: o backend não emite evento.)
-const FOCOS: Partial<Record<HeroState, Alvo>> = {
-  demanda: { texto: 'Preciso de uma proposta pra 12', mensagem: 'demo-m-5', bolha: true },
+export const FOCOS: Partial<Record<HeroState, Alvo>> = {
+  // A campanha chegando: a mensagem do modelo na conversa da Marina. Não há
+  // mudança de estado no primeiro passo — a tomada sai ao chegar na cena
+  // (`alvoAoChegar`).
+  inicio: { texto: 'Já está na hora do seu retorno', mensagem: 'demo-m-10', bolha: true },
+  // Os trechos saem da própria mensagem: um texto escrito à mão aqui ficava
+  // para trás quando a história mudava, e a legenda passava sem destaque.
+  demanda: { texto: HERO.demand.slice(0, 18), mensagem: 'demo-m-5', bolha: true },
   resposta: { texto: 'O retorno com a Dra. Helena', mensagem: 'demo-m-6', bolha: true },
   confirma: { texto: HERO.confirm.slice(0, 18), mensagem: 'demo-m-7', bolha: true },
   pedido: { texto: HERO.ask.slice(0, 18), mensagem: 'demo-m-8', bolha: true },
   avanco: { texto: 'Retorno · Dra. Helena', bolha: true },
-  humano: { texto: 'aqui é a Ana', mensagem: 'demo-m-9', bolha: true },
+  humano: { texto: HERO.human.slice(0, 18), mensagem: 'demo-m-9', bolha: true },
 }
 
 /** O elemento visível mais interno (o de menor área) cujo texto contém o trecho. */
@@ -431,6 +437,12 @@ function encerrarFoco() {
 function focar(estado: HeroState) {
   const alvo = FOCOS[estado]
   if (alvo) focarAlvo(alvo, 150)
+}
+
+/** A tomada ao CHEGAR numa cena: a da própria cena ou, no primeiro passo da
+ *  história (que não muda estado), a da campanha chegando. */
+function alvoAoChegar(estado: HeroState, cena: HeroCena): Alvo | undefined {
+  return FOCOS_CENA[cena] ?? (estado === 'inicio' && cena === 'conversa' ? FOCOS.inicio : undefined)
 }
 
 /** Quanto tempo a tomada fica no ar depois que o alvo assenta. */
