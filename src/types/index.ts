@@ -1593,6 +1593,8 @@ export interface CampaignRecipientRow {
   status: CampaignRecipientStatus
   errorCode: string | null
   replyText: string | null
+  /** Resposta sem texto (mídia) também prova entrega (R3). */
+  repliedAt?: string | null
   sentAt: string | null
   deliveredAt: string | null
   readAt: string | null
