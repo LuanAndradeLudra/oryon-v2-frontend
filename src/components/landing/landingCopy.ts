@@ -182,8 +182,8 @@ export const plataforma = {
    */
   atos: [
     { id: 'ia',     numero: 'I',   titulo: 'A IA responde',           frase: 'Seu conteúdo orienta cada resposta no WhatsApp.', blocos: ['conhecer', 'atender'] },
-    { id: 'venda',  numero: 'II',  titulo: 'O atendimento avança',    frase: 'A IA atualiza o funil e chama sua equipe quando é hora de assumir.', blocos: ['funil', 'equipe'] },
-    { id: 'escala', numero: 'III', titulo: 'Você reativa a base',     frase: 'Campanhas reabrem conversas e o painel mostra o resultado.', blocos: ['campanhas', 'medir'] },
+    { id: 'venda',  numero: 'II',  titulo: 'O atendimento avança',    frase: 'A IA avança a venda e chama sua equipe quando é hora de assumir.', blocos: ['funil', 'equipe'] },
+    { id: 'escala', numero: 'III', titulo: 'Clientes voltam',        frase: 'Campanhas reabrem conversas e o painel mostra o resultado.', blocos: ['campanhas', 'medir'] },
   ],
   // Ordem (26/09, aprovada pelo PO): conhecer → atender → funil → equipe →
   // reativar → medir. O funil vem ANTES da equipe porque o clímax da história
