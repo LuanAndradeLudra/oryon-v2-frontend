@@ -31,7 +31,8 @@ describe('período do Dashboard', () => {
 
 describe('montarSnapshot', () => {
   it('usa os números do backend e cai nas contagens de stats sem snapshot', () => {
-    const s = { conversationsOpen: 4, queueCount: 2, conversationsResolvedToday: 3, totalConversations: 12, appointmentsScheduled: 7 } as HomeStats
+    // K1: a taxa vem do backend (resolutionRate), o front não recalcula.
+    const s = { conversationsOpen: 4, queueCount: 2, conversationsResolvedToday: 3, totalConversations: 12, resolutionRate: 25, appointmentsScheduled: 7 } as HomeStats
     const snap = montarSnapshot(s, null)
     const kpi = (id: string) => snap.kpis.find((k) => k.id === id)?.value
     expect(kpi('active_conversations')).toBe(4)

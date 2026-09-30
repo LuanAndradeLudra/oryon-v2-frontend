@@ -22,7 +22,7 @@ function responder(range: string, resolvidas: number) {
 function falhar(range: string) {
   for (const p of pendentes.filter((x) => x.range === range && x.url === '/home/stats')) p.reject(new Error('falhou'))
 }
-const resolvidasDe = (r: { snapshot: { kpis: Array<{ id: string; value: number }> } | null }) =>
+const resolvidasDe = (r: { snapshot: { kpis: Array<{ id: string; value: number | null }> } | null }) =>
   r.snapshot?.kpis.find((k) => k.id === 'resolved')?.value
 
 beforeEach(() => { pendentes.length = 0; get.mockClear(); vi.spyOn(console, 'error').mockImplementation(() => {}) })
