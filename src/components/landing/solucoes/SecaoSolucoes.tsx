@@ -110,8 +110,11 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
           <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px] text-pretty">{solucoes.lead}</p>
         </Revelar>
 
-        <div role="tablist" aria-label={solucoes.abasLabel} className="-mx-1.5 mt-6 flex gap-2 overflow-x-auto px-1.5 py-2 [scrollbar-width:none]">
-          {solucoes.areas.map((a) => (
+        {/* As áreas como índice (P5, 30/09): número em mono + nome sobre uma
+            régua, a ativa sublinhada; e sem a moldura em volta do painel — só
+            a simulação (que tem tela dentro) fica emoldurada. */}
+        <div role="tablist" aria-label={solucoes.abasLabel} className="landing-abas mt-8">
+          {solucoes.areas.map((a, i) => (
             <button
               key={a.id}
               type="button"
@@ -120,22 +123,17 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
               aria-selected={a.id === ativa}
               aria-controls="area-painel"
               onClick={() => setAtiva(a.id)}
-              className={cn(
-                'flex-none rounded-full px-3.5 py-1.5 text-[13px] font-medium ring-1 transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                a.id === ativa
-                  ? 'landing-aba-ativa ring-transparent'
-                  : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100 [[data-theme=light]_&]:bg-white',
-              )}
+              className={cn('landing-aba rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500', a.id === ativa && 'landing-aba-ativa')}
             >
+              <span data-numero>{String(i + 1).padStart(2, '0')}</span>
               {a.nome}
             </button>
           ))}
         </div>
 
-        <div id="area-painel" role="tabpanel" aria-labelledby={`area-aba-${area.id}`} className="mt-5 grid gap-5 rounded-2xl bg-[var(--landing-cartao)] p-4 ring-1 ring-[var(--landing-borda)] sm:p-6 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.5fr)] lg:gap-8">
+        <div id="area-painel" role="tabpanel" aria-labelledby={`area-aba-${area.id}`} className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.5fr)] lg:gap-10">
           <div className="min-w-0">
-            <h3 className="font-display text-[clamp(1.1rem,1.5vw,1.35rem)] font-semibold leading-[1.15] tracking-[-0.02em] text-surface-50">{area.titulo}</h3>
+            <h3 className="font-display text-[clamp(1.2rem,1.7vw,1.5rem)] font-semibold leading-[1.15] tracking-[-0.02em] text-surface-50">{area.titulo}</h3>
             <p className="mt-2.5 text-[14px] leading-relaxed text-surface-400">{area.texto}</p>
             <ul className="mt-4 space-y-2">
               {area.itens.map((it) => (

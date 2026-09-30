@@ -1823,15 +1823,42 @@ h1, h2, h3 {
   & > [data-numero] { letter-spacing: .04em; color: var(--landing-destaque); }
   &::after { content: ''; flex: 1 1 auto; height: 1px; background: var(--landing-borda); }
 }
+/* As abas como ÍNDICE (P4/P5 da auditoria anti-genérico, 30/09): número em
+   mono + nome, sobre uma régua; a ativa sublinhada em teal. Sem pílula. */
+@utility landing-abas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--landing-borda);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+@utility landing-aba {
+  display: inline-flex;
+  flex: none;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 14px 12px 0;
+  margin-right: 10px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-surface-400);
+  transition: color .2s, border-color .2s;
+  & > [data-numero] { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--color-surface-600); }
+  &:hover { color: var(--color-surface-100); }
+}
+/* A aba ativa (classe, não atributo: a regra por atributo dentro de @utility
+   não chegava ao build). */
+@utility landing-aba-ativa {
+  color: var(--color-surface-50);
+  border-bottom-color: var(--landing-destaque);
+  & > [data-numero] { color: var(--landing-destaque); }
+}
 @utility landing-selo {
   background-color: #115E59;
   color: #CCFBF1;
   [data-theme='light'] & { background-color: #0F766E; color: #FFFFFF; }
-}
-@utility landing-aba-ativa {
-  background-color: #FFFFFF;
-  color: #0B0C0E;
-  [data-theme='light'] & { background-color: #0B0C0E; color: #FFFFFF; }
 }
 
 /* Landing · TEMA CLARO COM PROFUNDIDADE (30/09, PO: "excesso de branco, pouco

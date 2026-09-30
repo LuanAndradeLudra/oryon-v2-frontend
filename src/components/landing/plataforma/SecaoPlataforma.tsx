@@ -402,7 +402,7 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
       {/* Todas as evidências no mesmo desenho (visual em cima, frase embaixo) e
           com a altura da vizinha: o painel (06) tinha visual e frase lado a
           lado, e a grade ficava desalinhada com cartões de alturas diferentes. */}
-      <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
+      <div className="flex h-full w-full flex-col overflow-hidden rounded-xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
         <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5 [[data-theme=light]_&]:bg-surface-900">
           <div aria-hidden inert data-evidencia className="pointer-events-none grid min-w-0 select-none [zoom:0.8]">
             {RESERVAS[bloco]?.map((estado) => (
@@ -415,9 +415,14 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
             </div>
           </div>
         </div>
-        <div className="px-5 pb-4 pt-3.5">
-          <p className="text-[15px] font-semibold leading-snug text-surface-50">{c.titulo}</p>
-          <p className="mt-1.5 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{c.texto}</p>
+        {/* A frase como linha de REGISTRO (P4, 30/09): o ponto teal do
+            produto — foi a IA — no lugar de um título solto. */}
+        <div className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-2.5 px-5 pb-4 pt-3.5">
+          <span aria-hidden className="mt-[7px] h-[7px] w-[7px] rounded-full bg-[var(--landing-destaque)]" />
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold leading-snug text-surface-50">{c.titulo}</p>
+            <p className="mt-1 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{c.texto}</p>
+          </div>
         </div>
       </div>
     </Revelar>
@@ -783,7 +788,9 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
         {/* Folga em volta das abas: o contêiner rola na horizontal, e `overflow`
             também recorta na vertical — sem ela, a borda de cima das abas saía
             cortada (30/09). */}
-        <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="-mx-1.5 mt-6 flex gap-2 overflow-x-auto px-1.5 py-2 [scrollbar-width:none]">
+        {/* As etapas como índice (P4, 30/09): número em mono + nome sobre uma
+            régua, a ativa sublinhada — sem pílulas. */}
+        <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="landing-abas mt-8">
           {plataforma.blocos.map((bl, i) => (
             <button
               key={bl.id}
@@ -793,15 +800,9 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
               aria-selected={bl.id === ativo}
               aria-controls="etapa-painel"
               onClick={() => setAtivo(bl.id)}
-              className={cn(
-                'flex flex-none items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium ring-1 transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                bl.id === ativo
-                  ? 'landing-aba-ativa ring-transparent'
-                  : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100 [[data-theme=light]_&]:bg-white',
-              )}
+              className={cn('landing-aba rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500', bl.id === ativo && 'landing-aba-ativa')}
             >
-              <span className="tabular-nums text-[11px] opacity-60">{String(i + 1).padStart(2, '0')}</span>
+              <span data-numero>{String(i + 1).padStart(2, '0')}</span>
               {bl.indice}
             </button>
           ))}
