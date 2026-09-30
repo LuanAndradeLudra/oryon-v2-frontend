@@ -97,7 +97,7 @@ export function SecaoSolucoes({ completa = false }: { completa?: boolean }) {
           <p className="mt-3 max-w-[64ch] text-[14px] leading-relaxed text-surface-400 sm:text-[15px] text-pretty">{solucoes.lead}</p>
         </Revelar>
 
-        <div role="tablist" aria-label={solucoes.abasLabel} className="mt-7 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+        <div role="tablist" aria-label={solucoes.abasLabel} className="-mx-1.5 mt-6 flex gap-2 overflow-x-auto px-1.5 py-2 [scrollbar-width:none]">
           {solucoes.areas.map((a) => (
             <button
               key={a.id}

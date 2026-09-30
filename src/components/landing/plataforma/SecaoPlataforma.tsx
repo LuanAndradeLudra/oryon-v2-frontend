@@ -771,7 +771,10 @@ export function SecaoComoFunciona() {
           </h2>
         </Revelar>
 
-        <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="mt-7 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+        {/* Folga em volta das abas: o contêiner rola na horizontal, e `overflow`
+            também recorta na vertical — sem ela, a borda de cima das abas saía
+            cortada (30/09). */}
+        <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="-mx-1.5 mt-6 flex gap-2 overflow-x-auto px-1.5 py-2 [scrollbar-width:none]">
           {plataforma.blocos.map((bl, i) => (
             <button
               key={bl.id}
