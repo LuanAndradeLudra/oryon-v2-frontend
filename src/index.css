@@ -1845,7 +1845,7 @@ h1, h2, h3 {
   font-weight: 500;
   color: var(--color-surface-400);
   transition: color .2s, border-color .2s;
-  & > [data-numero] { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--color-surface-600); }
+  & > [data-numero] { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--color-surface-500); }
   &:hover { color: var(--color-surface-100); }
 }
 /* A aba ativa (classe, não atributo: a regra por atributo dentro de @utility

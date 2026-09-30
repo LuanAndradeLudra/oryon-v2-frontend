@@ -9,6 +9,7 @@ import { MediaViewerProvider } from '@/components/ui/MediaViewer'
 import { LANDING_ROUTES, solucoes, type AreaSolucao } from '../landingCopy'
 import { Cabecalho, Revelar } from '../plataforma/SecoesVenda'
 import { SIMULACOES, linhaDoTempoAte, mensagensAte } from './simulacoes'
+import { teclasDasAbas } from '../ui/abasTeclado'
 
 /**
  * PARA A SUA ÁREA (30/09) — a mesma plataforma em operações diferentes, em
@@ -58,6 +59,21 @@ function Simulacao({ area }: { area: AreaSolucao }) {
   const contato = { displayName: sim.contato, profilePicUrl: null }
 
   return (
+    <>
+    {/* A simulação é visual (aria-hidden); o leitor de tela recebe a conversa
+        inteira em texto (auditoria WIG, 30/09). */}
+    <div className="sr-only">
+      <p>Simulação de atendimento com {sim.contato}:</p>
+      <ol>
+        {sim.passos.map((p, i) => (
+          <li key={i}>
+            {p.tipo === 'cliente' ? `${sim.contato}: ${p.texto}`
+              : p.tipo === 'ia' ? `${sim.agente}: ${p.texto}`
+              : `Registro: ${p.resumo}`}
+          </li>
+        ))}
+      </ol>
+    </div>
     <div ref={ref} aria-hidden inert className="pointer-events-none grid select-none gap-3 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
       {/* A conversa: as bolhas reais do chat da Oryon. */}
       <div className="flex h-[400px] flex-col overflow-hidden rounded-xl bg-surface-950 ring-1 ring-surface-700">
@@ -191,6 +207,7 @@ function Simulacao({ area }: { area: AreaSolucao }) {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
@@ -217,7 +234,9 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
               id={`area-aba-${a.id}`}
               aria-selected={a.id === ativa}
               aria-controls="area-painel"
+              tabIndex={a.id === ativa ? 0 : -1}
               onClick={() => setAtiva(a.id)}
+              onKeyDown={teclasDasAbas(solucoes.areas.map((x) => x.id), ativa, setAtiva, 'area-aba-')}
               className={cn('landing-aba rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500', a.id === ativa && 'landing-aba-ativa')}
             >
               <span data-numero>{String(i + 1).padStart(2, '0')}</span>

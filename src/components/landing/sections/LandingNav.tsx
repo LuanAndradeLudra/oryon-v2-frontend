@@ -70,8 +70,8 @@ export function LandingNav() {
         >
           {/* Símbolo + WORDMARK oficial (a mesma da barra lateral do app e do
               login; branca, invertida no tema claro por `.oryon-wordmark`). */}
-          <img src="/oryon-logo.svg" alt="" className="w-7 h-7 select-none" draggable={false} />
-          <img src="/oryon-wordmark.png" alt="Oryon" className="oryon-wordmark hidden h-[14px] w-auto select-none min-[420px]:block" draggable={false} />
+          <img src="/oryon-logo.svg" alt="" width={28} height={28} className="w-7 h-7 select-none" draggable={false} />
+          <img src="/oryon-wordmark.png" alt="Oryon" width={56} height={14} className="oryon-wordmark hidden h-[14px] w-auto select-none min-[420px]:block" draggable={false} />
         </Link>
 
         <nav aria-label="Páginas" className="flex items-center md:ml-2">
@@ -99,7 +99,7 @@ export function LandingNav() {
               <div
                 id="menu-plataforma"
                 className={cn(
-                  'fixed left-4 right-4 top-[72px] z-50 max-h-[calc(100vh-88px)] overflow-y-auto rounded-xl border border-[var(--landing-borda)]',
+                  'fixed left-4 right-4 top-[72px] z-50 max-h-[calc(100vh-88px)] overflow-y-auto overscroll-contain rounded-xl border border-[var(--landing-borda)]',
                   'bg-[var(--landing-cartao)] p-2 shadow-[0_18px_55px_rgba(0,0,0,.2)]',
                   'md:absolute md:left-0 md:right-auto md:top-full md:mt-2 md:w-[440px]',
                 )}

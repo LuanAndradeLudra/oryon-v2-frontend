@@ -4,6 +4,7 @@ import { ArrowRight, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Capitulo } from './SecoesVenda'
+import { teclasDasAbas } from '../ui/abasTeclado'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
@@ -536,9 +537,9 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
             exit={{ opacity: 0, y: -4, transition: { duration: 0.15 } }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h4 className={cn(!semRotulo && 'mt-2.5', ' font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
+            <h3 className={cn(!semRotulo && 'mt-2.5', ' font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
               {b.destaque}
-            </h4>
+            </h3>
             <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
           </motion.div>
         </AnimatePresence>
@@ -645,7 +646,7 @@ export function SecaoPlataforma() {
                   <span
                     aria-hidden
                     className={cn(
-                      'absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full transition-all duration-300',
+                      'absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full transition-[background-color,opacity] duration-300',
                       ativo === b.id ? 'bg-brand-400 opacity-100' : 'bg-surface-700 opacity-60',
                     )}
                   />
@@ -811,7 +812,9 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
               id={`etapa-aba-${bl.id}`}
               aria-selected={bl.id === ativo}
               aria-controls="etapa-painel"
+              tabIndex={bl.id === ativo ? 0 : -1}
               onClick={() => setAtivo(bl.id)}
+              onKeyDown={teclasDasAbas(plataforma.blocos.map((x) => x.id), ativo, setAtivo, 'etapa-aba-')}
               className={cn('landing-aba rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500', bl.id === ativo && 'landing-aba-ativa')}
             >
               <span data-numero>{String(i + 1).padStart(2, '0')}</span>

@@ -105,37 +105,39 @@ export function FormDemonstracao({ origem }: { origem: string }) {
   // Os campos sobre réguas (P10): sem caixa em volta do formulário nem dos
   // campos — rótulo em mono, linha embaixo, foco em teal.
   const CAMPO = '[&>label]:font-mono [&>label]:text-[10.5px] [&>label]:uppercase [&>label]:tracking-[.12em] [&>label]:text-surface-500'
+  // A lista nativa do <select> no Windows escuro abria clara: fundo e cor explícitos.
+  const OPCOES = '[&_option]:bg-[#0E1414] [&_option]:text-surface-100'
   const LINHA = '!rounded-none !border-0 !border-b !border-[var(--landing-borda)] !bg-transparent !px-0 !shadow-none focus:!border-[var(--landing-destaque)] focus:!ring-0'
 
   const c = formDemo.campos
   return (
     <form noValidate onSubmit={enviar} aria-describedby={avisoId} className="grid gap-x-8 gap-y-6 border-t border-[var(--landing-borda)] pt-6 sm:grid-cols-2">
       <FormField label={c.nome} error={erros.nome} required className={CAMPO}>
-        <Input className={LINHA} value={dados.nome} onChange={(e) => mudar('nome')(e.target.value)} autoComplete="name" />
+        <Input className={LINHA} name="nome" value={dados.nome} onChange={(e) => mudar('nome')(e.target.value)} autoComplete="name" />
       </FormField>
       <FormField label={c.empresa} error={erros.empresa} required className={CAMPO}>
-        <Input className={LINHA} value={dados.empresa} onChange={(e) => mudar('empresa')(e.target.value)} autoComplete="organization" />
+        <Input className={LINHA} name="empresa" value={dados.empresa} onChange={(e) => mudar('empresa')(e.target.value)} autoComplete="organization" />
       </FormField>
       <FormField label={c.whatsapp} error={erros.whatsapp} required className={CAMPO}>
-        <Input className={LINHA} value={dados.whatsapp} onChange={(e) => mudar('whatsapp')(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000" />
+        <Input className={LINHA} name="whatsapp" value={dados.whatsapp} onChange={(e) => mudar('whatsapp')(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000…" />
       </FormField>
       <FormField label={c.email} error={erros.email} required className={CAMPO}>
-        <Input className={LINHA} type="email" value={dados.email} onChange={(e) => mudar('email')(e.target.value)} autoComplete="email" />
+        <Input className={LINHA} name="email" type="email" spellCheck={false} value={dados.email} onChange={(e) => mudar('email')(e.target.value)} autoComplete="email" />
       </FormField>
       <FormField label={c.segmento} error={erros.segmento} required className={CAMPO}>
-        <Select className={LINHA} value={dados.segmento} onChange={(e) => mudar('segmento')(e.target.value)}>
+        <Select className={cn(LINHA, OPCOES)} name="segmento" value={dados.segmento} onChange={(e) => mudar('segmento')(e.target.value)}>
           <option value="">{formDemo.selecione}</option>
           {formDemo.segmentos.map((s) => <option key={s} value={s}>{s}</option>)}
         </Select>
       </FormField>
       <FormField label={c.equipe} error={erros.equipe} required className={CAMPO}>
-        <Select className={LINHA} value={dados.equipe} onChange={(e) => mudar('equipe')(e.target.value)}>
+        <Select className={cn(LINHA, OPCOES)} name="equipe" value={dados.equipe} onChange={(e) => mudar('equipe')(e.target.value)}>
           <option value="">{formDemo.selecione}</option>
           {formDemo.tamanhos.map((s) => <option key={s} value={s}>{s}</option>)}
         </Select>
       </FormField>
       <FormField label={c.mensagem} requirement="optional" className={cn('sm:col-span-2', CAMPO)}>
-        <Textarea className={LINHA} value={dados.mensagem} onChange={(e) => mudar('mensagem')(e.target.value)} rows={3} maxLength={1000} />
+        <Textarea className={LINHA} name="mensagem" value={dados.mensagem} onChange={(e) => mudar('mensagem')(e.target.value)} rows={3} maxLength={1000} />
       </FormField>
       {/* Armadilha para robôs: fora da tela e fora da ordem de tabulação. */}
       <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">

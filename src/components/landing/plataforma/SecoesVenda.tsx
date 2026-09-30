@@ -178,11 +178,11 @@ function Pergunta({ pergunta, resposta, n }: { pergunta: string; resposta: strin
         onClick={() => setAberta((v) => !v)}
         aria-expanded={aberta}
         aria-controls={aberta ? respostaId : undefined}
-        className="grid w-full grid-cols-[34px_minmax(0,1fr)_auto] items-baseline gap-x-3 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] rounded-md"
+        className="group grid w-full grid-cols-[34px_minmax(0,1fr)_auto] items-baseline gap-x-3 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] rounded-md"
       >
         <span className={cn('font-mono text-[11.5px] tracking-[.04em]', aberta ? 'text-[var(--landing-destaque)]' : 'text-surface-500')}>{String(n).padStart(2, '0')}</span>
-        <span className="text-[15.5px] font-semibold text-surface-50">{pergunta}</span>
-        <span aria-hidden className="font-mono text-[16px] leading-none text-surface-500">{aberta ? '−' : '+'}</span>
+        <span className="text-[15.5px] font-semibold text-surface-50 transition-colors group-hover:text-[var(--landing-destaque)]">{pergunta}</span>
+        <span aria-hidden className="font-mono text-[16px] leading-none text-surface-500 transition-colors group-hover:text-surface-200">{aberta ? '−' : '+'}</span>
       </button>
       <AnimatePresence initial={false}>
         {aberta && (

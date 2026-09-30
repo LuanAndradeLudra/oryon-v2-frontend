@@ -31,10 +31,17 @@ export function LandingLayout({ children }: { children: ReactNode }) {
     <div
       ref={rootRef}
       data-landing-root
-      className="h-screen w-full overflow-y-auto scroll-smooth motion-reduce:scroll-auto bg-surface-950 text-surface-100"
+      className="h-screen w-full overflow-y-auto scroll-smooth motion-reduce:scroll-auto touch-manipulation bg-surface-950 text-surface-100"
     >
+      {/* Pular a navegação (auditoria WIG, 30/09): só aparece no foco do teclado. */}
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-[60] focus:rounded-full focus:bg-surface-50 focus:px-4 focus:py-2 focus:text-[13.5px] focus:font-semibold focus:text-surface-950 focus:outline-none focus:ring-2 focus:ring-brand-500"
+      >
+        Pular para o conteúdo
+      </a>
       <LandingNav />
-      <main>{children}</main>
+      <main id="conteudo" tabIndex={-1} className="focus:outline-none">{children}</main>
       <Footer />
     </div>
   )
