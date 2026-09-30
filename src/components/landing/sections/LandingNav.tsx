@@ -126,6 +126,10 @@ export function LandingNav() {
                       {l.label}
                     </Link>
                   ))}
+                  <Link data-menu-link to={LANDING_ROUTES.login} onClick={() => setMenuAberto(false)}
+                    className="block rounded-lg px-3 py-2.5 text-[13px] font-semibold text-surface-100 hover:bg-[var(--rowhover)] min-[420px]:hidden">
+                    {nav.cta}
+                  </Link>
                 </div>
               </div>
             )}
@@ -141,8 +145,14 @@ export function LandingNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <BotaoLanding to={LANDING_ROUTES.login} variante="fantasma">
+          {/* Abaixo de 420 px, Entrar mora no menu (a barra não comporta os dois botões). */}
+          <BotaoLanding to={LANDING_ROUTES.login} variante="fantasma" className="hidden min-[420px]:inline-flex">
             {nav.cta}
+          </BotaoLanding>
+          {/* No celular (ciclo noturno, 30/09) a conversão não some da barra:
+              o rótulo encurta para caber ao lado de Entrar. */}
+          <BotaoLanding to={LANDING_ROUTES.demonstracao} className="h-10 px-3.5 text-[13px] sm:hidden">
+            {home.ctaCurto}
           </BotaoLanding>
           <BotaoLanding to={LANDING_ROUTES.demonstracao} className="hidden sm:inline-flex">
             {home.ctaPrincipal}

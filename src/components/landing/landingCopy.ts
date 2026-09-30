@@ -493,7 +493,7 @@ export const paginasPlataforma = [
   },
   {
     slug: 'disparos',
-    menu: 'Disparos e resultados',
+    menu: 'Campanhas e resultados',
     resumo: 'Campanhas que reabrem conversas.',
     titulo: 'Traga contatos de volta pelo WhatsApp.',
     cinza: 'E acompanhe o resultado no painel.',
@@ -517,6 +517,8 @@ export type PaginaPlataforma = (typeof paginasPlataforma)[number]
 
 export const home = {
   ctaPrincipal: 'Agendar demonstração',
+  /** A mesma ação, na barra do celular. */
+  ctaCurto: 'Demonstração',
   ctaSecundario: 'Ver como funciona',
   /** A faixa de fatos logo depois do Hero — só o que dá para afirmar hoje. */
   fatos: [
