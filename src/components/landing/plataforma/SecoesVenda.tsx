@@ -184,6 +184,8 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
  */
 export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number; comoPagina?: boolean }) {
   const todas: ReadonlyArray<{ pergunta: string; resposta: string }> = perguntas.grupos.flatMap((g): ReadonlyArray<{ pergunta: string; resposta: string }> => g.itens)
+  // Na home, as objeções escolhidas em perguntas.naHome, na ordem delas.
+  const naHome = perguntas.naHome.map((p) => todas.find((q) => q.pergunta === p)).filter((q): q is (typeof todas)[number] => !!q)
   return (
     <section id="perguntas" data-section="perguntas" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
       <div className="landing-container grid gap-10 lg:grid-cols-[1fr_1.25fr] lg:gap-14">
@@ -208,7 +210,7 @@ export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number
         {limite ? (
           <Revelar atraso={0.1}>
             <div className="rounded-2xl bg-[var(--landing-cartao)] px-5 ring-1 ring-[var(--landing-borda)] [&>div:last-child]:border-b-0">
-              {todas.slice(0, limite).map((q) => <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />)}
+              {naHome.slice(0, limite).map((q) => <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />)}
             </div>
             <Link to={LANDING_ROUTES.perguntas} className="mt-5 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
               {home.perguntas.verTodas} <ArrowRight className="h-3.5 w-3.5" aria-hidden />

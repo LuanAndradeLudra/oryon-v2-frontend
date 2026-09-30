@@ -388,6 +388,15 @@ export const perguntas = {
   eyebrow: 'Perguntas',
   title: 'Dúvidas comuns antes de começar.',
   titleCinza: 'Respostas diretas.',
+  /** As que abrem a home (ciclo noturno, 30/09): as objeções de quem decide a
+   *  compra, na ordem em que costumam aparecer. */
+  naHome: [
+    'Quanto custa a Oryon?',
+    'Preciso entender de tecnologia?',
+    'A IA pode errar?',
+    'Em quanto tempo começo a usar?',
+    'A conexão com o WhatsApp é oficial?',
+  ],
   // A página já demonstra boa parte do produto. O FAQ fica restrito às dez
   // objeções residuais que alguém precisa resolver antes de avançar.
   grupos: [
@@ -397,6 +406,10 @@ export const perguntas = {
         {
           pergunta: 'Quanto custa a Oryon?',
           resposta: 'O valor depende do volume de atendimento, do tamanho da equipe e da quantidade de números. Por isso, montamos uma proposta para cada operação. Peça uma demonstração para receber a sua.',
+        },
+        {
+          pergunta: 'Preciso entender de tecnologia?',
+          resposta: 'Não. Nossa equipe faz a configuração inicial com você. Depois, mudar um valor, uma regra ou uma resposta é só editar a informação dentro da Oryon, sem programação.',
         },
         {
           pergunta: 'Em quanto tempo começo a usar?',
