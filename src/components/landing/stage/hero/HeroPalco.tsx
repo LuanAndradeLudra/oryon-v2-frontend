@@ -111,10 +111,9 @@ function cantos(h: number) {
 
 /** O aparelho (WhatsApp da cliente), à esquerda, rente à base da âncora.
  *  30/09: em x = 0 ele cobria 114 px da âncora — a coluna da lista de
- *  conversas (abas cortadas); em x = -48 só encosta na barra de ícones sem
- *  sair da tela quando o palco ocupa a largura (layout editorial, 30/09). */
+ *  conversas (abas cortadas); em x = -60 só encosta na barra de ícones. */
 function aparelho(h: number): PoseSatelite {
-  return { x: -48, y: h - 434, w: TELA_APARELHO.w + 14, origem: '100% 50%' }
+  return { x: -60, y: h - 434, w: TELA_APARELHO.w + 14, origem: '100% 50%' }
 }
 
 function diagonal(cena: HeroCena, h: number) {
@@ -328,10 +327,7 @@ export function HeroPalco({ className }: { className?: string }) {
       // Topo do palco no documento (independe da escala: nada acima dele muda).
       const topo = host.getBoundingClientRect().top - topoTela + rolado
       const barra = (barraRef.current?.offsetHeight ?? 0) + 14
-      // Layout editorial (30/09, PO): com o texto à esquerda, o palco não precisa
-      // caber inteiro na primeira dobra — como na Attio, ele ocupa a largura e
-      // passa um pouco da dobra (pelo menos 78 % da altura da tela para ele).
-      const disponivel = celular ? alturaTela - topo - barra - 14 : Math.max(alturaTela - topo - barra - 14, alturaTela * 0.78)
+      const disponivel = alturaTela - topo - barra - 14
       const q = enquadrar(largura, disponivel, celular, comConector ? (corredorLargo ? CORREDOR : 28) : 0)
       setQuadro((a) => (a.fit === q.fit && a.h === q.h ? a : q))
     }
@@ -435,9 +431,7 @@ export function HeroPalco({ className }: { className?: string }) {
 
       {/* A NARRAÇÃO — o que acontece agora, fora do palco, em faixa de altura
           fixa (a troca de frase nunca move o palco). */}
-      {/* Encaixada na borda de cima do palco (30/09): a legenda narra a
-          demonstração, então pertence a ela — não aos botões lá em cima. */}
-      <HeroNarracao texto={batida} pilulaRef={pilulaRef} className="relative z-[45] -mb-5 px-1 sm:-mb-[18px]" />
+      <HeroNarracao texto={batida} pilulaRef={pilulaRef} className="relative z-[45] mb-[var(--hero-gap-palco,16px)] px-1" />
 
       <div
         ref={hostRef}

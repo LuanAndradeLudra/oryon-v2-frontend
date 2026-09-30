@@ -82,7 +82,6 @@ export const hero = {
   // CRM sem depender do lead para explicar a categoria do produto.
   // 30/09 (PO): título 2 + subtítulo sobre o VALOR do agente — sem falar de
   // funil e sem prometer que ele não erra (a equipe assume quando precisa).
-  selo: 'Para quem atende pelo WhatsApp',
   title: 'Seu WhatsApp atende, vende e organiza.',
   lead: 'Um agente de inteligência artificial responde seus clientes a qualquer hora, com as informações da sua empresa, e chama sua equipe quando uma pessoa precisa assumir.',
   stageLabel: 'Demonstração animada do produto',
