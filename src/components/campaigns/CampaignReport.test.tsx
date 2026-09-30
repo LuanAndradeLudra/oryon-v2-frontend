@@ -139,4 +139,29 @@ describe('CampaignReport com o payload real do backend', () => {
     )
     await waitFor(() => expect(screen.getByText(/Não foi possível carregar o relatório/)).toBeTruthy())
   })
+
+  it('R3: nenhum percentual passa de 100%, mesmo com contador fora de ordem', async () => {
+    getAnalytics.mockResolvedValue({
+      data: {
+        campaignId: 'c1',
+        stats: { total: 4, sent: 4, delivered: 1, read: 1, failed: 0, replied: 3 },
+        funnel: { pending: 0, sent: 4, delivered: 1, read: 1, replied: 3, failed: 0, cancelled: 0, excluded: 0, optedOut: 0 },
+        failures: [], replies: [],
+      },
+    })
+    render(
+      <MemoryRouter>
+        <CampaignReport campaign={campaign} onClose={() => undefined} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByText('Destinatários')).toBeTruthy())
+    // Nó a nó: o textContent do body cola números vizinhos ("1" + "25%").
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    const achados: string[] = []
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      for (const m of (n.textContent ?? '').matchAll(/(\d+)%/g)) achados.push(`${m[1]}|${n.textContent}`)
+    }
+    expect(achados.length).toBeGreaterThan(0)
+    for (const a of achados) expect(Number(a.split('|')[0]), a).toBeLessThanOrEqual(100)
+  })
 })

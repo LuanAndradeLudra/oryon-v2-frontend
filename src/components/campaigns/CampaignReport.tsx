@@ -284,7 +284,8 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   // "Enviadas" = tudo que tentamos mandar (aceitas pela Meta + falhas): é a
   // base de entregues e de falhas (D7), então as duas somam no máximo 100%.
   const enviadas  = sent + failed
-  const pctDe = (n: number, base: number) => (base > 0 ? `${Math.round((n / base) * 100)}%` : '—')
+  // R3: teto de 100% — um contador fora de ordem (webhook atrasado) nunca vira "150%".
+  const pctDe = (n: number, base: number) => (base > 0 ? `${Math.min(100, Math.round((n / base) * 100))}%` : '—')
   const convRate  = stats.read > 0 && stats.conversions ? Math.round((stats.conversions / stats.read) * 100) : 0
 
   const funnelData = [
