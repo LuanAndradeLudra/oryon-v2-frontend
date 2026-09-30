@@ -551,24 +551,24 @@ export const home = {
     titulo: 'Cliente sem resposta procura outra empresa.',
     cinza: 'E o WhatsApp da sua empresa não para.',
     comOryon: 'Com a Oryon',
+    /** Cada dor é uma MENSAGEM de cliente (a conversa fictícia mora em
+     *  home/dorConversas.ts, fora da copy: tem hora e valor). Aqui só a
+     *  afirmação: o problema e o que muda com a Oryon. */
     itens: [
       {
         key: 'horario',
         problema: 'As mensagens chegam fora do horário.',
-        texto: 'À noite e no fim de semana, o cliente pergunta e ninguém responde. Quando a equipe volta, ele pode já ter fechado com outra empresa.',
-        solucao: 'O agente responde na hora, a qualquer hora, com as informações da sua empresa.',
+        solucao: 'o agente responde na hora, a qualquer hora, com as informações da sua empresa.',
       },
       {
         key: 'repeticao',
         problema: 'A equipe responde a mesma coisa o dia todo.',
-        texto: 'Valores, endereço, formas de pagamento, documentos. É tempo que poderia ir para quem está pronto para comprar.',
-        solucao: 'O agente cuida das perguntas do dia a dia e chama sua equipe quando uma pessoa precisa assumir.',
+        solucao: 'as perguntas do dia a dia são respondidas na hora, e sua equipe fica com quem está pronto para comprar.',
       },
       {
         key: 'organizacao',
         problema: 'Ninguém sabe em que pé está cada cliente.',
-        texto: 'Conversas espalhadas em vários celulares, anotações soltas e clientes interessados que ninguém chamou de volta.',
-        solucao: 'Cada conversa fica registrada, com a etapa da venda e o histórico à vista de toda a equipe.',
+        solucao: 'cada conversa fica registrada, com a etapa da venda e um responsável.',
       },
     ],
     ponte: 'Veja como isso funciona na prática',
