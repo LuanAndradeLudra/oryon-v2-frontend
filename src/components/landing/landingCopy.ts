@@ -522,6 +522,35 @@ export const home = {
     { key: 'prazo', titulo: 'No ar em até 7 dias', texto: 'Depois que a Meta libera o número.' },
     { key: 'controle', titulo: 'Sua equipe no comando', texto: 'Você define o que a IA faz e quando uma pessoa assume.' },
   ],
+  /** A dor e a virada (ciclo noturno, 30/09): o que acontece hoje no WhatsApp
+   *  de quem compra, em palavras simples, e o que muda. Sem números. */
+  dor: {
+    eyebrow: 'Por que a Oryon',
+    titulo: 'Cliente sem resposta procura outra empresa.',
+    cinza: 'E o WhatsApp da sua empresa não para.',
+    comOryon: 'Com a Oryon',
+    itens: [
+      {
+        key: 'horario',
+        problema: 'As mensagens chegam fora do horário.',
+        texto: 'À noite e no fim de semana, o cliente pergunta e ninguém responde. Quando a equipe volta, ele pode já ter fechado com outra empresa.',
+        solucao: 'O agente responde na hora, a qualquer hora, com as informações da sua empresa.',
+      },
+      {
+        key: 'repeticao',
+        problema: 'A equipe responde a mesma coisa o dia todo.',
+        texto: 'Valores, endereço, formas de pagamento, documentos. É tempo que poderia ir para quem está pronto para comprar.',
+        solucao: 'O agente cuida das perguntas do dia a dia e chama sua equipe quando uma pessoa precisa assumir.',
+      },
+      {
+        key: 'organizacao',
+        problema: 'Ninguém sabe em que pé está cada cliente.',
+        texto: 'Conversas espalhadas em vários celulares, anotações soltas e clientes interessados que ninguém chamou de volta.',
+        solucao: 'Cada conversa fica registrada, com a etapa da venda e o histórico à vista de toda a equipe.',
+      },
+    ],
+    ponte: 'Veja como isso funciona na prática',
+  },
   comoFunciona: {
     eyebrow: 'Como funciona',
     titulo: 'Da primeira mensagem ao negócio fechado.',

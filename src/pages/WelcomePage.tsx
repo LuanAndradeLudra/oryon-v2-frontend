@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Hero, Trust } from '@/components/landing/sections'
 import { LandingLayout } from '@/components/landing/LandingLayout'
 import { FaixaFatos } from '@/components/landing/home/FaixaFatos'
+import { SecaoDor } from '@/components/landing/home/SecaoDor'
 
 // Abaixo da primeira dobra: carrega depois do Hero (demo, recortes e
 // componentes reais pesam — não podem atrasar a primeira pintura).
@@ -19,7 +20,7 @@ const SecaoDemonstracao = lazy(() => import('@/components/landing/demonstracao/F
  * detalhe mora nas páginas de produto (menu Plataforma), em /solucoes e em
  * /perguntas:
  *
- *   Hero (com a conversão) → fatos → como funciona (abas) → para a sua área
+ *   Hero (com a conversão) → fatos → a dor e a virada → como funciona (abas) → para a sua área
  *   (simulações) → limites da IA (curto) → implantação (curta) → perguntas
  *   (as primeiras) → pedido de demonstração.
  */
@@ -28,6 +29,7 @@ export function WelcomePage() {
     <LandingLayout>
       <Hero />
       <FaixaFatos />
+      <SecaoDor />
       <Suspense fallback={<div className="min-h-[60vh]" />}>
         <SecaoComoFunciona />
         <SecaoSolucoes />
