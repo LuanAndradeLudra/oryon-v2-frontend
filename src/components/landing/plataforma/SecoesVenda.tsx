@@ -98,20 +98,21 @@ export function SecaoImplantacao({ compacta = false, numero }: { compacta?: bool
   return (
     <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-16">
-          <Revelar>
-            <h2 className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance text-surface-50">{implantacao.title}</h2>
-            <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{implantacao.titleCinza}</p>
-          </Revelar>
+        {/* Lote 3 (30/09): o título em cima e os dias numa linha do tempo
+            HORIZONTAL (Dia 1 → Dia 7) a partir de 768 px; no celular, a mesma
+            lista na vertical. O ponto na linha diz quem faz o passo. */}
+        <Cabecalho titulo={implantacao.title} apoio={implantacao.titleCinza} />
 
-          <Revelar atraso={0.1}><ol className="border-t border-[var(--landing-borda)]">
+        <Revelar atraso={0.1}><ol className="relative mt-12 grid border-t border-[var(--landing-borda)] md:grid-cols-4 md:gap-8 md:border-t-0">
+          {/* A linha do tempo (desktop): uma régua atrás dos pontos. */}
+          <span aria-hidden className="absolute inset-x-0 top-[31px] hidden h-px bg-surface-700 md:block" />
             {implantacao.passos.map((p, i) => {
               const voce = p.quem === 'voce'
               return (
-                <li key={p.titulo} className="grid grid-cols-[72px_14px_minmax(0,1fr)] gap-x-3 border-b border-[var(--landing-borda)] py-5 sm:grid-cols-[84px_14px_minmax(0,1fr)] sm:gap-x-4">
-                    <span className="pt-[3px] font-mono text-[11.5px] tracking-[.02em] text-surface-500">{DIAS_PASSO[i]}</span>
-                    <span aria-hidden className={cn('mt-[8px] h-[7px] w-[7px] rounded-full', voce ? 'bg-[#F5B544]' : 'bg-[var(--landing-destaque)]')} />
-                    <div className="min-w-0">
+                <li key={p.titulo} className="relative grid grid-cols-[72px_14px_minmax(0,1fr)] gap-x-3 border-b border-[var(--landing-borda)] py-5 md:block md:border-b-0 md:py-0">
+                    <span className="pt-[3px] font-mono text-[11.5px] tracking-[.02em] text-surface-500 md:block md:pt-0">{DIAS_PASSO[i]}</span>
+                    <span aria-hidden className={cn('mt-[8px] h-[7px] w-[7px] rounded-full md:relative md:mt-[9px] md:block md:h-[9px] md:w-[9px] md:ring-4 md:ring-[var(--landing-palco)]', voce ? 'bg-[#F5B544]' : 'bg-[var(--landing-destaque)]')} />
+                    <div className="min-w-0 md:mt-5">
                       <p className="text-[16px] font-semibold leading-snug text-surface-50">{p.titulo}</p>
                       <p className="mt-1 text-[14.5px] leading-relaxed text-surface-400 text-pretty">{p.texto}</p>
                       <p className={cn('mt-2 font-mono text-[11px] tracking-[.04em]', voce ? 'text-[#F5B544]' : 'text-[var(--landing-destaque)]')}>{p.rotulo}</p>
@@ -131,7 +132,6 @@ export function SecaoImplantacao({ compacta = false, numero }: { compacta?: bool
               )
             })}
           </ol></Revelar>
-        </div>
 
         {/* Depois do ar: o ajuste passa a ser do cliente, na própria Oryon. */}
         {!compacta && (<>
@@ -213,9 +213,11 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
   const naHome = perguntas.naHome.map((p) => todas.find((q) => q.pergunta === p)).filter((q): q is (typeof todas)[number] => !!q)
   return (
     <section id="perguntas" data-section="perguntas" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
-      <div className="landing-container grid gap-10 lg:grid-cols-[1fr_1.25fr] lg:gap-14">
-        {/* O título acompanha a leitura no desktop. */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
+      {/* Lote 3 (30/09): coluna única de leitura — título em cima, perguntas
+          embaixo, e o próximo passo no fim. Antes eram três seções seguidas no
+          mesmo formato "título à esquerda, conteúdo à direita". */}
+      <div className="landing-container">
+        <div className="max-w-[46rem]">
           {comoPagina ? (
             <Revelar>
               <Capitulo rotulo={perguntas.eyebrow} />
@@ -224,22 +226,21 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
           ) : (
             <Cabecalho titulo={perguntas.title} />
           )}
-          <Revelar atraso={0.2} className="mt-8 flex flex-wrap gap-3">
-            <BotaoContato longo={false} />
-            <BotaoLanding to={LANDING_ROUTES.demonstracao} variante="secundario" seta>{home.ctaPrincipal}</BotaoLanding>
-          </Revelar>
-        </div>
         {limite ? (
-          <Revelar atraso={0.1}>
+          <Revelar atraso={0.1} className="mt-10">
             <div className="border-t border-[var(--landing-borda)]">
               {naHome.slice(0, limite).map((q, i) => <Pergunta key={q.pergunta} n={i + 1} pergunta={q.pergunta} resposta={q.resposta} />)}
             </div>
-            <Link to={LANDING_ROUTES.perguntas} className="mt-5 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-              {home.perguntas.verTodas} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <BotaoContato longo={false} />
+              <BotaoLanding to={LANDING_ROUTES.demonstracao} variante="secundario" seta>{home.ctaPrincipal}</BotaoLanding>
+              <Link to={LANDING_ROUTES.perguntas} className="inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                {home.perguntas.verTodas} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </div>
           </Revelar>
         ) : (
-        <div className="space-y-6">
+        <div className="mt-10 space-y-6">
           {perguntas.grupos.map((g, gi) => (
             <Revelar key={g.titulo} atraso={0.1 + gi * 0.08}>
               <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{g.titulo}</p>
@@ -250,8 +251,13 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
               </div>
             </Revelar>
           ))}
+          <Revelar className="flex flex-wrap gap-3 pt-2">
+            <BotaoContato longo={false} />
+            <BotaoLanding to={LANDING_ROUTES.demonstracao} variante="secundario" seta>{home.ctaPrincipal}</BotaoLanding>
+          </Revelar>
         </div>
         )}
+        </div>
       </div>
     </section>
   )

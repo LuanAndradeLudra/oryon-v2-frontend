@@ -566,6 +566,8 @@ export const home = {
     titulo: 'Cliente sem resposta procura outra empresa.',
     cinza: 'E o WhatsApp da sua empresa não para.',
     comOryon: 'Com a Oryon',
+    /** As conversas têm hora e valor: dizem que são exemplo (lote 3, 30/09). */
+    aviso: 'Conversas de exemplo.',
     /** Cada dor é uma MENSAGEM de cliente (a conversa fictícia mora em
      *  home/dorConversas.ts, fora da copy: tem hora e valor). Aqui só a
      *  afirmação: o problema e o que muda com a Oryon. */

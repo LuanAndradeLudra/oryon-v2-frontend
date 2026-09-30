@@ -47,7 +47,7 @@ function Coluna({ quem, i }: { quem: 'ia' | 'pessoa'; i: number }) {
       </h3>
       <ul className="mt-3">
         {col.itens.map((it) => (
-          <li key={it.texto} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-t border-[var(--landing-borda)] py-3">
+          <li key={it.texto} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2.5">
             <span className={cn('text-[15px] leading-snug', ia ? 'text-surface-100' : 'font-medium text-surface-50')}>{it.texto}</span>
             <span className="font-mono text-[11px] tracking-[.02em] text-surface-500">{it.nota}</span>
           </li>

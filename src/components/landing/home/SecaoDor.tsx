@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { home } from '../landingCopy'
 import { Cabecalho, Revelar } from '../plataforma/SecoesVenda'
@@ -21,22 +22,34 @@ export function SecaoDor({ numero }: { numero?: string } = {}) {
       <div className="landing-container">
         <Cabecalho rotulo={dor.eyebrow} titulo={dor.titulo} apoio={dor.cinza} />
 
-        <Revelar atraso={0.1}><ul className="mt-10 grid border-t border-[var(--landing-borda)] lg:grid-cols-3">
+        {/* Composição assimétrica (lote 3, 30/09): a 1ª dor (fora do horário, a
+            mais forte) ocupa a coluna da esquerda inteira; as outras duas se
+            empilham à direita. No celular, uma embaixo da outra. */}
+        <Revelar atraso={0.1}><ul className="mt-10 grid border-t border-[var(--landing-borda)] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:grid-rows-2">
           {dor.itens.map((it, i) => {
             const d = { ...it, ...DOR_CONVERSAS[it.key] }
+            const principal = i === 0
             return (
-            <li key={d.key} className={cn('border-b border-[var(--landing-borda)] py-7 lg:border-b-0 lg:py-8', i > 0 && 'lg:border-l lg:pl-7', i < 2 && 'lg:pr-7')}>
-              <div>
+            <li
+              key={d.key}
+              className={cn(
+                'border-b border-[var(--landing-borda)] py-7',
+                principal ? 'lg:row-span-2 lg:flex lg:items-center lg:border-b-0 lg:border-r lg:py-10 lg:pr-12' : 'lg:pl-10 lg:py-8',
+                i === 2 && 'lg:border-b-0',
+              )}
+            >
+              <div className={cn(principal && 'lg:max-w-[34rem] lg:[&_[data-bolha]]:text-[15px]')}>
                 <p className="font-mono text-[11.5px] tracking-[.04em] text-surface-500">{d.quando}</p>
-                <h3 className="mt-3 text-[17px] font-semibold leading-snug text-surface-50 text-balance lg:min-h-[2.6em]">{d.problema}</h3>
+                <h3 className={cn('mt-3 font-semibold leading-snug text-surface-50 text-balance', principal ? 'text-[17px] lg:text-[24px] lg:leading-[1.2]' : 'text-[17px]')}>{d.problema}</h3>
 
                 {/* A conversa: a pergunta do cliente e o que acontece com ela. */}
                 <div aria-hidden className="mt-5 flex flex-col gap-2">
-                  <div className="max-w-[92%] self-start rounded-[10px] rounded-bl-[3px] border border-[var(--landing-borda)] bg-bubble-in px-3 py-2 text-[13.5px] leading-snug text-surface-100">
+                  <div data-bolha className="max-w-[92%] self-start rounded-[10px] rounded-bl-[3px] border border-[var(--landing-borda)] bg-bubble-in px-3 py-2 text-[13.5px] leading-snug text-surface-100">
                     {d.cliente}
                     <span className="mt-1 block text-right font-mono text-[10.5px] text-[#F87171] line-through decoration-[#F87171]/60">{d.semResposta}</span>
                   </div>
                   <div
+                    data-bolha
                     className={cn(
                       'max-w-[92%] self-end rounded-[10px] rounded-br-[3px] px-3 py-2 text-[13.5px] leading-snug text-surface-50',
                       d.quem === 'ia' ? 'bg-bubble-out' : 'bg-[#3A2C0E] ring-1 ring-[#F5B544]/35',
@@ -59,7 +72,10 @@ export function SecaoDor({ numero }: { numero?: string } = {}) {
             )
           })}
         </ul></Revelar>
-
+        <p className="mt-5 flex items-center gap-2 text-[12.5px] text-surface-500">
+          <Info className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+          {dor.aviso}
+        </p>
       </div>
     </section>
   )
