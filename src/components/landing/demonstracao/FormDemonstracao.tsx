@@ -147,12 +147,9 @@ export function FormDemonstracao({ origem }: { origem: string }) {
 /** A seção de fecho: o convite e o formulário lado a lado. */
 export function SecaoDemonstracao({ origem, comoPagina = false, numero }: { origem: string; comoPagina?: boolean; numero?: string }) {
   return (
-    <section id="demonstracao" data-section="demonstracao" className="relative scroll-mt-20 overflow-hidden border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{ background: 'radial-gradient(60% 70% at 20% 100%, color-mix(in srgb, var(--color-brand-500) 18%, transparent) 0%, transparent 70%)' }}
-      />
+    // P12 da auditoria anti-genérico (30/09): sem o glow radial de fundo — na
+    // landing fica só o halo do palco do Hero.
+    <section id="demonstracao" data-section="demonstracao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
       <div className="landing-container relative grid gap-8 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] lg:gap-14">
         <div>
           {comoPagina ? (
