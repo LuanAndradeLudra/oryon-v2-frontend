@@ -16,6 +16,7 @@ import { campaignsApi } from '@/services/api'
 import { generateCampaignInsights } from '@/services/copilotService'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { ChartColors } from '@/components/dashboard/utils'
+import { normalizeCampaignAnalytics, formatMinutes } from '@/lib/campaignAnalytics'
 import type { Campaign, CampaignAnalytics, CampaignConversionEvent, CampaignAttributionBreakdown, CampaignConversationSummary } from '@/types'
 import type { CampaignInsight } from '@/services/copilotService'
 
@@ -247,7 +248,11 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const [outcomeFilter, setOutcomeFilter] = useState<string>('all')
   const [sentimentFilter, setSentimentFilter] = useState<string>('all')
 
-  const { stats } = campaign
+  // Os contadores do `/analytics` são lidos AGORA; `campaign.stats` vem da lista e
+  // pode estar velho (delivered/read sobem depois, por webhook, e a aba não recarrega).
+  const stats = analytics?.stats ?? campaign.stats
+  // SCRUM-1150: campanha parada sozinha pelo circuit breaker; o /analytics traz o motivo atual.
+  const stopReason = analytics?.stopReason ?? campaign.stopReason ?? null
 
   useEffect(() => {
     Promise.all([
@@ -255,7 +260,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
       campaignsApi.getConversations(campaign.id),
     ])
       .then(([analyticsRes, convsRes]) => {
-        setAnalytics(analyticsRes.data)
+        setAnalytics(normalizeCampaignAnalytics(analyticsRes.data))
         setConversations(convsRes.data ?? [])
       })
       .catch(() => {})
@@ -388,6 +393,24 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                   {/* ── OVERVIEW ── */}
                   {tab === 'overview' && (
                     <>
+                      {/* Pausa automática (circuit breaker) e contatos suprimidos */}
+                      {stopReason && (
+                        <div
+                          role="alert"
+                          className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5"
+                        >
+                          <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                          <p className="text-2xs text-surface-200">{stopReason}</p>
+                        </div>
+                      )}
+                      {(stats.excluded ?? 0) > 0 && (
+                        <p className="text-2xs text-surface-400">
+                          <span className="font-semibold text-surface-200">{stats.excluded}</span>{' '}
+                          {stats.excluded === 1 ? 'contato do segmento ficou' : 'contatos do segmento ficaram'} de fora
+                          do envio (número inválido ou opt-out de marketing).
+                        </p>
+                      )}
+
                       {/* Funnel */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-3">Funil de engajamento</p>
@@ -398,7 +421,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               <div className="flex-1 h-6 bg-surface-800 rounded-lg overflow-hidden relative">
                                 <motion.div
                                   initial={{ width: 0 }}
-                                  animate={{ width: `${(f.value / stats.sent) * 100}%` }}
+                                  animate={{ width: `${stats.sent > 0 ? (f.value / stats.sent) * 100 : 0}%` }}
                                   transition={{ duration: 0.6, delay: i * 0.08 }}
                                   className="h-full rounded-lg flex items-center pl-2"
                                   style={{ backgroundColor: tint(f.color, 25), borderLeft: `3px solid ${f.color}` }}
@@ -413,6 +436,36 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           ))}
                         </div>
                       </div>
+
+                      {/* Falhas de entrega por motivo (SCRUM-1142) */}
+                      {analytics && (analytics.failures.length > 0 || analytics.avgTimeToReadMinutes != null) && (
+                        <div>
+                          {analytics.avgTimeToReadMinutes != null && (
+                            <p className="text-2xs text-surface-400 mb-3">
+                              Tempo médio até a leitura:{' '}
+                              <span className="font-semibold text-surface-200">{formatMinutes(analytics.avgTimeToReadMinutes)}</span>
+                            </p>
+                          )}
+                          {analytics.failures.length > 0 && (
+                            <>
+                              <p className="text-xs font-semibold text-surface-300 mb-3">
+                                Falhas por motivo ({analytics.failures.reduce((n, f) => n + f.count, 0)})
+                              </p>
+                              <div className="space-y-1.5">
+                                {analytics.failures.map((f) => (
+                                  <div
+                                    key={f.code}
+                                    className="flex items-center justify-between gap-3 bg-surface-800 border border-surface-700 rounded-lg px-3 py-2"
+                                  >
+                                    <span className="text-2xs text-surface-300" title={`Código ${f.code}`}>{f.reason}</span>
+                                    <span className="text-2xs font-semibold text-danger flex-shrink-0">{f.count}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
 
                       {/* Timeline */}
                       {analytics && analytics.engagementTimeline.length > 0 && (

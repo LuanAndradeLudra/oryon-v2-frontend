@@ -67,7 +67,7 @@ export type MessageType =
 /** `sending` nunca vem do backend — é o eco otimista local enquanto a
  *  requisição está em voo (ver `useMessages.sendMessage`), substituído pela
  *  mensagem real do servidor (ou por `failed`) assim que ela resolve. */
-export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
+export type MessageStatus = 'queued' | 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
 
 export type UserRole = 'super_admin' | 'business_admin' | 'admin' | 'agent' | 'supervisor'
 
@@ -1054,6 +1054,10 @@ export interface Message {
   readAt?: string
   failedAt?: string
   errorCode?: string
+  /** Motivo curto da falha (vem do socket `message:status`). */
+  errorTitle?: string
+  /** Payload bruto de falha gravado pelo backend (`errors[]` da Meta). */
+  deliveryError?: { errors?: Array<{ title?: string; message?: string }> } | null
   /** Populated by the backend for outbound messages typed by a human operator
    *  (`sentByUserId` not null). Stays null/undefined for AI-generated outbound
    *  and any inbound. The bubble uses presence to render either the
@@ -1425,7 +1429,7 @@ export interface WhatsAppTemplate {
   updatedAt: string
 }
 
-export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled'
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled' | 'stopped' | 'paused'
 
 export interface CampaignSegment {
   type: 'all' | 'tag' | 'stage' | 'manual' | 'filter'
@@ -1465,6 +1469,8 @@ export interface CampaignStats {
   conversions?: number
   engagementScore?: number   // 0–100 composite
   churnCount?: number
+  /** Contatos do segmento fora do envio (número inválido / opt-out de marketing). */
+  excluded?: number
 }
 
 export interface CampaignChurnBreakdown {
@@ -1515,6 +1521,32 @@ export interface CampaignConversationSummary {
   adCampaignName?:  string
 }
 
+/** Falhas de entrega agrupadas por código da Meta (BE.1 — `failures[]`). */
+export interface CampaignFailureReason {
+  code:   string
+  reason: string
+  count:  number
+}
+
+/** Resposta de um destinatário à campanha (BE.1 — `replies[]`). */
+export interface CampaignReply {
+  contactId: string
+  name:      string | null
+  text:      string | null
+  at:        string | null
+}
+
+export interface CampaignReadHeatmapCell {
+  dayOffset: number
+  hour:      number
+  count:     number
+}
+
+/**
+ * Payload de `GET /campaigns/:id/analytics` DEPOIS de `normalizeCampaignAnalytics`
+ * (lib/campaignAnalytics.ts): os campos legados que o backend não devolve chegam
+ * como vazio/zero, então o relatório os lê sem guarda.
+ */
 export interface CampaignAnalytics {
   campaignId:         string
   churnBreakdown:     CampaignChurnBreakdown
@@ -1522,6 +1554,16 @@ export interface CampaignAnalytics {
   engagementTimeline: CampaignEngagementPoint[]
   attributionBreakdown: CampaignAttributionBreakdown[]
   aiInsights:         string[]
+  /** Novos (BE.1/SCRUM-1142) */
+  failures:           CampaignFailureReason[]
+  replies:            CampaignReply[]
+  readHeatmap:        CampaignReadHeatmapCell[]
+  /** `null` quando ninguém leu ainda (não é "0 minutos"). */
+  avgTimeToReadMinutes: number | null
+  /** Contadores atuais da campanha — mais novos que o `stats` da lista. */
+  stats?: CampaignStats
+  /** Motivo da pausa automática, sempre atual. */
+  stopReason?: string | null
 }
 
 export interface Campaign {
@@ -1536,6 +1578,8 @@ export interface Campaign {
   scheduledAt?: string
   sentAt?: string
   stats: CampaignStats
+  /** Por que a campanha foi parada sozinha (circuit breaker). */
+  stopReason?: string | null
   createdByUserId: string
   createdAt: string
   whatsappNumberId?: string | null
@@ -1600,9 +1644,15 @@ export interface SocketConversationStatusUpdated {
 }
 
 export interface SocketMessageStatus {
-  messageId: string
+  messageId?: string
+  wamid?: string | null
   status: MessageStatus
-  timestamp: string
+  conversationId?: string
+  deliveredAt?: string | null
+  readAt?: string | null
+  failedAt?: string | null
+  errorCode?: string | null
+  errorTitle?: string | null
 }
 
 /** Miniatura de PDF gerada de forma assíncrona (fila `media-thumbnail`) —

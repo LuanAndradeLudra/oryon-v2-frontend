@@ -35,6 +35,8 @@ const STATUS_CONFIG: Record<CampaignStatus, {
   sent:      { label: 'Enviada',    chip: 'var(--color-status-active)', icon: CheckCircle2 },
   failed:    { label: 'Falhou',     chip: 'var(--color-danger)',                icon: XCircle },
   cancelled: { label: 'Cancelada',  chip: 'var(--color-status-muted)', icon: AlertCircle },
+  stopped:   { label: 'Interrompida', chip: 'var(--color-danger)',      icon: AlertCircle },
+  paused:    { label: 'Pausada',    chip: 'var(--color-status-pending)', icon: Clock },
 }
 
 const FILTER_OPTIONS: { value: CampaignStatus | 'all'; label: string }[] = [
