@@ -20,11 +20,15 @@ interface FunnelRow {
 }
 
 /**
- * SCRUM-1104 (tela 1b) — "Funil de vendas": estoque ABERTO de hoje por etapa
- * do funil padrão do tenant (mesma semântica de `StageFunnelChart`, D2/935).
- * Conversão aqui é a razão simples entre o estoque de etapas adjacentes (não
- * a taxa histórica de transição de `StageConversion`) — é o que o mock pede
- * e o que dá pra calcular sem período.
+ * SCRUM-1104 (tela 1b) — "Funil de vendas": estoque ABERTO agora por etapa do
+ * funil padrão do tenant (mesma semântica de `StageFunnelChart`, D2/935).
+ *
+ * K14 (release 2026-09-29): o cabeçalho dizia "mês atual", mas o estoque é
+ * de agora. E a "conversão" era a razão entre estoques de etapas vizinhas —
+ * número sem significado (dá 300% quando a etapa seguinte acumula). Agora é a
+ * taxa real de transição que a analítica do funil já calcula
+ * (`StageConversion`): dos que entraram na etapa, quantos foram para a
+ * seguinte (na última etapa aberta, para o ganho). Sem entrada: "—".
  */
 export function SalesFunnelCard() {
   const [pipeline, setPipeline] = useState<Pipeline | null>(null)
@@ -80,14 +84,24 @@ export function SalesFunnelCard() {
     }
   })
 
-  const topCount = rows[0]?.count || 1
+  const topCount = Math.max(1, ...rows.map((r) => r.count))
+  const wonIds = new Set(pipeline.stages.filter((s) => s.isWon).map((s) => s.id))
+  /** Taxa real etapa → próxima (ou → ganho na última aberta); null sem entrada. */
+  const conversaoDe = (i: number): number | null => {
+    const conv = overview?.conversion.find((c) => c.fromStageId === rows[i].stage.id)
+    if (!conv || conv.enteredCount === 0) return null
+    const next = rows[i + 1]?.stage.id
+    const alvo = conv.outcomes.filter((o) => (next ? o.toStageId === next : wonIds.has(o.toStageId)))
+    return Math.round(alvo.reduce((n, o) => n + o.count, 0) / conv.enteredCount * 100)
+  }
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
       {/* PL-C3-FAR-eixo10: h-10 fixo, mesma medida dos irmãos do grid. */}
       <div className="flex items-center h-10 px-3.5 border-b border-surface-700">
         <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
-        <span className="text-[11.5px] text-surface-500 ml-2">por etapa · mês atual</span>
+        <span className="text-[11.5px] text-surface-500 ml-2">em aberto por etapa</span>
+        <EscopoDoCartao className="ml-2">agora</EscopoDoCartao>
         <Link
           to={`/pipelines/${pipeline.id}`}
           className="ml-auto flex items-center gap-1 text-xs font-semibold text-accent-dark hover:text-brand-300 transition-colors"
@@ -107,11 +121,10 @@ export function SalesFunnelCard() {
             <span className="text-right">Negócios</span>
             <span className="text-right">Valor</span>
             <span className="pl-4">Distribuição</span>
-            <span className="text-right">Conversão</span>
+            <span className="text-right" title="Dos negócios que entraram na etapa, quantos passaram para a seguinte (na última, quantos foram ganhos)">Avançam</span>
           </div>
           {rows.map((row, i) => {
-            const prevCount = i > 0 ? rows[i - 1].count : null
-            const conversion = prevCount ? Math.round((row.count / prevCount) * 100) : null
+            const conversion = conversaoDe(i)
             const width = Math.min(100, Math.round((row.count / topCount) * 100))
             return (
               <div
