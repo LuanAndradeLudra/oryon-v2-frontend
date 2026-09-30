@@ -116,9 +116,11 @@ export const trust = {
       text: 'Encaixes, urgências, assuntos delicados: você define quando o agente chama a equipe. Quem assume recebe a conversa inteira.',
     },
     {
-      key: 'conexao',
-      title: 'WhatsApp oficial para empresas',
-      text: 'A Oryon usa a conexão oficial do WhatsApp Business, fornecida pela Meta, a empresa dona do WhatsApp.',
+      // Ciclo noturno (30/09): o cartão da conexão oficial repetia a faixa de
+      // fatos, palavra por palavra. No lugar, a prova de que dá para conferir.
+      key: 'historico',
+      title: 'Tudo fica registrado',
+      text: 'Cada resposta e cada ação do agente ficam no histórico da conversa, com data e hora. Você confere quando quiser.',
     },
   ],
 } as const
@@ -336,7 +338,7 @@ export const implantacao = {
     {
       quem: 'Você',
       titulo: 'Escolha o número',
-      texto: 'Você escolhe o número de WhatsApp que vai atender e conclui a liberação na Meta, a empresa dona do WhatsApp.',
+      texto: 'Você escolhe o número de WhatsApp que vai atender e conclui a liberação na Meta.',
       entregas: [
         'Número que será usado no atendimento',
         'Conta aprovada pela Meta para a API oficial',
