@@ -10,6 +10,7 @@ import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { OBJETIVOS, PADRAO_POR_OBJETIVO, cobertura } from './especificacao'
+import { useErroDoCampo } from './campoComErro'
 
 type Mudar = (fn: (s: AgentSpec) => AgentSpec) => void
 
@@ -78,6 +79,8 @@ export function EtapaEstudar({
   const [frase, setFrase] = useState(pendente?.description ?? hub?.description ?? '')
   const [link, setLink] = useState(pendente?.link ?? (hub?.website || (hub?.instagram ? hub.instagram : '')))
   const [estudando, setEstudando] = useState(false)
+  const erroSegmento = useErroDoCampo('segmento')
+  const erroEstudar = useErroDoCampo('estudar')
   const [erro, setErro] = useState<string | null>(null)
   // O Contexto da IA chega depois da primeira renderização: enquanto o dono
   // não mexeu nos campos, o cartão acompanha o que foi carregado.
@@ -176,9 +179,11 @@ export function EtapaEstudar({
       <p className="text-sm text-surface-400">
         Antes de perguntar, o Oryon lê o que a empresa já tem. Você só confirma ou corrige o resumo na próxima etapa.
       </p>
-      <FormField label="Tipo de negócio" hint='Ex.: "clínica odontológica", "loja de roupas", "escritório de contabilidade".'>
-        <Input value={spec.identity.segment ?? ''} onChange={(e) => mudar((s) => ({ ...s, identity: { ...s.identity, segment: e.target.value } }))} />
-      </FormField>
+      <div data-campo="segmento">
+        <FormField label="Tipo de negócio" hint='Ex.: "clínica odontológica", "loja de roupas", "escritório de contabilidade".' error={erroSegmento}>
+          <Input value={spec.identity.segment ?? ''} onChange={(e) => mudar((s) => ({ ...s, identity: { ...s.identity, segment: e.target.value } }))} />
+        </FormField>
+      </div>
       <div>
         <p className="mb-2 text-sm font-medium text-surface-200">O principal que o agente vai fazer</p>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -254,13 +259,14 @@ export function EtapaEstudar({
       </section>
 
       {erro && <Banner variant="danger">{erro}</Banner>}
-      <div className="flex flex-wrap items-center gap-3">
+      <div data-campo="estudar" className="flex flex-wrap items-center gap-3">
         <Button onClick={() => void estudar()} disabled={estudando} leftIcon={estudando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}>
           {estudando ? 'Estudando o negócio…' : spec.context.studied ? 'Estudar de novo' : 'Estudar meu negócio'}
         </Button>
         {!spec.context.studied && (
           <Button variant="ghost" onClick={pular} disabled={estudando}>Pular e responder tudo</Button>
         )}
+        {erroEstudar && <p role="alert" className="w-full text-xs text-danger">{erroEstudar}</p>}
       </div>
     </div>
   )

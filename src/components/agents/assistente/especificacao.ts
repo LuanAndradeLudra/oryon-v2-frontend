@@ -123,16 +123,24 @@ export const PERGUNTAS_DE_ENSAIO: Record<AgentGoal, string[]> = {
   outro: ['Oi, tudo bem?', 'O que vocês fazem?', 'Quero falar com uma pessoa'],
 }
 
-/** O que falta nesta etapa para seguir (vazio = pode seguir). */
-export function faltaNaEtapa(etapa: number, spec: AgentSpec): string | null {
+/** Campo da etapa que precisa de atenção (a tela rola até ele e marca). */
+export type CampoDoAssistente = 'segmento' | 'estudar' | 'nome' | 'persona' | 'fluxo'
+
+/** O que falta nesta etapa para seguir, e em qual campo (null = pode seguir). */
+export function pendenciaNaEtapa(etapa: number, spec: AgentSpec): { mensagem: string; campo: CampoDoAssistente } | null {
   if (etapa === 1) {
-    if (!spec.identity.segment?.trim()) return 'Conte o tipo de negócio.'
-    if (!spec.context.studied) return 'Clique em "Estudar meu negócio" (ou em "Pular e responder tudo").'
+    if (!spec.identity.segment?.trim()) return { mensagem: 'Conte o tipo de negócio.', campo: 'segmento' }
+    if (!spec.context.studied) return { mensagem: 'Clique em "Estudar meu negócio" (ou em "Pular e responder tudo").', campo: 'estudar' }
   }
   if (etapa === ETAPA_TEXTO) {
-    if (!spec.identity.name.trim()) return 'Dê um nome ao agente.'
-    if (spec.persona.text.trim().length < 20) return 'Descreva quem é o agente (ou use "Escrever com IA").'
-    if (spec.flow.text.trim().length < 20) return 'Descreva como ele conduz a conversa.'
+    if (!spec.identity.name.trim()) return { mensagem: 'Dê um nome ao agente.', campo: 'nome' }
+    if (spec.persona.text.trim().length < 20) return { mensagem: 'Descreva quem é o agente (ou use "Escrever com IA").', campo: 'persona' }
+    if (spec.flow.text.trim().length < 20) return { mensagem: 'Descreva como ele conduz a conversa.', campo: 'fluxo' }
   }
   return null
+}
+
+/** O que falta nesta etapa para seguir (vazio = pode seguir). */
+export function faltaNaEtapa(etapa: number, spec: AgentSpec): string | null {
+  return pendenciaNaEtapa(etapa, spec)?.mensagem ?? null
 }

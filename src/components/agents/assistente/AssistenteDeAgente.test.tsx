@@ -46,7 +46,7 @@ const quem = vi.hoisted(() => ({ role: 'admin' }))
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: 't1', role: quem.role } }) }))
 
 import { AssistenteDeAgente } from './AssistenteDeAgente'
-import { cobertura, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia } from './especificacao'
+import { cobertura, completarSpec, faltaNaEtapa, marcarNaoRespondidas, pendenciaNaEtapa, specVazia } from './especificacao'
 
 const DRAFT = { id: 'draft-1', agent_id: null, spec: specVazia(), step: 1, published_agent_id: null, published_version: null, updated_at: '' }
 
@@ -84,6 +84,18 @@ describe('regras do assistente', () => {
     expect(faltaNaEtapa(5, s)).toMatch(/nome/)
   })
 
+  it('cada pendência aponta o campo que a tela deve mostrar', () => {
+    const s = specVazia()
+    expect(pendenciaNaEtapa(1, s)?.campo).toBe('segmento')
+    s.identity.segment = 'Clínica'
+    expect(pendenciaNaEtapa(1, s)?.campo).toBe('estudar')
+    expect(pendenciaNaEtapa(5, s)?.campo).toBe('nome')
+    s.identity.name = 'Serrinha'
+    expect(pendenciaNaEtapa(5, s)?.campo).toBe('persona')
+    s.persona.text = 'Recepcionista acolhedora e objetiva.'
+    expect(pendenciaNaEtapa(5, s)?.campo).toBe('fluxo')
+  })
+
   it('rascunho antigo, sem contexto, é completado; cobertura sobe com confirmação e escolhas', () => {
     const antigo = { ...specVazia() } as Partial<ReturnType<typeof specVazia>>
     delete antigo.context
@@ -117,11 +129,39 @@ describe('AssistenteDeAgente', () => {
     expect(api.createSpecDraft).not.toHaveBeenCalled()
   })
 
-  it('não deixa avançar sem o mínimo da etapa', async () => {
+  it('não deixa avançar sem o mínimo da etapa: o aviso fica à vista, no rodapé e no campo, com foco nele', async () => {
+    const rolou = vi.fn()
+    Element.prototype.scrollIntoView = rolou
     render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
     await waitFor(() => expect(api.createSpecDraft).toHaveBeenCalled())
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
-    expect(screen.getByText('Conte o tipo de negócio.')).toBeInTheDocument()
+    // Rodapé fixo, ao lado do botão (antes ia para o fim da página, fora da vista).
+    expect(screen.getByRole('contentinfo').querySelector('[role="alert"]')).toHaveTextContent('Conte o tipo de negócio.')
+    // Campo marcado com a mensagem e com o foco; a tela rola até ele.
+    const campo = screen.getByLabelText('Tipo de negócio')
+    expect(campo).toHaveAttribute('aria-invalid', 'true')
+    await waitFor(() => expect(campo).toHaveFocus())
+    expect(rolou).toHaveBeenCalled()
+    // Corrigir o campo tira o aviso.
+    fireEvent.change(campo, { target: { value: 'Clínica' } })
+    expect(screen.getByRole('contentinfo').querySelector('[role="alert"]')).toBeNull()
+    expect(campo).not.toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('painel ao lado: mostra o agente tomando forma e o que falta para seguir', async () => {
+    localStorage.setItem('oryon:agentes:assistente:t1', 'draft-9')
+    api.getSpecDraft.mockResolvedValue({
+      ...DRAFT, id: 'draft-9', step: 5,
+      spec: { ...specVazia(), identity: { name: 'Serrinha', goal: 'atender_agendar', segment: 'Clínica' } },
+    })
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    const painel = await screen.findByRole('complementary', { name: 'Seu agente até agora' })
+    expect(painel).toHaveTextContent('Serrinha')
+    expect(painel).toHaveTextContent('Clínica · Atender e agendar')
+    expect(painel).toHaveTextContent('Texto do agenteFalta escrever')
+    // A etapa atual fica destacada e o painel diz o que falta nela.
+    expect(painel.querySelector('[aria-current="step"]')).toHaveTextContent('Texto do agente')
+    expect(painel).toHaveTextContent('Descreva quem é o agente')
   })
 
   it('rascunho guardado com falha passageira ao ler: não cria outro por cima', async () => {

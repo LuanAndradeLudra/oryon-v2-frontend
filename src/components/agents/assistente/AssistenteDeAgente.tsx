@@ -16,8 +16,11 @@ import { EtapaNoAr, type LinhaParaEscolher } from './EtapasDoAssistente'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import {
-  ETAPAS, ETAPA_ENTREVISTA, ETAPA_EXEMPLOS, ETAPA_TEXTO, completarSpec, faltaNaEtapa, marcarNaoRespondidas, specVazia,
+  ETAPAS, ETAPA_ENTREVISTA, ETAPA_EXEMPLOS, ETAPA_TEXTO, completarSpec, marcarNaoRespondidas, pendenciaNaEtapa, specVazia,
+  type CampoDoAssistente,
 } from './especificacao'
+import { CampoComErroContext } from './campoComErro'
+import { PainelDoAgente } from './PainelDoAgente'
 import { EtapaEnsaio, EtapaQuemE } from './EtapasDoAssistente'
 import { EtapaEntrevista, EtapaJeitoDeResponder, ParaOndeFoi } from './EtapasDaEntrevista'
 import { EtapaEstudar, EtapaOQueJaSei, type FontesDaConta } from './EtapasDeEstudo'
@@ -64,7 +67,7 @@ export function AssistenteDeAgente({
   const [etapa, setEtapa] = useState(1)
   const [draftId, setDraftId] = useState<string | null>(null)
   const [salvo, setSalvo] = useState<EstadoSalvo>('salvando')
-  const [falta, setFalta] = useState<string | null>(null)
+  const [falta, setFalta] = useState<{ mensagem: string; campo: CampoDoAssistente } | null>(null)
   const [setores, setSetores] = useState<Array<{ id: string; name: string }>>([])
   const [numeros, setNumeros] = useState<LinhaParaEscolher[] | null>(null)
   const [erroLinhas, setErroLinhas] = useState(false)
@@ -211,10 +214,19 @@ export function AssistenteDeAgente({
   }, [draftId])
 
   // Trocar de etapa começa do topo (antes ficava na rolagem da etapa anterior).
-  useEffect(() => { rolagem.current?.scrollTo?.({ top: 0 }) }, [etapa])
+  useEffect(() => { rolagem.current?.scrollTo?.({ top: 0 }); setFalta(null) }, [etapa])
+
+  // O que barrou o "Continuar" fica à vista: a tela rola até o campo e o foco
+  // vai para ele (antes o aviso ia para o fim da página, fora da vista).
+  useEffect(() => {
+    if (!falta) return
+    const alvo = rolagem.current?.querySelector<HTMLElement>(`[data-campo="${falta.campo}"]`)
+    alvo?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    alvo?.querySelector<HTMLElement>('input, textarea, select, button:not([disabled])')?.focus({ preventScroll: true })
+  }, [falta])
 
   const avancar = () => {
-    const f = faltaNaEtapa(etapa, spec)
+    const f = pendenciaNaEtapa(etapa, spec)
     if (f) { setFalta(f); return }
     // Sair da entrevista: o que ficou sem resposta vira pendência, não some.
     if (etapa === ETAPA_ENTREVISTA) setSpec((s) => marcarNaoRespondidas(s))
@@ -386,7 +398,11 @@ export function AssistenteDeAgente({
           </header>
 
           <div ref={rolagem} className="flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8">
+            {/* Desktop largo: formulário + painel do que o agente já tem (o espaço
+                vazio das laterais vira contexto). Abaixo de 1280 px, só o formulário. */}
+            <div className="mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8 xl:grid xl:max-w-[1040px] xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-8">
+             <CampoComErroContext.Provider value={falta}>
+             <div className="min-w-0">
               {agentId && editadoFora.length > 0 && (etapa === ETAPA_TEXTO || etapa === 7) && (
                 <Banner variant="warning" className="mb-6">
                   {editadoFora.includes('texto') && editadoFora.includes('capacidades')
@@ -442,7 +458,6 @@ export function AssistenteDeAgente({
                   Configurações → Números WhatsApp.
                 </Banner>
               )}
-              {falta && <Banner variant="warning" className="mt-6">{falta}</Banner>}
               {erroPublicar && <Banner variant="danger" className="mt-6">{erroPublicar}</Banner>}
               {semLinha && (
                 <Banner
@@ -483,6 +498,11 @@ export function AssistenteDeAgente({
                   O agente foi publicado, mas não consegui abri-lo agora. Ele já está salvo; se fechar, ele aparece na lista de agentes.
                 </Banner>
               )}
+             </div>
+             </CampoComErroContext.Provider>
+             <div className="hidden xl:block xl:self-start xl:sticky xl:top-8">
+               <PainelDoAgente spec={spec} etapa={etapa} fontes={fontes} numeros={numeros} />
+             </div>
             </div>
           </div>
 
@@ -490,7 +510,11 @@ export function AssistenteDeAgente({
             <Button variant="neutral" size="md" onClick={() => setEtapa((e) => Math.max(e - 1, 1))} disabled={etapa === 1 || publicando}>
               Voltar
             </Button>
-            <div className="flex-1" />
+            <div className="flex min-w-0 flex-1 justify-end">
+              {falta && (
+                <p role="alert" className="line-clamp-2 text-right text-xs text-danger sm:text-sm">{falta.mensagem}</p>
+              )}
+            </div>
             {etapa < ETAPAS.length ? (
               <Button size="md" onClick={avancar}>Continuar</Button>
             ) : (

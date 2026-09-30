@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
 import { Textarea } from '@/components/ui/Textarea'
 import { PERGUNTAS_DE_ENSAIO, SITUACOES, TONS } from './especificacao'
+import { useErroDoCampo } from './campoComErro'
 
 type Mudar = (fn: (s: AgentSpec) => AgentSpec) => void
 
@@ -41,6 +42,9 @@ function Opcao({ ativa, onClick, titulo, descricao }: { ativa: boolean; onClick:
 // ── 3. Quem é o agente ───────────────────────────────────────────────────────
 
 export function EtapaQuemE({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
+  const erroNome = useErroDoCampo('nome')
+  const erroPersona = useErroDoCampo('persona')
+  const erroFluxo = useErroDoCampo('fluxo')
   const [gerando, setGerando] = useState(false)
   const [avisos, setAvisos] = useState<string[]>([])
   const [erro, setErro] = useState<string | null>(null)
@@ -73,9 +77,11 @@ export function EtapaQuemE({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
   }
   return (
     <div className="space-y-6">
-      <FormField label="Nome do agente">
-        <Input value={spec.identity.name} onChange={(e) => mudar((s) => ({ ...s, identity: { ...s.identity, name: e.target.value } }))} placeholder="Ex.: Serrinha" />
-      </FormField>
+      <div data-campo="nome">
+        <FormField label="Nome do agente" error={erroNome}>
+          <Input value={spec.identity.name} onChange={(e) => mudar((s) => ({ ...s, identity: { ...s.identity, name: e.target.value } }))} placeholder="Ex.: Serrinha" />
+        </FormField>
+      </div>
       <div>
         <p className="mb-2 text-sm font-medium text-surface-200">Como ele fala</p>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -128,12 +134,16 @@ export function EtapaQuemE({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
           </Button>
         </section>
       )}
-      <FormField label="Quem é o agente" hint="Personalidade e jeito de atender. Sem preços, endereço ou horários.">
-        <Textarea rows={5} value={spec.persona.text} onChange={(e) => mudar((s) => ({ ...s, persona: { ...s.persona, text: e.target.value } }))} />
-      </FormField>
-      <FormField label="Como ele conduz a conversa" hint="Os passos, do cumprimento ao fechamento.">
-        <Textarea rows={7} value={spec.flow.text} onChange={(e) => mudar((s) => ({ ...s, flow: { text: e.target.value } }))} />
-      </FormField>
+      <div data-campo="persona">
+        <FormField label="Quem é o agente" hint="Personalidade e jeito de atender. Sem preços, endereço ou horários." error={erroPersona}>
+          <Textarea rows={5} value={spec.persona.text} onChange={(e) => mudar((s) => ({ ...s, persona: { ...s.persona, text: e.target.value } }))} />
+        </FormField>
+      </div>
+      <div data-campo="fluxo">
+        <FormField label="Como ele conduz a conversa" hint="Os passos, do cumprimento ao fechamento." error={erroFluxo}>
+          <Textarea rows={7} value={spec.flow.text} onChange={(e) => mudar((s) => ({ ...s, flow: { text: e.target.value } }))} />
+        </FormField>
+      </div>
     </div>
   )
 }
