@@ -44,6 +44,12 @@ function useSomenteEscuro() {
 export function LandingLayout({ children }: { children: ReactNode }) {
   const rootRef = useRef<HTMLDivElement>(null)
   useSomenteEscuro()
+  // O título da aba nas páginas públicas diz o que a Oryon é; o app volta a "Oryon".
+  useEffect(() => {
+    const anterior = document.title
+    document.title = 'Oryon · Atendimento com IA no WhatsApp'
+    return () => { document.title = anterior }
+  }, [])
   const { pathname, hash } = useLocation()
   useHashAnchorScroll(rootRef)
   useEffect(() => {
