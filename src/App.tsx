@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { isFeatureVisible } from '@/config/featureFlags'
 import { useEffect, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
@@ -292,12 +293,14 @@ function AnimatedRoutes() {
           <Route path="/admin/skills/assign" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Atribuir skills"><AssignSkillPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
-          <Route path="/admin/connector-requests" element={
+          {/* O3 / D12: com connectorsSelfService desligada, as telas de staff de
+              Conectores também fecham por URL (o agent-server responde 404). */}
+          <Route path="/admin/connector-requests" element={isFeatureVisible('connectorsSelfService') ? (
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Solicitações de conector"><ConnectorRequestsPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
-          } />
-          <Route path="/admin/connectors" element={
+          ) : <Navigate to="/admin/skill-templates" replace />} />
+          <Route path="/admin/connectors" element={isFeatureVisible('connectorsSelfService') ? (
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Conectores"><ConnectorAdminPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
-          } />
+          ) : <Navigate to="/admin/skill-templates" replace />} />
           <Route path="/admin/audit" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Auditoria"><AuditPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
