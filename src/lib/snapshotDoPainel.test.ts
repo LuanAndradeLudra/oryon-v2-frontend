@@ -9,7 +9,7 @@ const valor = (snap: ReturnType<typeof montarSnapshot>, id: string) => snap.kpis
 describe('Dashboard onda 1 — montarSnapshot', () => {
   it('K1: lê os campos que o backend já calcula (antes iam como 0 fixo)', () => {
     const stats = {
-      totalConversations: 40, conversationsOpenInRange: 7, queueCountInRange: 3, conversationsResolvedToday: 20,
+      totalConversations: 40, conversationsOpen: 7, queueCount: 3, conversationsResolvedToday: 20,
       abandonedCount: 2, resolutionRate: 50, abandonRate: 5, avgResponseMinutes: 4, recontactRate: 10,
       botResolved: 6, botDeflectionRate: 30, campaignSent: 100, campaignDeliveryRate: 90, campaignReadRate: 60,
       campaignReplyRate: 12, messagesSentToday: 300, messagesReceivedToday: 280, newContactsThisWeek: 9,

@@ -16,7 +16,7 @@ const COLUMN_TOOLTIPS: Record<string, string> = {
   responseTime:   'TMR — Tempo Médio de Resposta. Quanto o atendente leva, em média, para enviar a primeira resposta após o cliente abrir a conversa. Média de todo o histórico (não segue o período).',
   resolutionTime: 'Tempo médio entre o início da conversa e o momento em que ela foi marcada como resolvida. Média de todo o histórico (não segue o período).',
   csat:           'Satisfação do cliente (CSAT) — média das avaliações recebidas em uma escala de 0 a 5. Disponível quando a pesquisa de satisfação estiver ativa.',
-  sla:            'Cumprimento do SLA — porcentagem de conversas em que a primeira resposta foi enviada dentro do tempo-alvo (atualmente 5 minutos).',
+  sla:            'SLA de primeira resposta — das conversas do período que um atendente respondeu, quantas tiveram a primeira resposta humana em até 15 minutos.',
   utilization:    'Utilização da capacidade do atendente. 100% indica saturação (a partir de 20 conversas abertas simultâneas).',
 }
 
@@ -172,12 +172,13 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               <Th label="Resolvidas"     sortKey="resolvedToday"      tooltip={COLUMN_TOOLTIPS.resolved}       />
               <Th label="TMR"            sortKey="avgResponseTime"    tooltip={COLUMN_TOOLTIPS.responseTime}   />
               <Th label="Resolução"      sortKey="avgResolutionTime"  tooltip={COLUMN_TOOLTIPS.resolutionTime} />
+              <Th label="SLA 15 min"     sortKey="slaCompliance"      tooltip={COLUMN_TOOLTIPS.sla}            />
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-700">
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-xs text-surface-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-xs text-surface-500">
                   Nenhum agente encontrado{query ? ` para "${search.trim()}"` : ''}.
                 </td>
               </tr>
@@ -225,6 +226,13 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                 {/* Resolution time */}
                 <td className="px-4 py-3.5 text-sm text-surface-300 tabular-nums">
                   {agent.avgResolutionTime ? formatKpiValue(agent.avgResolutionTime, 'seconds') : '—'}
+                </td>
+
+                {/* SLA de primeira resposta (K8, 15 min) */}
+                <td className="px-4 py-3.5">
+                  {agent.slaCompliance !== null && agent.slaCompliance !== undefined
+                    ? <MiniBar value={agent.slaCompliance} color={slaColor(agent.slaCompliance)} />
+                    : <span className="text-xs text-surface-600">—</span>}
                 </td>
 
               </tr>

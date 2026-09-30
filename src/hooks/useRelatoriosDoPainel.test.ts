@@ -55,6 +55,13 @@ describe('useRelatoriosDoPainel', () => {
     expect(resolvidasDe(result.current)).toBe(1)
   })
 
+  it('sem permissão de ler a atividade da empresa, nem pede /activity-feed (antes: 403 engolido)', async () => {
+    get.mockClear()
+    renderHook(() => useRelatoriosDoPainel('7d', false))
+    await act(async () => { responder('7d', 1) })
+    expect(get.mock.calls.map((c) => c[0])).not.toContain('/activity-feed')
+  })
+
   it('só a resposta mais recente vale (troca rápida de período)', async () => {
     const { result, rerender } = renderHook(({ p }: { p: DateRange }) => useRelatoriosDoPainel(p), { initialProps: { p: '7d' as DateRange } })
     rerender({ p: 'today' })

@@ -87,7 +87,7 @@ export interface RelatoriosDoPainel {
  * - Falha: sem dado nenhum, a tela de erro; com dado anterior, ele fica e um
  *   aviso diz qual período está à vista (nunca zera nada).
  */
-export function useRelatoriosDoPainel(periodo: DateRange): RelatoriosDoPainel {
+export function useRelatoriosDoPainel(periodo: DateRange, podeVerAtividade = true): RelatoriosDoPainel {
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null)
   const [periodoCarregado, setPeriodoCarregado] = useState<DateRange | null>(null)
   const [atividade, setAtividade] = useState<ActivityEvent[]>([])
@@ -119,6 +119,9 @@ export function useRelatoriosDoPainel(periodo: DateRange): RelatoriosDoPainel {
   }, [])
 
   const buscarAtividade = useCallback(async () => {
+    // GET /activity-feed é só de administrador: sem permissão, nem pede
+    // (antes pedia e engolia o 403 — o cartão ficava vazio sem dizer por quê).
+    if (!podeVerAtividade) return
     const desde = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
     try {
       const { data } = await api.get<{ data: ActivityFeedApiRow[] }>('/activity-feed', { params: { since: desde, limit: 100 } })
@@ -126,7 +129,7 @@ export function useRelatoriosDoPainel(periodo: DateRange): RelatoriosDoPainel {
     } catch {
       // A atividade é complementar: sem ela o cartão mostra o vazio dele.
     }
-  }, [])
+  }, [podeVerAtividade])
 
   useEffect(() => {
     vivo.current = true

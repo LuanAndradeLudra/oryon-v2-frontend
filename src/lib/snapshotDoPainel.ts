@@ -34,9 +34,10 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
 
   const realKpis: Record<string, number | null> = {
     'total_conversations':    n(x.totalConversations),
-    // Relatórios seguem o período (D6): as versões escopadas que o backend já manda.
-    'active_conversations':   n(x.conversationsOpenInRange) ?? n(x.conversationsOpen),
-    'queued':                 n(x.queueCountInRange) ?? n(x.queueCount),
+    // Estes dois são "agora" (a faixa diz), não do período.
+    'active_conversations':   n(x.conversationsOpen),
+    // K7: fila = pendentes sem dono.
+    'queued':                 n(x.queueCount),
     'resolved':               n(x.conversationsResolvedToday),
     'abandoned':              n(x.abandonedCount),
     'resolution_rate':        n(x.resolutionRate),
@@ -79,5 +80,6 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
   // D4: CSAT sai — sem pesquisa de satisfação no backend.
   snap.csatChart   = []
   snap.activityFeed = []
+  snap.escopo = s.escopo
   return snap
 }

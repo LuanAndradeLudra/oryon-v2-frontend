@@ -1392,27 +1392,34 @@ export interface AuditLog {
 }
 
 export interface HomeStats {
+  /** K12: 'minhas' = números só das conversas do usuário (atendente). */
+  escopo?: 'empresa' | 'minhas'
   conversationsOpen: number
   conversationsResolvedToday: number
   messagesSentToday: number
   messagesReceivedToday?: number
   newContactsThisWeek: number
-  agentsOnline: number
+  /** K6: presença por socket; null para o atendente (número da empresa). */
+  agentsOnline: number | null
   agentsActive: number
   agentsPending: number
-  avgResponseMinutes: number
+  /** K2: TMR por ciclo; null sem ciclo respondido no período. */
+  avgResponseMinutes: number | null
+  medianResponseMinutes?: number | null
   queueCount: number
+  /** D5: pendentes sem dono + pendentes com dono sem resposta humana. */
+  waitingCount?: number
   planUsed: number
   planLimit: number
   totalContacts?: number
   totalConversations?: number
-  unassignedCount?: number
+  unassignedCount?: number | null
   myConversationsOpen: number
   myConversationsResolvedToday: number
-  myAvgResponseMinutes: number
+  myAvgResponseMinutes: number | null
   myMessagesSentToday: number
-  appointmentsScheduled?: number
-  appointmentsCancelled?: number
+  appointmentsScheduled?: number | null
+  appointmentsCancelled?: number | null
 }
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────

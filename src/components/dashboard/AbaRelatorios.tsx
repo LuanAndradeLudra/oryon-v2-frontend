@@ -20,6 +20,7 @@ import { isFeatureVisible } from '@/config/featureFlags'
 
 import type { DateRange } from '@/types/dashboard'
 import { useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { ConnectedLineChip } from '@/components/layout/ConnectedLineChip'
 import { usePrimaryConnectedLine } from '@/hooks/usePrimaryConnectedLine'
 import { useRelatoriosDoPainel } from '@/hooks/useRelatoriosDoPainel'
@@ -71,7 +72,10 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
     }, { replace: true })
   }
 
-  const r = useRelatoriosDoPainel(periodo)
+  const { user } = useAuth()
+  // Atividade da empresa (GET /activity-feed) é só de administrador.
+  const podeVerAtividade = ['admin', 'business_admin', 'super_admin'].includes(user?.role ?? '')
+  const r = useRelatoriosDoPainel(periodo, podeVerAtividade)
   const [now, setNow] = useState(() => new Date())
   const [personalizando, setPersonalizando] = useState(false)
   const primaryLine = usePrimaryConnectedLine()
@@ -155,6 +159,12 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
     <div className="space-y-3.5">
       {cabecalho}
 
+      {snapshot.escopo === 'minhas' && (
+        <p role="note" className="text-[12.5px] text-surface-400">
+          Números das suas conversas. A visão da empresa inteira é de administradores e supervisores.
+        </p>
+      )}
+
       {r.erro && (
         <div role="status" className="flex items-center gap-3 px-3.5 py-2 rounded-lg border border-status-pending-border bg-status-pending-bg text-[12.5px] text-status-pending">
           <span className="flex-1">
@@ -183,24 +193,27 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
             <VolumeChart data={snapshot.volumeChart} range={r.periodoCarregado ?? periodo} />
           </div>
           <div className="col-span-12 xl:col-span-4">
-            <StatusDonut data={snapshot.statusDistribution} escopo={ESCOPO.historico} />
+            {/* Distribuição por status é o estado de agora. */}
+            <StatusDonut data={snapshot.statusDistribution} escopo={ESCOPO.agora} />
           </div>
         </div>
 
         <div className="grid grid-cols-12 gap-3.5 items-start">
-          <div className="col-span-12 xl:col-span-8">
+          <div className={cn('col-span-12', podeVerAtividade && 'xl:col-span-8')}>
             <SalesFunnelCard />
           </div>
-          <div className="col-span-12 xl:col-span-4">
-            {/* A atividade já diz a própria janela ("Últimas 4 horas"). */}
-            <ActivityFeed events={r.atividade} />
-          </div>
+          {podeVerAtividade && (
+            <div className="col-span-12 xl:col-span-4">
+              {/* A atividade já diz a própria janela ("Últimas 4 horas"). */}
+              <ActivityFeed events={r.atividade} />
+            </div>
+          )}
         </div>
 
         {/* D4: o gráfico de CSAT saiu (sem pesquisa de satisfação no backend). */}
-        <TagsChart data={snapshot.tagVolumes} escopo={ESCOPO.historico} />
+        <TagsChart data={snapshot.tagVolumes} />
 
-        <PeakHoursHeatmap data={snapshot.heatmap} escopo={ESCOPO.seteDias} />
+        <PeakHoursHeatmap data={snapshot.heatmap} />
 
         <AgentTable agents={snapshot.agentMetrics} />
       </div>

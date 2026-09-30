@@ -85,11 +85,11 @@ export interface AgentMetrics {
   isOnline: boolean | null
   conversationsToday: number
   resolvedToday: number
-  avgResponseTime: number   // seconds
-  avgResolutionTime: number // seconds
-  csat: number              // 0-5
-  slaCompliance: number     // 0-100
-  utilization: number       // 0-100
+  avgResponseTime: number | null   // seconds (1ª resposta humana), null = sem dado
+  avgResolutionTime: number | null // seconds, null = sem dado
+  /** K8: % de 1ª resposta humana dentro do SLA (15 min); null = sem conversa respondida. */
+  slaCompliance: number | null
+  slaTargetMinutes?: number
 }
 
 export type ActivityEventType =
@@ -145,6 +145,8 @@ export interface DashboardSnapshot {
   agentMetrics: AgentMetrics[]
   activityFeed: ActivityEvent[]
   realtime?: { agentsOnline: number; activeConversations: number; queueSize: number; avgWaitSeconds: number }
+  /** K12: 'minhas' quando o painel mostra só as conversas do usuário. */
+  escopo?: 'empresa' | 'minhas'
   csatTimeline?: CsatDataPoint[]
 }
 

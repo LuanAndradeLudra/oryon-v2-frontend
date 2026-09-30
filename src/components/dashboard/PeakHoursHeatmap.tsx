@@ -9,14 +9,16 @@ import type { HeatmapCell } from '@/types/dashboard'
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-// Aggregate heatmap cells into per-day buckets: manhã, tarde, noite
+// Agrega as células em faixas por dia. K10: a madrugada (0h–6h) entra —
+// antes as mensagens dessa faixa simplesmente sumiam do gráfico.
 function aggregate(data: HeatmapCell[]) {
   return DAYS.map((label, di) => {
     const dayRows = data.filter((c) => c.day === di)
+    const madrugada = dayRows.filter((c) => c.hour >= 0 && c.hour < 6).reduce((s, c) => s + c.value, 0)
     const manha   = dayRows.filter((c) => c.hour >= 6  && c.hour < 12).reduce((s, c) => s + c.value, 0)
     const tarde   = dayRows.filter((c) => c.hour >= 12 && c.hour < 18).reduce((s, c) => s + c.value, 0)
     const noite   = dayRows.filter((c) => c.hour >= 18 && c.hour < 24).reduce((s, c) => s + c.value, 0)
-    return { label, manha, tarde, noite }
+    return { label, madrugada, manha, tarde, noite }
   })
 }
 
@@ -52,7 +54,8 @@ export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data, escopo }:
   // aggregate() varre 168 células com 21 filter/reduce — só recalcula se data mudar
   const chartData = useMemo(() => aggregate(data), [data])
 
-  const BARS: { key: 'manha' | 'tarde' | 'noite'; label: string; color: string }[] = [
+  const BARS: { key: 'madrugada' | 'manha' | 'tarde' | 'noite'; label: string; color: string }[] = [
+    { key: 'madrugada', label: 'Madrugada (0h–6h)', color: C.purple },
     { key: 'manha', label: 'Manhã (6h–12h)',  color: C.brand },
     { key: 'tarde', label: 'Tarde (12h–18h)', color: C.online },
     { key: 'noite', label: 'Noite (18h–24h)', color: C.axis },

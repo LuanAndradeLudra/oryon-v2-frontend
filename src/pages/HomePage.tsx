@@ -290,7 +290,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
   const myOpen      = stats.myConversationsOpen ?? 0
   const myResolved  = stats.myConversationsResolvedToday ?? 0
   const mySent      = stats.myMessagesSentToday ?? 0
-  const myAvgMin    = stats.myAvgResponseMinutes ?? 0
+  const myAvgMin    = stats.myAvgResponseMinutes
 
   return (
     <Card className="h-full flex flex-col">
@@ -336,9 +336,9 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
           {
             label: 'Tempo médio de resposta',
             // Sem mensagem enviada hoje não há tempo médio: "—", não "0min".
-            value: mySent === 0 && myAvgMin === 0 ? '—' : `${myAvgMin.toLocaleString('pt-BR')} min`,
+            value: myAvgMin == null ? '—' : `${myAvgMin.toLocaleString('pt-BR')} min`,
             // Mesma régua do "Atendimento agora": >10min = atenção.
-            cls: myAvgMin > 10 ? 'text-status-pending' : 'text-surface-200',
+            cls: (myAvgMin ?? 0) > 10 ? 'text-status-pending' : 'text-surface-200',
             icon: <Clock className="w-3.5 h-3.5" />,
           },
         ].map((row) => (

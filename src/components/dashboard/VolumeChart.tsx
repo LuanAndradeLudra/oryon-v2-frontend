@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { DateRange, VolumeDataPoint } from '@/types/dashboard'
-import { baldeDeHoje, ESCOPO, volumeSeguePeriodo } from '@/lib/periodoDoPainel'
+import { ESCOPO, volumeSeguePeriodo } from '@/lib/periodoDoPainel'
 import { EscopoDoCartao } from './EscopoDoCartao'
 
 function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
@@ -47,7 +47,7 @@ export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
   range?: DateRange
 }) {
   const C = useChartColors()
-  const chartData = range === 'today' ? data.filter((d) => d.date === baldeDeHoje()) : data
+  const chartData = data
   // R2-DASH-09 (canvas 1b, valores exatos): card sem padding próprio; header
   // h40 px14 gap16 border-b; legenda gap14 11.5 --tx2; segmentado raio 6 borda --bd
   // com células h24 px9 11.5/600 (ativa --sf2/--tx, demais --tx2 + border-left);
