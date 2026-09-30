@@ -107,10 +107,10 @@ export const trust = {
     ia: {
       titulo: 'A IA pode, se você ligar',
       itens: [
-        { texto: 'Responder com o que você cadastrou', nota: 'instruções · documentos · serviços' },
+        { texto: 'Responder com o que você cadastrou', nota: 'instruções, documentos e serviços' },
         { texto: 'Marcar a situação e as etiquetas do cliente', nota: 'fica no registro' },
         { texto: 'Avançar a venda para a próxima etapa', nota: 'nunca a última' },
-        { texto: 'Chamar a sua equipe', nota: 'encaixes · urgências · fora do escopo' },
+        { texto: 'Chamar a sua equipe', nota: 'encaixes, urgências e fora do escopo' },
       ],
     },
     pessoa: {
@@ -178,7 +178,7 @@ export function linkContato(): string {
 export const plataforma = {
   eyebrow: 'Plataforma',
   title: 'Veja o atendimento acontecer.',
-  titleCinza: 'A conversa avança enquanto o CRM e o funil se atualizam.',
+  titleCinza: 'A conversa avança enquanto o cadastro e as vendas se atualizam.',
   contexto: 'Demonstração completa · uma clínica atendendo pelo WhatsApp',
   /**
    * Os três ATOS (26/09): seis capítulos com a mesma anatomia cansavam no
@@ -337,7 +337,6 @@ export const implantacao = {
   // o prazo continua com a ressalva da Meta.
   title: 'Você não precisa entender de tecnologia.',
   titleCinza: 'Nossa equipe configura a Oryon com você, em até 7 dias depois que a Meta libera o número.',
-  lead: 'Assim fica o registro de uma implantação, do primeiro ao último dia.',
   /** Os passos como REGISTRO (auditoria anti-genérico, 30/09): quem fez cada
    *  um segue o código de cor do produto — 'voce' = âmbar (pessoa), 'oryon' =
    *  teal. Os carimbos de dia moram no componente (a copy não tem número). */
@@ -553,8 +552,6 @@ export type PaginaPlataforma = (typeof paginasPlataforma)[number]
 
 export const home = {
   ctaPrincipal: 'Agendar demonstração',
-  /** A mesma ação, na barra do celular. */
-  ctaCurto: 'Demonstração',
   ctaSecundario: 'Ver como funciona',
   /** A faixa de fatos logo depois do Hero — só o que dá para afirmar hoje. */
   fatos: [
@@ -589,7 +586,6 @@ export const home = {
         solucao: 'cada conversa fica registrada, com a etapa da venda e um responsável.',
       },
     ],
-    ponte: 'Veja como isso funciona na prática',
   },
   /** A chamada no meio da página, depois das áreas. */
   chamada: {
@@ -696,7 +692,8 @@ export const formDemo = {
   tamanhos: ['Só eu', 'Até cinco pessoas', 'De seis a vinte pessoas', 'Mais de vinte pessoas'],
   selecione: 'Selecione',
   privacidade: 'Usamos esses dados só para falar com você sobre a demonstração.',
-  enviar: 'Pedir demonstração',
+  // Lote 2 (30/09): um rótulo por intenção em toda a página.
+  enviar: 'Agendar demonstração',
   enviando: 'Enviando…',
   sucessoTitulo: 'Pedido recebido.',
   sucessoTexto: 'Nossa equipe vai falar com você pelo WhatsApp ou pelo e-mail informado.',

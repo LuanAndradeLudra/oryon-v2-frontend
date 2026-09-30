@@ -81,12 +81,9 @@ export function Trust({ compacto = false, numero }: { compacto?: boolean; numero
           viewport={{ once: true, margin: '-12% 0px' }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         >
-          <Capitulo numero={numero} rotulo={trust.eyebrow} />
-          <h2 className="mt-6 max-w-[64rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance">
-            <span className="text-surface-50">{trust.title}</span>{' '}
-            <span className="text-surface-500">{trust.titleCinza}</span>
-          </h2>
-          <p className="mt-3 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{trust.lead}</p>
+          <Capitulo rotulo={trust.eyebrow} className="mb-6" />
+          <h2 className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance text-surface-50">{trust.title}</h2>
+          <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{trust.lead}</p>
         </motion.div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,550px)_minmax(340px,1fr)] lg:gap-4">
@@ -105,7 +102,7 @@ export function Trust({ compacto = false, numero }: { compacto?: boolean; numero
             <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11.5px] tracking-[.02em] text-surface-500">
               <span className="inline-flex items-center gap-2"><span aria-hidden className="h-[7px] w-[7px] rounded-full bg-[var(--landing-destaque)]" />{trust.pode.legendaIa}</span>
               <span className="inline-flex items-center gap-2"><span aria-hidden className="h-[7px] w-[7px] rounded-full bg-[#F5B544]" />{trust.pode.legendaPessoa}</span>
-              <span>· {trust.pode.legendaNota}</span>
+              <span>{trust.pode.legendaNota}</span>
             </p>
           </div>
         </div>

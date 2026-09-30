@@ -217,10 +217,12 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
   return (
     <section id="solucoes" data-section="solucoes" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
-        {!completa && <Cabecalho numero={numero} eyebrow={solucoes.eyebrow} titulo={solucoes.titulo} cinza={solucoes.cinza} />}
-        <Revelar atraso={0.1}>
-          <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px] text-pretty">{solucoes.lead}</p>
-        </Revelar>
+        {!completa && <Cabecalho titulo={solucoes.titulo} apoio={solucoes.lead} />}
+        {completa && (
+          <Revelar>
+            <p className="max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{solucoes.lead}</p>
+          </Revelar>
+        )}
 
         {/* As áreas como índice (P5, 30/09): número em mono + nome sobre uma
             régua, a ativa sublinhada; e sem a moldura em volta do painel — só

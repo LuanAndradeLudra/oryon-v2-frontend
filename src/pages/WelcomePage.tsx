@@ -30,15 +30,15 @@ export function WelcomePage() {
     <LandingLayout>
       <Hero />
       <FaixaFatos />
-      <SecaoDor numero="01" />
+      <SecaoDor />
       <Suspense fallback={<div className="min-h-[60vh]" />}>
-        <SecaoComoFunciona numero="02" />
-        <SecaoSolucoes numero="03" />
+        <SecaoComoFunciona />
+        <SecaoSolucoes />
         <FaixaChamada />
-        <Trust compacto numero="04" />
-        <SecaoImplantacao compacta numero="05" />
-        <SecaoPerguntas limite={5} numero="06" />
-        <SecaoDemonstracao origem="home" numero="07" />
+        <Trust compacto />
+        <SecaoImplantacao compacta />
+        <SecaoPerguntas limite={5} />
+        <SecaoDemonstracao origem="home" />
       </Suspense>
     </LandingLayout>
   )

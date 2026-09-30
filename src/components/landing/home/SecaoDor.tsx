@@ -1,4 +1,3 @@
-import { ArrowDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { home } from '../landingCopy'
 import { Cabecalho, Revelar } from '../plataforma/SecoesVenda'
@@ -20,7 +19,7 @@ export function SecaoDor({ numero }: { numero?: string } = {}) {
   return (
     <section data-section="dor" className="relative border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
-        <Cabecalho numero={numero} eyebrow={dor.eyebrow} titulo={dor.titulo} cinza={dor.cinza} />
+        <Cabecalho rotulo={dor.eyebrow} titulo={dor.titulo} apoio={dor.cinza} />
 
         <Revelar atraso={0.1}><ul className="mt-10 grid border-t border-[var(--landing-borda)] lg:grid-cols-3">
           {dor.itens.map((it, i) => {
@@ -61,15 +60,6 @@ export function SecaoDor({ numero }: { numero?: string } = {}) {
           })}
         </ul></Revelar>
 
-        <Revelar atraso={0.2}>
-          <a
-            href="#como-funciona"
-            className="mt-8 inline-flex items-center gap-2 rounded-sm font-mono text-[12.5px] tracking-[.02em] text-surface-200 transition-colors hover:text-surface-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-          >
-            {dor.ponte}
-            <ArrowDown className="h-4 w-4 text-[var(--landing-destaque)]" aria-hidden />
-          </a>
-        </Revelar>
       </div>
     </section>
   )

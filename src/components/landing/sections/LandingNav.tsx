@@ -150,9 +150,9 @@ export function LandingNav() {
             {nav.cta}
           </BotaoLanding>
           {/* No celular (ciclo noturno, 30/09) a conversão não some da barra:
-              o rótulo encurta para caber ao lado de Entrar. */}
-          <BotaoLanding to={LANDING_ROUTES.demonstracao} className="h-10 px-3.5 text-[13px] sm:hidden">
-            {home.ctaCurto}
+              o mesmo rótulo do resto da página, em tamanho compacto (lote 2). */}
+          <BotaoLanding to={LANDING_ROUTES.demonstracao} className="h-10 px-2.5 text-[12.5px] sm:hidden">
+            {home.ctaPrincipal}
           </BotaoLanding>
           <BotaoLanding to={LANDING_ROUTES.demonstracao} className="hidden sm:inline-flex">
             {home.ctaPrincipal}

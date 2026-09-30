@@ -33,7 +33,7 @@ export const DOR_CONVERSAS: Record<'horario' | 'repeticao' | 'organizacao', DorC
     assinatura: 'Agente IA',
   },
   repeticao: {
-    quando: 'Terça · 11:03 · a 14ª vez hoje',
+    quando: 'Terça, 11:03 · a 14ª vez hoje',
     cliente: 'Qual o valor da consulta? Aceitam cartão?',
     semResposta: 'respondida à mão, pela 14ª vez',
     resposta: 'R$ 220 no particular. Aceitamos cartão em até 3x e Pix. Quer que eu veja um horário?',

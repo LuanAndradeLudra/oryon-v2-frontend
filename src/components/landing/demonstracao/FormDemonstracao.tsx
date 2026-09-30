@@ -167,13 +167,10 @@ export function SecaoDemonstracao({ origem, comoPagina = false, numero }: { orig
           {comoPagina ? (
             <Revelar>
               <Capitulo rotulo={formDemo.eyebrow} />
-              <h1 className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
-                <span className="text-surface-50">{formDemo.titulo}</span>{' '}
-                <span className="text-surface-500">{formDemo.cinza}</span>
-              </h1>
+              <h1 className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance text-surface-50">{formDemo.titulo}</h1>
             </Revelar>
           ) : (
-            <Cabecalho numero={numero} eyebrow={formDemo.eyebrow} titulo={formDemo.titulo} cinza={formDemo.cinza} />
+            <Cabecalho rotulo={formDemo.eyebrow} titulo={formDemo.titulo} />
           )}
           <Revelar atraso={0.1}>
             <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px]">{formDemo.lead}</p>

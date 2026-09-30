@@ -51,6 +51,8 @@ function BotaoContato({ className, longo = true }: { className?: string; longo?:
  *  Na home cada seção tem número (a página é um roteiro); nas páginas internas
  *  só rótulo e régua. */
 export function Capitulo({ numero, rotulo, className }: { numero?: string; rotulo: string; className?: string }) {
+  // numero: sem uso na home desde o lote 2 (a skill proíbe numerar seções);
+  // fica para as páginas que ainda precisarem de sequência real.
   return (
     <p className={cn('landing-capitulo', className)}>
       {numero && <span data-numero>{numero}</span>}
@@ -59,14 +61,18 @@ export function Capitulo({ numero, rotulo, className }: { numero?: string; rotul
   )
 }
 
-export function Cabecalho({ eyebrow, titulo, cinza, numero }: { eyebrow: string; titulo: string; cinza: string; numero?: string }) {
+/**
+ * O cabeçalho de seção (lote 2, 30/09, decidido com o PO): o rótulo com régua
+ * aparece só em três seções da home (dor, limites da IA e demonstração) — a
+ * skill design-taste limita a 1 a cada 3 seções e proíbe numerar; o título é
+ * curto; o que era a continuação cinza do título vira o parágrafo de apoio.
+ */
+export function Cabecalho({ rotulo, titulo, apoio }: { rotulo?: string; titulo: string; apoio?: string }) {
   return (
     <Revelar>
-      <Capitulo numero={numero} rotulo={eyebrow} />
-      <h2 className="mt-6 max-w-[64rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance">
-        <span className="text-surface-50">{titulo}</span>{' '}
-        <span className="text-surface-500">{cinza}</span>
-      </h2>
+      {rotulo && <Capitulo rotulo={rotulo} className="mb-6" />}
+      <h2 className="max-w-[40rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance text-surface-50">{titulo}</h2>
+      {apoio && <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{apoio}</p>}
     </Revelar>
   )
 }
@@ -92,15 +98,10 @@ export function SecaoImplantacao({ compacta = false, numero }: { compacta?: bool
   return (
     <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
-        <Revelar><Capitulo numero={numero} rotulo={implantacao.eyebrow} /></Revelar>
-
-        <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-16">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-16">
           <Revelar>
-            <h2 className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance">
-              <span className="text-surface-50">{implantacao.title}</span>{' '}
-              <span className="text-surface-500">{implantacao.titleCinza}</span>
-            </h2>
-            <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px]">{implantacao.lead}</p>
+            <h2 className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance text-surface-50">{implantacao.title}</h2>
+            <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{implantacao.titleCinza}</p>
           </Revelar>
 
           <Revelar atraso={0.1}><ol className="border-t border-[var(--landing-borda)]">
@@ -218,13 +219,10 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
           {comoPagina ? (
             <Revelar>
               <Capitulo rotulo={perguntas.eyebrow} />
-              <h1 className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
-                <span className="text-surface-50">{perguntas.title}</span>{' '}
-                <span className="text-surface-500">{perguntas.titleCinza}</span>
-              </h1>
+              <h1 className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance text-surface-50">{perguntas.title}</h1>
             </Revelar>
           ) : (
-            <Cabecalho numero={numero} eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
+            <Cabecalho titulo={perguntas.title} />
           )}
           <Revelar atraso={0.2} className="mt-8 flex flex-wrap gap-3">
             <BotaoContato longo={false} />

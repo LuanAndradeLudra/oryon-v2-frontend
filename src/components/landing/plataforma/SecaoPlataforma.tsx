@@ -3,7 +3,6 @@ import { AnimatePresence, animate, motion, useReducedMotion } from 'framer-motio
 import { ArrowRight, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { Capitulo } from './SecoesVenda'
 import { teclasDasAbas } from '../ui/abasTeclado'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { BotaoLanding } from '../ui/BotaoLanding'
@@ -664,11 +663,8 @@ export function SecaoPlataforma() {
         {/* Cabeçalho da seção — alinhado à coluna dos artigos. */}
         <div className="min-w-0 xl:border-l xl:border-[var(--landing-borda)] xl:pl-[clamp(20px,1.8vw,32px)]">
         <Revelar className="max-w-[64rem]">
-          <Capitulo rotulo={plataforma.eyebrow} />
-          <h2 id="plataforma-titulo" className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
-            <span className="text-surface-50">{plataforma.title}</span>{' '}
-            <span className="text-surface-500">{plataforma.titleCinza}</span>
-          </h2>
+          <h2 id="plataforma-titulo" className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance text-surface-50">{plataforma.title}</h2>
+          <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{plataforma.titleCinza}</p>
           <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--landing-borda)] bg-[var(--landing-cartao)] px-3 py-1.5 text-[12px] font-medium text-surface-300">
             <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-brand-400" />
             {plataforma.contexto}
@@ -791,11 +787,8 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
     <section id="como-funciona" data-section="como-funciona" aria-labelledby="como-funciona-titulo" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
       <div className="landing-container">
         <Revelar className="max-w-[64rem]">
-          <Capitulo numero={numero} rotulo={home.comoFunciona.eyebrow} />
-          <h2 id="como-funciona-titulo" className="mt-6 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance">
-            <span className="text-surface-50">{home.comoFunciona.titulo}</span>{' '}
-            <span className="text-surface-500">{home.comoFunciona.cinza}</span>
-          </h2>
+          <h2 id="como-funciona-titulo" className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance text-surface-50">{home.comoFunciona.titulo}</h2>
+          <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{home.comoFunciona.cinza}</p>
         </Revelar>
 
         {/* Folga em volta das abas: o contêiner rola na horizontal, e `overflow`

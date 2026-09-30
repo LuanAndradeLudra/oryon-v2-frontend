@@ -29,11 +29,9 @@ function TopoDaPagina({ eyebrow, titulo, cinza, lead }: { eyebrow: string; titul
     <section data-section="topo" className="bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_420px)] pb-12 pt-14 sm:pb-14 sm:pt-20">
       <div className="landing-container">
         <Capitulo rotulo={eyebrow} />
-        <h1 className="mt-6 max-w-[52rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.9rem,3.6vw,3rem)] text-balance">
-          <span className="text-surface-50">{titulo}</span>{' '}
-          <span className="text-surface-500">{cinza}</span>
-        </h1>
-        <p className="mt-4 max-w-[60ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16px]">{lead}</p>
+        <h1 className="mt-6 max-w-[44rem] font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.9rem,3.6vw,3rem)] text-balance text-surface-50">{titulo}</h1>
+        {/* Lote 2 (30/09): a antiga continuação cinza do H1 abre o parágrafo. */}
+        <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{lead ? `${cinza} ${lead}` : cinza}</p>
         <div className="mt-7 flex flex-wrap gap-2.5">
           <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta>{home.ctaPrincipal}</BotaoLanding>
         </div>
@@ -87,7 +85,7 @@ export function PlataformaPage() {
 export function SolucoesPage() {
   return (
     <LandingLayout>
-      <TopoDaPagina eyebrow={solucoes.eyebrow} titulo={solucoes.paginaTitulo} cinza={solucoes.paginaCinza} lead={solucoes.areas.map((a) => a.nome).join(' · ')} />
+      <TopoDaPagina eyebrow={solucoes.eyebrow} titulo={solucoes.paginaTitulo} cinza={solucoes.paginaCinza} lead="" />
       <Suspense fallback={<div className="min-h-[60vh]" />}>
         <SecaoSolucoes completa />
         <SecaoArea />
