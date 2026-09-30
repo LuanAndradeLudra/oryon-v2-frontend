@@ -15,7 +15,7 @@ export function FaixaFatos() {
     // para baixo de propósito) pintava por cima da faixa — os fatos pareciam
     // dentro do Hero (30/09). Com fundo próprio e acima dela, a faixa começa
     // onde o Hero termina.
-    <section data-section="fatos" aria-label="Fatos sobre a Oryon" className="relative z-10 mt-6 border-y border-[var(--landing-borda)] bg-surface-950 sm:mt-10">
+    <section data-section="fatos" aria-label="Fatos sobre a Oryon" className="relative z-10 mt-6 border-y border-[var(--landing-borda)] bg-[var(--landing-cartao)] sm:mt-10">
       <ul className="landing-container grid divide-y divide-[var(--landing-borda)] py-2 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:py-3">
         {home.fatos.map((f) => {
           const Icone = ICONES[f.key]

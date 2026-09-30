@@ -32,7 +32,7 @@ function Prova({ visual, titulo, texto, atraso = 0, alturaVisual = 'min-h-[160px
   return (
     <Revelar atraso={atraso} className="flex min-w-0">
       <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
-        <div className={cn('flex flex-1 flex-col justify-center border-b border-[var(--landing-borda)] bg-surface-950 py-2', alturaVisual)}>
+        <div className={cn('flex flex-1 flex-col justify-center border-b border-[var(--landing-borda)] bg-surface-950 py-2 [[data-theme=light]_&]:bg-surface-900', alturaVisual)}>
           <div aria-hidden inert className="pointer-events-none select-none">{visual}</div>
         </div>
         <div className="px-5 pb-4 pt-3.5 lg:px-4 lg:pb-3.5 lg:pt-3">

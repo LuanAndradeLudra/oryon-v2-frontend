@@ -402,7 +402,7 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
           com a altura da vizinha: o painel (06) tinha visual e frase lado a
           lado, e a grade ficava desalinhada com cartões de alturas diferentes. */}
       <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
-        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5">
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5 [[data-theme=light]_&]:bg-surface-900">
           <div aria-hidden inert data-evidencia className="pointer-events-none grid min-w-0 select-none [zoom:0.8]">
             {RESERVAS[bloco]?.map((estado) => (
               <div key={estado} className="invisible min-w-0 [grid-area:1/1]" data-reserva>
@@ -801,7 +801,7 @@ export function SecaoComoFunciona() {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                 bl.id === ativo
                   ? 'landing-aba-ativa ring-transparent'
-                  : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100',
+                  : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100 [[data-theme=light]_&]:bg-white',
               )}
             >
               <span className="tabular-nums text-[11px] opacity-60">{String(i + 1).padStart(2, '0')}</span>

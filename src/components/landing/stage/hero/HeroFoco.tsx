@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
-import { planoDoFoco, borderRadiusDoFoco, escalarRaios, raiosDoElemento, recortarForma, SEM_RAIOS, type RaiosFoco } from './focoGeometry'
+import { planoDoFoco, borderRadiusDoFoco, comRespiro, escalarRaios, raiosDoElemento, recortarForma, SEM_RAIOS, type RaiosFoco } from './focoGeometry'
 
 /**
  * O FOCO — o contorno sobre o elemento real e o conector que o liga à
@@ -231,7 +231,18 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
         noAr = true
       }
       const corte = m.corte
-      const forma = recortarForma(m.alvo, corte, m.raios)
+      // Folga e cantos suaves em volta do alvo (comRespiro). Se a folga passa
+      // da borda da tela, ela ENCOLHE daquele lado (os cantos continuam
+      // redondos); só um alvo realmente cortado pela tela ganha canto reto.
+      const solto = comRespiro(m.alvo, m.raios)
+      const cabe = {
+        x: Math.max(solto.alvo.x, corte.x), y: Math.max(solto.alvo.y, corte.y),
+        r: Math.min(solto.alvo.x + solto.alvo.w, corte.x + corte.w), b: Math.min(solto.alvo.y + solto.alvo.h, corte.y + corte.h),
+      }
+      const alvoInteiro = cabe.x <= m.alvo.x + 0.5 && cabe.y <= m.alvo.y + 0.5 && cabe.r >= m.alvo.x + m.alvo.w - 0.5 && cabe.b >= m.alvo.y + m.alvo.h - 0.5
+      const forma = alvoInteiro
+        ? recortarForma({ x: cabe.x, y: cabe.y, w: cabe.r - cabe.x, h: cabe.b - cabe.y }, corte, solto.raios)
+        : recortarForma(m.alvo, corte, m.raios)
       const anel = forma.rect
       // Uma faixa que sobrou na borda do recorte não constitui uma tomada:
       // esperamos a peça aparecer quase inteira antes de acender o holofote.

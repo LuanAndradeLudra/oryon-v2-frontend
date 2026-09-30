@@ -207,7 +207,7 @@ export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number
         </div>
         {limite ? (
           <Revelar atraso={0.1}>
-            <div className="border-t border-[var(--landing-borda)]">
+            <div className="rounded-2xl bg-[var(--landing-cartao)] px-5 ring-1 ring-[var(--landing-borda)] [&>div:last-child]:border-b-0">
               {todas.slice(0, limite).map((q) => <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />)}
             </div>
             <Link to={LANDING_ROUTES.perguntas} className="mt-5 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">

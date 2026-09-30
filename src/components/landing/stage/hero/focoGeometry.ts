@@ -72,3 +72,25 @@ export function borderRadiusDoFoco(raios: RaiosFoco): string {
 export function planoDoFoco(w: number, h: number, larguraLocal: number, alturaLocal: number) {
   return { w, h, inversaX: larguraLocal / w, inversaY: alturaLocal / h }
 }
+
+/**
+ * RESPIRO do holofote (30/09, PO: "muito quadrado e delimitado" — relatório e
+ * etiquetas). O furo copiava a caixa exata do elemento: quando ele não tem
+ * cantos arredondados (um bloco do relatório, a linha da etiqueta na linha do
+ * tempo), o recorte saía reto e colado no conteúdo. Agora:
+ *  • elemento SEM raio → 4 px de folga em volta e cantos de 8 px;
+ *  • elemento COM raio → 2 px de folga e o raio cresce junto (concêntrico).
+ * (30/09: 8/4 px ficou grande demais — PO pediu menos.)
+ * O recorte pela tela (`recortarForma`) continua depois, então a folga nunca
+ * vaza para fora da janela do app.
+ */
+export function comRespiro(alvo: RetanguloFoco, raios: RaiosFoco): { alvo: RetanguloFoco; raios: RaiosFoco } {
+  const cantos = [raios.tl, raios.tr, raios.br, raios.bl]
+  const semRaio = cantos.every((r) => r.x < 2 && r.y < 2)
+  const folga = semRaio ? 4 : 2
+  const crescer = (r: RaioCanto): RaioCanto => semRaio ? { x: 8, y: 8 } : { x: r.x + folga, y: r.y + folga }
+  return {
+    alvo: { x: alvo.x - folga, y: alvo.y - folga, w: alvo.w + 2 * folga, h: alvo.h + 2 * folga },
+    raios: { tl: crescer(raios.tl), tr: crescer(raios.tr), br: crescer(raios.br), bl: crescer(raios.bl) },
+  }
+}

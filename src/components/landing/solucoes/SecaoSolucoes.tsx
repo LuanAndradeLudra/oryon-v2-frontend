@@ -112,7 +112,7 @@ export function SecaoSolucoes({ completa = false }: { completa?: boolean }) {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                 a.id === ativa
                   ? 'landing-aba-ativa ring-transparent'
-                  : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100',
+                  : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100 [[data-theme=light]_&]:bg-white',
               )}
             >
               {a.nome}

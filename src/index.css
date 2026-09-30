@@ -1816,3 +1816,34 @@ h1, h2, h3 {
   color: #0B0C0E;
   [data-theme='light'] & { background-color: #0B0C0E; color: #FFFFFF; }
 }
+
+/* Landing · TEMA CLARO COM PROFUNDIDADE (30/09, PO: "excesso de branco, pouco
+   contraste entre cards e containers"). Antes: página #FAFAFC, cartões #FFFFFF
+   e bordas #DCE0E7 — tudo no mesmo plano. Agora três camadas, só na landing
+   (o app não muda):
+     1. página       #ECEFF4  (cinza-azulado frio)
+     2. cartões      #FFFFFF  com borda #D2D8E1 e sombra curta + difusa
+     3. recuos       #E3E7EE  (fundo dos visuais dentro dos cartões, trilhos)
+   Os tokens de superfície são redefinidos dentro de [data-landing-root], então
+   toda classe que já usa surface-950/900 segue a escala nova. */
+/* Prata (30/09, PO): o cinza azulado anterior (#ECEFF4) lia lavado. A escala
+   da landing é NEUTRA — sem viés azul nem nos textos — e mais marcada: a
+   página em prata, os recuos um degrau abaixo, os cartões brancos saltando. */
+[data-theme='light'] [data-landing-root] {
+  --color-surface-950: #E1E1E4;
+  --color-surface-900: #D5D5D9;
+  --color-surface-700: #BDBDC3;
+  --color-surface-600: #626269;
+  --color-surface-500: #52525A;
+  --color-surface-400: #3F3F46;
+  --color-surface-300: #2A2A30;
+  --color-surface-200: #26262B;
+  --color-surface-100: #1C1C20;
+  --color-surface-50: #111113;
+  --landing-borda: #C6C6CC;
+  --landing-cartao: #FFFFFF;
+  --landing-palco: #D5D5D9;
+}
+[data-theme='light'] [data-landing-root] .bg-\[var\(--landing-cartao\)\] {
+  box-shadow: 0 1px 2px rgba(24, 24, 27, .07), 0 12px 30px -14px rgba(24, 24, 27, .22);
+}
