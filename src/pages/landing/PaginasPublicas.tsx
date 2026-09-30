@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { LandingLayout } from '@/components/landing/LandingLayout'
 import { Trust } from '@/components/landing/sections'
-import { LinkButton } from '@/components/ui/LinkButton'
+import { BotaoLanding } from '@/components/landing/ui/BotaoLanding'
 import { home, LANDING_ROUTES, paginasPlataforma, rotaPlataforma, solucoes } from '@/components/landing/landingCopy'
 
 /**
@@ -34,7 +34,7 @@ function TopoDaPagina({ eyebrow, titulo, cinza, lead }: { eyebrow: string; titul
         </h1>
         <p className="mt-4 max-w-[60ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16px]">{lead}</p>
         <div className="mt-7 flex flex-wrap gap-2.5">
-          <LinkButton to={LANDING_ROUTES.demonstracao} size="lg">{home.ctaPrincipal}</LinkButton>
+          <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta>{home.ctaPrincipal}</BotaoLanding>
         </div>
       </div>
     </section>

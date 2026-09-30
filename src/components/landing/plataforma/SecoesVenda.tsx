@@ -3,7 +3,7 @@ import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ChevronDown, MessageCircle, Smartphone, Settings2, Rocket, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { LinkButton } from '@/components/ui/LinkButton'
+import { BotaoLanding } from '../ui/BotaoLanding'
 import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho, home, LANDING_ROUTES } from '../landingCopy'
 
 /**
@@ -34,16 +34,16 @@ export function Revelar({ children, atraso = 0, className }: { children: ReactNo
 function BotaoContato({ className, longo = true }: { className?: string; longo?: boolean }) {
   if (!contatoDisponivel) return null
   return (
-    <LinkButton
+    <BotaoLanding
       href={linkContato()}
       target="_blank"
       rel="noopener noreferrer"
-      size="lg"
+      tamanho="lg"
       className={className}
-      leftIcon={<MessageCircle className="h-4 w-4" strokeWidth={2.2} />}
+      icone={<MessageCircle className="h-4 w-4" strokeWidth={2.2} />}
     >
       {longo ? contato.ctaLongo : contato.cta}
-    </LinkButton>
+    </BotaoLanding>
   )
 }
 
@@ -202,7 +202,7 @@ export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number
           )}
           <Revelar atraso={0.2} className="mt-8 flex flex-wrap gap-3">
             <BotaoContato longo={false} />
-            <LinkButton to={LANDING_ROUTES.demonstracao} variant="neutral">{home.ctaPrincipal}</LinkButton>
+            <BotaoLanding to={LANDING_ROUTES.demonstracao} variante="secundario" seta>{home.ctaPrincipal}</BotaoLanding>
           </Revelar>
         </div>
         {limite ? (
@@ -252,7 +252,7 @@ export function SecaoFecho() {
         </Revelar>
         <Revelar atraso={0.15} className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <BotaoContato />
-          <LinkButton to={LANDING_ROUTES.login} variant={contatoDisponivel ? 'neutral' : 'primary'} size="lg">{fecho.entrar}</LinkButton>
+          <BotaoLanding to={LANDING_ROUTES.login} variante={contatoDisponivel ? 'secundario' : 'primario'} tamanho="lg">{fecho.entrar}</BotaoLanding>
         </Revelar>
       </div>
     </section>

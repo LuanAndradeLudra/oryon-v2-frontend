@@ -1,6 +1,6 @@
 import { HeroPalco } from '@/components/landing/stage/hero/HeroPalco'
 import { cn } from '@/lib/utils'
-import { LinkButton } from '@/components/ui/LinkButton'
+import { BotaoLanding } from '../ui/BotaoLanding'
 import { hero, home, LANDING_ROUTES } from '../landingCopy'
 
 /**
@@ -67,8 +67,8 @@ export function Hero() {
           className="reveal mt-[clamp(12px,1.8svh,18px)] flex flex-wrap items-center justify-center gap-2.5"
           style={{ ['--d' as string]: '180ms' }}
         >
-          <LinkButton to={LANDING_ROUTES.demonstracao} size="lg">{home.ctaPrincipal}</LinkButton>
-          <LinkButton href="#como-funciona" variant="neutral" size="lg">{home.ctaSecundario}</LinkButton>
+          <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta>{home.ctaPrincipal}</BotaoLanding>
+          <BotaoLanding href="#como-funciona" variante="secundario" tamanho="lg">{home.ctaSecundario}</BotaoLanding>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import { ArrowRight, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { LinkButton } from '@/components/ui/LinkButton'
+import { BotaoLanding } from '../ui/BotaoLanding'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
 import { StatStrip } from '@/components/campaigns/StatStrip'
 import { NotificationItem } from '@/components/notifications/NotificationItem'
@@ -716,16 +716,16 @@ export function SecaoPlataforma() {
                   Teste o Agente IA da Oryon pelo WhatsApp.
                   <span className="block text-surface-400 text-[12px] font-medium mt-1">Envie uma mensagem e veja como o atendimento funciona.</span>
                 </p>
-                <LinkButton
+                <BotaoLanding
                   href={linkContato()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  size="lg"
+                  tamanho="lg"
                   className="flex-none"
-                  leftIcon={<MessageCircle className="h-4 w-4" strokeWidth={2.2} />}
+                  icone={<MessageCircle className="h-4 w-4" strokeWidth={2.2} />}
                 >
                   {contato.ctaLongo}
-                </LinkButton>
+                </BotaoLanding>
               </div>
             </Revelar>
             )}

@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { CheckCircle2 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { BotaoLanding } from '../ui/BotaoLanding'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -133,9 +133,9 @@ export function FormDemonstracao({ origem }: { origem: string }) {
       </div>
       <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
         <p id={avisoId} className="text-[12.5px] leading-relaxed text-surface-500">{formDemo.privacidade}</p>
-        <Button type="submit" size="lg" loading={estado === 'enviando'} className="flex-none">
+        <BotaoLanding type="submit" tamanho="lg" seta carregando={estado === 'enviando'} className="flex-none">
           {estado === 'enviando' ? formDemo.enviando : formDemo.enviar}
-        </Button>
+        </BotaoLanding>
       </div>
       {estado === 'falhou' && (
         <p role="alert" className="text-[13.5px] text-danger sm:col-span-2">{formDemo.erro}</p>

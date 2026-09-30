@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Sun, Moon, ChevronDown } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
-import { LinkButton } from '@/components/ui/LinkButton'
+import { BotaoLanding } from '../ui/BotaoLanding'
 import { cn } from '@/lib/utils'
 import { nav, home, LANDING_ROUTES, paginasPlataforma, rotaPlataforma } from '../landingCopy'
 
@@ -151,12 +151,12 @@ export function LandingNav() {
             <Sun className="w-4 h-4 [[data-theme=light]_&]:hidden" strokeWidth={1.75} aria-hidden />
             <Moon className="w-4 h-4 hidden [[data-theme=light]_&]:block" strokeWidth={1.75} aria-hidden />
           </button>
-          <LinkButton to={LANDING_ROUTES.login} variant="neutral">
+          <BotaoLanding to={LANDING_ROUTES.login} variante="fantasma">
             {nav.cta}
-          </LinkButton>
-          <LinkButton to={LANDING_ROUTES.demonstracao} className="hidden sm:inline-flex">
+          </BotaoLanding>
+          <BotaoLanding to={LANDING_ROUTES.demonstracao} className="hidden sm:inline-flex">
             {home.ctaPrincipal}
-          </LinkButton>
+          </BotaoLanding>
         </div>
       </div>
     </header>
