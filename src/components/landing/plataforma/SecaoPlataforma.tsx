@@ -526,10 +526,22 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
           {b.indice}
         </p>
         )}
-        <h4 className={cn(!semRotulo && 'mt-2.5', ' font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
-          {b.destaque}
-        </h4>
-        <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
+        {/* Ao trocar de etapa (abas da home), o texto entra em crossfade em
+            vez de trocar de uma vez (30/09). */}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={b.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.15 } }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <h4 className={cn(!semRotulo && 'mt-2.5', ' font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
+              {b.destaque}
+            </h4>
+            <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
+          </motion.div>
+        </AnimatePresence>
       </Revelar></div>
 
       <div className="mt-6 flex justify-start" data-composicao-envelope>

@@ -5,7 +5,6 @@ import { ArrowRight, Check, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MessageBubble } from '@/components/conversations/ChatWindow/MessageBubble'
 import { TypingIndicator } from '@/components/conversations/ChatWindow/TypingIndicator'
-import { ConversationActivitySection } from '@/components/conversations/ContactPanel/ConversationActivitySection'
 import { MediaViewerProvider } from '@/components/ui/MediaViewer'
 import { LANDING_ROUTES, solucoes, type AreaSolucao } from '../landingCopy'
 import { Cabecalho, Revelar } from '../plataforma/SecoesVenda'
@@ -33,12 +32,16 @@ function Simulacao({ area }: { area: AreaSolucao }) {
   // `passo` = quantos passos já aconteceram; `digitando` = a IA escrevendo o próximo.
   const [passo, setPasso] = useState(semMovimento ? total : 1)
   const [digitando, setDigitando] = useState(false)
+  // Cada volta da história é um ciclo: a conversa inteira sai com um fade e a
+  // nova entra — antes, as bolhas sumiam de uma vez (30/09, PO: "não tem uma
+  // animação suave").
+  const [ciclo, setCiclo] = useState(0)
 
   useEffect(() => {
     if (semMovimento || !naTela) return
     let timer: ReturnType<typeof setTimeout>
     if (passo >= total) {
-      timer = setTimeout(() => setPasso(1), PAUSA_FIM_MS)
+      timer = setTimeout(() => { setCiclo((c) => c + 1); setPasso(1) }, PAUSA_FIM_MS)
       return () => clearTimeout(timer)
     }
     const proximo = sim.passos[passo]
@@ -66,15 +69,55 @@ function Simulacao({ area }: { area: AreaSolucao }) {
           <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold landing-selo">{sim.agente}</span>
         </div>
         <MediaViewerProvider>
-          <div className="flex min-h-0 flex-1 flex-col justify-end gap-1 overflow-hidden px-2 py-2">
-            <AnimatePresence initial={false}>
-              {mensagens.map((m, i) => (
-                <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-                  <MessageBubble message={m} prevMessage={mensagens[i - 1]} contact={contato} showAvatar={mensagens[i - 1]?.direction !== m.direction} />
-                </motion.div>
-              ))}
+          <div className="relative min-h-0 flex-1 overflow-hidden">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={ciclo}
+                className="absolute inset-0 flex flex-col justify-end px-2 py-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: semMovimento ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {/* A bolha nova cresce de altura 0 (as anteriores sobem junto,
+                    sem pulo) e entra com fade + leve subida. Sem layout
+                    projection: com a coluna ancorada embaixo ela deixava
+                    transformações penduradas. */}
+                <AnimatePresence initial={false}>
+                  {mensagens.map((m, i) => (
+                    <motion.div
+                      key={m.id}
+                      className="overflow-hidden"
+                      initial={semMovimento ? false : { height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      transition={{ height: { duration: 0.38, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 0.3, delay: 0.08 } }}
+                    >
+                      <motion.div
+                        className="pb-1"
+                        initial={semMovimento ? false : { y: 10, scale: 0.97 }}
+                        animate={{ y: 0, scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30, delay: 0.05 }}
+                        style={{ transformOrigin: m.direction === 'outbound' ? 'bottom right' : 'bottom left' }}
+                      >
+                        <MessageBubble message={m} prevMessage={mensagens[i - 1]} contact={contato} showAvatar={mensagens[i - 1]?.direction !== m.direction} />
+                      </motion.div>
+                    </motion.div>
+                  ))}
+                  {digitando && (
+                    <motion.div
+                      key="digitando"
+                      className="overflow-hidden"
+                      initial={semMovimento ? false : { height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0, transition: { duration: 0.18 } }}
+                      transition={{ height: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 0.25 } }}
+                    >
+                      <div className="flex justify-end pr-2 pb-1"><TypingIndicator /></div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             </AnimatePresence>
-            {digitando && <div className="flex justify-end pr-2"><TypingIndicator /></div>}
           </div>
         </MediaViewerProvider>
       </div>
@@ -87,13 +130,62 @@ function Simulacao({ area }: { area: AreaSolucao }) {
           <p className="text-[12px] font-semibold text-surface-100">{solucoes.registroTitulo}</p>
           <p className="text-[11px] text-surface-500">{solucoes.registroSub}</p>
         </div>
-        {linha.length === 0 ? (
-          <p className="flex flex-1 items-center justify-center px-5 py-8 text-center text-[12.5px] leading-relaxed text-surface-500">{solucoes.registroVazio}</p>
-        ) : (
-          <div className="px-3 pb-2 [&_.panel-divider>div:first-child]:hidden [&_.panel-divider]:border-t-0">
-            <ConversationActivitySection conversationId={`sim-${area.id}`} entries={linha} />
-          </div>
-        )}
+        {/* O registro desenhado aqui (não o componente real): cada linha nova
+            desliza e acende, com o ponto do produto — teal quando a IA agiu,
+            âmbar quando chamou uma pessoa (30/09, PO: "as ações simplesmente
+            surgem na tela"). */}
+        <div className="relative min-h-0 flex-1">
+        {/* O recomeço sai em fade junto com a conversa (a chave é o ciclo). */}
+        <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={ciclo}
+          className="absolute inset-0"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: semMovimento ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {linha.length === 0 && (
+            <motion.p
+              key={`vazio-${ciclo}`}
+              className="absolute inset-0 flex items-center justify-center px-5 py-8 text-center text-[12.5px] leading-relaxed text-surface-500"
+              initial={semMovimento ? false : { opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              {solucoes.registroVazio}
+            </motion.p>
+          )}
+          <ol className="px-4 py-2">
+              {linha.map((e) => {
+                const pessoa = e.kind === 'agent' && e.toolName === 'assign_conversation'
+                const hora = new Date(e.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                return (
+                  <motion.li
+                    key={`${ciclo}-${e.id}`}
+                    className="grid grid-cols-[38px_12px_minmax(0,1fr)] gap-x-2.5 border-b border-surface-800 py-3 last:border-b-0"
+                    initial={semMovimento ? false : { opacity: 0, x: -14 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+                  >
+                    <span className="pt-[2px] font-mono text-[10.5px] text-surface-500">{hora}</span>
+                    <motion.span
+                      aria-hidden
+                      className={cn('mt-[6px] h-[7px] w-[7px] rounded-full', pessoa ? 'bg-[#F5B544]' : 'bg-[var(--landing-destaque)]')}
+                      initial={semMovimento ? false : { scale: 0.4, boxShadow: pessoa ? '0 0 0 0 rgba(245,181,68,.6)' : '0 0 0 0 rgba(45,212,191,.6)' }}
+                      animate={{ scale: 1, boxShadow: pessoa ? '0 0 0 8px rgba(245,181,68,0)' : '0 0 0 8px rgba(45,212,191,0)' }}
+                      transition={{ duration: 0.9, ease: 'easeOut' }}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-[12.5px] leading-snug text-surface-100">{e.summary}</span>
+                      <span className={cn('mt-0.5 block font-mono text-[10px] tracking-[.04em]', pessoa ? 'text-[#F5B544]' : 'text-[var(--landing-destaque)]')}>
+                        {e.kind === 'agent' ? e.agentName : ''}
+                      </span>
+                    </span>
+                  </motion.li>
+                )
+              })}
+          </ol>
+        </motion.div>
+        </AnimatePresence>
+        </div>
       </div>
     </div>
   )
@@ -131,7 +223,18 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
           ))}
         </div>
 
-        <div id="area-painel" role="tabpanel" aria-labelledby={`area-aba-${area.id}`} className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.5fr)] lg:gap-10">
+        <div id="area-painel" role="tabpanel" aria-labelledby={`area-aba-${area.id}`} className="mt-8">
+        {/* Trocar de área: o painel sai e entra em crossfade, em vez de trocar
+            de conteúdo de uma vez (30/09). */}
+        <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={area.id}
+          className="grid gap-6 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.5fr)] lg:gap-10"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6, transition: { duration: 0.18 } }}
+          transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+        >
           <div className="min-w-0">
             <h3 className="font-display text-[clamp(1.2rem,1.7vw,1.5rem)] font-semibold leading-[1.15] tracking-[-0.02em] text-surface-50">{area.titulo}</h3>
             <p className="mt-2.5 text-[14px] leading-relaxed text-surface-400">{area.texto}</p>
@@ -150,6 +253,8 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
           </div>
           {/* A simulação remonta ao trocar de área (recomeça do primeiro passo). */}
           <Simulacao key={area.id} area={area} />
+        </motion.div>
+        </AnimatePresence>
         </div>
 
         {!completa && (
