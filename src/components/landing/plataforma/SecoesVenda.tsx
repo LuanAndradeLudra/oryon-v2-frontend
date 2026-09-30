@@ -51,7 +51,7 @@ export function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo:
   return (
     <Revelar className="max-w-[64rem]">
       <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{eyebrow}</p>
-      <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.16rem,2.17vw,1.73rem)] text-balance">
+      <h2 className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.08] text-[clamp(1.6rem,2.8vw,2.3rem)] text-balance">
         <span className="text-surface-50">{titulo}</span>{' '}
         <span className="text-surface-500">{cinza}</span>
       </h2>
@@ -186,7 +186,7 @@ export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number
   const todas: ReadonlyArray<{ pergunta: string; resposta: string }> = perguntas.grupos.flatMap((g): ReadonlyArray<{ pergunta: string; resposta: string }> => g.itens)
   return (
     <section id="perguntas" data-section="perguntas" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
-      <div className="landing-container grid gap-10 lg:grid-cols-[.85fr_1.4fr] lg:gap-16">
+      <div className="landing-container grid gap-10 lg:grid-cols-[1fr_1.25fr] lg:gap-14">
         {/* O título acompanha a leitura no desktop. */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           {comoPagina ? (

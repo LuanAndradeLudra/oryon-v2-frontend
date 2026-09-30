@@ -97,28 +97,28 @@ export const trust = {
   title: 'Você define os limites da IA.',
   titleCinza: 'Sua equipe decide quando assumir.',
   /** A frase que prepara a tela real (aba Capacidades do agente). */
-  lead: 'A IA pode errar. Por isso, sua equipe define o que ela pode fazer, acompanha o histórico e assume a conversa sempre que precisar.',
+  lead: 'A IA pode errar. Por isso, você escolhe o que ela pode fazer, vê tudo o que ela fez e assume a conversa quando quiser.',
   tela: 'Oryon · Agentes IA',
   items: [
     {
       key: 'permissoes',
       title: 'Escolha o que o agente pode fazer',
-      text: 'Ative apenas as capacidades necessárias, como mudar a situação do contato, aplicar etiquetas, mover negócios e chamar a equipe.',
+      text: 'Ligue só o que faz sentido para a sua operação: organizar os contatos, avançar a venda de etapa ou chamar a equipe.',
     },
     {
       key: 'venda',
-      title: 'Só uma pessoa conclui a venda',
-      text: 'A IA pode avançar o negócio entre as etapas. Marcar uma venda como ganha ou perdida continua sendo uma decisão da equipe.',
+      title: 'Só uma pessoa fecha a venda',
+      text: 'A IA pode avançar o atendimento, mas marcar a venda como ganha ou perdida é sempre decisão da sua equipe.',
     },
     {
       key: 'chamada',
-      title: 'Defina o que exige uma pessoa',
-      text: 'Configure situações como encaixes, urgências e assuntos fora do escopo para chamar a equipe. A pessoa responsável recebe a conversa com o histórico.',
+      title: 'Você decide o que exige uma pessoa',
+      text: 'Encaixes, urgências, assuntos delicados: você define quando o agente chama a equipe. Quem assume recebe a conversa inteira.',
     },
     {
       key: 'conexao',
-      title: 'Conexão oficial com o WhatsApp',
-      text: 'A integração usa a API oficial do WhatsApp Business. Para iniciar uma conversa fora da janela de atendimento, a Oryon usa um modelo aprovado pela Meta.',
+      title: 'WhatsApp oficial para empresas',
+      text: 'A Oryon usa a conexão oficial do WhatsApp Business, fornecida pela Meta, a empresa dona do WhatsApp.',
     },
   ],
 } as const
