@@ -29,7 +29,7 @@ const CUES: readonly HeroCue<HeroState, HeroCena>[] = [
   { t: 11000, composition: 'agente-capacidades-funil' },
 ]
 // Página do agente em 1280×720: navegação + seção Capacidades (direção D).
-const RECORTE = { x: 62, y: 48, w: 1104, h: 672 }
+const RECORTE = { x: 62, y: 48, w: 1218, h: 672 }
 
 function Item({ k, i }: { k: (typeof trust.items)[number]; i: number }) {
   const semMovimento = useReducedMotion()

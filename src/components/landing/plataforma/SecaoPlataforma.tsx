@@ -62,7 +62,9 @@ const RECORTES: Record<string, Recorte> = {
   relatorio: { x: 684, y: 0, w: 596, h: 656 },
   // A página do agente (direção D, 27/09 — medido em 1280×720): cabeçalho de
   // identidade, a navegação em três grupos e a seção até o fim dos cartões.
-  agente: { x: 62, y: 48, w: 1104, h: 672 },
+  // Até a borda do app (30/09): em w = 1104 o cabeçalho do agente saía cortado
+  // no meio dos botões ("Ligad…").
+  agente: { x: 62, y: 48, w: 1218, h: 672 },
   // O Dashboard de ponta a ponta: indicadores, volume, funil, fila e equipe —
   // um recorte mais estreito cortava cartões pela metade.
   painel: { x: 62, y: 56, w: 1218, h: 382 },
@@ -421,7 +423,7 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
   )
 }
 
-function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void }) {
+function ArtigoRecurso({ b, n, registrar, semRotulo = false }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void; semRotulo?: boolean }) {
   const h = HISTORIAS[b.id]
   const arranjo = COMPOSICAO[b.id]
   const ref = useRef<HTMLElement | null>(null)
@@ -438,7 +440,9 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
       const desktop = window.innerWidth >= 1024
       const disponivel = window.innerHeight - 96 - editorial.offsetHeight - 24 - 24
       const natural = composicao.offsetHeight
-      setEscala(desktop && natural > 0 ? 0.92 * Math.min(1, Math.max(1, disponivel) / natural) : 1)
+      // Só encolhe se não couber na altura (30/09): o fator fixo de 0,92 deixava
+      // toda composição 8 % mais estreita que o texto acima — um vão à direita.
+      setEscala(desktop && natural > 0 ? Math.min(1, Math.max(1, disponivel) / natural) : 1)
     }
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
     ro?.observe(composicao)
@@ -498,12 +502,16 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
     >
       {/* A promessa (curta, no H3) e a explicação (parágrafo à parte). */}
       <div ref={editorialRef}><Revelar>
+        {/* Nas abas (home), o número e o nome já estão na aba: repetir aqui
+            era índice em dobro (30/09). */}
+        {!semRotulo && (
         <p className="text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">
           <span className="tabular-nums">{String(n).padStart(2, '0')}</span>
           <span aria-hidden className="mx-2 text-surface-600">·</span>
           {b.indice}
         </p>
-        <h4 className="mt-2.5 font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance">
+        )}
+        <h4 className={cn(!semRotulo && 'mt-2.5', ' font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
           {b.destaque}
         </h4>
         <p className="mt-2.5 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
@@ -789,7 +797,7 @@ export function SecaoComoFunciona() {
 
         {/* Remonta ao trocar de aba: a demonstração da etapa recomeça. */}
         <div id="etapa-painel" role="tabpanel" aria-labelledby={`etapa-aba-${b.id}`} className="mt-8">
-          <ArtigoRecurso key={b.id} b={b} n={idx + 1} registrar={NOOP_REGISTRO} />
+          <ArtigoRecurso key={b.id} b={b} n={idx + 1} registrar={NOOP_REGISTRO} semRotulo />
           {pagina && (
             <Link to={rotaPlataforma(pagina.slug)} className="mt-6 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
               {home.comoFunciona.saibaMais}: {pagina.menu} <ArrowRight className="h-3.5 w-3.5" aria-hidden />

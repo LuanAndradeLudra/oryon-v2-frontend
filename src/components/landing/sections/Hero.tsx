@@ -55,7 +55,7 @@ export function Hero() {
           {hero.title}
         </h1>
         <p
-          className="reveal mx-auto mt-[clamp(10px,1.6svh,16px)] max-w-[54ch] text-base sm:text-lg leading-relaxed text-surface-400 text-balance"
+          className="reveal mx-auto mt-[clamp(10px,1.6svh,16px)] max-w-[64ch] text-base sm:text-lg leading-relaxed text-surface-400 text-balance"
           style={{ ['--d' as string]: '90ms' }}
         >
           {hero.lead}
@@ -64,7 +64,7 @@ export function Hero() {
             etapas logo abaixo. Antes (24/09) o Hero não tinha botões — a página
             chegava ao fim sem nenhum próximo passo para quem não é cliente. */}
         <div
-          className="reveal mt-[clamp(14px,2.2svh,22px)] flex flex-wrap items-center justify-center gap-2.5"
+          className="reveal mt-[clamp(12px,1.8svh,18px)] flex flex-wrap items-center justify-center gap-2.5"
           style={{ ['--d' as string]: '180ms' }}
         >
           <LinkButton to={LANDING_ROUTES.demonstracao} size="lg">{home.ctaPrincipal}</LinkButton>

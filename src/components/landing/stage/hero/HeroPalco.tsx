@@ -109,9 +109,11 @@ function cantos(h: number) {
   } satisfies Record<string, PoseSatelite>
 }
 
-/** O aparelho (WhatsApp da cliente), à esquerda, rente à base da âncora. */
+/** O aparelho (WhatsApp da cliente), à esquerda, rente à base da âncora.
+ *  30/09: em x = 0 ele cobria 114 px da âncora — a coluna da lista de
+ *  conversas (abas cortadas); em x = -60 só encosta na barra de ícones. */
 function aparelho(h: number): PoseSatelite {
-  return { x: 0, y: h - 434, w: TELA_APARELHO.w + 14, origem: '100% 50%' }
+  return { x: -60, y: h - 434, w: TELA_APARELHO.w + 14, origem: '100% 50%' }
 }
 
 function diagonal(cena: HeroCena, h: number) {
