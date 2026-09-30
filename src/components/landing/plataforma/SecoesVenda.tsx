@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ChevronDown, MessageCircle, Smartphone, Settings2, Rocket, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
+import { ArrowRight, ChevronDown, MessageCircle, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 import { BotaoLanding } from '../ui/BotaoLanding'
@@ -73,49 +73,60 @@ export function Cabecalho({ eyebrow, titulo, cinza, numero }: { eyebrow: string;
 
 // ─── Implantação ─────────────────────────────────────────────────────────────
 
-const ICONES_PASSO = [Smartphone, Settings2, Rocket]
+/** Os carimbos de dia do registro — estrutura, não copy (a copy não tem número).
+ *  Um por passo; "até 7 dias" é o prazo autorizado pelo PO. */
+const DIAS_PASSO = ['Dia 1', 'Dias 2 a 5', 'Dia 6', 'Dia 7'] as const
 const ICONES_DEPOIS = { ajuste: PencilLine, crescer: Layers, acompanhar: LayoutDashboard } as const
 
-/** `compacta` (home de venda): só os três passos — o "depois da implantação" fica na página. */
+/**
+ * A implantação como REGISTRO de dias (P8 da auditoria anti-genérico, 30/09):
+ * saiu a linha do tempo com três ícones (Smartphone, Settings2, Rocket); entra
+ * o formato do histórico do próprio app — carimbo do dia, ponto colorido por
+ * quem fez (âmbar = você, teal = equipe Oryon), título e uma linha. Título e
+ * lead à esquerda, o registro à direita.
+ *
+ * `compacta` (home de venda): sem as entregas de cada passo e sem o "depois da
+ * implantação" — ficam na página completa.
+ */
 export function SecaoImplantacao({ compacta = false, numero }: { compacta?: boolean; numero?: string }) {
-  const semMovimento = useReducedMotion()
   return (
-    <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20 lg:py-14">
+    <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
-        <Cabecalho numero={numero} eyebrow={implantacao.eyebrow} titulo={implantacao.title} cinza={implantacao.titleCinza} />
+        <Revelar><Capitulo numero={numero} rotulo={implantacao.eyebrow} /></Revelar>
 
-        <div className="relative mt-10 sm:mt-12">
-          {/* A linha do tempo que se desenha ao entrar na tela (desktop). */}
-          <div aria-hidden className="absolute left-0 right-0 top-[16px] hidden h-px bg-surface-800 md:block">
-            <motion.div
-              className="h-full origin-left bg-gradient-to-r from-brand-500 via-brand-400 to-brand-500"
-              initial={semMovimento ? false : { scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true, margin: '-20% 0px' }}
-              transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-            />
-          </div>
-          <ol className="relative grid gap-6 md:grid-cols-3 md:gap-8">
+        <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-16">
+          <Revelar>
+            <h2 className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance">
+              <span className="text-surface-50">{implantacao.title}</span>{' '}
+              <span className="text-surface-500">{implantacao.titleCinza}</span>
+            </h2>
+            <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px]">{implantacao.lead}</p>
+          </Revelar>
+
+          <ol className="border-t border-[var(--landing-borda)]">
             {implantacao.passos.map((p, i) => {
-              const Icone = ICONES_PASSO[i]
+              const voce = p.quem === 'voce'
               return (
-                <Revelar key={p.titulo} atraso={0.25 + i * 0.25}>
-                  <li className="list-none">
-                    <span className="relative z-10 flex h-[34px] w-[34px] items-center justify-center rounded-2xl bg-surface-900 ring-1 ring-surface-700 text-[var(--landing-destaque)]">
-                      <Icone className="h-[14.5px] w-[14.5px]" strokeWidth={1.8} />
-                    </span>
-                    <p className="mt-4 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{p.quem}</p>
-                    <p className="mt-1.5 font-display text-[17px] font-semibold tracking-[-0.01em] text-surface-50">{p.titulo}</p>
-                    <p className="mt-2 max-w-[34ch] text-[15px] leading-relaxed text-surface-400">{p.texto}</p>
-                    {/* O que sai deste passo — concreto, verificável (só na página completa). */}
-                    {!compacta && <ul className="mt-4 space-y-2 border-t border-[var(--landing-borda)] pt-4">
-                      {p.entregas.map((e) => (
-                        <li key={e} className="flex items-start gap-2 text-[14px] leading-relaxed text-surface-300">
-                          <Check className="mt-[1px] h-3.5 w-3.5 flex-shrink-0 text-[var(--landing-destaque)]" strokeWidth={2.2} aria-hidden />
-                          <span>{e}</span>
-                        </li>
-                      ))}
-                    </ul>}
+                <Revelar key={p.titulo} atraso={0.1 + i * 0.1}>
+                  <li className="grid grid-cols-[72px_14px_minmax(0,1fr)] gap-x-3 border-b border-[var(--landing-borda)] py-5 sm:grid-cols-[84px_14px_minmax(0,1fr)] sm:gap-x-4">
+                    <span className="pt-[3px] font-mono text-[11.5px] tracking-[.02em] text-surface-500">{DIAS_PASSO[i]}</span>
+                    <span aria-hidden className={cn('mt-[8px] h-[7px] w-[7px] rounded-full', voce ? 'bg-[#F5B544]' : 'bg-[var(--landing-destaque)]')} />
+                    <div className="min-w-0">
+                      <p className="text-[16px] font-semibold leading-snug text-surface-50">{p.titulo}</p>
+                      <p className="mt-1 text-[14.5px] leading-relaxed text-surface-400 text-pretty">{p.texto}</p>
+                      <p className={cn('mt-2 font-mono text-[11px] tracking-[.04em]', voce ? 'text-[#F5B544]' : 'text-[var(--landing-destaque)]')}>{p.rotulo}</p>
+                      {/* O que sai deste passo — concreto, verificável (só na página completa). */}
+                      {!compacta && (
+                        <ul className="mt-3 space-y-1.5">
+                          {p.entregas.map((e) => (
+                            <li key={e} className="flex items-start gap-2 text-[13.5px] leading-relaxed text-surface-300">
+                              <Check className="mt-[3px] h-3.5 w-3.5 flex-shrink-0 text-[var(--landing-destaque)]" strokeWidth={2.2} aria-hidden />
+                              <span>{e}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </li>
                 </Revelar>
               )

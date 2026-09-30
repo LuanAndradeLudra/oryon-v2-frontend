@@ -334,11 +334,16 @@ export const implantacao = {
   // o prazo continua com a ressalva da Meta.
   title: 'Você não precisa entender de tecnologia.',
   titleCinza: 'Nossa equipe configura a Oryon com você, em até 7 dias depois que a Meta libera o número.',
+  lead: 'Assim fica o registro de uma implantação, do primeiro ao último dia.',
+  /** Os passos como REGISTRO (auditoria anti-genérico, 30/09): quem fez cada
+   *  um segue o código de cor do produto — 'voce' = âmbar (pessoa), 'oryon' =
+   *  teal. Os carimbos de dia moram no componente (a copy não tem número). */
   passos: [
     {
-      quem: 'Você',
-      titulo: 'Escolha o número',
-      texto: 'Você escolhe o número de WhatsApp que vai atender e conclui a liberação na Meta.',
+      quem: 'voce',
+      rotulo: 'Você',
+      titulo: 'Você escolhe o número',
+      texto: 'Informa o número de WhatsApp que vai atender e conclui a liberação na Meta.',
       entregas: [
         'Número que será usado no atendimento',
         'Conta aprovada pela Meta para a API oficial',
@@ -346,7 +351,8 @@ export const implantacao = {
       ],
     },
     {
-      quem: 'Nós',
+      quem: 'oryon',
+      rotulo: 'Equipe Oryon',
       titulo: 'Configuramos a Oryon',
       texto: 'Cadastramos suas informações, montamos as etapas de venda e definimos quando o agente chama a sua equipe.',
       entregas: [
@@ -356,12 +362,21 @@ export const implantacao = {
       ],
     },
     {
-      quem: 'Juntos',
-      titulo: 'Teste antes de ligar',
-      texto: 'Você conversa com o agente como se fosse um cliente, pede os ajustes e só então ele passa a atender no seu número.',
+      quem: 'voce',
+      rotulo: 'Você',
+      titulo: 'Você testa como cliente',
+      texto: 'Conversa com o agente no chat de teste, como se fosse um cliente, e pede os ajustes.',
       entregas: [
         'Cenários de teste antes da ativação',
         'Respostas e capacidades ajustadas com a sua equipe',
+      ],
+    },
+    {
+      quem: 'oryon',
+      rotulo: 'No ar',
+      titulo: 'O agente passa a atender no seu número',
+      texto: 'Sua equipe acompanha tudo pelo painel e assume a conversa quando quiser.',
+      entregas: [
         'Atendimento com IA ativado no número oficial',
       ],
     },
