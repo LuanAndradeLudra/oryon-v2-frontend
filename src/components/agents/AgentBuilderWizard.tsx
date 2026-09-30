@@ -2,13 +2,14 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2, Sparkles,
-  Loader2, MessageSquare, Globe, Instagram, AlertCircle, Zap,
+  Loader2, MessageSquare, Globe, AlertCircle, Zap,
   BookOpen, FileUp, FileText, Upload,
   Briefcase, SmilePlus, GraduationCap, Heart, Flame,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
-import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFile } from '@/services/agentsApi'
+import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFileDetailed, podePublicarAgente } from '@/services/agentsApi'
+import { useAuth } from '@/contexts/AuthContext'
 import { showToast } from '@/hooks/useToast'
 import {
   loadHub, loadHubAsync, saveHub, hubToBrandLinks, hubHasContent,
@@ -61,8 +62,6 @@ interface WizardData {
   handoff_rules: HandoffRule[]
   knowledge_docs: Array<{ id: string; name: string; content: string; source_type: string }>
   channels_whatsapp: boolean
-  channels_messenger: boolean
-  channels_instagram: boolean
   /**
    * Phase 25 — opt-in CRM operations. Configured in the Revisão step as a
    * simple toggle list (no constraint pickers — those live in the post-
@@ -83,7 +82,7 @@ const DEFAULT_DATA: WizardData = {
   brand_links: [], brand_links_context: '',
   handoff_rules: [],
   knowledge_docs: [],
-  channels_whatsapp: true, channels_messenger: false, channels_instagram: false,
+  channels_whatsapp: true,
   crm_capabilities: { capabilities: [] },
   generated_prompt: '',
 }
@@ -1177,6 +1176,8 @@ function Step6KB({
     // is CPU-heavy on the agent-server side). Each file gets its own doc
     // entry in knowledge_docs; failures are logged but don't abort the batch.
     const failed: string[] = []
+    const failureReasons: string[] = []
+    const partial: string[] = []
     const total = files.length
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
@@ -1198,7 +1199,8 @@ function Step6KB({
           contentType = 'base64'
         }
 
-        const extracted = await extractBrandFile(file.name, file.type || 'text/plain', content, contentType)
+        const { text: extracted, warning } = await extractBrandFileDetailed(file.name, file.type || 'text/plain', content, contentType)
+        if (warning) partial.push(warning)
         // Suffix the id with the index so a fast batch (sub-ms apart) doesn't
         // collide on Date.now() and produce duplicate doc ids.
         const id = `kb-${Date.now()}-${i}`
@@ -1212,14 +1214,20 @@ function Step6KB({
       } catch (err) {
         console.error('[KB upload]', file.name, err)
         failed.push(file.name)
+        if (err instanceof Error && err.message) failureReasons.push(err.message)
       }
     }
     if (failed.length > 0) {
       showToast(
-        `Falha ao processar ${failed.length} arquivo${failed.length > 1 ? 's' : ''}: ${failed.join(', ')}`,
+        // Um arquivo só: o motivo que a rota deu (ex.: formato não suportado).
+        failed.length === 1 && failureReasons.length === 1
+          ? failureReasons[0]
+          : `Falha ao processar ${failed.length} arquivo${failed.length > 1 ? 's' : ''}: ${failed.join(', ')}`,
         'error',
       )
     }
+    // Lido só em parte: o final do arquivo não entrou na base.
+    for (const w of partial) showToast(w, 'warning')
     setUploadingFile(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -1250,7 +1258,7 @@ function Step6KB({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg,.webp"
+          accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp"
           multiple
           onChange={handleFileUpload}
           className="hidden"
@@ -1435,6 +1443,8 @@ function Step6({
 }: { data: WizardData; setData: React.Dispatch<React.SetStateAction<WizardData>> }) {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // A IA não respondeu e o texto é o modelo básico local: a tela diz isso.
+  const [fallbackReason, setFallbackReason] = useState<string | null>(null)
   const [manualMode, setManualMode] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
 
@@ -1442,7 +1452,7 @@ function Step6({
     setGenerating(true)
     setError(null)
     try {
-      const prompt = await generateAgentPrompt({
+      const { prompt, source, failureReason } = await generateAgentPrompt({
         identity: { name: data.name, emoji: '', sector: data.sector, objective: data.objective },
         personality: {
           persona_name: data.persona_name || data.name,
@@ -1460,15 +1470,19 @@ function Step6({
           escalation_department: data.handoff_rules.find(r => r.department)?.department ?? '',
           channels: [
             data.channels_whatsapp && 'WhatsApp',
-            data.channels_messenger && 'Messenger',
-            data.channels_instagram && 'Instagram',
           ].filter(Boolean) as string[],
         },
       })
       setData(d => ({ ...d, generated_prompt: prompt }))
-      // Open the review modal right after a successful generation so the user
-      // can read the full prompt comfortably and edit before confirming.
-      setReviewOpen(true)
+      if (source === 'local_fallback') {
+        // Sem modal: o aviso abaixo precisa ser visto antes do texto.
+        setFallbackReason(failureReason ?? 'sem resposta')
+      } else {
+        setFallbackReason(null)
+        // Open the review modal right after a successful generation so the user
+        // can read the full prompt comfortably and edit before confirming.
+        setReviewOpen(true)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao conectar com o servidor')
     } finally {
@@ -1540,6 +1554,20 @@ function Step6({
 
       {/* Generating animation */}
       {generating && <PromptGeneratingAnimation />}
+
+      {fallbackReason && data.generated_prompt && !generating && !manualMode && (
+        <Banner
+          variant="warning"
+          action={(
+            <button type="button" onClick={generate} className="text-xs font-semibold underline">
+              Tentar de novo
+            </button>
+          )}
+        >
+          A IA não respondeu ({fallbackReason}). O texto abaixo é um modelo básico montado a partir das suas
+          respostas, não um prompt gerado pela IA. Tente gerar de novo ou revise com cuidado antes de publicar.
+        </Banner>
+      )}
 
       {/* Completed — collapsed inline preview (first 10 lines).
           Editing happens only in the modal; both views share data.generated_prompt. */}
@@ -1678,8 +1706,6 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
   const activeChannels = [
     data.channels_whatsapp && 'WhatsApp',
-    data.channels_messenger && 'Messenger',
-    data.channels_instagram && 'Instagram',
   ].filter(Boolean) as string[]
 
   const sectorLabel = SECTORS.find(s => s.value === data.sector)?.label ?? data.sector
@@ -1762,12 +1788,63 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
 // ─── Wizard root ──────────────────────────────────────────────────────────────
 
+export const MSG_ADMIN_PRECISA_PUBLICAR = 'Um administrador precisa publicar este agente.'
+
+/**
+ * D11 (PO, 29/09): só administrador põe agente no ar. O agent-server recusa o
+ * PATCH `status:'active'` de quem não é admin com 403 — e como o POST já criou
+ * o agente, ele ficava órfão, só com o nome. Quem não publica salva sempre
+ * como rascunho, com o resto da configuração junto.
+ */
+export function statusAoSalvar(pedido: 'active' | 'draft', podePublicar: boolean): 'active' | 'draft' {
+  return podePublicar ? pedido : 'draft'
+}
+
+/** Ações da revisão (etapa 8). Sem permissão de publicar, "Publicar" não aparece. */
+export function AcoesDaRevisao({ podePublicar, publishing, temPrompt, onPublish }: {
+  podePublicar: boolean
+  publishing: boolean
+  temPrompt: boolean
+  onPublish: (status: 'active' | 'draft') => void
+}) {
+  if (!podePublicar) {
+    return (
+      <>
+        <span className="text-xs text-surface-400">{MSG_ADMIN_PRECISA_PUBLICAR}</span>
+        <Button type="button" variant="primary" size="md" onClick={() => onPublish('draft')} disabled={!temPrompt} loading={publishing}>
+          <span className="sm:hidden">Rascunho</span><span className="hidden sm:inline">Salvar como rascunho</span>
+        </Button>
+      </>
+    )
+  }
+  return (
+    <>
+      <Button type="button" variant="neutral" size="md" onClick={() => onPublish('draft')} disabled={publishing}>
+        <span className="sm:hidden">Rascunho</span><span className="hidden sm:inline">Salvar como rascunho</span>
+      </Button>
+      <Button
+        type="button"
+        variant="primary"
+        size="md"
+        onClick={() => onPublish('active')}
+        disabled={!temPrompt}
+        loading={publishing}
+        leftIcon={<Zap className="w-4 h-4" />}
+      >
+        {publishing ? 'Publicando...' : 'Publicar agente'}
+      </Button>
+    </>
+  )
+}
+
 interface AgentBuilderWizardProps {
   onClose: () => void
   onCreated: (agent: AgentConfigWithTools) => void
 }
 
 export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardProps) {
+  const { user } = useAuth()
+  const podePublicar = podePublicarAgente((user as { role?: string } | null)?.role)
   const [step, setStep] = useState(1)
   const [data, setData] = useState<WizardData>(DEFAULT_DATA)
   const [publishing, setPublishing] = useState(false)
@@ -1880,7 +1957,8 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
     onClose()
   }
 
-  const handlePublish = async (status: 'active' | 'draft') => {
+  const handlePublish = async (pedido: 'active' | 'draft') => {
+    const status = statusAoSalvar(pedido, podePublicar)
     setPublishing(true)
     setPublishError(null)
     const { userId, tenantId, actorName } = readSession()
@@ -1903,8 +1981,6 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
         handoff_rules: { rules: data.handoff_rules },
         channels: {
           whatsapp:  { enabled: data.channels_whatsapp  },
-          messenger: { enabled: data.channels_messenger },
-          instagram: { enabled: data.channels_instagram },
         },
         // Phase 25 — persist CRM capabilities chosen in the wizard's review step.
         // Skip the field entirely when the user didn't enable anything so
@@ -1940,8 +2016,6 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
           },
           deployment: {
             channels_whatsapp:  data.channels_whatsapp,
-            channels_messenger: data.channels_messenger,
-            channels_instagram: data.channels_instagram,
             handoff_rules:      data.handoff_rules,
           },
         },
@@ -1967,7 +2041,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
         data: {
           agent_id: raw.id, agent_name: data.name, publish_mode: status,
           handoff_rules_count: data.handoff_rules.length,
-          channels: { whatsapp: data.channels_whatsapp, messenger: data.channels_messenger, instagram: data.channels_instagram },
+          channels: { whatsapp: data.channels_whatsapp },
           prompt_length: data.generated_prompt.length,
         },
       })
@@ -2237,22 +2311,12 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   )}
                   <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                     {step === 8 ? (
-                      <>
-                        <Button type="button" variant="neutral" size="md" onClick={() => handlePublish('draft')} disabled={publishing}>
-                          <span className="sm:hidden">Rascunho</span><span className="hidden sm:inline">Salvar como rascunho</span>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="primary"
-                          size="md"
-                          onClick={() => handlePublish('active')}
-                          disabled={!data.generated_prompt}
-                          loading={publishing}
-                          leftIcon={<Zap className="w-4 h-4" />}
-                        >
-                          {publishing ? 'Publicando...' : 'Publicar agente'}
-                        </Button>
-                      </>
+                      <AcoesDaRevisao
+                        podePublicar={podePublicar}
+                        publishing={publishing}
+                        temPrompt={!!data.generated_prompt}
+                        onPublish={(s) => void handlePublish(s)}
+                      />
                     ) : (
                       <Button
                         type="button"

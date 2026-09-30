@@ -36,7 +36,7 @@ export const SECOES: ReadonlyArray<Secao> = [
   { id: 'conhecimento', grupo: 'responde', rotulo: 'Conhecimento', icone: BookOpen,
     descricao: 'Documentos e textos que a IA consulta antes de responder.' },
   { id: 'catalogo', grupo: 'responde', rotulo: 'Catálogo', icone: Package,
-    descricao: 'Produtos e serviços que a IA pode oferecer, com os valores cadastrados.' },
+    descricao: 'Produtos, serviços e profissionais que a IA pode oferecer ou citar.' },
   { id: 'capacidades', grupo: 'pode', rotulo: 'Capacidades', icone: ShieldCheck,
     descricao: 'O que a IA pode mudar no CRM enquanto atende. Tudo fica no histórico do contato.' },
   { id: 'transferencia', grupo: 'pode', rotulo: 'Transferência', icone: ArrowRightLeft,

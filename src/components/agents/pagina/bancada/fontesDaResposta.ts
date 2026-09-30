@@ -6,7 +6,7 @@ import { CRM_CAPABILITIES_CATALOG } from '@/components/agents/crmCapabilitiesCat
  * configura o agente, não de quem o programou. Puro: recebe o debug do /chat
  * e devolve linhas prontas para mostrar.
  */
-export type TipoDeFonte = 'conhecimento' | 'crm' | 'skill' | 'integracao' | 'outra' | 'transferencia' | 'verificacao' | 'instrucoes'
+export type TipoDeFonte = 'conhecimento' | 'crm' | 'skill' | 'integracao' | 'outra' | 'transferencia' | 'verificacao' | 'instrucoes' | 'regra'
 
 export interface FonteDaResposta {
   tipo: TipoDeFonte
@@ -43,6 +43,14 @@ function daFerramenta(t: ToolCall): FonteDaResposta {
 export function fontesDaResposta(debug: ChatTurnDebug | undefined): FonteDaResposta[] {
   if (!debug) return []
   const out: FonteDaResposta[] = []
+  // Onda 3 — uma regra ou FAQ respondeu antes do modelo, como em produção.
+  const sim = debug.simulated
+  if (sim) {
+    const quem = sim.kind === 'faq' ? `Resposta rápida "${sim.ruleName}"` : `Regra "${sim.ruleName}"`
+    out.push({ tipo: 'regra', rotulo: `${quem} respondeu pelo texto configurado; o modelo não foi chamado` })
+    if (sim.transfers) out.push({ tipo: 'transferencia', rotulo: 'Em produção, a conversa iria para uma pessoa da equipe' })
+    return out
+  }
   // A mesma ferramenta chamada várias vezes no turno vira uma linha só.
   const vistas = new Set<string>()
   for (const t of debug.toolCalls ?? []) {
@@ -62,38 +70,11 @@ export function fontesDaResposta(debug: ChatTurnDebug | undefined): FonteDaRespo
 }
 
 /**
- * O prompt usado no teste: as instruções + as regras de transferência ligadas,
- * escritas como prioridade máxima (é como o agente as recebe em produção).
+ * O prompt usado no teste: só as instruções salvas. O resto (regras da
+ * plataforma, empresa, catálogo) o agent-server monta igual à produção, e as
+ * regras de transferência são avaliadas antes do modelo (simulate_rules) — não
+ * viram mais um bloco "prioridade máxima" que a produção nunca teve.
  */
 export function promptDeTeste(agent: AgentConfigWithTools): string {
-  const regras = (agent.handoff_rules?.rules ?? []).filter((r) => r.enabled)
-  if (regras.length === 0) return agent.system_prompt
-
-  const blocos = regras.map((r) => {
-    const casamento = r.matchMode === 'exact' ? 'frase exata'
-      : r.matchMode === 'all_keywords' ? 'todas as palavras presentes'
-        : 'qualquer uma das palavras-chave'
-    const acao = r.action === 'human_handoff' ? `transferir para atendimento humano${r.department ? ` (${r.department})` : ''}`
-      : r.action === 'auto_reply' ? 'responder automaticamente com o template'
-        : r.action === 'external_redirect' ? 'redirecionar para URL externa'
-          : 'repassar para outro agente'
-    return [
-      `### Regra: ${r.name}`,
-      `- Critério de disparo (${casamento}): ${r.keywords.join(', ')}`,
-      `- Ação: ${acao}`,
-      r.template ? `- Resposta obrigatória: "${r.template}"` : '',
-    ].filter(Boolean).join('\n')
-  }).join('\n\n')
-
-  return `${agent.system_prompt}
-
----
-
-## REGRAS DE HANDOFF (PRIORIDADE MÁXIMA)
-
-As regras abaixo têm prioridade sobre qualquer outra instrução. Quando detectar as palavras-chave indicadas na mensagem do cliente, execute a ação correspondente e use EXATAMENTE o texto do template — não improvise, não adicione conteúdo extra.
-
-${blocos}
-
-Quando uma regra for ativada, responda SOMENTE com o texto do template configurado.`
+  return agent.system_prompt
 }

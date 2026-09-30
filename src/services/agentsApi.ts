@@ -203,13 +203,18 @@ export async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> 
   try {
     json = JSON.parse(text) as { data?: T; error?: string }
   } catch {
+    // 404 sem JSON = a rota não existe no servidor dos agentes em execução
+    // (versão anterior à tela). Reiniciar não resolve; dizer o que é.
     throw new Error(
       res.ok
-        ? 'Resposta inválida do servidor'
-        : `Servidor indisponível (${res.status}) — reinicie o backend`,
+        ? 'Resposta inválida do servidor.'
+        : res.status === 404
+          ? 'Este recurso ainda não está disponível no servidor dos agentes.'
+          : `Servidor dos agentes indisponível (erro ${res.status}). Tente de novo em instantes.`,
     )
   }
-  if (!res.ok) throw new Error(json.error ?? `Erro ${res.status}`)
+  // status junto da mensagem: quem chama distingue "não existe" (404) de falha passageira.
+  if (!res.ok) throw Object.assign(new Error(json.error ?? `Erro ${res.status}`), { status: res.status })
   return json.data as T
 }
 
@@ -291,7 +296,19 @@ export interface AgentPromptRequest {
   }
 }
 
-export async function generateAgentPrompt(request: AgentPromptRequest): Promise<string> {
+/**
+ * Resultado do gerador. `source: 'local_fallback'` quer dizer que a IA NÃO
+ * respondeu e o texto é um modelo básico montado aqui a partir das respostas
+ * do assistente — a tela precisa dizer isso, nunca apresentar como da IA.
+ */
+export interface GeneratedAgentPrompt {
+  prompt: string
+  source: 'ai' | 'local_fallback'
+  /** Motivo da falha da IA, só quando `source === 'local_fallback'`. */
+  failureReason?: string
+}
+
+export async function generateAgentPrompt(request: AgentPromptRequest): Promise<GeneratedAgentPrompt> {
   const { userId, tenantId, actorName } = readSession()
   const t0 = Date.now()
   try {
@@ -336,7 +353,7 @@ export async function generateAgentPrompt(request: AgentPromptRequest): Promise<
       details: { prompt_length: result.prompt.length, sector: request.identity.sector },
       source: 'ui',
     })
-    return result.prompt
+    return { prompt: result.prompt, source: 'ai' }
   } catch (err) {
     console.error('[generate-prompt] backend call failed — using local fallback. Reason:', err instanceof Error ? err.message : err)
     // Local fallback: generate a baseline prompt from the wizard data
@@ -371,7 +388,11 @@ export async function generateAgentPrompt(request: AgentPromptRequest): Promise<
       details: { prompt_length: prompt.length, source: 'local_fallback', sector: request.identity.sector },
       source: 'ui',
     })
-    return prompt
+    return {
+      prompt,
+      source: 'local_fallback',
+      failureReason: err instanceof Error ? err.message : String(err),
+    }
   }
 }
 
@@ -1121,10 +1142,21 @@ export interface GuardSignal {
   repair?: { rung: number | null; llmCalls: number | null } | null
 }
 
+/** A regra ou FAQ que respondeu no lugar do modelo (bancada, onda 3). */
+export interface SimulatedReply {
+  kind: 'handoff_rule' | 'auto_reply' | 'redirect' | 'faq'
+  ruleName: string
+  message: string
+  /** Em produção a conversa iria para uma pessoa. */
+  transfers: boolean
+}
+
 export interface ChatTurnDebug {
   toolCalls: ToolCall[]
-  turnSummary: TurnSummary
+  /** Ausente quando uma regra respondeu sem chamar o modelo. */
+  turnSummary?: TurnSummary
   guard: GuardSignal | null
+  simulated?: SimulatedReply | null
 }
 
 export type ChatWithAgentResult = { message: string } & ChatTurnDebug
@@ -1132,38 +1164,396 @@ export type ChatWithAgentResult = { message: string } & ChatTurnDebug
 export async function chatWithAgent(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  meta: { sessionId?: string; agentId?: string } = {},
+  meta: {
+    sessionId?: string; agentId?: string; stubTools?: boolean
+    /** Ensaio do assistente: o servidor compila este rascunho e usa no lugar do texto salvo. */
+    specDraftId?: string
+  } = {},
 ): Promise<ChatWithAgentResult> {
-  const data = await apiFetch<{ message: string; toolCalls: ToolCall[]; turnSummary: TurnSummary; guard?: GuardSignal }>('/chat', {
+  const data = await apiFetch<{
+    message: string; toolCalls?: ToolCall[]; turnSummary?: TurnSummary; guard?: GuardSignal; simulated?: SimulatedReply
+  }>('/chat', {
     method: 'POST',
     body: JSON.stringify({
       system_prompt: systemPrompt,
       messages,
       session_id: meta.sessionId ?? null,
       agent_id:   meta.agentId  ?? null,
+      // Onda 3 — a bancada recebe o mesmo prompt da produção (montado em
+      // camadas no agent-server, com empresa e dicas do WhatsApp) e as regras
+      // de transferência/FAQ são avaliadas antes do modelo, como lá.
+      prompt_mode: 'compiled',
+      channel: 'whatsapp',
+      simulate_rules: true,
+      // Onda 5 — bateria de testes: skill/CRM/HTTP simulados, nada executado.
+      ...(meta.stubTools ? { stub_tools: true } : {}),
+      ...(meta.specDraftId ? { spec_draft_id: meta.specDraftId } : {}),
     }),
   })
   return {
     message: data.message,
-    toolCalls: data.toolCalls,
+    toolCalls: data.toolCalls ?? [],
     turnSummary: data.turnSummary,
     guard: data.guard ?? null,
+    simulated: data.simulated ?? null,
   }
+}
+
+// ─── O que o agente recebe (onda 3) ──────────────────────────────────────────
+
+export interface EffectivePromptLayer {
+  id: 'plataforma' | 'agente' | 'empresa' | 'fontes' | 'turno'
+  title: string
+  source: string
+  text: string
+}
+
+export interface EffectivePrompt {
+  mode: 'compiled' | 'legacy'
+  model: string
+  layers: EffectivePromptLayer[]
+  tools: Array<{ name: string; description: string }>
+  totalChars: number
+}
+
+/**
+ * Monta o prompt do agente pelo MESMO caminho do /chat (dry_run), sem chamar o
+ * modelo. Canal WhatsApp, modo compilado — o mesmo que a bancada usa.
+ */
+export async function getEffectivePrompt(agent: Pick<AgentConfigWithTools, 'id' | 'system_prompt'>): Promise<EffectivePrompt> {
+  return apiFetch<EffectivePrompt>('/chat', {
+    method: 'POST',
+    body: JSON.stringify({
+      system_prompt: agent.system_prompt,
+      messages: [],
+      agent_id: agent.id,
+      prompt_mode: 'compiled',
+      channel: 'whatsapp',
+      dry_run: true,
+    }),
+  })
+}
+
+// ─── Especificação do agente (onda 4) ────────────────────────────────────────
+// Espelho de agent-server/src/services/agentSpec.ts.
+
+export type AgentGoal = 'atender_agendar' | 'tirar_duvidas' | 'qualificar' | 'outro'
+export type AgentTone = 'acolhedor' | 'direto' | 'formal' | 'descontraido'
+export type HandoffSituation = 'pediu_humano' | 'reclamacao' | 'urgencia' | 'fora_do_escopo'
+
+export interface AgentSpec {
+  schemaVersion: 1
+  identity: { name: string; icon?: string; segment?: string | null; goal: AgentGoal }
+  persona: { tone: AgentTone; text: string }
+  flow: { text: string }
+  capabilities: Array<{ id: CrmCapabilityId; constraints?: CrmCapabilityConstraints }>
+  knowledge: { useCompanyProfile: boolean; useCatalog: boolean; usePractitioners: boolean }
+  handoff: { situations: HandoffSituation[]; sectorName?: string | null; message?: string | null }
+  channel: { whatsappNumberId?: string | null }
+  tests: Array<{ question: string; answer?: string | null; verdict?: 'boa' | 'ruim' | null }>
+  /** SCRUM-1190 — o que o assistente descobriu e o dono confirmou. */
+  context: SpecContext
+}
+
+export type FindingConfidence = 'confirmado' | 'sugestao' | 'segmento'
+
+export interface SpecFinding {
+  id: string
+  title: string
+  text: string
+  source: string
+  confidence: FindingConfidence
+  /** O dono conferiu ou corrigiu. Só item confirmado entra como fato do negócio no gerador. */
+  confirmed: boolean
+}
+
+export interface SpecContext {
+  studied: boolean
+  findings: SpecFinding[]
+  answers: Array<{ question: string; answer: string }>
+  pricePolicy: 'catalog' | 'evaluation' | null
+  namePolicy: 'cite' | 'no_names' | null
+  /** Empresa digitada aqui sem permissão para salvar no Contexto da IA. */
+  pendingCompany: { name: string; city: string; description: string; link: string } | null
+  /** SCRUM-1192 — entrevista: 'behavior' entra no texto; 'fact' vai para a base ao publicar. */
+  interview: InterviewAnswer[]
+  /** SCRUM-1192 — respostas de exemplo escolhidas pelo dono. */
+  examples: Array<{ question: string; answer: string }>
+}
+
+export interface InterviewAnswer {
+  id: string
+  question: string
+  destination: 'behavior' | 'fact'
+  answer: string | string[] | null
+  skipped: boolean
+}
+
+export interface InterviewQuestion {
+  id: string
+  question: string
+  why: string
+  kind: 'single' | 'multi' | 'text'
+  options?: string[]
+  placeholder?: string
+  destination: 'behavior' | 'fact'
+  /** O que o estudo já respondia (o dono confirma). */
+  prefill: string | string[] | null
+}
+
+/** SCRUM-1192 — roteiro da entrevista do segmento, com o que o estudo já sabe. */
+export function fetchInterview(spec: AgentSpec) {
+  return apiFetch<{ segment: { key: string; label: string }; questions: InterviewQuestion[] }>('/specs/interview', {
+    method: 'POST', body: JSON.stringify({ spec }),
+  })
+}
+
+export interface AnswerExampleSet {
+  question: string
+  answers: Array<{ style: 'direta' | 'acolhedora' | 'detalhada'; text: string }>
+}
+
+/** SCRUM-1192 — respostas de exemplo para as dúvidas mais comuns, sem fatos. */
+export function fetchAnswerExamples(spec: AgentSpec) {
+  return apiFetch<{ examples: AnswerExampleSet[] }>('/specs/answer-examples', { method: 'POST', body: JSON.stringify({ spec }) })
+}
+
+export interface StudySource {
+  id: 'cadastro' | 'site' | 'instagram' | 'catalogo' | 'profissionais'
+  label: string
+  state: 'ok' | 'partial' | 'empty' | 'na'
+  detail: string
+}
+
+export interface StudyResult {
+  sources: StudySource[]
+  findings: Array<Omit<SpecFinding, 'confirmed'>>
+  summaryError: string | null
+}
+
+/** SCRUM-1190 — estuda o negócio: estado das fontes e resumo com fonte e certeza. */
+export function studyBusiness(input: {
+  spec: AgentSpec
+  company: { name?: string; city?: string; industry?: string; description?: string; productsServices?: string }
+  catalog: { count: number; names: string[] }
+  practitioners: { count: number }
+  links: string[]
+}) {
+  return apiFetch<StudyResult>('/specs/study', { method: 'POST', body: JSON.stringify(input) })
+}
+
+export interface SpecDraft {
+  id: string
+  agent_id: string | null
+  spec: AgentSpec
+  step: number
+  published_agent_id: string | null
+  published_version: number | null
+  updated_at: string
+}
+
+export interface RepeatedFact { kind: 'preco' | 'telefone' | 'site' | 'empresa' | 'endereco'; excerpt: string }
+
+export interface ReadinessItem {
+  id: 'identidade' | 'ensaio' | 'fontes' | 'entrevista' | 'acoes' | 'numero'
+  label: string
+  ok: boolean
+  blocking: boolean
+  detail?: string
+}
+
+export function createSpecDraft(opts: { agentId?: string; spec?: AgentSpec } = {}) {
+  return apiFetch<{
+    draft: SpecDraft; repeatedFacts: RepeatedFact[]
+    /** Revisão: o que foi editado na página depois da última publicação (ausente em servidor antigo). */
+    editedOutside?: Array<'texto' | 'capacidades'>
+  }>('/specs/drafts', {
+    method: 'POST', body: JSON.stringify(opts),
+  })
+}
+
+/** Rascunhos do assistente ainda não publicados (os 10 mais recentes da empresa). */
+export function listSpecDrafts() {
+  return apiFetch<SpecDraft[]>('/specs/drafts')
+}
+
+/** Quem pode colocar agente no ar — espelha o agent-server (podePublicarAgente). */
+export function podePublicarAgente(role: string | null | undefined): boolean {
+  return role === 'admin' || role === 'business_admin' || role === 'super_admin'
+}
+
+export function getSpecDraft(id: string) {
+  return apiFetch<SpecDraft>(`/specs/drafts/${id}`)
+}
+
+export function saveSpecDraft(id: string, spec: AgentSpec, step: number) {
+  return apiFetch<SpecDraft>(`/specs/drafts/${id}`, { method: 'PUT', body: JSON.stringify({ spec, step }) })
+}
+
+export function getSpecReadiness(id: string) {
+  return apiFetch<{ ready: boolean; items: ReadinessItem[] }>(`/specs/drafts/${id}/readiness`)
+}
+
+/** Spec atual do agente: a última publicada ou a derivada do texto antigo. */
+export function getAgentSpecForAgent(agentId: string) {
+  return apiFetch<{
+    spec: AgentSpec; version: number | null
+    /** O que foi editado na página depois da última publicação (ausente em servidor antigo). */
+    editedOutside?: Array<'texto' | 'capacidades'>
+  }>(`/configs/${encodeURIComponent(agentId)}/spec`)
+}
+
+export function publishSpecDraft(id: string) {
+  return apiFetch<{
+    agentId: string; version: number; alreadyPublished: boolean
+    /** SCRUM-1192 — documento de fatos na base: 'error' = publicado, mas os fatos não foram. */
+    factsDoc?: 'created' | 'updated' | 'removed' | 'none' | 'error'
+  }>(`/specs/drafts/${id}/publish`, { method: 'POST' })
+}
+
+export function generateSpecText(spec: AgentSpec, language?: string) {
+  return apiFetch<{
+    persona: string; flow: string; warnings: string[]; generatorVersion: string
+    /** O que o gerador precisou supor, com a pergunta que resolve (SCRUM-1190). Ausente em servidor antigo. */
+    assumptions?: Array<{ text: string; question: string }>
+  }>('/specs/generate-text', {
+    method: 'POST', body: JSON.stringify({ spec, language }),
+  })
+}
+
+// ─── Runtime flags ────────────────────────────────────────────────────────────
+
+/** O que o motor do agente faz hoje neste tenant, para a tela não prometer além. */
+export interface AgentRuntimeFlags {
+  /** Os produtos escolhidos na seção Catálogo chegam ao modelo na conversa. */
+  catalogInjection: boolean
+  /** Onda 4 — o "Novo agente" abre o assistente de 7 etapas. */
+  specWizard?: boolean
+  /** Onda 5 — os turnos do agente são gravados para a repetição segura. */
+  turnRecord?: boolean
+}
+
+export async function getAgentRuntimeFlags(): Promise<AgentRuntimeFlags> {
+  return apiFetch<AgentRuntimeFlags>('/runtime-flags')
+}
+
+// ─── Onde o agente está falhando (onda 5) ─────────────────────────────────────
+
+export interface AgentInsights {
+  days: number
+  /** Quais registros estão ligados; desligado = "nada registrado", não "nenhum problema". */
+  logging: { executions: boolean; ragQueries: boolean }
+  problems: Array<{ conversationId: string; at: string; kind: 'deadline' | 'error' | 'loop' | 'max_turns'; reason: string }>
+  unanswered: Array<{ question: string; count: number; lastAt: string }>
+}
+
+export async function getAgentInsights(agentId: string): Promise<AgentInsights> {
+  return apiFetch<AgentInsights>(`/configs/${encodeURIComponent(agentId)}/insights`)
+}
+
+// ─── Turnos gravados e repetição segura (onda 5) ──────────────────────────────
+
+export interface AgentTurnSummary {
+  id: string
+  conversationId: string | null
+  sessionId: string | null
+  model: string
+  finalStatus: string
+  toolsCalled: number
+  createdAt: string
+  expiresAt: string
+  lastUserText: string
+  finalReply: string
+}
+
+export interface TurnReplayResult {
+  /** current = com o texto atual do agente; current_not_applied = com o gravado. */
+  instructions: 'recorded' | 'current' | 'current_not_applied'
+  text: string
+  toolCalls: Array<{ name: string; input: Record<string, unknown>; source: 'recorded' | 'missing' }>
+  turns: number
+  textChanged: boolean
+  toolsChanged: boolean
+  recorded: { text: string; toolCalls: Array<{ name: string; input: Record<string, unknown> }> }
+}
+
+// ─── Bateria de testes (onda 5) ───────────────────────────────────────────────
+
+export interface AgentTestRunResult {
+  question: string
+  answer: string
+  toolCalls: string[]
+  approvedAnswer: string | null
+  similarity: number | null
+  answerChanged: boolean | null
+  toolsChanged: boolean | null
+  error: string | null
+}
+
+export interface AgentTestRun {
+  id: string
+  specVersion: number | null
+  trigger: 'publish' | 'manual'
+  total: number
+  changed: number
+  failed: number
+  results: AgentTestRunResult[]
+  createdAt: string
+}
+
+export async function listAgentTestRuns(agentId: string): Promise<AgentTestRun[]> {
+  return apiFetch<AgentTestRun[]>(`/configs/${encodeURIComponent(agentId)}/test-runs`)
+}
+
+export async function saveAgentTestRun(
+  agentId: string, run: { trigger: 'publish' | 'manual'; specVersion: number | null; results: AgentTestRunResult[] },
+): Promise<AgentTestRun> {
+  return apiFetch<AgentTestRun>(`/configs/${encodeURIComponent(agentId)}/test-runs`, { method: 'POST', body: JSON.stringify(run) })
+}
+
+export async function listAgentTurns(agentId: string): Promise<AgentTurnSummary[]> {
+  return apiFetch<AgentTurnSummary[]>(`/configs/${encodeURIComponent(agentId)}/turns`)
+}
+
+export async function replayAgentTurn(agentId: string, turnId: string): Promise<TurnReplayResult> {
+  return apiFetch<TurnReplayResult>(`/configs/${encodeURIComponent(agentId)}/turns/${encodeURIComponent(turnId)}/replay`, { method: 'POST' })
 }
 
 // ─── Brand File Extraction ─────────────────────────────────────────────────────
 
+/**
+ * Texto extraído de um arquivo. `truncated` = o arquivo foi lido só em parte
+ * (corte por tamanho ou o modelo parou antes do fim); `warning` traz a frase
+ * pronta para mostrar. Formato não suportado ou arquivo sem texto chegam como
+ * erro (422), nunca como um texto-placeholder.
+ */
+export interface ExtractedBrandFile {
+  text: string
+  truncated: boolean
+  warning?: string
+}
+
+export async function extractBrandFileDetailed(
+  fileName: string,
+  mimeType: string,
+  content: string,
+  contentType: 'base64' | 'text',
+): Promise<ExtractedBrandFile> {
+  const data = await apiFetch<{ extractedText: string; truncated?: boolean; warning?: string }>('/extract-brand-file', {
+    method: 'POST',
+    body: JSON.stringify({ fileName, mimeType, content, contentType }),
+  })
+  return { text: data.extractedText, truncated: data.truncated === true, warning: data.warning }
+}
+
+/** Só o texto (Hub da empresa, onboarding). Quem monta a base do agente usa a versão detalhada. */
 export async function extractBrandFile(
   fileName: string,
   mimeType: string,
   content: string,
   contentType: 'base64' | 'text',
 ): Promise<string> {
-  const data = await apiFetch<{ extractedText: string }>('/extract-brand-file', {
-    method: 'POST',
-    body: JSON.stringify({ fileName, mimeType, content, contentType }),
-  })
-  return data.extractedText
+  return (await extractBrandFileDetailed(fileName, mimeType, content, contentType)).text
 }
 
 // ─── Agent Knowledge Base ─────────────────────────────────────────────────────
@@ -1178,7 +1568,24 @@ export interface AgentKnowledgeDoc {
   chunk_count: number
   status: string
   created_at: string
+  /** Onda 4 — relatório de leitura; null em documentos indexados antes. */
+  quality?: KnowledgeDocQuality | null
+  error_message?: string | null
 }
+
+export interface KnowledgeDocQuality {
+  chunks: number
+  chars: number
+  /** false = só busca por texto (sem vetores). */
+  embedded: boolean
+  chunker: 'structural' | 'fixed'
+  truncated: boolean
+  warning: string | null
+  indexedAt: string
+}
+
+/** O que a extração sabe do arquivo, para o relatório do documento. */
+export interface QualityHints { truncated?: boolean; warning?: string | null }
 
 export async function listAgentKnowledge(agentId: string): Promise<AgentKnowledgeDoc[]> {
   return apiFetch<AgentKnowledgeDoc[]>(`/configs/${agentId}/knowledge`)
@@ -1186,7 +1593,7 @@ export async function listAgentKnowledge(agentId: string): Promise<AgentKnowledg
 
 export async function addAgentKnowledge(
   agentId: string,
-  doc: { document_id: string; document_name: string; content: string; source_type?: string },
+  doc: { document_id: string; document_name: string; content: string; source_type?: string; quality_hints?: QualityHints },
 ): Promise<AgentKnowledgeDoc> {
   return apiFetch<AgentKnowledgeDoc>(`/configs/${agentId}/knowledge`, {
     method: 'POST',
@@ -1201,7 +1608,7 @@ export async function deleteAgentKnowledge(agentId: string, docId: string): Prom
 export async function updateAgentKnowledge(
   agentId: string,
   docId: string,
-  updates: { content: string; document_name?: string },
+  updates: { content: string; document_name?: string; quality_hints?: QualityHints },
 ): Promise<AgentKnowledgeDoc> {
   return apiFetch<AgentKnowledgeDoc>(`/configs/${agentId}/knowledge/${docId}`, {
     method: 'PUT',

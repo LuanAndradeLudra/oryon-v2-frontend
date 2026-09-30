@@ -102,6 +102,22 @@ export async function loadHubAsync(tenantId: string | undefined): Promise<Compan
   return data ?? { ...DEFAULT_HUB }
 }
 
+/**
+ * Como o `loadHubAsync`, mas devolve `null` quando a leitura FALHOU — em vez
+ * de um Hub vazio indistinguível de "empresa sem cadastro". Quem vai gravar o
+ * Hub inteiro (PATCH) a partir do que leu precisa desta diferença: gravar em
+ * cima de um vazio falso apaga produtos, redes e arquivos de marca.
+ */
+export async function loadHubOrNull(tenantId: string | undefined): Promise<CompanyHubData | null> {
+  if (!tenantId) return null
+  const data = await fetchHubFromBackend(tenantId)
+  if (data) {
+    cachedHub = data
+    cachedTenantId = tenantId
+  }
+  return data
+}
+
 export function saveHub(tenantId: string | undefined, data: CompanyHubData): void {
   if (!tenantId) return
 
@@ -137,6 +153,32 @@ async function saveHubToBackend(tenantId: string, data: CompanyHubData): Promise
     credentials: 'include',
     body: JSON.stringify(data),
   })
+}
+
+/**
+ * SCRUM-1190 — salva e ESPERA a resposta. O `saveHub` de cima é "atira e
+ * esquece"; o assistente precisa saber se gravou, porque sem permissão de
+ * administrador a empresa fica guardada no próprio agente como pendência.
+ * Devolve 'ok', 'forbidden' (sem permissão) ou 'error'.
+ */
+export async function saveHubAndWait(tenantId: string | undefined, data: CompanyHubData): Promise<'ok' | 'forbidden' | 'error'> {
+  if (!tenantId) return 'error'
+  try {
+    const res = await fetch(`${API}/context/brain`, {
+      method: 'PATCH',
+      headers: headers(),
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
+    if (res.status === 401 || res.status === 403) return 'forbidden'
+    if (!res.ok) return 'error'
+    cachedHub = { ...data, lastUpdatedAt: new Date().toISOString() }
+    cachedTenantId = tenantId
+    window.dispatchEvent(new CustomEvent('oryon:hub:updated', { detail: { tenantId } }))
+    return 'ok'
+  } catch {
+    return 'error'
+  }
 }
 
 // ─── RAG Sync ───────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { Bot, ChevronRight, Copy, ExternalLink, Plus, Search, Sparkles } from 'l
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAgentStale, loadHub } from '@/services/companyContextService'
-import { listAgents, type AgentConfig } from '@/services/agentsApi'
+import { listAgents, type AgentConfig, type SpecDraft } from '@/services/agentsApi'
 import { AgentIcon } from '@/components/agents/AgentIcons'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
@@ -19,6 +19,7 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { StatusDoAgente } from './StatusDoAgente'
 import './agenteMovel.css'
 import { rotaDoAgente } from './secoesDoAgente'
+import { numeroDoAgente, useLinhasPorAgente } from '../linhasDosAgentes'
 
 type Filtro = 'todos' | 'ativos' | 'pausados' | 'rascunhos' | 'atencao'
 const FILTROS: Filtro[] = ['todos', 'ativos', 'pausados', 'rascunhos', 'atencao']
@@ -61,7 +62,7 @@ function Resumo({ rotulo, valor, detalhe, onClick, ativo }: { rotulo: string; va
   )
 }
 
-function Linha({ a, desatualizado }: { a: AgentConfig; desatualizado: boolean }) {
+function Linha({ a, desatualizado, numero }: { a: AgentConfig; desatualizado: boolean; numero?: string }) {
   const navigate = useNavigate()
   const { toast } = useToast()
   const abrir = useCallback(() => navigate(rotaDoAgente(a.id)), [navigate, a.id])
@@ -71,7 +72,6 @@ function Linha({ a, desatualizado }: { a: AgentConfig; desatualizado: boolean })
     { label: 'Copiar nome', icon: Copy, onClick: () => { void navigator.clipboard?.writeText(a.name).then(() => toast('Nome copiado.', 'success')).catch(() => {}) } },
   ], [a, abrir, navigate, toast])
   const { onContextMenu } = useContextMenu(menu)
-  const numero = a.channels?.whatsapp?.number
   const naoTestado = (a.test_count ?? 0) === 0
 
   return (
@@ -113,8 +113,7 @@ function Linha({ a, desatualizado }: { a: AgentConfig; desatualizado: boolean })
   )
 }
 
-function CartaoMovel({ a, desatualizado }: { a: AgentConfig; desatualizado: boolean }) {
-  const numero = a.channels?.whatsapp?.number
+function CartaoMovel({ a, desatualizado, numero }: { a: AgentConfig; desatualizado: boolean; numero?: string }) {
   const naoTestado = (a.test_count ?? 0) === 0
   return (
     <li>
@@ -151,7 +150,12 @@ function CartaoMovel({ a, desatualizado }: { a: AgentConfig; desatualizado: bool
  * API já devolve — conversas desde a criação e testes — sem métrica inventada.
  * O status muda na página do agente, não aqui.
  */
-export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
+export function ListaDeAgentes({ onNovo, rascunhos = [], onContinuarRascunho }: {
+  onNovo: () => void
+  /** Rascunhos do assistente novo ainda não publicados (de qualquer pessoa da empresa). */
+  rascunhos?: SpecDraft[]
+  onContinuarRascunho?: (d: SpecDraft) => void
+}) {
   const { user } = useAuth()
   const hub = user?.tenantId ? loadHub(user.tenantId) : null
   const { toast } = useToast()
@@ -195,6 +199,9 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
 
   const lista = useMemo(() => agentes ?? [], [agentes])
   const desatualizado = useCallback((a: AgentConfig) => (hub ? isAgentStale(a.updated_at, hub) : false), [hub])
+  // Onde cada agente atende vem das linhas (whatsapp_numbers.agentId), não de `channels`.
+  const linhas = useLinhasPorAgente()
+  const numeroDe = useCallback((a: AgentConfig) => numeroDoAgente(linhas?.get(a.id)), [linhas])
   const contagem = useMemo(() => ({
     todos: lista.length,
     ativos: lista.filter((a) => a.status === 'active').length,
@@ -211,9 +218,9 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
       if (filtro === 'rascunhos' && a.status !== 'draft') return false
       if (filtro === 'atencao' && motivosDeAtencao(a, desatualizado(a)).length === 0) return false
       if (!q) return true
-      return a.name.toLowerCase().includes(q) || (a.objective ?? '').toLowerCase().includes(q) || (a.channels?.whatsapp?.number ?? '').includes(q)
+      return a.name.toLowerCase().includes(q) || (a.objective ?? '').toLowerCase().includes(q) || (numeroDe(a) ?? '').includes(q)
     })
-  }, [lista, filtro, busca, desatualizado])
+  }, [lista, filtro, busca, desatualizado, numeroDe])
 
   if (agentes === null) {
     return casca(
@@ -248,8 +255,29 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
     ...(contagem.atencao ? [{ value: 'atencao' as const, label: 'Precisam de atenção', count: contagem.atencao }] : []),
   ]
 
+  const nomeDoAgente = (id: string | null) => (id ? lista.find((a) => a.id === id)?.name : undefined)
+
   return casca(
       <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-8 sm:py-6">
+        {rascunhos.length > 0 && onContinuarRascunho && (
+          <section aria-labelledby="rascunhos-titulo" className="mb-5 rounded-md border border-surface-700 bg-surface-800 px-4 py-3">
+            <h2 id="rascunhos-titulo" className="text-sm font-semibold text-surface-100">Rascunhos esperando publicação</h2>
+            <ul className="mt-2 divide-y divide-surface-700">
+              {rascunhos.map((d) => (
+                <li key={d.id} className="flex items-center gap-3 py-2 text-sm">
+                  <span className="min-w-0 flex-1 truncate text-surface-200">
+                    {d.spec.identity.name}
+                    <span className="text-surface-400">
+                      {' · '}{d.agent_id ? `revisão de ${nomeDoAgente(d.agent_id) ?? 'um agente'}` : 'agente novo'}
+                      {' · '}atualizado em {new Date(d.updated_at).toLocaleDateString('pt-BR')}
+                    </span>
+                  </span>
+                  <Button size="sm" variant="neutral" onClick={() => onContinuarRascunho(d)}>Continuar</Button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Resumo rotulo="Ligados" valor={`${contagem.ativos} de ${lista.length}`} detalhe="atendendo agora" />
           <Resumo rotulo="Conversas atendidas" valor={conversas.toLocaleString('pt-BR')} detalhe="somando todos, desde a criação" />
@@ -276,7 +304,7 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
 
         {movel ? (
           <ul className="mt-3 divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700 bg-[var(--sf2)]">
-            {visiveis.map((a) => <CartaoMovel key={a.id} a={a} desatualizado={desatualizado(a)} />)}
+            {visiveis.map((a) => <CartaoMovel key={a.id} a={a} desatualizado={desatualizado(a)} numero={numeroDe(a)} />)}
             {visiveis.length === 0 && (
               <li className="px-4 py-8 text-center text-sm text-surface-400">Nenhum agente com esse filtro{busca ? ' e essa busca' : ''}.</li>
             )}
@@ -296,7 +324,7 @@ export function ListaDeAgentes({ onNovo }: { onNovo: () => void }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-700">
-              {visiveis.map((a) => <Linha key={a.id} a={a} desatualizado={desatualizado(a)} />)}
+              {visiveis.map((a) => <Linha key={a.id} a={a} desatualizado={desatualizado(a)} numero={numeroDe(a)} />)}
             </tbody>
           </table>
           {visiveis.length === 0 && (
