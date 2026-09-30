@@ -39,7 +39,7 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais
       id: 'esperando',
       rotulo: 'Esperando alguém',
       valor: String(esperando),
-      nota: esperando === 0 ? 'ninguém na fila' : semDono === 0 ? 'todas com dono' : `${semDono} sem dono`,
+      nota: esperando === 0 ? 'ninguém esperando' : semDono === 0 ? 'todas com dono' : `${semDono} sem dono`,
       tom: semDono > 0 ? 'atencao' : undefined,
     },
     {

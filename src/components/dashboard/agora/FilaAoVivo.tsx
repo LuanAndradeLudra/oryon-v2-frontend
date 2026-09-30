@@ -291,7 +291,7 @@ export function FilaAoVivo({
         ate={pag.ate}
         total={pag.total}
         onPagina={onPagina}
-        rotulo="conversas na fila"
+        rotulo="conversas esperando alguém"
         className="flex-shrink-0"
       />
 

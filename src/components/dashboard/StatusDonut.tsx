@@ -9,7 +9,7 @@ import { EscopoDoCartao } from './EscopoDoCartao'
 export const StatusDonut = memo(function StatusDonut({ data, escopo }: { data: StatusDistribution; escopo?: string }) {
   const C = useChartColors()
   const SLICES = [
-    { key: 'pending' as const,   label: 'Em Fila',     color: C.away    },
+    { key: 'pending' as const,   label: 'Pendentes',   color: C.away    },
     { key: 'open' as const,      label: 'Ativas',      color: C.brand   },
     { key: 'resolved' as const,  label: 'Resolvidas',  color: C.online  },
     { key: 'abandoned' as const, label: 'Abandonadas', color: C.danger  },
