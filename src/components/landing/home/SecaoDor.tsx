@@ -30,13 +30,12 @@ export function SecaoDor() {
                     <h3 className="mt-4 text-[16px] font-semibold leading-snug text-surface-50 text-balance">{d.problema}</h3>
                     <p className="mt-2 text-[14px] leading-relaxed text-surface-400 text-pretty">{d.texto}</p>
                   </div>
-                  <div className="flex items-start gap-2.5 border-t border-[var(--landing-borda)] bg-brand-500/[.06] px-5 py-4 sm:px-6">
-                    <span className="mt-[2px] flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-brand-500/20 text-[var(--landing-destaque)]">
-                      <Check className="h-3 w-3" strokeWidth={2.6} aria-hidden />
-                    </span>
-                    <p className="text-[14px] font-medium leading-snug text-surface-100 text-pretty">
-                      <span className="sr-only">{dor.comOryon}: </span>{d.solucao}
+                  <div className="border-t border-[var(--landing-borda)] bg-brand-500/[.06] px-5 py-4 sm:px-6">
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">
+                      <Check className="h-3.5 w-3.5" strokeWidth={2.6} aria-hidden />
+                      {dor.comOryon}
                     </p>
+                    <p className="mt-1.5 text-[14px] font-medium leading-snug text-surface-100 text-pretty md:min-h-[4.2em]">{d.solucao}</p>
                   </div>
                 </div>
               </Revelar>
