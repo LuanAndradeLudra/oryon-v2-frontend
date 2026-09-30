@@ -81,6 +81,8 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   const sorted = [...filtered].sort((a, b) => {
     const va = a[sort.key]
     const vb = b[sort.key]
+    // "Sem dado" (null) vai sempre para o fim — não ordena como se fosse 0.
+    if (va == null || vb == null) return va == null && vb == null ? 0 : va == null ? 1 : -1
     const cmp = typeof va === 'string' ? va.localeCompare(vb as string) : (va as number) - (vb as number)
     return sort.dir === 'asc' ? cmp : -cmp
   })
