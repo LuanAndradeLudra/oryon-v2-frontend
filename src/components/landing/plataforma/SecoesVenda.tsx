@@ -68,7 +68,7 @@ const ICONES_DEPOIS = { ajuste: PencilLine, crescer: Layers, acompanhar: LayoutD
 export function SecaoImplantacao({ compacta = false }: { compacta?: boolean }) {
   const semMovimento = useReducedMotion()
   return (
-    <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
+    <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20 lg:py-14">
       <div className="landing-container">
         <Cabecalho eyebrow={implantacao.eyebrow} titulo={implantacao.title} cinza={implantacao.titleCinza} />
 

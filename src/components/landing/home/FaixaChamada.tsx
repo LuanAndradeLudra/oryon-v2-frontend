@@ -10,7 +10,7 @@ import { home, LANDING_ROUTES } from '../landingCopy'
 export function FaixaChamada() {
   const { chamada } = home
   return (
-    <section data-section="chamada" aria-label={chamada.titulo} className="relative bg-surface-950 pb-16 sm:pb-20">
+    <section data-section="chamada" aria-label={chamada.titulo} className="relative bg-[var(--landing-palco)] pb-16 sm:pb-20">
       <div className="landing-container">
         <Revelar>
           <div className="relative overflow-hidden rounded-3xl bg-[var(--landing-cartao)] px-6 py-8 ring-1 ring-[var(--landing-borda)] sm:px-10 sm:py-10">

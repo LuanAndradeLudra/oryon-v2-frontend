@@ -90,7 +90,7 @@ export function SecaoSolucoes({ completa = false }: { completa?: boolean }) {
   const [ativa, setAtiva] = useState<string>(solucoes.areas[0].id)
   const area = solucoes.areas.find((a) => a.id === ativa) ?? solucoes.areas[0]
   return (
-    <section id="solucoes" data-section="solucoes" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
+    <section id="solucoes" data-section="solucoes" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
         {!completa && <Cabecalho eyebrow={solucoes.eyebrow} titulo={solucoes.titulo} cinza={solucoes.cinza} />}
         <Revelar atraso={0.1}>

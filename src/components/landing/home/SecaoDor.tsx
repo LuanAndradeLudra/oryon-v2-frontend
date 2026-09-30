@@ -12,7 +12,7 @@ const ICONES = { horario: Moon, repeticao: Repeat, organizacao: Shuffle } as con
 export function SecaoDor() {
   const { dor } = home
   return (
-    <section data-section="dor" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
+    <section data-section="dor" className="relative border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
       <div className="landing-container">
         <Cabecalho eyebrow={dor.eyebrow} titulo={dor.titulo} cinza={dor.cinza} />
 
