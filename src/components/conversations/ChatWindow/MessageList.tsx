@@ -64,7 +64,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
     () => intercalar(messages, eventos, { mostrarRotina: mostrarEventos, temMais: hasMore }),
     [messages, eventos, mostrarEventos, hasMore],
   )
-  const rotina = contarRotina(eventos)
+  const rotina = contarRotina(eventos, messages, hasMore)
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(0)

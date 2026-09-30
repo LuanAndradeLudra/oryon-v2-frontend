@@ -58,4 +58,12 @@ describe('eventos da conversa — T4 fase 1', () => {
     const itens = intercalar([msg('m2', 10)], [eventoDaAtividade(ativ('h', 'human_handoff', 1))!], { mostrarRotina: true, temMais: true })
     expect(itens.map((i) => i.kind)).toEqual(['mensagem'])
   })
+  it('primeira mensagem com data inválida não some com os eventos; contador segue a janela', () => {
+    const quebrada = { id: 'x', sentAt: 'não é data', direction: 'inbound' } as unknown as Message
+    const evs = [eventoDaAtividade(ativ('h', 'human_handoff', 1))!, eventoDaAcaoDaIa(acao('crm', 2))]
+    expect(intercalar([quebrada], evs, { mostrarRotina: true, temMais: true }).some((i) => i.kind === 'eventos')).toBe(true)
+    // Com mensagens antigas por carregar, rotina anterior à janela não entra no contador.
+    expect(contarRotina([eventoDaAcaoDaIa(acao('antes', 0))], [msg('m', 10)], true)).toBe(0)
+    expect(contarRotina([eventoDaAcaoDaIa(acao('depois', 11))], [msg('m', 10)], true)).toBe(1)
+  })
 })

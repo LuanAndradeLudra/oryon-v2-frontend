@@ -121,14 +121,28 @@ export type ItemDaConversa =
  * mensagens antigas por carregar (`temMais`), eventos anteriores à primeira
  * mensagem carregada ficam de fora (apareceriam fora do lugar).
  */
+/** Início da janela carregada; data inválida não esconde nada (antes virava NaN e sumia tudo). */
+function inicioDaJanela(mensagens: Message[], temMais: boolean): number {
+  if (!temMais || !mensagens[0]) return -Infinity
+  const t = new Date(mensagens[0].sentAt).getTime()
+  return Number.isFinite(t) ? t : -Infinity
+}
+
+function naJanela(eventos: EventoDaConversa[], mensagens: Message[], temMais: boolean): EventoDaConversa[] {
+  const inicio = inicioDaJanela(mensagens, temMais)
+  return eventos.filter((e) => {
+    const t = new Date(e.at).getTime()
+    return Number.isFinite(t) && t >= inicio
+  })
+}
+
 export function intercalar(
   mensagens: Message[],
   eventos: EventoDaConversa[],
   { mostrarRotina, temMais }: { mostrarRotina: boolean; temMais: boolean },
 ): ItemDaConversa[] {
-  const inicio = temMais && mensagens[0] ? new Date(mensagens[0].sentAt).getTime() : -Infinity
-  const visiveis = eventos
-    .filter((e) => (mostrarRotina || !e.rotina) && new Date(e.at).getTime() >= inicio)
+  const visiveis = naJanela(eventos, mensagens, temMais)
+    .filter((e) => mostrarRotina || !e.rotina)
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
   const itens: ItemDaConversa[] = []
   let i = 0
@@ -145,6 +159,7 @@ export function intercalar(
   return itens
 }
 
-export function contarRotina(eventos: EventoDaConversa[]): number {
-  return eventos.filter((e) => e.rotina).length
+/** Eventos de rotina que APARECEM ao ligar "Mostrar eventos" (mesma janela da lista). */
+export function contarRotina(eventos: EventoDaConversa[], mensagens: Message[] = [], temMais = false): number {
+  return naJanela(eventos, mensagens, temMais).filter((e) => e.rotina).length
 }
