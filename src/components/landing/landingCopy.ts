@@ -518,8 +518,8 @@ export const home = {
   ctaSecundario: 'Ver como funciona',
   /** A faixa de fatos logo depois do Hero — só o que dá para afirmar hoje. */
   fatos: [
-    { key: 'oficial', titulo: 'API oficial do WhatsApp Business', texto: 'Conexão fornecida pela Meta.' },
-    { key: 'prazo', titulo: 'No ar em até 7 dias', texto: 'Depois que a Meta libera o número.' },
+    { key: 'oficial', titulo: 'WhatsApp oficial para empresas', texto: 'Conexão fornecida pela Meta, dona do WhatsApp.' },
+    { key: 'prazo', titulo: 'No ar em até 7 dias', texto: 'Nossa equipe configura tudo com você.' },
     { key: 'controle', titulo: 'Sua equipe no comando', texto: 'Você define o que a IA faz e quando uma pessoa assume.' },
   ],
   /** A dor e a virada (ciclo noturno, 30/09): o que acontece hoje no WhatsApp
@@ -550,6 +550,11 @@ export const home = {
       },
     ],
     ponte: 'Veja como isso funciona na prática',
+  },
+  /** A chamada no meio da página, depois das áreas. */
+  chamada: {
+    titulo: 'Quer ver a Oryon com o conteúdo da sua empresa?',
+    texto: 'Mostramos na prática, com exemplos da sua área, e tiramos suas dúvidas.',
   },
   comoFunciona: {
     eyebrow: 'Como funciona',

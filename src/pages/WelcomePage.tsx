@@ -3,6 +3,7 @@ import { Hero, Trust } from '@/components/landing/sections'
 import { LandingLayout } from '@/components/landing/LandingLayout'
 import { FaixaFatos } from '@/components/landing/home/FaixaFatos'
 import { SecaoDor } from '@/components/landing/home/SecaoDor'
+import { FaixaChamada } from '@/components/landing/home/FaixaChamada'
 
 // Abaixo da primeira dobra: carrega depois do Hero (demo, recortes e
 // componentes reais pesam — não podem atrasar a primeira pintura).
@@ -21,7 +22,7 @@ const SecaoDemonstracao = lazy(() => import('@/components/landing/demonstracao/F
  * /perguntas:
  *
  *   Hero (com a conversão) → fatos → a dor e a virada → como funciona (abas) → para a sua área
- *   (simulações) → limites da IA (curto) → implantação (curta) → perguntas
+ *   (simulações) → chamada → limites da IA (curto) → implantação (curta) → perguntas
  *   (as primeiras) → pedido de demonstração.
  */
 export function WelcomePage() {
@@ -33,6 +34,7 @@ export function WelcomePage() {
       <Suspense fallback={<div className="min-h-[60vh]" />}>
         <SecaoComoFunciona />
         <SecaoSolucoes />
+        <FaixaChamada />
         <Trust compacto />
         <SecaoImplantacao compacta />
         <SecaoPerguntas limite={5} />
