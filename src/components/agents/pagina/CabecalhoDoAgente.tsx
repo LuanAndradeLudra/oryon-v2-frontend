@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Copy, FileText, MoreHorizontal, Pencil, Sparkles, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { deleteAgent, updateAgent, type AgentConfig, type AgentConfigWithTools } from '@/services/agentsApi'
+import { deleteAgent, MSG_ADMIN_PRECISA_PUBLICAR, podePublicarAgente, updateAgent, type AgentConfig, type AgentConfigWithTools } from '@/services/agentsApi'
+import { useAuth } from '@/contexts/AuthContext'
 import { AgentIcon } from '@/components/agents/AgentIcons'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -40,6 +41,11 @@ export function CabecalhoDoAgente({
   const [menu, setMenu] = useState(false)
   const [confirmar, setConfirmar] = useState<null | 'rascunho' | 'excluir'>(null)
   const [ocupado, setOcupado] = useState(false)
+  // R6 / D11: só administrador liga (publica) o agente; pausar segue livre
+  // para todos. Sem isto o switch aparecia e o agent-server devolvia 403 com
+  // um toast genérico.
+  const { user } = useAuth()
+  const naoPodeLigar = agent.status !== 'active' && !podePublicarAgente((user as { role?: string } | null)?.role)
   const [novoNome, setNovoNome] = useState<string | null>(null)
   // O número vem da linha ligada ao agente, não de `agent.channels` (nunca gravado).
   const linhas = useLinhasPorAgente()
@@ -198,10 +204,13 @@ export function CabecalhoDoAgente({
               </p>
             )}
           </div>
-          <label className="flex flex-shrink-0 flex-col items-center gap-1 text-2xs font-semibold text-surface-300">
+          <label
+            className="flex flex-shrink-0 flex-col items-center gap-1 text-2xs font-semibold text-surface-300"
+            title={naoPodeLigar ? MSG_ADMIN_PRECISA_PUBLICAR : undefined}
+          >
             <Switch
               checked={agent.status === 'active'}
-              disabled={ocupado}
+              disabled={ocupado || naoPodeLigar}
               onChange={(ligar) => void mudarStatus(ligar ? 'active' : 'paused')}
             />
             {agent.status === 'active' ? 'Ligado' : 'Desligado'}
@@ -250,11 +259,20 @@ export function CabecalhoDoAgente({
         >
           {testeAberto ? 'Fechar teste' : 'Testar'}
         </Button>
-        <label className="inline-flex items-center gap-2 h-7 pl-2.5 pr-2 rounded-sm border border-[var(--bd2)] text-xs font-semibold text-surface-100 cursor-pointer">
+        {naoPodeLigar && (
+          <span className="hidden lg:inline text-2xs text-surface-400">{MSG_ADMIN_PRECISA_PUBLICAR}</span>
+        )}
+        <label
+          className={cn(
+            'inline-flex items-center gap-2 h-7 pl-2.5 pr-2 rounded-sm border border-[var(--bd2)] text-xs font-semibold text-surface-100',
+            naoPodeLigar ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
+          )}
+          title={naoPodeLigar ? MSG_ADMIN_PRECISA_PUBLICAR : undefined}
+        >
           {agent.status === 'active' ? 'Ligado' : 'Desligado'}
           <Switch
             checked={agent.status === 'active'}
-            disabled={ocupado}
+            disabled={ocupado || naoPodeLigar}
             onChange={(ligar) => void mudarStatus(ligar ? 'active' : 'paused')}
           />
         </label>

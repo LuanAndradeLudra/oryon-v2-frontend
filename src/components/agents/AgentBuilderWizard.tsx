@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
-import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFileDetailed, podePublicarAgente } from '@/services/agentsApi'
+import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFileDetailed, podePublicarAgente, MSG_ADMIN_PRECISA_PUBLICAR } from '@/services/agentsApi'
 import { useAuth } from '@/contexts/AuthContext'
 import { showToast } from '@/hooks/useToast'
 import {
@@ -1788,7 +1788,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
 // ─── Wizard root ──────────────────────────────────────────────────────────────
 
-export const MSG_ADMIN_PRECISA_PUBLICAR = 'Um administrador precisa publicar este agente.'
+export { MSG_ADMIN_PRECISA_PUBLICAR }
 
 /**
  * D11 (PO, 29/09): só administrador põe agente no ar. O agent-server recusa o

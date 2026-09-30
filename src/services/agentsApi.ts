@@ -1377,6 +1377,9 @@ export function listSpecDrafts() {
   return apiFetch<SpecDraft[]>('/specs/drafts')
 }
 
+/** D11 — o que quem não publica vê no lugar de "Publicar"/"Ligar". */
+export const MSG_ADMIN_PRECISA_PUBLICAR = 'Um administrador precisa publicar este agente.'
+
 /** Quem pode colocar agente no ar — espelha o agent-server (podePublicarAgente). */
 export function podePublicarAgente(role: string | null | undefined): boolean {
   return role === 'admin' || role === 'business_admin' || role === 'super_admin'
