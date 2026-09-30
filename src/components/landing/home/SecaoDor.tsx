@@ -16,7 +16,7 @@ export function SecaoDor() {
       <div className="landing-container">
         <Cabecalho eyebrow={dor.eyebrow} titulo={dor.titulo} cinza={dor.cinza} />
 
-        <ul className="mt-9 grid gap-4 md:grid-cols-3">
+        <ul className="mt-9 grid gap-4 lg:grid-cols-3">
           {dor.itens.map((d, i) => {
             const Icone = ICONES[d.key]
             return (
@@ -35,7 +35,7 @@ export function SecaoDor() {
                       <Check className="h-3.5 w-3.5" strokeWidth={2.6} aria-hidden />
                       {dor.comOryon}
                     </p>
-                    <p className="mt-1.5 text-[14px] font-medium leading-snug text-surface-100 text-pretty md:min-h-[4.2em]">{d.solucao}</p>
+                    <p className="mt-1.5 text-[14px] font-medium leading-snug text-surface-100 text-pretty lg:min-h-[4.2em]">{d.solucao}</p>
                   </div>
                 </div>
               </Revelar>
