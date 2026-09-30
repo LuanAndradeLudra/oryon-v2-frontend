@@ -169,6 +169,22 @@ export function SecaoDemonstracao({ origem, comoPagina = false }: { origem: stri
           <Revelar atraso={0.1}>
             <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-surface-400">{formDemo.lead}</p>
           </Revelar>
+          {/* O que acontece depois (ciclo noturno, 30/09): quem vai deixar os
+              dados quer saber o próximo passo antes de enviar. */}
+          <Revelar atraso={0.15}>
+            <p className="mt-8 text-[11px] font-semibold uppercase tracking-[.12em] text-surface-500">{formDemo.depoisTitulo}</p>
+            <ol className="mt-3 space-y-4">
+              {formDemo.depois.map((p, i) => (
+                <li key={p.titulo} className="flex gap-3.5">
+                  <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-surface-900 text-[12px] font-semibold tabular-nums text-[var(--landing-destaque)] ring-1 ring-surface-700">{i + 1}</span>
+                  <div>
+                    <p className="text-[14.5px] font-semibold text-surface-100">{p.titulo}</p>
+                    <p className="mt-0.5 text-[13.5px] leading-relaxed text-surface-400">{p.texto}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Revelar>
         </div>
         <Revelar atraso={0.15}>
           <FormDemonstracao origem={origem} />

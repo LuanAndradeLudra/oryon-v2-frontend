@@ -634,8 +634,14 @@ export type AreaSolucao = (typeof solucoes.areas)[number]
 export const formDemo = {
   eyebrow: 'Demonstração',
   titulo: 'Veja a Oryon no seu atendimento.',
-  cinza: 'Conte um pouco da sua operação e mostramos na prática.',
+  cinza: 'Mostramos na prática.',
   lead: 'Nossa equipe entra em contato para marcar uma demonstração com o conteúdo da sua área.',
+  depoisTitulo: 'O que acontece depois',
+  depois: [
+    { titulo: 'Você envia o pedido', texto: 'Só os dados básicos da sua operação.' },
+    { titulo: 'Nossa equipe fala com você', texto: 'Pelo WhatsApp ou pelo e-mail informado, para combinar o melhor horário.' },
+    { titulo: 'Você vê a Oryon funcionando', texto: 'Com exemplos da sua área e espaço para todas as suas perguntas.' },
+  ],
   campos: {
     nome: 'Seu nome',
     empresa: 'Empresa',
