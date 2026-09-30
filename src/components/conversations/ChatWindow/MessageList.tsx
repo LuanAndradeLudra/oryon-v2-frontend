@@ -5,6 +5,8 @@ import { TypingIndicator } from './TypingIndicator'
 import { format, isToday, isYesterday, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Message } from '@/types'
+import { LinhaDeEventos } from './LinhaDeEventos'
+import { contarRotina, intercalar, type EventoDaConversa } from '@/lib/eventosDaConversa'
 
 interface MessageListProps {
   messages: Message[]
@@ -17,6 +19,11 @@ interface MessageListProps {
   /** CONV-CHAT-16/21 (spec/1d-conversas.GAPS.md): avatar do contato na 1ª
    *  bolha de cada grupo inbound. */
   contact: { displayName: string; profilePicUrl?: string | null }
+  /** T4 fase 1 — eventos entre as mensagens (D10). */
+  eventos?: EventoDaConversa[]
+  /** Rotina visível (`eventos=1` na URL). */
+  mostrarEventos?: boolean
+  onAlternarEventos?: () => void
 }
 
 /** Identity key for grouping consecutive messages by the SAME sender, so the
@@ -52,7 +59,12 @@ function DateSeparator({ date }: { date: string }) {
   )
 }
 
-export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, onReply, contact }: MessageListProps) {
+export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, onReply, contact, eventos = [], mostrarEventos = false, onAlternarEventos }: MessageListProps) {
+  const itens = useMemo(
+    () => intercalar(messages, eventos, { mostrarRotina: mostrarEventos, temMais: hasMore }),
+    [messages, eventos, mostrarEventos, hasMore],
+  )
+  const rotina = contarRotina(eventos)
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(0)
@@ -218,9 +230,30 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
         </div>
       )}
 
-      {/* Messages grouped by date */}
-      {messages.map((msg, idx) => {
-        const prev = messages[idx - 1]
+      {/* D10 — rotina (pausa, atribuição, ações no CRM…) atrás deste botão;
+          transferências, falhas e bloqueios aparecem sempre. */}
+      {onAlternarEventos && rotina > 0 && (
+        <div className="flex justify-center pb-2">
+          <button
+            type="button"
+            onClick={onAlternarEventos}
+            aria-pressed={mostrarEventos}
+            className="text-[11px] font-medium text-surface-500 hover:text-surface-300 px-2 py-0.5 rounded-xs border border-surface-700"
+          >
+            {mostrarEventos ? 'Ocultar eventos' : `Mostrar eventos (${rotina})`}
+          </button>
+        </div>
+      )}
+
+      {/* Messages grouped by date, com os eventos intercalados */}
+      {itens.map((item, idx) => {
+        if (item.kind === 'eventos') return <LinhaDeEventos key={item.id} grupos={item.grupos} />
+        const msg = item.mensagem
+        let prev: Message | undefined
+        for (let j = idx - 1; j >= 0; j--) {
+          const it = itens[j]
+          if (it.kind === 'mensagem') { prev = it.mensagem; break }
+        }
         const showDate =
           !prev || !isSameDay(new Date(msg.sentAt), new Date(prev.sentAt))
         const isNew = newMsgIds.has(msg.id)

@@ -8,6 +8,9 @@ import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
 import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed, SocketMediaReady, SocketMessageStatus } from '@/types'
 import { msRestantesDaJanela } from '@/lib/whatsappWindow'
+import { useAuth } from '@/contexts/AuthContext'
+import { useEventosDaConversa } from '@/hooks/useEventosDaConversa'
+import { useEstadoNaUrl, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
 
 interface ChatWindowProps {
   conversation: Conversation | null
@@ -61,6 +64,13 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const { messages, loading, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, updateMediaThumbnail, markAnomaliesReviewed } =
     useMessages(conversation?.id ?? null)
+
+  // T4 fase 1 — eventos da IA e da equipe entre as mensagens. A rotina fica
+  // atrás de "Mostrar eventos", com o estado na URL (D10: `eventos=1`).
+  const { user } = useAuth()
+  const meuNome = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null
+  const eventos = useEventosDaConversa(conversation?.id ?? null, messages.length, meuNome)
+  const [mostrarEventos, setMostrarEventos] = useEstadoNaUrl<boolean>('eventos', { padrao: false, ler: lerBool, escrever: escreverBool })
 
   // Outbound quoted reply: which message the operator is replying to. Cleared
   // when the conversation changes or after a successful send.
@@ -226,6 +236,9 @@ export function ChatWindow({
         onLoadMore={fetchMore}
         onReply={setReplyTo}
         contact={conversation.contact}
+        eventos={eventos}
+        mostrarEventos={mostrarEventos}
+        onAlternarEventos={() => setMostrarEventos((v) => !v)}
       />
       {/* key por conversa (28/09): sem ela o rascunho, os anexos e o
           "modelo enviado" sobreviviam à troca de conversa — digitar em A,
