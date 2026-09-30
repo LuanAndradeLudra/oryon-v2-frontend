@@ -184,10 +184,13 @@ export default defineConfig({
     // from the public dist.
     sourcemap: sentryAuthToken ? 'hidden' : false,
     rollupOptions: {
-      // D13 (release 2026-09-29): a demonstração da landing (demo.html) fica
-      // fora desta release — só a entrada do app.
+      // Duas entradas: o app (index.html) e o documento de demonstração que o
+      // Hero da landing abre num iframe (demo.html — o Oryon real com backend
+      // em memória). Os pedaços comuns saem compartilhados, então a demo
+      // reaproveita o que a landing já baixou.
       input: {
         main: path.resolve(__dirname, 'index.html'),
+        demo: path.resolve(__dirname, 'demo.html'),
       },
       output: {
         // O pedaço de ENTRADA do app (main-*.js) roda o bootstrap ao ser
