@@ -95,7 +95,7 @@ export function Trust({ compacto = false, numero }: { compacto?: boolean; numero
             </div>
           )}
           <div className={cn('min-w-0 self-start', compacto && 'lg:col-span-2')}>
-            <div className="grid border border-[var(--landing-borda)] sm:grid-cols-2">
+            <div className="grid overflow-hidden rounded-xl border border-[var(--landing-borda)] sm:grid-cols-2">
               <Coluna quem="ia" i={0} />
               <Coluna quem="pessoa" i={1} />
             </div>

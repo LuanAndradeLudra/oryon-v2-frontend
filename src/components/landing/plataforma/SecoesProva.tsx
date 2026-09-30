@@ -31,7 +31,7 @@ function Prova({ visual, titulo, texto, atraso = 0, alturaVisual = 'min-h-[160px
 }) {
   return (
     <Revelar atraso={atraso} className="flex min-w-0">
-      <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
+      <div className="flex w-full flex-col overflow-hidden rounded-xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
         <div className={cn('flex flex-1 flex-col justify-center border-b border-[var(--landing-borda)] bg-surface-950 py-2 [[data-theme=light]_&]:bg-surface-900', alturaVisual)}>
           <div aria-hidden inert className="pointer-events-none select-none">{visual}</div>
         </div>
@@ -55,7 +55,7 @@ export function SecaoArea() {
         <div className="mt-8 grid gap-4 lg:grid-cols-[1.3fr_1fr] lg:gap-4">
           {/* O caso completo: a clínica da demonstração, com o WhatsApp real ao lado do que a IA faz. */}
           <Revelar atraso={0.15} className="flex min-w-0">
-            <div className="flex w-full flex-col rounded-2xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:p-7 lg:p-5">
+            <div className="flex w-full flex-col rounded-xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:p-7 lg:p-5">
               <p className="inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold landing-selo">{area.caso.rotulo}</p>
               <h3 className="mt-3.5 font-display text-[clamp(0.98rem,1.33vw,1.27rem)] font-semibold leading-[1.15] tracking-[-0.022em] text-surface-50">{area.caso.titulo}</h3>
               <p className="mt-2 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{area.caso.texto}</p>
@@ -86,7 +86,7 @@ export function SecaoArea() {
           <div className="flex min-w-0 flex-col gap-4">
             {area.cenarios.map((c, i) => (
               <Revelar key={c.titulo} atraso={0.2 + i * 0.08} className="flex flex-1">
-                <div className="flex w-full flex-col rounded-2xl bg-[var(--landing-cartao)] p-5 ring-1 ring-[var(--landing-borda)] lg:p-4">
+                <div className="flex w-full flex-col rounded-xl bg-[var(--landing-cartao)] p-5 ring-1 ring-[var(--landing-borda)] lg:p-4">
                   <p className="text-[15px] font-semibold text-surface-50">{c.titulo}</p>
                   <p aria-hidden className="mt-2.5 w-fit max-w-full rounded-2xl rounded-tl-md bg-surface-900 px-3 py-2 text-[13px] leading-relaxed text-surface-200 ring-1 ring-surface-700">{c.exemplo}</p>
                   <p className="mt-2.5 text-[14px] leading-relaxed text-surface-400">{c.texto}</p>

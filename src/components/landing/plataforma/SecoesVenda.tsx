@@ -138,7 +138,7 @@ export function SecaoImplantacao({ compacta = false, numero }: { compacta?: bool
         <Revelar atraso={0.2} className="mt-10">
           <p className="font-display text-[17px] font-semibold tracking-[-0.01em] text-surface-50">{implantacao.depois.titulo}</p>
         </Revelar>
-        <div className="mt-5 grid gap-px overflow-hidden rounded-2xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] md:grid-cols-3">
+        <div className="mt-5 grid gap-px overflow-hidden rounded-xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] md:grid-cols-3">
           {implantacao.depois.itens.map((d, i) => {
             const Icone = ICONES_DEPOIS[d.key]
             return (

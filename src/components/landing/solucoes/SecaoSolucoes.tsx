@@ -10,6 +10,7 @@ import { LANDING_ROUTES, solucoes, type AreaSolucao } from '../landingCopy'
 import { Cabecalho, Revelar } from '../plataforma/SecoesVenda'
 import { SIMULACOES, linhaDoTempoAte, mensagensAte } from './simulacoes'
 import { teclasDasAbas } from '../ui/abasTeclado'
+import { BotaoPausa } from '../ui/BotaoPausa'
 
 /**
  * PARA A SUA ÁREA (30/09) — a mesma plataforma em operações diferentes, em
@@ -24,7 +25,7 @@ const PASSO_MS = 1900
 const DIGITANDO_MS = 1100
 const PAUSA_FIM_MS = 4200
 
-function Simulacao({ area }: { area: AreaSolucao }) {
+function Simulacao({ area, pausado = false }: { area: AreaSolucao; pausado?: boolean }) {
   const sim = SIMULACOES[area.id]
   const semMovimento = useReducedMotion()
   const ref = useRef<HTMLDivElement>(null)
@@ -39,7 +40,7 @@ function Simulacao({ area }: { area: AreaSolucao }) {
   const [ciclo, setCiclo] = useState(0)
 
   useEffect(() => {
-    if (semMovimento || !naTela) return
+    if (semMovimento || !naTela || pausado) return
     let timer: ReturnType<typeof setTimeout>
     if (passo >= total) {
       timer = setTimeout(() => { setCiclo((c) => c + 1); setPasso(1) }, PAUSA_FIM_MS)
@@ -52,7 +53,7 @@ function Simulacao({ area }: { area: AreaSolucao }) {
       timer = setTimeout(() => { setDigitando(false); setPasso((p) => p + 1) }, digitando ? DIGITANDO_MS : PASSO_MS)
     }
     return () => clearTimeout(timer)
-  }, [passo, digitando, naTela, semMovimento, total, sim])
+  }, [passo, digitando, naTela, semMovimento, total, sim, pausado])
 
   const mensagens = mensagensAte(sim, passo)
   const linha = linhaDoTempoAte(sim, passo)
@@ -96,42 +97,37 @@ function Simulacao({ area }: { area: AreaSolucao }) {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: semMovimento ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
               >
-                {/* A bolha nova cresce de altura 0 (as anteriores sobem junto,
-                    sem pulo) e entra com fade + leve subida. Sem layout
-                    projection: com a coluna ancorada embaixo ela deixava
-                    transformações penduradas. */}
-                <AnimatePresence initial={false}>
+                {/* Lote 4 (30/09, PO): só transform e opacidade. As bolhas que
+                    já estavam sobem por FLIP (layout="position" anima o
+                    deslocamento com transform, não a altura) e a nova entra
+                    com fade + leve subida. popLayout tira o "digitando" do
+                    fluxo na saída, para ele não segurar espaço. */}
+                <AnimatePresence initial={false} mode="popLayout">
                   {mensagens.map((m, i) => (
                     <motion.div
                       key={m.id}
-                      // O recorte só vale DURANTE a entrada: o avatar e o ícone da IA
-                      // ficam um pouco para fora da bolha e saíam cortados (30/09, PO).
-                      initial={semMovimento ? false : { height: 0, opacity: 0, overflow: 'hidden' }}
-                      animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
-                      transition={{ height: { duration: 0.38, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 0.3, delay: 0.08 } }}
+                      layout={semMovimento ? false : 'position'}
+                      className="pb-1"
+                      initial={semMovimento ? false : { opacity: 0, y: 14, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.9 }}
+                      style={{ transformOrigin: m.direction === 'outbound' ? 'bottom right' : 'bottom left' }}
                     >
-                      <motion.div
-                        className="pb-1"
-                        initial={semMovimento ? false : { y: 10, scale: 0.97 }}
-                        animate={{ y: 0, scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 380, damping: 30, delay: 0.05 }}
-                        style={{ transformOrigin: m.direction === 'outbound' ? 'bottom right' : 'bottom left' }}
-                      >
-                        <MessageBubble message={m} prevMessage={mensagens[i - 1]} contact={contato} showAvatar={mensagens[i - 1]?.direction !== m.direction} />
-                      </motion.div>
+                      <MessageBubble message={m} prevMessage={mensagens[i - 1]} contact={contato} showAvatar={mensagens[i - 1]?.direction !== m.direction} />
                     </motion.div>
                   ))}
                   {digitando && (
                     <motion.div
                       key="digitando"
-                      // O recorte só vale DURANTE a entrada: o avatar e o ícone da IA
-                      // ficam um pouco para fora da bolha e saíam cortados (30/09, PO).
-                      initial={semMovimento ? false : { height: 0, opacity: 0, overflow: 'hidden' }}
-                      animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
-                      exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: { duration: 0.18 } }}
-                      transition={{ height: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 0.25 } }}
+                      layout={semMovimento ? false : 'position'}
+                      className="flex justify-end pr-2 pb-1"
+                      initial={semMovimento ? false : { opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      style={{ transformOrigin: 'bottom right' }}
                     >
-                      <div className="flex justify-end pr-2 pb-1"><TypingIndicator /></div>
+                      <TypingIndicator />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -213,6 +209,7 @@ function Simulacao({ area }: { area: AreaSolucao }) {
 
 export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean; numero?: string }) {
   const [ativa, setAtiva] = useState<string>(solucoes.areas[0].id)
+  const [pausado, setPausado] = useState(false)
   const area = solucoes.areas.find((a) => a.id === ativa) ?? solucoes.areas[0]
   return (
     <section id="solucoes" data-section="solucoes" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
@@ -227,7 +224,8 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
         {/* As áreas como índice (P5, 30/09): número em mono + nome sobre uma
             régua, a ativa sublinhada; e sem a moldura em volta do painel — só
             a simulação (que tem tela dentro) fica emoldurada. */}
-        <div role="tablist" aria-label={solucoes.abasLabel} className="landing-abas mt-8">
+        <div className="relative mt-8">
+        <div role="tablist" aria-label={solucoes.abasLabel} className="landing-abas pr-10">
           {solucoes.areas.map((a, i) => (
             <button
               key={a.id}
@@ -245,6 +243,8 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
               {a.nome}
             </button>
           ))}
+        </div>
+        <BotaoPausa pausado={pausado} onAlternar={() => setPausado((p) => !p)} className="absolute bottom-1.5 right-0" />
         </div>
 
         <div id="area-painel" role="tabpanel" aria-labelledby={`area-aba-${area.id}`} className="mt-8">
@@ -276,7 +276,7 @@ export function SecaoSolucoes({ completa = false, numero }: { completa?: boolean
             </p>
           </div>
           {/* A simulação remonta ao trocar de área (recomeça do primeiro passo). */}
-          <Simulacao key={area.id} area={area} />
+          <Simulacao key={area.id} area={area} pausado={pausado} />
         </motion.div>
         </AnimatePresence>
         </div>

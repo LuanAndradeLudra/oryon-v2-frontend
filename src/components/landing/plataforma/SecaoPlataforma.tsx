@@ -4,6 +4,7 @@ import { ArrowRight, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { teclasDasAbas } from '../ui/abasTeclado'
+import { BotaoPausa } from '../ui/BotaoPausa'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
@@ -415,21 +416,18 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
             </div>
           </div>
         </div>
-        {/* A frase como linha de REGISTRO (P4, 30/09): o ponto teal do
-            produto — foi a IA — no lugar de um título solto. */}
-        <div className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-2.5 px-5 pb-4 pt-3.5">
-          <span aria-hidden className="mt-[7px] h-[7px] w-[7px] rounded-full bg-[var(--landing-destaque)]" />
-          <div className="min-w-0">
-            <p className="text-[15px] font-semibold leading-snug text-surface-50">{c.titulo}</p>
-            <p className="mt-1 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{c.texto}</p>
-          </div>
+        {/* Lote 4 (30/09): sem o ponto teal — ele era sempre igual e só
+            decorava; os pontos ficam onde dizem IA × pessoa. */}
+        <div className="px-5 pb-4 pt-3.5">
+          <p className="text-[15px] font-semibold leading-snug text-surface-50">{c.titulo}</p>
+          <p className="mt-1 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{c.texto}</p>
         </div>
       </div>
     </Revelar>
   )
 }
 
-function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = false }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void; semRotulo?: boolean; manterMontado?: boolean }) {
+function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = false, pausado = false }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void; semRotulo?: boolean; manterMontado?: boolean; pausado?: boolean }) {
   const h = HISTORIAS[b.id]
   const arranjo = COMPOSICAO[b.id]
   const ref = useRef<HTMLElement | null>(null)
@@ -556,7 +554,7 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
           {/* Embaixo, a tela nunca passa do tamanho real do app (1×) nem de
               1000 px: com só o teto de 1000 px, o funil (região estreita) saía
               a 1,3× — maior e mais cortado que as outras telas da página. */}
-          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto' : undefined} style={arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} esmaecerBase={b.id === 'funil'} pausado={semTela} manterMontado={manterMontado} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
+          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto' : undefined} style={arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} esmaecerBase={b.id === 'funil'} pausado={semTela || pausado} manterMontado={manterMontado} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
             foraDoRecorte={aoLado ? 330 : 170} />
         </Revelar>
         )}
@@ -724,7 +722,7 @@ export function SecaoPlataforma() {
             {/* Fecho da seção: a ação de conversão — só com o canal configurado. */}
             {contatoDisponivel && (
             <Revelar className="mt-16 sm:mt-20">
-              <div className="flex flex-col items-start gap-4 rounded-2xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:flex-row sm:items-center sm:justify-between sm:p-8">
+              <div className="flex flex-col items-start gap-4 rounded-xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:flex-row sm:items-center sm:justify-between sm:p-8">
                 <p className="max-w-[34ch] font-display text-[13px] font-semibold leading-snug tracking-[-0.01em] text-surface-50">
                   Teste o Agente IA da Oryon pelo WhatsApp.
                   <span className="block text-surface-400 text-[12px] font-medium mt-1">Envie uma mensagem e veja como o atendimento funciona.</span>
@@ -780,6 +778,7 @@ export function SecaoCapitulos({ ids }: { ids: readonly string[] }) {
  */
 export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
   const [ativo, setAtivo] = useState<string>(plataforma.blocos[0].id)
+  const [pausado, setPausado] = useState(false)
   const idx = Math.max(0, plataforma.blocos.findIndex((b) => b.id === ativo))
   const b = plataforma.blocos[idx]
   const pagina = paginasPlataforma.find((p) => (p.blocos as readonly string[]).includes(b.id))
@@ -796,7 +795,8 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
             cortada (30/09). */}
         {/* As etapas como índice (P4, 30/09): número em mono + nome sobre uma
             régua, a ativa sublinhada — sem pílulas. */}
-        <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="landing-abas mt-8">
+        <div className="relative mt-8">
+        <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="landing-abas pr-10">
           {plataforma.blocos.map((bl, i) => (
             <button
               key={bl.id}
@@ -815,6 +815,8 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
             </button>
           ))}
         </div>
+        <BotaoPausa pausado={pausado} onAlternar={() => setPausado((p) => !p)} className="absolute bottom-1.5 right-0" />
+        </div>
 
         {/* Troca de aba SEM remontar (30/09, PO): o artigo é um só e a
             demonstração dentro dele é o mesmo app — trocar de etapa é mandar
@@ -823,7 +825,7 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
             no build de produção), e carregar as seis juntas custaria ~6× a
             memória de uma demonstração. */}
         <div id="etapa-painel" role="tabpanel" aria-labelledby={`etapa-aba-${b.id}`} className="mt-8">
-          <ArtigoRecurso b={b} n={idx + 1} registrar={NOOP_REGISTRO} semRotulo manterMontado />
+          <ArtigoRecurso b={b} n={idx + 1} registrar={NOOP_REGISTRO} semRotulo manterMontado pausado={pausado} />
           {pagina && (
             <Link to={rotaPlataforma(pagina.slug)} className="mt-6 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
               {home.comoFunciona.saibaMais}: {pagina.menu} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
