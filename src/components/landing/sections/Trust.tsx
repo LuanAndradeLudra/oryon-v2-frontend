@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { Plug, SlidersHorizontal, PhoneForwarded, Hand, BadgeCheck, History } from 'lucide-react'
-import { trust } from '../landingCopy'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Plug, SlidersHorizontal, PhoneForwarded, Hand, BadgeCheck, History } from 'lucide-react'
+import { home, rotaPlataforma, trust } from '../landingCopy'
 import { DemoRecorte } from '../plataforma/DemoRecorte'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '../stage/hero/heroStory'
 import type { HeroCue } from '../stage/hero/useHeroTimeline'
@@ -57,9 +58,10 @@ function Item({ k, i }: { k: (typeof trust.items)[number]; i: number }) {
  * lado dos quatro limites decisivos. Histórico e retomada humana já aparecem
  * na narrativa anterior, por isso não são repetidos aqui.
  */
-export function Trust() {
+/** `compacto` (home de venda): só os quatro limites, sem a tela, e o link para a página de Atendimento com IA. */
+export function Trust({ compacto = false }: { compacto?: boolean }) {
   const semMovimento = useReducedMotion()
-  const desktop = useMediaQuery('(min-width: 1024px)')
+  const desktop = useMediaQuery('(min-width: 1024px)') && !compacto
   return (
     <section
       id="confianca"
@@ -90,10 +92,15 @@ export function Trust() {
               </div>
             </div>
           )}
-          <ul className="grid gap-px overflow-hidden rounded-2xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] sm:grid-cols-2">
+          <ul className={compacto ? 'grid gap-px overflow-hidden rounded-2xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] sm:grid-cols-2 lg:col-span-2 lg:grid-cols-4' : 'grid gap-px overflow-hidden rounded-2xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] sm:grid-cols-2'}>
             {trust.items.map((k, i) => <Item key={k.key} k={k} i={i} />)}
           </ul>
         </div>
+        {compacto && (
+          <Link to={rotaPlataforma('atendimento-ia')} className="mt-5 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+            {home.limites.saibaMais} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        )}
       </div>
     </section>
   )

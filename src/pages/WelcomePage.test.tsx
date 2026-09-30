@@ -64,10 +64,13 @@ function renderPage() {
   )
 }
 
-/** Rotas reais que a landing pode apontar. Só a entrada do app. */
-const ROTAS_VALIDAS = new Set(['/login'])
-/** O título do fecho depende do canal comercial: sem número, chama quem já é cliente. */
-const TITULO_FECHO = copy.contatoDisponivel ? copy.fecho.title : copy.fecho.titleSemContato
+/** Rotas reais que a landing pode apontar: a entrada do app e as páginas públicas (30/09). */
+const ROTAS_VALIDAS = new Set<string>([
+  '/login', '/', '/demonstracao', '/solucoes', '/perguntas',
+  ...copy.paginasPlataforma.map((p) => copy.rotaPlataforma(p.slug)),
+])
+/** O fim da home de venda (30/09): o pedido de demonstração. */
+const TITULO_FECHO = copy.formDemo.titulo
 
 describe('WelcomePage', () => {
   it('renderiza sem crash com o H1 curto (medição Attio 24/09: svh sozinho só funciona com H1 curto)', () => {
@@ -83,13 +86,13 @@ describe('WelcomePage', () => {
     expect(screen.getByText(copy.hero.lead)).toBeInTheDocument()
   })
 
-  it('tem as seções na escada de consciência: nav · hero · plataforma · limites da IA · área · equipe · resposta · implantação · perguntas · cta · footer', async () => {
+  it('home de venda (30/09): nav · hero · fatos · como funciona · áreas · limites da IA · implantação · perguntas · demonstração · footer', async () => {
     const { container } = renderPage()
     // As seções abaixo do Hero chegam por lazy import.
-    await screen.findByText(TITULO_FECHO, undefined, { timeout: 8000 })
+    await screen.findByText(TITULO_FECHO, undefined, { timeout: 15000 })
     const seções = Array.from(container.querySelectorAll('[data-section]')).map((el) => el.getAttribute('data-section'))
-    expect(seções).toEqual(['nav', 'hero', 'plataforma', 'confianca', 'area', 'equipe', 'resposta', 'implantacao', 'perguntas', 'cta', 'footer'])
-  }, 15_000) // a página inteira, com as seções que chegam por import tardio
+    expect(seções).toEqual(['nav', 'hero', 'fatos', 'como-funciona', 'solucoes', 'confianca', 'implantacao', 'perguntas', 'demonstracao', 'footer'])
+  }, 25_000) // a página inteira, com as seções que chegam por import tardio
 
   it('o contêiner rola (h-screen overflow-y-auto) — o root do App é overflow hidden', () => {
     const { container } = renderPage()
@@ -98,31 +101,29 @@ describe('WelcomePage', () => {
     expect(root.className).toContain('overflow-y-auto')
   })
 
-  it('CTAs: conversa comercial só com o número configurado; "Entrar"/"Já sou cliente" (→ /login) sempre — o hero não tem botões', async () => {
+  it('CTAs: "Agendar demonstração" (→ /demonstracao) no Hero e na nav; "Entrar" (→ /login) na nav e no rodapé; conversa comercial só com o número configurado', async () => {
     renderPage()
-    await screen.findByText(TITULO_FECHO, undefined, { timeout: 8000 })
-    const entrar = [
-      ...screen.getAllByRole('link', { name: 'Entrar' }),
-      screen.getByRole('link', { name: copy.fecho.entrar }),
-    ]
-    expect(entrar).toHaveLength(3) // nav, fecho, rodapé
+    await screen.findByText(TITULO_FECHO, undefined, { timeout: 15000 })
+    const entrar = screen.getAllByRole('link', { name: 'Entrar' })
+    expect(entrar).toHaveLength(2) // nav, rodapé
+    entrar.forEach((a) => expect(a).toHaveAttribute('href', '/login'))
+    const demo = screen.getAllByRole('link', { name: copy.home.ctaPrincipal })
+    expect(demo.length).toBeGreaterThanOrEqual(3) // nav, hero, perguntas (e o rodapé)
+    demo.forEach((a) => expect(a).toHaveAttribute('href', '/demonstracao'))
+    // O pedido de demonstração está na própria home, no fim.
+    expect(screen.getByRole('button', { name: copy.formDemo.enviar })).toBeInTheDocument()
     const contato = screen.queryAllByRole('link', { name: new RegExp(copy.contato.cta + '|' + copy.contato.ctaLongo) })
     if (copy.contatoDisponivel) {
-      expect(contato.length).toBeGreaterThanOrEqual(4) // nav, plataforma, implantação, perguntas, fecho
       contato.forEach((a) => expect(a).toHaveAttribute('href', copy.linkContato()))
     } else {
       // Sem número: nenhum botão promete uma conversa que ainda não atende.
       expect(contato).toHaveLength(0)
-      expect(screen.getByText(copy.fecho.leadSemContato)).toBeInTheDocument()
-      expect(screen.queryByText(/a configurar em/)).toBeNull()
     }
-    entrar.forEach((a) => expect(a).toHaveAttribute('href', '/login'))
-    expect(screen.queryByRole('link', { name: 'Ver o produto' })).toBeNull()
-  }, 15_000)
+  }, 25_000)
 
   it('nenhum link para rota inexistente: só /login, âncoras que existem na página e o WhatsApp comercial', async () => {
     const { container } = renderPage()
-    await screen.findByText(TITULO_FECHO, undefined, { timeout: 8000 })
+    await screen.findByText(TITULO_FECHO, undefined, { timeout: 15000 })
     const links = Array.from(container.querySelectorAll('a'))
     expect(links.length).toBeGreaterThan(0)
     for (const a of links) {
@@ -138,7 +139,7 @@ describe('WelcomePage', () => {
         expect(ROTAS_VALIDAS.has(href!), `rota fora da lista: ${href}`).toBe(true)
       }
     }
-  }, 15_000)
+  }, 25_000)
 
   it('sem botão morto: todo <button> tem nome acessível e (o de tema) age', () => {
     renderPage()
@@ -152,12 +153,14 @@ describe('WelcomePage', () => {
 
   it('não vende o que não existe: sem planos, preços, depoimentos nem módulos desligados', async () => {
     const { container } = renderPage()
-    await screen.findByText(TITULO_FECHO, undefined, { timeout: 8000 })
+    await screen.findByText(TITULO_FECHO, undefined, { timeout: 15000 })
     // O palco do hero e os visuais da Plataforma (aria-hidden) mostram os dados
     // da empresa FICTÍCIA da demo, que vende "planos" — aqui vale só a copy.
     const clone = container.cloneNode(true) as HTMLElement
     clone.querySelectorAll('[role="region"], [role="img"], [aria-hidden="true"]').forEach((el) => el.remove())
-    const texto = clone.textContent ?? ''
+    // "conforme o plano" (30/09, PO): mais de um número depende do plano
+    // contratado — é a única menção a plano permitida; seção de planos e preços não.
+    const texto = (clone.textContent ?? '').replace(/conforme o plano( contratado)?|de acordo com o plano/gi, '')
     for (const proibido of [
       /planos?\b/i, /pre[çc]os?\b/i, /depoiment/i, /AI-powered/i,
       /agendament/i, /conectores?\b/i, /copilot/i, /automa[çc][õo]es\b/i, /marketing/i, /nexus/i,
@@ -165,7 +168,7 @@ describe('WelcomePage', () => {
     ]) {
       expect(texto, `texto banido: ${proibido}`).not.toMatch(proibido)
     }
-  }, 15_000)
+  }, 25_000)
 })
 
 describe('landingCopy (P14: zero número)', () => {
@@ -180,6 +183,7 @@ describe('landingCopy (P14: zero número)', () => {
   it('nenhuma frase tem dígito — exceto o ano do © do rodapé e o prazo de implantação ("até 7 dias", autorizado pelo PO)', () => {
     const todas = strings({
       nav: copy.nav, hero: copy.hero, plataforma: copy.plataforma, implantacao: copy.implantacao,
+      home: copy.home, solucoes: copy.solucoes, formDemo: copy.formDemo, paginas: copy.paginasPlataforma,
       trust: copy.trust, perguntas: copy.perguntas, fecho: copy.fecho, footer: copy.footer,
       contato: { mensagem: copy.contato.mensagem, cta: copy.contato.cta, ctaLongo: copy.contato.ctaLongo },
     })

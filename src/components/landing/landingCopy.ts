@@ -17,9 +17,17 @@
  */
 
 export const LANDING_ROUTES = {
-  /** Único destino de rota da página: a entrada do app. */
+  /** A entrada do app. */
   login: '/login',
+  /** As páginas públicas (30/09: home de venda + páginas de produto, modelo Attio). */
+  home: '/',
+  demonstracao: '/demonstracao',
+  solucoes: '/solucoes',
+  perguntas: '/perguntas',
 } as const
+
+/** Caminho de uma página de produto (menu Plataforma). */
+export const rotaPlataforma = (slug: string) => `/plataforma/${slug}`
 
 /** Âncoras internas — cada uma corresponde a um `id` de seção. */
 export const LANDING_ANCHORS = {
@@ -191,7 +199,7 @@ export const plataforma = {
       id: 'atender',
       indice: 'Atender com IA',
       destaque: 'A IA atende mesmo quando a equipe está offline.',
-      texto: 'A paciente pede um horário à noite. O agente responde e atualiza a situação e as etiquetas do contato no CRM.',
+      texto: 'O cliente pede um horário à noite. O agente responde e atualiza a situação e as etiquetas do contato no CRM.',
       cartoes: [
         { titulo: 'O CRM se atualiza durante a conversa.', texto: 'Situação e etiquetas mudam durante o atendimento. O histórico mostra o que aconteceu e quem fez.' },
         { titulo: 'O cliente continua no WhatsApp.', texto: 'Sem instalar outro aplicativo ou preencher um formulário.' },
@@ -211,7 +219,7 @@ export const plataforma = {
       id: 'equipe',
       indice: 'Passar para a equipe',
       destaque: 'A equipe assume com todo o contexto.',
-      texto: 'Quando a paciente pede ajuda, a IA transfere a conversa, avisa a pessoa certa e mantém o histórico à vista.',
+      texto: 'Quando o cliente pede ajuda, a IA transfere a conversa, avisa a pessoa certa e mantém o histórico à vista.',
       cartoes: [
         { titulo: 'A pessoa certa recebe o aviso.', texto: 'A atendente abre a conversa já sabendo o que foi pedido e respondido.' },
         { titulo: 'A decisão final continua humana.', texto: 'A IA registra e avança as etapas. Só uma pessoa marca o negócio como ganho ou perdido.' },
@@ -288,9 +296,10 @@ export const equipe = {
   eyebrow: 'A equipe no comando',
   title: 'Dê a cada pessoa o acesso certo.',
   titleCinza: 'Permissões, responsáveis e histórico no mesmo lugar.',
-  lead: 'Organize o atendimento por setor, defina as permissões de cada perfil e consulte o histórico das ações da equipe.',
+  // 30/09 (PO): as permissões por setor vão ser corrigidas no produto — até
+  // lá, a página não vende a matriz de permissões (o cartão "Setores" saiu).
+  lead: 'Organize o atendimento por setor, defina o acesso de cada perfil e consulte o histórico das ações da equipe.',
   cartoes: [
-    { key: 'setores', titulo: 'Setores com permissões', texto: 'Cada setor pode ter seu número de WhatsApp, seu Agente IA e permissões para ler, responder, atribuir, ver relatórios ou alterar configurações.' },
     { key: 'papeis', titulo: 'Acessos por perfil', texto: 'Dono, administrador, supervisor e agente têm acessos diferentes de acordo com a função.' },
     { key: 'auditoria', titulo: 'Quem mudou o quê', texto: 'A linha do tempo mostra quem alterou o quê e quando.' },
     { key: 'chat', titulo: 'Chat interno da equipe', texto: 'A equipe usa canais, mensagens diretas e menções sem sair da Oryon.' },
@@ -307,7 +316,8 @@ export const resposta = {
     { key: 'notificacoes', titulo: 'Cada aviso chega com contexto.', texto: 'Transferências, conversas atribuídas, campanhas concluídas, menções e alertas de conexão aparecem no app e podem chegar ao celular.' },
     { key: 'espera', titulo: 'Aviso quando a resposta atrasa.', texto: 'Se uma conversa atribuída fica sem resposta além do tempo definido, o responsável recebe um aviso.' },
     { key: 'fila', titulo: 'Fila e atribuição', texto: 'As conversas transferidas pela IA entram na fila. A equipe pode assumir, escolher um responsável ou transferir para outro setor.' },
-    { key: 'numeros', titulo: 'Números diferentes, uma caixa de entrada', texto: 'Recepção, comercial e pós-atendimento podem usar números e agentes diferentes na mesma tela de Conversas.' },
+    // 30/09 (PO): mais de um número, sim — conforme o plano contratado.
+    { key: 'numeros', titulo: 'Números diferentes, uma caixa de entrada', texto: 'Conforme o plano, recepção, comercial e pós-atendimento podem usar números e agentes diferentes na mesma tela de Conversas.' },
   ],
 } as const
 
@@ -358,8 +368,8 @@ export const implantacao = {
       },
       {
         key: 'crescer',
-        titulo: 'Mais de um número, mais de um agente.',
-        texto: 'Cada número de WhatsApp pode ter seu próprio Agente IA, equipe e fluxo de atendimento.',
+        titulo: 'Mais números, conforme o plano.',
+        texto: 'Conecte outros números de WhatsApp de acordo com o plano. Cada um pode ter seu próprio Agente IA, equipe e fluxo de atendimento.',
       },
       {
         key: 'acompanhar',
@@ -382,9 +392,7 @@ export const perguntas = {
       itens: [
         {
           pergunta: 'Quanto custa a Oryon?',
-          resposta: 'O valor depende do volume de atendimento e do tamanho da equipe. Por isso, montamos uma proposta para cada operação. Fale com a gente para receber a sua.',
-          /** Sem canal comercial publicado, não mandamos "falar com a gente". */
-          respostaSemContato: 'O valor depende do volume de atendimento e do tamanho da equipe. Por isso, montamos uma proposta para cada operação.',
+          resposta: 'O valor depende do volume de atendimento, do tamanho da equipe e da quantidade de números. Por isso, montamos uma proposta para cada operação. Peça uma demonstração para receber a sua.',
         },
         {
           pergunta: 'Em quanto tempo começo a usar?',
@@ -396,7 +404,7 @@ export const perguntas = {
         },
         {
           pergunta: 'Posso conectar mais de um número?',
-          resposta: 'Sim. Cada número conectado pode ter seu próprio Agente IA. Atendimento, comercial e pós-venda podem usar números, equipes e fluxos diferentes.',
+          resposta: 'Sim, conforme o plano contratado. Cada número conectado pode ter seu próprio Agente IA, e atendimento, comercial e pós-venda podem usar números, equipes e fluxos diferentes.',
         },
       ],
     },
@@ -429,8 +437,8 @@ export const perguntas = {
           resposta: 'Para iniciar uma conversa ou retomar uma conversa fora da janela de atendimento, o WhatsApp exige um modelo aprovado pela Meta. Você cria, envia para aprovação e acompanha o status dentro da Oryon.',
         },
         {
-          pergunta: 'A IA marca consultas na agenda da clínica?',
-          resposta: 'Quando a agenda está integrada à Oryon, o agente pode consultar os horários livres e encaminhar a marcação. Quando não puder confirmar a disponibilidade, chama a recepção.',
+          pergunta: 'A IA marca horários na minha agenda?',
+          resposta: 'Quando a agenda está integrada à Oryon, o agente pode consultar os horários livres e encaminhar a marcação. Quando não puder confirmar a disponibilidade, chama sua equipe.',
         },
       ],
     },
@@ -444,4 +452,185 @@ export const fecho = {
   /** Sem canal comercial configurado: nada de prometer conversa. */
   leadSemContato: 'Entre na sua conta e retome o atendimento.',
   entrar: 'Já sou cliente',
+} as const
+
+// ─── 30/09: home de venda + páginas de produto (modelo Attio) ────────────────
+//
+// Decisões do PO (30/09): a home vira página de VENDA — uma ideia por bloco,
+// o detalhe mora nas páginas de produto; conversão = formulário de
+// demonstração (o WhatsApp comercial ainda não tem número); a copy não fala só
+// de clínicas — outras áreas aparecem com simulações; vários números de
+// WhatsApp, conforme o plano; a matriz de permissões por setor não é vendida
+// até ser corrigida no produto. E, como sempre: nunca prometer que a IA não
+// erra ou não inventa.
+
+/** As páginas de produto (menu Plataforma). `blocos` = capítulos da Plataforma;
+ *  `extras` = seções de prova que moram na página. */
+export const paginasPlataforma = [
+  {
+    slug: 'atendimento-ia',
+    menu: 'Atendimento com IA',
+    resumo: 'A IA responde com o que você cadastrou.',
+    titulo: 'A IA atende com o conteúdo da sua empresa.',
+    cinza: 'Sua equipe decide quando assumir.',
+    lead: 'O agente consulta instruções, documentos e catálogo, responde no WhatsApp e atualiza o CRM durante a conversa. Você testa antes de ativar e define o que ele pode fazer.',
+    blocos: ['conhecer', 'atender'],
+    extras: ['limites'],
+  },
+  {
+    slug: 'funil',
+    menu: 'Funil e vendas',
+    resumo: 'O negócio avança durante a conversa.',
+    titulo: 'O funil se atualiza enquanto a conversa acontece.',
+    cinza: 'A equipe assume com todo o contexto.',
+    lead: 'O agente move o negócio entre as etapas, registra itens e valores e chama a pessoa certa quando é hora de fechar.',
+    blocos: ['funil', 'equipe'],
+    extras: [],
+  },
+  {
+    slug: 'disparos',
+    menu: 'Disparos e resultados',
+    resumo: 'Campanhas que reabrem conversas.',
+    titulo: 'Traga contatos de volta pelo WhatsApp.',
+    cinza: 'E acompanhe o resultado no painel.',
+    lead: 'Envie modelos aprovados pela Meta, acompanhe entregas, leituras e respostas, e veja no painel onde a operação precisa de atenção.',
+    blocos: ['campanhas', 'medir'],
+    extras: [],
+  },
+  {
+    slug: 'equipe',
+    menu: 'Equipe e controle',
+    resumo: 'Acessos, fila e avisos.',
+    titulo: 'Sua equipe no comando do atendimento.',
+    cinza: 'Acessos, fila e avisos no mesmo lugar.',
+    lead: 'Cada pessoa com o acesso certo, a fila do que precisa de resposta e avisos quando alguém fica esperando.',
+    blocos: [],
+    extras: ['equipe', 'resposta'],
+  },
+] as const
+
+export type PaginaPlataforma = (typeof paginasPlataforma)[number]
+
+export const home = {
+  ctaPrincipal: 'Agendar demonstração',
+  ctaSecundario: 'Ver como funciona',
+  /** A faixa de fatos logo depois do Hero — só o que dá para afirmar hoje. */
+  fatos: [
+    { key: 'oficial', titulo: 'API oficial do WhatsApp Business', texto: 'Conexão fornecida pela Meta.' },
+    { key: 'prazo', titulo: 'No ar em até 7 dias', texto: 'Depois que a Meta libera o número.' },
+    { key: 'controle', titulo: 'Sua equipe no comando', texto: 'Você define o que a IA faz e quando uma pessoa assume.' },
+  ],
+  comoFunciona: {
+    eyebrow: 'Como funciona',
+    titulo: 'Da primeira mensagem ao negócio fechado.',
+    cinza: 'Cada etapa na Oryon real, em modo demonstração.',
+    abasLabel: 'Etapas do atendimento',
+    saibaMais: 'Ver os detalhes',
+  },
+  limites: {
+    /** Link da versão curta para a página completa. */
+    saibaMais: 'Ver como a IA é configurada',
+  },
+  perguntas: {
+    verTodas: 'Ver todas as perguntas',
+  },
+} as const
+
+/** As áreas (30/09): a mesma plataforma em operações diferentes, cada uma com
+ *  uma simulação (dados fictícios). Nada aqui é integração pronta que não
+ *  exista: o que muda de uma área para outra é o conteúdo e as regras que a
+ *  empresa cadastra. */
+export const solucoes = {
+  eyebrow: 'Para a sua área',
+  titulo: 'Um jeito de atender, várias áreas.',
+  cinza: 'Veja simulações em operações diferentes.',
+  lead: 'O que muda de uma área para outra é o conteúdo, o catálogo, o funil e as regras que sua equipe cadastra. A IA pode errar: por isso, quem define quando uma pessoa assume é você.',
+  aviso: 'Simulação com dados fictícios.',
+  verTodas: 'Ver todas as áreas',
+  abasLabel: 'Escolher área',
+  paginaTitulo: 'A Oryon em operações diferentes.',
+  paginaCinza: 'O mesmo atendimento, com o conteúdo de cada área.',
+  areas: [
+    {
+      id: 'clinicas',
+      nome: 'Clínicas e consultórios',
+      titulo: 'Valores, convênios e horários sem fila de espera.',
+      texto: 'O agente informa valores e convênios a partir do catálogo e da base de conhecimento, e chama a recepção para encaixes, urgências e dúvidas clínicas.',
+      itens: ['Valores e convênios vindos do que a clínica cadastrou', 'Horários quando a agenda está integrada à Oryon', 'Recepção chamada para urgências e dúvidas clínicas'],
+    },
+    {
+      id: 'contabilidade',
+      nome: 'Contabilidade',
+      titulo: 'Prazos e documentos respondidos na hora.',
+      texto: 'O agente responde dúvidas recorrentes sobre prazos e documentos com o conteúdo do escritório e passa para o contador quando o caso é específico.',
+      itens: ['Prazos e listas de documentos do próprio escritório', 'Etiqueta por assunto para organizar a demanda', 'Contador chamado quando o caso exige análise'],
+    },
+    {
+      id: 'juridico',
+      nome: 'Jurídico',
+      titulo: 'Triagem organizada antes do advogado entrar.',
+      texto: 'O agente faz a triagem inicial, pede os documentos definidos pelo escritório e não dá orientação sobre o caso: quem analisa é o advogado.',
+      itens: ['Perguntas de triagem definidas pelo escritório', 'Lista de documentos antes da primeira reunião', 'Advogado chamado para qualquer orientação'],
+    },
+    {
+      id: 'imobiliarias',
+      nome: 'Imobiliárias',
+      titulo: 'Imóveis certos para cada pedido.',
+      texto: 'O agente consulta os imóveis cadastrados no catálogo, cria o negócio no funil e chama o corretor para combinar a visita.',
+      itens: ['Imóveis vindos do catálogo cadastrado', 'Negócio criado no funil a cada interesse', 'Corretor chamado para combinar a visita'],
+    },
+    {
+      id: 'varejo',
+      nome: 'Varejo e lojas',
+      titulo: 'Estoque, tamanho e reserva pelo WhatsApp.',
+      texto: 'O agente consulta produtos e condições do catálogo, registra o interesse no funil e chama um vendedor para concluir a venda.',
+      itens: ['Produtos e condições do catálogo', 'Interesse registrado como negócio no funil', 'Vendedor chamado para concluir a venda'],
+    },
+  ],
+} as const
+
+export type AreaSolucao = (typeof solucoes.areas)[number]
+
+/** O formulário de demonstração — a conversão da página enquanto o WhatsApp
+ *  comercial não tem número. */
+export const formDemo = {
+  eyebrow: 'Demonstração',
+  titulo: 'Veja a Oryon no seu atendimento.',
+  cinza: 'Conte um pouco da sua operação e mostramos na prática.',
+  lead: 'Nossa equipe entra em contato para marcar uma demonstração com o conteúdo da sua área.',
+  campos: {
+    nome: 'Seu nome',
+    empresa: 'Empresa',
+    whatsapp: 'WhatsApp',
+    email: 'E-mail',
+    segmento: 'Área de atuação',
+    equipe: 'Quantas pessoas atendem hoje?',
+    mensagem: 'O que você quer resolver?',
+  },
+  segmentos: ['Clínica ou consultório', 'Contabilidade', 'Jurídico', 'Imobiliária', 'Varejo ou loja', 'Educação', 'Outra área'],
+  tamanhos: ['Só eu', 'Até cinco pessoas', 'De seis a vinte pessoas', 'Mais de vinte pessoas'],
+  selecione: 'Selecione',
+  privacidade: 'Usamos esses dados só para falar com você sobre a demonstração.',
+  enviar: 'Pedir demonstração',
+  enviando: 'Enviando…',
+  sucessoTitulo: 'Pedido recebido.',
+  sucessoTexto: 'Nossa equipe vai falar com você pelo WhatsApp ou pelo e-mail informado.',
+  erro: 'Não foi possível enviar agora. Tente de novo em alguns minutos.',
+  obrigatorio: 'Preencha este campo.',
+  emailInvalido: 'Confira o e-mail.',
+  whatsappInvalido: 'Confira o número com DDD.',
+} as const
+
+export const rodape = {
+  grupos: [
+    { titulo: 'Plataforma', links: paginasPlataforma.map((p) => ({ label: p.menu, to: rotaPlataforma(p.slug) })) },
+    {
+      titulo: 'Conheça',
+      links: [
+        { label: 'Para a sua área', to: LANDING_ROUTES.solucoes },
+        { label: 'Perguntas', to: LANDING_ROUTES.perguntas },
+        { label: 'Agendar demonstração', to: LANDING_ROUTES.demonstracao },
+      ],
+    },
+  ],
 } as const

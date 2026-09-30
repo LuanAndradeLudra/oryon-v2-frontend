@@ -1,59 +1,41 @@
-import { lazy, Suspense, useRef } from 'react'
-import {
-  LandingNav, Hero, Trust, Footer,
-} from '@/components/landing/sections'
-import { useHashAnchorScroll } from '@/hooks/useHashAnchorScroll'
+import { lazy, Suspense } from 'react'
+import { Hero, Trust } from '@/components/landing/sections'
+import { LandingLayout } from '@/components/landing/LandingLayout'
+import { FaixaFatos } from '@/components/landing/home/FaixaFatos'
 
 // Abaixo da primeira dobra: carrega depois do Hero (demo, recortes e
 // componentes reais pesam — não podem atrasar a primeira pintura).
-const SecaoPlataforma = lazy(() => import('@/components/landing/plataforma/SecaoPlataforma').then((m) => ({ default: m.SecaoPlataforma })))
+const SecaoComoFunciona = lazy(() => import('@/components/landing/plataforma/SecaoPlataforma').then((m) => ({ default: m.SecaoComoFunciona })))
+const SecaoSolucoes = lazy(() => import('@/components/landing/solucoes/SecaoSolucoes').then((m) => ({ default: m.SecaoSolucoes })))
 const SecaoImplantacao = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoImplantacao })))
 const SecaoPerguntas = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoPerguntas })))
-const SecaoFecho = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoFecho })))
-const SecaoArea = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoArea })))
-const SecaoEquipe = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoEquipe })))
-const SecaoResposta = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoResposta })))
+const SecaoDemonstracao = lazy(() => import('@/components/landing/demonstracao/FormDemonstracao').then((m) => ({ default: m.SecaoDemonstracao })))
 
 /**
- * Landing pública (`/`) — SCRUM-1097, fase "porta de entrada". Reescrita
- * completa: a versão anterior (logo gigante com glow, palavra rotativa, beams
- * em canvas, planos, redes sociais) foi descartada pelo PO.
+ * Landing pública (`/`) — a HOME DE VENDA (30/09, modelo Attio).
  *
- * O contêiner é `h-screen overflow-y-auto`: o root do App é `overflow: hidden`,
- * então é ESTE elemento que rola (o `IntersectionObserver` do palco funciona;
- * `window.scrollY` não). A nav é `sticky` dentro dele; as âncoras (#produto,
- * #como-funciona) rolam este contêiner. Copy toda em `landingCopy.ts`.
+ * Antes: seis capítulos empilhados + cinco seções explicativas e nenhum
+ * próximo passo para quem não é cliente. Agora uma ideia por bloco, e o
+ * detalhe mora nas páginas de produto (menu Plataforma), em /solucoes e em
+ * /perguntas:
+ *
+ *   Hero (com a conversão) → fatos → como funciona (abas) → para a sua área
+ *   (simulações) → limites da IA (curto) → implantação (curta) → perguntas
+ *   (as primeiras) → pedido de demonstração.
  */
 export function WelcomePage() {
-  const landingRootRef = useRef<HTMLDivElement>(null)
-  useHashAnchorScroll(landingRootRef)
-
   return (
-    <div
-      ref={landingRootRef}
-      data-landing-root
-      className="h-screen w-full overflow-y-auto scroll-smooth motion-reduce:scroll-auto bg-surface-950 text-surface-100"
-    >
-      <LandingNav />
-      <main>
-        <Hero />
-        {/* A escada de consciência: o que é (Hero) → como resolve cada problema
-            (Plataforma) → vai dar trabalho? (Implantação) → posso confiar?
-            (limites da IA) → dúvidas finais (Perguntas) → conversa (Fecho). */}
-        <Suspense fallback={<div className="min-h-[60vh]" />}>
-          <SecaoPlataforma />
-          {/* "Posso confiar?" vem antes de "dá trabalho?" (26/09). */}
-          <Trust />
-          {/* As provas (26/09): serve para mim? perco o controle? e se ninguém responder? */}
-          <SecaoArea />
-          <SecaoEquipe />
-          <SecaoResposta />
-          <SecaoImplantacao />
-          <SecaoPerguntas />
-          <SecaoFecho />
-        </Suspense>
-      </main>
-      <Footer />
-    </div>
+    <LandingLayout>
+      <Hero />
+      <FaixaFatos />
+      <Suspense fallback={<div className="min-h-[60vh]" />}>
+        <SecaoComoFunciona />
+        <SecaoSolucoes />
+        <Trust compacto />
+        <SecaoImplantacao compacta />
+        <SecaoPerguntas limite={5} />
+        <SecaoDemonstracao origem="home" />
+      </Suspense>
+    </LandingLayout>
   )
 }

@@ -1,9 +1,10 @@
 import { useId, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, MessageCircle, Smartphone, Settings2, Rocket, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
+import { ArrowRight, ChevronDown, MessageCircle, Smartphone, Settings2, Rocket, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Link } from 'react-router-dom'
 import { LinkButton } from '@/components/ui/LinkButton'
-import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho, LANDING_ROUTES } from '../landingCopy'
+import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho, home, LANDING_ROUTES } from '../landingCopy'
 
 /**
  * As seções de CONVERSÃO depois da Plataforma (25/09). Cada uma derruba uma
@@ -63,7 +64,8 @@ export function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo:
 const ICONES_PASSO = [Smartphone, Settings2, Rocket]
 const ICONES_DEPOIS = { ajuste: PencilLine, crescer: Layers, acompanhar: LayoutDashboard } as const
 
-export function SecaoImplantacao() {
+/** `compacta` (home de venda): só os três passos — o "depois da implantação" fica na página. */
+export function SecaoImplantacao({ compacta = false }: { compacta?: boolean }) {
   const semMovimento = useReducedMotion()
   return (
     <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
@@ -93,15 +95,15 @@ export function SecaoImplantacao() {
                     <p className="mt-4 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{p.quem}</p>
                     <p className="mt-1.5 font-display text-[17px] font-semibold tracking-[-0.01em] text-surface-50">{p.titulo}</p>
                     <p className="mt-2 max-w-[34ch] text-[15px] leading-relaxed text-surface-400">{p.texto}</p>
-                    {/* O que sai deste passo — concreto, verificável. */}
-                    <ul className="mt-4 space-y-2 border-t border-[var(--landing-borda)] pt-4">
+                    {/* O que sai deste passo — concreto, verificável (só na página completa). */}
+                    {!compacta && <ul className="mt-4 space-y-2 border-t border-[var(--landing-borda)] pt-4">
                       {p.entregas.map((e) => (
                         <li key={e} className="flex items-start gap-2 text-[14px] leading-relaxed text-surface-300">
                           <Check className="mt-[1px] h-3.5 w-3.5 flex-shrink-0 text-[var(--landing-destaque)]" strokeWidth={2.2} aria-hidden />
                           <span>{e}</span>
                         </li>
                       ))}
-                    </ul>
+                    </ul>}
                   </li>
                 </Revelar>
               )
@@ -110,6 +112,7 @@ export function SecaoImplantacao() {
         </div>
 
         {/* Depois do ar: o ajuste passa a ser do cliente, na própria Oryon. */}
+        {!compacta && (<>
         <Revelar atraso={0.2} className="mt-10">
           <p className="font-display text-[17px] font-semibold tracking-[-0.01em] text-surface-50">{implantacao.depois.titulo}</p>
         </Revelar>
@@ -127,6 +130,7 @@ export function SecaoImplantacao() {
             )
           })}
         </div>
+        </>)}
 
         {contatoDisponivel && (
           <Revelar atraso={0.4} className="mt-10">
@@ -174,30 +178,56 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
   )
 }
 
-export function SecaoPerguntas() {
+/**
+ * `limite` (home de venda): só as primeiras perguntas, sem grupos, com o link
+ * para a página completa. `comoPagina`: o título vira o H1 da página.
+ */
+export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number; comoPagina?: boolean }) {
+  const todas: ReadonlyArray<{ pergunta: string; resposta: string }> = perguntas.grupos.flatMap((g): ReadonlyArray<{ pergunta: string; resposta: string }> => g.itens)
   return (
     <section id="perguntas" data-section="perguntas" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
       <div className="landing-container grid gap-10 lg:grid-cols-[.85fr_1.4fr] lg:gap-16">
         {/* O título acompanha a leitura no desktop. */}
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <Cabecalho eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
-          <Revelar atraso={0.2} className="mt-8">
+          {comoPagina ? (
+            <Revelar>
+              <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{perguntas.eyebrow}</p>
+              <h1 className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
+                <span className="text-surface-50">{perguntas.title}</span>{' '}
+                <span className="text-surface-500">{perguntas.titleCinza}</span>
+              </h1>
+            </Revelar>
+          ) : (
+            <Cabecalho eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
+          )}
+          <Revelar atraso={0.2} className="mt-8 flex flex-wrap gap-3">
             <BotaoContato longo={false} />
+            <LinkButton to={LANDING_ROUTES.demonstracao} variant="neutral">{home.ctaPrincipal}</LinkButton>
           </Revelar>
         </div>
+        {limite ? (
+          <Revelar atraso={0.1}>
+            <div className="border-t border-[var(--landing-borda)]">
+              {todas.slice(0, limite).map((q) => <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />)}
+            </div>
+            <Link to={LANDING_ROUTES.perguntas} className="mt-5 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+              {home.perguntas.verTodas} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </Revelar>
+        ) : (
         <div className="space-y-6">
           {perguntas.grupos.map((g, gi) => (
             <Revelar key={g.titulo} atraso={0.1 + gi * 0.08}>
               <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{g.titulo}</p>
               <div className="mt-2 border-t border-[var(--landing-borda)]">
                 {g.itens.map((q) => (
-                  <Pergunta key={q.pergunta} pergunta={q.pergunta}
-                    resposta={!contatoDisponivel && 'respostaSemContato' in q ? q.respostaSemContato : q.resposta} />
+                  <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />
                 ))}
               </div>
             </Revelar>
           ))}
         </div>
+        )}
       </div>
     </section>
   )

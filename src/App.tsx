@@ -69,6 +69,10 @@ const SetupPage         = lazyRoute(() => import('@/pages/SetupPage').then(m => 
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
 const WelcomePage       = lazyRoute(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })))
+const PlataformaPublicaPage = lazyRoute(() => import('@/pages/landing/PaginasPublicas').then(m => ({ default: m.PlataformaPage })))
+const SolucoesPage      = lazyRoute(() => import('@/pages/landing/PaginasPublicas').then(m => ({ default: m.SolucoesPage })))
+const PerguntasPage     = lazyRoute(() => import('@/pages/landing/PaginasPublicas').then(m => ({ default: m.PerguntasPage })))
+const DemonstracaoPage  = lazyRoute(() => import('@/pages/landing/PaginasPublicas').then(m => ({ default: m.DemonstracaoPage })))
 const ForgotPasswordPage = lazyRoute(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
@@ -164,6 +168,8 @@ function RequireGuest({ children }: { children: ReactNode }) {
 const SHELL_LESS_SECTIONS = new Set([
   '/', '/login', '/register', '/forgot-password', '/reset-password', '/activate',
   '/set-password', '/setup', '/canva',
+  // Páginas públicas da landing (30/09: home de venda + páginas de produto).
+  '/plataforma', '/solucoes', '/perguntas', '/demonstracao',
 ])
 
 function AnimatedRoutes() {
@@ -320,6 +326,10 @@ function AnimatedRoutes() {
 
           {/* Welcome page — public */}
           <Route path="/" element={<WelcomePage />} />
+          <Route path="/plataforma/:slug" element={<PlataformaPublicaPage />} />
+          <Route path="/solucoes" element={<SolucoesPage />} />
+          <Route path="/perguntas" element={<PerguntasPage />} />
+          <Route path="/demonstracao" element={<DemonstracaoPage />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
         </Suspense>

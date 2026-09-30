@@ -1,6 +1,7 @@
 import { HeroPalco } from '@/components/landing/stage/hero/HeroPalco'
 import { cn } from '@/lib/utils'
-import { hero } from '../landingCopy'
+import { LinkButton } from '@/components/ui/LinkButton'
+import { hero, home, LANDING_ROUTES } from '../landingCopy'
 
 /**
  * Headline + o produto operando logo abaixo (referência: hero da Attio, HTML
@@ -59,9 +60,16 @@ export function Hero() {
         >
           {hero.lead}
         </p>
-        {/* Sem botões aqui (decisão do PO, 24/09): o lugar deles é da legenda
-            da demonstração, que abre o palco logo abaixo. "Entrar" continua
-            no cabeçalho, no fecho e no rodapé. */}
+        {/* A conversão (30/09, home de venda): pedir a demonstração ou ver as
+            etapas logo abaixo. Antes (24/09) o Hero não tinha botões — a página
+            chegava ao fim sem nenhum próximo passo para quem não é cliente. */}
+        <div
+          className="reveal mt-[clamp(14px,2.2svh,22px)] flex flex-wrap items-center justify-center gap-2.5"
+          style={{ ['--d' as string]: '180ms' }}
+        >
+          <LinkButton to={LANDING_ROUTES.demonstracao} size="lg">{home.ctaPrincipal}</LinkButton>
+          <LinkButton href="#como-funciona" variant="neutral" size="lg">{home.ctaSecundario}</LinkButton>
+        </div>
       </div>
 
       <div

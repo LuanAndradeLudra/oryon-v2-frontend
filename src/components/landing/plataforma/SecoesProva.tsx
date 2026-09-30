@@ -1,10 +1,8 @@
 import type { ReactNode } from 'react'
 import { Check, Info, Hash, AtSign, Smartphone } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Switch } from '@/components/ui/Switch'
 import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { ConversationItem } from '@/components/conversations/ConversationList/ConversationItem'
-import { PERMISSION_GROUPS } from '@/components/settings/sections/Departments'
 import { roleLabel } from '@/lib/roleHelpers'
 import type { AppNotification } from '@/hooks/useNotifications'
 import type { Conversation } from '@/types'
@@ -107,33 +105,8 @@ export function SecaoArea() {
 
 // ─── A equipe no comando ─────────────────────────────────────────────────────
 
-/** As permissões REAIS do setor (rótulos do produto), como a tela de Setores mostra. */
-function VisualSetor() {
-  const ligadas = new Set(['read_conversations', 'reply_conversations', 'assign_conversations', 'view_dashboard'])
-  const grupos = PERMISSION_GROUPS.slice(0, 2)
-  return (
-    <div className="mx-auto w-[94%] max-w-[480px] rounded-xl bg-surface-900 p-3 ring-1 ring-surface-700">
-      <div className="flex items-center justify-between border-b border-surface-700 pb-2">
-        <div>
-          <p className="text-[12px] font-semibold text-surface-100">Recepção</p>
-          <p className="text-[10.5px] text-surface-500">{HERO_LINE.displayPhoneNumber} · {HERO.agent}</p>
-        </div>
-        <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-[10px] font-semibold text-brand-400">3 pessoas</span>
-      </div>
-      {grupos.map((g) => (
-        <div key={g.group} className="mt-2">
-          <p className="text-[9.5px] font-semibold uppercase tracking-[.1em] text-surface-500">{g.group}</p>
-          {g.perms.slice(0, 2).map((p) => (
-            <div key={p.key} className="flex items-center justify-between py-[3px]">
-              <span className="text-[11px] text-surface-200">{p.label}</span>
-              <Switch checked={ligadas.has(p.key)} onChange={NOOP} />
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  )
-}
+// 30/09 (PO): o cartão "Setores com permissões" saiu — as permissões por
+// setor vão ser corrigidas no produto e a página não vende a matriz até lá.
 
 const PAPEIS = [
   { nome: 'Ana Prado', role: 'business_admin', cor: 'bg-brand-500' },
@@ -203,7 +176,6 @@ function VisualChat() {
 }
 
 const VISUAIS_EQUIPE: Record<string, () => ReactNode> = {
-  setores: () => <VisualSetor />,
   papeis: () => <VisualPapeis />,
   auditoria: () => <VisualAuditoria />,
   chat: () => <VisualChat />,
@@ -217,7 +189,7 @@ export function SecaoEquipe() {
         <Revelar atraso={0.1}>
           <p className="mt-3 max-w-[62ch] text-[14px] sm:text-[15px] leading-relaxed text-surface-400 text-pretty">{equipe.lead}</p>
         </Revelar>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {equipe.cartoes.map((c, i) => (
             <Prova key={c.key} atraso={0.1 + i * 0.08} titulo={c.titulo} texto={c.texto} visual={VISUAIS_EQUIPE[c.key]()} />
           ))}

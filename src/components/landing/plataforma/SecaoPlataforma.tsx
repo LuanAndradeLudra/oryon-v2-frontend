@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, animate, motion, useReducedMotion } from 'framer-motion'
-import { MessageCircle } from 'lucide-react'
+import { ArrowRight, MessageCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { LinkButton } from '@/components/ui/LinkButton'
@@ -19,7 +20,7 @@ import type { ActivityEvent } from '@/types/dashboard'
 import { CONHECIMENTO_RECEPCAO } from '@/demo/agentesDemo'
 import { heroActivityFeed, heroHomeSnapshot } from '@/demo/dashboardDemo'
 import { ConteudoWhatsAppAparelho } from '../stage/hero/HeroSatelitesConteudo'
-import { contato, contatoDisponivel, linkContato, plataforma } from '../landingCopy'
+import { contato, contatoDisponivel, home, linkContato, paginasPlataforma, plataforma, rotaPlataforma } from '../landingCopy'
 import { DemoRecorte, type Recorte } from './DemoRecorte'
 import {
   HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroCampaigns, heroDeal, heroHistoricoGanho, heroMessages, heroNotifications, heroTimeline,
@@ -710,6 +711,90 @@ export function SecaoPlataforma() {
             )}
           </div>
         </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── 30/09: a Plataforma dividida — abas na home, capítulos nas páginas ─────
+
+const NOOP_REGISTRO = () => {}
+
+/** Os capítulos de uma página de produto (menu Plataforma): os mesmos artigos
+ *  da seção inteira, sem o índice lateral — a página já é um recorte. */
+export function SecaoCapitulos({ ids }: { ids: readonly string[] }) {
+  const blocos = plataforma.blocos.filter((b) => ids.includes(b.id))
+  if (blocos.length === 0) return null
+  return (
+    <section data-section="capitulos" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-14 sm:py-16">
+      <div className="landing-container">
+        {blocos.map((b, i) => (
+          <div key={b.id} className={cn(i > 0 && 'mt-12 border-t border-[var(--landing-borda)] pt-12 sm:mt-14 sm:pt-14')}>
+            <ArtigoRecurso b={b} n={i + 1} registrar={NOOP_REGISTRO} />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/**
+ * COMO FUNCIONA (home de venda, 30/09) — os seis capítulos em ABAS, como os
+ * casos de uso da Attio: uma demonstração por vez, no lugar dos seis
+ * artigos empilhados (6.580 px na página antiga). Cada aba leva à página de
+ * produto que a aprofunda.
+ */
+export function SecaoComoFunciona() {
+  const [ativo, setAtivo] = useState<string>(plataforma.blocos[0].id)
+  const idx = Math.max(0, plataforma.blocos.findIndex((b) => b.id === ativo))
+  const b = plataforma.blocos[idx]
+  const pagina = paginasPlataforma.find((p) => (p.blocos as readonly string[]).includes(b.id))
+  return (
+    <section id="como-funciona" data-section="como-funciona" aria-labelledby="como-funciona-titulo" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
+      <div className="landing-container">
+        <Revelar className="max-w-[64rem]">
+          <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">
+            {home.comoFunciona.eyebrow}
+          </p>
+          <h2 id="como-funciona-titulo" className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.6rem,2.8vw,2.3rem)] text-balance">
+            <span className="text-surface-50">{home.comoFunciona.titulo}</span>{' '}
+            <span className="text-surface-500">{home.comoFunciona.cinza}</span>
+          </h2>
+        </Revelar>
+
+        <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="mt-7 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          {plataforma.blocos.map((bl, i) => (
+            <button
+              key={bl.id}
+              type="button"
+              role="tab"
+              id={`etapa-aba-${bl.id}`}
+              aria-selected={bl.id === ativo}
+              aria-controls="etapa-painel"
+              onClick={() => setAtivo(bl.id)}
+              className={cn(
+                'flex flex-none items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium ring-1 transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                bl.id === ativo
+                  ? 'bg-brand-500/15 text-surface-50 ring-brand-500/40'
+                  : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100',
+              )}
+            >
+              <span className="tabular-nums text-[11px] text-surface-500">{String(i + 1).padStart(2, '0')}</span>
+              {bl.indice}
+            </button>
+          ))}
+        </div>
+
+        {/* Remonta ao trocar de aba: a demonstração da etapa recomeça. */}
+        <div id="etapa-painel" role="tabpanel" aria-labelledby={`etapa-aba-${b.id}`} className="mt-8">
+          <ArtigoRecurso key={b.id} b={b} n={idx + 1} registrar={NOOP_REGISTRO} />
+          {pagina && (
+            <Link to={rotaPlataforma(pagina.slug)} className="mt-6 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+              {home.comoFunciona.saibaMais}: {pagina.menu} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          )}
         </div>
       </div>
     </section>

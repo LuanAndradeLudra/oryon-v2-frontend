@@ -1,30 +1,42 @@
 import { useEffect, useRef, useState } from 'react'
-import { Sun, Moon, MessageCircle } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { Sun, Moon, ChevronDown } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { cn } from '@/lib/utils'
-import { nav, LANDING_ROUTES, contato, contatoDisponivel, linkContato } from '../landingCopy'
+import { nav, home, LANDING_ROUTES, paginasPlataforma, rotaPlataforma } from '../landingCopy'
 
 /**
- * Nav fixa em vidro (64px). Âncoras só das seções que existem. O CTA teal é a
- * conversa comercial ("Falar com a gente", no WhatsApp com o Agente IA do
- * própria Oryon); "Entrar" fica neutro, para quem já é cliente. O botão de tema mostra o ícone do tema de DESTINO pelo
- * atributo `data-theme` do <html> (CSS) — sem ternário de tema no JSX.
+ * Nav fixa em vidro (64px) das páginas públicas (30/09: home de venda +
+ * páginas de produto, modelo Attio). "Plataforma" abre o menu das páginas de
+ * produto; "Para a sua área" e "Perguntas" são páginas. À direita, "Entrar"
+ * (neutro, para quem já é cliente) e a conversão: "Agendar demonstração".
+ * O botão de tema mostra o ícone do tema de DESTINO pelo atributo
+ * `data-theme` do <html> (CSS) — sem ternário de tema no JSX.
  */
+const LINKS = [
+  { label: 'Para a sua área', to: LANDING_ROUTES.solucoes },
+  { label: 'Perguntas', to: LANDING_ROUTES.perguntas },
+] as const
+
 export function LandingNav() {
   const { toggle } = useTheme()
-  const [indiceAberto, setIndiceAberto] = useState(false)
-  const indiceRef = useRef<HTMLDivElement>(null)
+  const { pathname } = useLocation()
+  const [menuAberto, setMenuAberto] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const gatilhoRef = useRef<HTMLButtonElement>(null)
 
+  // Fecha ao navegar.
+  useEffect(() => { setMenuAberto(false) }, [pathname])
+
   useEffect(() => {
-    if (!indiceAberto) return
+    if (!menuAberto) return
     const fecharFora = (event: PointerEvent) => {
-      if (!indiceRef.current?.contains(event.target as Node)) setIndiceAberto(false)
+      if (!menuRef.current?.contains(event.target as Node)) setMenuAberto(false)
     }
     const fecharComEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
-      setIndiceAberto(false)
+      setMenuAberto(false)
       gatilhoRef.current?.focus()
     }
     document.addEventListener('pointerdown', fecharFora)
@@ -33,85 +45,88 @@ export function LandingNav() {
       document.removeEventListener('pointerdown', fecharFora)
       document.removeEventListener('keydown', fecharComEscape)
     }
-  }, [indiceAberto])
+  }, [menuAberto])
 
   const abrirPeloTeclado = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== 'ArrowDown') return
     event.preventDefault()
-    setIndiceAberto(true)
-    requestAnimationFrame(() => indiceRef.current?.querySelector<HTMLAnchorElement>('[data-index-link]')?.focus())
+    setMenuAberto(true)
+    requestAnimationFrame(() => menuRef.current?.querySelector<HTMLAnchorElement>('[data-menu-link]')?.focus())
   }
+
+  const linkNav = (ativo: boolean) => cn(
+    'rounded-sm text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+    ativo ? 'text-surface-50' : 'text-surface-400 hover:text-surface-100',
+  )
 
   return (
     <header
       data-section="nav"
       className="sticky top-0 z-40 h-16 border-b border-surface-700 bg-[color-mix(in_srgb,var(--color-surface-950)_72%,transparent)] backdrop-blur-md"
     >
-      <div className="landing-container flex h-full items-center gap-6">
-        <a
-          href="#inicio"
+      <div className="landing-container flex h-full items-center gap-4 sm:gap-6">
+        <Link
+          to={LANDING_ROUTES.home}
           aria-label={nav.homeLabel}
-          className="flex items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          className="flex flex-none items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           {/* Símbolo + WORDMARK oficial (a mesma da barra lateral do app e do
               login; branca, invertida no tema claro por `.oryon-wordmark`). */}
           <img src="/oryon-logo.svg" alt="" className="w-7 h-7 select-none" draggable={false} />
-          <img src="/oryon-wordmark.png" alt="Oryon" className="oryon-wordmark h-[14px] w-auto select-none" draggable={false} />
-        </a>
+          <img src="/oryon-wordmark.png" alt="Oryon" className="oryon-wordmark hidden h-[14px] w-auto select-none min-[420px]:block" draggable={false} />
+        </Link>
 
-        <nav
-          aria-label="Seções da página"
-          className="flex items-center md:ml-4"
-        >
-          <div ref={indiceRef} className="relative">
+        <nav aria-label="Páginas" className="flex items-center md:ml-2">
+          <div ref={menuRef} className="relative">
             <button
               ref={gatilhoRef}
               type="button"
-              aria-expanded={indiceAberto}
-              aria-controls="indice-plataforma"
-              aria-label={nav.platformMenuLabel}
-              onClick={() => setIndiceAberto((aberto) => !aberto)}
+              aria-expanded={menuAberto}
+              aria-controls="menu-plataforma"
+              onClick={() => setMenuAberto((aberto) => !aberto)}
               onKeyDown={abrirPeloTeclado}
               className={cn(
-                'relative inline-flex h-9 items-center rounded-md px-2.5 text-[13px] font-medium transition-colors',
+                'inline-flex h-9 items-center gap-1 rounded-md px-2.5 text-[13px] font-medium transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                'after:absolute after:bottom-1 after:left-3 after:right-3 after:h-px after:origin-center after:scale-x-0 after:bg-[var(--landing-destaque)] after:transition-transform after:duration-200 hover:after:scale-x-100',
-                indiceAberto
-                  ? 'bg-[var(--rowhover)] text-surface-50 after:scale-x-100'
+                menuAberto || pathname.startsWith('/plataforma')
+                  ? 'bg-[var(--rowhover)] text-surface-50'
                   : 'text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100',
               )}
             >
               Plataforma
+              <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', menuAberto && 'rotate-180')} aria-hidden />
             </button>
 
-            {indiceAberto && (
+            {menuAberto && (
               <div
-                id="indice-plataforma"
+                id="menu-plataforma"
                 className={cn(
                   'fixed left-4 right-4 top-[72px] z-50 max-h-[calc(100vh-88px)] overflow-y-auto rounded-xl border border-[var(--landing-borda)]',
                   'bg-[var(--landing-cartao)] p-2 shadow-[0_18px_55px_rgba(0,0,0,.2)]',
-                  'md:absolute md:left-0 md:right-auto md:top-full md:mt-2 md:max-h-[min(590px,calc(100vh-88px))] md:w-[430px]',
+                  'md:absolute md:left-0 md:right-auto md:top-full md:mt-2 md:w-[440px]',
                 )}
               >
                 <div className="grid gap-1 md:grid-cols-2">
-                  {nav.platformGroups.map((grupo, gi) => (
-                    <div key={grupo.label} className="min-w-0 p-1.5">
-                      <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-surface-500">{grupo.label}</p>
-                      <div className="space-y-0.5">
-                        {grupo.items.map((item, ii) => (
-                          <a
-                            key={item.anchor}
-                            data-index-link
-                            href={`#${item.anchor}`}
-                            onClick={() => setIndiceAberto(false)}
-                            className="group flex min-h-9 items-center gap-2.5 rounded-lg px-2 py-1.5 text-[12.5px] font-medium text-surface-300 transition-colors hover:bg-[var(--rowhover)] hover:text-surface-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                          >
-                            <span className="w-5 flex-none font-mono text-[10px] tabular-nums text-surface-600 transition-colors group-hover:text-[var(--landing-destaque)]">{String(nav.platformGroups.slice(0, gi).reduce((n, g) => n + g.items.length, 0) + ii + 1).padStart(2, '0')}</span>
-                            <span className="truncate">{item.label}</span>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
+                  {paginasPlataforma.map((p) => (
+                    <Link
+                      key={p.slug}
+                      data-menu-link
+                      to={rotaPlataforma(p.slug)}
+                      onClick={() => setMenuAberto(false)}
+                      className="rounded-lg px-3 py-2.5 transition-colors hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                    >
+                      <span className="block text-[13px] font-semibold text-surface-100">{p.menu}</span>
+                      <span className="mt-0.5 block text-[12px] leading-snug text-surface-500">{p.resumo}</span>
+                    </Link>
+                  ))}
+                </div>
+                {/* No celular, as outras páginas também moram aqui. */}
+                <div className="mt-1 border-t border-[var(--landing-borda)] pt-1 md:hidden">
+                  {LINKS.map((l) => (
+                    <Link key={l.to} data-menu-link to={l.to} onClick={() => setMenuAberto(false)}
+                      className="block rounded-lg px-3 py-2.5 text-[13px] font-semibold text-surface-100 hover:bg-[var(--rowhover)]">
+                      {l.label}
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -119,15 +134,9 @@ export function LandingNav() {
           </div>
 
           <div className="ml-4 hidden items-center gap-6 md:flex">
-          {nav.links.filter((l) => l.anchor !== 'plataforma').map((l) => (
-            <a
-              key={l.anchor}
-              href={`#${l.anchor}`}
-              className="rounded-sm text-[13px] font-medium text-surface-400 transition-colors hover:text-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-            >
-              {l.label}
-            </a>
-          ))}
+            {LINKS.map((l) => (
+              <Link key={l.to} to={l.to} className={linkNav(pathname === l.to)}>{l.label}</Link>
+            ))}
           </div>
         </nav>
 
@@ -142,21 +151,12 @@ export function LandingNav() {
             <Sun className="w-4 h-4 [[data-theme=light]_&]:hidden" strokeWidth={1.75} aria-hidden />
             <Moon className="w-4 h-4 hidden [[data-theme=light]_&]:block" strokeWidth={1.75} aria-hidden />
           </button>
-          {/* Sem canal comercial configurado, "Entrar" é o único botão (e o
-              destaque): a página não promete uma conversa que ainda não atende. */}
-          <LinkButton to={LANDING_ROUTES.login} variant={contatoDisponivel ? 'neutral' : 'primary'} className={contatoDisponivel ? 'hidden sm:inline-flex' : undefined}>
+          <LinkButton to={LANDING_ROUTES.login} variant="neutral">
             {nav.cta}
           </LinkButton>
-          {contatoDisponivel && (
-            <LinkButton
-              href={linkContato()}
-              target="_blank"
-              rel="noopener noreferrer"
-              leftIcon={<MessageCircle className="h-4 w-4" strokeWidth={2.2} />}
-            >
-              {contato.cta}
-            </LinkButton>
-          )}
+          <LinkButton to={LANDING_ROUTES.demonstracao} className="hidden sm:inline-flex">
+            {home.ctaPrincipal}
+          </LinkButton>
         </div>
       </div>
     </header>
