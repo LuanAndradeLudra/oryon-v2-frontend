@@ -141,11 +141,13 @@ describe('WelcomePage', () => {
     }
   }, 25_000)
 
-  it('sem botão morto: todo <button> tem nome acessível e (o de tema) age', () => {
+  it('sem botão morto: todo <button> tem nome acessível; a landing é só escura', () => {
+    document.documentElement.setAttribute('data-theme', 'light')
     renderPage()
     const nav = screen.getByRole('banner')
-    const tema = within(nav).getByRole('button', { name: 'Alternar tema claro e escuro' })
-    expect(tema).toBeEnabled()
+    // 30/09 (PO): sem alternância de tema nas páginas públicas.
+    expect(within(nav).queryByRole('button', { name: /tema/i })).toBeNull()
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull()
     for (const b of screen.getAllByRole('button')) {
       expect(b.getAttribute('aria-label') || b.textContent?.trim(), 'botão sem nome').toBeTruthy()
     }

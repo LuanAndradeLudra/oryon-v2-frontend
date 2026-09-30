@@ -17,7 +17,11 @@
         // 'auto' segue o SO — resolvido aqui, antes do primeiro paint, para
         // não piscar dark→light quando o SO prefere claro (SCRUM-1100).
         var isLight = t === 'light' || (t === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
-        if (isLight) document.documentElement.setAttribute('data-theme', 'light');
+        // As páginas públicas (landing) são só escuras (30/09, PO): o tema
+        // claro da landing sai até ter um desenho próprio aprovado.
+        var p = location.pathname;
+        var publica = p === '/' || /^\/(plataforma|solucoes|perguntas|demonstracao)(\/|$)/.test(p);
+        if (isLight && !publica) document.documentElement.setAttribute('data-theme', 'light');
       })();
     </script>
   </head>

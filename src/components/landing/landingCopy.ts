@@ -73,7 +73,7 @@ export const nav = {
       ],
     },
   ],
-  themeToggleLabel: 'Alternar tema claro e escuro',
+
   cta: 'Entrar',
 } as const
 

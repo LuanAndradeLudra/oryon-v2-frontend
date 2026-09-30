@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Sun, Moon, ChevronDown } from 'lucide-react'
-import { useTheme } from '@/hooks/useTheme'
+import { ChevronDown } from 'lucide-react'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { cn } from '@/lib/utils'
 import { nav, home, LANDING_ROUTES, paginasPlataforma, rotaPlataforma } from '../landingCopy'
@@ -20,7 +19,6 @@ const LINKS = [
 ] as const
 
 export function LandingNav() {
-  const { toggle } = useTheme()
   const { pathname } = useLocation()
   const [menuAberto, setMenuAberto] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -143,16 +141,6 @@ export function LandingNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label={nav.themeToggleLabel}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-surface-400 transition-colors hover:bg-[var(--rowhover)] hover:text-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-          >
-            {/* escuro (padrão): Sol (vai para o claro) · claro: Lua */}
-            <Sun className="w-4 h-4 [[data-theme=light]_&]:hidden" strokeWidth={1.75} aria-hidden />
-            <Moon className="w-4 h-4 hidden [[data-theme=light]_&]:block" strokeWidth={1.75} aria-hidden />
-          </button>
           <BotaoLanding to={LANDING_ROUTES.login} variante="fantasma">
             {nav.cta}
           </BotaoLanding>
