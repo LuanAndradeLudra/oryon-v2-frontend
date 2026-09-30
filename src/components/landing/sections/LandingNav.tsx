@@ -120,8 +120,8 @@ export function LandingNav() {
                     </Link>
                   ))}
                 </div>
-                {/* No celular, as outras páginas também moram aqui. */}
-                <div className="mt-1 border-t border-[var(--landing-borda)] pt-1 md:hidden">
+                {/* Abaixo de 1024 px, as outras páginas também moram aqui. */}
+                <div className="mt-1 border-t border-[var(--landing-borda)] pt-1 lg:hidden">
                   {LINKS.map((l) => (
                     <Link key={l.to} data-menu-link to={l.to} onClick={() => setMenuAberto(false)}
                       className="block rounded-lg px-3 py-2.5 text-[13px] font-semibold text-surface-100 hover:bg-[var(--rowhover)]">
@@ -133,7 +133,9 @@ export function LandingNav() {
             )}
           </div>
 
-          <div className="ml-4 hidden items-center gap-6 md:flex">
+          {/* Links soltos só a partir de 1024 px: entre 768 e 1024 "Para a sua área"
+              quebrava em três linhas (30/09). */}
+          <div className="ml-4 hidden items-center gap-6 whitespace-nowrap lg:flex">
             {LINKS.map((l) => (
               <Link key={l.to} to={l.to} className={linkNav(pathname === l.to)}>{l.label}</Link>
             ))}

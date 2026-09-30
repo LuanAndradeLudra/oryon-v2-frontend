@@ -157,7 +157,7 @@ export function SecaoDemonstracao({ origem, comoPagina = false }: { origem: stri
         <div>
           {comoPagina ? (
             <Revelar>
-              <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{formDemo.eyebrow}</p>
+              <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{formDemo.eyebrow}</p>
               <h1 className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
                 <span className="text-surface-50">{formDemo.titulo}</span>{' '}
                 <span className="text-surface-500">{formDemo.cinza}</span>

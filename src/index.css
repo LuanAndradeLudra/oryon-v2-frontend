@@ -1800,3 +1800,19 @@ h1, h2, h3 {
   max-width: 1520px;
   padding-inline: clamp(16px, 4.5vw, 72px);
 }
+
+/* Landing (30/09, PO): selos ("Como funciona", "Perguntas"…) e a aba ativa
+   com FUNDO SATURADO e TEXTO SÓLIDO — o teal translúcido sobre branco virava
+   um pastel lavado no tema claro. Contraste do texto ≥ 4,5:1 nos dois temas
+   (#CCFBF1 sobre #115E59 ≈ 6,8:1; branco sobre #0F766E ≈ 5,5:1). A aba ativa
+   segue o botão principal: branca no escuro, preta no claro. */
+@utility landing-selo {
+  background-color: #115E59;
+  color: #CCFBF1;
+  [data-theme='light'] & { background-color: #0F766E; color: #FFFFFF; }
+}
+@utility landing-aba-ativa {
+  background-color: #FFFFFF;
+  color: #0B0C0E;
+  [data-theme='light'] & { background-color: #0B0C0E; color: #FFFFFF; }
+}

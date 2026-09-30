@@ -424,20 +424,10 @@ export function HeroPalco({ className }: { className?: string }) {
 
   return (
     <div ref={raizRef} className={cn('relative w-full', className)}>
-      {/* ATMOSFERA: campo teal vindo de baixo + persiana de 1 px a cada 8 px. */}
-      <div aria-hidden className="pointer-events-none absolute -inset-x-[12vw] -top-10 -bottom-24 overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-70 [[data-theme=light]_&]:opacity-60"
-          style={{ background: 'radial-gradient(70% 62% at 50% 100%, color-mix(in srgb, var(--color-brand-500) 30%, transparent) 0%, color-mix(in srgb, var(--color-brand-500) 10%, transparent) 45%, transparent 75%)' }}
-        />
-        <div
-          className="absolute inset-0 opacity-[.35] [[data-theme=light]_&]:opacity-[.5]"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-surface-50) 7%, transparent) 0 1px, transparent 1px 8px)',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 45%, black 100%)',
-          }}
-        />
-      </div>
+      {/* A ATMOSFERA (campo teal + persiana) mora na SEÇÃO do Hero desde 30/09
+          (Hero.tsx): presa ao palco, ela terminava numa borda reta 96 px
+          abaixo dele — justamente onde o brilho era mais forte — e o véu
+          aparecia cortado antes do fim da seção. */}
 
       {/* A NARRAÇÃO — o que acontece agora, fora do palco, em faixa de altura
           fixa (a troca de frase nunca move o palco). */}
@@ -572,10 +562,14 @@ export function HeroPalco({ className }: { className?: string }) {
 
       {/* A BARRA DE CONTROLE — capítulos, a divulgação dos dados e a pausa,
           como num player: o título, a narração e o palco ficam juntos em cima. */}
-      <div ref={barraRef} className="relative mt-3.5 flex flex-col gap-2 px-1 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-3">
-        <p className="hidden md:block text-[11.5px] text-surface-500">Telas reais da Oryon · dados de demonstração.</p>
+      {/* Em três colunas só a partir de 1280 px: entre 768 e 1280 as laterais
+          ficavam estreitas — o aviso quebrava em quatro linhas e o capítulo 04
+          caía para baixo (30/09). Abaixo disso, capítulos em cima e o aviso com
+          a pausa numa linha embaixo. */}
+      <div ref={barraRef} className="relative mt-3.5 flex flex-col gap-2 px-1 xl:grid xl:grid-cols-[1fr_auto_1fr] xl:items-center xl:gap-3">
+        <p className="hidden xl:block text-[11.5px] text-surface-500">Telas reais da Oryon · dados de demonstração.</p>
         <HeroCapitulosLinha
-          className="flex-1 md:col-start-2"
+          className="flex-1 xl:col-start-2"
           capitulos={HERO_CAPITULOS}
           ativo={capitulo}
           duracoes={duracoes}
@@ -583,9 +577,9 @@ export function HeroPalco({ className }: { className?: string }) {
           chaveProgresso={`${capitulo}-${saltos}`}
           onIr={irParaCapitulo}
         />
-        {/* Celular: a legenda e a pausa numa linha só, abaixo dos capítulos. */}
-        <div className="flex items-center justify-between md:col-start-3 md:justify-end">
-          <p className="text-[11px] text-surface-500 md:hidden">Telas reais da Oryon · dados de demonstração.</p>
+        {/* Até 1280 px: o aviso e a pausa numa linha só, abaixo dos capítulos. */}
+        <div className="flex items-center justify-between xl:col-start-3 xl:justify-end">
+          <p className="text-[11px] text-surface-500 xl:hidden">Telas reais da Oryon · dados de demonstração.</p>
           {canAnimate && (
             <button
               type="button"

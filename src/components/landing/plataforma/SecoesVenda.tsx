@@ -50,7 +50,7 @@ function BotaoContato({ className, longo = true }: { className?: string; longo?:
 export function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string; cinza: string }) {
   return (
     <Revelar className="max-w-[64rem]">
-      <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{eyebrow}</p>
+      <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{eyebrow}</p>
       <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.16rem,2.17vw,1.73rem)] text-balance">
         <span className="text-surface-50">{titulo}</span>{' '}
         <span className="text-surface-500">{cinza}</span>
@@ -191,7 +191,7 @@ export function SecaoPerguntas({ limite, comoPagina = false }: { limite?: number
         <div className="lg:sticky lg:top-24 lg:self-start">
           {comoPagina ? (
             <Revelar>
-              <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{perguntas.eyebrow}</p>
+              <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{perguntas.eyebrow}</p>
               <h1 className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
                 <span className="text-surface-50">{perguntas.title}</span>{' '}
                 <span className="text-surface-500">{perguntas.titleCinza}</span>

@@ -63,7 +63,7 @@ function Simulacao({ area }: { area: AreaSolucao }) {
             {sim.contato.split(' ').map((n) => n[0]).join('')}
           </span>
           <span className="text-[12px] font-semibold text-surface-100">{sim.contato}</span>
-          <span className="ml-auto rounded-full bg-brand-500/15 px-2 py-0.5 text-[10px] font-semibold text-brand-300">{sim.agente}</span>
+          <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold landing-selo">{sim.agente}</span>
         </div>
         <MediaViewerProvider>
           <div className="flex flex-1 flex-col justify-end gap-1 px-2 py-2">
@@ -111,7 +111,7 @@ export function SecaoSolucoes({ completa = false }: { completa?: boolean }) {
                 'flex-none rounded-full px-3.5 py-1.5 text-[13px] font-medium ring-1 transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                 a.id === ativa
-                  ? 'bg-brand-500/15 text-surface-50 ring-brand-500/40'
+                  ? 'landing-aba-ativa ring-transparent'
                   : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100',
               )}
             >

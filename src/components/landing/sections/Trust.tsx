@@ -76,7 +76,7 @@ export function Trust({ compacto = false }: { compacto?: boolean }) {
           viewport={{ once: true, margin: '-12% 0px' }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         >
-          <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{trust.eyebrow}</p>
+          <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">{trust.eyebrow}</p>
           <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.16rem,2.17vw,1.73rem)] text-balance">
             <span className="text-surface-50">{trust.title}</span>{' '}
             <span className="text-surface-500">{trust.titleCinza}</span>

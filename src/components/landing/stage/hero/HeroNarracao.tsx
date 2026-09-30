@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils'
  * palco.
  *
  * Decisão do PO (24/09): as anotações saíram de dentro das telas (poluíam a
- * cena) e vieram para cá, com as cores INVERTIDAS em relação ao tema — fundo
- * claro e texto escuro no tema escuro, o contrário no claro. Os tokens
- * `surface-50` e `surface-950` já se invertem entre os temas.
+ * cena) e vieram para cá. Até 30/09 a pílula tinha as cores INVERTIDAS em
+ * relação ao tema; com os botões do Hero (cápsula clara), ela virou vidro
+ * com texto claro para não parecer um botão (decisão do PO, 30/09).
  *
  * Geometria estável (25/09): a FAIXA tem altura fixa por regime — uma linha a
  * partir de `sm` (a frase mais longa tem ~60 caracteres e cabe), duas no
@@ -36,8 +36,13 @@ export function HeroNarracao({ texto, className, pilulaRef }: {
         style={{ borderRadius: 999 }}
         className={cn(
           'relative inline-flex max-w-full items-center gap-2.5 px-4 py-2',
-          'bg-surface-50 text-surface-950',
-          'shadow-[0_10px_30px_-12px_rgba(0,0,0,.55)] [[data-theme=light]_&]:shadow-[0_10px_30px_-12px_rgba(11,13,24,.35)]',
+          // 30/09 (PO): vidro com texto claro — antes era uma cápsula CLARA, igual
+          // ao botão principal logo acima, e parecia clicável. Agora o único
+          // elemento cheio e claro do Hero é a ação principal; a legenda é
+          // narração e pertence visualmente à demonstração.
+          'bg-[color-mix(in_srgb,var(--color-surface-900)_72%,transparent)] text-surface-100 backdrop-blur-md',
+          'ring-1 ring-inset ring-[var(--landing-borda)]',
+          'shadow-[0_10px_30px_-14px_rgba(0,0,0,.6)] [[data-theme=light]_&]:shadow-[0_8px_24px_-14px_rgba(11,13,24,.25)]',
         )}
       >
         <motion.span layout="position" aria-hidden className="relative flex h-2 w-2 flex-shrink-0">
@@ -48,7 +53,7 @@ export function HeroNarracao({ texto, className, pilulaRef }: {
           <motion.span
             key={texto}
             layout="position"
-            className="text-[13.5px] sm:text-[14px] font-semibold leading-[1.35] tracking-[-0.01em] text-balance"
+            className="text-[13.5px] sm:text-[14px] font-medium leading-[1.35] tracking-[-0.01em] text-balance"
             initial={{ opacity: 0, filter: 'blur(4px)' }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, filter: 'blur(3px)' }}

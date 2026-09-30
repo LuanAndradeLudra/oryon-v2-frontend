@@ -645,7 +645,7 @@ export function SecaoPlataforma() {
         {/* Cabeçalho da seção — alinhado à coluna dos artigos. */}
         <div className="min-w-0 xl:border-l xl:border-[var(--landing-borda)] xl:pl-[clamp(20px,1.8vw,32px)]">
         <Revelar className="max-w-[64rem]">
-          <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">
+          <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">
             {plataforma.eyebrow}
           </p>
           <h2 id="plataforma-titulo" className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.75rem,3vw,2.5rem)] text-balance">
@@ -774,7 +774,7 @@ export function SecaoComoFunciona() {
     <section id="como-funciona" data-section="como-funciona" aria-labelledby="como-funciona-titulo" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
       <div className="landing-container">
         <Revelar className="max-w-[64rem]">
-          <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">
+          <p className="inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold landing-selo">
             {home.comoFunciona.eyebrow}
           </p>
           <h2 id="como-funciona-titulo" className="mt-4 font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.6rem,2.8vw,2.3rem)] text-balance">
@@ -800,11 +800,11 @@ export function SecaoComoFunciona() {
                 'flex flex-none items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium ring-1 transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                 bl.id === ativo
-                  ? 'bg-brand-500/15 text-surface-50 ring-brand-500/40'
+                  ? 'landing-aba-ativa ring-transparent'
                   : 'text-surface-400 ring-[var(--landing-borda)] hover:text-surface-100',
               )}
             >
-              <span className="tabular-nums text-[11px] text-surface-500">{String(i + 1).padStart(2, '0')}</span>
+              <span className="tabular-nums text-[11px] opacity-60">{String(i + 1).padStart(2, '0')}</span>
               {bl.indice}
             </button>
           ))}

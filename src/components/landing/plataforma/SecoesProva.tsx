@@ -59,7 +59,7 @@ export function SecaoArea() {
           {/* O caso completo: a clínica da demonstração, com o WhatsApp real ao lado do que a IA faz. */}
           <Revelar atraso={0.15} className="flex min-w-0">
             <div className="flex w-full flex-col rounded-2xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:p-7 lg:p-5">
-              <p className="inline-flex w-fit rounded-full bg-brand-500/10 px-2.5 py-1 text-[11px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{area.caso.rotulo}</p>
+              <p className="inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold landing-selo">{area.caso.rotulo}</p>
               <h3 className="mt-3.5 font-display text-[clamp(0.98rem,1.33vw,1.27rem)] font-semibold leading-[1.15] tracking-[-0.022em] text-surface-50">{area.caso.titulo}</h3>
               <p className="mt-2 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{area.caso.texto}</p>
               <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_auto] sm:items-center">
