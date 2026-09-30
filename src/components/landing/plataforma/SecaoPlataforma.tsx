@@ -50,10 +50,12 @@ const S = (t: number, state: HeroState): Cue => ({ t, state })
 const RECORTES: Record<string, Recorte> = {
   // Conversa + painel do contato.
   conversa: { x: 421, y: 44, w: 859, h: 676 },
-  // Quadro do funil, panorâmico: Qualificação, Proposta e Negociação — o card
+  // Quadro do funil, panorâmico: Avaliação, Agendado e Aguardando guia — o card
   // anda entre as duas primeiras, e a terceira mostra que o funil continua.
-  // A partir de x = 330: em 318 entrava uma fatia da coluna Entrada, que parecia corte acidental.
-  funil: { x: 330, y: 92, w: 780, h: 262 },
+  // Medido em 1280×720 (30/09): colunas de x = 336 a 1110; começa no
+  // cabeçalho das colunas (y = 136 — a faixa de filtros acima saía cortada à
+  // esquerda) e termina no vão abaixo do 2º card de Avaliação e Aguardando guia.
+  funil: { x: 334, y: 136, w: 778, h: 236 },
   // A gaveta do relatório da campanha.
   // Até a legenda do gráfico (a 640 px ela saía cortada).
   relatorio: { x: 684, y: 0, w: 596, h: 656 },
@@ -242,7 +244,9 @@ function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number;
         // o zoom compensa a redução do cartão (0,66) para o texto do WhatsApp
         // ficar legível (≈ 0,75 do tamanho real), e o close mostra o fim da
         // conversa — onde a pergunta e a resposta chegam.
-        <div className="flex h-[272px] items-end justify-center overflow-hidden">
+        // O topo do close some num degradê: sem ele, a bolha de cima aparecia
+        // cortada ao meio, com cara de erro.
+        <div className="flex h-[272px] items-end justify-center overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,#000_56px)]">
           <div className="-mb-[24px] [zoom:1.57]" style={{ width: 234, height: 456 }}><ConteudoWhatsAppAparelho at={at} cena="conversa" /></div>
         </div>
       )
@@ -391,7 +395,10 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
     // Esticada, a evidência divide a altura do palco (flex-1): a folga vai para
     // a área do visual, centrado — nunca um vão entre as duas.
     <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-w-0', esticar && 'flex-1')}>
-      <div className={cn('flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]', bloco === 'medir' && 'lg:grid lg:grid-cols-[1.3fr_1fr] lg:items-center', esticar && 'h-full')}>
+      {/* Todas as evidências no mesmo desenho (visual em cima, frase embaixo) e
+          com a altura da vizinha: o painel (06) tinha visual e frase lado a
+          lado, e a grade ficava desalinhada com cartões de alturas diferentes. */}
+      <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
         <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5">
           <div aria-hidden inert data-evidencia className="pointer-events-none grid min-w-0 select-none [zoom:0.8]">
             {RESERVAS[bloco]?.map((estado) => (
@@ -507,7 +514,10 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
         {/* A operação, na tela. */}
         {!semTela && (
         <Revelar atraso={0.1} className="min-w-0 self-start">
-          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto max-w-[1000px]' : undefined} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
+          {/* Embaixo, a tela nunca passa do tamanho real do app (1×) nem de
+              1000 px: com só o teto de 1000 px, o funil (região estreita) saía
+              a 1,3× — maior e mais cortado que as outras telas da página. */}
+          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto' : undefined} style={arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} esmaecerBase={b.id === 'funil'} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
             foraDoRecorte={aoLado ? 330 : 170} />
         </Revelar>
         )}
@@ -654,12 +664,11 @@ export function SecaoPlataforma() {
                   className={cn(ai > 0 && 'mt-14 sm:mt-16')}
                 >
                   <Revelar className="mb-8 sm:mb-10">
-                    <div className="relative grid gap-3 overflow-hidden rounded-xl border border-[var(--landing-borda)] bg-[color-mix(in_srgb,var(--color-brand-500)_7%,var(--landing-cartao))] px-5 py-5 sm:grid-cols-[7.25rem_minmax(0,1fr)] sm:items-center sm:gap-6 sm:px-6 sm:py-6">
+                    {/* O ato como rótulo ("ATO I"), não como numeral gigante: na fonte
+                        de título o "I" sozinho parecia um traço ou um cursor. */}
+                    <div className="relative overflow-hidden rounded-xl border border-[var(--landing-borda)] bg-[color-mix(in_srgb,var(--color-brand-500)_7%,var(--landing-cartao))] px-5 py-5 sm:px-6 sm:py-6">
                       <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-[var(--landing-destaque)]" />
-                      <div className="flex items-baseline gap-2 sm:block">
-                        <span className="text-[10px] font-semibold uppercase tracking-[.18em] text-surface-500">Ato</span>
-                        <span aria-hidden className="font-display text-[2rem] font-bold leading-none tracking-[-.04em] text-[var(--landing-destaque)] sm:mt-1 sm:block sm:text-[2.5rem]">{ato.numero}</span>
-                      </div>
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[.18em] text-[var(--landing-destaque)]">Ato {ato.numero}</p>
                       <div className="min-w-0">
                         <h3 id={`plataforma-ato-${ato.id}`} className="font-display text-[clamp(1.35rem,1.9vw,1.75rem)] font-bold leading-[1.08] tracking-[-.025em] text-surface-50 text-balance">{ato.titulo}</h3>
                         <p className="mt-2 max-w-[56ch] text-[14px] leading-relaxed text-surface-400 sm:text-[15px]">{ato.frase}</p>

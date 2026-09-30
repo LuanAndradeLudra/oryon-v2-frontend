@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { pedirMontagem, tornarVisivel, cancelarMontagem, liberar } from './filaDeMontagem'
 import { useReducedMotion } from 'framer-motion'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -179,7 +179,7 @@ function PosterDaDemo({ rota }: { rota: string }) {
 }
 
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
+  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
 }: {
   titulo: string
   /** Rota em que o app nasce. */
@@ -191,6 +191,10 @@ export function DemoRecorte({
   /** A região do app (1280 × 720) que o bloco mostra. */
   recorte: Recorte
   className?: string
+  style?: CSSProperties
+  /** A base da região some num degradê — para regiões que cortam uma lista
+   *  (o funil): o card que continua embaixo lê como "tem mais", não como erro. */
+  esmaecerBase?: boolean
   /** A largura máxima da moldura (px) para este viewport — o pai compõe a grade com ela. */
   onLimite?: (px: number) => void
   /** Altura da tela reservada ao que fica fora do recorte (cabeçalho, frase do
@@ -327,13 +331,13 @@ export function DemoRecorte({
   const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}`)
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('w-full', className)} style={style}>
         <div ref={hostRef} className="relative" aria-hidden>
           <Bandeja titulo={titulo} className="w-full">
             <div
               ref={telaRef}
               inert
-              className="relative w-full overflow-hidden pointer-events-none select-none"
+              className={cn('relative w-full overflow-hidden pointer-events-none select-none', esmaecerBase && '[mask-image:linear-gradient(to_bottom,#000_78%,transparent)]')}
               style={{ aspectRatio: `${regiao.w} / ${regiao.h}` }}
             >
               {montar && (
