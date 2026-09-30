@@ -42,6 +42,9 @@ export function HeroNarracao({ texto, className, pilulaRef }: {
           // narração e pertence visualmente à demonstração.
           'bg-[color-mix(in_srgb,var(--color-surface-900)_72%,transparent)] text-surface-100 backdrop-blur-md',
           'ring-1 ring-inset ring-[var(--landing-borda)]',
+          // Tema claro: o vidro sumia no fundo claro do Hero — cápsula branca
+          // sólida, contorno de verdade e texto escuro (o botão lá é preto).
+          '[[data-theme=light]_&]:bg-white [[data-theme=light]_&]:ring-[#C9CFD8] [[data-theme=light]_&]:text-[#1B1F24]',
           'shadow-[0_10px_30px_-14px_rgba(0,0,0,.6)] [[data-theme=light]_&]:shadow-[0_8px_24px_-14px_rgba(11,13,24,.25)]',
         )}
       >

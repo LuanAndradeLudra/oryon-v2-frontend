@@ -1,5 +1,6 @@
 import { HeroPalco } from '@/components/landing/stage/hero/HeroPalco'
 import { cn } from '@/lib/utils'
+import { ArrowDown } from 'lucide-react'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { hero, home, LANDING_ROUTES } from '../landingCopy'
 
@@ -66,31 +67,34 @@ export function Hero() {
           }}
         />
       </div>
-      {/* Texto CENTRADO no mesmo eixo do palco (como a referência): título,
-          lead e CTAs alinhados à esquerda numa coluna mais estreita que o
-          palco criavam dois eixos brigando na primeira dobra. */}
-      <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-6 text-center">
+      {/* LAYOUT C (30/09, PO): editorial, tudo alinhado à esquerda na mesma
+          margem das outras seções — selo, título, texto de apoio e a ação, em
+          uma coluna de leitura. Um botão só com peso (a demonstração); "Ver
+          como funciona" é link de texto (quem quer ver, rola). */}
+      <div className="landing-container">
+        <p className="reveal landing-selo inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ ['--d' as string]: '0ms' }}>
+          {hero.selo}
+        </p>
         <h1
-          className="reveal font-display font-extrabold text-surface-50 text-[clamp(30px,min(8.2vw,16px+5.333svh),72px)] leading-[0.95] tracking-[clamp(-2.2px,2.08px-0.3733svh,-1.1px)]"
-          style={{ ['--d' as string]: '0ms' }}
+          className="reveal mt-4 max-w-[16ch] font-display font-extrabold text-surface-50 text-[clamp(34px,min(6.4vw,14px+5svh),68px)] leading-[0.98] tracking-[clamp(-2.2px,2.08px-0.3733svh,-1.1px)] text-balance"
+          style={{ ['--d' as string]: '60ms' }}
         >
           {hero.title}
         </h1>
-        <p
-          className="reveal mx-auto mt-[clamp(10px,1.6svh,16px)] max-w-[64ch] text-base sm:text-lg leading-relaxed text-surface-400 text-balance"
-          style={{ ['--d' as string]: '90ms' }}
-        >
-          {hero.lead}
-        </p>
-        {/* A conversão (30/09, home de venda): pedir a demonstração ou ver as
-            etapas logo abaixo. Antes (24/09) o Hero não tinha botões — a página
-            chegava ao fim sem nenhum próximo passo para quem não é cliente. */}
-        <div
-          className="reveal mt-[clamp(12px,1.8svh,18px)] flex flex-wrap items-center justify-center gap-2.5"
-          style={{ ['--d' as string]: '180ms' }}
-        >
-          <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta>{home.ctaPrincipal}</BotaoLanding>
-          <BotaoLanding href="#como-funciona" variante="secundario" tamanho="lg">{home.ctaSecundario}</BotaoLanding>
+        <div className="reveal mt-[clamp(12px,1.8svh,18px)]" style={{ ['--d' as string]: '120ms' }}>
+          <p className="max-w-[62ch] text-[16px] leading-relaxed text-surface-400 sm:text-[17px] text-pretty">
+            {hero.lead}
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <BotaoLanding to={LANDING_ROUTES.demonstracao} seta className="h-11 px-5 text-[14.5px]">{home.ctaPrincipal}</BotaoLanding>
+            <a
+              href="#como-funciona"
+              className="group inline-flex items-center gap-1.5 rounded-sm text-[14.5px] font-medium text-surface-300 transition-colors hover:text-surface-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              {home.ctaSecundario}
+              <ArrowDown className="h-4 w-4 transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none" aria-hidden />
+            </a>
+          </div>
         </div>
       </div>
 

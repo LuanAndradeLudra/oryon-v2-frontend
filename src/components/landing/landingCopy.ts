@@ -80,8 +80,11 @@ export const nav = {
 export const hero = {
   // H1 curto, em duas frases: apresenta o trabalho da IA e o diferencial do
   // CRM sem depender do lead para explicar a categoria do produto.
-  title: 'A IA atende. O CRM se atualiza.',
-  lead: 'A Oryon responde aos clientes no WhatsApp, atualiza contatos e negócios durante a conversa e chama sua equipe com todo o histórico quando uma pessoa precisa assumir.',
+  // 30/09 (PO): título 2 + subtítulo sobre o VALOR do agente — sem falar de
+  // funil e sem prometer que ele não erra (a equipe assume quando precisa).
+  selo: 'Para quem atende pelo WhatsApp',
+  title: 'Seu WhatsApp atende, vende e organiza.',
+  lead: 'Um agente de inteligência artificial responde seus clientes a qualquer hora, com as informações da sua empresa, e chama sua equipe quando uma pessoa precisa assumir.',
   stageLabel: 'Demonstração animada do produto',
 } as const
 
