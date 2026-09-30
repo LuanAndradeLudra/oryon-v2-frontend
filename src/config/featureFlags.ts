@@ -110,6 +110,12 @@ export const FEATURE_FLAGS = {
   // segurança da T6 (segredos cifrados, teto do motor de rascunho, SSRF,
   // tenantPlan, piloto do Feegow).
   connectorsSelfService: false,
+  // D8 (release 2026-09-29) — abas do relatório de campanha sem fonte de
+  // dados (Conversões, Churn, Atribuição, Conversas por campanha, linha do
+  // tempo de engajamento e a análise da IA sobre esses números). O backend
+  // não calcula nada disso: com a flag desligada as abas somem em vez de
+  // mostrar zero. Religar só quando existir fonte.
+  campaignReportLegacyTabs: false,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS

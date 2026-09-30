@@ -1719,6 +1719,15 @@ export const campaignsApi = {
   getConversations(id: string) {
     return api.get<import('@/types').CampaignConversationSummary[]>(`/campaigns/${id}/conversations`)
   },
+  /** T2 — destinatários por status; `excluded` (D9) lista os suprimidos do segmento. */
+  getRecipients(id: string, status?: import('@/types').CampaignRecipientStatus | 'excluded', page = 1, limit = 50) {
+    return api.get<{
+      data: Array<import('@/types').CampaignRecipientRow | import('@/types').CampaignExcludedRow>
+      total: number
+      page: number
+      limit: number
+    }>(`/campaigns/${id}/recipients`, { params: { status, page, limit } })
+  },
 }
 
 export const activityApi = {

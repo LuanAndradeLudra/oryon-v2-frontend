@@ -1561,6 +1561,45 @@ export interface CampaignFailureReason {
 }
 
 /** Resposta de um destinatário à campanha (BE.1 — `replies[]`). */
+/** T2 — funil completo de `GET /campaigns/:id/analytics`. */
+export interface CampaignFunnel {
+  pending:   number
+  sent:      number
+  delivered: number
+  read:      number
+  replied:   number
+  failed:    number
+  cancelled: number
+  /** Suprimidos antes do envio (número inválido / opt-out) — fora de toda base. */
+  excluded:  number
+  /** Saíram de marketing (131050) — à parte. */
+  optedOut:  number
+}
+
+export type CampaignRecipientStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'cancelled'
+
+/** Linha de `GET /campaigns/:id/recipients`. */
+export interface CampaignRecipientRow {
+  id: string
+  contactId: string
+  contactName: string | null
+  status: CampaignRecipientStatus
+  errorCode: string | null
+  replyText: string | null
+  sentAt: string | null
+  deliveredAt: string | null
+  readAt: string | null
+  failedAt: string | null
+}
+
+/** Linha de `GET /campaigns/:id/recipients?status=excluded` (D9, situação atual). */
+export interface CampaignExcludedRow {
+  contactId: string
+  contactName: string | null
+  reason: 'invalid_number' | 'opt_out'
+  since: string | null
+}
+
 export interface CampaignReply {
   contactId: string
   name:      string | null
@@ -1594,6 +1633,8 @@ export interface CampaignAnalytics {
   avgTimeToReadMinutes: number | null
   /** Contadores atuais da campanha — mais novos que o `stats` da lista. */
   stats?: CampaignStats
+  /** Funil por destinatário (T2). Base dos percentuais pela D7. */
+  funnel?: CampaignFunnel
   /** Motivo da pausa automática, sempre atual. */
   stopReason?: string | null
 }

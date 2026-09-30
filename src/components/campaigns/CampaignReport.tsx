@@ -14,6 +14,8 @@ import {
 import { cn } from '@/lib/utils'
 import { Spinner } from '@/components/ui/Spinner'
 import { StatStrip } from './StatStrip'
+import { RecipientsTab, RepliesTab } from './CampaignReportTabs'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { campaignsApi } from '@/services/api'
 import { generateCampaignInsights } from '@/services/copilotService'
 import { useChartColors } from '@/hooks/useChartColors'
@@ -214,7 +216,9 @@ const SENTIMENT_CONFIG: Record<string, { label: string; color: string }> = {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'conversions' | 'churn' | 'attribution' | 'conversations'
+type Tab = 'overview' | 'recipients' | 'replies' | 'conversions' | 'churn' | 'attribution' | 'conversations'
+/** D8 — abas sem fonte de dados, atrás de campaignReportLegacyTabs. */
+const LEGACY_TABS: ReadonlySet<Tab> = new Set<Tab>(['conversions', 'churn', 'attribution', 'conversations'])
 
 // ── Main report drawer ────────────────────────────────────────────────────────
 
@@ -223,7 +227,7 @@ interface CampaignReportProps {
   onClose: () => void
 }
 
-const lerAbaRelatorio = lerUmDe(['overview', 'conversions', 'churn', 'attribution', 'conversations'] as const, 'overview')
+const lerAbaRelatorio = lerUmDe(['overview', 'recipients', 'replies', 'conversions', 'churn', 'attribution', 'conversations'] as const, 'overview')
 
 export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const navigate = useNavigate()
@@ -231,8 +235,12 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const [analytics, setAnalytics] = useState<CampaignAnalytics | null>(null)
   const [conversations, setConversations] = useState<CampaignConversationSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const legacy = useFeatureVisibility().isFeatureVisible('campaignReportLegacyTabs')
   // Aba e filtros do relatório na URL (limpos junto com ?report= ao fechar).
-  const [tab, setTab] = useEstadoNaUrl<Tab>('relatorioAba', { padrao: 'overview', ler: lerAbaRelatorio })
+  const [tabNaUrl, setTab] = useEstadoNaUrl<Tab>('relatorioAba', { padrao: 'overview', ler: lerAbaRelatorio })
+  // D8 — link antigo para uma aba escondida cai na visão geral.
+  const tab: Tab = !legacy && LEGACY_TABS.has(tabNaUrl) ? 'overview' : tabNaUrl
   const [outcomeFilter, setOutcomeFilter] = useEstadoNaUrl<string>('resultado', { padrao: 'all' })
   const [sentimentFilter, setSentimentFilter] = useEstadoNaUrl<string>('sentimento', { padrao: 'all' })
 
@@ -242,31 +250,49 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   // SCRUM-1150: campanha parada sozinha pelo circuit breaker; o /analytics traz o motivo atual.
   const stopReason = analytics?.stopReason ?? campaign.stopReason ?? null
 
+  // T2 — o analytics não depende mais de `/campaigns/:id/conversations`: esse
+  // endpoint não existe, e no Promise.all a falha dele derrubava o relatório
+  // inteiro (em silêncio). As conversas por campanha só com as abas legadas (D8).
   useEffect(() => {
-    Promise.all([
-      campaignsApi.getAnalytics(campaign.id),
-      campaignsApi.getConversations(campaign.id),
-    ])
-      .then(([analyticsRes, convsRes]) => {
-        setAnalytics(normalizeCampaignAnalytics(analyticsRes.data))
-        setConversations(convsRes.data ?? [])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [campaign.id])
+    let vivo = true
+    setLoading(true)
+    setLoadError(false)
+    campaignsApi.getAnalytics(campaign.id)
+      .then((r) => { if (vivo) setAnalytics(normalizeCampaignAnalytics(r.data)) })
+      .catch(() => { if (vivo) setLoadError(true) })
+      .finally(() => { if (vivo) setLoading(false) })
+    if (legacy) {
+      campaignsApi.getConversations(campaign.id)
+        .then((r) => { if (vivo) setConversations(r.data ?? []) })
+        .catch(() => { if (vivo) setConversations([]) })
+    }
+    return () => { vivo = false }
+  }, [campaign.id, legacy])
 
-  // Derived metrics
-  const deliveredRate = stats.sent > 0 ? Math.round((stats.delivered / stats.sent) * 100) : 0
-  const readRate      = stats.sent > 0 ? Math.round((stats.read / stats.sent) * 100) : 0
-  const replyRate     = stats.read > 0 && stats.replied ? Math.round((stats.replied / stats.read) * 100) : 0
-  const convRate      = stats.read > 0 && stats.conversions ? Math.round((stats.conversions / stats.read) * 100) : 0
+  // D7 — cada percentual com a base escrita na tela: entregues e falhas sobre
+  // as ENVIADAS; lidas e respostas sobre as ENTREGUES. Excluídos e opt-out à
+  // parte, fora de toda base. Sem base (0), mostra "—", não "0%".
+  const funnel = analytics?.funnel
+  const sent      = funnel?.sent ?? stats.sent
+  const delivered = funnel?.delivered ?? stats.delivered
+  const read      = funnel?.read ?? stats.read
+  const replied   = funnel?.replied ?? stats.replied ?? 0
+  const failed    = funnel?.failed ?? stats.failed
+  const excluded  = funnel?.excluded ?? stats.excluded ?? 0
+  const optedOut  = funnel?.optedOut ?? stats.optedOut ?? 0
+  const pending   = funnel?.pending ?? 0
+  // "Enviadas" = tudo que tentamos mandar (aceitas pela Meta + falhas): é a
+  // base de entregues e de falhas (D7), então as duas somam no máximo 100%.
+  const enviadas  = sent + failed
+  const pctDe = (n: number, base: number) => (base > 0 ? `${Math.round((n / base) * 100)}%` : '—')
+  const convRate  = stats.read > 0 && stats.conversions ? Math.round((stats.conversions / stats.read) * 100) : 0
 
   const funnelData = [
-    { label: 'Enviadas',    value: stats.sent,      color: 'var(--color-accent-blue)' },
-    { label: 'Entregues',   value: stats.delivered, color: 'var(--color-accent-cyan)' },
-    { label: 'Lidas',       value: stats.read,      color: 'var(--color-accent-amber)' },
-    { label: 'Responderam', value: stats.replied ?? 0, color: 'var(--color-accent-violet)' },
-    { label: 'Convertidas', value: stats.conversions ?? 0, color: 'var(--color-accent-green)' },
+    { label: 'Enviadas',    value: enviadas,  base: enviadas,  baseLabel: '',              color: 'var(--color-accent-blue)' },
+    { label: 'Entregues',   value: delivered, base: enviadas,  baseLabel: 'das enviadas',  color: 'var(--color-accent-cyan)' },
+    { label: 'Lidas',       value: read,      base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-amber)' },
+    { label: 'Responderam', value: replied,   base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-violet)' },
+    { label: 'Falharam',    value: failed,    base: enviadas,  baseLabel: 'das enviadas',  color: 'var(--color-danger)' },
   ]
 
   const churnColors = CHURN_COLOR_KEYS.map((k) => C[k])
@@ -283,10 +309,14 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview',       label: 'Visão Geral' },
-    { id: 'conversions',    label: `Conversões (${stats.conversions ?? 0})` },
-    { id: 'churn',          label: `Churn (${stats.churnCount ?? totalChurn})` },
-    { id: 'attribution',    label: 'Atribuição' },
-    { id: 'conversations',  label: `Conversas (${conversations.length})` },
+    { id: 'recipients',     label: 'Destinatários' },
+    { id: 'replies',        label: `Respostas (${replied})` },
+    ...(legacy ? [
+      { id: 'conversions' as const,   label: `Conversões (${stats.conversions ?? 0})` },
+      { id: 'churn' as const,         label: `Churn (${stats.churnCount ?? totalChurn})` },
+      { id: 'attribution' as const,   label: 'Atribuição' },
+      { id: 'conversations' as const, label: `Conversas (${conversations.length})` },
+    ] : []),
   ]
 
   // Filtered conversations
@@ -333,34 +363,23 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
             <Spinner className="w-5 h-5 text-brand-400" />
             Carregando dados...
           </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center flex-1 gap-2 text-xs text-surface-400 px-6 text-center">
+            <AlertTriangle className="w-5 h-5 text-danger" />
+            Não foi possível carregar o relatório desta campanha. Os números não aparecem para não mostrar zero no lugar do dado real.
+          </div>
         ) : (
           <>
             {/* KPI Strip — direção C: número grande + rótulo miúdo, linha de
                 1px entre eles, sem cartão por item. */}
             <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
               <StatStrip items={[
-                { label: 'Lidas',       value: `${readRate}%`,  sub: `${stats.read} de ${stats.sent}`,          color: 'var(--color-accent-amber)' },
-                { label: 'Responderam', value: `${replyRate}%`, sub: `${stats.replied ?? 0} respostas`,         color: 'var(--color-accent-violet)' },
-                { label: 'Conversões',  value: `${convRate}%`,  sub: `${stats.conversions ?? 0} confirmadas`,   color: 'var(--color-accent-green)' },
-                { label: 'Churn',       value: totalChurn,      sub: `${pct(totalChurn, stats.sent)} do total`, color: 'var(--color-accent-rose)' },
+                { label: 'Enviadas',    value: enviadas,                  sub: pending > 0 ? `${pending} na fila` : `de ${stats.total} contatos`, color: 'var(--color-accent-blue)' },
+                { label: 'Entregues',   value: pctDe(delivered, enviadas), sub: `${delivered} das enviadas`,  color: 'var(--color-accent-cyan)' },
+                { label: 'Lidas',       value: pctDe(read, delivered),    sub: `${read} das entregues`,      color: 'var(--color-accent-amber)' },
+                { label: 'Responderam', value: pctDe(replied, delivered), sub: `${replied} das entregues`,   color: 'var(--color-accent-violet)' },
+                { label: 'Falhas',      value: pctDe(failed, enviadas),   sub: `${failed} das enviadas`,     color: 'var(--color-danger)' },
               ]} />
-              {stats.engagementScore !== undefined && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-3xs text-surface-500">Score de engajamento</span>
-                  <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${stats.engagementScore}%`,
-                        background: stats.engagementScore >= 70 ? 'var(--color-accent-green)' : stats.engagementScore >= 40 ? 'var(--color-accent-amber)' : 'var(--color-accent-rose)',
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs font-bold" style={{
-                    color: stats.engagementScore >= 70 ? 'var(--color-accent-green)' : stats.engagementScore >= 40 ? 'var(--color-accent-amber)' : 'var(--color-accent-rose)',
-                  }}>{stats.engagementScore}/100</span>
-                </div>
-              )}
             </div>
 
             {/* Tab bar */}
@@ -397,11 +416,18 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           <p className="text-2xs text-surface-200">{stopReason}</p>
                         </div>
                       )}
-                      {(stats.excluded ?? 0) > 0 && (
+                      {(excluded > 0 || optedOut > 0) && (
                         <p className="text-2xs text-surface-400">
-                          <span className="font-semibold text-surface-200">{stats.excluded}</span>{' '}
-                          {stats.excluded === 1 ? 'contato do segmento ficou' : 'contatos do segmento ficaram'} de fora
-                          do envio (número inválido ou opt-out de marketing).
+                          À parte, fora dos percentuais:{' '}
+                          {excluded > 0 && (
+                            <><span className="font-semibold text-surface-200">{excluded}</span> {excluded === 1 ? 'contato ficou' : 'contatos ficaram'} fora do envio (número inválido ou opt-out)</>
+                          )}
+                          {excluded > 0 && optedOut > 0 && '; '}
+                          {optedOut > 0 && (
+                            <><span className="font-semibold text-surface-200">{optedOut}</span> {optedOut === 1 ? 'saiu' : 'saíram'} de marketing ao receber</>
+                          )}
+                          .{' '}
+                          <button type="button" className="underline hover:text-surface-200" onClick={() => setTab('recipients')}>Ver destinatários</button>
                         </p>
                       )}
 
@@ -415,7 +441,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               <div className="flex-1 h-6 bg-surface-800 rounded-lg overflow-hidden relative">
                                 <motion.div
                                   initial={{ width: 0 }}
-                                  animate={{ width: `${stats.sent > 0 ? (f.value / stats.sent) * 100 : 0}%` }}
+                                  animate={{ width: `${f.base > 0 ? Math.min(100, (f.value / f.base) * 100) : 0}%` }}
                                   transition={{ duration: 0.6, delay: i * 0.08 }}
                                   className="h-full rounded-lg flex items-center pl-2"
                                   style={{ backgroundColor: tint(f.color, 25), borderLeft: `3px solid ${f.color}` }}
@@ -423,8 +449,8 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   <span className="text-3xs font-bold" style={{ color: f.color }}>{f.value}</span>
                                 </motion.div>
                               </div>
-                              <span className="text-2xs text-surface-500 w-12 text-right flex-shrink-0">
-                                {pct(f.value, stats.sent)}
+                              <span className="text-2xs text-surface-500 w-32 text-right flex-shrink-0">
+                                {f.baseLabel ? `${pctDe(f.value, f.base)} ${f.baseLabel}` : ''}
                               </span>
                             </div>
                           ))}
@@ -461,8 +487,8 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         </div>
                       )}
 
-                      {/* Timeline */}
-                      {analytics && analytics.engagementTimeline.length > 0 && (
+                      {/* Timeline (D8: sem fonte — só com as abas legadas) */}
+                      {legacy && analytics && analytics.engagementTimeline.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-surface-300 mb-3">Engajamento ao longo do tempo</p>
                           <div className="h-44">
@@ -496,10 +522,18 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         </div>
                       )}
 
-                      {/* AI Insights */}
-                      {analytics && <AiInsightsSection campaign={campaign} analytics={analytics} />}
+                      {/* AI Insights (D8: analisava números sem fonte — só com as abas legadas) */}
+                      {legacy && analytics && <AiInsightsSection campaign={campaign} analytics={analytics} />}
                     </>
                   )}
+
+                  {/* ── DESTINATÁRIOS (T2 + D9) ── */}
+                  {tab === 'recipients' && (
+                    <RecipientsTab campaignId={campaign.id} failures={analytics?.failures ?? []} />
+                  )}
+
+                  {/* ── RESPOSTAS (T2) ── */}
+                  {tab === 'replies' && <RepliesTab replies={analytics?.replies ?? []} />}
 
                   {/* ── CONVERSIONS ── */}
                   {tab === 'conversions' && analytics && (

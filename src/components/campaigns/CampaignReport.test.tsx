@@ -12,6 +12,7 @@ const { getAnalytics, getConversations } = vi.hoisted(() => ({
 vi.mock('@/services/api', () => ({
   campaignsApi: { getAnalytics, getConversations },
 }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { tenantId: 't1', role: 'admin', email: 'a@b.c' } }) }))
 vi.mock('@/hooks/useChartColors', () => ({
   useChartColors: () =>
     new Proxy({}, { get: () => '#888' }) as Record<string, string>,
@@ -95,7 +96,47 @@ describe('CampaignReport com o payload real do backend', () => {
     )
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy())
     expect(screen.getByRole('alert').textContent).toContain('Pausada automaticamente')
-    expect(screen.getByText(/ficaram de fora/)).toBeTruthy()
+    expect(screen.getByText(/ficaram fora do envio/)).toBeTruthy()
     expect(screen.getByText('Template pausado')).toBeTruthy()
+  })
+
+  it('T2: não chama /conversations (inexistente), esconde as abas sem fonte (D8) e escreve a base (D7)', async () => {
+    getConversations.mockClear()
+    getAnalytics.mockResolvedValue({
+      data: {
+        campaignId: 'c1',
+        stats: { total: 12, sent: 8, delivered: 6, read: 3, failed: 2, replied: 3 },
+        funnel: { pending: 0, sent: 8, delivered: 6, read: 3, replied: 3, failed: 2, cancelled: 0, excluded: 2, optedOut: 1 },
+        failures: [],
+        replies: [],
+      },
+    })
+    render(
+      <MemoryRouter>
+        <CampaignReport campaign={campaign} onClose={() => undefined} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByText('Destinatários')).toBeTruthy())
+    expect(getConversations).not.toHaveBeenCalled()
+    for (const aba of [/^Conversões/, /^Churn/, /^Atribuição/, /^Conversas/]) {
+      expect(screen.queryByRole('button', { name: aba })).toBeNull()
+    }
+    // Enviadas = 8 aceitas + 2 falhas = 10; entregues 6/10; lidas 3/6 (sobre entregues).
+    expect(screen.getAllByText('60% das enviadas').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('50% das entregues').length).toBeGreaterThan(0)
+    // Excluídos e opt-out à parte.
+    expect(screen.getByText(/À parte, fora dos percentuais/)).toBeTruthy()
+    // Sem score inventado.
+    expect(screen.queryByText(/Score de engajamento/)).toBeNull()
+  })
+
+  it('T2: falha do analytics mostra erro, não zeros', async () => {
+    getAnalytics.mockRejectedValue(new Error('500'))
+    render(
+      <MemoryRouter>
+        <CampaignReport campaign={campaign} onClose={() => undefined} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByText(/Não foi possível carregar o relatório/)).toBeTruthy())
   })
 })
