@@ -28,7 +28,13 @@ import type { CampaignInsight } from '@/services/copilotService'
 
 function pct(num: number, den: number) {
   if (!den) return '0%'
-  return Math.round((num / den) * 100) + '%'
+  return Math.min(100, Math.round((num / den) * 100)) + '%'
+}
+
+/** Taxa (0–1) em % inteiro, com teto de 100 (M7: conversão ou leitura contada
+ *  sem a etapa anterior — webhook perdido — passava de 100%). */
+function pct100(taxa: number) {
+  return Math.min(100, Math.round(taxa * 100))
 }
 
 function fmtDate(iso: string) {
@@ -286,7 +292,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const enviadas  = sent + failed
   // R3: teto de 100% — um contador fora de ordem (webhook atrasado) nunca vira "150%".
   const pctDe = (n: number, base: number) => (base > 0 ? `${Math.min(100, Math.round((n / base) * 100))}%` : '—')
-  const convRate  = stats.read > 0 && stats.conversions ? Math.round((stats.conversions / stats.read) * 100) : 0
+  const convRate  = stats.read > 0 && stats.conversions ? pct100(stats.conversions / stats.read) : 0
 
   const funnelData = [
     { label: 'Enviadas',    value: enviadas,  base: enviadas,  baseLabel: '',              color: 'var(--color-accent-blue)' },
@@ -620,7 +626,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold" style={{ color: cfg.color }}>Melhor origem: {cfg.label}</p>
                               <p className="text-2xs text-surface-400 mt-0.5">
-                                {best.conversionCount} conversões · {Math.round(best.conversionRate * 100)}% de taxa · {best.contactCount} contatos
+                                {best.conversionCount} conversões · {pct100(best.conversionRate)}% de taxa · {best.contactCount} contatos
                               </p>
                             </div>
                           </div>
@@ -642,13 +648,13 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                     <span className="text-3xs text-surface-600">({ab.contactCount} contatos)</span>
                                   </div>
                                   <span className="text-2xs font-bold" style={{ color: cfg.color }}>
-                                    {Math.round(ab.readRate * 100)}%
+                                    {pct100(ab.readRate)}%
                                   </span>
                                 </div>
                                 <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
                                   <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${ab.readRate * 100}%` }}
+                                    animate={{ width: `${pct100(ab.readRate)}%` }}
                                     transition={{ duration: 0.5 }}
                                     className="h-full rounded-full"
                                     style={{ backgroundColor: cfg.color }}
@@ -673,13 +679,13 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                     <span className="text-2xs text-surface-300">{cfg.label}</span>
                                   </div>
                                   <span className="text-2xs font-bold" style={{ color: cfg.color }}>
-                                    {Math.round(ab.conversionRate * 100)}%
+                                    {pct100(ab.conversionRate)}%
                                   </span>
                                 </div>
                                 <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
                                   <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${ab.conversionRate * 100}%` }}
+                                    animate={{ width: `${pct100(ab.conversionRate)}%` }}
                                     transition={{ duration: 0.5 }}
                                     className="h-full rounded-full"
                                     style={{ backgroundColor: tint(cfg.color, 80) }}
@@ -722,10 +728,10 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                       )}
                                     </td>
                                     <td className="px-3 py-2 text-right text-surface-300">{ab.contactCount}</td>
-                                    <td className="px-3 py-2 text-right text-surface-300">{ab.readCount} <span className="text-surface-600">({Math.round(ab.readRate * 100)}%)</span></td>
+                                    <td className="px-3 py-2 text-right text-surface-300">{ab.readCount} <span className="text-surface-600">({pct100(ab.readRate)}%)</span></td>
                                     <td className="px-3 py-2 text-right text-surface-300">{ab.replyCount}</td>
                                     <td className="px-3 py-2 text-right font-bold" style={{ color: cfg.color }}>{ab.conversionCount}</td>
-                                    <td className="px-3 py-2 text-right font-bold" style={{ color: cfg.color }}>{Math.round(ab.conversionRate * 100)}%</td>
+                                    <td className="px-3 py-2 text-right font-bold" style={{ color: cfg.color }}>{pct100(ab.conversionRate)}%</td>
                                   </tr>
                                 )
                               })}
