@@ -27,35 +27,41 @@ interface StatStripProps {
 }
 
 export function StatStrip({ items, className }: StatStripProps) {
+  // Smoke 375 px (30/09): 5 números lado a lado cortavam os rótulos
+  // ("Respo…"). Com 4+ itens, o celular quebra em 3 colunas. Cada célula tem
+  // borda à esquerda e em cima; a grade desloca 1 px para esconder as bordas
+  // de fora — funciona sobre qualquer fundo.
+  const quebra = items.length >= 4
   return (
-    <div
-      className={cn('grid border border-surface-700 rounded-lg overflow-hidden', className)}
-      style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}
-    >
-      {items.map((item, i) => {
-        const Tag = item.onClick ? 'button' : 'div'
-        return (
-          <Tag
-            key={item.label}
-            type={item.onClick ? 'button' : undefined}
-            onClick={item.onClick}
-            className={cn(
-              'px-3 py-2.5 text-center min-w-0',
-              i > 0 && 'border-l border-surface-700',
-              item.onClick && 'cursor-pointer hover:bg-[var(--rowhover)] transition-colors',
-              item.active && 'bg-[var(--sf2)]',
-            )}
-          >
-            <p className="text-lg font-bold tabular-nums truncate" style={item.color ? { color: item.color } : undefined}>
-              {item.value}
-            </p>
-            {/* Piso tipográfico do produto pra texto informativo é 11px
-                (--text-2xs, P8) — não o 10px de --text-3xs. */}
-            <p className="text-2xs text-surface-500 mt-0.5 leading-tight truncate">{item.label}</p>
-            {item.sub && <p className="text-2xs text-surface-600 truncate">{item.sub}</p>}
-          </Tag>
-        )
-      })}
+    <div className={cn('border border-surface-700 rounded-lg overflow-hidden', className)}>
+      <div
+        className={cn('grid -ml-px -mt-px', quebra ? 'grid-cols-3 sm:[grid-template-columns:var(--colunas)]' : '[grid-template-columns:var(--colunas)]')}
+        style={{ ['--colunas' as string]: `repeat(${items.length}, 1fr)` }}
+      >
+        {items.map((item) => {
+          const Tag = item.onClick ? 'button' : 'div'
+          return (
+            <Tag
+              key={item.label}
+              type={item.onClick ? 'button' : undefined}
+              onClick={item.onClick}
+              className={cn(
+                'px-3 py-2.5 text-center min-w-0 border-l border-t border-surface-700',
+                item.onClick && 'cursor-pointer hover:bg-[var(--rowhover)] transition-colors',
+                item.active && 'bg-[var(--sf2)]',
+              )}
+            >
+              <p className="text-lg font-bold tabular-nums truncate" style={item.color ? { color: item.color } : undefined}>
+                {item.value}
+              </p>
+              {/* Piso tipográfico do produto pra texto informativo é 11px
+                  (--text-2xs, P8) — não o 10px de --text-3xs. */}
+              <p className="text-2xs text-surface-500 mt-0.5 leading-tight truncate">{item.label}</p>
+              {item.sub && <p className="text-2xs text-surface-600 truncate">{item.sub}</p>}
+            </Tag>
+          )
+        })}
+      </div>
     </div>
   )
 }
