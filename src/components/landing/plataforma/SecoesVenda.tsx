@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ChevronDown, MessageCircle, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
+import { ArrowRight, MessageCircle, Check, PencilLine, Layers, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 import { BotaoLanding } from '../ui/BotaoLanding'
@@ -103,12 +103,11 @@ export function SecaoImplantacao({ compacta = false, numero }: { compacta?: bool
             <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px]">{implantacao.lead}</p>
           </Revelar>
 
-          <ol className="border-t border-[var(--landing-borda)]">
+          <Revelar atraso={0.1}><ol className="border-t border-[var(--landing-borda)]">
             {implantacao.passos.map((p, i) => {
               const voce = p.quem === 'voce'
               return (
-                <Revelar key={p.titulo} atraso={0.1 + i * 0.1}>
-                  <li className="grid grid-cols-[72px_14px_minmax(0,1fr)] gap-x-3 border-b border-[var(--landing-borda)] py-5 sm:grid-cols-[84px_14px_minmax(0,1fr)] sm:gap-x-4">
+                <li key={p.titulo} className="grid grid-cols-[72px_14px_minmax(0,1fr)] gap-x-3 border-b border-[var(--landing-borda)] py-5 sm:grid-cols-[84px_14px_minmax(0,1fr)] sm:gap-x-4">
                     <span className="pt-[3px] font-mono text-[11.5px] tracking-[.02em] text-surface-500">{DIAS_PASSO[i]}</span>
                     <span aria-hidden className={cn('mt-[8px] h-[7px] w-[7px] rounded-full', voce ? 'bg-[#F5B544]' : 'bg-[var(--landing-destaque)]')} />
                     <div className="min-w-0">
@@ -128,10 +127,9 @@ export function SecaoImplantacao({ compacta = false, numero }: { compacta?: bool
                       )}
                     </div>
                   </li>
-                </Revelar>
               )
             })}
-          </ol>
+          </ol></Revelar>
         </div>
 
         {/* Depois do ar: o ajuste passa a ser do cliente, na própria Oryon. */}
@@ -167,7 +165,9 @@ export function SecaoImplantacao({ compacta = false, numero }: { compacta?: bool
 
 // ─── Perguntas frequentes ────────────────────────────────────────────────────
 
-function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }) {
+/** Uma pergunta do FAQ (P9 da auditoria anti-genérico, 30/09): número em
+ *  mono à esquerda, "+" que vira "−" no lugar do chevron, sobre réguas. */
+function Pergunta({ pergunta, resposta, n }: { pergunta: string; resposta: string; n: number }) {
   const respostaId = useId()
   const [aberta, setAberta] = useState(false)
   const semMovimento = useReducedMotion()
@@ -178,10 +178,11 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
         onClick={() => setAberta((v) => !v)}
         aria-expanded={aberta}
         aria-controls={aberta ? respostaId : undefined}
-        className="flex w-full items-center justify-between gap-6 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] rounded-md"
+        className="grid w-full grid-cols-[34px_minmax(0,1fr)_auto] items-baseline gap-x-3 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] rounded-md"
       >
-        <span className="text-[15px] font-semibold text-surface-50">{pergunta}</span>
-        <ChevronDown className={cn('h-5 w-5 flex-shrink-0 text-surface-500 transition-transform duration-300', aberta && 'rotate-180')} />
+        <span className={cn('font-mono text-[11.5px] tracking-[.04em]', aberta ? 'text-[var(--landing-destaque)]' : 'text-surface-500')}>{String(n).padStart(2, '0')}</span>
+        <span className="text-[15.5px] font-semibold text-surface-50">{pergunta}</span>
+        <span aria-hidden className="font-mono text-[16px] leading-none text-surface-500">{aberta ? '−' : '+'}</span>
       </button>
       <AnimatePresence initial={false}>
         {aberta && (
@@ -193,7 +194,7 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
             transition={{ duration: semMovimento ? 0 : 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <p className="max-w-[62ch] pb-5 text-[14px] leading-relaxed text-surface-400">{resposta}</p>
+            <p className="max-w-[62ch] pb-5 pl-[46px] text-[14.5px] leading-relaxed text-surface-400">{resposta}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -232,8 +233,8 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
         </div>
         {limite ? (
           <Revelar atraso={0.1}>
-            <div className="rounded-2xl bg-[var(--landing-cartao)] px-5 ring-1 ring-[var(--landing-borda)] [&>div:last-child]:border-b-0">
-              {naHome.slice(0, limite).map((q) => <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />)}
+            <div className="border-t border-[var(--landing-borda)]">
+              {naHome.slice(0, limite).map((q, i) => <Pergunta key={q.pergunta} n={i + 1} pergunta={q.pergunta} resposta={q.resposta} />)}
             </div>
             <Link to={LANDING_ROUTES.perguntas} className="mt-5 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
               {home.perguntas.verTodas} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -246,7 +247,7 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
               <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{g.titulo}</p>
               <div className="mt-2 border-t border-[var(--landing-borda)]">
                 {g.itens.map((q) => (
-                  <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />
+                  <Pergunta key={q.pergunta} n={todas.findIndex((t) => t.pergunta === q.pergunta) + 1} pergunta={q.pergunta} resposta={q.resposta} />
                 ))}
               </div>
             </Revelar>

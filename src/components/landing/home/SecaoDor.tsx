@@ -22,12 +22,12 @@ export function SecaoDor({ numero }: { numero?: string } = {}) {
       <div className="landing-container">
         <Cabecalho numero={numero} eyebrow={dor.eyebrow} titulo={dor.titulo} cinza={dor.cinza} />
 
-        <ul className="mt-10 grid border-t border-[var(--landing-borda)] lg:grid-cols-3">
+        <Revelar atraso={0.1}><ul className="mt-10 grid border-t border-[var(--landing-borda)] lg:grid-cols-3">
           {dor.itens.map((it, i) => {
             const d = { ...it, ...DOR_CONVERSAS[it.key] }
             return (
             <li key={d.key} className={cn('border-b border-[var(--landing-borda)] py-7 lg:border-b-0 lg:py-8', i > 0 && 'lg:border-l lg:pl-7', i < 2 && 'lg:pr-7')}>
-              <Revelar atraso={0.08 * i}>
+              <div>
                 <p className="font-mono text-[11.5px] tracking-[.04em] text-surface-500">{d.quando}</p>
                 <h3 className="mt-3 text-[17px] font-semibold leading-snug text-surface-50 text-balance lg:min-h-[2.6em]">{d.problema}</h3>
 
@@ -55,11 +55,11 @@ export function SecaoDor({ numero }: { numero?: string } = {}) {
                 <p className="mt-5 text-[14px] leading-relaxed text-surface-400 text-pretty">
                   <span className="font-semibold text-surface-100">{dor.comOryon}</span>, {d.solucao}
                 </p>
-              </Revelar>
+              </div>
             </li>
             )
           })}
-        </ul>
+        </ul></Revelar>
 
         <Revelar atraso={0.2}>
           <a

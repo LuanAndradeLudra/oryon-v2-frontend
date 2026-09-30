@@ -1,11 +1,11 @@
 import { useId, useState, type FormEvent } from 'react'
-import { CheckCircle2 } from 'lucide-react'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { apiBaseUrl } from '@/config/env'
+import { cn } from '@/lib/utils'
 import { formDemo } from '../landingCopy'
 import { Cabecalho, Capitulo, Revelar } from '../plataforma/SecoesVenda'
 
@@ -88,50 +88,60 @@ export function FormDemonstracao({ origem }: { origem: string }) {
   }
 
   if (estado === 'enviado') {
+    // P10 da auditoria anti-genérico (30/09): o sucesso é uma mensagem, não um
+    // CheckCircle — a resposta como o cliente da Oryon a receberia.
+    const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     return (
-      <div role="status" className="flex flex-col items-start gap-3 rounded-2xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:p-8">
-        <CheckCircle2 className="h-7 w-7 text-[var(--landing-destaque)]" aria-hidden />
-        <p className="font-display text-[20px] font-semibold text-surface-50">{formDemo.sucessoTitulo}</p>
-        <p className="max-w-[46ch] text-[15px] leading-relaxed text-surface-400">{formDemo.sucessoTexto}</p>
+      <div role="status" className="flex flex-col items-start gap-3 border-t border-[var(--landing-borda)] pt-6">
+        <div className="max-w-[92%] rounded-[10px] rounded-bl-[3px] bg-bubble-out px-4 py-3 text-[15px] leading-snug text-surface-50">
+          <p className="font-semibold">{formDemo.sucessoTitulo}</p>
+          <p className="mt-1 text-[14.5px] text-surface-100/90">{formDemo.sucessoTexto}</p>
+          <span aria-hidden className="mt-1.5 block text-right font-mono text-[10.5px] text-brand-300">{hora} ✓✓</span>
+        </div>
       </div>
     )
   }
 
+  // Os campos sobre réguas (P10): sem caixa em volta do formulário nem dos
+  // campos — rótulo em mono, linha embaixo, foco em teal.
+  const CAMPO = '[&>label]:font-mono [&>label]:text-[10.5px] [&>label]:uppercase [&>label]:tracking-[.12em] [&>label]:text-surface-500'
+  const LINHA = '!rounded-none !border-0 !border-b !border-[var(--landing-borda)] !bg-transparent !px-0 !shadow-none focus:!border-[var(--landing-destaque)] focus:!ring-0'
+
   const c = formDemo.campos
   return (
-    <form noValidate onSubmit={enviar} aria-describedby={avisoId} className="grid gap-4 rounded-2xl bg-[var(--landing-cartao)] p-5 ring-1 ring-[var(--landing-borda)] sm:grid-cols-2 sm:p-7">
-      <FormField label={c.nome} error={erros.nome} required>
-        <Input value={dados.nome} onChange={(e) => mudar('nome')(e.target.value)} autoComplete="name" />
+    <form noValidate onSubmit={enviar} aria-describedby={avisoId} className="grid gap-x-8 gap-y-6 border-t border-[var(--landing-borda)] pt-6 sm:grid-cols-2">
+      <FormField label={c.nome} error={erros.nome} required className={CAMPO}>
+        <Input className={LINHA} value={dados.nome} onChange={(e) => mudar('nome')(e.target.value)} autoComplete="name" />
       </FormField>
-      <FormField label={c.empresa} error={erros.empresa} required>
-        <Input value={dados.empresa} onChange={(e) => mudar('empresa')(e.target.value)} autoComplete="organization" />
+      <FormField label={c.empresa} error={erros.empresa} required className={CAMPO}>
+        <Input className={LINHA} value={dados.empresa} onChange={(e) => mudar('empresa')(e.target.value)} autoComplete="organization" />
       </FormField>
-      <FormField label={c.whatsapp} error={erros.whatsapp} required>
-        <Input value={dados.whatsapp} onChange={(e) => mudar('whatsapp')(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000" />
+      <FormField label={c.whatsapp} error={erros.whatsapp} required className={CAMPO}>
+        <Input className={LINHA} value={dados.whatsapp} onChange={(e) => mudar('whatsapp')(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000" />
       </FormField>
-      <FormField label={c.email} error={erros.email} required>
-        <Input type="email" value={dados.email} onChange={(e) => mudar('email')(e.target.value)} autoComplete="email" />
+      <FormField label={c.email} error={erros.email} required className={CAMPO}>
+        <Input className={LINHA} type="email" value={dados.email} onChange={(e) => mudar('email')(e.target.value)} autoComplete="email" />
       </FormField>
-      <FormField label={c.segmento} error={erros.segmento} required>
-        <Select value={dados.segmento} onChange={(e) => mudar('segmento')(e.target.value)}>
+      <FormField label={c.segmento} error={erros.segmento} required className={CAMPO}>
+        <Select className={LINHA} value={dados.segmento} onChange={(e) => mudar('segmento')(e.target.value)}>
           <option value="">{formDemo.selecione}</option>
           {formDemo.segmentos.map((s) => <option key={s} value={s}>{s}</option>)}
         </Select>
       </FormField>
-      <FormField label={c.equipe} error={erros.equipe} required>
-        <Select value={dados.equipe} onChange={(e) => mudar('equipe')(e.target.value)}>
+      <FormField label={c.equipe} error={erros.equipe} required className={CAMPO}>
+        <Select className={LINHA} value={dados.equipe} onChange={(e) => mudar('equipe')(e.target.value)}>
           <option value="">{formDemo.selecione}</option>
           {formDemo.tamanhos.map((s) => <option key={s} value={s}>{s}</option>)}
         </Select>
       </FormField>
-      <FormField label={c.mensagem} requirement="optional" className="sm:col-span-2">
-        <Textarea value={dados.mensagem} onChange={(e) => mudar('mensagem')(e.target.value)} rows={3} maxLength={1000} />
+      <FormField label={c.mensagem} requirement="optional" className={cn('sm:col-span-2', CAMPO)}>
+        <Textarea className={LINHA} value={dados.mensagem} onChange={(e) => mudar('mensagem')(e.target.value)} rows={3} maxLength={1000} />
       </FormField>
       {/* Armadilha para robôs: fora da tela e fora da ordem de tabulação. */}
       <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
         <label>Site<input tabIndex={-1} autoComplete="off" value={dados.site} onChange={(e) => mudar('site')(e.target.value)} /></label>
       </div>
-      <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-2 flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
         <p id={avisoId} className="text-[12.5px] leading-relaxed text-surface-500">{formDemo.privacidade}</p>
         <BotaoLanding type="submit" tamanho="lg" seta carregando={estado === 'enviando'} className="flex-none">
           {estado === 'enviando' ? formDemo.enviando : formDemo.enviar}
