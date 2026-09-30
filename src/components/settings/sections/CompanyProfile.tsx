@@ -36,6 +36,9 @@ export function CompanyProfile() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { checklist, markDone } = useSetupChecklist(user?.id)
+  // S1 (release 2026-09-29): só administrador altera a organização — o
+  // backend agora recusa os outros papéis. Supervisor vê, sem editar.
+  const podeEditar = ['admin', 'business_admin', 'super_admin'].includes(user?.role ?? '')
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [form, setForm] = useState({
     name: '',
@@ -177,6 +180,7 @@ export function CompanyProfile() {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="Nome da empresa"
+              readOnly={!podeEditar}
             />
           </FormField>
 
@@ -210,6 +214,7 @@ export function CompanyProfile() {
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               placeholder="contato@empresa.com"
+              readOnly={!podeEditar}
             />
           </FormField>
 
@@ -230,9 +235,13 @@ export function CompanyProfile() {
           </FormField>
         </div>
 
-        <div className="flex justify-end mt-4">
-          <Button onClick={save} loading={loading} disabled={nomeInvalido || emailInvalido}>Salvar alterações</Button>
-        </div>
+        {podeEditar ? (
+          <div className="flex justify-end mt-4">
+            <Button onClick={save} loading={loading} disabled={nomeInvalido || emailInvalido}>Salvar alterações</Button>
+          </div>
+        ) : (
+          <p className="mt-4 text-xs text-surface-500">Só um administrador da empresa altera estes dados.</p>
+        )}
       </SettingsSection>
     </div>
   )
