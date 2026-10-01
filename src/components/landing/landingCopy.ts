@@ -592,6 +592,8 @@ export const home = {
     abasLabel: 'Escolher o tipo de empresa',
     resultado: 'Resultado',
     andamento: 'Conversa em andamento…',
+    /** Celular: com as duas conversas vistas, o botão do setor seguinte ("Próximo: Imobiliária"). */
+    proximo: 'Próximo:',
   },
   /** A chamada no meio da página, depois das áreas. */
   chamada: {

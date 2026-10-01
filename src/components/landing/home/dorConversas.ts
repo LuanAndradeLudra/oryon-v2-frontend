@@ -62,10 +62,15 @@ export const RITMO = 1.7
 /** Quanto o setor fica parado no fim, antes de deslizar para o próximo (ms). */
 export const PAUSA_NO_FIM = 3800
 
-/** O tempo total de um setor: o último passo, o contador e a pausa no fim. */
+/** Quando uma conversa termina (tempo de roteiro): o último passo, com o
+ *  contador correndo, ou o resultado — o que vier por último. */
+export function fimDoLado(l: Lado) {
+  return Math.max(l.resultado.t, ...l.passos.map((p) => p.t + (p.tipo === 'selo' && p.contador ? DURACAO_CONTADOR : 0)))
+}
+
+/** O tempo total de um setor: a conversa mais longa e a pausa no fim. */
 export function duracaoDoSetor(s: Setor) {
-  const fim = Math.max(...[s.sem, s.com].flatMap((l) => [l.resultado.t, ...l.passos.map((p) => p.t + (p.tipo === 'selo' && p.contador ? DURACAO_CONTADOR : 0))]))
-  return fim + PAUSA_NO_FIM
+  return Math.max(fimDoLado(s.sem), fimDoLado(s.com)) + PAUSA_NO_FIM
 }
 
 export const SETORES: Setor[] = [

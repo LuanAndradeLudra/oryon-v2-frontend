@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion'
 import { Check, Clock, Info, UserRound, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { home } from '../landingCopy'
 import { Capitulo, Revelar } from '../plataforma/SecoesVenda'
 import { Aparelho } from '../stage/hero/HeroSatelites'
 import { Bolha, TelaWhatsApp } from '../stage/hero/HeroWhatsAppIphone'
 import { teclasDasAbas } from '../ui/abasTeclado'
+import { BotaoLanding } from '../ui/BotaoLanding'
 import { BotaoPausa } from '../ui/BotaoPausa'
-import { DURACAO_CONTADOR, RITMO, SETORES, duracaoDoSetor, type Lado, type PassoDia, type Setor } from './dorConversas'
+import { DURACAO_CONTADOR, RITMO, SETORES, duracaoDoSetor, fimDoLado, type Lado, type PassoDia, type Setor } from './dorConversas'
 
 /**
  * "POR QUE A ORYON" como UM DIA NO WHATSAPP (30/09, PO): dois iPhones — o
@@ -19,11 +21,55 @@ import { DURACAO_CONTADOR, RITMO, SETORES, duracaoDoSetor, type Lado, type Passo
  * checklist marca o que acontece, no ritmo da conversa (aparelho → checklist
  * → aparelho → checklist).
  *
- * Um setor por vez, em carrossel: quando as duas conversas terminam, os dois
- * aparelhos deslizam para o lado e entra o próximo setor. Um relógio único
- * (pausa com o botão e fora da tela) comanda tudo; sem movimento, cada setor
- * aparece já terminado e a troca é pelas abas.
+ * Lado a lado (tablet e desktop): um setor por vez, em carrossel. Um relógio
+ * único (pausa com o botão e fora da tela) comanda as duas conversas; quando
+ * terminam, os aparelhos deslizam para o lado e entra o próximo setor.
+ *
+ * Empilhadas (celular, 02/10, PO): só se vê uma conversa por vez, então cada
+ * uma tem o seu relógio, que só anda enquanto ela está na faixa central da
+ * tela — rolou para fora, pausa; voltou, retoma de onde parou. O setor não
+ * troca sozinho: com as duas terminadas, "Próximo" leva ao setor seguinte e
+ * de volta ao título, na ordem problema → solução.
+ *
+ * Sem movimento, cada setor aparece já terminado e a troca é pelas abas (ou
+ * pelo "Próximo", no celular).
  */
+
+/** Respiro no fim de cada conversa empilhada, para o resultado assentar antes
+ *  do "Próximo" aparecer (tempo de roteiro). */
+const RESPIRO_FIM = 1200
+
+/**
+ * A conversa "na vista" no celular: a que cruza a faixa central da tela (os 10%
+ * do meio). Só uma metade cabe ali por vez — a que a pessoa está olhando,
+ * inclusive quando lê o checklist logo abaixo do aparelho.
+ *
+ * Ref de callback (estável), e não `useInView`: os aparelhos remontam a cada
+ * setor (o carrossel desliza o antigo para fora enquanto o novo entra), e o
+ * observador precisa seguir o elemento novo. Só o último elemento ligado conta.
+ */
+function useNaFaixaCentral() {
+  const [naFaixa, setNaFaixa] = useState(false)
+  const atual = useRef<Element | null>(null)
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return
+    atual.current = el
+    let observador: IntersectionObserver
+    try {
+      observador = new IntersectionObserver((entradas) => {
+        for (const e of entradas) if (e.target === atual.current) setNaFaixa(e.isIntersecting)
+      }, { rootMargin: '-45% 0px -45% 0px' })
+    } catch {
+      return // sem IntersectionObserver (ambiente de teste): fica fora da vista
+    }
+    observador.observe(el)
+    return () => {
+      observador.disconnect()
+      if (atual.current === el) atual.current = null
+    }
+  }, [])
+  return [ref, naFaixa] as const
+}
 
 /** Minutos → "10 h 25 min". */
 function duracao(min: number) {
@@ -183,11 +229,11 @@ function textoDoLado(setor: Setor, lado: Lado) {
     .join('. ')
 }
 
-function Metade({ setor, com, ms }: { setor: Setor; com: boolean; ms: number }) {
+function Metade({ setor, com, ms, raizRef }: { setor: Setor; com: boolean; ms: number; raizRef?: React.Ref<HTMLDivElement> }) {
   const lado = com ? setor.com : setor.sem
   return (
     // No lg+ a metade se desfaz (contents) e os quatro blocos entram numa linha só.
-    <div className="flex flex-col items-center gap-6 lg:contents">
+    <div ref={raizRef} className="flex flex-col items-center gap-6 lg:contents">
       <Rotulo com={com} className="inline-flex lg:hidden" />
       <div aria-hidden className="pointer-events-none select-none">
         <Telefone setor={setor} lado={lado} ms={ms} />
@@ -202,45 +248,86 @@ export function SecaoDor() {
   const { dor } = home
   const semMovimento = useReducedMotion()
   const ref = useRef<HTMLDivElement>(null)
+  const tituloRef = useRef<HTMLDivElement>(null)
   const naTela = useInView(ref, { amount: 0.35 })
+  // Do md para cima as duas conversas ficam lado a lado (vê-se as duas ao
+  // mesmo tempo); abaixo, empilhadas (uma por vez).
+  const ladoALado = useMediaQuery('(min-width: 768px)')
+  const [refSem, semNaVista] = useNaFaixaCentral()
+  const [refCom, comNaVista] = useNaFaixaCentral()
   const [indice, setIndice] = useState(0)
   const [direcao, setDirecao] = useState(1)
-  const [ms, setMs] = useState(0)
+  // Um relógio por conversa (tempo real); os roteiros correm em tempo de
+  // roteiro (RITMO mais devagar). Lado a lado, os dois andam juntos.
+  const [msSem, setMsSem] = useState(0)
+  const [msCom, setMsCom] = useState(0)
   const [pausado, setPausado] = useState(false)
   const setor = SETORES[indice]
-  // O relógio corre em tempo real; os roteiros, em tempo de roteiro (RITMO mais devagar).
+  const proximo = SETORES[(indice + 1) % SETORES.length]
   const total = duracaoDoSetor(setor) * RITMO
-  const correndo = naTela && !pausado && !semMovimento
+  // Lado a lado, as duas correm até o fim do setor (com a pausa no fim);
+  // empilhadas, cada uma para no fim da própria conversa.
+  const fimSem = ladoALado ? total : (fimDoLado(setor.sem) + RESPIRO_FIM) * RITMO
+  const fimCom = ladoALado ? total : (fimDoLado(setor.com) + RESPIRO_FIM) * RITMO
+  const ativo = !pausado && !semMovimento
+  const correndoSem = ativo && (ladoALado ? naTela : semNaVista) && msSem < fimSem
+  const correndoCom = ativo && (ladoALado ? naTela : comNaVista) && msCom < fimCom
 
-  // Um relógio só para o setor: anda quando a seção está na tela e não está pausada.
+  // Trocou de arranjo (girou o tablet, redimensionou): o setor recomeça, para
+  // as duas conversas não ficarem dessincronizadas lado a lado.
+  const [arranjo, setArranjo] = useState(ladoALado)
+  if (arranjo !== ladoALado) {
+    setArranjo(ladoALado)
+    setMsSem(0)
+    setMsCom(0)
+  }
+
+  // Os relógios: cada um anda só enquanto a sua conversa está na vista (lado a
+  // lado: a seção na tela) e não está pausada; volta de onde parou.
   useEffect(() => {
-    if (!correndo) return
+    if (!correndoSem && !correndoCom) return
     let antes = performance.now()
     const id = window.setInterval(() => {
       const agora = performance.now()
-      setMs((m) => m + Math.min(agora - antes, 250))
+      const passo = Math.min(agora - antes, 250)
       antes = agora
+      if (correndoSem) setMsSem((m) => Math.min(m + passo, fimSem))
+      if (correndoCom) setMsCom((m) => Math.min(m + passo, fimCom))
     }, 80)
     return () => window.clearInterval(id)
-  }, [correndo])
+  }, [correndoSem, correndoCom, fimSem, fimCom])
 
-  // Fim do setor: os aparelhos deslizam e entra o próximo.
+  // Lado a lado, fim do setor: os aparelhos deslizam e entra o próximo.
   useEffect(() => {
-    if (ms < total) return
+    if (!ladoALado || msSem < total) return
     setDirecao(1)
     setIndice((i) => (i + 1) % SETORES.length)
-    setMs(0)
-  }, [ms, total])
+    setMsSem(0)
+    setMsCom(0)
+  }, [ladoALado, msSem, total])
 
   function escolher(id: string) {
     const novo = SETORES.findIndex((s) => s.id === id)
     if (novo === indice) return
     setDirecao(novo > indice ? 1 : -1)
     setIndice(novo)
-    setMs(0)
+    setMsSem(0)
+    setMsCom(0)
   }
 
-  const agora = semMovimento ? Infinity : ms / RITMO
+  // Empilhadas: o próximo setor e, de volta ao título dele, a comparação
+  // recomeça na ordem problema → solução. O foco vai para a aba do setor novo.
+  function irParaOProximo() {
+    escolher(proximo.id)
+    document.getElementById(`dor-aba-${proximo.id}`)?.focus({ preventScroll: true })
+    tituloRef.current?.scrollIntoView({ behavior: semMovimento ? 'auto' : 'smooth', block: 'start' })
+  }
+
+  const agoraSem = semMovimento ? Infinity : msSem / RITMO
+  const agoraCom = semMovimento ? Infinity : msCom / RITMO
+  const terminaram = !ladoALado && (semMovimento || (msSem >= fimSem && msCom >= fimCom))
+  // O andamento na aba: lado a lado, o setor; empilhadas, as duas conversas somadas.
+  const andamento = semMovimento ? 1 : ladoALado ? msSem / total : (msSem + msCom) / (fimSem + fimCom)
   const ids = SETORES.map((s) => s.id)
 
   return (
@@ -254,7 +341,9 @@ export function SecaoDor() {
             {/* Os títulos de todos os setores ocupam a mesma célula da grade: a
                 altura é a do maior e a troca é um cruzamento, sem a página pular.
                 Só o do setor ativo fica visível (e acessível). */}
-            <div className="grid min-w-0">
+            {/* scroll-mt: o "Próximo" (celular) traz o título com o sobretítulo
+                visível abaixo da barra fixa do topo. */}
+            <div ref={tituloRef} className="grid min-w-0 scroll-mt-36">
               {SETORES.map((s) => {
                 const ativo = s.id === setor.id
                 const texto = dor.setores[s.id as keyof typeof dor.setores]
@@ -296,7 +385,7 @@ export function SecaoDor() {
                         <span aria-hidden className="absolute bottom-[-1px] left-0 right-[14px] h-[2px] overflow-hidden rounded-full bg-white/[.10]">
                           <span
                             className="block h-full origin-left bg-[var(--landing-destaque)]"
-                            style={{ transform: `scaleX(${semMovimento ? 1 : Math.min(1, ms / total)})` }}
+                            style={{ transform: `scaleX(${Math.min(1, andamento)})` }}
                           />
                         </span>
                       )}
@@ -328,8 +417,21 @@ export function SecaoDor() {
                   transition={{ duration: 0.8, ease: [0.65, 0, 0.35, 1] }}
                   className="grid items-start gap-x-8 gap-y-14 md:grid-cols-2 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-x-6 xl:gap-x-8"
                 >
-                  <Metade setor={setor} com={false} ms={agora} />
-                  <Metade setor={setor} com ms={agora} />
+                  <Metade raizRef={refSem} setor={setor} com={false} ms={agoraSem} />
+                  <Metade raizRef={refCom} setor={setor} com ms={agoraCom} />
+                  {/* Celular: com as duas conversas vistas até o fim, o próximo setor. */}
+                  {terminaram && (
+                    <motion.div
+                      className="flex justify-center md:hidden"
+                      initial={semMovimento ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <BotaoLanding variante="secundario" tamanho="lg" seta onClick={irParaOProximo}>
+                        {dor.proximo} {proximo.rotulo}
+                      </BotaoLanding>
+                    </motion.div>
+                  )}
                 </motion.div>
               </AnimatePresence>
             </div>
