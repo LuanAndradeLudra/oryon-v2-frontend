@@ -354,7 +354,8 @@ function PainelDaLista({ ancoraRef, id, idOpcao, rotulo, opcoes, escolhido, ativ
         className={cn(
           // O vidro dos menus (index.css), no raio e respiro do Dropdown.
           'overlay-surface overlay-vidro border rounded-lg p-1',
-          'overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-width:thin]',
+          // A barra de rolagem é a do vidro (index.css, "Rolagem no vidro").
+          'overflow-y-auto overflow-x-hidden overscroll-contain',
         )}
       >
         {opcoes.map((o, i) => {

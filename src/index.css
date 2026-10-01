@@ -490,6 +490,9 @@
   --vidro-fundo: rgba(30, 42, 42, 0.88);
   --vidro-borda: rgba(255, 255, 255, 0.10);
   --vidro-desfoque: blur(20px) saturate(1.5);
+  /* Rolagem dentro do vidro (02/10): polegar translúcido, trilho transparente. */
+  --vidro-rolagem: rgba(255, 255, 255, 0.16);
+  --vidro-rolagem-forte: rgba(255, 255, 255, 0.28);
 
   /* Marca (kit Órbita, marca-oryon/): o ponto da órbita da palavra "oryon".
      O componente OryonLogo lê esta variável. */
@@ -959,6 +962,45 @@ code, pre, kbd, samp {
     backdrop-filter: none;
   }
 }
+/* ROLAGEM NO VIDRO (02/10, PO): a barra de dentro dos menus de vidro segue o
+   padrão fino do app (4px, trilho transparente) com o polegar translúcido do
+   vidro — discreta sobre qualquer fundo. Vale para o painel que rola e para as
+   listas que rolam dentro dele, no app (.overlay-vidro) e na landing
+   (.landing-vidro). Sem `scrollbar-width`/`scrollbar-color` no Chromium e no
+   WebKit: no Chromium 121+ eles desligam os ::-webkit-scrollbar e devolvem a
+   barra do sistema, de trilho claro (o defeito apontado pelo PO). O Firefox,
+   que não tem os pseudo-elementos, recebe os padrões no @supports abaixo. O
+   `:root` na frente vence a regra global do tema claro, de mesma
+   especificidade. */
+:root :is(.overlay-vidro, .landing-vidro)::-webkit-scrollbar,
+:root :is(.overlay-vidro, .landing-vidro) ::-webkit-scrollbar { width: 4px; height: 4px; }
+:root :is(.overlay-vidro, .landing-vidro)::-webkit-scrollbar-track,
+:root :is(.overlay-vidro, .landing-vidro) ::-webkit-scrollbar-track { background: transparent; }
+:root :is(.overlay-vidro, .landing-vidro)::-webkit-scrollbar-thumb,
+:root :is(.overlay-vidro, .landing-vidro) ::-webkit-scrollbar-thumb {
+  background: var(--vidro-rolagem);
+  border-radius: 999px;
+}
+:root :is(.overlay-vidro, .landing-vidro)::-webkit-scrollbar-thumb:hover,
+:root :is(.overlay-vidro, .landing-vidro) ::-webkit-scrollbar-thumb:hover { background: var(--vidro-rolagem-forte); }
+:root :is(.overlay-vidro, .landing-vidro)::-webkit-scrollbar-corner,
+:root :is(.overlay-vidro, .landing-vidro) ::-webkit-scrollbar-corner { background: transparent; }
+@supports (-moz-appearance: none) {
+  :is(.overlay-vidro, .landing-vidro),
+  :is(.overlay-vidro, .landing-vidro) * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--vidro-rolagem) transparent;
+  }
+}
+/* Uma lista com a barra fina padrão (.scroll-thin/.filter-scroll) DENTRO do
+   vidro segue a barra do vidro: no Chromium, o `scrollbar-width` dessas
+   classes desligaria os pseudo-elementos acima. */
+@supports not (-moz-appearance: none) {
+  :root :is(.overlay-vidro, .landing-vidro) :is(.scroll-thin, .filter-scroll) {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
 /* Fundo do overlay para elementos internos (headers sticky etc.) */
 .overlay-bg { background-color: var(--color-overlay); }
 /* Nível 4 (Modal/Drawer): mantém o bg próprio (o scrim já separa) e herda
@@ -1149,6 +1191,8 @@ code, pre, kbd, samp {
   /* Vidro no tema claro: branco translúcido, borda escura sutil. */
   --vidro-fundo: rgba(255, 255, 255, 0.86);
   --vidro-borda: rgba(15, 23, 42, 0.12);
+  --vidro-rolagem: rgba(15, 23, 42, 0.18);
+  --vidro-rolagem-forte: rgba(15, 23, 42, 0.32);
 
   /* Marca: o ponto da órbita no tema claro. */
   --oryon-accent: #0D9488;

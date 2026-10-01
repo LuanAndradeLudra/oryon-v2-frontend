@@ -31,6 +31,8 @@ export interface OpcaoLista {
 /** Altura de uma opção + o respiro do painel: estima o menu antes de abrir. */
 const ALTURA_OPCAO = 44
 const RESPIRO_PAINEL = 12
+/** Teto da lista: as sete áreas (7 × 44 + respiro + borda = 322px) cabem sem rolar. */
+const ALTURA_MAXIMA = 336
 const MENU_FIXO = 64
 
 export function ListaSuspensa({ rotulo, opcoes, valor, onEscolher, placeholder, name, className }: {
@@ -63,7 +65,7 @@ export function ListaSuspensa({ rotulo, opcoes, valor, onEscolher, placeholder, 
       // mais espaço acima (até o menu fixo da landing).
       const r = botaoRef.current?.getBoundingClientRect()
       if (!r) return
-      const altura = Math.min(320, opcoes.length * ALTURA_OPCAO + RESPIRO_PAINEL) + 8
+      const altura = Math.min(ALTURA_MAXIMA, opcoes.length * ALTURA_OPCAO + RESPIRO_PAINEL) + 8
       const embaixo = window.innerHeight - r.bottom
       setParaCima(embaixo < altura && r.top - MENU_FIXO > embaixo)
     },
@@ -130,7 +132,7 @@ export function ListaSuspensa({ rotulo, opcoes, valor, onEscolher, placeholder, 
             exit={semMovimento ? { opacity: 0 } : { opacity: 0, y: paraCima ? 4 : -4, scale: 0.98, transition: { duration: 0.12 } }}
             transition={semMovimento ? { duration: 0.1 } : { type: 'spring', stiffness: 520, damping: 34, mass: 0.7 }}
             className={cn(
-              'landing-vidro absolute inset-x-0 z-50 max-h-[320px] overflow-y-auto overscroll-contain rounded-xl p-1.5 [scrollbar-width:thin]',
+              'landing-vidro absolute inset-x-0 z-50 max-h-[336px] overflow-y-auto overscroll-contain rounded-xl p-1.5',
               paraCima ? 'bottom-full mb-2 origin-bottom' : 'top-full mt-2 origin-top',
             )}
           >
