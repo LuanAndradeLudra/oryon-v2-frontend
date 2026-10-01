@@ -75,7 +75,7 @@ export function LandingNav() {
               símbolo ao meio da altura x da palavra. O nome acessível é o do link. */}
           <OryonLogo variant="symbol" decorativa className="h-7 select-none min-[420px]:hidden" />
           <OryonLogo decorativa className="hidden h-8 text-surface-50 select-none min-[420px]:block lg:hidden" />
-          <span className="hidden items-start gap-2 lg:flex">
+          <span className="hidden items-start gap-2.5 lg:flex">
             <OryonLogo variant="symbol" decorativa className="h-[26px] select-none" />
             <OryonLogo variant="wordmark" decorativa className="mt-[5px] h-[22px] text-surface-50 select-none" />
           </span>
