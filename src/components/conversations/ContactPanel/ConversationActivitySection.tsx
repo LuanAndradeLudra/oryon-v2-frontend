@@ -314,7 +314,7 @@ export function ConversationActivitySection({ conversationId, entries: injected 
               <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setFilterOpen(false)} />
             )}
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-1 z-50 min-w-[100px] py-1 overlay-surface border rounded-xl overflow-hidden">
+              <div className="absolute right-0 top-full mt-1 z-50 min-w-[100px] py-1 overlay-surface overlay-vidro border rounded-xl overflow-hidden">
                 {(Object.keys(FILTER_LABELS) as TimeFilter[]).map(f => (
                   <button
                     key={f}

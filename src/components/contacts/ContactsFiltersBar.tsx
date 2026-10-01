@@ -282,7 +282,7 @@ export function ContactsFiltersBar({ filters, onFiltersChange, tags, commercial,
             <div
               role="dialog"
               aria-label="Filtros de contatos"
-              className="absolute left-0 top-full mt-1 z-50 w-80 max-h-[70vh] overflow-y-auto overlay-surface border rounded-lg p-3 flex flex-col gap-3"
+              className="absolute left-0 top-full mt-1 z-50 w-80 max-h-[70vh] overflow-y-auto overlay-surface overlay-vidro border rounded-lg p-3 flex flex-col gap-3"
             >
               <StageGroup
                 selected={stageSel}

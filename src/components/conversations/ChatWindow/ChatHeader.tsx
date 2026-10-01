@@ -231,7 +231,7 @@ export function ChatHeader({
         <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setStatusOpen(false)} />
       )}
       {statusOpen && (
-        <div className="absolute right-0 top-full mt-1 min-w-[11rem] py-1 overlay-surface border rounded-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 min-w-[11rem] py-1 overlay-surface overlay-vidro border rounded-xl z-50 overflow-hidden">
           {STATUS_OPTIONS.map(({ value: v, label }) => {
             const active = status === v
             const statusBg = v === 'open'

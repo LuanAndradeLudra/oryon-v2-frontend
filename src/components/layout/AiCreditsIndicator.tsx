@@ -230,7 +230,7 @@ export function AiCreditsIndicator() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.13, ease: 'easeOut' }}
             style={{ position: 'fixed', left: pos.left, bottom: pos.bottom, width: 300, pointerEvents: 'auto' }}
-            className="overlay-surface border rounded-lg p-3.5 flex flex-col gap-2.5 text-[12.5px]"
+            className="overlay-surface overlay-vidro border rounded-lg p-3.5 flex flex-col gap-2.5 text-[12.5px]"
           >
             {/* Canvas 6b: coluna única, padding 14, gap 10, 12.5px. Anel 36 com trilha --bd. */}
             <div className="flex items-center gap-2.5">

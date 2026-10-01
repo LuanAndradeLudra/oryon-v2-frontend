@@ -83,7 +83,7 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.13, ease: 'easeOut' }}
         style={{ position: 'fixed', top, bottom, left, width: POPOVER_WIDTH }}
-        className="overlay-surface border rounded-md p-3.5 text-[12.5px]"
+        className="overlay-surface overlay-vidro border rounded-md p-3.5 text-[12.5px]"
       >
         <div className="flex items-start gap-2 mb-2.5">
           <span

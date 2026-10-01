@@ -298,7 +298,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
         <div
           ref={menuRef}
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: MENU_W, maxHeight: `calc(100vh - ${menuPos.top + 12}px)` }}
-          className="z-[9999] overlay-surface border rounded-lg py-1.5 overflow-y-auto"
+          className="z-[9999] overlay-surface overlay-vidro border rounded-lg py-1.5 overflow-y-auto"
         >
           <GroupLabel>Status</GroupLabel>
           {STATUS_ITEMS.map(({ label, value }) => {
@@ -460,7 +460,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
         <div
           ref={flyoutRef}
           style={{ position: 'fixed', top: flyoutPos.top, left: flyoutPos.left, width: 232 }}
-          className="z-[9999] overlay-surface border rounded-lg overflow-hidden"
+          className="z-[9999] overlay-surface overlay-vidro border rounded-lg overflow-hidden"
         >
           {allUsers.length > 5 && (
             <div className="p-2 border-b border-surface-700">

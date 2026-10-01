@@ -299,7 +299,7 @@ export function ResolveOutcomePopover({ open, mobile, target, candidates, onPick
         role="dialog"
         aria-modal="true"
         aria-label="Resolver com desfecho"
-        className="absolute right-0 top-full mt-1 w-[22rem] max-w-[calc(100vw-1rem)] p-4 overlay-surface border rounded-xl z-50"
+        className="absolute right-0 top-full mt-1 w-[22rem] max-w-[calc(100vw-1rem)] p-4 overlay-surface overlay-vidro border rounded-xl z-50"
       >
         {body}
       </div>

@@ -123,9 +123,9 @@ function QuickReplyPicker({
   return (
     <div
       ref={listRef}
-      className="absolute bottom-full left-0 right-0 mb-2 z-50 overlay-surface border rounded-xl overflow-hidden max-h-56 overflow-y-auto"
+      className="absolute bottom-full left-0 right-0 mb-2 z-50 overlay-surface overlay-vidro border rounded-xl overflow-hidden max-h-56 overflow-y-auto"
     >
-      <div className="px-3 py-2 border-b border-surface-700 flex items-center gap-1.5 sticky top-0 overlay-bg z-10">
+      <div className="px-3 py-2 border-b border-surface-700 flex items-center gap-1.5 sticky top-0 overlay-vidro z-10">
         <Zap className="w-3 h-3 text-accent-dark" />
         <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wide">
           Respostas rápidas {query ? `— /${query}` : ''}
@@ -851,7 +851,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
               {showAttachMenu && (
                 <div
                   ref={attachMenuRef}
-                  className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-lg p-1 z-50 w-40"
+                  className="absolute bottom-full left-0 mb-2 overlay-surface overlay-vidro border rounded-lg p-1 z-50 w-40"
                 >
                   <button
                     onClick={() => {

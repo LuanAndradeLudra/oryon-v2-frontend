@@ -149,7 +149,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute z-50 top-full mt-1 left-0 right-0 overlay-surface border rounded-xl overflow-hidden"
+            className="absolute z-50 top-full mt-1 left-0 right-0 overlay-surface overlay-vidro border rounded-xl overflow-hidden"
           >
             <div className="p-2 border-b border-surface-700">
               <input

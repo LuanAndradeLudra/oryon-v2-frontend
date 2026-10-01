@@ -94,7 +94,7 @@ export function TopBarReadinessIndicator() {
         <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setOpen(false)} />
       )}
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-[360px] overlay-surface border rounded-2xl overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 z-50 w-[360px] overlay-surface overlay-vidro border rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-warning" />

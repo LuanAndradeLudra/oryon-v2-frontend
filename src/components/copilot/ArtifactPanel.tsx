@@ -1016,7 +1016,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -4, scale: 0.97 }}
                       transition={{ duration: 0.12 }}
-                      className="absolute top-full left-0 mt-2 w-72 overlay-surface border rounded-xl z-50 overflow-hidden py-1"
+                      className="absolute top-full left-0 mt-2 w-72 overlay-surface overlay-vidro border rounded-xl z-50 overflow-hidden py-1"
                     >
                       {artifacts.map((art) => (
                         <button

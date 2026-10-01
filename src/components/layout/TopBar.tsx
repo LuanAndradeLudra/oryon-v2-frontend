@@ -948,7 +948,7 @@ function NotificationsPanel() {
           (16/24/21) e chips de 10px; itens de 101px. Agora: cabeçalho de
           44px com ações como botões de ícone 28×28, uma linha de filtros com
           SegmentedControl sm + categoria em Dropdown, item de ~64px. */}
-      <div className="absolute top-full right-0 mt-2 w-[400px] max-w-[calc(100vw-1rem)] overlay-surface border rounded-lg z-50 overflow-hidden animate-slide-in-right">
+      <div className="absolute top-full right-0 mt-2 w-[400px] max-w-[calc(100vw-1rem)] overlay-surface overlay-vidro border rounded-lg z-50 overflow-hidden animate-slide-in-right">
         <div className="h-11 px-3 flex items-center gap-2 border-b border-surface-700">
           <span className="text-[13px] font-bold text-surface-50 tracking-[-0.01em]">Notificações</span>
           {!showArchived && (

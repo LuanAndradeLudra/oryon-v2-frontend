@@ -259,7 +259,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.12 }}
-              className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg overlay-surface border overflow-hidden"
+              className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg overlay-surface overlay-vidro border overflow-hidden"
             >
               {EXTEND_OPTIONS.map((opt) => (
                 <button
