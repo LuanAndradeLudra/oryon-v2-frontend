@@ -26,11 +26,13 @@ function preencher() {
   const campos: Array<[string, string]> = [
     [formDemo.campos.nome, OK.nome], [formDemo.campos.empresa, OK.empresa],
     [formDemo.campos.whatsapp, OK.whatsapp], [formDemo.campos.email, OK.email],
-    [formDemo.campos.segmento, OK.segmento], [formDemo.campos.equipe, OK.equipe],
   ]
   for (const [rotulo, valor] of campos) {
     fireEvent.change(screen.getByLabelText(new RegExp(rotulo.replace(/[?]/g, '\\?'))), { target: { value: valor } })
   }
+  // Área de atuação e tamanho da equipe são escolhas em pílulas (rádios).
+  fireEvent.click(screen.getByRole('radio', { name: OK.segmento }))
+  fireEvent.click(screen.getByRole('radio', { name: OK.equipe }))
 }
 
 describe('FormDemonstracao', () => {

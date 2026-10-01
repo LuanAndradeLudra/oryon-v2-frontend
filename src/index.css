@@ -1855,6 +1855,19 @@ h1, h2, h3 {
   border-bottom-color: var(--landing-destaque);
   & > [data-numero] { color: var(--landing-destaque); }
 }
+/* Landing · SUPERFÍCIES DO NAVEGADOR (redesenho do formulário, 30/09): seleção,
+   cursor e o autopreenchimento do Chrome com as cores do tema, não as do
+   navegador (o autofill pintava os campos de amarelo/azul no escuro). */
+[data-landing-root] ::selection { background: rgba(45, 212, 191, .3); color: #F6FAFA; }
+[data-landing-root] input, [data-landing-root] textarea { caret-color: #2DD4BF; }
+[data-landing-root] input:-webkit-autofill,
+[data-landing-root] input:-webkit-autofill:hover,
+[data-landing-root] input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #F6FAFA;
+  box-shadow: 0 0 0 1000px #060909 inset;
+  caret-color: #2DD4BF;
+  transition: background-color 9999s ease-out 0s;
+}
 @utility landing-selo {
   background-color: #115E59;
   color: #CCFBF1;

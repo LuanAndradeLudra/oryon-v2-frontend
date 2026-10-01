@@ -676,6 +676,10 @@ export const formDemo = {
   cinza: 'Mostramos na prática.',
   lead: 'Nossa equipe entra em contato para marcar uma demonstração com o conteúdo da sua área.',
   depoisTitulo: 'O que acontece depois',
+  /** As duas partes do pedido (redesenho, 30/09). */
+  parteVoce: 'Quem é você',
+  parteOperacao: 'Sua operação',
+  mensagemExemplo: 'Ex.: respondemos muitas mensagens fora do horário…',
   depois: [
     { titulo: 'Você envia o pedido', texto: 'Só os dados básicos da sua operação.' },
     { titulo: 'Nossa equipe fala com você', texto: 'Pelo WhatsApp ou pelo e-mail informado, para combinar o melhor horário.' },
