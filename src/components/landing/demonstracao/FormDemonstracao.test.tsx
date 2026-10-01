@@ -30,9 +30,11 @@ function preencher() {
   for (const [rotulo, valor] of campos) {
     fireEvent.change(screen.getByLabelText(new RegExp(rotulo.replace(/[?]/g, '\\?'))), { target: { value: valor } })
   }
-  // Área de atuação e tamanho da equipe são listas (select nativo).
-  fireEvent.change(screen.getByRole('combobox', { name: new RegExp(formDemo.campos.segmento) }), { target: { value: OK.segmento } })
-  fireEvent.change(screen.getByRole('combobox', { name: new RegExp(formDemo.campos.equipe.replace(/[?]/g, '\\?')) }), { target: { value: OK.equipe } })
+  // Área de atuação e tamanho da equipe: o menu da landing (combobox + listbox).
+  fireEvent.click(screen.getByRole('combobox', { name: new RegExp(formDemo.campos.segmento) }))
+  fireEvent.click(screen.getByRole('option', { name: OK.segmento }))
+  fireEvent.click(screen.getByRole('combobox', { name: new RegExp(formDemo.campos.equipe.replace(/[?]/g, '\\?')) }))
+  fireEvent.click(screen.getByRole('option', { name: OK.equipe }))
 }
 
 describe('FormDemonstracao', () => {
@@ -58,6 +60,29 @@ describe('FormDemonstracao', () => {
     expect(String(url)).toMatch(/\/public\/demo-requests$/)
     const corpo = JSON.parse(init.body)
     expect(corpo).toMatchObject({ nome: 'Ana', whatsapp: '47999990000', origem: 'home' })
+  })
+
+  it('o menu de área funciona pelo teclado (padrão combobox do WAI-ARIA)', () => {
+    render(<FormDemonstracao origem="teste" />)
+    const area = screen.getByRole('combobox', { name: new RegExp(formDemo.campos.segmento) })
+    expect(area).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.keyDown(area, { key: 'ArrowDown' })
+    expect(area).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('listbox', { name: formDemo.campos.segmento })).toBeInTheDocument()
+    fireEvent.keyDown(area, { key: 'ArrowDown' })
+    expect(area.getAttribute('aria-activedescendant')).toBeTruthy()
+    fireEvent.keyDown(area, { key: 'Enter' })
+    expect(area).toHaveAttribute('aria-expanded', 'false')
+    expect(area).toHaveTextContent(formDemo.segmentos[1])
+    // Uma letra leva à opção que começa com ela, sem acento ("e" → "Educação").
+    fireEvent.keyDown(area, { key: 'e' })
+    fireEvent.keyDown(area, { key: 'Enter' })
+    expect(area).toHaveTextContent('Educação')
+    // Esc fecha sem mudar.
+    fireEvent.keyDown(area, { key: 'ArrowDown' })
+    fireEvent.keyDown(area, { key: 'Home' })
+    fireEvent.keyDown(area, { key: 'Escape' })
+    expect(area).toHaveTextContent('Educação')
   })
 
   it('a mensagem é opcional: começa recolhida e abre pelo link', () => {

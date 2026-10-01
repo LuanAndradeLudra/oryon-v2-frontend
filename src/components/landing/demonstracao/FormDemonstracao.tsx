@@ -1,10 +1,10 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { AlertCircle, Lock, Plus } from 'lucide-react'
+import { AlertCircle, Building2, Calculator, GraduationCap, Lock, Plus, Scale, Shapes, ShoppingBag, Stethoscope } from 'lucide-react'
 import { BotaoLanding } from '../ui/BotaoLanding'
+import { ListaSuspensa, Medidor, type OpcaoLista } from '../ui/ListaSuspensa'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { apiBaseUrl } from '@/config/env'
 import { cn } from '@/lib/utils'
@@ -58,6 +58,19 @@ export async function enviarPedido(p: PedidoDemonstracao): Promise<void> {
   })
   if (!r.ok) throw new Error(`demo-requests ${r.status}`)
 }
+
+/** Um ícone por área de atuação no menu (a área nova cai no genérico). */
+const ICONE_AREA: Record<string, ReactNode> = {
+  'Clínica ou consultório': <Stethoscope className="h-4 w-4" strokeWidth={1.9} />,
+  Contabilidade: <Calculator className="h-4 w-4" strokeWidth={1.9} />,
+  Jurídico: <Scale className="h-4 w-4" strokeWidth={1.9} />,
+  Imobiliária: <Building2 className="h-4 w-4" strokeWidth={1.9} />,
+  'Varejo ou loja': <ShoppingBag className="h-4 w-4" strokeWidth={1.9} />,
+  Educação: <GraduationCap className="h-4 w-4" strokeWidth={1.9} />,
+}
+const OPCOES_AREA: OpcaoLista[] = formDemo.segmentos.map((s) => ({ valor: s, rotulo: s, icone: ICONE_AREA[s] ?? <Shapes className="h-4 w-4" strokeWidth={1.9} /> }))
+/** O tamanho da equipe num medidor de quatro barras (uma por faixa). */
+const OPCOES_EQUIPE: OpcaoLista[] = formDemo.tamanhos.map((t, i) => ({ valor: t, rotulo: t, icone: <Medidor nivel={i + 1} /> }))
 
 export function FormDemonstracao({ origem }: { origem: string }) {
   const semMovimento = useReducedMotion()
@@ -121,7 +134,7 @@ export function FormDemonstracao({ origem }: { origem: string }) {
   // Campos preenchidos e afundados no painel (fundo da página dentro do
   // cartão), raio 10, borda que acende no hover e no foco. O estado de erro
   // volta pela borda (o className sobrescreve a do componente, então o
-  // vermelho é reaplicado por aria-invalid). As listas usam o mesmo desenho.
+  // vermelho é reaplicado por aria-invalid). O botão das listas tem o mesmo desenho.
   const CAMPO = '[&>label]:text-[13px] [&>label]:font-medium [&>label]:text-surface-200 [&>label>span[aria-hidden]]:text-[var(--landing-destaque)] gap-2'
   const ENTRADA = cn(
     'h-11 rounded-[10px] border-white/[.09] bg-surface-950 px-3.5 text-[14.5px] text-surface-50',
@@ -129,12 +142,6 @@ export function FormDemonstracao({ origem }: { origem: string }) {
     'focus:border-[var(--landing-destaque)] focus:ring-[3px] focus:ring-brand-500/20',
     'aria-[invalid=true]:border-danger/70',
   )
-
-  // Lista nativa no desenho dos campos: fechada, igual a um campo de texto (o
-  // "Selecione" em cinza, como um placeholder); aberta, a lista do sistema —
-  // escura pelo color-scheme da landing e, no celular, o seletor nativo.
-  const LISTA = (preenchida: boolean) => cn(ENTRADA, 'cursor-pointer pr-9', preenchida ? 'text-surface-50' : 'text-surface-500')
-  const OPCAO = 'bg-surface-900 text-surface-100'
 
   const c = formDemo.campos
   return (
@@ -160,17 +167,12 @@ export function FormDemonstracao({ origem }: { origem: string }) {
         <FormField label={c.empresa} error={erros.empresa} required className={CAMPO}>
           <Input className={ENTRADA} name="empresa" value={dados.empresa} onChange={(e) => mudar('empresa')(e.target.value)} autoComplete="organization" />
         </FormField>
+        {/* Área e equipe: o menu de vidro da landing (ListaSuspensa). */}
         <FormField label={c.segmento} error={erros.segmento} required className={CAMPO}>
-          <Select size="lg" className={LISTA(!!dados.segmento)} name="segmento" value={dados.segmento} onChange={(e) => mudar('segmento')(e.target.value)}>
-            <option value="" disabled className={OPCAO}>{formDemo.selecione}</option>
-            {formDemo.segmentos.map((o) => <option key={o} value={o} className={OPCAO}>{o}</option>)}
-          </Select>
+          <ListaSuspensa rotulo={c.segmento} name="segmento" opcoes={OPCOES_AREA} valor={dados.segmento} onEscolher={mudar('segmento')} placeholder={formDemo.selecione} />
         </FormField>
         <FormField label={c.equipe} error={erros.equipe} required className={CAMPO}>
-          <Select size="lg" className={LISTA(!!dados.equipe)} name="equipe" value={dados.equipe} onChange={(e) => mudar('equipe')(e.target.value)}>
-            <option value="" disabled className={OPCAO}>{formDemo.selecione}</option>
-            {formDemo.tamanhos.map((o) => <option key={o} value={o} className={OPCAO}>{o}</option>)}
-          </Select>
+          <ListaSuspensa rotulo={c.equipe} name="equipe" opcoes={OPCOES_EQUIPE} valor={dados.equipe} onEscolher={mudar('equipe')} placeholder={formDemo.selecione} />
         </FormField>
         {comMensagem ? (
           <FormField label={c.mensagem} requirement="optional" className={cn(CAMPO, 'sm:col-span-2')}>
