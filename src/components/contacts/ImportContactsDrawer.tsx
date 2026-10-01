@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  X, Upload, FileText, FileJson, FileCode2, ChevronDown,
+  X, Upload, FileText, FileJson, FileCode2,
   CheckCircle2, AlertCircle, Loader2, ArrowRight, ArrowLeft,
   Users, ClipboardPaste, FolderOpen, Sparkles,
 } from 'lucide-react'
 import { appLogger } from '@/services/appLogger'
 import { Banner } from '@/components/ui/Banner'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { useLayer } from '@/contexts/LayerContext'
@@ -818,15 +819,17 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                             <ArrowRight className={cn('w-3.5 h-3.5 flex-shrink-0', isAiMapped ? 'text-accent-dark/60' : 'text-surface-700')} />
 
                             <div className="relative w-44 flex-shrink-0">
-                              <select
+                              <SelectMenu
                                 value={colMap[h] ?? '__skip__'}
                                 onChange={(e) => {
                                   setColMap((m) => ({ ...m, [h]: e.target.value as TargetField }))
                                   // Clear AI suggestion if user overrides
                                   setAiSuggestions((s) => { const n = { ...s }; delete n[h]; return n })
                                 }}
+                                aria-label={`Campo do contato para a coluna ${h}`}
+                                chevronClassName="right-2 h-3 w-3"
                                 className={cn(
-                                  'w-full appearance-none border rounded-lg py-1.5 text-xs text-surface-100',
+                                  'h-auto w-full border rounded-lg py-1.5 text-xs text-surface-100',
                                   'focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 pr-7 transition-colors',
                                   isAiMapped
                                     ? 'bg-status-pending-bg border-status-pending-border pl-7'
@@ -838,8 +841,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                                     {f.label}{f.required ? ' *' : ''}
                                   </option>
                                 ))}
-                              </select>
-                              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
+                              </SelectMenu>
                               {isAiMapped && (
                                 <Sparkles className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-accent-dark" />
                               )}
@@ -891,41 +893,39 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       <label className="text-xs font-semibold text-surface-400 mb-1.5 block">
                         Funil de destino <span className="text-surface-500 font-normal">(opcional)</span>
                       </label>
-                      <div className="relative w-full">
-                        <select
-                          value={pipelineId}
-                          onChange={(e) => setPipelineId(e.target.value)}
-                          className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
-                          data-testid="import-pipeline"
-                        >
-                          <option value="">— nenhum —</option>
-                          {getActivePipelines(pipelines).map((p) => (
-                            <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
-                      </div>
+                      <SelectMenu
+                        value={pipelineId}
+                        onChange={(e) => setPipelineId(e.target.value)}
+                        aria-label="Funil de destino"
+                        chevronClassName="right-2 h-3 w-3"
+                        className="h-auto w-full bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
+                        data-testid="import-pipeline"
+                      >
+                        <option value="">— nenhum —</option>
+                        {getActivePipelines(pipelines).map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
+                        ))}
+                      </SelectMenu>
                     </div>
 
                     <div className="flex-1">
                       <label className="text-xs font-semibold text-surface-400 mb-1.5 block">
                         Estágio do funil
                       </label>
-                      <div className="relative w-full">
-                        <select
-                          value={pipelineStageId}
-                          onChange={(e) => setPipelineStageId(e.target.value)}
-                          className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
-                        >
-                          {getPipelineStages(pipelines, pipelineId).length === 0 && (
-                            <option value="">Nenhuma situação disponível</option>
-                          )}
-                          {getPipelineStages(pipelines, pipelineId).map((s) => (
-                            <option key={s.id} value={s.id}>{s.label}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
-                      </div>
+                      <SelectMenu
+                        value={pipelineStageId}
+                        onChange={(e) => setPipelineStageId(e.target.value)}
+                        aria-label="Estágio do funil"
+                        chevronClassName="right-2 h-3 w-3"
+                        className="h-auto w-full bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
+                      >
+                        {getPipelineStages(pipelines, pipelineId).length === 0 && (
+                          <option value="">Nenhuma situação disponível</option>
+                        )}
+                        {getPipelineStages(pipelines, pipelineId).map((s) => (
+                          <option key={s.id} value={s.id}>{s.label}</option>
+                        ))}
+                      </SelectMenu>
                     </div>
                   </div>
                   <p className="text-[11px] text-surface-600 -mt-1">

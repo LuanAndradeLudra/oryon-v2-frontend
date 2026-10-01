@@ -17,6 +17,7 @@ import type { ArtifactType } from '@/contexts/ArtifactContext'
 import type { CopilotAttachment, CopilotMessage, ToolCallRecord } from '@/contexts/CopilotContext'
 import { PlanCard } from './PlanCard'
 import { WhatsappLineRow } from './WhatsappLineRow'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import {
   parseContent,
   stripInline,
@@ -1062,15 +1063,17 @@ function SelectField({
   return (
     <div className="flex flex-col gap-1">
       <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">{label}</label>
-      <select
+      <SelectMenu
         value={value}
         onChange={(e) => onChange(fieldKey, e.target.value)}
-        className="w-full px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 focus:outline-none focus:border-brand-500/50 appearance-none cursor-pointer"
+        aria-label={label || undefined}
+        chevronClassName="right-2 h-3 w-3"
+        className="h-auto w-full px-2.5 py-1.5 pr-7 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 focus:outline-none focus:border-brand-500/50 cursor-pointer"
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value} className="bg-surface-900 text-surface-200">{o.label}</option>
+          <option key={o.value} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </SelectMenu>
     </div>
   )
 }

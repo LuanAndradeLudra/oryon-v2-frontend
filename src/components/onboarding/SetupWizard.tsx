@@ -15,6 +15,7 @@ import { saveHub, loadHub, type CompanyHubData, type BrandFile, DEFAULT_HUB } fr
 import { extractBrandFile } from '@/services/agentsApi'
 import { onboardingApi } from '@/services/api'
 import { Textarea } from '@/components/ui/Textarea'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { WhatsAppNumbers } from '@/components/settings/sections/WhatsAppNumbers'
 import { Departments } from '@/components/settings/sections/Departments'
@@ -475,14 +476,15 @@ function HubStep({
                   <label className="block text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">
                     Setor
                   </label>
-                  <select
+                  <SelectMenu
                     value={selectIndustryValue}
                     onChange={e => onChange({ industry: e.target.value })}
-                    className={SELECT}
+                    aria-label="Setor"
+                    className={`${SELECT} pr-8`}
                   >
                     <option value="">Selecione...</option>
                     {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
+                  </SelectMenu>
                   {showCustomIndustry && (
                     <input
                       autoFocus

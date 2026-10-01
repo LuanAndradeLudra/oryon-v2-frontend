@@ -8,7 +8,7 @@
 
 import { useState } from 'react'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
 import { Eye, EyeOff } from 'lucide-react'
@@ -82,7 +82,8 @@ function FieldRenderer({
     return (
       <div>
         {label}
-        <Select
+        <SelectMenu
+          aria-label={name}
           value={String(value ?? '')}
           onChange={(e) => {
             const raw = e.target.value
@@ -95,7 +96,7 @@ function FieldRenderer({
           {prop.enum.map((v) => (
             <option key={String(v)} value={String(v)}>{String(v)}</option>
           ))}
-        </Select>
+        </SelectMenu>
         {hint}
       </div>
     )

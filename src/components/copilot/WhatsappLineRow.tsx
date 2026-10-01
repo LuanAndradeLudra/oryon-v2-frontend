@@ -22,7 +22,7 @@
 import { Phone } from 'lucide-react'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { Banner } from '@/components/ui/Banner'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 
 function formatPhone(raw?: string | null): string {
   if (!raw) return '—'
@@ -66,7 +66,7 @@ export function WhatsappLineRow({
     // "criando na linha" confirma o alvo (success). O select é o primitivo
     // `Select` sm (28px) como ação à direita do banner.
     const select = onLineChange ? (
-      <Select
+      <SelectMenu
         size="sm"
         aria-label="Linha do WhatsApp"
         value={whatsappNumberId ?? ''}
@@ -80,7 +80,7 @@ export function WhatsappLineRow({
             {n.isPrimary ? ' • Primária' : ''}
           </option>
         ))}
-      </Select>
+      </SelectMenu>
     ) : undefined
     return (
       <Banner variant={line ? 'success' : 'warning'} action={select}>
