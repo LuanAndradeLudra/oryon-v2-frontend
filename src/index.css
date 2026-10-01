@@ -1850,6 +1850,17 @@ h1, h2, h3 {
 }
 /* A aba ativa (classe, não atributo: a regra por atributo dentro de @utility
    não chegava ao build). */
+/* O andamento da etapa ativa do "Como funciona" (opção A, 30/09): a barra
+   enche no tempo da mini-história da etapa; pausa junto com ela. */
+/* A tela nova carregando sob o véu da demonstração (DemoRecorte). */
+@keyframes landing-veu-carregando {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+@keyframes landing-etapa-progresso {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 @utility landing-aba-ativa {
   color: var(--color-surface-50);
   border-bottom-color: var(--landing-destaque);

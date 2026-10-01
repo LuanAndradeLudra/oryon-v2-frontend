@@ -6,7 +6,7 @@ import { FaixaChamada } from '@/components/landing/home/FaixaChamada'
 
 // Abaixo da primeira dobra: carrega depois do Hero (demo, recortes e
 // componentes reais pesam — não podem atrasar a primeira pintura).
-const SecaoComoFunciona = lazy(() => import('@/components/landing/plataforma/SecaoPlataforma').then((m) => ({ default: m.SecaoComoFunciona })))
+const SecaoComoFunciona = lazy(() => import('@/components/landing/plataforma/SecaoComoFunciona').then((m) => ({ default: m.SecaoComoFunciona })))
 const SecaoImplantacao = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoImplantacao })))
 const SecaoPerguntas = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoPerguntas })))
 const SecaoDemonstracao = lazy(() => import('@/components/landing/demonstracao/FormDemonstracao').then((m) => ({ default: m.SecaoDemonstracao })))

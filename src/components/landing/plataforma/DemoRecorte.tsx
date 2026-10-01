@@ -39,6 +39,13 @@ const AMPLIACAO_MAX = 0.87
 /** Cabeçalho fixo + frase do bloco + moldura + folgas, fora do recorte. */
 const FORA_DO_RECORTE = 300
 const ALTURA = { min: 202, max: 419 }
+/** O menu lateral e a barra do topo do app (1280 × 720): na troca de história
+ *  com o app inteiro em quadro, eles ficam à vista e só o conteúdo some sob o
+ *  véu — como navegar de verdade entre os módulos. */
+const MENU_LATERAL = 62
+const BARRA_TOPO = 48
+/** Quanto o véu leva para cobrir o conteúdo antes de o app trocar de tela. */
+const VEU_ENTRADA_MS = 160
 /** Evita remontar uma demonstração quando a pessoa apenas compara dois itens
  *  do índice em sequência. A página continua liberando iframes distantes. */
 const DESMONTAR_APOS_MS = 10_000
@@ -179,11 +186,17 @@ function PosterDaDemo({ rota }: { rota: string }) {
 }
 
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, pausado = false, manterMontado = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso, alturaMax,
+  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, pausado = false, manterMontado = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
+  alturaMax, ampliacaoMax = AMPLIACAO_MAX, aoTerminar,
 }: {
-  /** A altura máxima da moldura inteira (px), quando o pai fixa a grade (abas
-   *  da home): substitui o orçamento calculado pela altura da tela. */
+  /** Altura máxima da moldura inteira (px), quando o pai fixa a composição
+   *  (o "Como funciona" da home): substitui o orçamento pela altura da tela. */
   alturaMax?: number
+  /** Teto de ampliação da região (padrão 0,87; 1 = tamanho real do app). */
+  ampliacaoMax?: number
+  /** Chamado quando a mini-história chega ao fim. Devolve `true` quando o pai
+   *  assume (troca de história) — então ela não recomeça sozinha. */
+  aoTerminar?: () => boolean
   titulo: string
   /** Rota em que o app nasce. */
   rota: string
@@ -264,11 +277,29 @@ export function DemoRecorte({
     }
   }, [])
 
+  // Estado da troca de história (ver o efeito "TROCA DE HISTÓRIA" abaixo):
+  // declarado antes do ouvinte de mensagens, que o encerra no aviso "pintou".
+  const historiaAnterior = useRef(cues)
+  const inicioTroca = useRef(0)
+  const esperaPintura = useRef<{ rota: string | null } | null>(null)
+  const fimTroca = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const encerrarTroca = () => {
+    clearTimeout(fimTroca.current)
+    const falta = 380 - (performance.now() - inicioTroca.current)
+    if (falta > 0) fimTroca.current = setTimeout(() => setTrocando(false), falta)
+    else setTrocando(false)
+    esperaPintura.current = null
+  }
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== location.origin || !iframeRef.current || e.source !== iframeRef.current.contentWindow) return
       const d = e.data as { canal?: string; tipo?: string }
-      if (d?.canal === CANAL && d.tipo === 'pintou') setTrocando(false)
+      if (d?.canal === CANAL && d.tipo === 'pintou') {
+        const espera = esperaPintura.current
+        const rotaPintada = (d as { rota?: string }).rota
+        if (espera?.rota && rotaPintada && new URL(rotaPintada, 'http://x').pathname !== espera.rota) return
+        encerrarTroca()
+      }
       if (d?.canal === CANAL && d.tipo === 'pronta') {
         setPronta(true)
         // A montagem terminou: libera a vez para o próximo recorte.
@@ -282,11 +313,22 @@ export function DemoRecorte({
 
   // ── A mini-história do bloco ───────────────────────────────────────────────
   const { state, composition, index } = useHeroTimeline<HeroState, HeroCena>({
-    cues, tailMs: 900, hostRef, staticIndex: cues.length - 1, enabled: pronta && !pausado,
+    cues, tailMs: 900, hostRef, staticIndex: cues.length - 1, enabled: pronta && !pausado, aoTerminar,
   })
+  // Na troca de história, o app só muda de tela depois que o véu cobriu o
+  // conteúdo: a tela anterior nunca aparece trocando por baixo dele. "História
+  // nova" é outra lista de cues (os roteiros são constantes do módulo).
+  const historiaPostada = useRef(cues)
   useEffect(() => {
-    if (pronta) iframeRef.current?.contentWindow?.postMessage({ canal: CANAL, tipo: 'passo', estado: state, cena: composition }, location.origin)
-  }, [pronta, state, composition])
+    if (!pronta) return
+    const enviar = () => iframeRef.current?.contentWindow?.postMessage({ canal: CANAL, tipo: 'passo', estado: state, cena: composition }, location.origin)
+    if (historiaPostada.current !== cues) {
+      historiaPostada.current = cues
+      const id = setTimeout(enviar, VEU_ENTRADA_MS)
+      return () => clearTimeout(id)
+    }
+    enviar()
+  }, [pronta, state, composition, cues])
   // O passo também sai para o artigo: os cartões de evidência ao lado reagem
   // à MESMA história que a tela conta (e sabem quando o laço recomeça).
   const avisarPasso = useRef(onPasso)
@@ -324,13 +366,13 @@ export function DemoRecorte({
         : Math.min(Math.min(560, Math.max(ALTURA.max, window.innerHeight * 0.47 - 4)), Math.max(ALTURA.min, window.innerHeight - foraDoRecorte))
       // A borda da bandeja (12 px) e a barra de título (30 px) ficam fora da região.
       const porAltura = (orcamento - 36) * (regiao.w / regiao.h) + 12
-      const porAmpliacao = regiao.w * (celular ? 1 : AMPLIACAO_MAX) + 12
+      const porAmpliacao = regiao.w * (celular ? 1 : ampliacaoMax) + 12
       avisar.current?.(Math.floor(Math.min(porAltura, porAmpliacao)))
     }
     medir()
     window.addEventListener('resize', medir)
     return () => window.removeEventListener('resize', medir)
-  }, [regiao.w, regiao.h, celular, foraDoRecorte, alturaMax])
+  }, [regiao.w, regiao.h, celular, foraDoRecorte, alturaMax, ampliacaoMax])
   const [tela, setTela] = useState(0)
   useLayoutEffect(() => {
     const el = telaRef.current
@@ -342,38 +384,30 @@ export function DemoRecorte({
     return () => ro?.disconnect()
   }, [])
   const escala = tela > 0 ? tela / regiao.w : 0.7
+  const appInteiro = !celular && recorte.x === 0 && recorte.y === 0 && recorte.w === APP.w && recorte.h === APP.h
 
-  // TROCA DE HISTÓRIA no mesmo app (abas): o recorte muda na hora, mas a tela
-  // nova ainda está navegando lá dentro — um apagar curto esconde o quadro
-  // intermediário (a tela anterior no enquadramento novo). Volta quando o app
-  // avisa que pintou a rota nova, ou em 450 ms (mesma rota: não há aviso).
-  const chaveHistoria = `${recorte.x},${recorte.y},${recorte.w},${recorte.h}|${cues[0]?.composition ?? ''}`
-  const historiaAnterior = useRef(chaveHistoria)
+  // TROCA DE HISTÓRIA no mesmo app (etapas do "Como funciona"): um véu cobre
+  // o conteúdo (VEU_ENTRADA_MS), o app troca de tela por baixo e o véu sai
+  // quando o app avisa que a tela nova pintou com os dados ("pintou", em
+  // demo/diretor.ts) — no mínimo 380 ms, para a troca não piscar. Sem troca de
+  // rota (outro momento da mesma tela) não há aviso: o véu sai em 520 ms. A
+  // tela nunca fica preta nem muda de tamanho: o conteúdo se dissolve no próximo.
   useEffect(() => {
-    if (historiaAnterior.current === chaveHistoria) return
-    historiaAnterior.current = chaveHistoria
-    setTrocando(true)
-    // A tela nova aparece assim que a rota dela está no app (medido: 200–300 ms
-    // depois do clique, no build de produção) e o texto já mudou; teto de 600 ms.
+    if (historiaAnterior.current === cues) return
+    historiaAnterior.current = cues
     const cena = cues[0]?.composition
-    const alvo = cena && cena !== 'reinicio' ? new URL(HERO_ROTAS[cena], 'http://x').pathname : null
-    const inicio = performance.now()
-    const textoAntes = iframeRef.current?.contentDocument?.body?.innerText ?? ''
-    let quadro = 0
-    const checar = () => {
-      const w = iframeRef.current?.contentWindow as (Window & { __demoRota?: () => string }) | null | undefined
-      const rota = w?.__demoRota ? new URL(w.__demoRota(), 'http://x').pathname : null
-      const texto = iframeRef.current?.contentDocument?.body?.innerText ?? ''
-      const chegou = (!alvo || rota === alvo) && texto !== textoAntes
-      const decorrido = performance.now() - inicio
-      // Mínimo de 450 ms: o esqueleto da tela nova tem tempo de aparecer e a
-      // troca não pisca; teto de 900 ms se o app não avisar.
-      if ((chegou && decorrido > 450) || decorrido > 900) { setTrocando(false); return }
-      quadro = requestAnimationFrame(checar)
-    }
-    quadro = requestAnimationFrame(checar)
-    return () => cancelAnimationFrame(quadro)
-  }, [chaveHistoria])
+    const rotaNova = cena && cena !== 'reinicio' ? new URL(HERO_ROTAS[cena], 'http://x').pathname : null
+    const w = iframeRef.current?.contentWindow as (Window & { __demoRota?: () => string }) | null | undefined
+    const rotaAtual = w?.__demoRota ? new URL(w.__demoRota(), 'http://x').pathname : null
+    const navega = rotaNova !== null && rotaNova !== rotaAtual
+    inicioTroca.current = performance.now()
+    esperaPintura.current = { rota: navega ? rotaNova : null }
+    setTrocando(true)
+    clearTimeout(fimTroca.current)
+    // Teto: o app não avisou (rota igual, ou a demonstração parada).
+    fimTroca.current = setTimeout(() => { esperaPintura.current = null; setTrocando(false) }, navega ? 2200 : 520)
+  }, [cues])
+  useEffect(() => () => clearTimeout(fimTroca.current), [])
 
   // `modo=recorte`: o app das abas troca para QUALQUER tela também no celular
   // (no Hero, o celular só navega entre conversa e negócio).
@@ -386,10 +420,8 @@ export function DemoRecorte({
             <div
               ref={telaRef}
               inert
-              className={cn('relative w-full overflow-hidden pointer-events-none select-none transition-[height] duration-700 ease-[cubic-bezier(.65,0,.35,1)] motion-reduce:transition-none', esmaecerBase && '[mask-image:linear-gradient(to_bottom,#000_78%,transparent)]')}
-              // Com a largura medida, a altura é explícita e TRANSICIONA quando a
-              // etapa muda de enquadramento; antes da medida, o aspect-ratio.
-              style={tela > 0 ? { height: Math.round(tela * regiao.h / regiao.w) } : { aspectRatio: `${regiao.w} / ${regiao.h}` }}
+              className={cn('relative w-full overflow-hidden pointer-events-none select-none', esmaecerBase && '[mask-image:linear-gradient(to_bottom,#000_78%,transparent)]')}
+              style={{ aspectRatio: `${regiao.w} / ${regiao.h}` }}
             >
               {montar && (
                 <iframe
@@ -397,19 +429,18 @@ export function DemoRecorte({
                   src={src}
                   title={`Oryon em demonstração: ${titulo}`}
                   tabIndex={-1}
-                  className={cn('absolute left-0 top-0 border-0 origin-top-left transition-[opacity,filter] ease-out', pronta && !trocando ? 'duration-500' : 'duration-200')}
+                  className="absolute left-0 top-0 border-0 origin-top-left transition-opacity duration-500"
                   style={{
                     width: app.w, height: app.h,
                     transform: `translate(${-regiao.x * escala}px, ${-regiao.y * escala}px) scale(${escala})`,
-                    opacity: pronta && !trocando ? 1 : 0,
-                    filter: pronta && !trocando ? 'blur(0px)' : 'blur(6px)',
+                    opacity: pronta ? 1 : 0,
                     colorScheme: 'normal',
                   }}
                 />
               )}
               <div
-                className={cn('absolute inset-0 transition-[opacity,visibility] duration-300', trocando && 'motion-safe:animate-pulse')}
-                style={{ opacity: pronta && !trocando ? 0 : 1, visibility: pronta && !trocando ? 'hidden' : 'visible' }}
+                className="absolute inset-0 transition-opacity duration-500"
+                style={{ opacity: pronta ? 0 : 1, visibility: pronta ? 'hidden' : 'visible' }}
               >
                 <PosterDaDemo rota={rota} />
               </div>
@@ -422,6 +453,24 @@ export function DemoRecorte({
                   raizRef={telaRef}
                 />
               )}
+              {/* O véu da troca de história. Com o app inteiro em quadro, o
+                  menu lateral e a barra do topo ficam fora dele. */}
+              <div
+                aria-hidden
+                className={cn(
+                  'pointer-events-none absolute bottom-0 right-0 bg-surface-950 transition-opacity motion-reduce:transition-none',
+                  trocando ? 'opacity-100 duration-150 ease-out' : 'opacity-0 duration-[380ms] ease-in-out',
+                )}
+                style={appInteiro ? { left: MENU_LATERAL * escala, top: BARRA_TOPO * escala } : { left: 0, top: 0 }}
+              >
+                {/* A tela nova carregando: uma linha fina no topo do conteúdo,
+                    como a navegação de um app — o véu nunca parece parado. */}
+                {trocando && !semMovimento && (
+                  <span className="absolute inset-x-0 top-0 h-[2px] overflow-hidden">
+                    <span className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-[var(--landing-destaque)] opacity-70 [animation:landing-veu-carregando_1.1s_cubic-bezier(.45,0,.55,1)_infinite]" />
+                  </span>
+                )}
+              </div>
             </div>
           </Bandeja>
         </div>

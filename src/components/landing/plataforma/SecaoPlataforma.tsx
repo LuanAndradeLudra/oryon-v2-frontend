@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, animate, motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, MessageCircle } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { teclasDasAbas } from '../ui/abasTeclado'
-import { BotaoPausa } from '../ui/BotaoPausa'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
@@ -22,13 +19,13 @@ import type { ActivityEvent } from '@/types/dashboard'
 import { CONHECIMENTO_RECEPCAO } from '@/demo/agentesDemo'
 import { heroActivityFeed, heroHomeSnapshot } from '@/demo/dashboardDemo'
 import { ConteudoWhatsAppAparelho } from '../stage/hero/HeroSatelitesConteudo'
-import { contato, contatoDisponivel, home, linkContato, paginasPlataforma, plataforma, rotaPlataforma } from '../landingCopy'
-import { DemoRecorte, type Recorte } from './DemoRecorte'
+import { contato, contatoDisponivel, linkContato, plataforma } from '../landingCopy'
+import { DemoRecorte } from './DemoRecorte'
+import { HISTORIAS } from './historias'
 import {
   HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroCampaigns, heroDeal, heroHistoricoGanho, heroMessages, heroNotifications, heroTimeline,
 } from '../stage/hero/heroRealData'
-import { HERO_ROTAS, type HeroCena, type HeroState } from '../stage/hero/heroStory'
-import type { HeroCue } from '../stage/hero/useHeroTimeline'
+import type { HeroCena, HeroState } from '../stage/hero/heroStory'
 
 /**
  * A SEÇÃO PLATAFORMA — o coração da página (padrão medido na Attio, 25/09).
@@ -45,111 +42,6 @@ import type { HeroCue } from '../stage/hero/useHeroTimeline'
  * Nível de consciência: o Hero disse O QUE é; aqui o visitante vê COMO resolve
  * cada problema dele — de "o que é isso" para "é exatamente o que eu preciso".
  */
-
-type Cue = HeroCue<HeroState, HeroCena>
-const S = (t: number, state: HeroState): Cue => ({ t, state })
-
-/** Regiões do app (1280 × 720) — medidas no app real em 25/09. */
-const RECORTES: Record<string, Recorte> = {
-  // Conversa + painel do contato.
-  conversa: { x: 421, y: 44, w: 859, h: 676 },
-  // Quadro do funil, panorâmico: Avaliação, Agendado e Aguardando guia — o card
-  // anda entre as duas primeiras, e a terceira mostra que o funil continua.
-  // Medido em 1280×720 (30/09): colunas de x = 336 a 1110; começa no
-  // cabeçalho das colunas (y = 136 — a faixa de filtros acima saía cortada à
-  // esquerda) e termina no vão abaixo do 2º card de Avaliação e Aguardando guia.
-  funil: { x: 334, y: 136, w: 778, h: 236 },
-  // A gaveta do relatório da campanha.
-  // Até a legenda do gráfico (a 640 px ela saía cortada).
-  relatorio: { x: 684, y: 0, w: 596, h: 656 },
-  // A página do agente (direção D, 27/09 — medido em 1280×720): cabeçalho de
-  // identidade, a navegação em três grupos e a seção até o fim dos cartões.
-  // Até a borda do app (30/09): em w = 1104 o cabeçalho do agente saía cortado
-  // no meio dos botões ("Ligad…").
-  agente: { x: 62, y: 48, w: 1218, h: 672 },
-  // O Dashboard de ponta a ponta: indicadores, volume, funil, fila e equipe —
-  // um recorte mais estreito cortava cartões pela metade.
-  painel: { x: 62, y: 56, w: 1218, h: 382 },
-}
-
-/** Nas abas da home a grade é a mesma em todas as etapas (PO, 30/09): as telas
- *  panorâmicas (funil, painel) ganham um enquadramento mais alto para encher a
- *  coluna da tela em vez de virar uma faixa fina. */
-const RECORTES_GRADE: Partial<Record<string, Recorte>> = {
-  funil: { x: 334, y: 136, w: 778, h: 500 },
-  painel: { x: 62, y: 56, w: 1218, h: 664 },
-}
-const RECORTE_DO_BLOCO: Record<string, string> = { funil: 'funil', medir: 'painel' }
-
-interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; recorte: Recorte; titulo: string }
-
-const HISTORIAS: Record<string, Historia> = {
-  // A configuração do agente, aba por aba: instruções → conhecimento → catálogo.
-  conhecer: {
-    titulo: 'Oryon · Agentes IA',
-    rota: HERO_ROTAS['agente-instrucoes'], estado: 'inicio', recorte: RECORTES.agente,
-    cues: [
-      { t: 0, state: 'inicio', composition: 'agente-instrucoes' },
-      { t: 4600, composition: 'agente-conhecimento' },
-      { t: 9400, composition: 'agente-catalogo' },
-      { t: 14800, composition: 'agente-catalogo' },
-    ],
-  },
-  atender: {
-    titulo: 'Oryon · Conversas',
-    rota: HERO_ROTAS.conversa, estado: 'inicio', recorte: RECORTES.conversa,
-    cues: [
-      { t: 0, state: 'inicio', composition: 'conversa' },
-      S(1400, 'demanda'), S(3800, 'resposta'), S(7800, 'confirma'), S(9600, 'situacao'), S(11600, 'etiqueta'),
-      S(15800, 'etiqueta'),
-    ],
-  },
-  equipe: {
-    titulo: 'Oryon · Conversas',
-    rota: HERO_ROTAS.conversa, estado: 'avanco', recorte: RECORTES.conversa,
-    cues: [
-      { t: 0, state: 'avanco', composition: 'conversa' },
-      S(1400, 'pedido'), S(3800, 'assumido'), S(6600, 'humano'), S(9800, 'ganho'),
-      S(13800, 'ganho'),
-    ],
-  },
-  funil: {
-    titulo: 'Oryon · Funis · Consultas',
-    rota: HERO_ROTAS.funil, estado: 'etiqueta', recorte: RECORTES.funil,
-    cues: [
-      { t: 0, state: 'etiqueta', composition: 'funil' },
-      S(2200, 'avanco'),
-      S(7600, 'avanco'),
-    ],
-  },
-  campanhas: {
-    titulo: 'Oryon · Disparos',
-    rota: HERO_ROTAS.disparos, estado: 'ganho', recorte: RECORTES.relatorio,
-    // Direto no relatório: começando na lista de Disparos, o recorte (a metade
-    // direita da tela) mostrava só faixas vazias até a gaveta abrir.
-    // Campanha CONCLUÍDA (estado 'ganho'): em 'inicio' ela ainda está saindo e
-    // o funil do relatório contradizia os números dos cartões ao lado.
-    cues: [
-      { t: 0, state: 'ganho', composition: 'relatorio' },
-      { t: 9600, composition: 'relatorio' },
-    ],
-  },
-  // O Dashboard no momento em que a Marina espera na fila: o holofote passa
-  // pela fila (aba Agora) e depois pelos indicadores e pelo volume da semana
-  // (aba Relatórios). A tela não muda de dado (o Dashboard
-  // real busca uma vez ao abrir) — só o olhar percorre.
-  medir: {
-    titulo: 'Oryon · Dashboard',
-    rota: HERO_ROTAS.painel, estado: 'assumido', recorte: RECORTES.painel,
-    cues: [
-      { t: 0, state: 'assumido', composition: 'painel' },
-      { t: 2400, composition: 'painel-fila' },
-      { t: 7000, composition: 'painel-indicadores' },
-      { t: 11600, composition: 'painel-volume' },
-      { t: 16200, composition: 'painel-volume' },
-    ],
-  },
-}
 
 const NOOP = () => {}
 
@@ -174,8 +66,9 @@ const CONTAGENS_CAMPANHA = (() => {
 function Surgir({ chave, children, className }: { chave: string | number; children: ReactNode; className?: string }) {
   const semMovimento = useReducedMotion()
   return (
-    // relative: a peça que sai (absolute no popLayout) fica presa aqui dentro.
-    // Antes o ancestral posicionado era a seção, e a peça piscava sobre o título.
+    // relative: com popLayout a peça que SAI vira `absolute` e se posiciona pelo
+    // ancestral posicionado mais próximo — sem este contêiner era a seção, e a
+    // peça piscava no topo dela, sobre o título (30/09).
     <div className="relative min-w-0">
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.div
@@ -183,7 +76,7 @@ function Surgir({ chave, children, className }: { chave: string | number; childr
           className={className}
           initial={semMovimento ? false : { opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={semMovimento ? undefined : { opacity: 0, transition: { duration: 0.25 } }}
+          exit={semMovimento ? undefined : { opacity: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
           {children}
@@ -407,39 +300,18 @@ const RESERVAS: Record<string, HeroState[]> = {
   equipe: ['avanco', 'ganho'], funil: ['etiqueta', 'avanco'],
 }
 
-/**
- * Cada evidência entra quando a etapa troca (abas da home): espera a tela ao
- * lado carregar a rota nova (~0,45 s) e sobe com desfoque, uma depois da outra.
- * Na primeira pintura não anima (o Revelar de dentro já cuida da entrada).
- */
-function EntradaDaEtapa({ i, className, children }: { i: number; className?: string; children: ReactNode }) {
-  const semMovimento = useReducedMotion()
-  const primeira = useRef(true)
-  useEffect(() => { primeira.current = false }, [])
-  return (
-    <motion.div
-      className={className}
-      initial={semMovimento || primeira.current ? false : { opacity: 0, y: 14, filter: 'blur(6px)' }}
-      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      transition={{ duration: 0.6, delay: 0.45 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {children}
-    </motion.div>
-  )
-}
-
 /** Uma evidência: o componente real em cima, a frase embaixo. */
-function Beneficio({ bloco, i, c, esticar, at, cena, ciclo, compacto = false }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean; at: HeroState; cena: HeroCena; ciclo: number; compacto?: boolean }) {
+function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean; at: HeroState; cena: HeroCena; ciclo: number }) {
   return (
     // Esticada, a evidência divide a altura do palco (flex-1): a folga vai para
     // a área do visual, centrado — nunca um vão entre as duas.
-    <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-h-0 min-w-0', esticar && 'flex-1')}>
+    <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-w-0', esticar && 'flex-1')}>
       {/* Todas as evidências no mesmo desenho (visual em cima, frase embaixo) e
           com a altura da vizinha: o painel (06) tinha visual e frase lado a
           lado, e a grade ficava desalinhada com cartões de alturas diferentes. */}
-      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
+      <div className="flex h-full w-full flex-col overflow-hidden rounded-xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
         <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5 [[data-theme=light]_&]:bg-surface-900">
-          <div aria-hidden inert data-evidencia className={cn('pointer-events-none grid min-w-0 select-none', compacto ? '[zoom:0.66]' : '[zoom:0.8]')}>
+          <div aria-hidden inert data-evidencia className="pointer-events-none grid min-w-0 select-none [zoom:0.8]">
             {RESERVAS[bloco]?.map((estado) => (
               <div key={estado} className="invisible min-w-0 [grid-area:1/1]" data-reserva>
                 <VisualCartao bloco={bloco} i={i} at={estado} cena="agente-catalogo" ciclo={0} />
@@ -452,23 +324,22 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo, compacto = false }: 
         </div>
         {/* Lote 4 (30/09): sem o ponto teal — ele era sempre igual e só
             decorava; os pontos ficam onde dizem IA × pessoa. */}
-        <div className={compacto ? 'px-4 pb-3 pt-2.5' : 'px-5 pb-4 pt-3.5'}>
-          <p className={cn('font-semibold leading-snug text-surface-50', compacto ? 'text-[14px]' : 'text-[15px]')}>{c.titulo}</p>
-          <p className={cn('mt-1 max-w-[52ch] text-surface-400', compacto ? 'text-[13px] leading-snug' : 'text-[14px] leading-relaxed')}>{c.texto}</p>
+        <div className="px-5 pb-4 pt-3.5">
+          <p className="text-[15px] font-semibold leading-snug text-surface-50">{c.titulo}</p>
+          <p className="mt-1 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{c.texto}</p>
         </div>
       </div>
     </Revelar>
   )
 }
 
-function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = false, pausado = false, caberNaSecao = false }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void; semRotulo?: boolean; manterMontado?: boolean; pausado?: boolean; caberNaSecao?: boolean }) {
+function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void }) {
   const h = HISTORIAS[b.id]
   const arranjo = COMPOSICAO[b.id]
   const ref = useRef<HTMLElement | null>(null)
   const editorialRef = useRef<HTMLDivElement>(null)
   const composicaoRef = useRef<HTMLDivElement>(null)
   const [escala, setEscala] = useState(1)
-  const [alturaGrade, setAlturaGrade] = useState(0)
   // Fit the complete composition, not each window independently. offsetHeight
   // is in unscaled CSS pixels, so applying zoom cannot feed back into sizing.
   useLayoutEffect(() => {
@@ -477,28 +348,11 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
     if (!composicao || !editorial) return
     const medir = () => {
       const desktop = window.innerWidth >= 1024
-      let disponivel = window.innerHeight - 96 - editorial.offsetHeight - 24 - 24
-      if (caberNaSecao) {
-        // Abas da home (30/09, PO): a seção inteira cabe na tela, sem rolar —
-        // do título da seção ao link embaixo. O orçamento é a altura da tela
-        // menos o menu fixo (64), tudo o que vem antes da composição dentro da
-        // seção e o link depois dela (~44).
-        const secao = composicao.closest('section')
-        const antes = secao ? composicao.getBoundingClientRect().top - secao.getBoundingClientRect().top : 0
-        disponivel = window.innerHeight - 64 - antes - 44 - 12
-      }
-      if (caberNaSecao) {
-        // Grade única: a altura vem só da tela (não do conteúdo da etapa), então
-        // é a mesma nas seis abas; sem zoom.
-        const alvo = desktop ? Math.round(Math.min(600, Math.max(380, disponivel))) : 0
-        setAlturaGrade((a) => (Math.abs(a - alvo) > 2 ? alvo : a))
-        setEscala(1)
-        return
-      }
+      const disponivel = window.innerHeight - 96 - editorial.offsetHeight - 24 - 24
       const natural = composicao.offsetHeight
-      // Só encolhe se não couber na altura (30/09); nunca abaixo de 0,7 (legível).
-      const nova = desktop && natural > 0 ? Math.min(1, Math.max(0.7, Math.max(1, disponivel) / natural)) : 1
-      setEscala((e) => (Math.abs(e - nova) > 0.008 ? nova : e))
+      // Só encolhe se não couber na altura (30/09): o fator fixo de 0,92 deixava
+      // toda composição 8 % mais estreita que o texto acima — um vão à direita.
+      setEscala(desktop && natural > 0 ? Math.min(1, Math.max(1, disponivel) / natural) : 1)
     }
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
     ro?.observe(composicao)
@@ -506,7 +360,7 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
     window.addEventListener('resize', medir)
     medir()
     return () => { ro?.disconnect(); window.removeEventListener('resize', medir) }
-  }, [caberNaSecao])
+  }, [])
   // Largura REAL do artigo — decide o arranjo (não o breakpoint da viewport).
   const [largura, setLargura] = useState(0)
   useLayoutEffect(() => {
@@ -535,15 +389,6 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
   const passoSemTela: HeroState = b.id === 'funil' ? 'avanco' : h.estado
   // O passo da mini-história da tela — os cartões ao lado reagem a ele.
   const [passo, setPasso] = useState<HeroState>(h.estado)
-  // Outra etapa no mesmo artigo (abas da home): a mini-história recomeça.
-  const blocoAnterior = useRef(b.id)
-  useEffect(() => {
-    if (blocoAnterior.current === b.id) return
-    blocoAnterior.current = b.id
-    setPasso(h.estado)
-    setCiclo(0)
-    setCenaAtual(h.cues[0].composition ?? 'conversa')
-  }, [b.id, h])
   const [ciclo, setCiclo] = useState(0)
   const [cenaAtual, setCenaAtual] = useState<HeroCena>(h.cues[0].composition ?? 'conversa')
   const onPasso = useCallback((estado: HeroState, cena: HeroCena, indice: number) => {
@@ -551,10 +396,7 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
     setCenaAtual(cena)
     if (indice === 0) setCiclo((n) => n + 1)
   }, [])
-  const grade = caberNaSecao && alturaGrade > 0 && !semTela
-  const recorteAtual = (grade && RECORTES_GRADE[RECORTE_DO_BLOCO[b.id] ?? '']) || h.recorte
-  const colunas = grade ? `minmax(0, 1.45fr) minmax(${EVIDENCIAS_MIN}px, 1fr)`
-    : !aoLado ? undefined
+  const colunas = !aoLado ? undefined
     : tresColunas ? `${palco}px minmax(0, 1fr) minmax(0, 1fr)`
     // Conversas usam duas colunas; relatórios verticais preservam sua largura.
     : arranjo === 'vertical' ? `${palco}px minmax(0, 1fr)`
@@ -564,65 +406,56 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
     <article
       id={`plataforma-${b.id}`}
       data-bloco={b.id}
-      data-arranjo={grade ? 'grade' : !aoLado ? 'empilhado' : tresColunas ? 'tres-colunas' : 'lado'}
+      data-arranjo={!aoLado ? 'empilhado' : tresColunas ? 'tres-colunas' : 'lado'}
       ref={(el) => { ref.current = el; registrar(el) }}
       className="scroll-mt-24"
     >
       {/* A promessa (curta, no H3) e a explicação (parágrafo à parte). */}
       <div ref={editorialRef}><Revelar>
-        {/* Nas abas (home), o número e o nome já estão na aba: repetir aqui
-            era índice em dobro (30/09). */}
-        {!semRotulo && (
         <p className="text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">
           <span className="tabular-nums">{String(n).padStart(2, '0')}</span>
           <span aria-hidden className="mx-2 text-surface-600">·</span>
           {b.indice}
         </p>
-        )}
         {/* Ao trocar de etapa (abas da home), o texto entra em crossfade em
             vez de trocar de uma vez (30/09). */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={b.id}
-            className={cn(semRotulo && 'lg:grid lg:grid-cols-[minmax(0,.85fr)_minmax(0,1.15fr)] lg:items-baseline lg:gap-10')}
-            initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -6, filter: 'blur(4px)', transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.15 } }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h3 className={cn(!semRotulo && 'mt-2.5', ' font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
+            <h3 className={cn('mt-2.5 font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
               {b.destaque}
             </h3>
-            <p className={cn('mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty', semRotulo && 'lg:mt-0')}>{b.texto}</p>
+            <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
           </motion.div>
         </AnimatePresence>
       </Revelar></div>
 
-      <div className={cn('flex', escala < 1 ? 'justify-center' : 'justify-start', semRotulo ? 'mt-5' : 'mt-6')} data-composicao-envelope>
+      <div className="mt-6 flex justify-start" data-composicao-envelope>
       <div ref={composicaoRef} data-composicao-recurso className="grid shrink-0 gap-4 sm:gap-5"
-        style={{ width: largura || '100%', zoom: escala, ...(colunas ? { gridTemplateColumns: colunas, gap: VAO } : {}), ...(grade ? { height: alturaGrade } : {}) }}>
+        style={{ width: largura || '100%', zoom: escala, ...(colunas ? { gridTemplateColumns: colunas, gap: VAO } : {}) }}>
         {/* A operação, na tela. */}
-        {/* Com manterMontado (abas da home), a tela nunca sai da árvore: nas
-            etapas sem tela (celular) ela só fica escondida e parada — o MESMO
-            app atende as seis abas, e sair dele custaria remontá-lo (~1,3 s). */}
-        {(!semTela || manterMontado) && (
-        <Revelar atraso={0.1} className={cn('min-w-0', grade ? 'flex h-full items-start justify-start' : 'self-start', semTela && 'hidden')}>
+        {!semTela && (
+        <Revelar atraso={0.1} className="min-w-0 self-start">
           {/* Embaixo, a tela nunca passa do tamanho real do app (1×) nem de
               1000 px: com só o teto de 1000 px, o funil (região estreita) saía
               a 1,3× — maior e mais cortado que as outras telas da página. */}
-          <DemoRecorte className={!grade && arranjo === 'abaixo' ? 'mx-auto' : undefined} style={grade ? { maxWidth: limite || undefined } : arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} alturaMax={grade ? alturaGrade : undefined} esmaecerBase={b.id === 'funil'} pausado={semTela || pausado} manterMontado={manterMontado} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={recorteAtual} onLimite={setLimite}
+          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto' : undefined} style={arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} esmaecerBase={b.id === 'funil'} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
             foraDoRecorte={aoLado ? 330 : 170} />
         </Revelar>
         )}
 
         {/* As evidências: ao lado (empilhadas, dividindo a altura do palco), em
             duas colunas altas (vertical) ou embaixo. */}
-        {tresColunas && !grade
-          ? b.cartoes.map((c, i) => <EntradaDaEtapa key={`${b.id}-${c.titulo}`} i={i} className="grid min-w-0"><Beneficio bloco={b.id} i={i} c={c} esticar at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} compacto={semRotulo} /></EntradaDaEtapa>)
+        {tresColunas
+          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)
           : (
-            <div className={grade || aoLado ? 'flex h-full min-h-0 min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
-              {/* Na grade única, os dois cartões dividem a altura em partes iguais. */}
-              {b.cartoes.map((c, i) => <EntradaDaEtapa key={`${b.id}-${c.titulo}`} i={i} className={cn('grid min-w-0', grade ? 'min-h-0 flex-1 basis-0 grid-rows-[minmax(0,1fr)]' : aoLado && 'flex-1')}><Beneficio bloco={b.id} i={i} c={c} esticar={grade || aoLado} at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} compacto={semRotulo} /></EntradaDaEtapa>)}
+            <div className={aoLado ? 'flex h-full min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
+              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)}
             </div>
           )}
       </div>
@@ -805,7 +638,8 @@ export function SecaoPlataforma() {
   )
 }
 
-// ─── 30/09: a Plataforma dividida — abas na home, capítulos nas páginas ─────
+// ─── 30/09: a Plataforma dividida — capítulos nas páginas de produto ─────────
+// (o "Como funciona" da home mora em SecaoComoFunciona.tsx)
 
 const NOOP_REGISTRO = () => {}
 
@@ -822,73 +656,6 @@ export function SecaoCapitulos({ ids }: { ids: readonly string[] }) {
             <ArtigoRecurso b={b} n={i + 1} registrar={NOOP_REGISTRO} />
           </div>
         ))}
-      </div>
-    </section>
-  )
-}
-
-/**
- * COMO FUNCIONA (home de venda, 30/09) — os seis capítulos em ABAS, como os
- * casos de uso da Attio: uma demonstração por vez, no lugar dos seis
- * artigos empilhados (6.580 px na página antiga). Cada aba leva à página de
- * produto que a aprofunda.
- */
-export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
-  const [ativo, setAtivo] = useState<string>(plataforma.blocos[0].id)
-  const [pausado, setPausado] = useState(false)
-  const idx = Math.max(0, plataforma.blocos.findIndex((b) => b.id === ativo))
-  const b = plataforma.blocos[idx]
-  const pagina = paginasPlataforma.find((p) => (p.blocos as readonly string[]).includes(b.id))
-  return (
-    <section id="como-funciona" data-section="como-funciona" aria-labelledby="como-funciona-titulo" className="relative scroll-mt-16 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:pb-14 lg:pt-10">
-      <div className="landing-container">
-        <Revelar className="max-w-[64rem]">
-          <h2 id="como-funciona-titulo" className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance text-surface-50">{home.comoFunciona.titulo}</h2>
-          <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{home.comoFunciona.cinza}</p>
-        </Revelar>
-
-        {/* Folga em volta das abas: o contêiner rola na horizontal, e `overflow`
-            também recorta na vertical — sem ela, a borda de cima das abas saía
-            cortada (30/09). */}
-        {/* As etapas como índice (P4, 30/09): número em mono + nome sobre uma
-            régua, a ativa sublinhada — sem pílulas. */}
-        <div className="relative mt-8 lg:mt-6">
-        <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="landing-abas pr-10">
-          {plataforma.blocos.map((bl, i) => (
-            <button
-              key={bl.id}
-              type="button"
-              role="tab"
-              id={`etapa-aba-${bl.id}`}
-              aria-selected={bl.id === ativo}
-              aria-controls="etapa-painel"
-              tabIndex={bl.id === ativo ? 0 : -1}
-              onClick={() => setAtivo(bl.id)}
-              onKeyDown={teclasDasAbas(plataforma.blocos.map((x) => x.id), ativo, setAtivo, 'etapa-aba-')}
-              className={cn('landing-aba rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500', bl.id === ativo && 'landing-aba-ativa')}
-            >
-              <span data-numero>{String(i + 1).padStart(2, '0')}</span>
-              {bl.indice}
-            </button>
-          ))}
-        </div>
-        <BotaoPausa pausado={pausado} onAlternar={() => setPausado((p) => !p)} className="absolute bottom-1.5 right-0" />
-        </div>
-
-        {/* Troca de aba SEM remontar (30/09, PO): o artigo é um só e a
-            demonstração dentro dele é o mesmo app — trocar de etapa é mandar
-            outra história para ele (troca de rota lá dentro, como um clique no
-            menu). Antes cada aba montava o app do zero (~1,3 s de espera, medido
-            no build de produção), e carregar as seis juntas custaria ~6× a
-            memória de uma demonstração. */}
-        <div id="etapa-painel" role="tabpanel" aria-labelledby={`etapa-aba-${b.id}`} className="mt-8 lg:mt-6">
-          <ArtigoRecurso b={b} n={idx + 1} registrar={NOOP_REGISTRO} semRotulo manterMontado pausado={pausado} caberNaSecao />
-          {pagina && (
-            <Link to={rotaPlataforma(pagina.slug)} className="mt-6 lg:mt-4 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-              {home.comoFunciona.saibaMais}: {pagina.menu} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          )}
-        </div>
       </div>
     </section>
   )

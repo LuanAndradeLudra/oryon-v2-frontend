@@ -50,6 +50,10 @@ interface Options<S extends string, C extends string> {
   staticIndex: number
   /** Enquanto falso, o relógio não anda (ex.: a demonstração ainda carregando). */
   enabled?: boolean
+  /** Chamado no fim do último cue. Devolvendo `true`, a linha do tempo NÃO
+   *  recomeça sozinha: quem chamou troca a história (cues novos recomeçam do
+   *  primeiro). Sem ele, o laço segue como sempre. */
+  aoTerminar?: () => boolean
 }
 
 export interface HeroTimeline<S extends string, C extends string> {
@@ -78,8 +82,10 @@ function canObserve(): boolean {
 }
 
 export function useHeroTimeline<S extends string, C extends string>(
-  { cues, tailMs, hostRef, staticIndex, enabled = true }: Options<S, C>,
+  { cues, tailMs, hostRef, staticIndex, enabled = true, aoTerminar }: Options<S, C>,
 ): HeroTimeline<S, C> {
+  const aoTerminarRef = useRef(aoTerminar)
+  useEffect(() => { aoTerminarRef.current = aoTerminar }, [aoTerminar])
   const reduced = useReducedMotion()
   const [observable] = useState(canObserve)
   const canAnimate = !reduced && observable
@@ -149,6 +155,7 @@ export function useHeroTimeline<S extends string, C extends string>(
     const inicio = Date.now()
     const id = setTimeout(() => {
       restante.current = null
+      if (index === cues.length - 1 && aoTerminarRef.current?.()) return
       setIndex((i) => (i + 1) % cues.length)
     }, espera)
     return () => {
