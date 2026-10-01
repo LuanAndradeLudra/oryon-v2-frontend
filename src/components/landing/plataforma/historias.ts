@@ -4,7 +4,7 @@ import type { HeroCue } from '../stage/hero/useHeroTimeline'
 
 /**
  * OS ROTEIROS de cada etapa da Plataforma — a mini-história que a demonstração
- * conta (cues) e a região do app que cada capítulo mostra (recorte).
+ * conta (cues), a rota e o estado em que o app nasce.
  *
  * Num módulo próprio (30/09) porque são usados por dois lugares: os capítulos
  * das páginas de produto (`SecaoPlataforma`, com os cartões de evidência e
@@ -15,36 +15,22 @@ import type { HeroCue } from '../stage/hero/useHeroTimeline'
 export type Cue = HeroCue<HeroState, HeroCena>
 const S = (t: number, state: HeroState): Cue => ({ t, state })
 
-/** Regiões do app (1280 × 720) — medidas no app real em 25/09. */
-export const RECORTES: Record<string, Recorte> = {
-  // Conversa + painel do contato.
-  conversa: { x: 421, y: 44, w: 859, h: 676 },
-  // Quadro do funil, panorâmico: Avaliação, Agendado e Aguardando guia — o card
-  // anda entre as duas primeiras, e a terceira mostra que o funil continua.
-  // Medido em 1280×720 (30/09): colunas de x = 336 a 1110; começa no
-  // cabeçalho das colunas (y = 136 — a faixa de filtros acima saía cortada à
-  // esquerda) e termina no vão abaixo do 2º card de Avaliação e Aguardando guia.
-  funil: { x: 334, y: 136, w: 778, h: 236 },
-  // A gaveta do relatório da campanha.
-  // Até a legenda do gráfico (a 640 px ela saía cortada).
-  relatorio: { x: 684, y: 0, w: 596, h: 656 },
-  // A página do agente (direção D, 27/09 — medido em 1280×720): cabeçalho de
-  // identidade, a navegação em três grupos e a seção até o fim dos cartões.
-  // Até a borda do app (30/09): em w = 1104 o cabeçalho do agente saía cortado
-  // no meio dos botões ("Ligad…").
-  agente: { x: 62, y: 48, w: 1218, h: 672 },
-  // O Dashboard de ponta a ponta: indicadores, volume, funil, fila e equipe —
-  // um recorte mais estreito cortava cartões pela metade.
-  painel: { x: 62, y: 56, w: 1218, h: 382 },
-}
+/**
+ * O quadro de TODAS as etapas: o app inteiro (1280 × 720). Até 30/09 cada
+ * etapa mostrava uma região ampliada (o chat, o quadro do funil, a gaveta do
+ * relatório), com proporções de 0,91 a 1,83 — e a moldura mudava de tamanho de
+ * uma etapa para outra. Com o app inteiro, a janela é a mesma na home e nos
+ * capítulos das páginas, e a etapa seguinte é o app navegando entre os módulos.
+ */
+export const APP_INTEIRO: Recorte = { x: 0, y: 0, w: 1280, h: 720 }
 
-export interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; recorte: Recorte; titulo: string }
+export interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; titulo: string }
 
 export const HISTORIAS: Record<string, Historia> = {
   // A configuração do agente, aba por aba: instruções → conhecimento → catálogo.
   conhecer: {
     titulo: 'Oryon · Agentes IA',
-    rota: HERO_ROTAS['agente-instrucoes'], estado: 'inicio', recorte: RECORTES.agente,
+    rota: HERO_ROTAS['agente-instrucoes'], estado: 'inicio',
     cues: [
       { t: 0, state: 'inicio', composition: 'agente-instrucoes' },
       { t: 4600, composition: 'agente-conhecimento' },
@@ -54,7 +40,7 @@ export const HISTORIAS: Record<string, Historia> = {
   },
   atender: {
     titulo: 'Oryon · Conversas',
-    rota: HERO_ROTAS.conversa, estado: 'inicio', recorte: RECORTES.conversa,
+    rota: HERO_ROTAS.conversa, estado: 'inicio',
     cues: [
       { t: 0, state: 'inicio', composition: 'conversa' },
       S(1400, 'demanda'), S(3800, 'resposta'), S(7800, 'confirma'), S(9600, 'situacao'), S(11600, 'etiqueta'),
@@ -63,7 +49,7 @@ export const HISTORIAS: Record<string, Historia> = {
   },
   equipe: {
     titulo: 'Oryon · Conversas',
-    rota: HERO_ROTAS.conversa, estado: 'avanco', recorte: RECORTES.conversa,
+    rota: HERO_ROTAS.conversa, estado: 'avanco',
     cues: [
       { t: 0, state: 'avanco', composition: 'conversa' },
       S(1400, 'pedido'), S(3800, 'assumido'), S(6600, 'humano'), S(9800, 'ganho'),
@@ -72,7 +58,7 @@ export const HISTORIAS: Record<string, Historia> = {
   },
   funil: {
     titulo: 'Oryon · Funis · Consultas',
-    rota: HERO_ROTAS.funil, estado: 'etiqueta', recorte: RECORTES.funil,
+    rota: HERO_ROTAS.funil, estado: 'etiqueta',
     cues: [
       { t: 0, state: 'etiqueta', composition: 'funil' },
       S(2200, 'avanco'),
@@ -81,7 +67,7 @@ export const HISTORIAS: Record<string, Historia> = {
   },
   campanhas: {
     titulo: 'Oryon · Disparos',
-    rota: HERO_ROTAS.disparos, estado: 'ganho', recorte: RECORTES.relatorio,
+    rota: HERO_ROTAS.disparos, estado: 'ganho',
     // Direto no relatório: começando na lista de Disparos, o recorte (a metade
     // direita da tela) mostrava só faixas vazias até a gaveta abrir.
     // Campanha CONCLUÍDA (estado 'ganho'): em 'inicio' ela ainda está saindo e
@@ -97,7 +83,7 @@ export const HISTORIAS: Record<string, Historia> = {
   // real busca uma vez ao abrir) — só o olhar percorre.
   medir: {
     titulo: 'Oryon · Dashboard',
-    rota: HERO_ROTAS.painel, estado: 'assumido', recorte: RECORTES.painel,
+    rota: HERO_ROTAS.painel, estado: 'assumido',
     cues: [
       { t: 0, state: 'assumido', composition: 'painel' },
       { t: 2400, composition: 'painel-fila' },

@@ -7,8 +7,8 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { home, paginasPlataforma, plataforma, rotaPlataforma } from '../landingCopy'
 import { BotaoPausa } from '../ui/BotaoPausa'
 import { Revelar } from './SecoesVenda'
-import { DemoRecorte, type Recorte } from './DemoRecorte'
-import { HISTORIAS } from './historias'
+import { DemoRecorte } from './DemoRecorte'
+import { APP_INTEIRO, HISTORIAS } from './historias'
 
 /**
  * COMO FUNCIONA (home de venda) — opção A, decidida com o PO em 30/09: as seis
@@ -35,8 +35,6 @@ import { HISTORIAS } from './historias'
  * a lista vira uma faixa rolável acima da janela.
  */
 
-/** O app inteiro, em todas as etapas (a mesma janela sempre). */
-const APP_INTEIRO: Recorte = { x: 0, y: 0, w: 1280, h: 720 }
 /** Altura do menu fixo da landing. */
 const MENU_FIXO = 64
 /** Largura mínima da coluna da lista (a promessa de cada etapa cabe em uma linha). */

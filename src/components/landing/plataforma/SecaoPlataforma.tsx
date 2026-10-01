@@ -21,7 +21,7 @@ import { heroActivityFeed, heroHomeSnapshot } from '@/demo/dashboardDemo'
 import { ConteudoWhatsAppAparelho } from '../stage/hero/HeroSatelitesConteudo'
 import { contato, contatoDisponivel, linkContato, plataforma } from '../landingCopy'
 import { DemoRecorte } from './DemoRecorte'
-import { HISTORIAS } from './historias'
+import { APP_INTEIRO, HISTORIAS } from './historias'
 import {
   HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroCampaigns, heroDeal, heroHistoricoGanho, heroMessages, heroNotifications, heroTimeline,
 } from '../stage/hero/heroRealData'
@@ -268,27 +268,31 @@ function Revelar({ children, atraso = 0, className }: { children: ReactNode; atr
   )
 }
 
-/** Each resource keeps its own reading order. Conversations pair the window
- * with stacked evidence; the wide funnel/dashboard use evidence below;
- * portrait campaign reports can share a row with both evidence cards.
- * The window IS the stage: no second stretched container around it. */
-type Arranjo = 'lado' | 'vertical' | 'abaixo'
-const COMPOSICAO: Record<string, Arranjo> = {
-  conhecer: 'lado',
-  // Dashboard: tela larga demais para dividir a largura — evidências embaixo.
-  medir: 'abaixo',
-  atender: 'lado',
-  equipe: 'lado',
-  funil: 'abaixo',
-  campanhas: 'vertical',
-}
-
-/** Largura mínima da coluna de evidências ao lado do palco. */
-const EVIDENCIAS_MIN = 320
-/** Largura mínima de cada evidência quando ficam lado a lado (arranjo vertical). */
-// Below this width, stack the evidence beside the portrait report.
-const EVIDENCIA_COLUNA_MIN = 300
+/**
+ * A COMPOSIÇÃO dos capítulos (páginas de detalhe, 01/10 — a mesma lógica do
+ * "Como funciona" da home): todo capítulo é igual. A janela do app inteiro à
+ * esquerda; os dois cartões empilhados à direita, com a altura da janela e o
+ * mesmo vão. Antes cada capítulo tinha o seu arranjo (lado, embaixo, três
+ * colunas), molduras de 359 a 735 px de largura e, quando a composição
+ * encolhia para caber, até 600 px sobrando à direita.
+ *
+ * No desktop a janela é a maior que cabe na altura da tela (menu fixo, o texto
+ * do capítulo e folgas) e na largura que sobra para os cartões (pelo menos
+ * CARTOES_MIN, idealmente CARTOES_FRACAO do capítulo): o capítulo inteiro cabe
+ * numa tela. No celular e no tablet tudo empilha.
+ */
 const VAO = 20
+const MENU_FIXO = 64
+const CARTOES_MIN = 340
+const CARTOES_FRACAO = 0.3
+/** Folga acima e abaixo do capítulo quando ele ocupa a tela. */
+const RESPIRO = 24
+/** Abaixo disso a janela fica pequena demais para ler. */
+const MOLDURA_MIN = 300
+/** A escala base dos visuais dos cartões (componentes reais a 80 %) e a menor
+ *  aceitável quando o visual encolhe para caber na altura do cartão. */
+const ZOOM_CARTAO = 0.8
+const ZOOM_CARTAO_MIN = 0.45
 
 type Bloco = (typeof plataforma.blocos)[number]
 
@@ -302,16 +306,43 @@ const RESERVAS: Record<string, HeroState[]> = {
 
 /** Uma evidência: o componente real em cima, a frase embaixo. */
 function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean; at: HeroState; cena: HeroCena; ciclo: number }) {
+  // Esticado (a grade do desktop), o cartão tem metade da altura da janela e o
+  // visual ENCOLHE para caber inteiro. A largura de diagramação continua a da
+  // escala base (largura do cartão ÷ ZOOM_CARTAO): só a escala muda, então a
+  // altura natural medida não depende dela e a medida não realimenta.
+  const caixaRef = useRef<HTMLDivElement>(null)
+  const conteudoRef = useRef<HTMLDivElement>(null)
+  const [ajuste, setAjuste] = useState<{ zoom: number; largura: number } | null>(null)
+  useLayoutEffect(() => {
+    const caixa = caixaRef.current
+    const conteudo = conteudoRef.current
+    if (!esticar || !caixa || !conteudo) return
+    const medir = () => {
+      const largura = caixa.clientWidth / ZOOM_CARTAO
+      const disponivel = caixa.clientHeight - 12
+      // Sob CSS zoom, offsetHeight vem na escala do próprio elemento (sem zoom).
+      const natural = conteudo.offsetHeight
+      if (natural <= 0 || disponivel <= 0) return
+      const zoom = Math.max(ZOOM_CARTAO_MIN, Math.min(ZOOM_CARTAO, disponivel / natural))
+      setAjuste((a) => (a && Math.abs(a.zoom - zoom) < 0.01 && Math.abs(a.largura - largura) < 1 ? a : { zoom, largura }))
+    }
+    medir()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
+    ro?.observe(caixa)
+    ro?.observe(conteudo)
+    return () => ro?.disconnect()
+  }, [esticar])
+  const encaixe = esticar && ajuste ? { zoom: ajuste.zoom, width: ajuste.largura } : { zoom: ZOOM_CARTAO }
   return (
-    // Esticada, a evidência divide a altura do palco (flex-1): a folga vai para
-    // a área do visual, centrado — nunca um vão entre as duas.
-    <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-w-0', esticar && 'flex-1')}>
+    // Esticada, a evidência divide a altura da janela (flex-1, base 0): as duas
+    // têm sempre a mesma altura, e a folga vai para a área do visual.
+    <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-w-0', esticar && 'min-h-0 flex-1 basis-0')}>
       {/* Todas as evidências no mesmo desenho (visual em cima, frase embaixo) e
           com a altura da vizinha: o painel (06) tinha visual e frase lado a
           lado, e a grade ficava desalinhada com cartões de alturas diferentes. */}
-      <div className="flex h-full w-full flex-col overflow-hidden rounded-xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
-        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5 [[data-theme=light]_&]:bg-surface-900">
-          <div aria-hidden inert data-evidencia className="pointer-events-none grid min-w-0 select-none [zoom:0.8]">
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
+        <div ref={caixaRef} className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5 [[data-theme=light]_&]:bg-surface-900">
+          <div ref={conteudoRef} aria-hidden inert data-evidencia className="pointer-events-none mx-auto grid min-w-0 max-w-none select-none" style={encaixe}>
             {RESERVAS[bloco]?.map((estado) => (
               <div key={estado} className="invisible min-w-0 [grid-area:1/1]" data-reserva>
                 <VisualCartao bloco={bloco} i={i} at={estado} cena="agente-catalogo" ciclo={0} />
@@ -324,9 +355,9 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
         </div>
         {/* Lote 4 (30/09): sem o ponto teal — ele era sempre igual e só
             decorava; os pontos ficam onde dizem IA × pessoa. */}
-        <div className="px-5 pb-4 pt-3.5">
-          <p className="text-[15px] font-semibold leading-snug text-surface-50">{c.titulo}</p>
-          <p className="mt-1 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{c.texto}</p>
+        <div className={esticar ? 'px-4 pb-3.5 pt-3' : 'px-5 pb-4 pt-3.5'}>
+          <p className={cn('font-semibold leading-snug text-surface-50', esticar ? 'text-[14.5px]' : 'text-[15px]')}>{c.titulo}</p>
+          <p className={cn('mt-1 max-w-[52ch] text-surface-400', esticar ? 'text-[13.5px] leading-snug' : 'text-[14px] leading-relaxed')}>{c.texto}</p>
         </div>
       </div>
     </Revelar>
@@ -335,50 +366,30 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
 
 function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void }) {
   const h = HISTORIAS[b.id]
-  const arranjo = COMPOSICAO[b.id]
   const ref = useRef<HTMLElement | null>(null)
   const editorialRef = useRef<HTMLDivElement>(null)
-  const composicaoRef = useRef<HTMLDivElement>(null)
-  const [escala, setEscala] = useState(1)
-  // Fit the complete composition, not each window independently. offsetHeight
-  // is in unscaled CSS pixels, so applying zoom cannot feed back into sizing.
+  // ── Geometria (desktop): a janela vem da tela, não do conteúdo da etapa ──
+  const [geo, setGeo] = useState<{ alturaMax: number; larguraMax: number } | null>(null)
+  const [limite, setLimite] = useState(0)
   useLayoutEffect(() => {
-    const composicao = composicaoRef.current
+    const artigo = ref.current
     const editorial = editorialRef.current
-    if (!composicao || !editorial) return
+    if (!artigo || !editorial) return
     const medir = () => {
-      const desktop = window.innerWidth >= 1024
-      const disponivel = window.innerHeight - 96 - editorial.offsetHeight - 24 - 24
-      const natural = composicao.offsetHeight
-      // Só encolhe se não couber na altura (30/09): o fator fixo de 0,92 deixava
-      // toda composição 8 % mais estreita que o texto acima — um vão à direita.
-      setEscala(desktop && natural > 0 ? Math.min(1, Math.max(1, disponivel) / natural) : 1)
+      if (window.innerWidth < 1024) { setGeo((g) => (g === null ? g : null)); return }
+      const largura = artigo.clientWidth
+      const cartoes = Math.max(CARTOES_MIN, Math.round(largura * CARTOES_FRACAO))
+      const larguraMax = Math.floor(largura - cartoes - VAO)
+      const alturaMax = Math.max(MOLDURA_MIN, Math.floor(window.innerHeight - MENU_FIXO - editorial.offsetHeight - 24 - 2 * RESPIRO))
+      setGeo((g) => (g && Math.abs(g.alturaMax - alturaMax) < 2 && Math.abs(g.larguraMax - larguraMax) < 2 ? g : { alturaMax, larguraMax }))
     }
+    medir()
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
-    ro?.observe(composicao)
+    ro?.observe(artigo)
     ro?.observe(editorial)
     window.addEventListener('resize', medir)
-    medir()
     return () => { ro?.disconnect(); window.removeEventListener('resize', medir) }
   }, [])
-  // Largura REAL do artigo — decide o arranjo (não o breakpoint da viewport).
-  const [largura, setLargura] = useState(0)
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const medir = () => setLargura(el.clientWidth)
-    medir()
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
-    ro?.observe(el)
-    return () => ro?.disconnect()
-  }, [])
-  // The window itself is the stage. Portrait reports keep their natural
-  // width; landscape screens use the available column without an outer mat.
-  const [limite, setLimite] = useState(0)
-  const palco = limite
-  const sobra = palco ? largura - palco - VAO : 0
-  const aoLado = palco > 0 && sobra >= EVIDENCIAS_MIN && arranjo !== 'abaixo'
-  const tresColunas = aoLado && arranjo === 'vertical' && sobra >= 2 * EVIDENCIA_COLUNA_MIN + VAO
   // Configurar agentes é desktop no próprio produto (no celular ele avisa "use
   // o desktop"): ali o capítulo conta a história só pelas evidências.
   const celular = !useMediaQuery('(min-width: 768px)')
@@ -387,6 +398,9 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
   // negócio, já em Agendado) conta o capítulo sozinha.
   const semTela = celular && (b.id === 'conhecer' || b.id === 'funil')
   const passoSemTela: HeroState = b.id === 'funil' ? 'avanco' : h.estado
+  const grade = geo !== null && !semTela
+  // A janela: a maior que cabe na altura (DemoRecorte calcula) e na largura.
+  const palco = geo ? Math.min(limite || geo.larguraMax, geo.larguraMax) : 0
   // O passo da mini-história da tela — os cartões ao lado reagem a ele.
   const [passo, setPasso] = useState<HeroState>(h.estado)
   const [ciclo, setCiclo] = useState(0)
@@ -396,17 +410,12 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
     setCenaAtual(cena)
     if (indice === 0) setCiclo((n) => n + 1)
   }, [])
-  const colunas = !aoLado ? undefined
-    : tresColunas ? `${palco}px minmax(0, 1fr) minmax(0, 1fr)`
-    // Conversas usam duas colunas; relatórios verticais preservam sua largura.
-    : arranjo === 'vertical' ? `${palco}px minmax(0, 1fr)`
-    : `minmax(0, 1.3fr) minmax(${EVIDENCIAS_MIN}px, 1fr)`
 
   return (
     <article
       id={`plataforma-${b.id}`}
       data-bloco={b.id}
-      data-arranjo={!aoLado ? 'empilhado' : tresColunas ? 'tres-colunas' : 'lado'}
+      data-arranjo={grade ? 'grade' : 'empilhado'}
       ref={(el) => { ref.current = el; registrar(el) }}
       className="scroll-mt-24"
     >
@@ -417,48 +426,33 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
           <span aria-hidden className="mx-2 text-surface-600">·</span>
           {b.indice}
         </p>
-        {/* Ao trocar de etapa (abas da home), o texto entra em crossfade em
-            vez de trocar de uma vez (30/09). */}
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={b.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4, transition: { duration: 0.15 } }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <h3 className={cn('mt-2.5 font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
-              {b.destaque}
-            </h3>
-            <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
-          </motion.div>
-        </AnimatePresence>
+        <h3 className="mt-2.5 font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance">
+          {b.destaque}
+        </h3>
+        {/* Duas linhas reservadas no desktop: o texto de todo capítulo ocupa a
+            mesma altura, e a janela (que se mede pelo que sobra) sai igual em todos. */}
+        <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty lg:min-h-[2lh]">{b.texto}</p>
       </Revelar></div>
 
-      <div className="mt-6 flex justify-start" data-composicao-envelope>
-      <div ref={composicaoRef} data-composicao-recurso className="grid shrink-0 gap-4 sm:gap-5"
-        style={{ width: largura || '100%', zoom: escala, ...(colunas ? { gridTemplateColumns: colunas, gap: VAO } : {}) }}>
-        {/* A operação, na tela. */}
+      <div
+        data-composicao-recurso
+        className="mt-6 grid gap-4 sm:gap-5"
+        style={grade ? { gridTemplateColumns: `${palco}px minmax(0, 1fr)`, columnGap: VAO } : undefined}
+      >
+        {/* A operação, na tela — o app inteiro, a mesma janela da home. */}
         {!semTela && (
-        <Revelar atraso={0.1} className="min-w-0 self-start">
-          {/* Embaixo, a tela nunca passa do tamanho real do app (1×) nem de
-              1000 px: com só o teto de 1000 px, o funil (região estreita) saía
-              a 1,3× — maior e mais cortado que as outras telas da página. */}
-          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto' : undefined} style={arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} esmaecerBase={b.id === 'funil'} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
-            foraDoRecorte={aoLado ? 330 : 170} />
+        <Revelar atraso={0.1} className="min-w-0">
+          <DemoRecorte onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={APP_INTEIRO}
+            alturaMax={geo?.alturaMax} ampliacaoMax={1} onLimite={setLimite} />
         </Revelar>
         )}
 
-        {/* As evidências: ao lado (empilhadas, dividindo a altura do palco), em
-            duas colunas altas (vertical) ou embaixo. */}
-        {tresColunas
-          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)
-          : (
-            <div className={aoLado ? 'flex h-full min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
-              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)}
-            </div>
-          )}
-      </div>
+        {/* As evidências. Na grade, empilhadas com a altura da janela: o
+            contain:size tira a altura natural delas do cálculo da linha (quem
+            manda é a janela) e as duas dividem o que sobra em partes iguais. */}
+        <div className={grade ? 'flex min-h-0 min-w-0 flex-col gap-5 [contain:size]' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
+          {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={grade} at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)}
+        </div>
       </div>
     </article>
   )
