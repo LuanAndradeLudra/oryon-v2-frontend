@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { statusDoModelo } from '@/lib/metaRotulos'
 import { appLogger } from '@/services/appLogger'
 
 function readSession() {
@@ -1451,16 +1452,8 @@ function Step4({
 // CAMP-WIZ-19 (spec 2c): chip "Aprovado · Meta" na linha Template do resumo —
 // mesmo padrão suave (fundo tinta + texto colorido) do statusChip de
 // CampaignsTab.tsx/TemplatesTab.tsx.
-const TEMPLATE_STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Em análise', APPROVED: 'Aprovado', REJECTED: 'Rejeitado', PAUSED: 'Pausado', DISABLED: 'Desativado',
-}
-const TEMPLATE_STATUS_CLASS: Record<string, string> = {
-  APPROVED: 'color-chip-soft border [--chip:var(--color-status-active)]',
-  PENDING:  'color-chip-soft border [--chip:var(--color-status-pending)]',
-  REJECTED: 'color-chip-soft border [--chip:var(--color-danger)]',
-  PAUSED:   'bg-surface-900 border border-surface-700 text-surface-400',
-  DISABLED: 'color-chip-soft border [--chip:var(--color-danger)]',
-}
+// Plano MA (MA-6.3): os mesmos rótulos da tela de templates, com reserva.
+
 
 function EditLink({ onClick }: { onClick: () => void }) {
   return (
@@ -1596,8 +1589,8 @@ function Step5({
             value={
               <span className="flex items-center gap-2 min-w-0">
                 <span className="font-mono text-[11.5px] truncate">{template.name}</span>
-                <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0', TEMPLATE_STATUS_CLASS[template.status] ?? TEMPLATE_STATUS_CLASS.PENDING)}>
-                  {TEMPLATE_STATUS_LABEL[template.status] ?? template.status} · Meta
+                <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0', statusDoModelo(template.status).chip)}>
+                  {statusDoModelo(template.status).label} · Meta
                 </span>
               </span>
             }

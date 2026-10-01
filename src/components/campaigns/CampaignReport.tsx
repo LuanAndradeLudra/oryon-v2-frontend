@@ -420,7 +420,13 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5"
                         >
                           <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
-                          <p className="text-2xs text-surface-200">{stopReason}</p>
+                          <div className="text-2xs text-surface-200 space-y-1">
+                            <p>{stopReason}</p>
+                            {/* Decisão do PO (plano MA): a campanha parada não volta sozinha. */}
+                            {campaign.status === 'stopped' && (
+                              <p className="text-surface-400">Os contatos que ainda não tinham recebido não vão receber. Para reenviar, crie uma nova campanha.</p>
+                            )}
+                          </div>
                         </div>
                       )}
                       {(excluded > 0 || optedOut > 0) && (

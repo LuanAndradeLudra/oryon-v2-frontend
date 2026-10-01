@@ -164,4 +164,22 @@ describe('CampaignReport com o payload real do backend', () => {
     expect(achados.length).toBeGreaterThan(0)
     for (const a of achados) expect(Number(a.split('|')[0]), a).toBeLessThanOrEqual(100)
   })
+
+  it('MA-6.3: interrompida mostra o motivo e orienta a criar uma nova campanha', async () => {
+    getAnalytics.mockResolvedValue({
+      data: {
+        campaignId: 'c1', stats: campaign.stats, failures: [], replies: [],
+        stopReason: 'Template "lembrete" foi pausado pela Meta: primeira pausa por baixa qualidade',
+      },
+    })
+    getConversations.mockResolvedValue({ data: [] })
+    const parada = { ...campaign, status: 'stopped' } as unknown as Campaign
+    render(
+      <MemoryRouter>
+        <CampaignReport campaign={parada} onClose={() => undefined} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByText(/foi pausado pela Meta/)).toBeTruthy())
+    expect(screen.getByText(/Para reenviar, crie uma nova campanha/)).toBeTruthy()
+  })
 })

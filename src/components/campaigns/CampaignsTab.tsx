@@ -45,9 +45,11 @@ const FILTER_OPTIONS: { value: CampaignStatus | 'all'; label: string }[] = [
   { value: 'draft',     label: 'Rascunhos' },
   { value: 'scheduled', label: 'Agendadas' },
   { value: 'sent',      label: 'Enviadas' },
+  // Plano MA: parada pela Meta (template pausado/reprovado) ou pelo disjuntor.
+  { value: 'stopped',   label: 'Interrompidas' },
 ]
 
-const lerStatusCampanha = lerUmDe(['all', 'draft', 'scheduled', 'sending', 'sent', 'failed', 'cancelled'] as const, 'all')
+const lerStatusCampanha = lerUmDe(['all', 'draft', 'scheduled', 'sending', 'sent', 'failed', 'cancelled', 'stopped'] as const, 'all')
 
 export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) => void } = {}) {
   // Gate on WhatsApp line availability — the backend rejects
@@ -323,8 +325,11 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
   const s = campaign.stats
   // "Já saiu da fila" — define se o card mostra progresso e relatório ou as
   // ações de rascunho. `failed` entra aqui de propósito: quem falhou precisa
-  // do relatório MAIS que quem deu certo.
-  const jaDisparou = ['sending', 'sent', 'failed'].includes(campaign.status)
+  // do relatório MAIS que quem deu certo. Plano MA (MA-6.3): `stopped` também —
+  // a interrompida tem relatório e NÃO tem "Enviar" (o backend recusava com
+  // 400: não se retoma campanha parada; para reenviar, cria-se outra).
+  const jaDisparou = ['sending', 'sent', 'failed', 'stopped'].includes(campaign.status)
+  const interrompida = campaign.status === 'stopped'
   const total = s.total || 0
   const pct = total > 0 ? Math.min(100, Math.round((s.sent / total) * 100)) : 0
   const quando = campaign.sentAt ?? campaign.scheduledAt ?? campaign.createdAt
@@ -392,6 +397,10 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
         {total > 0 && <> · {num(total)} destinatário{total === 1 ? '' : 's'}</>}
       </p>
 
+      {interrompida && campaign.stopReason && (
+        <p className="text-[11.5px] text-danger line-clamp-2" title={campaign.stopReason}>{campaign.stopReason}</p>
+      )}
+
       {/* Progresso + métricas, só quando já existe resultado */}
       {jaDisparou && total > 0 && (
         <>
@@ -399,7 +408,7 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
             <div className="flex-1 h-1.5 rounded-full bg-surface-900 overflow-hidden">
               <div
                 className={cn('h-full rounded-full transition-[width] duration-500',
-                  campaign.status === 'failed' ? 'bg-danger' : 'bg-brand-500')}
+                  campaign.status === 'failed' || interrompida ? 'bg-danger' : 'bg-brand-500')}
                 style={{ width: `${pct}%` }}
               />
             </div>
