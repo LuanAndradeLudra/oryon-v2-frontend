@@ -56,6 +56,9 @@ export interface Setor {
 
 /** Quanto o contador de minutos leva para correr (ms). */
 export const DURACAO_CONTADOR = 1600
+/** O ritmo da exibição (PO, 30/09): os tempos dos roteiros correm 1,7× mais
+ *  devagar na tela, para dar tempo de ler cada mensagem com calma. */
+export const RITMO = 1.7
 /** Quanto o setor fica parado no fim, antes de deslizar para o próximo (ms). */
 export const PAUSA_NO_FIM = 3800
 

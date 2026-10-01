@@ -8,7 +8,7 @@ import { Aparelho } from '../stage/hero/HeroSatelites'
 import { Bolha, TelaWhatsApp } from '../stage/hero/HeroWhatsAppIphone'
 import { teclasDasAbas } from '../ui/abasTeclado'
 import { BotaoPausa } from '../ui/BotaoPausa'
-import { DURACAO_CONTADOR, SETORES, duracaoDoSetor, type Lado, type PassoDia, type Setor } from './dorConversas'
+import { DURACAO_CONTADOR, RITMO, SETORES, duracaoDoSetor, type Lado, type PassoDia, type Setor } from './dorConversas'
 
 /**
  * "POR QUE A ORYON" como UM DIA NO WHATSAPP (30/09, PO): dois iPhones — o
@@ -208,7 +208,8 @@ export function SecaoDor() {
   const [ms, setMs] = useState(0)
   const [pausado, setPausado] = useState(false)
   const setor = SETORES[indice]
-  const total = duracaoDoSetor(setor)
+  // O relógio corre em tempo real; os roteiros, em tempo de roteiro (RITMO mais devagar).
+  const total = duracaoDoSetor(setor) * RITMO
   const correndo = naTela && !pausado && !semMovimento
 
   // Um relógio só para o setor: anda quando a seção está na tela e não está pausada.
@@ -239,7 +240,7 @@ export function SecaoDor() {
     setMs(0)
   }
 
-  const agora = semMovimento ? Infinity : ms
+  const agora = semMovimento ? Infinity : ms / RITMO
   const ids = SETORES.map((s) => s.id)
 
   return (
