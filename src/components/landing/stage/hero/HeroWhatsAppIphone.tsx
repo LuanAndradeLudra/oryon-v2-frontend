@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { TemplatePreview, WA, FONTE_WA } from '@/components/campaigns/TemplatePreview'
 import { HERO, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, reached } from './heroRealData'
@@ -87,7 +87,7 @@ function Tiques() {
 
 // ─── Bolhas ─────────────────────────────────────────────────────────────────
 
-function Bolha({ texto, hora, minha }: { texto: string; hora: string; minha?: boolean }) {
+export function Bolha({ texto, hora, minha }: { texto: string; hora: string; minha?: boolean }) {
   return (
     <motion.div
       layout
@@ -161,38 +161,66 @@ export function WhatsAppIphone({ at, cena }: { at: HeroState; cena: HeroCena }) 
   if (reached(at, 'confirma')) mensagens.push({ id: 'c', texto: HERO.confirm, hora: hhmm(2), minha: true })
 
   return (
+    <TelaWhatsApp hora={hhmm(0).replace(/^0/, '')} digitado={digitado} digitando={!!rascunho}>
+      <div className="self-center mb-1">
+        <span className="inline-block rounded-md bg-white/90 px-2.5 py-1 text-[12px] font-medium shadow-[0_1px_.5px_rgba(11,20,26,.13)]" style={{ color: '#54656F' }}>Hoje</span>
+      </div>
+      <div className="self-start" style={{ maxWidth: '86%' }}>
+        <TemplatePreview template={HERO_TEMPLATE} variables={HERO_TEMPLATE_VARIAVEIS} variant="card" sentAt={hhmm(6)} />
+      </div>
+      <AnimatePresence initial={false}>
+        {mensagens.map((m) => <Bolha key={m.id} texto={m.texto} hora={m.hora} minha={m.minha} />)}
+      </AnimatePresence>
+    </TelaWhatsApp>
+  )
+}
+
+/**
+ * A CASCA do WhatsApp no iPhone (extraída em 30/09 para a seção "Por que a
+ * Oryon" usar o mesmo aparelho do palco): barra de status do iOS, cabeçalho da
+ * conversa com a empresa, a conversa sobre o papel de parede e a barra de
+ * digitação. Desenhada em 390 × 760 pontos e reduzida por `escala`.
+ */
+export function TelaWhatsApp({
+  hora, children, digitado = '', digitando = false, escala = 0.6, subtitulo = 'Conta comercial',
+  empresa = 'Clínica Vitalis', iniciais = 'VS', corAvatar = '#0F766E',
+}: {
+  hora: string
+  /** A empresa da conversa (a seção "Por que a Oryon" troca de setor). */
+  empresa?: string
+  iniciais?: string
+  corAvatar?: string
+  children: ReactNode
+  digitado?: string
+  digitando?: boolean
+  escala?: number
+  subtitulo?: string
+}) {
+  return (
     <div
       className="relative flex flex-col overflow-hidden origin-top-left"
-      style={{ width: 390, height: 760, transform: 'scale(0.6)', fontFamily: FONTE_WA, background: WA.papel }}
+      style={{ width: 390, height: 760, transform: `scale(${escala})`, fontFamily: FONTE_WA, background: WA.papel }}
     >
       {/* ── Barra de status do iOS ── */}
       <div className="flex h-[54px] flex-shrink-0 items-center justify-between px-[34px] pt-[6px]" style={{ background: BARRA_IOS }}>
-        <span className="text-[17px] font-semibold tracking-[-0.2px] text-black" style={{ fontFamily: '-apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif' }}>{hhmm(0).replace(/^0/, '')}</span>
+        <span className="text-[17px] font-semibold tracking-[-0.2px] text-black tabular-nums" style={{ fontFamily: '-apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif' }}>{hora}</span>
         <span className="flex items-center gap-[6px]"><Sinal /><WiFi /><Bateria /></span>
       </div>
 
       {/* ── Cabeçalho da conversa ── */}
       <div className="flex h-[52px] flex-shrink-0 items-center gap-2 px-3" style={{ background: BARRA_IOS, borderBottom: `0.5px solid ${DIVISOR_IOS}` }}>
         <span className="flex items-center gap-1 pr-1"><Voltar /></span>
-        <span className="flex h-[36px] w-[36px] flex-shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white" style={{ background: '#0F766E' }}>VS</span>
+        <span className="flex h-[36px] w-[36px] flex-shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white" style={{ background: corAvatar }}>{iniciais}</span>
         <span className="flex min-w-0 flex-1 flex-col leading-tight">
-          <span className="truncate text-[16.5px] font-semibold text-black">Clínica Vitalis</span>
-          <span className="truncate text-[12.5px]" style={{ color: CINZA_IOS }}>Conta comercial</span>
+          <span className="truncate text-[16.5px] font-semibold text-black">{empresa}</span>
+          <span className="truncate text-[12.5px]" style={{ color: CINZA_IOS }}>{subtitulo}</span>
         </span>
         <span className="flex items-center gap-5 pl-2"><Video /><Telefone /></span>
       </div>
 
       {/* ── A conversa ── */}
       <div className="relative flex min-h-0 flex-1 flex-col justify-end gap-[6px] overflow-hidden px-[10px] pb-2">
-        <div className="self-center mb-1">
-          <span className="inline-block rounded-md bg-white/90 px-2.5 py-1 text-[12px] font-medium shadow-[0_1px_.5px_rgba(11,20,26,.13)]" style={{ color: '#54656F' }}>Hoje</span>
-        </div>
-        <div className="self-start" style={{ maxWidth: '86%' }}>
-          <TemplatePreview template={HERO_TEMPLATE} variables={HERO_TEMPLATE_VARIAVEIS} variant="card" sentAt={hhmm(6)} />
-        </div>
-        <AnimatePresence initial={false}>
-          {mensagens.map((m) => <Bolha key={m.id} texto={m.texto} hora={m.hora} minha={m.minha} />)}
-        </AnimatePresence>
+        {children}
       </div>
 
       {/* ── Barra de digitação do WhatsApp (iOS) ── */}
@@ -205,7 +233,7 @@ export function WhatsAppIphone({ at, cena }: { at: HeroState; cena: HeroCena }) 
           >
             <span className="min-w-0 flex-1 py-[7px] text-[16px] leading-[21px] text-black">
               {digitado}
-              {rascunho && <span className="ml-[1px] inline-block h-[19px] w-[2px] translate-y-[3px] animate-pulse" style={{ background: AZUL_IOS }} />}
+              {digitando && <span className="ml-[1px] inline-block h-[19px] w-[2px] translate-y-[3px] animate-pulse" style={{ background: AZUL_IOS }} />}
             </span>
             <Figurinha />
           </div>

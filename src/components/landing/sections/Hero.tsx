@@ -31,11 +31,13 @@ export function Hero() {
       id="inicio"
       data-section="hero"
       className={cn(
+        // Sem a faixa de fatos (removida em 30/09), o respiro antes da próxima
+        // seção fica aqui.
         // `overflow-x-clip`: a atmosfera do palco sangra para fora da coluna de
         // propósito, mas nunca pode criar rolagem horizontal na página.
         // `isolate`: o véu do holofote (z 40, dentro da seção) nunca passa por
         // cima do menu fixo quando a página rola.
-        'relative isolate overflow-x-clip scroll-mt-16 pb-10 sm:pb-5',
+        'relative isolate overflow-x-clip scroll-mt-16 pb-14 sm:pb-16',
         // Espaçamento do conjunto título → narração → palco em TOKENS (25/09):
         // encolhem juntos em telas baixas, para o conjunto caber na altura.
         'pt-[var(--hero-gap-topo)]',

@@ -553,41 +553,45 @@ export type PaginaPlataforma = (typeof paginasPlataforma)[number]
 export const home = {
   ctaPrincipal: 'Agendar demonstração',
   ctaSecundario: 'Ver como funciona',
-  /** A faixa de fatos logo depois do Hero — só o que dá para afirmar hoje. */
-  fatos: [
-    { key: 'oficial', titulo: 'WhatsApp oficial para empresas', texto: 'Conexão fornecida pela Meta, dona do WhatsApp.' },
-    { key: 'prazo', titulo: 'No ar em até 7 dias', texto: 'Depois que a Meta libera o seu número.' },
-    { key: 'controle', titulo: 'Sua equipe no comando', texto: 'Você define o que a IA faz e quando uma pessoa assume.' },
-  ],
   /** A dor e a virada (ciclo noturno, 30/09): o que acontece hoje no WhatsApp
    *  de quem compra, em palavras simples, e o que muda. Sem números. */
   dor: {
     eyebrow: 'Por que a Oryon',
-    titulo: 'Cliente sem resposta procura outra empresa.',
-    cinza: 'E o WhatsApp da sua empresa não para.',
+    /** O título muda com o setor do carrossel (PO, 30/09): cada segmento tem
+     *  um valor próprio. Clínica e loja: agilidade com volume alto. Imobiliária:
+     *  o interesse não esfria. Contabilidade e jurídico: triagem e menos carga
+     *  operacional. As chaves são os ids de home/dorConversas.ts. */
+    setores: {
+      clinica: {
+        titulo: 'Na clínica cheia, marca quem responde primeiro.',
+        apoio: 'O agente responde na hora, com convênios, valores e horários que a clínica cadastrou, e chama a recepção para confirmar.',
+      },
+      imobiliaria: {
+        titulo: 'O interesse no imóvel não espera o corretor voltar.',
+        apoio: 'O agente responde sobre os imóveis que você cadastrou e chama o corretor certo para combinar a visita.',
+      },
+      loja: {
+        titulo: 'Na loja, a venda fica com quem responde primeiro.',
+        apoio: 'Estoque, preço e retirada respondidos na hora, enquanto a equipe atende o balcão.',
+      },
+      contabilidade: {
+        titulo: 'Menos tempo do contador com as mesmas perguntas.',
+        apoio: 'Prazos e documentos respondidos com o conteúdo do escritório. O contador entra quando o caso pede análise.',
+      },
+      juridico: {
+        titulo: 'O advogado recebe a triagem pronta.',
+        apoio: 'O agente faz as perguntas definidas pelo escritório e pede os documentos. Orientação sobre o caso fica com o advogado.',
+      },
+    },
     comOryon: 'Com a Oryon',
+    semOryon: 'Sem a Oryon',
     /** As conversas têm hora e valor: dizem que são exemplo (lote 3, 30/09). */
     aviso: 'Conversas de exemplo.',
-    /** Cada dor é uma MENSAGEM de cliente (a conversa fictícia mora em
-     *  home/dorConversas.ts, fora da copy: tem hora e valor). Aqui só a
-     *  afirmação: o problema e o que muda com a Oryon. */
-    itens: [
-      {
-        key: 'horario',
-        problema: 'As mensagens chegam fora do horário.',
-        solucao: 'o agente responde na hora, a qualquer hora, com as informações da sua empresa.',
-      },
-      {
-        key: 'repeticao',
-        problema: 'A equipe responde a mesma coisa o dia todo.',
-        solucao: 'as perguntas do dia a dia são respondidas na hora, e sua equipe fica com quem está pronto para comprar.',
-      },
-      {
-        key: 'organizacao',
-        problema: 'Ninguém sabe em que pé está cada cliente.',
-        solucao: 'cada conversa fica registrada, com a etapa da venda e um responsável.',
-      },
-    ],
+    /** O carrossel de setores (o roteiro de cada um mora em
+     *  home/dorConversas.ts, fora da copy: tem hora e valor). */
+    abasLabel: 'Escolher o tipo de empresa',
+    resultado: 'Resultado',
+    andamento: 'Conversa em andamento…',
   },
   /** A chamada no meio da página, depois das áreas. */
   chamada: {
