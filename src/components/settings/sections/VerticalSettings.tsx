@@ -8,7 +8,7 @@ import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
 import type { TenantVocabulary } from '@/types'
@@ -148,7 +148,7 @@ function PersonSelect({
   const isCustom = !presets.includes(value)
   return (
     <div className="flex flex-col gap-2">
-      <Select
+      <SelectMenu
         value={isCustom ? CUSTOM : value}
         onChange={(e) => onChange(e.target.value === CUSTOM ? '' : e.target.value)}
       >
@@ -156,7 +156,7 @@ function PersonSelect({
           <option key={p} value={p}>{p}</option>
         ))}
         <option value={CUSTOM}>Personalizado</option>
-      </Select>
+      </SelectMenu>
       {isCustom && (
         <Input value={value} placeholder="Termo personalizado" onChange={(e) => onChange(e.target.value)} />
       )}

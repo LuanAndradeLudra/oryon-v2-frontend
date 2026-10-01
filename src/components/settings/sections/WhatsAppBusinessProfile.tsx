@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Avatar } from '@/components/ui/Avatar'
 import { Banner } from '@/components/ui/Banner'
 import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
@@ -206,13 +206,13 @@ export function WhatsAppBusinessProfile() {
                 escolher: mostra a linha em texto em vez de um seletor. */}
             <FormField label="Linha WhatsApp">
               {numbers.length > 1 ? (
-                <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+                <SelectMenu value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
                   {numbers.map((n) => (
                     <option key={n.id} value={n.id}>
                       {formatWaSelectLabel(n)}
                     </option>
                   ))}
-                </Select>
+                </SelectMenu>
               ) : (
                 <p className="text-sm text-surface-200">{selectedNumber ? formatWaSelectLabel(selectedNumber) : ''}</p>
               )}
@@ -321,14 +321,14 @@ export function WhatsAppBusinessProfile() {
                 </FormField>
 
                 <FormField label="Categoria">
-                  <Select
+                  <SelectMenu
                     value={form.vertical}
                     onChange={(e) => setForm((f) => ({ ...f, vertical: e.target.value }))}
                   >
                     {VERTICAL_OPTIONS.map((v) => (
                       <option key={v.value} value={v.value}>{v.label}</option>
                     ))}
-                  </Select>
+                  </SelectMenu>
                 </FormField>
               </div>
             </SettingsSection>

@@ -13,7 +13,7 @@ import { SkeletonTable } from '@/components/ui/Skeleton'
 import { Spinner } from '@/components/ui/Spinner'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select as SelectField } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { ActorChip } from '@/components/ui/ActorChip'
 import { formatActivity } from '@/components/dashboard/activityFormatter'
 import {
@@ -401,14 +401,14 @@ function FilterBar({
         <Filter className="w-4 h-4" /> Filtros
       </div>
       <Field label="Quem (userId)" value={draft.actorId ?? ''} onChange={v => set('actorId', v || undefined)} placeholder="UUID" />
-      <Select
+      <FiltroSelect
         label="Área"
         value={draft.entityType ?? ''}
         options={ENTITY_BUCKETS}
         onChange={v => set('entityType', v || undefined)}
       />
       <Field label="Ação (verb)" value={draft.action ?? ''} onChange={v => set('action', v || undefined)} placeholder="ex: campaign_sent" />
-      <Select
+      <FiltroSelect
         label="Severidade"
         value={draft.severity ?? ''}
         options={SEVERITY_OPTIONS.map(s => ({ value: s, label: s || 'todas' }))}
@@ -453,7 +453,7 @@ function Field({
   )
 }
 
-function Select({
+function FiltroSelect({
   label, value, options, onChange,
 }: {
   label: string
@@ -464,15 +464,16 @@ function Select({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <SelectField
+      <SelectMenu
         value={value}
         onChange={e => onChange(e.target.value)}
+        aria-label={label}
         className="min-w-[140px]"
       >
         {options.map(o => (
           <option key={o.value || 'all'} value={o.value}>{o.label}</option>
         ))}
-      </SelectField>
+      </SelectMenu>
     </label>
   )
 }

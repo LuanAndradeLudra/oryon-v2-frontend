@@ -7,7 +7,7 @@ import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Switch } from '@/components/ui/Switch'
@@ -176,10 +176,10 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
               {unicaLinha ? (
                 <p className="text-sm text-surface-200">{formatWaSelectLabel(unicaLinha)}</p>
               ) : (
-                <Select value={form.whatsappNumberId} onChange={(e) => set('whatsappNumberId', e.target.value)}>
+                <SelectMenu value={form.whatsappNumberId} onChange={(e) => set('whatsappNumberId', e.target.value)}>
                   <option value="">Selecione um número…</option>
                   {waNumbers.map((n) => <option key={n.id} value={n.id}>{formatWaSelectLabel(n)}</option>)}
-                </Select>
+                </SelectMenu>
               )}
             </FormField>
           )

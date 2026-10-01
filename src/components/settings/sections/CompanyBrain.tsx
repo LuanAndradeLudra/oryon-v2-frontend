@@ -9,7 +9,7 @@ import { SettingsSection } from '../SettingsSection'
 import { Textarea } from '@/components/ui/Textarea'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Button } from '@/components/ui/Button'
 import { useToast, showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -462,10 +462,10 @@ export function CompanyBrain() {
             </FormField>
 
             <FormField label="Setor / Indústria">
-              <Select value={form.industry} onChange={e => patch({ industry: e.target.value })}>
+              <SelectMenu value={form.industry} onChange={e => patch({ industry: e.target.value })}>
                 <option value="">Selecione...</option>
                 {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-              </Select>
+              </SelectMenu>
             </FormField>
 
             <FormField label="Modelo de negócio">

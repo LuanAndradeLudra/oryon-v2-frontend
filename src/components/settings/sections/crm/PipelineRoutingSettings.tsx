@@ -3,7 +3,7 @@ import { Route } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/settings/SectionHeader'
 import { Switch } from '@/components/ui/Switch'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { useToast } from '@/hooks/useToast'
 import { pipelineRoutingApi, pipelinesApi, whatsappNumbersApi, usersApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -178,7 +178,8 @@ export function PipelineRoutingSettings() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Pipeline</label>
-                    <Select
+                    <SelectMenu
+                      aria-label="Pipeline"
                       value={draft.pipelineId}
                       disabled={!canManage}
                       onChange={(e) => updateDraft(n.id, { pipelineId: e.target.value, defaultStageId: '' })}
@@ -187,12 +188,13 @@ export function PipelineRoutingSettings() {
                       {pipelineOptions.map((p) => (
                         <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (default)' : ''}{p.isArchived ? ' (arquivado)' : ''}</option>
                       ))}
-                    </Select>
+                    </SelectMenu>
                   </div>
 
                   <div>
                     <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Estágio inicial</label>
-                    <Select
+                    <SelectMenu
+                      aria-label="Estágio inicial"
                       value={draft.defaultStageId}
                       disabled={!canManage}
                       onChange={(e) => updateDraft(n.id, { defaultStageId: e.target.value })}
@@ -204,12 +206,13 @@ export function PipelineRoutingSettings() {
                         .map((s) => (
                           <option key={s.id} value={s.id}>{s.label}</option>
                         ))}
-                    </Select>
+                    </SelectMenu>
                   </div>
 
                   <div>
                     <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Dono do negócio</label>
-                    <Select
+                    <SelectMenu
+                      aria-label="Dono do negócio"
                       value={draft.ownerRule}
                       disabled={!canManage}
                       onChange={(e) => updateDraft(n.id, { ownerRule: e.target.value as OwnerRule })}
@@ -217,13 +220,14 @@ export function PipelineRoutingSettings() {
                       {(Object.keys(OWNER_RULE_LABELS) as OwnerRule[]).map((rule) => (
                         <option key={rule} value={rule}>{OWNER_RULE_LABELS[rule]}</option>
                       ))}
-                    </Select>
+                    </SelectMenu>
                   </div>
 
                   {draft.ownerRule === 'fixed_user' ? (
                     <div>
                       <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Usuário</label>
-                      <Select
+                      <SelectMenu
+                        aria-label="Usuário"
                         value={draft.ownerUserId}
                         disabled={!canManage}
                         onChange={(e) => updateDraft(n.id, { ownerUserId: e.target.value })}
@@ -232,7 +236,7 @@ export function PipelineRoutingSettings() {
                         {users.map((u) => (
                           <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
                         ))}
-                      </Select>
+                      </SelectMenu>
                     </div>
                   ) : (
                     <div className="flex items-end gap-2 pb-2">

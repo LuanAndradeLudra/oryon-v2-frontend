@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { FormDialog } from '@/components/ui/FormDialog'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Switch } from '@/components/ui/Switch'
 import type { ContactCustomFieldDef, CustomFieldType } from '@/types'
 
@@ -138,11 +138,11 @@ export function CustomFieldModal({ open, onClose, onSave, editField, existingKey
         </FormField>
 
         <FormField label="Tipo do campo">
-          <Select value={type} onChange={(e) => { setType(e.target.value as CustomFieldType); setError('') }}>
+          <SelectMenu value={type} onChange={(e) => { setType(e.target.value as CustomFieldType); setError('') }}>
             {FIELD_TYPES.map((t) => (
               <option key={t.value} value={t.value}>{t.label} — {t.description}</option>
             ))}
-          </Select>
+          </SelectMenu>
         </FormField>
 
         {hasOptions && (

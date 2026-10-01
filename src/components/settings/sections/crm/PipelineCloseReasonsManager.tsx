@@ -3,7 +3,7 @@ import { Plus, Pencil, GripVertical, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { useToast } from '@/hooks/useToast'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { pipelinesApi } from '@/services/api'
@@ -163,11 +163,11 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                       autoFocus
                       className="flex-1 min-w-0"
                     />
-                    <Select size="sm" value={editOutcome} onChange={(e) => setEditOutcome(e.target.value as typeof editOutcome)} className="w-32">
+                    <SelectMenu size="sm" aria-label="Resultado do motivo" value={editOutcome} onChange={(e) => setEditOutcome(e.target.value as typeof editOutcome)} className="w-32">
                       <option value="won">Ganho</option>
                       <option value="lost">Perdido</option>
                       <option value="any">Qualquer</option>
-                    </Select>
+                    </SelectMenu>
                     <button onClick={handleSaveEdit} className="p-1.5 rounded-xs text-accent-dark hover:bg-[var(--rowhover)]">
                       <Check className="w-3.5 h-3.5" />
                     </button>
@@ -209,11 +209,11 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
               autoFocus
               className="flex-1 min-w-0"
             />
-            <Select size="sm" value={newOutcome} onChange={(e) => setNewOutcome(e.target.value as typeof newOutcome)} className="w-32">
+            <SelectMenu size="sm" aria-label="Resultado do motivo" value={newOutcome} onChange={(e) => setNewOutcome(e.target.value as typeof newOutcome)} className="w-32">
               <option value="won">Ganho</option>
               <option value="lost">Perdido</option>
               <option value="any">Qualquer</option>
-            </Select>
+            </SelectMenu>
             <Button size="sm" variant="primary" onClick={handleCreate} disabled={savingCreate || !newLabel.trim()}>
               {savingCreate ? 'Salvando...' : 'Adicionar'}
             </Button>
