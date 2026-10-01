@@ -1,17 +1,17 @@
 import { useReducedMotion } from 'framer-motion'
 import { LoginBeams } from '@/components/ui/LoginBeams'
 import { RotatingWord } from './RotatingWord'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 /** O fundo dos feixes: o `--color-surface-950` do tema escuro. As telas de
  *  acesso são só escuras (30/09), então não há tema a resolver. */
 const FUNDO_ESCURO = '#060909'
 
-/** Logo + wordmark, em tamanho de cabeçalho (sem logo gigante, sem glow). */
+/** A assinatura horizontal (símbolo + palavra), em tamanho de cabeçalho. */
 export function AuthBrandMark({ className }: { className?: string }) {
   return (
-    <div className={`flex items-center gap-2.5 ${className ?? ''}`}>
-      <img src="/oryon-logo.svg" alt="" className="w-8 h-8 select-none" draggable={false} />
-      <img src="/oryon-wordmark.png" alt="Oryon" className="h-5 w-auto select-none oryon-wordmark" draggable={false} />
+    <div className={`flex items-center ${className ?? ''}`}>
+      <OryonLogo className="h-8 text-surface-50 select-none" />
     </div>
   )
 }

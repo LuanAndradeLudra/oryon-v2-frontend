@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { cn } from '@/lib/utils'
 import { nav, home, LANDING_ROUTES, paginasPlataforma, rotaPlataforma } from '../landingCopy'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 /**
  * Nav fixa em vidro (64px) das páginas públicas (30/09: home de venda +
@@ -68,10 +69,16 @@ export function LandingNav() {
           aria-label={nav.homeLabel}
           className="flex flex-none items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
-          {/* Símbolo + WORDMARK oficial (a mesma da barra lateral do app e do
-              login; branca, invertida no tema claro por `.oryon-wordmark`). */}
-          <img src="/oryon-logo.svg" alt="" width={28} height={28} className="w-7 h-7 select-none" draggable={false} />
-          <img src="/oryon-wordmark.png" alt="Oryon" width={56} height={14} className="oryon-wordmark hidden h-[14px] w-auto select-none min-[420px]:block" draggable={false} />
+          {/* A assinatura Órbita (marca-oryon/): só o símbolo abaixo de 420 px,
+              símbolo + palavra acima. No desktop, o símbolo mantém o tamanho
+              original (26 px) e só a palavra diminui; o mt alinha o centro do
+              símbolo ao meio da altura x da palavra. O nome acessível é o do link. */}
+          <OryonLogo variant="symbol" decorativa className="h-7 select-none min-[420px]:hidden" />
+          <OryonLogo decorativa className="hidden h-8 text-surface-50 select-none min-[420px]:block lg:hidden" />
+          <span className="hidden items-start gap-2 lg:flex">
+            <OryonLogo variant="symbol" decorativa className="h-[26px] select-none" />
+            <OryonLogo variant="wordmark" decorativa className="mt-[5px] h-[22px] text-surface-50 select-none" />
+          </span>
         </Link>
 
         <nav aria-label="Páginas" className="flex items-center md:ml-2">

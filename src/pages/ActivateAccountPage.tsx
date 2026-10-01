@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { Input } from '@/components/ui/Input'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 export function ActivateAccountPage() {
   const [searchParams] = useSearchParams()
@@ -59,8 +60,8 @@ export function ActivateAccountPage() {
           className="w-full max-w-sm text-center space-y-4"
         >
           <div className="flex flex-col items-center mb-2">
-            <img src="/oryon-logo.svg" alt="Oryon" className="w-16 h-16 mb-4 select-none" draggable={false} />
-            <h1 className="text-xl font-bold text-surface-50">Oryon</h1>
+            <OryonLogo variant="symbol" decorativa className="h-16 mb-4 select-none" />
+            <h1 className="text-surface-50"><OryonLogo variant="wordmark" className="h-7" /></h1>
           </div>
           <Banner variant="danger">
             Link de convite incompleto ou inválido. Abra o endereço completo enviado no e-mail ou peça ao
@@ -87,8 +88,8 @@ export function ActivateAccountPage() {
         className="w-full max-w-sm"
       >
         <div className="flex flex-col items-center mb-8">
-          <img src="/oryon-logo.svg" alt="Oryon" className="w-16 h-16 mb-4 select-none" draggable={false} />
-          <h1 className="text-xl font-bold text-surface-50">Oryon</h1>
+          <OryonLogo variant="symbol" decorativa className="h-16 mb-4 select-none" />
+          <h1 className="text-surface-50"><OryonLogo variant="wordmark" className="h-7" /></h1>
         </div>
 
         <div className="mb-7">

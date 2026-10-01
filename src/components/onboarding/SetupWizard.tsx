@@ -22,6 +22,7 @@ import {
   SETUP_STEPS, loadSetupStep, saveSetupStep, clearSetupProgress,
   stepNumber, nextStep, previousStep, type SetupStep,
 } from '@/lib/setupProgress'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -211,15 +212,14 @@ function StepChrome({
     <div className="h-full flex overflow-hidden">
       <div className="w-80 flex-shrink-0 border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
         <div className="flex items-center gap-3 mb-8">
-          <motion.img
-            src="/oryon-logo.svg"
-            alt="Oryon"
+          <motion.span
             animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-11 h-11 select-none flex-shrink-0"
-            draggable={false}
-          />
-          <span className="text-sm font-bold text-surface-50">Oryon</span>
+            className="flex flex-shrink-0 select-none"
+          >
+            <OryonLogo variant="symbol" decorativa className="h-11" />
+          </motion.span>
+          <OryonLogo variant="wordmark" className="h-[18px] text-surface-50" />
         </div>
 
         <StepCounter step={step} />
@@ -395,15 +395,14 @@ function HubStep({
       <div className="w-80 flex-shrink-0 border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
         {/* Brand */}
         <div className="flex items-center gap-3 mb-8">
-          <motion.img
-            src="/oryon-logo.svg"
-            alt="Oryon"
+          <motion.span
             animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-11 h-11 select-none flex-shrink-0"
-            draggable={false}
-          />
-          <span className="text-sm font-bold text-surface-50">Oryon</span>
+            className="flex flex-shrink-0 select-none"
+          >
+            <OryonLogo variant="symbol" decorativa className="h-11" />
+          </motion.span>
+          <OryonLogo variant="wordmark" className="h-[18px] text-surface-50" />
         </div>
 
         <StepCounter step="hub" />

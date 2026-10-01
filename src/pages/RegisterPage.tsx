@@ -8,6 +8,7 @@ import { Banner } from '@/components/ui/Banner'
 import { useTheme } from '@/hooks/useTheme'
 import { PhoneField } from '@/components/ui/PhoneField'
 import { FormFieldContext, useFieldAria } from '@/components/ui/formField.context'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 interface FormState {
   companyName: string
@@ -140,12 +141,7 @@ export function RegisterPage() {
 
         {/* Brand */}
         <div className="flex flex-col items-center mb-5">
-          <img
-            src="/oryon-logo.svg"
-            alt="Oryon"
-            className="w-14 h-14 mb-3 select-none"
-            draggable={false}
-          />
+          <OryonLogo variant="symbol" className="h-14 mb-3 select-none" />
           <h1 className="text-lg font-bold text-surface-50">Criar conta</h1>
           <p className="text-xs text-surface-400 mt-0.5">Configure sua empresa no Oryon</p>
         </div>

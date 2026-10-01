@@ -3,12 +3,14 @@ import { ArrowLeft, Bell } from 'lucide-react'
 import { type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { useNotifications } from '@/hooks/useNotifications'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 interface MobilePageHeaderProps {
   title: string
   /** Quando presente, renderiza esta imagem no lugar do título textual.
    *  Usado p.ex. em /more para mostrar o wordmark Oryon. */
-  titleImage?: string
+  /** Mostra a palavra "oryon" no lugar do título (o título vira o nome acessível). */
+  titleLogo?: boolean
   /** When provided, mostra um botão de voltar a esquerda em vez do espaço vazio. */
   onBack?: () => void
   /** Slot a direita, antes do sino de notificações. Use para ícone de busca,
@@ -22,7 +24,7 @@ interface MobilePageHeaderProps {
 
 export function MobilePageHeader({
   title,
-  titleImage,
+  titleLogo = false,
   onBack,
   rightActions,
   hideBell = false,
@@ -55,23 +57,13 @@ export function MobilePageHeader({
           aria-label="Ir para Home"
           className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
         >
-          <img
-            src="/oryon-logo.svg"
-            alt="Oryon"
-            className="w-7 h-7 select-none"
-            draggable={false}
-          />
+          <OryonLogo variant="symbol" decorativa className="h-7 select-none" />
         </button>
       )}
 
-      {titleImage ? (
+      {titleLogo ? (
         <div className="flex-1 min-w-0 flex items-center">
-          <img
-            src={titleImage}
-            alt={title}
-            className="h-[20px] w-auto select-none"
-            draggable={false}
-          />
+          <OryonLogo variant="wordmark" title={title} className="h-[20px] text-surface-50 select-none" />
         </div>
       ) : (
         <h1 className="flex-1 min-w-0 text-base font-semibold text-surface-100 truncate">

@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { Input } from '@/components/ui/Input'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 interface Requirement {
   label: string
@@ -65,12 +66,7 @@ export function SetPasswordPage() {
 
         {/* Brand */}
         <div className="flex flex-col items-center mb-8">
-          <img
-            src="/oryon-logo.svg"
-            alt="Oryon"
-            className="w-16 h-16 mb-4 select-none"
-            draggable={false}
-          />
+          <OryonLogo variant="symbol" className="h-16 mb-4 select-none" />
           <h1 className="text-xl font-bold text-surface-50">Bem-vindo, {user?.firstName}!</h1>
           <p className="text-sm text-surface-400 mt-1 text-center">
             Configure sua senha definitiva para continuar

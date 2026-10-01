@@ -30,6 +30,7 @@ import { conversationsApi } from '@/services/api'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { AiCreditsIndicator } from './AiCreditsIndicator'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -64,11 +65,10 @@ function LogoSection({ onToggle }: { onToggle?: () => void }) {
           title={toggleTitle}
           className="relative w-[26px] h-[26px] flex-shrink-0 rounded-sm flex items-center justify-center cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
         >
-          <img
-            src="/oryon-logo.svg"
-            alt=""
-            className="w-[26px] h-[26px] select-none transition-opacity duration-100 group-hover/logo:opacity-0 group-focus-within/logo:opacity-0"
-            draggable={false}
+          <OryonLogo
+            variant="symbol"
+            decorativa
+            className="h-[26px] select-none transition-opacity duration-100 group-hover/logo:opacity-0 group-focus-within/logo:opacity-0"
           />
           <PanelLeft
             className="absolute inset-0 m-auto w-3.5 h-3.5 text-surface-300 opacity-0 transition-opacity duration-100 group-hover/logo:opacity-100 group-focus-within/logo:opacity-100"
@@ -77,29 +77,21 @@ function LogoSection({ onToggle }: { onToggle?: () => void }) {
           />
         </button>
       ) : (
-        <img
-          src="/oryon-logo.svg"
-          alt="Oryon"
-          className="w-[26px] h-[26px] flex-shrink-0 select-none"
-          draggable={false}
-        />
+        <OryonLogo variant="symbol" decorativa className="h-[26px] flex-shrink-0 select-none" />
       )}
       <AnimatePresence>
         {(!animate || open) && (
-          <motion.img
-            src="/oryon-wordmark.png"
-            alt="Oryon"
+          <motion.span
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -6 }}
             transition={{ duration: 0.15 }}
-            // SEM a classe oryon-wordmark: essa classe inverte a wordmark
-            // (branca→preta) no tema claro, mas a sidebar agora é sempre
-            // escura — a wordmark original (branca) precisa ficar como está
-            // nos dois temas, senão fica preta sobre fundo escuro.
-            className="h-5 w-auto select-none"
-            draggable={false}
-          />
+            className="flex select-none"
+          >
+            {/* A sidebar é sempre escura (nos dois temas): palavra clara e o
+                ponto da órbita na cor de fundo escuro, fixos — não os do tema. */}
+            <OryonLogo variant="wordmark" accentColor="#2DD4BF" className="h-5 text-[#F1FBF9]" />
+          </motion.span>
         )}
       </AnimatePresence>
       {onToggle && open && (

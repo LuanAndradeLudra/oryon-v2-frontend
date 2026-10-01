@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { footer, rodape, LANDING_ROUTES } from '../landingCopy'
+import { OryonLogo } from '@/components/brand/OryonLogo'
 
 /** Logo, © e o mapa das páginas públicas. Sem redes sociais nem contato
  *  públicos (decisão do PO); a conversão é o pedido de demonstração. */
@@ -8,9 +9,10 @@ export function Footer() {
     <footer data-section="footer" className="border-t border-surface-700 bg-surface-950">
       <div className="landing-container grid gap-8 py-10 sm:grid-cols-[1fr_auto_auto] sm:gap-16">
         <div className="flex flex-col gap-3">
-          <Link to={LANDING_ROUTES.home} className="flex w-fit items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-            <img src="/oryon-logo.svg" alt="" width={24} height={24} className="w-6 h-6 select-none" draggable={false} />
-            <img src="/oryon-wordmark.png" alt={footer.homeLabel} width={48} height={12} className="oryon-wordmark h-[12px] w-auto select-none" draggable={false} />
+          {/* Assinatura horizontal com 22 px de altura (98 px de largura: o
+              mínimo do kit é 96). O nome acessível vem do link. */}
+          <Link to={LANDING_ROUTES.home} aria-label={footer.homeLabel} className="flex w-fit items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+            <OryonLogo decorativa className="h-[22px] text-surface-50 select-none" />
           </Link>
           <p className="max-w-[34ch] text-[13px] leading-relaxed text-surface-400">{footer.frase}</p>
         </div>

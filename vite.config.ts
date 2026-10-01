@@ -55,6 +55,38 @@ function appleEmojiPlugin(): Plugin {
   }
 }
 
+// ─── Prévia de link (Open Graph) ─────────────────────────────────────────────
+// og:image precisa de URL ABSOLUTA. Com VITE_SITE_URL definido (no deploy),
+// injeta a imagem do kit da marca (public/brand/oryon-og-1200x630.png) com
+// dimensões, alt e o cartão grande do X. Sem a variável, não injeta nada (o
+// Vite deixaria %VITE_SITE_URL% literal no HTML). O documento da demonstração
+// (demo.html, aberto num iframe) não recebe.
+function previaDeLinkPlugin(): Plugin {
+  let site = ''
+  return {
+    name: 'previa-de-link',
+    configResolved(config) {
+      site = String(config.env.VITE_SITE_URL ?? '').replace(/\/+$/, '')
+    },
+    transformIndexHtml(html, ctx) {
+      if (!site || ctx.filename.endsWith('demo.html') || ctx.path.endsWith('demo.html')) return html
+      const imagem = `${site}/brand/oryon-og-1200x630.png`
+      const meta = (attrs: Record<string, string>) => ({ tag: 'meta', attrs, injectTo: 'head' as const })
+      return {
+        html,
+        tags: [
+          meta({ property: 'og:image', content: imagem }),
+          meta({ property: 'og:image:width', content: '1200' }),
+          meta({ property: 'og:image:height', content: '630' }),
+          meta({ property: 'og:image:alt', content: 'Oryon' }),
+          meta({ name: 'twitter:card', content: 'summary_large_image' }),
+          meta({ name: 'twitter:image', content: imagem }),
+        ],
+      }
+    },
+  }
+}
+
 // ─── Canva Token Proxy Plugin ─────────────────────────────────────────────────
 // Proxies POST /api/canva-token → https://api.canva.com/rest/v1/oauth/token
 // Avoids CORS restriction on the Canva token endpoint when called from browser.
@@ -176,7 +208,7 @@ const sentryPlugins = sentryAuthToken
   : []
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), appleEmojiPlugin(), canvaTokenPlugin(), designSearchPlugin(), ...sentryPlugins],
+  plugins: [react(), tailwindcss(), appleEmojiPlugin(), canvaTokenPlugin(), designSearchPlugin(), previaDeLinkPlugin(), ...sentryPlugins],
   build: {
     // Sourcemaps are required for Sentry to symbolicate stack traces.
     // 'hidden' means the bundle doesn't ship a //# sourceMappingURL comment

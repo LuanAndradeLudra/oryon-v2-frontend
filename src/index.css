@@ -485,6 +485,10 @@
   /* Scrim suave: "reduz a luminosidade" da página sob menus abertos por clique */
   --color-scrim-soft: rgba(0, 0, 0, 0.35);
 
+  /* Marca (kit Órbita, marca-oryon/): o ponto da órbita da palavra "oryon".
+     O componente OryonLogo lê esta variável. */
+  --oryon-accent: #2DD4BF;
+
   /* ── Copilot / IA gradient (assinatura dark) ─────────────────────────── */
   --copilot-gradient-from: #5EEAD4;
   --copilot-gradient-via:  #2DD4BF;
@@ -1111,6 +1115,9 @@ code, pre, kbd, samp {
                     0 16px 40px rgba(15, 23, 42, 0.16);
   --color-scrim-soft: rgba(15, 23, 42, 0.18);
 
+  /* Marca: o ponto da órbita no tema claro. */
+  --oryon-accent: #0D9488;
+
   /* Status open (light: blue-700) */
   --color-status-open:        #1D4ED8;
   --color-status-open-bg:     rgba(29, 78, 216, 0.10);
@@ -1376,11 +1383,6 @@ code, pre, kbd, samp {
 [data-theme="light"] .anomaly-elevated-surface-compact {
   background-color: #FFFFFF;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.11), 0 1px 2px rgba(15, 23, 42, 0.08);
-}
-
-/* Wordmark branca → preta no tema claro */
-[data-theme="light"] .oryon-wordmark {
-  filter: invert(1);
 }
 
 /* ── Card janela 24h ─────────────────────────────────────────────────────── */
