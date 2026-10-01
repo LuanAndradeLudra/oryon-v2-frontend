@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { contactsApi } from '@/services/api'
 import type { Contact } from '@/types'
 
@@ -193,11 +193,11 @@ export function AddSharedContactModal({
         <div className="space-y-3">
           {phoneOptions.length > 1 && (
             <FormField label="Número compartilhado">
-              <Select value={waId} onChange={(e) => setWaId(e.target.value)}>
+              <SelectMenu value={waId} onChange={(e) => setWaId(e.target.value)}>
                 {phoneOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </Select>
+              </SelectMenu>
             </FormField>
           )}
           <FormField label="Nome" required>

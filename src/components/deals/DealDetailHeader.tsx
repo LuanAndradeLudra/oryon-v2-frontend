@@ -11,7 +11,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { UserPicker } from '@/components/ui/UserPicker'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { MoneyInput } from '@/components/ui/MoneyInput'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Button } from '@/components/ui/Button'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { formatBRL } from '@/utils/money'
@@ -566,12 +566,12 @@ function TransferPipelineModal({
         </div>
       }
     >
-      <Select value={pipelineId} onChange={(e) => setPipelineId(e.target.value)} aria-label="Funil de destino">
+      <SelectMenu value={pipelineId} onChange={(e) => setPipelineId(e.target.value)} aria-label="Funil de destino">
         <option value="">Escolha o funil…</option>
         {pipelines.map((p) => (
           <option key={p.id} value={p.id}>{p.name}</option>
         ))}
-      </Select>
+      </SelectMenu>
     </Modal>
   )
 }

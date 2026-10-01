@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Search, X, ChevronDown, SlidersHorizontal } from 'lucide-react'
+import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { contactsApi } from '@/services/api'
 import { Button } from '@/components/ui/Button'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Input } from '@/components/ui/Input'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { ContactFilters, ContactSource, ContactSentiment, ContactIntent, Tag as TagType } from '@/types'
@@ -59,33 +60,35 @@ const labelOf = (arr: { value: string; label: string }[], v?: string) =>
 
 // ─── Custom select wrapper ────────────────────────────────────────────────────
 
-function FilterSelect({ value, onChange, children, placeholder, fullWidth }: {
+/**
+ * Um filtro do painel "Filtro": o select de vidro do DS (SelectMenu), na régua
+ * sm, ocupando a largura do painel. Com valor escolhido, o campo e a seta
+ * ficam em teal (estado "ativo"). `rotulo` nomeia o campo para leitor de tela
+ * — o título do grupo ("IA", "Atividade") cobre mais de um filtro.
+ */
+function FilterSelect({ value, onChange, children, placeholder, rotulo }: {
   value: string
   onChange: (v: string) => void
   children: React.ReactNode
   placeholder?: string
-  /** Ocupa 100% da largura — usado dentro do painel "Filtro". */
-  fullWidth?: boolean
+  rotulo: string
 }) {
   const active = !!value
   return (
-    <div className={cn('relative flex items-center', fullWidth && 'w-full')}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          'appearance-none h-7 pl-3 pr-7 rounded-sm text-xs font-semibold border transition-all cursor-pointer',
-          fullWidth ? 'w-full' : 'flex-shrink-0',
-          active
-            ? 'border-brand-500 bg-accent-soft text-accent-dark'
-            : 'border-[var(--bd2)] bg-surface-800 text-surface-100 hover:border-surface-500',
-        )}
-      >
-        {placeholder && <option value="">{placeholder}</option>}
-        {children}
-      </select>
-      <ChevronDown className={cn('w-3 h-3 absolute right-2 pointer-events-none flex-shrink-0', active ? 'text-accent-dark' : 'text-surface-500')} />
-    </div>
+    <SelectMenu
+      size="sm"
+      value={value}
+      onValueChange={onChange}
+      aria-label={rotulo}
+      className={cn(
+        'pl-3 font-semibold transition-all',
+        active ? 'border-brand-500 bg-accent-soft text-accent-dark' : 'hover:border-surface-500',
+      )}
+      chevronClassName={cn('right-2 h-3 w-3', active && 'text-accent-dark')}
+    >
+      {placeholder && <option value="">{placeholder}</option>}
+      {children}
+    </SelectMenu>
   )
 }
 
@@ -305,42 +308,42 @@ export function ContactsFiltersBar({ filters, onFiltersChange, tags, commercial,
               )}
 
               <FilterGroup label="Origem">
-                <FilterSelect fullWidth value={filters.source ?? ''} onChange={(v) => set({ source: (v || undefined) as ContactSource | undefined })} placeholder="Fonte">
+                <FilterSelect rotulo="Fonte" value={filters.source ?? ''} onChange={(v) => set({ source: (v || undefined) as ContactSource | undefined })} placeholder="Fonte">
                   {SOURCES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </FilterSelect>
               </FilterGroup>
 
               {commercial && (
                 <FilterGroup label="Situação comercial">
-                  <FilterSelect fullWidth value={commercial.value === 'all' ? '' : commercial.value} onChange={(v) => commercial.onChange(v || 'all')} placeholder="Todos">
+                  <FilterSelect rotulo="Situação comercial" value={commercial.value === 'all' ? '' : commercial.value} onChange={(v) => commercial.onChange(v || 'all')} placeholder="Todos">
                     {commercial.options.filter((o) => o.key !== 'all').map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
                   </FilterSelect>
                 </FilterGroup>
               )}
 
               <FilterGroup label="IA">
-                <FilterSelect fullWidth value={filters.intent ?? ''} onChange={(v) => set({ intent: (v || undefined) as ContactIntent | undefined })} placeholder="Intenção">
+                <FilterSelect rotulo="Intenção" value={filters.intent ?? ''} onChange={(v) => set({ intent: (v || undefined) as ContactIntent | undefined })} placeholder="Intenção">
                   {INTENTS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
                 </FilterSelect>
-                <FilterSelect fullWidth value={filters.sentiment ?? ''} onChange={(v) => set({ sentiment: (v || undefined) as ContactSentiment | undefined })} placeholder="Sentimento">
+                <FilterSelect rotulo="Sentimento" value={filters.sentiment ?? ''} onChange={(v) => set({ sentiment: (v || undefined) as ContactSentiment | undefined })} placeholder="Sentimento">
                   {SENTIMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </FilterSelect>
-                <FilterSelect fullWidth value={filters.leadScoreBand ?? ''} onChange={(v) => set({ leadScoreBand: (v || undefined) as ContactFilters['leadScoreBand'] })} placeholder="Lead score">
+                <FilterSelect rotulo="Lead score" value={filters.leadScoreBand ?? ''} onChange={(v) => set({ leadScoreBand: (v || undefined) as ContactFilters['leadScoreBand'] })} placeholder="Lead score">
                   {LEAD_BANDS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
                 </FilterSelect>
               </FilterGroup>
 
               <FilterGroup label="Atividade">
-                <FilterSelect fullWidth value={filters.lastContact ?? ''} onChange={(v) => set({ lastContact: (v || undefined) as ContactFilters['lastContact'] })} placeholder="Atividade">
+                <FilterSelect rotulo="Último contato" value={filters.lastContact ?? ''} onChange={(v) => set({ lastContact: (v || undefined) as ContactFilters['lastContact'] })} placeholder="Atividade">
                   {LAST_CONTACTS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
                 </FilterSelect>
-                <FilterSelect fullWidth value={filters.optIn === undefined ? '' : String(filters.optIn)} onChange={(v) => set({ optIn: v === '' ? undefined : v === 'true' })} placeholder="Opt-in">
+                <FilterSelect rotulo="Opt-in" value={filters.optIn === undefined ? '' : String(filters.optIn)} onChange={(v) => set({ optIn: v === '' ? undefined : v === 'true' })} placeholder="Opt-in">
                   {OPT_INS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </FilterSelect>
               </FilterGroup>
 
               <FilterGroup label="Ordenar por">
-                <FilterSelect fullWidth value={filters.sortBy ?? 'lastContactedAt'} onChange={(v) => set({ sortBy: v as ContactFilters['sortBy'] })}>
+                <FilterSelect rotulo="Ordenar por" value={filters.sortBy ?? 'lastContactedAt'} onChange={(v) => set({ sortBy: v as ContactFilters['sortBy'] })}>
                   {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </FilterSelect>
               </FilterGroup>

@@ -2,6 +2,7 @@ import { Fragment, useState, useEffect } from 'react'
 import { Pencil, Save, X as XIcon, Plus, Trash2, Check } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { cn } from '@/lib/utils'
 import { contactsApi } from '@/services/api'
@@ -45,14 +46,15 @@ function FieldInput({
 
     case 'select':
       return (
-        <select
+        <SelectMenu
           value={field.value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+          aria-label={field.label}
+          className="h-auto w-full px-3 py-2 pr-8 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
         >
           <option value="">— Selecione —</option>
           {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
+        </SelectMenu>
       )
 
     case 'multiselect': {

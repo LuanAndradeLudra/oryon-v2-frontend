@@ -1209,12 +1209,14 @@ code, pre, kbd, samp {
  * mas há dezenas de <input>/<select>/<textarea> crus com `border-surface-700`
  * (buscas, filtros, drawers). Esta regra leva TODOS ao --bd2 no repouso, sem
  * tocar nos estados: foco (`:focus`, anel/borda de marca), inválido
- * (`aria-invalid` / `border-danger`) e campos deliberadamente sem borda
- * (`border-transparent`, `border-0`). Checkbox/radio/range/file/color ficam de fora. */
-[data-theme="light"] :is(input, select, textarea):not(
-    [type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="submit"], [type="button"],
+ * (`aria-invalid` / `border-danger` / `border-red-*`) e campos deliberadamente sem
+ * borda (`border-transparent`, `border-0`). Checkbox/radio/range/file/color ficam
+ * de fora. O combobox (o select de vidro, SelectMenu, é um botão) entra junto: um
+ * <select> cru convertido mantém a borda que tinha (01/10). */
+[data-theme="light"] :is(input, select, textarea, [role="combobox"]):not(
+    [type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], input[type="submit"], input[type="button"],
     :focus, :focus-visible, [aria-invalid="true"],
-    [class*="border-danger"], [class*="border-transparent"], [class*="border-0"], [class*="border-brand"], [class*="border-warning"]
+    [class*="border-danger"], [class*="border-red"], [class*="border-transparent"], [class*="border-0"], [class*="border-brand"], [class*="border-warning"]
   ) {
   border-color: var(--bd2);
 }

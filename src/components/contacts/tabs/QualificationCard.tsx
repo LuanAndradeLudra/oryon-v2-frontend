@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Pencil, Save, X as XIcon } from 'lucide-react'
 import { FormField } from '@/components/ui/FormField'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -110,9 +110,9 @@ export function QualificationCard({ contact, onSave, hideStage = false, hideTitl
           <>
             {!hideStage && (
               <FormField label="Situação">
-                <Select value={form.stage} onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value as ContactStage }))}>
+                <SelectMenu value={form.stage} onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value as ContactStage }))}>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-                </Select>
+                </SelectMenu>
               </FormField>
             )}
             <FormField label={`${vocab.leadScore}: ${form.leadScore}`}>
@@ -124,14 +124,14 @@ export function QualificationCard({ contact, onSave, hideStage = false, hideTitl
               <ProgressBar value={form.leadScore} max={100} className="mt-2" />
             </FormField>
             <FormField label={vocab.intent}>
-              <Select value={form.intent} onChange={(e) => setForm((f) => ({ ...f, intent: e.target.value as ContactIntent }))}>
+              <SelectMenu value={form.intent} onChange={(e) => setForm((f) => ({ ...f, intent: e.target.value as ContactIntent }))}>
                 {INTENTS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
-              </Select>
+              </SelectMenu>
             </FormField>
             <FormField label="Origem">
-              <Select value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value as ContactSource }))}>
+              <SelectMenu value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value as ContactSource }))}>
                 {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </Select>
+              </SelectMenu>
             </FormField>
             <div className="flex items-center justify-between">
               <div>

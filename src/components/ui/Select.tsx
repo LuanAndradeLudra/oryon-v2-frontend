@@ -10,6 +10,8 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'siz
   error?: string
   /** SCRUM-1097: régua canônica (sm 28 · md 36 · lg 44px). `md` reproduz hoje. */
   size?: 'sm' | 'md' | 'lg'
+  /** Classes da seta (ex.: a cor do estado "ativo" de um filtro). */
+  chevronClassName?: string
 }
 
 // spec/1a-primitivos.md FIELD-03: md 36px / padding 10px / 13px.
@@ -20,7 +22,7 @@ const sizeStyles = {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, error, children, id, 'aria-describedby': describedBy, required, size = 'md', ...props }, ref) => {
+  ({ className, error, children, id, 'aria-describedby': describedBy, required, size = 'md', chevronClassName, ...props }, ref) => {
     // Ver `Input`: id/aria vêm do `FormField` quando houver um em volta.
     const field = useFormFieldAria()
     const aria = mergeFieldAria(field, { id, describedBy, invalid: !!error, required })
@@ -47,7 +49,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         </select>
         {/* FIELD-06: chevron 14px em --tx3 (avatar dentro de select nativo é
             impossível — fica pro Select custom/UserPicker). */}
-        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
+        <ChevronDown className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none', chevronClassName)} />
       </div>
     )
   }

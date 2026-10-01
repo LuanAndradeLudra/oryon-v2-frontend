@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
@@ -294,7 +294,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           >
             <div className="flex gap-2">
               <div className="flex-1">
-                <Select
+                <SelectMenu
                   value={movePipelineId}
                   onChange={(e) => { setMovePipelineId(e.target.value); setMoveError('') }}
                   disabled={moving}
@@ -303,7 +303,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   {getActivePipelines(pipelines).filter((p) => p.id !== editDeal.pipelineId).map((p) => (
                     <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                   ))}
-                </Select>
+                </SelectMenu>
               </div>
               <button
                 type="button"
@@ -327,24 +327,24 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
         {!editDeal && multiPipeline && (
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
-              <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
+              <SelectMenu value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
                 {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
                 {getActivePipelines(pipelines).map((p) => (
                   <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                 ))}
-              </Select>
+              </SelectMenu>
             </FormField>
             {/* Etapa do FUNIL — eixo distinto da "Situação do contato" (ciclo
                 de vida). Reativo ao funil escolhido ao lado. */}
             <FormField label="Etapa" hint="Coluna do funil em que o negócio nasce.">
-              <Select value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
+              <SelectMenu value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
                 {getPipelineStages(pipelines, pipelineId).length === 0 && (
                   <option value="">Nenhuma etapa disponível</option>
                 )}
                 {getPipelineStages(pipelines, pipelineId).map((s) => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
-              </Select>
+              </SelectMenu>
             </FormField>
           </div>
         )}

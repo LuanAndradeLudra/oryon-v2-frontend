@@ -65,6 +65,8 @@ export interface SelectMenuProps {
   size?: 'sm' | 'md' | 'lg'
   /** Classes do campo, como no `Select`. */
   className?: string
+  /** Classes da seta (ex.: a cor do estado "ativo" de um filtro). */
+  chevronClassName?: string
   title?: string
   onFocus?: (e: FocusEvent<HTMLElement>) => void
   onBlur?: (e: FocusEvent<HTMLElement>) => void
@@ -148,7 +150,7 @@ const linhas = {
 
 function SelectDeVidro({
   value, defaultValue, onChange, onValueChange, children, id, name, disabled, required, autoFocus,
-  error, size = 'md', className, title, onFocus, onBlur,
+  error, size = 'md', className, chevronClassName, title, onFocus, onBlur,
   'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledby, 'aria-describedby': describedBy,
   ...resto
 }: SelectMenuProps) {
@@ -246,6 +248,7 @@ function SelectDeVidro({
         className={cn(
           'pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-surface-500 transition-transform duration-150',
           lista.aberta && 'rotate-180',
+          chevronClassName,
         )}
       />
       {name && <input type="hidden" name={name} value={valorEfetivo} />}
