@@ -151,7 +151,7 @@ function ContextMenuPortal({ items, x, y, onClose }: ContextMenuPortalProps) {
       tabIndex={-1}
       className={cn(
         'fixed z-[100]',
-        'overlay-surface border rounded-xl',
+        'overlay-surface overlay-vidro border rounded-xl',
         'min-w-[200px] max-w-[280px] overflow-visible py-1',
       )}
       style={{ left: pos.x, top: pos.y }}
@@ -342,7 +342,7 @@ function SubmenuItem({
             onContextMenu={(e) => e.preventDefault()}
             className={cn(
               'fixed z-[101]',
-              'overlay-surface border rounded-xl',
+              'overlay-surface overlay-vidro border rounded-xl',
               'min-w-[200px] max-w-[280px] overflow-visible py-1',
             )}
             style={{ left: subPos.left, top: subPos.top }}

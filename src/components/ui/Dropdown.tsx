@@ -171,8 +171,8 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
             maxHeight: pos.maxHeight,
           }}
           className={cn(
-            // DROP-01 (spec 1a): raio 8 + padding 4.
-            'overlay-surface border rounded-lg p-1',
+            // DROP-01 (spec 1a): raio 8 + padding 4. Vidro por adesão (index.css).
+            'overlay-surface overlay-vidro border rounded-lg p-1',
             // `overflow-y-auto` (e não `hidden`): com a altura limitada pela
             // janela, o que exceder precisa rolar DENTRO do menu.
             'min-w-[200px] overflow-x-hidden overflow-y-auto',

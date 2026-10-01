@@ -484,6 +484,12 @@
                     0 12px 32px rgba(0, 0, 0, 0.55);
   /* Scrim suave: "reduz a luminosidade" da página sob menus abertos por clique */
   --color-scrim-soft: rgba(0, 0, 0, 0.35);
+  /* Vidro (01/10): a superfície de overlay translúcida dos menus — mais opaca
+     que o vidro da landing (0,78), porque os menus do app têm mais texto e
+     abrem sobre telas cheias (tabelas, quadro do funil, chat). */
+  --vidro-fundo: rgba(30, 42, 42, 0.88);
+  --vidro-borda: rgba(255, 255, 255, 0.10);
+  --vidro-desfoque: blur(20px) saturate(1.5);
 
   /* Marca (kit Órbita, marca-oryon/): o ponto da órbita da palavra "oryon".
      O componente OryonLogo lê esta variável. */
@@ -927,6 +933,32 @@ code, pre, kbd, samp {
   border-color: var(--color-overlay-border);
   box-shadow: var(--shadow-overlay);
 }
+/* VIDRO (01/10): a superfície de overlay translúcida, que desfoca o que está
+   atrás — o padrão do menu do formulário da landing (landing-vidro). Por
+   ADESÃO, depois de .overlay-surface (sobrescreve fundo e borda, mantém a
+   sombra): entra nos painéis do Dropdown e do ContextMenu, que abrem em portal
+   no body — sem vidro dentro de vidro. Sem backdrop-filter, ou com
+   transparência reduzida no sistema, volta ao overlay sólido. */
+.overlay-vidro {
+  background-color: var(--vidro-fundo);
+  border-color: var(--vidro-borda);
+  -webkit-backdrop-filter: var(--vidro-desfoque);
+  backdrop-filter: var(--vidro-desfoque);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .overlay-vidro {
+    background-color: var(--color-overlay);
+    border-color: var(--color-overlay-border);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .overlay-vidro {
+    background-color: var(--color-overlay);
+    border-color: var(--color-overlay-border);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
 /* Fundo do overlay para elementos internos (headers sticky etc.) */
 .overlay-bg { background-color: var(--color-overlay); }
 /* Nível 4 (Modal/Drawer): mantém o bg próprio (o scrim já separa) e herda
@@ -1114,6 +1146,9 @@ code, pre, kbd, samp {
                     0 4px 12px rgba(15, 23, 42, 0.10),
                     0 16px 40px rgba(15, 23, 42, 0.16);
   --color-scrim-soft: rgba(15, 23, 42, 0.18);
+  /* Vidro no tema claro: branco translúcido, borda escura sutil. */
+  --vidro-fundo: rgba(255, 255, 255, 0.86);
+  --vidro-borda: rgba(15, 23, 42, 0.12);
 
   /* Marca: o ponto da órbita no tema claro. */
   --oryon-accent: #0D9488;

@@ -61,7 +61,11 @@ export function LandingNav() {
   return (
     <header
       data-section="nav"
-      className="sticky top-0 z-40 h-16 border-b border-surface-700 bg-[color-mix(in_srgb,var(--color-surface-950)_72%,transparent)] backdrop-blur-md"
+      // O desfoque da barra fica numa camada ATRÁS (::before): com o
+      // backdrop-filter na própria barra, ela viraria a "raiz" do desfoque e o
+      // painel de vidro do menu Plataforma só desfocaria o conteúdo dela, não a
+      // página embaixo.
+      className="sticky top-0 z-40 h-16 border-b border-surface-700 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[color-mix(in_srgb,var(--color-surface-950)_72%,transparent)] before:backdrop-blur-md before:content-['']"
     >
       <div className="landing-container flex h-full items-center gap-4 sm:gap-6">
         <Link
@@ -106,8 +110,9 @@ export function LandingNav() {
               <div
                 id="menu-plataforma"
                 className={cn(
-                  'fixed left-4 right-4 top-[72px] z-50 max-h-[calc(100vh-88px)] overflow-y-auto overscroll-contain rounded-xl border border-[var(--landing-borda)]',
-                  'bg-[var(--landing-cartao)] p-2 shadow-[0_18px_55px_rgba(0,0,0,.2)]',
+                  'fixed left-4 right-4 top-[72px] z-50 max-h-[calc(100vh-88px)] overflow-y-auto overscroll-contain rounded-xl',
+                  // O vidro do formulário de demonstração (index.css).
+                  'landing-vidro p-2',
                   'md:absolute md:left-0 md:right-auto md:top-full md:mt-2 md:w-[440px]',
                 )}
               >
