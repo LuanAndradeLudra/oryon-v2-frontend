@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Maximize2, X, AlertTriangle, Sparkles, Search, Replace } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { getAgentServerAuth } from '@/services/copilotServiceBackend'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 
 // ─── Shared utility: ExpandableTextarea ────────────────────────────────────
 // Auto-grows with content (min 6 rows, max 20 rows inline). A button in the
@@ -502,16 +503,18 @@ export function KnowledgeDocApprovalPreview({
             </div>
             <div>
               <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Tipo</label>
-              <select
+              <SelectMenu
+                aria-label="Tipo"
                 value={String(input.sourceType ?? 'text')}
                 onChange={(e) => onChange('sourceType', e.target.value)}
-                className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+                chevronClassName="right-2 h-3 w-3"
+                className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
               >
                 <option value="text">Texto</option>
                 <option value="pdf">PDF</option>
                 <option value="url">URL</option>
                 <option value="file">Arquivo</option>
-              </select>
+              </SelectMenu>
             </div>
           </div>
           <ExpandableTextarea
@@ -709,27 +712,31 @@ export function HandoffRuleApprovalPreview({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Modo</label>
-          <select
+          <SelectMenu
+            aria-label="Modo"
             value={String(rule.matchMode ?? 'any_keyword')}
             onChange={(e) => updateRule('matchMode', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_MATCH_MODES.map((m) => (
-              <option key={m.value} value={m.value} className="bg-surface-900">{m.label}</option>
+              <option key={m.value} value={m.value}>{m.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Ação</label>
-          <select
+          <SelectMenu
+            aria-label="Ação"
             value={String(rule.action ?? 'human_handoff')}
             onChange={(e) => updateRule('action', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_ACTIONS.map((a) => (
-              <option key={a.value} value={a.value} className="bg-surface-900">{a.label}</option>
+              <option key={a.value} value={a.value}>{a.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       </div>
 
@@ -835,15 +842,17 @@ export function AgentConfigApprovalPreview({
       {isStatus && (
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Novo status</label>
-          <select
+          <SelectMenu
+            aria-label="Novo status"
             value={String(input.status ?? 'draft')}
             onChange={(e) => onChange('status', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {AGENT_STATUSES.map((s) => (
-              <option key={s.value} value={s.value} className="bg-surface-900">{s.label}</option>
+              <option key={s.value} value={s.value}>{s.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       )}
     </div>
@@ -890,15 +899,17 @@ export function AgentFaqApprovalPreview({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Modo</label>
-          <select
+          <SelectMenu
+            aria-label="Modo"
             value={String(input.matchMode ?? 'any_keyword')}
             onChange={(e) => onChange('matchMode', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_MATCH_MODES.map((m) => (
-              <option key={m.value} value={m.value} className="bg-surface-900">{m.label}</option>
+              <option key={m.value} value={m.value}>{m.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Prioridade</label>
@@ -944,15 +955,17 @@ export function AgentToolHttpApprovalPreview({
         </div>
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Método</label>
-          <select
+          <SelectMenu
+            aria-label="Método"
             value={String(input.method ?? 'GET')}
             onChange={(e) => onChange('method', e.target.value)}
-            className="rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => (
-              <option key={m} value={m} className="bg-surface-900">{m}</option>
+              <option key={m} value={m}>{m}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       </div>
       <div>

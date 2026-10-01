@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { updateAgent, type AgentConfig, type AgentConfigWithTools } from '@/services/agentsApi'
 import { conversationsApi } from '@/services/api'
 import { FormField } from '@/components/ui/FormField'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { useToast } from '@/hooks/useToast'
 import { useSalvamento } from '../salvamentoContexto'
 import { CabecalhoDaSecao } from './Estrutura'
@@ -52,19 +52,19 @@ export function SecaoComportamento({ agent, onAtualizar }: { agent: AgentConfigW
           label="Quando alguém da equipe responde, a IA pausa por"
           hint="Vale para aquela conversa. Quem atende pode religar a IA na própria conversa, a qualquer momento."
         >
-          <Select value={paraTexto(agent.ai_handoff_pause_minutes)} disabled={ocupado}
+          <SelectMenu value={paraTexto(agent.ai_handoff_pause_minutes)} disabled={ocupado}
             onChange={(e) => void gravar('ai_handoff_pause_minutes', e.target.value)}>
             {PAUSA.map((o) => <option key={o.v} value={o.v}>{o.r}</option>)}
-          </Select>
+          </SelectMenu>
         </FormField>
         <FormField
           label="Esperar o cliente terminar de escrever"
           hint="Quem manda “oi”, “tudo bem?” e a pergunta em três mensagens recebe uma resposta só, depois da pausa escolhida."
         >
-          <Select value={paraTexto(agent.ai_inbound_debounce_seconds)} disabled={ocupado}
+          <SelectMenu value={paraTexto(agent.ai_inbound_debounce_seconds)} disabled={ocupado}
             onChange={(e) => void gravar('ai_inbound_debounce_seconds', e.target.value)}>
             {ESPERA.map((o) => <option key={o.v} value={o.v}>{o.r}</option>)}
-          </Select>
+          </SelectMenu>
         </FormField>
       </div>
     </div>

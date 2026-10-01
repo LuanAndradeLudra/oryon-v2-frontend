@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Switch } from '@/components/ui/Switch'
 import { Textarea } from '@/components/ui/Textarea'
 import { ConfirmModal } from '@/components/ui/Modal'
@@ -66,9 +66,9 @@ function Formulario({ inicial, onSalvar, onCancelar }: {
           <Input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} placeholder="Horário de funcionamento" />
         </FormField>
         <FormField label="Quando casar">
-          <Select value={d.match_mode} onChange={(e) => setD({ ...d, match_mode: e.target.value as FaqMatchMode })}>
+          <SelectMenu value={d.match_mode} onChange={(e) => setD({ ...d, match_mode: e.target.value as FaqMatchMode })}>
             {(Object.keys(MODO) as FaqMatchMode[]).map((m) => <option key={m} value={m}>{MODO[m]}</option>)}
-          </Select>
+          </SelectMenu>
         </FormField>
       </div>
       <FormField label="Palavras-chave" hint="Separadas por vírgula." required>

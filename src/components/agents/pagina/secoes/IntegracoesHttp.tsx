@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Switch } from '@/components/ui/Switch'
 import { Textarea } from '@/components/ui/Textarea'
 import { ConfirmModal } from '@/components/ui/Modal'
@@ -84,9 +84,9 @@ function FormularioIntegracao({ inicial, onSalvar, onCancelar }: {
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[120px_1fr]">
         <FormField label="Método">
-          <Select value={f.method} onChange={(e) => set('method', e.target.value as AgentTool['method'])}>
+          <SelectMenu value={f.method} onChange={(e) => set('method', e.target.value as AgentTool['method'])}>
             {METODOS.map((m) => <option key={m} value={m}>{m}</option>)}
-          </Select>
+          </SelectMenu>
         </FormField>
         <FormField label="Endereço (URL)" required>
           <Input value={f.url} onChange={(e) => set('url', e.target.value)} placeholder="https://api.suaempresa.com/horarios?data={{params.data}}" className="font-mono" />

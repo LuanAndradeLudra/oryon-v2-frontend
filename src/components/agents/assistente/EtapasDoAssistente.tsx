@@ -9,7 +9,7 @@ import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Switch } from '@/components/ui/Switch'
 import { Textarea } from '@/components/ui/Textarea'
 import { PERGUNTAS_DE_ENSAIO, SITUACOES, TONS } from './especificacao'
@@ -194,10 +194,10 @@ export function EtapaTransferencia({ spec, mudar, setores }: { spec: AgentSpec; 
         ))}
       </div>
       <FormField label="Setor que recebe" hint="Por enquanto informativo: a conversa vai para a fila da equipe.">
-        <Select value={spec.handoff.sectorName ?? ''} onChange={(e) => mudar((s) => ({ ...s, handoff: { ...s.handoff, sectorName: e.target.value || null } }))}>
+        <SelectMenu value={spec.handoff.sectorName ?? ''} onChange={(e) => mudar((s) => ({ ...s, handoff: { ...s.handoff, sectorName: e.target.value || null } }))}>
           <option value="">Qualquer pessoa da equipe</option>
           {setores.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
-        </Select>
+        </SelectMenu>
       </FormField>
       <FormField label="Mensagem ao transferir" hint="Deixe vazio para a frase padrão.">
         <Input value={spec.handoff.message ?? ''} onChange={(e) => mudar((s) => ({ ...s, handoff: { ...s.handoff, message: e.target.value || null } }))} placeholder="Vou chamar uma pessoa da nossa equipe para continuar o atendimento com você." />
@@ -330,12 +330,12 @@ export function EtapaNoAr({
         label="Número de WhatsApp que ele atende"
         hint={agentId ? '"Escolher depois" não muda a linha que o agente atende hoje.' : undefined}
       >
-        <Select value={spec.channel.whatsappNumberId ?? ''} onChange={(e) => mudar((s) => ({ ...s, channel: { whatsappNumberId: e.target.value || null } }))}>
+        <SelectMenu value={spec.channel.whatsappNumberId ?? ''} onChange={(e) => mudar((s) => ({ ...s, channel: { whatsappNumberId: e.target.value || null } }))}>
           <option value="">Escolher depois</option>
           {numeros.map((n) => (
             <option key={n.id} value={n.id}>{rotuloDaLinha(n, agentId)}</option>
           ))}
-        </Select>
+        </SelectMenu>
       </FormField>
       {ocupada && (
         <Banner variant="warning">

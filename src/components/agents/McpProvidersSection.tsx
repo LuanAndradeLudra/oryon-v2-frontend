@@ -27,7 +27,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { FormField } from '@/components/ui/FormField'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -334,11 +334,11 @@ function AttachMcpModal({
               <Input value={endpointUrl} onChange={(e) => setEndpointUrl(e.target.value)} placeholder="https://…" />
             </FormField>
             <FormField label="Autenticação">
-              <Select value={authType} onChange={(e) => setAuthType(e.target.value as McpAuthType)}>
+              <SelectMenu value={authType} onChange={(e) => setAuthType(e.target.value as McpAuthType)}>
                 {AUTH_TYPES.map((t) => (
                   <option key={t.id} value={t.id}>{t.label}</option>
                 ))}
-              </Select>
+              </SelectMenu>
             </FormField>
           </>
         )}

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { escolherOpcao, rotulosDasOpcoes } from '@/test/escolherOpcao'
 
 /**
  * Onda 4 — assistente novo: rascunho no servidor (recarregar não perde),
@@ -466,10 +467,12 @@ describe('linha de WhatsApp', () => {
   it('linha ocupada mostra o nome do agente que sai dela', async () => {
     naEtapaFinal()
     render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
-    expect(await screen.findByRole('option', { name: 'Linha 1 · +55 24 99999-0000 — hoje atendida por Bia' })).toBeInTheDocument()
+    // O campo é o select de vidro (SelectMenu): as opções só existem com a lista aberta.
+    const campo = await screen.findByLabelText('Número de WhatsApp que ele atende')
+    await waitFor(() => expect(rotulosDasOpcoes(campo)).toContain('Linha 1 · +55 24 99999-0000 — hoje atendida por Bia'))
     expect(screen.getByText(/passa a ser\s+atendida por este agente/)).toBeInTheDocument()
     expect(screen.getByText('Bia', { selector: 'strong' })).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Número de WhatsApp que ele atende'), { target: { value: 'n2' } })
+    escolherOpcao(campo, 'n2')
     expect(screen.queryByText('Bia', { selector: 'strong' })).not.toBeInTheDocument()
   })
 
@@ -480,7 +483,7 @@ describe('linha de WhatsApp', () => {
     await waitFor(() => expect(api.getSpecReadiness).toHaveBeenCalled())
     api.getSpecReadiness.mockClear()
     api.saveSpecDraft.mockClear()
-    fireEvent.change(select, { target: { value: '' } })
+    escolherOpcao(select, '')
     await waitFor(() => expect(api.getSpecReadiness).toHaveBeenCalled(), { timeout: 2000 })
     expect(api.saveSpecDraft).toHaveBeenCalled()
     expect(api.saveSpecDraft.mock.invocationCallOrder[0]).toBeLessThan(api.getSpecReadiness.mock.invocationCallOrder[0])

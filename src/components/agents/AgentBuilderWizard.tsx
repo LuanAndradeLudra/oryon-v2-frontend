@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFileDetailed, podePublicarAgente, MSG_ADMIN_PRECISA_PUBLICAR } from '@/services/agentsApi'
 import { useAuth } from '@/contexts/AuthContext'
 import { showToast } from '@/hooks/useToast'
@@ -342,14 +343,15 @@ function Step1({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
         <label className="block text-xs font-medium text-surface-400 mb-1.5">
           Setor / Indústria <span className="text-danger">*</span>
         </label>
-        <select
+        <SelectMenu
           value={data.sector}
           onChange={e => setData(d => ({ ...d, sector: e.target.value }))}
-          className={INPUT}
+          aria-label="Setor / Indústria"
+          className={`${INPUT} h-auto pr-8`}
         >
           <option value="">Selecione o setor...</option>
           {SECTORS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
+        </SelectMenu>
       </div>
 
       <div>
@@ -691,14 +693,15 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
                 </div>
                 <div>
                   <label className="block text-[11px] text-surface-400 mb-1">Setor / Indústria</label>
-                  <select
+                  <SelectMenu
                     value={hub.industry}
                     onChange={e => updateHub('industry', e.target.value)}
-                    className={INPUT}
+                    aria-label="Setor / Indústria"
+                    className={`${INPUT} h-auto pr-8`}
                   >
                     <option value="">Selecione…</option>
                     {HUB_INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
+                  </SelectMenu>
                 </div>
               </div>
 
@@ -726,14 +729,15 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
               <div>
                 <label className="block text-[11px] text-surface-400 mb-1">Tamanho da equipe</label>
-                <select
+                <SelectMenu
                   value={hub.teamSize}
                   onChange={e => updateHub('teamSize', e.target.value)}
-                  className={INPUT}
+                  aria-label="Tamanho da equipe"
+                  className={`${INPUT} h-auto pr-8`}
                 >
                   <option value="">Selecione…</option>
                   {HUB_TEAM_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                </SelectMenu>
               </div>
             </div>
 
