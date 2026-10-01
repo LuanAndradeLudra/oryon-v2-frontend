@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { mergeFieldAria, useFormFieldAria } from '@/components/ui/formField.context'
+import { useListaSelecao } from '@/components/ui/useListaSelecao'
 
 /**
  * LISTA SUSPENSA da landing (formulário de demonstração, 01/10, PO): no lugar
@@ -12,9 +13,10 @@ import { mergeFieldAria, useFormFieldAria } from '@/components/ui/formField.cont
  *
  * Semântica do padrão "select-only combobox" do WAI-ARIA: o botão é o
  * combobox (o foco fica nele, a opção ativa vai por aria-activedescendant) e
- * o menu é um listbox. Teclado: ↓/↑ abrem e andam, Home/End, Enter/Espaço
- * escolhem, Esc fecha sem mudar, Tab escolhe a ativa e segue, e uma letra
- * leva à opção que começa com ela (sem acento: "e" acha "Educação").
+ * o menu é um listbox. Teclado e busca por letra são os do SelectMenu do app
+ * (`useListaSelecao`): ↓/↑ abrem e andam, Home/End, Enter/Espaço escolhem, Esc
+ * fecha sem mudar, Tab escolhe a ativa e segue, e uma letra leva à opção que
+ * começa com ela (sem acento: "e" acha "Educação"; repetir anda entre elas).
  * Dentro de um FormField, o rótulo, o erro e o obrigatório vêm por contexto.
  * Quando não cabe embaixo, abre para cima.
  */
@@ -26,7 +28,6 @@ export interface OpcaoLista {
   icone?: ReactNode
 }
 
-const normalizar = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 /** Altura de uma opção + o respiro do painel: estima o menu antes de abrir. */
 const ALTURA_OPCAO = 44
 const RESPIRO_PAINEL = 12
@@ -48,77 +49,43 @@ export function ListaSuspensa({ rotulo, opcoes, valor, onEscolher, placeholder, 
   const raizRef = useRef<HTMLDivElement>(null)
   const botaoRef = useRef<HTMLButtonElement>(null)
   const listaRef = useRef<HTMLUListElement>(null)
-  const busca = useRef({ texto: '', ate: 0 })
-  const [aberta, setAberta] = useState(false)
-  const [ativa, setAtiva] = useState(-1)
   const [paraCima, setParaCima] = useState(false)
 
   const indiceEscolhido = opcoes.findIndex((o) => o.valor === valor)
   const escolhida = indiceEscolhido >= 0 ? opcoes[indiceEscolhido] : null
   const idOpcao = (i: number) => `${listaId}-opcao-${i}`
-  const ultimo = opcoes.length - 1
 
-  const abrir = (indice: number) => {
-    // Para cima quando o menu não cabe entre o botão e o pé da tela e há mais
-    // espaço acima (até o menu fixo da landing).
-    const r = botaoRef.current?.getBoundingClientRect()
-    if (r) {
+  const lista = useListaSelecao({
+    itens: opcoes,
+    escolhido: indiceEscolhido,
+    aoAbrir: () => {
+      // Para cima quando o menu não cabe entre o botão e o pé da tela e há
+      // mais espaço acima (até o menu fixo da landing).
+      const r = botaoRef.current?.getBoundingClientRect()
+      if (!r) return
       const altura = Math.min(320, opcoes.length * ALTURA_OPCAO + RESPIRO_PAINEL) + 8
       const embaixo = window.innerHeight - r.bottom
       setParaCima(embaixo < altura && r.top - MENU_FIXO > embaixo)
-    }
-    setAtiva(indice)
-    setAberta(true)
-  }
-  const fechar = () => setAberta(false)
-  const escolher = (i: number) => {
-    const o = opcoes[i]
-    if (o) onEscolher(o.valor)
-    fechar()
-    botaoRef.current?.focus()
-  }
+    },
+    aoEscolher: (i, origem) => {
+      onEscolher(opcoes[i].valor)
+      if (origem !== 'tab') botaoRef.current?.focus()
+    },
+  })
+  const { aberta, ativa, fechar } = lista
 
   // Clique ou toque fora fecha.
   useEffect(() => {
     if (!aberta) return
-    const fora = (e: PointerEvent) => { if (!raizRef.current?.contains(e.target as Node)) setAberta(false) }
+    const fora = (e: PointerEvent) => { if (!raizRef.current?.contains(e.target as Node)) fechar() }
     document.addEventListener('pointerdown', fora)
     return () => document.removeEventListener('pointerdown', fora)
-  }, [aberta])
+  }, [aberta, fechar])
 
   // A opção ativa sempre à vista quando o menu rola.
   useEffect(() => {
     if (aberta && ativa >= 0) listaRef.current?.querySelector<HTMLElement>(`[data-indice="${ativa}"]`)?.scrollIntoView?.({ block: 'nearest' })
   }, [aberta, ativa])
-
-  const teclas = (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (!aberta) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(indiceEscolhido >= 0 ? indiceEscolhido : 0); return }
-      if (e.key === 'ArrowUp') { e.preventDefault(); abrir(indiceEscolhido >= 0 ? indiceEscolhido : ultimo); return }
-      if (e.key === 'Home') { e.preventDefault(); abrir(0); return }
-      if (e.key === 'End') { e.preventDefault(); abrir(ultimo); return }
-    } else {
-      if (e.key === 'ArrowDown') { e.preventDefault(); setAtiva((i) => Math.min(ultimo, i + 1)); return }
-      if (e.key === 'ArrowUp') { e.preventDefault(); setAtiva((i) => Math.max(0, i - 1)); return }
-      if (e.key === 'Home') { e.preventDefault(); setAtiva(0); return }
-      if (e.key === 'End') { e.preventDefault(); setAtiva(ultimo); return }
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); escolher(ativa); return }
-      if (e.key === 'Escape') { e.preventDefault(); fechar(); return }
-      if (e.key === 'Tab') { if (ativa >= 0) onEscolher(opcoes[ativa].valor); fechar(); return }
-    }
-    // Busca por letra, aberto ou fechado.
-    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      const agora = Date.now()
-      busca.current.texto = (agora > busca.current.ate ? '' : busca.current.texto) + normalizar(e.key)
-      busca.current.ate = agora + 600
-      const achou = opcoes.findIndex((o) => normalizar(o.rotulo).startsWith(busca.current.texto))
-      if (achou >= 0) {
-        e.preventDefault()
-        if (aberta) setAtiva(achou)
-        else abrir(achou)
-      }
-    }
-  }
 
   return (
     <div ref={raizRef} className={cn('relative', className)}>
@@ -131,8 +98,11 @@ export function ListaSuspensa({ rotulo, opcoes, valor, onEscolher, placeholder, 
         aria-expanded={aberta}
         aria-controls={listaId}
         aria-activedescendant={aberta && ativa >= 0 ? idOpcao(ativa) : undefined}
-        onClick={() => (aberta ? fechar() : abrir(indiceEscolhido >= 0 ? indiceEscolhido : 0))}
-        onKeyDown={teclas}
+        onClick={lista.alternar}
+        onKeyDown={lista.aoTeclar}
+        // O Firefox aciona o botão no keyup do Espaço mesmo com o keydown
+        // cancelado: a lista abriria e fecharia na mesma tecla.
+        onKeyUp={(e) => { if (e.key === ' ') e.preventDefault() }}
         className={cn(
           'flex h-11 w-full items-center gap-2.5 rounded-[10px] border border-white/[.09] bg-surface-950 pl-3.5 pr-3 text-left text-[14.5px] outline-none',
           'transition-[border-color,box-shadow] duration-150 hover:border-white/[.18]',
@@ -176,8 +146,8 @@ export function ListaSuspensa({ rotulo, opcoes, valor, onEscolher, placeholder, 
                   data-indice={i}
                   // O foco fica no botão: o toque na opção não o rouba.
                   onPointerDown={(e) => e.preventDefault()}
-                  onPointerMove={() => { if (!ativaAqui) setAtiva(i) }}
-                  onClick={() => escolher(i)}
+                  onPointerMove={() => lista.apontar(i)}
+                  onClick={() => lista.escolher(i, 'ponteiro')}
                   className={cn(
                     'flex cursor-pointer select-none items-center gap-3 rounded-lg px-2.5 py-2 text-[14px] transition-colors duration-100',
                     ativaAqui ? 'bg-white/[.08] text-surface-50' : escolhidaAqui ? 'bg-brand-500/[.10] text-surface-50' : 'text-surface-200',

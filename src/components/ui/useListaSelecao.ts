@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useCallback, useRef, useState, type KeyboardEvent } from 'react'
 
 /**
  * O COMPORTAMENTO de uma lista de seleção, sem aparência (01/10): abrir,
@@ -69,7 +69,8 @@ export function useListaSelecao({ itens, escolhido, desabilitada = false, aoEsco
     setAberta(true)
     aoAbrir?.()
   }
-  const fechar = () => setAberta(false)
+  // Estável: quem fecha num efeito (clique fora, rolagem) pode depender dele.
+  const fechar = useCallback(() => setAberta(false), [])
   const alternar = () => (aberta ? fechar() : abrir())
   const escolher = (indice: number, origem: OrigemDaEscolha) => {
     if (!habilitado(indice)) return
