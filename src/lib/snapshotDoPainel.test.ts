@@ -88,4 +88,19 @@ describe('R4 — duração em segundos', () => {
     expect(h.value).toBeNull()
     expect(h.detail).toBe('nenhuma resposta de pessoa no período')
   })
+
+  it('revisão de código 01/10: tempo em segundos — resposta da IA em 2 s não some; instantânea vira "<1s"', () => {
+    const k = (stats: Record<string, unknown>, id: string) =>
+      montarSnapshot(stats as unknown as HomeStats, null).kpis.find((x) => x.id === id)!
+    const rapida = k({ medianResponseMinutes: 0, medianResponseSeconds: 2, avgResponseSeconds: 4, respondedCycles: 10 }, 'first_response_time')
+    expect(rapida.value).toBe(2)
+    expect(formatKpiValue(rapida.value, 'seconds')).toBe('2s')
+    expect(rapida.detail).toContain('média 4s')
+    const instantanea = k({ medianResponseMinutes: 0, medianResponseSeconds: 0, respondedCycles: 3 }, 'first_response_time')
+    expect(formatKpiValue(instantanea.value, 'seconds')).toBe('<1s')
+    // Sem nenhuma resposta: continua "—".
+    expect(k({ medianResponseSeconds: null, respondedCycles: 0 }, 'first_response_time').value).toBeNull()
+    // Backend antigo (só minutos) segue funcionando.
+    expect(k({ medianResponseMinutes: 3 }, 'first_response_time').value).toBe(180)
+  })
 })

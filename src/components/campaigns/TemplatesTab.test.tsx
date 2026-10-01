@@ -32,8 +32,8 @@ import { TemplatesTab } from './TemplatesTab'
 
 afterEach(() => cleanup())
 
-function montar() {
-  return render(<MemoryRouter><TemplatesTab /></MemoryRouter>)
+function montar(onCountChange?: (n: number) => void) {
+  return render(<MemoryRouter><TemplatesTab onCountChange={onCountChange} /></MemoryRouter>)
 }
 const abrir = async (nome: string) => {
   fireEvent.click((await screen.findByText(nome)).closest('button')!)
@@ -69,5 +69,12 @@ describe('TemplatesTab — avisos da Meta (MA-6.2)', () => {
     expect(screen.queryByText('apagada_na_meta')).toBeNull()
     fireEvent.click(screen.getByRole('tab', { name: 'Excluídos na Meta' }))
     await waitFor(() => expect(screen.getByText('apagada_na_meta')).toBeInTheDocument())
+  })
+
+  it('a contagem da aba não inclui os excluídos na Meta (revisão de código 01/10)', async () => {
+    const conta = vi.fn()
+    montar(conta)
+    await screen.findByText('lembrete_ok')
+    await waitFor(() => expect(conta).toHaveBeenLastCalledWith(4))
   })
 })

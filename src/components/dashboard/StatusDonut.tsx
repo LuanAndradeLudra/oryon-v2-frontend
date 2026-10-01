@@ -22,6 +22,9 @@ export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: 
   ]
   const slices = SLICES.map((s) => ({ name: s.label, recorte: s.recorte, value: data[s.key], color: s.color }))
   const emAndamento = data.open + data.pending
+  // O anel só desenha o que é do MESMO recorte (agora): resolvidas/arquivadas
+  // do período não são fatia de um todo com as ativas (revisão de código 01/10).
+  const anel = slices.filter((s) => s.recorte === 'agora')
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
@@ -33,13 +36,13 @@ export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: 
       <div className="relative flex-shrink-0">
         <ResponsiveContainer width="100%" height={160}>
           <PieChart>
-            <Pie data={slices} cx="50%" cy="50%"
+            <Pie data={anel} cx="50%" cy="50%"
               innerRadius={50} outerRadius={72}
               paddingAngle={3} dataKey="value"
               startAngle={90} endAngle={-270}
               isAnimationActive={false}
             >
-              {slices.map((s) => <Cell key={s.name} fill={s.color} />)}
+              {anel.map((s) => <Cell key={s.name} fill={s.color} />)}
             </Pie>
             <Tooltip {...chartTooltipProps(C)} />
           </PieChart>

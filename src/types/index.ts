@@ -1430,6 +1430,11 @@ export interface HomeStats {
   reopenedConversations?: number
   cohortConversations?: number
   unansweredCycles?: number
+  /** Segundos inteiros (revisão de código 01/10): resposta em segundos não vira 0,0 min. */
+  avgResponseSeconds?: number | null
+  medianResponseSeconds?: number | null
+  humanFirstResponseAvgSeconds?: number | null
+  humanFirstResponseMedianSeconds?: number | null
   humanFirstResponseAvgMinutes?: number | null
   humanFirstResponseMedianMinutes?: number | null
   humanFirstResponseCount?: number

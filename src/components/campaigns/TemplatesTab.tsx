@@ -103,7 +103,9 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
   useEffect(() => { fetchTemplates() }, [fetchTemplates])
 
   // SCRUM-1106 (tela 2c): contagem no rótulo da aba, no CampaignsPage.
-  useEffect(() => { onCountChange?.(templates.length) }, [templates.length, onCountChange])
+  // Excluídos na Meta ficam fora de "Todos" — e da contagem da aba.
+  const visiveis = templates.filter((t) => t.status !== 'DELETED').length
+  useEffect(() => { onCountChange?.(visiveis) }, [visiveis, onCountChange])
 
   const handleSync = async () => {
     setSyncing(true)

@@ -10,6 +10,8 @@ export function formatKpiValue(value: number | null, unit: KpiUnit): string {
     case 'seconds': {
       // R4: 0 ou negativo (dado inconsistente) é "sem dado", nunca "-222102s".
       if (value <= 0) return '—'
+      // Resposta instantânea (o backend manda 0 s com resposta registrada).
+      if (value < 1) return '<1s'
       if (value >= 86400) {
         // Arredonda em horas ANTES de separar (senão 1,99 dia vira "1d 24h").
         const horas = Math.round(value / 3600)

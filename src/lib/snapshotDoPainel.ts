@@ -39,6 +39,18 @@ function seg(min: unknown): number | null {
   return m !== null && m > 0 ? m * 60 : null
 }
 
+/**
+ * Tempo em segundos, preferindo o campo `*Seconds` (o de minutos tem 1 casa:
+ * uma resposta da IA em 2 s virava 0,0 e a tela mostrava "—"). Zero com
+ * resposta registrada = menos de 1 s (meio segundo → "<1s"); sem resposta = null.
+ */
+function tempo(segundos: unknown, minutos: unknown, houveResposta: boolean): number | null {
+  const s = n(segundos)
+  if (s === null) return seg(minutos)
+  if (s > 0) return s
+  return houveResposta ? 0.5 : null
+}
+
 const fmtSeg = (s: number | null) => formatKpiValue(s, 'seconds')
 const plural = (q: number, um: string, varios: string) => `${q.toLocaleString('pt-BR')} ${q === 1 ? um : varios}`
 
@@ -64,8 +76,8 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
     'abandoned':              n(x.abandonedCount),
     'resolution_rate':        n(x.resolutionRate),
     'abandon_rate':           n(x.abandonRate),
-    'first_response_time':    seg(x.medianResponseMinutes ?? x.avgResponseMinutes),
-    'human_first_response':   seg(x.humanFirstResponseMedianMinutes),
+    'first_response_time':    tempo(x.medianResponseSeconds, x.medianResponseMinutes ?? x.avgResponseMinutes, (n(x.respondedCycles) ?? 0) > 0),
+    'human_first_response':   tempo(x.humanFirstResponseMedianSeconds, x.humanFirstResponseMedianMinutes, humanas > 0),
     'avg_resolution_time':    (n(db?.medianResolutionTimeTenant) ?? mediaResolucao) || null,
     'recontact_rate':         n(x.recontactRate),
     'msgs_received':          n(x.messagesReceivedToday),
@@ -88,7 +100,9 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
     'resolution_rate': coorte !== null ? `de ${plural(coorte, 'atendimento iniciado', 'atendimentos iniciados')}` : null,
     'abandon_rate': coorte !== null ? `de ${plural(coorte, 'atendimento iniciado', 'atendimentos iniciados')}` : null,
     'first_response_time': [
-      seg(x.avgResponseMinutes) !== null ? `média ${fmtSeg(seg(x.avgResponseMinutes))}` : null,
+      tempo(x.avgResponseSeconds, x.avgResponseMinutes, (n(x.respondedCycles) ?? 0) > 0) !== null
+        ? `média ${fmtSeg(tempo(x.avgResponseSeconds, x.avgResponseMinutes, true))}`
+        : null,
       semResposta > 0 ? `${plural(semResposta, 'sem resposta', 'sem resposta')}` : null,
     ].filter(Boolean).join(' · ') || null,
     'human_first_response': humanas > 0
