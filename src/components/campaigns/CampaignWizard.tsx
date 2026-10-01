@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { getReadableTextColor } from '@/lib/colorPalette'
@@ -1302,21 +1302,23 @@ function Step3({
               />
 
               {m.source === 'contact_field' && (
-                <Select
+                <SelectMenu
                   size="md"
+                  aria-label={`Campo do contato para {{${m.position}}}`}
                   value={m.contactField ?? 'displayName'}
                   onChange={(e) => onUpdate(m.position, { contactField: e.target.value })}
                 >
                   {CONTACT_FIELDS.map((f) => (
                     <option key={f.value} value={f.value}>{f.label}</option>
                   ))}
-                </Select>
+                </SelectMenu>
               )}
 
               {m.source === 'custom_field' && (
                 fieldDefs.length > 0 ? (
-                  <Select
+                  <SelectMenu
                     size="md"
+                    aria-label={`Campo personalizado para {{${m.position}}}`}
                     value={m.customFieldKey ?? ''}
                     onChange={(e) => onUpdate(m.position, { customFieldKey: e.target.value })}
                   >
@@ -1324,7 +1326,7 @@ function Step3({
                     {fieldDefs.map((f) => (
                       <option key={f.key} value={f.key}>{f.label}</option>
                     ))}
-                  </Select>
+                  </SelectMenu>
                 ) : (
                   <div className="flex items-start gap-2 px-2.5 py-2.5 border border-accent-amber/25 rounded-sm">
                     <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />

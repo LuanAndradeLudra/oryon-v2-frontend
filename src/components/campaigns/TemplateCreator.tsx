@@ -13,7 +13,7 @@ import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Textarea } from '@/components/ui/Textarea'
 import { SubcategoryPreview } from './SubcategoryPreview'
 import { SummaryRow } from './SummaryRow'
@@ -677,7 +677,7 @@ function StepMensagem({
             />
             <Contador n={name.length} max={512} />
           </div>
-          <Select
+          <SelectMenu
             size="md"
             value={language}
             onChange={(e) => onLanguage(e.target.value)}
@@ -686,7 +686,7 @@ function StepMensagem({
             className="w-44 flex-none"
           >
             {LANGUAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </Select>
+          </SelectMenu>
         </div>
         {errors.name && <Ajuda erro={errors.name} />}
       </Section>
@@ -859,7 +859,7 @@ function StepBotoes({
               <div key={i} className="border-t border-surface-700 first:border-t-0 py-3 first:pt-0 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <Icon className="w-3.5 h-3.5 text-surface-400 flex-none" />
-                  <Select
+                  <SelectMenu
                     size="sm"
                     aria-label={`Tipo do botão ${i + 1}`}
                     className="w-48"
@@ -868,7 +868,7 @@ function StepBotoes({
                     disabled={fieldDisabled}
                   >
                     {availableButtonTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </Select>
+                  </SelectMenu>
                   <span className="text-[11px] text-surface-500">Botão {i + 1} de 3</span>
                   <button
                     type="button"

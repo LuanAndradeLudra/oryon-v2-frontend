@@ -7,7 +7,7 @@ import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -332,8 +332,9 @@ export function WhatsAppNumbers() {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-2 flex-1">
                           <Bot className="w-4 h-4 text-surface-500 flex-shrink-0" />
-                          <Select
+                          <SelectMenu
                             size="sm"
+                            aria-label="Agente de IA"
                             className="flex-1"
                             value={num.agentId ?? ''}
                             onChange={(e) => assignAgent(num.id, e.target.value || null)}
@@ -345,7 +346,7 @@ export function WhatsAppNumbers() {
                                 {a.name} {a.status !== 'active' ? `(${a.status})` : ''}
                               </option>
                             ))}
-                          </Select>
+                          </SelectMenu>
                           {num.agentId && (
                             <button
                               onClick={() => assignAgent(num.id, null)}
