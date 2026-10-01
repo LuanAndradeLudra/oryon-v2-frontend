@@ -128,9 +128,10 @@ describe('Dashboard · aba Agora', () => {
     montar()
     const faixa = await screen.findByTestId('faixa-do-agora')
     await waitFor(() => expect(within(faixa).getByText('2 sem dono')).toBeInTheDocument())
-    expect(within(faixa).getByText('3')).toBeInTheDocument()
-    expect(within(faixa).getByText('42 min')).toBeInTheDocument()
-    expect(within(faixa).getByText('2 de 2')).toBeInTheDocument()
+    // O valor sai com a unidade separada (menor) — `data-valor` guarda o texto.
+    expect(faixa.querySelector('[data-valor="3"]')).not.toBeNull()
+    expect(faixa.querySelector('[data-valor="42 min"]')).not.toBeNull()
+    expect(faixa.querySelector('[data-valor="2 de 2"]')).not.toBeNull()
     expect(within(faixa).getByText('conectadas · 1 com IA')).toBeInTheDocument()
   })
 
@@ -139,10 +140,24 @@ describe('Dashboard · aba Agora', () => {
     resumoDaFila = { esperando: 3, semDono: 2, maiorEsperaMin: 300, janelaFechando: 2, janelaFechada: 1 }
     montar()
     const faixa = await screen.findByTestId('faixa-do-agora')
-    await waitFor(() => expect(within(faixa).getByText('5 h')).toBeInTheDocument())
-    expect(within(faixa).queryByText('42 min')).not.toBeInTheDocument()
+    await waitFor(() => expect(faixa.querySelector('[data-valor="5 h"]')).not.toBeNull())
+    expect(faixa.querySelector('[data-valor="42 min"]')).toBeNull()
     expect(within(faixa).getByText('1 já fechou · só modelo')).toBeInTheDocument()
     expect(apiGet).toHaveBeenCalledWith('/home/queue')
+  })
+
+  it('PO 01/10: a faixa vem em cartões por assunto, com filete só onde há urgência, e a célula filtra a fila', async () => {
+    montar()
+    const faixa = await screen.findByTestId('faixa-do-agora')
+    await waitFor(() => expect(within(faixa).getByText('2 sem dono')).toBeInTheDocument())
+    expect(within(faixa).getAllByRole('region').map((r) => r.getAttribute('aria-label'))).toEqual(['Fila', 'Verificação', 'Linhas'])
+    const esperando = faixa.querySelector('[data-celula="esperando"]') as HTMLElement
+    const passou = faixa.querySelector('[data-celula="ia-passou"]') as HTMLElement
+    expect(esperando.style.boxShadow).toContain('status-pending') // 2 sem dono = atenção
+    expect(faixa.querySelector('[data-celula="linhas"]')!.getAttribute('style') ?? '').not.toContain('box-shadow')
+    fireEvent.click(passou)
+    await waitFor(() => expect(screen.getByTestId('local').textContent).toContain('fila=ia-passou'))
+    expect(passou).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('Assumir atribui a mim e abre a conversa', async () => {

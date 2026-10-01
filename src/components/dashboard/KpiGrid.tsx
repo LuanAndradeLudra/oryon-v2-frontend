@@ -7,6 +7,7 @@ import { formatKpiValue } from './utils'
 import type { KpiId, KpiMetric } from '@/types/dashboard'
 import { KPI_CATALOG, DEFAULT_KPI_SLOTS } from '@/types/dashboard'
 import { KpiCustomizerDrawer } from './KpiCustomizerDrawer'
+import { ValorComUnidade } from './ValorComUnidade'
 import {
   identidadeDo, agruparPorGrupo, NOME_DO_GRUPO, estadoDaMeta, COR_DO_ESTADO, ROTULO_DO_ESTADO,
 } from './kpiIdentidade'
@@ -35,20 +36,6 @@ function loadSlots(): KpiId[] {
 // O cartão leva à lista que compõe o número, quando existe uma.
 
 type Apoio = { text: string; tone: 'warn' | 'muted' }
-
-/** "10h 20m" / "39,0%": a unidade menor e mais leve que o número. */
-function Valor({ texto }: { texto: string }) {
-  const partes = texto.split(/([a-z%]+)/i).filter(Boolean)
-  return (
-    <>
-      {partes.map((p, i) =>
-        /^[a-z%]+$/i.test(p)
-          ? <span key={i} className="text-[0.58em] font-semibold text-surface-400 ml-[1px] mr-[3px] tracking-normal">{p}</span>
-          : <span key={i}>{p.trim()}</span>,
-      )}
-    </>
-  )
-}
 
 function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: Apoio }) {
   const { aoVivo, destino } = identidadeDo(metric)
@@ -87,7 +74,7 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: Apoio 
       </span>
 
       <div className="mt-1 font-extrabold tabular-nums tracking-[-0.02em] leading-[1.15] font-display text-[26px] text-surface-100">
-        <Valor texto={valor} />
+        <ValorComUnidade texto={valor} />
         {metric.unit === 'csat_score' && (
           <span className="font-normal text-surface-400 ml-1 font-sans text-sm">/ 5</span>
         )}
