@@ -2,6 +2,7 @@
 // motivo é impossível pela UI; o catálogo vem do funil, filtrado pelo desfecho.
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { escolherOpcao, valoresDasOpcoes } from '@/test/escolherOpcao'
 import { CloseDealReasonModal } from './CloseDealReasonModal'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
@@ -22,7 +23,7 @@ const PIPE: Pipeline = {
 }
 const DEAL: Deal = { id: 'd', contactId: 'c', title: 'x', status: 'open', pipelineId: 'p', stageId: 's1', amountCents: 0, contact: { id: 'c', displayName: 'Mariana', profilePicUrl: null } }
 
-const options = () => Array.from((screen.getByRole('combobox', { name: 'Motivo do desfecho' }) as HTMLSelectElement).options).map((o) => o.value)
+const options = () => valoresDasOpcoes(screen.getByRole('combobox', { name: 'Motivo do desfecho' }))
 
 describe('CloseDealReasonModal (F8)', () => {
   it('terminal Ganho: lista só motivos won/any; confirmar sem motivo mostra o erro e não envia; com motivo envia outcome+reason+note', async () => {
@@ -43,7 +44,7 @@ describe('CloseDealReasonModal (F8)', () => {
     expect(await screen.findByText('Escolha um motivo.')).toBeInTheDocument()
     expect(onConfirm).not.toHaveBeenCalled()
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'concluido' } })
+    escolherOpcao(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), 'concluido')
     fireEvent.change(screen.getByPlaceholderText(/paciente confirmou/), { target: { value: 'por telefone' } })
     expect(confirm).toBeEnabled()
     fireEvent.click(confirm)
@@ -61,7 +62,7 @@ describe('CloseDealReasonModal (F8)', () => {
     const onConfirm = vi.fn(async () => { throw { response: { data: { message: 'Motivo inválido para este tipo de funil.' } } } })
     const onClose = vi.fn()
     render(<CloseDealReasonModal open onClose={onClose} deal={DEAL} stage={WON} pipeline={PIPE} onConfirm={onConfirm} />)
-    fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'outro' } })
+    escolherOpcao(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), 'outro')
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     await waitFor(() => expect(screen.getByText('Motivo inválido para este tipo de funil.')).toBeInTheDocument())
     expect(onClose).not.toHaveBeenCalled()
@@ -127,7 +128,7 @@ describe('CloseDealReasonModal (A4 · SCRUM-926)', () => {
     render(<CloseDealReasonModal open onClose={vi.fn()} deal={SALES_DEAL} stage={SALES_WON} pipeline={SALES} onConfirm={onConfirm} />)
     const amount = screen.getByDisplayValue('1.500,00')
     fireEvent.change(amount, { target: { value: '120000' } })
-    fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'fechou' } })
+    escolherOpcao(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), 'fechou')
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     await waitFor(() => expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({ reason: 'fechou', amountCents: 120000 }),

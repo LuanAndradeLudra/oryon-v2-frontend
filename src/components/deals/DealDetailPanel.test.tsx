@@ -2,6 +2,7 @@
 // 404 · sem acesso · ok), stepper clicável, abas, e o realtime `deal:changed`.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { escolherOpcao } from '@/test/escolherOpcao'
 import type { Deal, Pipeline, PipelineStage, User, DealStageHistoryEntry } from '@/types'
 
 const { dealsApi, usersApi, conversationsApi, contactsApi, socket } = vi.hoisted(() => ({
@@ -167,7 +168,7 @@ describe('DealDetailPanel — carregado', () => {
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
     fireEvent.click(screen.getByTestId('deal-mark-won'))
-    fireEvent.change(await screen.findByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'fechou' } })
+    escolherOpcao(await screen.findByRole('combobox', { name: 'Motivo do desfecho' }), 'fechou')
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     await waitFor(() => expect(dealsApi.setStatus).toHaveBeenCalledWith('d1', { status: 'won', closeReason: 'fechou', closeNote: undefined, stageId: 's-won' }))
   })

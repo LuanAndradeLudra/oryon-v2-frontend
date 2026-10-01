@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Archive, ArchiveRestore, Star, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { FormField } from '@/components/ui/FormField'
 import { SectionHeader } from '@/components/settings/SectionHeader'
 import { SettingsSection } from '@/components/settings/SettingsSection'
@@ -174,12 +174,12 @@ export function FunnelsSettings() {
       >
         <div className="flex items-end gap-2 flex-wrap">
           <FormField label="Funil" className="w-full sm:w-72">
-            <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+            <SelectMenu value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
               {pipelines.length === 0 && <option value="">Nenhum funil ainda</option>}
               {pipelines.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}{p.isArchived ? ' (arquivado)' : ''}</option>
               ))}
-            </Select>
+            </SelectMenu>
           </FormField>
 
           {selected && (

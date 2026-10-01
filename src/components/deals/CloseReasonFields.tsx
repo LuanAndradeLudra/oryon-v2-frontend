@@ -1,5 +1,5 @@
 import { FormField } from '@/components/ui/FormField'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { preselectedReason, type CloseReasonOption } from '@/lib/closeReason'
@@ -60,7 +60,7 @@ export function CloseReasonFields({
           o mesmo id (o rótulo apontaria para o campo errado). */}
       <div className={allowFree ? 'flex flex-col sm:flex-row sm:items-start gap-2' : undefined}>
         <FormField label="Motivo" required error={error} className={allowFree ? 'sm:w-1/2' : undefined}>
-          <Select
+          <SelectMenu
             aria-label="Motivo do desfecho"
             value={freeWins ? '' : value.picked}
             onChange={(e) => set({ picked: e.target.value, free: '' })}
@@ -72,7 +72,7 @@ export function CloseReasonFields({
             {reasons.map((r) => (
               <option key={r.key} value={r.key}>{r.label}</option>
             ))}
-          </Select>
+          </SelectMenu>
         </FormField>
         {allowFree && (
           <FormField label="ou descreva" className="sm:w-1/2">

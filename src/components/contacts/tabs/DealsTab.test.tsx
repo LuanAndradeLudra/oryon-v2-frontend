@@ -10,6 +10,7 @@
 // mover/editar/excluir — os testes abaixo seguem essa estrutura nova.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { escolherOpcao } from '@/test/escolherOpcao'
 
 const { api, openDeal, multi, socket } = vi.hoisted(() => ({
   api: { list: vi.fn(), moveStage: vi.fn(), setStatus: vi.fn(), history: vi.fn(), remove: vi.fn(), get: vi.fn(), create: vi.fn() },
@@ -116,7 +117,7 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     // heading, não texto solto: o botão de confirmar repete o mesmo verbo (DEAL-MODAL-13).
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Mover para Cancelado' })).toBeInTheDocument())
     expect(api.setStatus).not.toHaveBeenCalled()
-    fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'cancelado_pelo_cliente' } })
+    escolherOpcao(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), 'cancelado_pelo_cliente')
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     await waitFor(() => expect(api.setStatus).toHaveBeenCalledWith('d1', { status: 'lost', closeReason: 'cancelado_pelo_cliente', closeNote: undefined }))
   })

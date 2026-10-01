@@ -118,14 +118,14 @@ describe('FunnelsSettings — o funil selecionado vem da URL', () => {
   it('abre no funil pedido por ?pipeline=, e não no padrão do tenant', async () => {
     currentPipelines = [SALES, PROCESS]
     renderTela('/settings/pipeline-stages?pipeline=' + PROCESS.id)
-    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLSelectElement
+    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLButtonElement
     expect(seletor.value).toBe(PROCESS.id)
   })
 
   it('sem o parâmetro, cai no padrão do tenant como antes', async () => {
     currentPipelines = [SALES, PROCESS]
     renderTela()
-    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLSelectElement
+    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLButtonElement
     expect(seletor.value).toBe(SALES.id)
   })
 })

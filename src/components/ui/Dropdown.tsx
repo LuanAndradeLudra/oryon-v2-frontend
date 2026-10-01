@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useLayer } from '@/contexts/LayerContext'
+import { usePosicaoFlutuante } from './posicaoFlutuante'
 
 interface DropdownProps {
   open: boolean
@@ -13,79 +14,13 @@ interface DropdownProps {
   className?: string
 }
 
-/**
- * Posição do menu: lado (`align`) + DIREÇÃO e ALTURA, decididas pela janela.
- *
- * Antes o menu abria sempre para baixo, com `top: rect.bottom`, e a altura era
- * a do conteúdo. Numa lista longa perto do rodapé — um catálogo de produtos, o
- * caso que expôs isto — ele vazava para fora da tela: as últimas opções ficavam
- * inalcançáveis, sem rolagem que as trouxesse de volta.
- *
- * Agora mede-se o espaço dos dois lados do gatilho. Se não couber embaixo e
- * houver mais espaço em cima, o menu VIRA para cima; de um jeito ou de outro, a
- * altura máxima é o espaço que existe de verdade, e o que passar disso rola
- * dentro do menu.
- *
- * Para cima o menu é ancorado por `bottom`, não por `top`: assim não é preciso
- * medir a altura do conteúdo antes de posicionar (o que exigiria um render
- * intermediário e faria o menu piscar no lugar errado).
- */
-interface PosicaoMenu {
-  top?: number
-  bottom?: number
-  left?: number
-  right?: number
-  maxHeight: number
-}
-
-function useDropdownPosition(open: boolean, align: 'left' | 'right', anchorRef: React.RefObject<HTMLDivElement | null>) {
-  const [pos, setPos] = useState<PosicaoMenu>({ top: 0, left: 0, maxHeight: 320 })
-
-  const update = () => {
-    const el = anchorRef.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const gap = 6
-    // Respiro contra a borda da janela — um menu colado no fim da tela parece
-    // cortado mesmo quando não está.
-    const margem = 12
-    const espacoAbaixo = window.innerHeight - rect.bottom - gap - margem
-    const espacoAcima = rect.top - gap - margem
-    // Só vira para cima quando embaixo é apertado E em cima cabe mais. Abrir
-    // para cima por qualquer motivo desorienta: o menu deve seguir o gatilho.
-    const minimoUtil = 180
-    const paraCima = espacoAbaixo < minimoUtil && espacoAcima > espacoAbaixo
-    const lado = align === 'right'
-      ? { right: window.innerWidth - rect.right }
-      : { left: rect.left }
-    setPos(paraCima
-      ? { ...lado, bottom: window.innerHeight - rect.top + gap, maxHeight: Math.max(espacoAcima, 120) }
-      : { ...lado, top: rect.bottom + gap, maxHeight: Math.max(espacoAbaixo, 120) })
-  }
-
-  useLayoutEffect(() => {
-    if (!open) return
-    update()
-  }, [open, align])
-
-  useEffect(() => {
-    if (!open) return
-    window.addEventListener('scroll', update, true)
-    window.addEventListener('resize', update)
-    return () => {
-      window.removeEventListener('scroll', update, true)
-      window.removeEventListener('resize', update)
-    }
-  }, [open, align])
-
-  return pos
-}
-
 export function Dropdown({ open, onClose, anchor, children, align = 'left', className }: DropdownProps) {
   const semMovimento = useReducedMotion()
   const wrapRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
-  const pos = useDropdownPosition(open, align, wrapRef)
+  // Lado, direção e altura pela janela (posicaoFlutuante.ts, a mesma régua da
+  // lista do SelectMenu); a rolagem do próprio menu não recalcula.
+  const pos = usePosicaoFlutuante(open, align, wrapRef, menuRef)
   // Mesma pilha compartilhada do Modal/Drawer (ver LayerContext): sem isto o
   // menu usava um z-index fixo (40/50) e ficava atrás de qualquer diálogo
   // aberto por cima dele (BASE_Z=60+), caso do seletor de catálogo dentro do

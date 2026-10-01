@@ -3,7 +3,7 @@ import { Plus, X, GripVertical, Lock, Check, Trophy, Loader2 } from 'lucide-reac
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
@@ -327,7 +327,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
                   IA" é uma opção do MESMO select, não um botão concorrente. */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-surface-500">Modelo:</span>
-                <Select
+                <SelectMenu
                   aria-label="Modelo de etapas"
                   value={suggesting || usedAi ? AI_OPTION : templateKey}
                   onChange={(e) => handleModelChange(e.target.value)}
@@ -338,7 +338,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
                     <option key={t.key} value={t.key}>{t.name}</option>
                   ))}
                   <option value={AI_OPTION}>✨ Sugerir com IA</option>
-                </Select>
+                </SelectMenu>
                 {suggesting && <Loader2 className="w-3.5 h-3.5 animate-spin text-surface-400" />}
               </div>
             </div>
