@@ -84,6 +84,18 @@ describe('LoginPage', () => {
     expect(senhaInput()).toHaveAttribute('aria-invalid', 'true')
   })
 
+  it('sem resposta do servidor (rede/bloqueio): diz que não conectou, não "senha inválida"', async () => {
+    login.mockRejectedValue(new Error('Network Error'))
+    renderLogin()
+    digitar(emailInput(), 'a@b.co')
+    digitar(senhaInput(), 'certa123')
+    fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
+
+    const alerta = await screen.findByRole('alert')
+    expect(alerta).toHaveTextContent('Não foi possível conectar ao servidor')
+    expect(alerta).not.toHaveTextContent(/inválid/i)
+  })
+
   it('sucesso: chama login com o e-mail aparado e navega para /conversations', async () => {
     login.mockResolvedValue(undefined)
     renderLogin()

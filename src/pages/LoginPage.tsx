@@ -29,9 +29,14 @@ export function LoginPage() {
       await login(e.trim(), p)
       navigate(from, { replace: true })
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })
-        ?.response?.data?.message
-      setError(msg ?? 'E-mail ou senha inválidos.')
+      const resposta = (err as { response?: { status?: number; data?: { message?: string } } })?.response
+      // Sem resposta do servidor (rede, bloqueio do navegador, backend fora do
+      // ar) não é credencial errada — dizer isso mandava o usuário trocar a
+      // senha à toa (achado de 30/09).
+      if (!resposta) setError('Não foi possível conectar ao servidor. Verifique sua conexão e tente de novo.')
+      else if (resposta.status === 429) setError('Muitas tentativas. Aguarde um minuto e tente de novo.')
+      else if (resposta.status && resposta.status >= 500) setError('O servidor não respondeu agora. Tente de novo em instantes.')
+      else setError(resposta.data?.message ?? 'E-mail ou senha inválidos.')
     } finally {
       setLoading(false)
     }
