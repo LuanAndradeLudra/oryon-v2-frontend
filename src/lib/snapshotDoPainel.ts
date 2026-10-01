@@ -78,7 +78,8 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
     'abandon_rate':           n(x.abandonRate),
     'first_response_time':    tempo(x.medianResponseSeconds, x.medianResponseMinutes ?? x.avgResponseMinutes, (n(x.respondedCycles) ?? 0) > 0),
     'human_first_response':   tempo(x.humanFirstResponseMedianSeconds, x.humanFirstResponseMedianMinutes, humanas > 0),
-    'avg_resolution_time':    (n(db?.medianResolutionTimeTenant) ?? mediaResolucao) || null,
+    // Mediana 0 com resolução registrada = menos de 1 s ("<1s"), não "sem dado".
+    'avg_resolution_time':    tempo(db?.medianResolutionTimeTenant, null, mediaResolucao !== null) ?? mediaResolucao,
     'recontact_rate':         n(x.recontactRate),
     'msgs_received':          n(x.messagesReceivedToday),
     'msgs_sent':              n(x.messagesSentToday),
@@ -120,10 +121,17 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
       : null,
   }
 
+  // Metas que já existem: o SLA da 1ª resposta humana (15 min no backend).
+  const metaSlaMin = n(x.slaTargetMinutes)
+  const metas: Record<string, KpiMetric['meta']> = {
+    'human_first_response': metaSlaMin ? { alvo: metaSlaMin * 60, sentido: 'menor' } : null,
+  }
+
   snap.kpis = snap.kpis.map((kpi: KpiMetric) => ({
     ...kpi,
     value: valores[kpi.id] ?? null,
     detail: detalhes[kpi.id] ?? null,
+    meta: metas[kpi.id] ?? null,
     trend: 0,
   }))
 

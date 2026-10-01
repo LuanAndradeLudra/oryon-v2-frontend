@@ -44,6 +44,8 @@ export interface KpiMetric extends KpiDefinition {
   value: number | null
   /** Linha de apoio com dado real (ex.: "média 4 min · 3 sem resposta"). */
   detail?: string | null
+  /** Meta do indicador (mesma unidade do valor) — dá o estado na meta/atenção/fora. */
+  meta?: { alvo: number; sentido: 'menor' | 'maior' } | null
   trend: number    // % change vs previous period
   sparkline: number[] // 7 data points (oldest → newest)
 }
