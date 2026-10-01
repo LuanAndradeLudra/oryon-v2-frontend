@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react'
 import { Phone, Star, AlertTriangle, Loader2, Check, Bot, ShieldCheck, ShieldOff, Globe } from 'lucide-react'
 import { whatsappNumbersApi, type WhatsappLinesHealth, type WhatsappLineHealth } from '@/services/api'
 import { cn } from '@/lib/utils'
+import { qualidadeDoNumero, limiteDoNumero } from '@/lib/metaRotulos'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
@@ -270,6 +271,15 @@ function LineHealthRow({
           {line.wabaName && (
             <p className="text-2xs text-surface-500 mt-0.5">WABA: {line.wabaName}</p>
           )}
+          {/* Plano MA (MA-6.4): qualidade e limite de envio que a Meta informa. */}
+          <p className="text-2xs text-surface-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1">
+              <span className={cn('w-1.5 h-1.5 rounded-full', qualidadeDoNumero(line.qualityRating).cor)} aria-hidden />
+              Qualidade {qualidadeDoNumero(line.qualityRating).label.toLowerCase()}
+            </span>
+            <span aria-hidden>·</span>
+            <span>Limite: {limiteDoNumero(line.messagingLimitTier, line.maxDailyConversations) ?? 'a Meta ainda não informou'}</span>
+          </p>
         </div>
 
         {variasLinhas && !line.isPrimary && line.isActive && (

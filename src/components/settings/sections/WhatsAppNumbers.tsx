@@ -17,6 +17,7 @@ import { listAgents, type AgentConfig } from '@/services/agentsApi'
 import { api, whatsappNumbersApi, type WhatsappLineDependencies } from '@/services/api'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { WhatsAppNumberDetailed } from '@/types'
+import { qualidadeDoNumero, limiteDoNumero } from '@/lib/metaRotulos'
 
 // Wifi/WifiOff/Clock não existem no set da casa (traço 2 do lucide real) —
 // strokeWidth explícito pra bater com os botões de ação (Star/RefreshCw/
@@ -44,7 +45,6 @@ const QUALITY_CONFIG: Record<string, { label: string; cls: string }> = {
   UNKNOWN: { label: 'N/D',       cls: 'bg-surface-600' },
 }
 
-const DEFAULT_QUALITY = { label: 'N/D', cls: 'bg-surface-600' }
 
 export function WhatsAppNumbers() {
   const { toast } = useToast()
@@ -271,7 +271,10 @@ export function WhatsAppNumbers() {
       <div className="divide-y divide-surface-700">
         {numbers.map((num) => {
           const status = STATUS_CONFIG[num.status] ?? DEFAULT_STATUS
-          const quality = QUALITY_CONFIG[num.qualityRating] ?? DEFAULT_QUALITY
+          // Plano MA (MA-6.4): rótulos comuns; o limite vem de messagingLimitTier/maxDailyConversations.
+          const nota = qualidadeDoNumero(num.qualityRating)
+          const quality = QUALITY_CONFIG[num.qualityRating] ?? { label: nota.label, cls: nota.cor }
+          const limite = limiteDoNumero(num.messagingLimitTier, num.maxDailyConversations) ?? num.messagingLimit ?? null
           const connected = num.status === 'connected' || num.status === 'CONNECTED'
 
           return (
@@ -305,12 +308,10 @@ export function WhatsAppNumbers() {
                           <span className="text-xs text-surface-300">{quality.label}</span>
                         </div>
                       </div>
-                      {num.messagingLimit && (
                       <div>
-                        <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5">Limite</p>
-                        <span className="text-xs text-surface-300">{num.messagingLimit}</span>
+                        <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5" title="Quantos contatos diferentes a linha pode chamar primeiro (com template) em 24 horas">Limite de envio</p>
+                        <span className="text-xs text-surface-300">{limite ?? 'A Meta ainda não informou'}</span>
                       </div>
-                      )}
                       {num.connectedAt && (
                       <div>
                         <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5">Conectado em</p>
