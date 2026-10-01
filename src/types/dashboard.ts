@@ -46,8 +46,15 @@ export interface KpiMetric extends KpiDefinition {
   detail?: string | null
   /** Meta do indicador (mesma unidade do valor) — dá o estado na meta/atenção/fora. */
   meta?: { alvo: number; sentido: 'menor' | 'maior' } | null
-  trend: number    // % change vs previous period
-  sparkline: number[] // 7 data points (oldest → newest)
+  /**
+   * DC-5: variação contra o período anterior de mesma duração — `%` nas
+   * contagens e tempos, pontos percentuais (`pp`) nas taxas. `null` = sem
+   * comparação (indicador "agora", base zero ou sem dado).
+   */
+  trend: number | null
+  trendUnit?: '%' | 'pp'
+  /** DC-5: valor por dia do período (mais antigo → mais novo); vazio = sem série. */
+  sparkline: number[]
 }
 
 export interface VolumeDataPoint {
@@ -238,8 +245,8 @@ export function buildEmptySnapshot(): DashboardSnapshot {
   const kpis: KpiMetric[] = KPI_CATALOG.map((def) => ({
     ...def,
     value: 0,
-    trend: 0,
-    sparkline: [0, 0, 0, 0, 0, 0, 0],
+    trend: null,
+    sparkline: [],
   }))
   return {
     kpis,

@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ChevronRight, GripVertical, Plus, Search, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ChevronRight, GripVertical, Pin, Plus, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { api } from '@/services/api'
 import { Drawer } from '@/components/ui/Drawer'
 import { Button } from '@/components/ui/Button'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { KPI_CATALOG, type KpiId } from '@/types/dashboard'
+import { CAMPOS_DAS_METAS, type CampoDaMeta, type MetasDoPainel } from '@/lib/metasDoPainel'
+import { DESTAQUE_MAX, type Densidade } from './kpiIdentidade'
 
 // Personalizar indicadores (28/09) — no mesmo desenho do "Configurar colunas"
 // dos Contatos: rascunho semeado ao abrir, Salvar grava, Cancelar descarta,
@@ -16,6 +19,10 @@ import { KPI_CATALOG, type KpiId } from '@/types/dashboard'
 // Embaixo, o catálogo para adicionar, com busca e filtro por categoria.
 // Indicadores sem dado no backend (`hasData: false`) aparecem, mas não entram
 // (ficariam em 0 para sempre — ver SCRUM-1161, R11/R12).
+//
+// DC-5/DC-6 (01/10): densidade (compacta/detalhada) e até 2 indicadores em
+// destaque — preferências de quem vê, no navegador. Metas da empresa no fim:
+// todos leem, só administradores mudam (PUT /home/goals); vazio = sem meta.
 
 const KPI_MIN = 4
 const KPI_MAX = 20
@@ -49,19 +56,47 @@ function PontoDaCategoria({ categoria }: { categoria: string }) {
   )
 }
 
+export interface PreferenciasDaFaixa {
+  slots: KpiId[]
+  densidade: Densidade
+  destaque: KpiId[]
+}
+
 interface Props {
   open: boolean
   onClose: () => void
   slots: KpiId[]
   defaults: KpiId[]
-  onSave: (slots: KpiId[]) => void
+  densidade?: Densidade
+  destaque?: KpiId[]
+  onSave: (prefs: PreferenciasDaFaixa) => void
+  podeEditarMetas?: boolean
+  onMetasSalvas?: () => void
 }
 
-export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: Props) {
+type TextoDasMetas = Record<CampoDaMeta, string>
+const metasEmTexto = (m: MetasDoPainel): TextoDasMetas =>
+  Object.fromEntries(CAMPOS_DAS_METAS.map((c) => [c.campo, m[c.campo] ? String(m[c.campo]).replace('.', ',') : ''])) as TextoDasMetas
+
+const DENSIDADES: Array<{ valor: Densidade; rotulo: string; dica: string }> = [
+  { valor: 'compacta', rotulo: 'Compacta', dica: 'Número, variação e apoio' },
+  { valor: 'detalhada', rotulo: 'Detalhada', dica: 'Mais a linha por dia do período' },
+]
+
+export function KpiCustomizerDrawer({
+  open, onClose, slots, defaults, densidade = 'compacta', destaque = [], onSave, podeEditarMetas = false, onMetasSalvas,
+}: Props) {
   const [rascunho, setRascunho] = useState<KpiId[]>(slots)
   const [busca, setBusca] = useState('')
   const [categoria, setCategoria] = useState<string | null>(null)
   const [verSemDado, setVerSemDado] = useState(false)
+  const [dens, setDens] = useState<Densidade>(densidade)
+  const [fixos, setFixos] = useState<KpiId[]>(destaque)
+  // Metas: `null` = ainda carregando (ou falhou — `erroMetas` diz).
+  const [metasSalvas, setMetasSalvas] = useState<TextoDasMetas | null>(null)
+  const [metas, setMetas] = useState<TextoDasMetas | null>(null)
+  const [erroMetas, setErroMetas] = useState<string | null>(null)
+  const [salvando, setSalvando] = useState(false)
 
   // Semeia o rascunho a cada abertura (ajuste durante a renderização, como no
   // ContactsColumnsModal): Cancelar não deixa rastro.
@@ -73,8 +108,23 @@ export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: 
       setBusca('')
       setCategoria(null)
       setVerSemDado(false)
+      setDens(densidade)
+      setFixos(destaque.filter((id) => slots.includes(id)))
     }
   }
+
+  // Metas da empresa: relidas a cada abertura (outro admin pode ter mudado).
+  useEffect(() => {
+    if (!open) return
+    let vivo = true
+    setMetas(null)
+    setMetasSalvas(null)
+    setErroMetas(null)
+    api.get<MetasDoPainel>('/home/goals')
+      .then(({ data }) => { if (vivo) { const t = metasEmTexto(data ?? {}); setMetasSalvas(t); setMetas(t) } })
+      .catch(() => { if (vivo) setErroMetas('Não foi possível carregar as metas.') })
+    return () => { vivo = false }
+  }, [open])
 
   const { overIdx, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useDragReorder(
     rascunho,
@@ -94,7 +144,13 @@ export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: 
       return next
     })
   }
-  const remover = (id: KpiId) => { if (!noMinimo) setRascunho((prev) => prev.filter((s) => s !== id)) }
+  const remover = (id: KpiId) => {
+    if (noMinimo) return
+    setRascunho((prev) => prev.filter((s) => s !== id))
+    setFixos((prev) => prev.filter((s) => s !== id))
+  }
+  const alternarDestaque = (id: KpiId) =>
+    setFixos((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : prev.length < DESTAQUE_MAX ? [...prev, id] : prev))
   const adicionar = (id: KpiId) => { if (!cheio) setRascunho((prev) => (prev.includes(id) ? prev : [...prev, id])) }
 
   // O que dá para adicionar vem primeiro; o que ainda não tem dado fica num
@@ -111,7 +167,51 @@ export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: 
   // Buscando, o grupo sem dado abre sozinho: quem digitou "NPS" quer ver o NPS.
   const semDadoAberto = verSemDado || busca.trim().length > 0
 
-  const mudou = rascunho.length !== slots.length || rascunho.some((id, i) => id !== slots[i])
+  const mesmaLista = (a: KpiId[], b: KpiId[]) => a.length === b.length && a.every((id, i) => id === b[i])
+  const destaqueAtual = destaque.filter((id) => slots.includes(id))
+
+  // Metas: cada campo válido (número no intervalo) ou vazio (= sem meta).
+  const errosDasMetas = useMemo(() => {
+    const out: Partial<Record<CampoDaMeta, string>> = {}
+    if (!metas) return out
+    for (const c of CAMPOS_DAS_METAS) {
+      const t = metas[c.campo].trim()
+      if (!t) continue
+      const v = Number(t.replace(',', '.'))
+      if (!Number.isFinite(v) || v < c.min || v > c.max) out[c.campo] = `Entre ${c.min} e ${c.max.toLocaleString('pt-BR')}`
+    }
+    return out
+  }, [metas])
+  const mudancaDasMetas = useMemo(() => {
+    if (!podeEditarMetas || !metas || !metasSalvas) return null
+    const out: MetasDoPainel = {}
+    for (const c of CAMPOS_DAS_METAS) {
+      if (metas[c.campo].trim() === metasSalvas[c.campo].trim()) continue
+      const t = metas[c.campo].trim()
+      out[c.campo] = t ? Number(t.replace(',', '.')) : null
+    }
+    return Object.keys(out).length > 0 ? out : null
+  }, [podeEditarMetas, metas, metasSalvas])
+  const metasInvalidas = Object.keys(errosDasMetas).length > 0
+
+  const mudou = !mesmaLista(rascunho, slots) || dens !== densidade || !mesmaLista(fixos, destaqueAtual) || mudancaDasMetas !== null
+
+  const salvar = async () => {
+    if (mudancaDasMetas) {
+      setSalvando(true)
+      try {
+        await api.put('/home/goals', mudancaDasMetas)
+        onMetasSalvas?.()
+      } catch {
+        setErroMetas('Não foi possível salvar as metas. Tente de novo.')
+        setSalvando(false)
+        return
+      }
+      setSalvando(false)
+    }
+    onSave({ slots: rascunho, densidade: dens, destaque: fixos.filter((id) => rascunho.includes(id)) })
+    onClose()
+  }
 
   return (
     <Drawer
@@ -124,7 +224,7 @@ export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: 
       <header className="flex items-start justify-between gap-3 px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
         <div className="min-w-0">
           <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">Personalizar indicadores</h2>
-          <p className="text-[12.5px] text-surface-400 mt-0.5">Escolha e ordene o que aparece no topo. Vale só para você.</p>
+          <p className="text-[12.5px] text-surface-400 mt-0.5">Escolha, ordene e destaque o que aparece no topo. Vale só para você.</p>
         </div>
         <button
           type="button"
@@ -137,13 +237,38 @@ export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: 
       </header>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* ── Exibição ─────────────────────────────────────────────────── */}
+        <section aria-labelledby="kpi-exibicao" className="px-[18px] pt-4">
+          <h3 id="kpi-exibicao" className="text-[11px] font-bold uppercase tracking-[0.1em] text-surface-400 mb-2">Exibição</h3>
+          <div role="radiogroup" aria-label="Densidade dos cartões" className="grid grid-cols-2 gap-1 p-0.5 rounded-lg border border-surface-700 bg-surface-800">
+            {DENSIDADES.map((d) => (
+              <button
+                key={d.valor}
+                type="button"
+                role="radio"
+                aria-checked={dens === d.valor}
+                onClick={() => setDens(d.valor)}
+                className={cn(
+                  'flex flex-col items-start px-2.5 py-1.5 rounded-md text-left transition-colors',
+                  dens === d.valor ? 'bg-[var(--ink-bg)] text-[var(--ink-fg)]' : 'text-surface-300 hover:bg-[var(--rowhover)]',
+                )}
+              >
+                <span className="text-[12.5px] font-semibold">{d.rotulo}</span>
+                <span className={cn('text-[11px]', dens === d.valor ? 'opacity-80' : 'text-surface-500')}>{d.dica}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* ── Na faixa ─────────────────────────────────────────────────── */}
         <section aria-labelledby="kpi-na-faixa" className="px-[18px] pt-4 pb-3">
           <div className="flex items-baseline gap-2 mb-2">
             <h3 id="kpi-na-faixa" className="text-[11px] font-bold uppercase tracking-[0.1em] text-surface-400">Na faixa</h3>
             <span className="text-[11.5px] text-surface-500 tabular-nums">{count} de {KPI_MAX} · mínimo {KPI_MIN}</span>
           </div>
-          <p className="text-[11.5px] text-surface-500 mb-2">Os 5 primeiros formam a primeira linha. Arraste para mudar a ordem.</p>
+          <p className="text-[11.5px] text-surface-500 mb-2">
+            Arraste para mudar a ordem. Fixe até {DESTAQUE_MAX} em destaque — aparecem maiores, acima dos grupos.
+          </p>
           <ol className="rounded-lg border border-surface-700 bg-surface-800 overflow-hidden" data-testid="kpi-selecionados">
             {rascunho.map((id, idx) => {
               const def = DEF_BY_ID.get(id)
@@ -160,7 +285,6 @@ export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: 
                   className={cn(
                     'group flex items-center gap-2 h-10 pl-2 pr-1.5 transition-colors',
                     !ultimo && 'border-b border-surface-700',
-                    idx === 4 && !ultimo && 'border-b-[var(--bd2)] border-dashed',
                     overIdx === idx ? 'bg-brand-500/10' : 'hover:bg-[var(--rowhover)]',
                   )}
                 >
@@ -192,6 +316,20 @@ export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: 
                       <ArrowDown className="w-3.5 h-3.5" />
                     </button>
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => alternarDestaque(id)}
+                    disabled={!fixos.includes(id) && fixos.length >= DESTAQUE_MAX}
+                    aria-pressed={fixos.includes(id)}
+                    aria-label={fixos.includes(id) ? `Tirar ${def.label} do destaque` : `Destacar ${def.label}`}
+                    title={fixos.includes(id) ? 'Tirar do destaque' : fixos.length >= DESTAQUE_MAX ? `Até ${DESTAQUE_MAX} em destaque` : 'Destacar'}
+                    className={cn(
+                      'p-1 rounded-md hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none',
+                      fixos.includes(id) ? 'text-brand-500' : 'text-surface-500 hover:text-surface-200',
+                    )}
+                  >
+                    <Pin className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => remover(id)}
@@ -317,13 +455,64 @@ export function KpiCustomizerDrawer({ open, onClose, slots, defaults, onSave }: 
             </>
           )}
         </section>
+
+        {/* ── Metas da empresa ─────────────────────────────────────────── */}
+        <section aria-labelledby="kpi-metas" className="px-[18px] pt-1 pb-5 border-t border-surface-700">
+          <h3 id="kpi-metas" className="text-[11px] font-bold uppercase tracking-[0.1em] text-surface-400 mt-4 mb-1">Metas da empresa</h3>
+          <p className="text-[11.5px] text-surface-500 mb-2.5">
+            {podeEditarMetas
+              ? 'Valem para todos. Cada cartão mostra se está na meta. Deixe vazio para não ter meta.'
+              : 'Definidas pelos administradores. Cada cartão mostra se está na meta.'}
+          </p>
+          {erroMetas && <p role="alert" className="mb-2 text-[12px] font-semibold text-danger">{erroMetas}</p>}
+          {!metas ? (
+            !erroMetas && <p className="py-3 text-[12.5px] text-surface-500">Carregando metas…</p>
+          ) : (
+            <ul className="rounded-lg border border-surface-700 bg-surface-800 overflow-hidden" data-testid="kpi-metas">
+              {CAMPOS_DAS_METAS.map((c, i) => {
+                const erro = errosDasMetas[c.campo]
+                return (
+                  <li key={c.campo} className={cn('flex items-center gap-2 min-h-10 pl-3 pr-2 py-1.5', i < CAMPOS_DAS_METAS.length - 1 && 'border-b border-surface-700')}>
+                    <label htmlFor={`meta-${c.campo}`} className="flex-1 min-w-0 text-[12.5px] text-surface-200 leading-[1.3]">
+                      {c.rotulo}
+                      {erro && <span className="block text-[11px] font-semibold text-danger">{erro}</span>}
+                    </label>
+                    {podeEditarMetas ? (
+                      <span className="flex items-center gap-1 flex-shrink-0">
+                        <input
+                          id={`meta-${c.campo}`}
+                          inputMode="decimal"
+                          value={metas[c.campo]}
+                          onChange={(e) => setMetas((m) => (m ? { ...m, [c.campo]: e.target.value } : m))}
+                          placeholder="—"
+                          aria-invalid={!!erro}
+                          className={cn(
+                            'w-16 h-7 px-2 rounded-sm text-right text-[13px] tabular-nums bg-surface-900 border text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500',
+                            erro ? 'border-danger' : 'border-[var(--bd2)]',
+                          )}
+                        />
+                        <span className="w-6 text-[11.5px] text-surface-500">{c.unidade}</span>
+                      </span>
+                    ) : (
+                      <span id={`meta-${c.campo}`} className="flex-shrink-0 text-[13px] font-semibold tabular-nums text-surface-100">
+                        {metas[c.campo] ? `${metas[c.campo]} ${c.unidade}` : <span className="font-normal text-surface-500">sem meta</span>}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
       </div>
 
       <footer className="flex items-center justify-between gap-2 px-[18px] py-3 border-t border-surface-700 flex-shrink-0">
-        <Button variant="ghost" size="sm" onClick={() => setRascunho(defaults)}>Restaurar padrão</Button>
+        <Button variant="ghost" size="sm" onClick={() => { setRascunho(defaults); setDens('compacta'); setFixos([]) }}>Restaurar padrão</Button>
         <div className="flex items-center gap-2">
           <Button variant="neutral" size="md" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" size="md" onClick={() => { onSave(rascunho); onClose() }} disabled={!mudou}>Salvar</Button>
+          <Button variant="primary" size="md" onClick={() => { void salvar() }} disabled={!mudou || metasInvalidas || salvando}>
+            {salvando ? 'Salvando…' : 'Salvar'}
+          </Button>
         </div>
       </footer>
     </Drawer>

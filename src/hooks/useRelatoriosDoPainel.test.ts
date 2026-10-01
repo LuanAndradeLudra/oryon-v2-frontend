@@ -31,13 +31,13 @@ afterEach(() => cleanup())
 describe('useRelatoriosDoPainel', () => {
   it('manda o período nas duas leituras e a atividade uma vez só', async () => {
     const { result, rerender } = renderHook(({ p }: { p: DateRange }) => useRelatoriosDoPainel(p), { initialProps: { p: '7d' as DateRange } })
-    expect(get).toHaveBeenCalledWith('/home/stats', { params: { range: '7d' } })
-    expect(get).toHaveBeenCalledWith('/home/snapshot', { params: { range: '7d' } })
+    expect(get).toHaveBeenCalledWith('/home/stats', { params: { range: '7d', compare: 1 } })
+    expect(get).toHaveBeenCalledWith('/home/snapshot', { params: { range: '7d', compare: 1 } })
     await act(async () => { responder('7d', 5) })
     await waitFor(() => expect(resolvidasDe(result.current)).toBe(5))
 
     rerender({ p: '30d' })
-    expect(get).toHaveBeenCalledWith('/home/stats', { params: { range: '30d' } })
+    expect(get).toHaveBeenCalledWith('/home/stats', { params: { range: '30d', compare: 1 } })
     // Trocar de período não refaz a atividade (janela própria de 4 h).
     expect(get.mock.calls.filter(([u]) => u === '/activity-feed')).toHaveLength(1)
   })

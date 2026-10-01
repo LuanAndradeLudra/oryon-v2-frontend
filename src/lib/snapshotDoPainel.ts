@@ -1,6 +1,7 @@
 import { buildEmptySnapshot, type DashboardSnapshot, type KpiMetric } from '@/types/dashboard'
 import type { HomeStats } from '@/types'
 import { formatKpiValue } from '@/components/dashboard/utils'
+import { metasDosIndicadores, type MetasDoPainel } from '@/lib/metasDoPainel'
 
 /**
  * Monta o snapshot da aba Relatórios a partir de `/home/stats` e
@@ -16,6 +17,11 @@ import { formatKpiValue } from '@/components/dashboard/utils'
  * catálogo e no cabeçalho do `dashboard.service.ts` do backend.
  *
  * `atividade` não entra: tem janela própria (4 h) e é buscada à parte.
+ *
+ * DC-5 (01/10): com `?compare=1`, cada indicador do período ganha a variação
+ * contra o período anterior de MESMA duração (o backend recorta), e as
+ * contagens ganham a série diária (`dailySeries`) para a linha de tendência.
+ * DC-6: as metas da empresa (`goals`) dão o estado de cada cartão.
  */
 // O snapshot cru do backend não tem tipo exportado no frontend.
 type SnapshotCru = {
@@ -26,7 +32,22 @@ type SnapshotCru = {
   heatmap?: DashboardSnapshot['heatmap']
   avgResolutionTimeTenant?: number | null
   medianResolutionTimeTenant?: number | null
+  dailySeries?: Array<Record<string, number | string | null>>
+  previousPeriod?: { values?: { avgResolutionTimeTenant?: number | null; medianResolutionTimeTenant?: number | null } } | null
 } | null
+
+/** Indicadores "agora" (não seguem o período) e os sem período anterior: sem variação. */
+const SEM_VARIACAO = new Set(['active_conversations', 'queued', 'agents_online', 'appointments_scheduled', 'appointments_cancelled'])
+
+/** Coluna da série diária de cada contagem (DC-3 no backend). */
+const SERIE_DO_KPI: Record<string, string> = {
+  total_conversations: 'atendimentos',
+  resolved:            'resolvidas',
+  msgs_received:       'recebidas',
+  msgs_sent:           'enviadas',
+  new_contacts:        'contatos',
+  campaign_sent:       'disparos',
+}
 
 /** Número do backend ou `null` (ausente, nulo, NaN). */
 function n(v: unknown): number | null {
@@ -54,32 +75,22 @@ function tempo(segundos: unknown, minutos: unknown, houveResposta: boolean): num
 const fmtSeg = (s: number | null) => formatKpiValue(s, 'seconds')
 const plural = (q: number, um: string, varios: string) => `${q.toLocaleString('pt-BR')} ${q === 1 ? um : varios}`
 
-export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot {
-  const snap = buildEmptySnapshot()
-  const x = s as HomeStats & Record<string, unknown>
-
-  const resolvidas = n(x.conversationsResolvedToday)
-  const coorte = n(x.cohortConversations)
-  const semResposta = n(x.unansweredCycles) ?? 0
-  const humanas = n(x.humanFirstResponseCount) ?? 0
-  const sla = n(x.humanFirstResponseSlaRate)
-  const enviadasPor = (x.messagesSentBy ?? null) as { operator?: number; ai?: number; rule?: number; campaign?: number } | null
-  const mediaResolucao = n(db?.avgResolutionTimeTenant)
-
-  const valores: Record<string, number | null> = {
+/** Valor de cada indicador a partir dos números de um período (atual ou anterior). */
+function valoresDe(x: Record<string, unknown>, resolucao: { media: number | null; mediana: number | null }): Record<string, number | null> {
+  return {
     'total_conversations':    n(x.totalConversations),
     // Estes três são "agora" (a faixa diz), não do período.
     'active_conversations':   n(x.conversationsOpen),
     'queued':                 n(x.queueCount),
     'agents_online':          n(x.agentsOnline),
-    'resolved':               resolvidas,
+    'resolved':               n(x.conversationsResolvedToday),
     'abandoned':              n(x.abandonedCount),
     'resolution_rate':        n(x.resolutionRate),
     'abandon_rate':           n(x.abandonRate),
     'first_response_time':    tempo(x.medianResponseSeconds, x.medianResponseMinutes ?? x.avgResponseMinutes, (n(x.respondedCycles) ?? 0) > 0),
-    'human_first_response':   tempo(x.humanFirstResponseMedianSeconds, x.humanFirstResponseMedianMinutes, humanas > 0),
+    'human_first_response':   tempo(x.humanFirstResponseMedianSeconds, x.humanFirstResponseMedianMinutes, (n(x.humanFirstResponseCount) ?? 0) > 0),
     // Mediana 0 com resolução registrada = menos de 1 s ("<1s"), não "sem dado".
-    'avg_resolution_time':    tempo(db?.medianResolutionTimeTenant, null, mediaResolucao !== null) ?? mediaResolucao,
+    'avg_resolution_time':    tempo(resolucao.mediana, null, resolucao.media !== null) ?? resolucao.media,
     'recontact_rate':         n(x.recontactRate),
     'msgs_received':          n(x.messagesReceivedToday),
     'msgs_sent':              n(x.messagesSentToday),
@@ -93,6 +104,45 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
     'appointments_scheduled': n(x.appointmentsScheduled),
     'appointments_cancelled': n(x.appointmentsCancelled),
   }
+}
+
+/**
+ * Variação contra o período anterior. Taxas: diferença em pontos percentuais.
+ * Contagens e tempos: % — com base zero não há % honesto (0 → 5 não é
+ * "+∞%"), então fica sem variação. Mudança menor que 0,05 = estável (0).
+ */
+export function variacao(atual: number | null, anterior: number | null, unidade: string): { trend: number | null; trendUnit?: '%' | 'pp' } {
+  if (atual === null || anterior === null) return { trend: null }
+  if (unidade === 'percent') {
+    const pp = Math.round((atual - anterior) * 10) / 10
+    return { trend: pp, trendUnit: 'pp' }
+  }
+  if (anterior <= 0) return { trend: null }
+  const pct = Math.round(((atual - anterior) / anterior) * 1000) / 10
+  return { trend: pct, trendUnit: '%' }
+}
+
+export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot {
+  const snap = buildEmptySnapshot()
+  const x = s as HomeStats & Record<string, unknown>
+
+  const resolvidas = n(x.conversationsResolvedToday)
+  const coorte = n(x.cohortConversations)
+  const semResposta = n(x.unansweredCycles) ?? 0
+  const humanas = n(x.humanFirstResponseCount) ?? 0
+  const sla = n(x.humanFirstResponseSlaRate)
+  const enviadasPor = (x.messagesSentBy ?? null) as { operator?: number; ai?: number; rule?: number; campaign?: number } | null
+  const mediaResolucao = n(db?.avgResolutionTimeTenant)
+
+  const valores = valoresDe(x, { media: mediaResolucao, mediana: n(db?.medianResolutionTimeTenant) })
+  const ant = (x.previousPeriod ?? null) as { values?: Record<string, unknown> } | null
+  const resolucaoAnt = db?.previousPeriod?.values
+  const anteriores = ant?.values
+    ? valoresDe(ant.values, { media: n(resolucaoAnt?.avgResolutionTimeTenant), mediana: n(resolucaoAnt?.medianResolutionTimeTenant) })
+    : null
+  // O tempo de resolução vem do outro endpoint: sem o anterior dele, sem variação.
+  if (anteriores && !resolucaoAnt) anteriores['avg_resolution_time'] = null
+  const serie = Array.isArray(db?.dailySeries) ? db.dailySeries : []
 
   const detalhes: Record<string, string | null> = {
     'total_conversations': n(x.newConversations) !== null && n(x.reopenedConversations) !== null
@@ -121,19 +171,25 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
       : null,
   }
 
-  // Metas que já existem: o SLA da 1ª resposta humana (15 min no backend).
-  const metaSlaMin = n(x.slaTargetMinutes)
-  const metas: Record<string, KpiMetric['meta']> = {
-    'human_first_response': metaSlaMin ? { alvo: metaSlaMin * 60, sentido: 'menor' } : null,
-  }
+  // DC-6: metas da empresa; a 1ª resposta humana cai no SLA (15 min padrão).
+  const metas = metasDosIndicadores((x.goals ?? null) as MetasDoPainel | null, n(x.slaTargetMinutes))
 
-  snap.kpis = snap.kpis.map((kpi: KpiMetric) => ({
-    ...kpi,
-    value: valores[kpi.id] ?? null,
-    detail: detalhes[kpi.id] ?? null,
-    meta: metas[kpi.id] ?? null,
-    trend: 0,
-  }))
+  snap.kpis = snap.kpis.map((kpi: KpiMetric) => {
+    const value = valores[kpi.id] ?? null
+    const coluna = SERIE_DO_KPI[kpi.id]
+    const pontos = coluna ? serie.map((d) => n(d[coluna])) : []
+    return {
+      ...kpi,
+      value,
+      detail: detalhes[kpi.id] ?? null,
+      meta: metas[kpi.id] ?? null,
+      ...(anteriores && !SEM_VARIACAO.has(kpi.id)
+        ? variacao(value, anteriores[kpi.id] ?? null, kpi.unit)
+        : { trend: null }),
+      // Série só com 2+ dias e sem buraco (null = sem acesso, ex.: disparos do atendente).
+      sparkline: pontos.length >= 2 && pontos.every((v) => v !== null) ? (pontos as number[]) : [],
+    }
+  })
 
   const sd = db?.statusDistribution
   snap.statusDistribution = sd

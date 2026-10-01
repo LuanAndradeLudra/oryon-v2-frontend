@@ -96,3 +96,54 @@ describe('KpiGrid — um cartão por categoria', () => {
     expect(unidades).toEqual(['h', 'm'])
   })
 })
+
+describe('DC-5 — variação, destaque e densidade', () => {
+  function montarCom(metricas: KpiMetric[], prefs: { densidade?: string; destaque?: string[] } = {}) {
+    localStorage.setItem('oryon:dashboard:kpi-slots', JSON.stringify(metricas.map((m) => m.id)))
+    if (prefs.densidade) localStorage.setItem('oryon:dashboard:kpi-densidade', JSON.stringify(prefs.densidade))
+    if (prefs.destaque) localStorage.setItem('oryon:dashboard:kpi-destaque', JSON.stringify(prefs.destaque))
+    return render(
+      <MemoryRouter>
+        <KpiGrid metrics={metricas} customizerOpen={false} onCustomizerClose={() => undefined} />
+      </MemoryRouter>,
+    )
+  }
+
+  it('variação ao lado do número: cor pelo lado bom do indicador; p.p. nas taxas', () => {
+    montarCom([
+      kpi('resolved', 30, { trend: 20, trendUnit: '%' }),
+      kpi('first_response_time', 90, { trend: 12.5, trendUnit: '%' }),
+      kpi('resolution_rate', 62, { trend: -2.5, trendUnit: 'pp' }),
+      kpi('msgs_received', 10, { trend: 5, trendUnit: '%' }),
+      kpi('abandoned', 1, { trend: null }),
+    ])
+    expect(screen.getAllByTestId('kpi-variacao')).toHaveLength(4)
+    const de = (rotulo: string) => within(screen.getByText(rotulo).closest('[data-spotlight-target="kpi-cell"]') as HTMLElement).getByTestId('kpi-variacao')
+    expect(de('Resolvidas')).toHaveTextContent('↑20%')
+    expect(de('Resolvidas')).toHaveClass('text-online')
+    // Tempo subindo é ruim.
+    expect(de('Tempo de Resposta')).toHaveClass('text-danger')
+    expect(de('Taxa de Resolução')).toHaveTextContent('↓2,5 p.p.')
+    expect(de('Taxa de Resolução')).toHaveTextContent('caiu 2,5 pontos percentuais')
+    // Neutro (mensagens recebidas) fica cinza.
+    expect(de('Msgs Recebidas')).toHaveClass('text-surface-500')
+  })
+
+  it('compacta não desenha a linha; detalhada desenha onde há série', () => {
+    const serie = [1, 4, 2]
+    const metricas = [kpi('resolved', 3, { sparkline: serie }), kpi('resolution_rate', 50)]
+    montarCom(metricas)
+    expect(screen.queryByTestId('kpi-sparkline')).toBeNull()
+    cleanup()
+    montarCom(metricas, { densidade: 'detalhada' })
+    expect(screen.getAllByTestId('kpi-sparkline')).toHaveLength(1)
+    expect(screen.getByTestId('faixa-kpi')).toHaveAttribute('data-densidade', 'detalhada')
+  })
+
+  it('destaque sobe para a linha própria e sai do grupo', () => {
+    montarCom([kpi('resolved', 3, { sparkline: [1, 2] }), kpi('queued', 2), kpi('resolution_rate', 50)], { destaque: ['resolution_rate', 'nao_existe'] })
+    const destaques = screen.getByTestId('kpi-destaques')
+    expect(within(destaques).getByText('Taxa de Resolução')).toBeInTheDocument()
+    expect(screen.getAllByText('Taxa de Resolução')).toHaveLength(1)
+  })
+})

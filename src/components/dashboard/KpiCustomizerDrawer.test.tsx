@@ -1,9 +1,13 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { render, screen, fireEvent, cleanup, within, waitFor } from '@testing-library/react'
 import { KpiCustomizerDrawer } from './KpiCustomizerDrawer'
 import type { KpiId } from '@/types/dashboard'
 
-afterEach(() => cleanup())
+const { get, put } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn() }))
+vi.mock('@/services/api', () => ({ api: { get, put } }))
+
+beforeEach(() => { get.mockResolvedValue({ data: {} }) })
+afterEach(() => { cleanup(); get.mockReset(); put.mockReset() })
 
 const SLOTS: KpiId[] = ['active_conversations', 'resolved', 'first_response_time', 'queued', 'resolution_rate']
 
@@ -29,7 +33,7 @@ describe('Personalizar indicadores', () => {
     fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar indicador' }), { target: { value: 'recebidas' } })
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar Msgs Recebidas' }))
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
-    expect(onSave).toHaveBeenCalledWith([...SLOTS, 'msgs_received'])
+    expect(onSave).toHaveBeenCalledWith({ slots: [...SLOTS, 'msgs_received'], densidade: 'compacta', destaque: [] })
     expect(onClose).toHaveBeenCalled()
   })
 
@@ -63,5 +67,74 @@ describe('Personalizar indicadores', () => {
       expect.stringContaining('Agendamentos Marcados'),
       expect.stringContaining('Cancelamentos'),
     ])
+  })
+})
+
+describe('DC-5/DC-6 — densidade, destaque e metas', () => {
+  it('densidade e até 2 em destaque vão no Salvar', () => {
+    get.mockResolvedValue({ data: {} })
+    const { onSave } = montar()
+    fireEvent.click(screen.getByRole('radio', { name: /Detalhada/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Destacar Resolvidas' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Destacar Em Fila' }))
+    // O terceiro não entra: até 2.
+    expect(screen.getByRole('button', { name: 'Destacar Conversas Ativas' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(onSave).toHaveBeenCalledWith({ slots: SLOTS, densidade: 'detalhada', destaque: ['resolved', 'queued'] })
+  })
+
+  it('tirar da faixa tira do destaque', () => {
+    get.mockResolvedValue({ data: {} })
+    const onSave = vi.fn()
+    render(<KpiCustomizerDrawer open onClose={() => undefined} slots={SLOTS} defaults={SLOTS} destaque={['resolved']} onSave={onSave} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Tirar Resolvidas da faixa' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ destaque: [] }))
+  })
+
+  it('administrador muda as metas: só o que mudou vai no PUT, vazio apaga', async () => {
+    get.mockResolvedValue({ data: { taxaResolucao: 70, tempoRespostaMin: 5 } })
+    put.mockResolvedValue({ data: {} })
+    const onSave = vi.fn()
+    const onMetasSalvas = vi.fn()
+    render(<KpiCustomizerDrawer open onClose={() => undefined} slots={SLOTS} defaults={SLOTS} onSave={onSave} podeEditarMetas onMetasSalvas={onMetasSalvas} />)
+    const taxa = await screen.findByLabelText('Taxa de resolução de pelo menos')
+    expect(taxa).toHaveValue('70')
+    fireEvent.change(taxa, { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Entrega dos disparos de pelo menos'), { target: { value: '92,5' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(put).toHaveBeenCalledWith('/home/goals', { taxaResolucao: null, taxaEntrega: 92.5 }))
+    await waitFor(() => expect(onSave).toHaveBeenCalled())
+    expect(onMetasSalvas).toHaveBeenCalled()
+  })
+
+  it('meta fora do intervalo trava o Salvar e diz o limite', async () => {
+    get.mockResolvedValue({ data: {} })
+    render(<KpiCustomizerDrawer open onClose={() => undefined} slots={SLOTS} defaults={SLOTS} onSave={vi.fn()} podeEditarMetas />)
+    fireEvent.change(await screen.findByLabelText('Taxa de resolução de pelo menos'), { target: { value: '120' } })
+    expect(screen.getByText('Entre 1 e 100')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled()
+  })
+
+  it('falha ao salvar as metas: avisa e não fecha', async () => {
+    get.mockResolvedValue({ data: {} })
+    put.mockRejectedValue(new Error('403'))
+    const onClose = vi.fn()
+    const onSave = vi.fn()
+    render(<KpiCustomizerDrawer open onClose={onClose} slots={SLOTS} defaults={SLOTS} onSave={onSave} podeEditarMetas />)
+    fireEvent.change(await screen.findByLabelText('Taxa de resolução de pelo menos'), { target: { value: '80' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível salvar as metas')
+    expect(onSave).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('quem não é administrador só lê as metas', async () => {
+    get.mockResolvedValue({ data: { taxaResolucao: 70 } })
+    render(<KpiCustomizerDrawer open onClose={() => undefined} slots={SLOTS} defaults={SLOTS} onSave={vi.fn()} />)
+    const lista = await screen.findByTestId('kpi-metas')
+    expect(within(lista).queryAllByRole('textbox')).toHaveLength(0)
+    expect(lista).toHaveTextContent('70 %')
+    expect(lista).toHaveTextContent('sem meta')
   })
 })

@@ -104,3 +104,65 @@ describe('R4 — duração em segundos', () => {
     expect(k({ medianResponseMinutes: 3 }, 'first_response_time').value).toBe(180)
   })
 })
+
+describe('DC-5/DC-6 — comparação, série diária e metas', () => {
+  const kpiDe = (snap: ReturnType<typeof montarSnapshot>, id: string) => snap.kpis.find((k) => k.id === id)!
+
+  it('variação contra o período anterior: % nas contagens e tempos, p.p. nas taxas', () => {
+    const stats = {
+      totalConversations: 120, conversationsResolvedToday: 30, resolutionRate: 62.5, medianResponseSeconds: 90, respondedCycles: 5,
+      conversationsOpen: 9, messagesReceivedToday: 10,
+      previousPeriod: { values: {
+        totalConversations: 100, conversationsResolvedToday: 0, resolutionRate: 60, medianResponseSeconds: 120, respondedCycles: 4,
+        conversationsOpen: 3, messagesReceivedToday: null,
+      } },
+    } as unknown as HomeStats
+    const snap = montarSnapshot(stats, { medianResolutionTimeTenant: 3000, avgResolutionTimeTenant: 3600, previousPeriod: { values: { medianResolutionTimeTenant: 6000, avgResolutionTimeTenant: 7000 } } })
+    expect(kpiDe(snap, 'total_conversations')).toMatchObject({ trend: 20, trendUnit: '%' })
+    expect(kpiDe(snap, 'resolution_rate')).toMatchObject({ trend: 2.5, trendUnit: 'pp' })
+    expect(kpiDe(snap, 'first_response_time')).toMatchObject({ trend: -25, trendUnit: '%' })
+    expect(kpiDe(snap, 'avg_resolution_time')).toMatchObject({ trend: -50, trendUnit: '%' })
+    // Base zero: sem % honesto. Sem dado no anterior: sem variação.
+    expect(kpiDe(snap, 'resolved').trend).toBeNull()
+    expect(kpiDe(snap, 'msgs_received').trend).toBeNull()
+    // "Agora" não compara com período nenhum.
+    expect(kpiDe(snap, 'active_conversations').trend).toBeNull()
+  })
+
+  it('sem `previousPeriod` (backend antigo ou sem compare): nenhuma variação', () => {
+    const snap = montarSnapshot({ totalConversations: 5 } as unknown as HomeStats, null)
+    expect(snap.kpis.every((k) => k.trend === null)).toBe(true)
+  })
+
+  it('tempo de resolução sem o anterior do outro endpoint: sem variação', () => {
+    const stats = { previousPeriod: { values: {} } } as unknown as HomeStats
+    const snap = montarSnapshot(stats, { medianResolutionTimeTenant: 3000, avgResolutionTimeTenant: 3600 })
+    expect(kpiDe(snap, 'avg_resolution_time').trend).toBeNull()
+  })
+
+  it('série diária vira a linha das contagens; 1 dia só ou buraco (null) não desenha', () => {
+    const dia = (date: string, a: number, d: number | null) => ({ date, atendimentos: a, resolvidas: 1, recebidas: 2, enviadas: 3, contatos: 0, disparos: d })
+    const snap = montarSnapshot({} as HomeStats, { dailySeries: [dia('2026-09-29', 4, null), dia('2026-09-30', 6, null), dia('2026-10-01', 2, null)] })
+    expect(kpiDe(snap, 'total_conversations').sparkline).toEqual([4, 6, 2])
+    expect(kpiDe(snap, 'msgs_sent').sparkline).toEqual([3, 3, 3])
+    expect(kpiDe(snap, 'campaign_sent').sparkline).toEqual([])
+    expect(kpiDe(snap, 'resolution_rate').sparkline).toEqual([])
+    const umDia = montarSnapshot({} as HomeStats, { dailySeries: [dia('2026-10-01', 4, 1)] })
+    expect(kpiDe(umDia, 'total_conversations').sparkline).toEqual([])
+  })
+
+  it('metas da empresa viram o alvo do cartão, na unidade do valor; 1ª humana cai no SLA', () => {
+    const stats = {
+      slaTargetMinutes: 15,
+      goals: { tempoRespostaMin: 2, tempoResolucaoHoras: 4, taxaResolucao: 70, taxaRecontatoMax: 10, taxaEntrega: 95 },
+    } as unknown as HomeStats
+    const snap = montarSnapshot(stats, null)
+    expect(kpiDe(snap, 'first_response_time').meta).toEqual({ alvo: 120, sentido: 'menor' })
+    expect(kpiDe(snap, 'avg_resolution_time').meta).toEqual({ alvo: 14400, sentido: 'menor' })
+    expect(kpiDe(snap, 'resolution_rate').meta).toEqual({ alvo: 70, sentido: 'maior' })
+    expect(kpiDe(snap, 'recontact_rate').meta).toEqual({ alvo: 10, sentido: 'menor' })
+    expect(kpiDe(snap, 'campaign_delivery_rate').meta).toEqual({ alvo: 95, sentido: 'maior' })
+    expect(kpiDe(snap, 'human_first_response').meta).toEqual({ alvo: 900, sentido: 'menor' })
+    expect(kpiDe(snap, 'bot_deflection').meta).toBeNull()
+  })
+})

@@ -86,3 +86,8 @@ export const ROTULO_DO_ESTADO: Record<EstadoDaMeta, string> = {
   atencao: 'atenção',
   fora: 'fora da meta',
 }
+
+/** DC-5: compacta = número, variação e apoio; detalhada = mais a linha por dia. */
+export type Densidade = 'compacta' | 'detalhada'
+/** DC-5: até 2 indicadores em destaque, maiores, acima dos grupos. */
+export const DESTAQUE_MAX = 2
