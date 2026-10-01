@@ -20,26 +20,12 @@ import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/
 import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequiredBanner'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { WhatsAppTemplate, TemplateStatus } from '@/types'
+import {
+  statusDoModelo, STATUS_QUE_PARAM, SINAL_DA_META, qualidadeDoModelo, rotuloDaCategoria, dataCurta,
+} from '@/lib/metaRotulos'
 
-// `chip`/`icon` por status saíram junto com o `.color-chip` sólido — o chip
-// virou STATUS_CHIP_CLASS (TPL-05), sem ícone.
-const STATUS_CONFIG: Record<TemplateStatus, { label: string }> = {
-  PENDING:  { label: 'Em análise' },
-  APPROVED: { label: 'Aprovado' },
-  REJECTED: { label: 'Rejeitado' },
-  PAUSED:   { label: 'Pausado' },
-  DISABLED: { label: 'Desativado' },
-}
-
-// TPL-05 (spec 2c): chip suave (fundo tinta + texto colorido), sem ícone —
-// mesmo padrão do statusChip de CampaignsTab.tsx, chip "Aprovado · Meta".
-const STATUS_CHIP_CLASS: Record<TemplateStatus, string> = {
-  APPROVED: 'color-chip-soft border [--chip:var(--color-status-active)]',
-  PENDING:  'color-chip-soft border [--chip:var(--color-status-pending)]',
-  REJECTED: 'color-chip-soft border [--chip:var(--color-danger)]',
-  PAUSED:   'bg-surface-900 border border-surface-700 text-surface-400',
-  DISABLED: 'color-chip-soft border [--chip:var(--color-danger)]',
-}
+// Plano MA (MA-6.2): rótulo e chip vêm de `statusDoModelo`, com reserva —
+// status que a tela não conhecia (ARCHIVED, DELETED…) não quebram mais a lista.
 
 const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
   { value: 'all',      label: 'Todos' },
@@ -48,8 +34,10 @@ const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
   { value: 'REJECTED', label: 'Rejeitados' },
   { value: 'PAUSED',   label: 'Pausados' },
 ]
+/** Só aparece quando há algum: excluídos na Meta ficam fora de "Todos". */
+const FILTRO_EXCLUIDOS: { value: TemplateStatus; label: string } = { value: 'DELETED', label: 'Excluídos na Meta' }
 
-const lerStatusModelo = lerUmDe(['all', 'PENDING', 'APPROVED', 'REJECTED', 'PAUSED', 'DISABLED'] as const, 'all')
+const lerStatusModelo = lerUmDe(['all', 'PENDING', 'APPROVED', 'REJECTED', 'PAUSED', 'DISABLED', 'DELETED'] as const, 'all')
 
 export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) => void } = {}) {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
@@ -169,8 +157,12 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
   // Local filter via LineFilterChip. Rows without a whatsappNumberId
   // (legacy, Migration #045) stay visible so the badge + modal can
   // resolve them — hiding them would make the gap invisible.
+  const temExcluidos = templates.some((t) => t.status === 'DELETED')
   const filtered = templates.filter((t) => {
     if (!lineMatches(lineFilter, { whatsappNumberId: t.whatsappNumberId })) return false
+    // Excluído na Meta é histórico (a linha não é apagada, para os relatórios):
+    // fica fora de "Todos" e tem filtro próprio.
+    if (statusFilter === 'all' && t.status === 'DELETED') return false
     if (statusFilter !== 'all' && t.status !== statusFilter) return false
     if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false
     return true
@@ -219,7 +211,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
         </div>
 
         <SegmentedControl
-          options={FILTER_OPTIONS}
+          options={temExcluidos ? [...FILTER_OPTIONS, FILTRO_EXCLUIDOS] : FILTER_OPTIONS}
           value={statusFilter}
           onChange={setStatusFilter}
           label="Filtrar templates por status"
@@ -373,7 +365,9 @@ function TemplateRow({ template, selecionado, onSelect }: {
   selecionado: boolean
   onSelect: () => void
 }) {
-  const cfg = STATUS_CONFIG[template.status]
+  const cfg = statusDoModelo(template.status)
+  const sinal = template.metaFlag ? SINAL_DA_META[template.metaFlag] : null
+  const qualidadeBaixa = String(template.qualityScore ?? '').toUpperCase() === 'RED'
   return (
     <button
       role="listitem"
@@ -403,12 +397,19 @@ function TemplateRow({ template, selecionado, onSelect }: {
       {template.needsWabaAssignment && (
         <AlertCircle className="w-3.5 h-3.5 text-warning flex-none" aria-label="Sem linha WhatsApp atribuída" />
       )}
+      {/* Plano MA: aviso da Meta que não tira do ar (sinalizado, qualidade baixa, categoria mudando). */}
+      {(sinal || qualidadeBaixa || template.pendingCategory) && (
+        <AlertCircle
+          className="w-3.5 h-3.5 text-status-pending flex-none"
+          aria-label={sinal ? sinal.label : qualidadeBaixa ? 'Qualidade baixa na Meta' : 'Categoria vai mudar'}
+        />
+      )}
       {/* Responsivo: idioma e data somem abaixo de `sm` (640) — nada de
           fixo pra encolher sobrava na linha em 390px (soma das larguras
           fixas passava de 300px antes mesmo do nome). Nome + resumo +
           chip de status continuam sempre visíveis (o essencial). */}
       <span className="hidden sm:block text-[11px] text-surface-500 tabular-nums flex-none w-12 text-right">{template.language}</span>
-      <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none w-[74px] justify-center', STATUS_CHIP_CLASS[template.status])}>
+      <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none w-[74px] justify-center', cfg.chip)}>
         {cfg.label}
       </span>
       <span className="hidden sm:block text-[11px] text-surface-600 tabular-nums flex-none w-[62px] text-right">
@@ -444,8 +445,15 @@ function TemplateDetail({ template, canEdit, onEdit, onDelete, onAssignWaba, onD
       </div>
     )
   }
-  const cat = TEMPLATE_CATEGORIES[template.category]
-  const cfg = STATUS_CONFIG[template.status]
+  const cat = TEMPLATE_CATEGORIES[template.category] ?? { label: rotuloDaCategoria(template.category) }
+  const cfg = statusDoModelo(template.status)
+  const sinal = template.metaFlag ? SINAL_DA_META[template.metaFlag] : null
+  const qualidade = qualidadeDoModelo(template.qualityScore)
+  const parou = STATUS_QUE_PARAM.has(String(template.status).toUpperCase())
+  // Motivo: da reprovação (REJECTED) ou da pausa/desativação (os demais).
+  const motivo = template.status === 'REJECTED'
+    ? template.rejectionReason || template.metaStatusReason
+    : template.metaStatusReason
   return (
     <div className="flex flex-col">
       <div className="px-4 py-3.5 border-b border-surface-700 flex items-start gap-2.5">
@@ -454,13 +462,35 @@ function TemplateDetail({ template, canEdit, onEdit, onDelete, onAssignWaba, onD
           <p className="text-[13px] font-semibold text-surface-50 truncate">{template.name}</p>
           <p className="text-[11px] text-surface-500">{cat.label} · {template.language}</p>
         </div>
-        <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none', STATUS_CHIP_CLASS[template.status])}>
+        <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none', cfg.chip)}>
           {cfg.label}
         </span>
       </div>
 
-      {template.status === 'REJECTED' && template.rejectionReason && (
+      {/* Plano MA (MA-6.2): o motivo aparece em todo status que tira o template do ar. */}
+      {parou && (
+        <Banner variant="danger" className="mx-4 mt-3">
+          <span className="block font-semibold">{tituloDaParada(template.status)}</span>
+          {motivo && <span className="block">{motivo}</span>}
+          {template.status === 'DISABLED' && dataCurta(template.disableDate) && (
+            <span className="block">Desativado em {dataCurta(template.disableDate)}.</span>
+          )}
+          {template.status !== 'REJECTED' && (
+            <span className="block mt-1">Campanhas com este template foram interrompidas. Se a Meta reativá-lo, elas não voltam sozinhas: para reenviar, crie uma nova campanha.</span>
+          )}
+        </Banner>
+      )}
+      {!parou && template.status === 'PENDING' && template.rejectionReason && (
         <Banner variant="danger" className="mx-4 mt-3">{template.rejectionReason}</Banner>
+      )}
+      {sinal && (
+        <Banner variant={sinal.tom} className="mx-4 mt-3">{sinal.texto}</Banner>
+      )}
+      {template.pendingCategory && (
+        <Banner variant="info" className="mx-4 mt-3">
+          A Meta vai mudar a categoria deste template para {rotuloDaCategoria(template.pendingCategory)}
+          {dataCurta(template.pendingCategoryAt) ? ` em ${dataCurta(template.pendingCategoryAt)}` : ''}. Isso muda como a mensagem é cobrada.
+        </Banner>
       )}
 
       <div className="px-4 py-3">
@@ -469,6 +499,14 @@ function TemplateDetail({ template, canEdit, onEdit, onDelete, onAssignWaba, onD
 
       <div className="px-4 pb-3">
         <LinhaMeta rotulo="Categoria">{cat.label}</LinhaMeta>
+        {qualidade && (
+          <LinhaMeta rotulo="Qualidade">
+            <span className="inline-flex items-center gap-1.5">
+              <span className={cn('w-2 h-2 rounded-full', qualidade.cor)} aria-hidden />
+              {qualidade.label}
+            </span>
+          </LinhaMeta>
+        )}
         <LinhaMeta rotulo="Idioma">{template.language}</LinhaMeta>
         <LinhaMeta rotulo="Linha">
           <WhatsappLineChip whatsappNumberId={template.whatsappNumberId} />
@@ -503,4 +541,16 @@ function TemplateDetail({ template, canEdit, onEdit, onDelete, onAssignWaba, onD
       </div>
     </div>
   )
+}
+
+function tituloDaParada(status: string): string {
+  switch (String(status).toUpperCase()) {
+    case 'REJECTED': return 'A Meta reprovou este template.'
+    case 'PAUSED': return 'A Meta pausou este template.'
+    case 'DISABLED': return 'A Meta desativou este template.'
+    case 'ARCHIVED': return 'Este template foi arquivado na Meta.'
+    case 'PENDING_DELETION': return 'Este template está sendo excluído na Meta.'
+    case 'DELETED': return 'Este template foi excluído na Meta.'
+    default: return 'Este template não pode ser enviado agora.'
+  }
 }
