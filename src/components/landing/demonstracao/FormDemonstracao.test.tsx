@@ -30,9 +30,9 @@ function preencher() {
   for (const [rotulo, valor] of campos) {
     fireEvent.change(screen.getByLabelText(new RegExp(rotulo.replace(/[?]/g, '\\?'))), { target: { value: valor } })
   }
-  // Área de atuação e tamanho da equipe são escolhas em pílulas (rádios).
-  fireEvent.click(screen.getByRole('radio', { name: OK.segmento }))
-  fireEvent.click(screen.getByRole('radio', { name: OK.equipe }))
+  // Área de atuação e tamanho da equipe são listas (select nativo).
+  fireEvent.change(screen.getByRole('combobox', { name: new RegExp(formDemo.campos.segmento) }), { target: { value: OK.segmento } })
+  fireEvent.change(screen.getByRole('combobox', { name: new RegExp(formDemo.campos.equipe.replace(/[?]/g, '\\?')) }), { target: { value: OK.equipe } })
 }
 
 describe('FormDemonstracao', () => {
@@ -58,6 +58,13 @@ describe('FormDemonstracao', () => {
     expect(String(url)).toMatch(/\/public\/demo-requests$/)
     const corpo = JSON.parse(init.body)
     expect(corpo).toMatchObject({ nome: 'Ana', whatsapp: '47999990000', origem: 'home' })
+  })
+
+  it('a mensagem é opcional: começa recolhida e abre pelo link', () => {
+    render(<FormDemonstracao origem="teste" />)
+    expect(screen.queryByLabelText(new RegExp(formDemo.campos.mensagem.replace(/[?]/g, '\\?')))).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(formDemo.mensagemAbrir) }))
+    expect(screen.getByLabelText(new RegExp(formDemo.campos.mensagem.replace(/[?]/g, '\\?')))).toBeInTheDocument()
   })
 
   it('falha no envio: nada de sucesso falso — mostra o erro e deixa tentar de novo', async () => {

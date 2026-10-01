@@ -1,9 +1,10 @@
-import { useId, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { AlertCircle, Lock } from 'lucide-react'
+import { AlertCircle, Lock, Plus } from 'lucide-react'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { apiBaseUrl } from '@/config/env'
 import { cn } from '@/lib/utils'
@@ -58,78 +59,17 @@ export async function enviarPedido(p: PedidoDemonstracao): Promise<void> {
   if (!r.ok) throw new Error(`demo-requests ${r.status}`)
 }
 
-/**
- * Uma escolha em pílulas (rádios nativos, visualmente escondidos): área de
- * atuação e tamanho da equipe deixam de ser <select> — um clique em vez de
- * abrir uma lista, e todas as opções à vista (redesenho, 30/09).
- */
-function Escolha({ nome, rotulo, opcoes, valor, erro, onEscolher }: {
-  nome: string
-  rotulo: string
-  opcoes: readonly string[]
-  valor: string
-  erro?: string
-  onEscolher: (v: string) => void
-}) {
-  const erroId = useId()
-  return (
-    <fieldset aria-describedby={erro ? erroId : undefined} className="min-w-0">
-      <legend className="mb-2.5 text-[13px] font-medium text-surface-200">
-        {rotulo}<span aria-hidden className="ml-0.5 text-[var(--landing-destaque)]">*</span>
-      </legend>
-      <div className="flex flex-wrap gap-2">
-        {opcoes.map((o) => (
-          <label key={o} className="relative">
-            <input
-              type="radio"
-              name={nome}
-              value={o}
-              checked={valor === o}
-              onChange={() => onEscolher(o)}
-              aria-invalid={erro ? true : undefined}
-              required
-              className="peer sr-only"
-            />
-            <span
-              className={cn(
-                'flex h-10 cursor-pointer select-none items-center justify-center rounded-full border px-4 text-[13.5px] font-medium transition-[background-color,border-color,color] duration-150',
-                'border-white/[.09] bg-surface-950 text-surface-300 hover:border-white/[.18] hover:text-surface-100',
-                'peer-checked:border-[var(--landing-destaque)] peer-checked:bg-brand-500/[.14] peer-checked:text-surface-50',
-                'peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--landing-destaque)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--landing-cartao)]',
-                erro && 'border-danger/60',
-              )}
-            >
-              {o}
-            </span>
-          </label>
-        ))}
-      </div>
-      {erro && (
-        <p id={erroId} role="alert" className="mt-2 flex items-center gap-1.5 text-[12px] text-danger">
-          <AlertCircle className="h-3 w-3 flex-none" strokeWidth={2.2} aria-hidden />
-          {erro}
-        </p>
-      )}
-    </fieldset>
-  )
-}
-
-/** Um bloco do pedido: título curto e os campos dele. */
-function Parte({ titulo, children }: { titulo: string; children: ReactNode }) {
-  return (
-    <div className="grid gap-5">
-      <p className="text-[15px] font-semibold tracking-[-0.01em] text-surface-50">{titulo}</p>
-      {children}
-    </div>
-  )
-}
-
 export function FormDemonstracao({ origem }: { origem: string }) {
   const semMovimento = useReducedMotion()
   const [dados, setDados] = useState<PedidoDemonstracao>({ ...VAZIO, origem })
   const [erros, setErros] = useState<Erros>({})
   const [estado, setEstado] = useState<'editando' | 'enviando' | 'enviado' | 'falhou'>('editando')
   const avisoId = useId()
+  // A mensagem é opcional: começa recolhida atrás de um link e, aberta, recebe
+  // o foco (quem clicou quer escrever).
+  const [comMensagem, setComMensagem] = useState(false)
+  const mensagemRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => { if (comMensagem) mensagemRef.current?.focus() }, [comMensagem])
 
   const mudar = (campo: keyof PedidoDemonstracao) => (v: string) => {
     setDados((d) => ({ ...d, [campo]: v }))
@@ -178,10 +118,10 @@ export function FormDemonstracao({ origem }: { origem: string }) {
     )
   }
 
-  // Redesenho (30/09): campos preenchidos e afundados no painel (fundo da
-  // página dentro do cartão), raio 10, borda que acende no hover e no foco.
-  // O estado de erro volta pela borda (o className do Input sobrescreve a do
-  // componente, então o vermelho é reaplicado por aria-invalid).
+  // Campos preenchidos e afundados no painel (fundo da página dentro do
+  // cartão), raio 10, borda que acende no hover e no foco. O estado de erro
+  // volta pela borda (o className sobrescreve a do componente, então o
+  // vermelho é reaplicado por aria-invalid). As listas usam o mesmo desenho.
   const CAMPO = '[&>label]:text-[13px] [&>label]:font-medium [&>label]:text-surface-200 [&>label>span[aria-hidden]]:text-[var(--landing-destaque)] gap-2'
   const ENTRADA = cn(
     'h-11 rounded-[10px] border-white/[.09] bg-surface-950 px-3.5 text-[14.5px] text-surface-50',
@@ -190,41 +130,64 @@ export function FormDemonstracao({ origem }: { origem: string }) {
     'aria-[invalid=true]:border-danger/70',
   )
 
+  // Lista nativa no desenho dos campos: fechada, igual a um campo de texto (o
+  // "Selecione" em cinza, como um placeholder); aberta, a lista do sistema —
+  // escura pelo color-scheme da landing e, no celular, o seletor nativo.
+  const LISTA = (preenchida: boolean) => cn(ENTRADA, 'cursor-pointer pr-9', preenchida ? 'text-surface-50' : 'text-surface-500')
+  const OPCAO = 'bg-surface-900 text-surface-100'
+
   const c = formDemo.campos
   return (
     <form
       noValidate
       onSubmit={enviar}
       aria-describedby={avisoId}
-      className="rounded-xl border border-white/[.08] bg-[var(--landing-cartao)] p-5 shadow-[0_24px_60px_-28px_rgba(0,0,0,.8)] sm:p-8"
+      className="rounded-xl border border-white/[.08] bg-[var(--landing-cartao)] p-5 shadow-[0_24px_60px_-28px_rgba(0,0,0,.8)] sm:p-7"
     >
-      <div className="grid gap-8">
-        <Parte titulo={formDemo.parteVoce}>
-          <FormField label={c.nome} error={erros.nome} required className={CAMPO}>
-            <Input className={ENTRADA} name="nome" value={dados.nome} onChange={(e) => mudar('nome')(e.target.value)} autoComplete="name" />
+      {/* Formulário compacto (01/10, PO): os mesmos campos em duas colunas no
+          desktop — nome e WhatsApp, e-mail e empresa, área e equipe — em vez
+          de uma coluna com pílulas (925 px de altura, mais que a tela). */}
+      <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+        <FormField label={c.nome} error={erros.nome} required className={CAMPO}>
+          <Input className={ENTRADA} name="nome" value={dados.nome} onChange={(e) => mudar('nome')(e.target.value)} autoComplete="name" />
+        </FormField>
+        <FormField label={c.whatsapp} error={erros.whatsapp} required className={CAMPO}>
+          <Input className={ENTRADA} name="whatsapp" value={dados.whatsapp} onChange={(e) => mudar('whatsapp')(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000…" />
+        </FormField>
+        <FormField label={c.email} error={erros.email} required className={CAMPO}>
+          <Input className={ENTRADA} name="email" type="email" spellCheck={false} value={dados.email} onChange={(e) => mudar('email')(e.target.value)} autoComplete="email" placeholder="voce@empresa.com.br…" />
+        </FormField>
+        <FormField label={c.empresa} error={erros.empresa} required className={CAMPO}>
+          <Input className={ENTRADA} name="empresa" value={dados.empresa} onChange={(e) => mudar('empresa')(e.target.value)} autoComplete="organization" />
+        </FormField>
+        <FormField label={c.segmento} error={erros.segmento} required className={CAMPO}>
+          <Select size="lg" className={LISTA(!!dados.segmento)} name="segmento" value={dados.segmento} onChange={(e) => mudar('segmento')(e.target.value)}>
+            <option value="" disabled className={OPCAO}>{formDemo.selecione}</option>
+            {formDemo.segmentos.map((o) => <option key={o} value={o} className={OPCAO}>{o}</option>)}
+          </Select>
+        </FormField>
+        <FormField label={c.equipe} error={erros.equipe} required className={CAMPO}>
+          <Select size="lg" className={LISTA(!!dados.equipe)} name="equipe" value={dados.equipe} onChange={(e) => mudar('equipe')(e.target.value)}>
+            <option value="" disabled className={OPCAO}>{formDemo.selecione}</option>
+            {formDemo.tamanhos.map((o) => <option key={o} value={o} className={OPCAO}>{o}</option>)}
+          </Select>
+        </FormField>
+        {comMensagem ? (
+          <FormField label={c.mensagem} requirement="optional" className={cn(CAMPO, 'sm:col-span-2')}>
+            <Textarea ref={mensagemRef} className={cn(ENTRADA, 'h-auto min-h-[88px] py-3 leading-relaxed')} name="mensagem" value={dados.mensagem} onChange={(e) => mudar('mensagem')(e.target.value)} rows={3} maxLength={1000} placeholder={formDemo.mensagemExemplo} />
           </FormField>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <FormField label={c.whatsapp} error={erros.whatsapp} required className={CAMPO}>
-              <Input className={ENTRADA} name="whatsapp" value={dados.whatsapp} onChange={(e) => mudar('whatsapp')(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(00) 00000-0000…" />
-            </FormField>
-            <FormField label={c.email} error={erros.email} required className={CAMPO}>
-              <Input className={ENTRADA} name="email" type="email" spellCheck={false} value={dados.email} onChange={(e) => mudar('email')(e.target.value)} autoComplete="email" placeholder="voce@empresa.com.br…" />
-            </FormField>
-          </div>
-        </Parte>
-
-        <div aria-hidden className="h-px bg-white/[.06]" />
-
-        <Parte titulo={formDemo.parteOperacao}>
-          <FormField label={c.empresa} error={erros.empresa} required className={CAMPO}>
-            <Input className={ENTRADA} name="empresa" value={dados.empresa} onChange={(e) => mudar('empresa')(e.target.value)} autoComplete="organization" />
-          </FormField>
-          <Escolha nome="segmento" rotulo={c.segmento} opcoes={formDemo.segmentos} valor={dados.segmento} erro={erros.segmento} onEscolher={mudar('segmento')} />
-          <Escolha nome="equipe" rotulo={c.equipe} opcoes={formDemo.tamanhos} valor={dados.equipe} erro={erros.equipe} onEscolher={mudar('equipe')} />
-          <FormField label={c.mensagem} requirement="optional" className={CAMPO}>
-            <Textarea className={cn(ENTRADA, 'h-auto min-h-[96px] py-3 leading-relaxed')} name="mensagem" value={dados.mensagem} onChange={(e) => mudar('mensagem')(e.target.value)} rows={3} maxLength={1000} placeholder={formDemo.mensagemExemplo} />
-          </FormField>
-        </Parte>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setComMensagem(true)}
+            aria-expanded={false}
+            className="-my-1 inline-flex items-center gap-1.5 justify-self-start rounded-sm py-1 text-[13.5px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 sm:col-span-2"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            {formDemo.mensagemAbrir}
+            <span className="font-normal text-surface-500">({formDemo.opcional})</span>
+          </button>
+        )}
       </div>
 
       {/* Armadilha para robôs: fora da tela e fora da ordem de tabulação. */}
@@ -239,7 +202,7 @@ export function FormDemonstracao({ origem }: { origem: string }) {
         </p>
       )}
 
-      <BotaoLanding type="submit" tamanho="lg" seta carregando={estado === 'enviando'} className="mt-8 w-full">
+      <BotaoLanding type="submit" tamanho="lg" seta carregando={estado === 'enviando'} className="mt-6 w-full">
         {estado === 'enviando' ? formDemo.enviando : formDemo.enviar}
       </BotaoLanding>
       <p id={avisoId} className="mt-3 text-center text-[12.5px] leading-relaxed text-surface-500 text-balance">
