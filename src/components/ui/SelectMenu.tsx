@@ -385,7 +385,8 @@ function PainelDaLista({ ancoraRef, id, idOpcao, rotulo, opcoes, escolhido, ativ
                 )}
               >
                 <span className="min-w-0 flex-1 truncate">{o.rotulo || ' '}</span>
-                {marcada && <Check aria-hidden className="h-3.5 w-3.5 flex-shrink-0 text-brand-400" />}
+                {/* Sem visto no texto inicial desabilitado ("Selecione…"): é aviso, não escolha. */}
+                {marcada && !o.desabilitado && <Check aria-hidden className="h-3.5 w-3.5 flex-shrink-0 text-brand-400" />}
               </li>
             </Fragment>
           )

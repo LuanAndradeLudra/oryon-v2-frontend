@@ -91,6 +91,25 @@ describe('SelectMenu — substituto direto do Select', () => {
     expect(campo()).toHaveTextContent('B')
   })
 
+  it('texto inicial desabilitado ("Selecione…"): aparece no campo, não é escolhido e a lista abre na primeira opção de verdade', () => {
+    const onChange = vi.fn()
+    render(
+      <Controlado rotulo="Campo" onChange={onChange}>
+        <option value="" disabled>Selecione um campo…</option>
+        <option value="plano">Plano</option>
+        <option value="cidade">Cidade</option>
+      </Controlado>,
+    )
+    expect(campo('Campo')).toHaveTextContent('Selecione um campo…')
+    fireEvent.keyDown(campo('Campo'), { key: 'ArrowDown' })
+    expect(campo('Campo')).toHaveAttribute('aria-activedescendant', opcao('Plano').id)
+    expect(opcao('Selecione um campo…')).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.click(opcao('Selecione um campo…'))
+    expect(onChange).not.toHaveBeenCalled()
+    fireEvent.keyDown(campo('Campo'), { key: 'Enter' })
+    expect(onChange).toHaveBeenCalledWith('plano')
+  })
+
   it('lê opções em Fragment, array, texto misto e optgroup (e ignora false)', () => {
     const pessoas = [{ id: 'u1', nome: 'Ana', sobrenome: 'Lima' }, { id: 'u2', nome: 'Bia', sobrenome: 'Souza' }]
     render(
