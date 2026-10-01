@@ -193,8 +193,8 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
             <VolumeChart data={snapshot.volumeChart} range={r.periodoCarregado ?? periodo} />
           </div>
           <div className="col-span-12 xl:col-span-4">
-            {/* Distribuição por status é o estado de agora. */}
-            <StatusDonut data={snapshot.statusDistribution} escopo={ESCOPO.agora} />
+            {/* Revisão 30/09 (C5): ativas/pendentes de agora; resolvidas/arquivadas do período. */}
+            <StatusDonut data={snapshot.statusDistribution} periodo={periodoPorExtenso(r.periodoCarregado ?? periodo)} />
           </div>
         </div>
 

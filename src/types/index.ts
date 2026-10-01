@@ -1420,6 +1420,20 @@ export interface HomeStats {
   myMessagesSentToday: number
   appointmentsScheduled?: number | null
   appointmentsCancelled?: number | null
+  // Revisão das métricas (30/09)
+  newConversations?: number
+  reopenedConversations?: number
+  cohortConversations?: number
+  unansweredCycles?: number
+  humanFirstResponseAvgMinutes?: number | null
+  humanFirstResponseMedianMinutes?: number | null
+  humanFirstResponseCount?: number
+  humanFirstResponseSlaRate?: number | null
+  slaTargetMinutes?: number
+  newContactsInPeriod?: number
+  messagesSentBy?: { operator: number; ai: number; rule: number; campaign: number }
+  botResolved?: number
+  botDeflectionRate?: number | null
 }
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────

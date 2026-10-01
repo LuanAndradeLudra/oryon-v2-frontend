@@ -55,4 +55,37 @@ describe('R4 — duração em segundos', () => {
     expect(formatKpiValue(222102, 'seconds')).toBe('2d 14h')
     expect(formatKpiValue(172000, 'seconds')).toBe('2d')
   })
+
+  it('revisão 30/09: tempos pela mediana, detalhe real na linha de apoio e a base de cada taxa', () => {
+    const stats = {
+      totalConversations: 12, newConversations: 9, reopenedConversations: 3, cohortConversations: 10,
+      conversationsResolvedToday: 8, resolutionRate: 60, abandonRate: 10,
+      avgResponseMinutes: 12, medianResponseMinutes: 2, unansweredCycles: 4,
+      humanFirstResponseMedianMinutes: 6, humanFirstResponseCount: 5, humanFirstResponseSlaRate: 80, slaTargetMinutes: 15,
+      botResolved: 3, botDeflectionRate: 38, newContactsInPeriod: 7, newContactsThisWeek: 99,
+      messagesSentToday: 30, messagesSentBy: { operator: 10, ai: 15, rule: 5, campaign: 0 },
+    } as unknown as HomeStats
+    const snap = montarSnapshot(stats, { avgResolutionTimeTenant: 7200, medianResolutionTimeTenant: 3600 })
+    const kpi = (id: string) => snap.kpis.find((k) => k.id === id)!
+    expect(kpi('total_conversations').detail).toBe('9 novos · 3 voltaram')
+    expect(kpi('resolution_rate').detail).toBe('de 10 atendimentos iniciados')
+    expect(kpi('first_response_time').value).toBe(120) // mediana, não a média de 12 min
+    expect(kpi('first_response_time').detail).toBe('média 12m · 4 sem resposta')
+    expect(kpi('human_first_response').value).toBe(360)
+    expect(kpi('human_first_response').detail).toBe('80% em até 15 min · 5 atendimentos')
+    expect(kpi('avg_resolution_time').value).toBe(3600)
+    expect(kpi('avg_resolution_time').detail).toBe('média 2h')
+    expect(kpi('bot_deflection').detail).toBe('3 de 8 resolvidas')
+    expect(kpi('new_contacts').value).toBe(7) // do período, não os 7 dias fixos
+    expect(kpi('msgs_sent').detail).toBe('pessoas 10 · IA 15 · automáticas 5')
+    expect(kpi('abandoned').label).toBe('Arquivadas')
+    expect(KPI_CATALOG.every((d) => !!d.help)).toBe(true)
+  })
+
+  it('revisão 30/09: sem resposta humana no período diz isso, em vez de um tempo inventado', () => {
+    const snap = montarSnapshot({ humanFirstResponseCount: 0, humanFirstResponseMedianMinutes: null } as unknown as HomeStats, null)
+    const h = snap.kpis.find((k) => k.id === 'human_first_response')!
+    expect(h.value).toBeNull()
+    expect(h.detail).toBe('nenhuma resposta de pessoa no período')
+  })
 })

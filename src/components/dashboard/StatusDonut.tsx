@@ -5,17 +5,23 @@ import { useChartColors } from '@/hooks/useChartColors'
 import type { StatusDistribution } from '@/types/dashboard'
 import { EscopoDoCartao } from './EscopoDoCartao'
 
-/** `escopo`: o recorte, quando o cartão está numa tela com seletor de período. */
-export const StatusDonut = memo(function StatusDonut({ data, escopo }: { data: StatusDistribution; escopo?: string }) {
+/**
+ * `escopo`: o recorte, quando o cartão está numa tela com seletor de período.
+ * Revisão 30/09 (C5): ativas e pendentes são de AGORA; resolvidas e arquivadas,
+ * do PERÍODO (`periodo`, ex.: "nos últimos 7 dias"). Antes o cartão dizia
+ * "agora" e somava as resolvidas de todo o histórico — por isso o centro mostra
+ * só o que está em andamento, e a lista diz o recorte de cada linha.
+ */
+export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: { data: StatusDistribution; escopo?: string; periodo?: string }) {
   const C = useChartColors()
   const SLICES = [
-    { key: 'pending' as const,   label: 'Pendentes',   color: C.away    },
-    { key: 'open' as const,      label: 'Ativas',      color: C.brand   },
-    { key: 'resolved' as const,  label: 'Resolvidas',  color: C.online  },
-    { key: 'abandoned' as const, label: 'Abandonadas', color: C.danger  },
+    { key: 'pending' as const,   label: 'Pendentes',   recorte: 'agora',   color: C.away    },
+    { key: 'open' as const,      label: 'Ativas',      recorte: 'agora',   color: C.brand   },
+    { key: 'resolved' as const,  label: 'Resolvidas',  recorte: periodo ?? 'no período', color: C.online  },
+    { key: 'abandoned' as const, label: 'Arquivadas',  recorte: periodo ?? 'no período', color: C.danger  },
   ]
-  const slices = SLICES.map((s) => ({ name: s.label, value: data[s.key], color: s.color }))
-  const total = slices.reduce((s, x) => s + x.value, 0)
+  const slices = SLICES.map((s) => ({ name: s.label, recorte: s.recorte, value: data[s.key], color: s.color }))
+  const emAndamento = data.open + data.pending
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
@@ -39,24 +45,21 @@ export const StatusDonut = memo(function StatusDonut({ data, escopo }: { data: S
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xl font-bold text-surface-50 tabular-nums">{total.toLocaleString('pt-BR')}</span>
-          <span className="text-[10px] text-surface-500 uppercase tracking-wide">conversas</span>
+          <span className="text-xl font-bold text-surface-50 tabular-nums">{emAndamento.toLocaleString('pt-BR')}</span>
+          <span className="text-[10px] text-surface-500 uppercase tracking-wide">em andamento</span>
         </div>
       </div>
 
       <div className="flex flex-col gap-2 mt-3">
         {slices.map((s) => {
-          const pct = total > 0 ? ((s.value / total) * 100).toFixed(1).replace('.', ',') : '0,0'
           return (
             <div key={s.name} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }} />
                 <span className="text-surface-400">{s.name}</span>
+                <span className="text-surface-600">· {s.recorte}</span>
               </div>
-              <div className="flex items-center gap-2 tabular-nums">
-                <span className="text-surface-100 font-medium">{s.value.toLocaleString('pt-BR')}</span>
-                <span className="text-surface-600 w-10 text-right">{pct}%</span>
-              </div>
+              <span className="text-surface-100 font-medium tabular-nums">{s.value.toLocaleString('pt-BR')}</span>
             </div>
           )
         })}

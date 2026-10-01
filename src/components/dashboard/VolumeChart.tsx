@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { DateRange, VolumeDataPoint } from '@/types/dashboard'
-import { ESCOPO, volumeSeguePeriodo } from '@/lib/periodoDoPainel'
+import { ESCOPO, periodoPorExtenso, volumeSeguePeriodo } from '@/lib/periodoDoPainel'
 import { EscopoDoCartao } from './EscopoDoCartao'
 
 function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
@@ -48,6 +48,8 @@ export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
 }) {
   const C = useChartColors()
   const chartData = data
+  // O backend manda todos os dias do período (zeros inclusive): vazio = nenhuma mensagem no período.
+  const semMensagem = chartData.every((d) => d.inbound === 0 && d.outbound === 0)
   // R2-DASH-09 (canvas 1b, valores exatos): card sem padding próprio; header
   // h40 px14 gap16 border-b; legenda gap14 11.5 --tx2; segmentado raio 6 borda --bd
   // com células h24 px9 11.5/600 (ativa --sf2/--tx, demais --tx2 + border-left);
@@ -72,11 +74,11 @@ export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
           100% do ResponsiveContainer resolviam para zero e o gráfico sumia —
           medido na demonstração da landing, mesmo layout do app. */}
       <div className="h-[170px] flex-shrink-0 pt-3.5 px-3.5 pb-2">
-        {chartData.length === 0 ? (
+        {semMensagem ? (
           // P6: gráfico vazio não desenha eixos em branco — "Hoje" pode não
           // ter mensagem nenhuma ainda (dia começando, fora do horário).
           <div className="h-full flex items-center justify-center text-[11.5px] text-surface-500">
-            Sem mensagens hoje ainda
+            Sem mensagens {periodoPorExtenso(range)}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">

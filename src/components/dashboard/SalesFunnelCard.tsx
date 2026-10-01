@@ -121,7 +121,7 @@ export function SalesFunnelCard() {
             <span className="text-right">Negócios</span>
             <span className="text-right">Valor</span>
             <span className="pl-4">Distribuição</span>
-            <span className="text-right" title="Dos negócios que entraram na etapa, quantos passaram para a seguinte (na última, quantos foram ganhos)">Avançam</span>
+            <span className="text-right" title="Em todo o histórico do funil (não segue o período): dos negócios que entraram na etapa, quantos passaram para a seguinte (na última, quantos foram ganhos).">Avançam*</span>
           </div>
           {rows.map((row, i) => {
             const conversion = conversaoDe(i)
@@ -151,6 +151,9 @@ export function SalesFunnelCard() {
               </div>
             )
           })}
+          <p className="px-3.5 py-2 border-t border-surface-700 text-[11px] text-surface-500">
+            * Avançam: em todo o histórico do funil (não segue o período). Negócios e valor são de agora.
+          </p>
         </div>
       )}
     </div>

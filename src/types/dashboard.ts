@@ -5,7 +5,7 @@ export type DateRange = 'today' | '7d' | '30d' | 'month'
 export type KpiId =
   | 'total_conversations' | 'active_conversations' | 'queued'
   | 'resolved' | 'abandoned' | 'resolution_rate' | 'abandon_rate'
-  | 'first_response_time' | 'avg_resolution_time' | 'sla_compliance'
+  | 'first_response_time' | 'human_first_response' | 'avg_resolution_time' | 'sla_compliance'
   | 'csat' | 'nps' | 'recontact_rate'
   | 'msgs_received' | 'msgs_sent' | 'new_contacts'
   | 'bot_deflection' | 'bot_resolved'
@@ -35,11 +35,15 @@ export interface KpiDefinition {
    *  disparos/marketing ainda não têm dado no backend). Omitido = true. O
    *  customizador usa isto pra não oferecer como se fosse um KPI de verdade. */
   hasData?: boolean
+  /** Revisão 30/09: o que o número conta, em português (ⓘ do cartão). */
+  help?: string
 }
 
 export interface KpiMetric extends KpiDefinition {
   /** `null` = sem dado (mostra "—"), nunca um 0 inventado (regra 6). */
   value: number | null
+  /** Linha de apoio com dado real (ex.: "média 4 min · 3 sem resposta"). */
+  detail?: string | null
   trend: number    // % change vs previous period
   sparkline: number[] // 7 data points (oldest → newest)
 }
@@ -83,9 +87,12 @@ export interface AgentMetrics {
   departmentName: string | null
   /** `null` = sem rastreio de presença ainda (mostra "—", não "Offline"). */
   isOnline: boolean | null
+  /** Atendimentos atuais iniciados no período, do dono atual. */
   conversationsToday: number
   resolvedToday: number
-  avgResponseTime: number | null   // seconds (1ª resposta humana), null = sem dado
+  /** Quantas 1ªs respostas humanas a pessoa deu no período (base do TMR e do SLA). */
+  firstResponses?: number
+  avgResponseTime: number | null   // seconds (1ª resposta humana, do repasse), null = sem dado
   avgResolutionTime: number | null // seconds, null = sem dado
   /** K8: % de 1ª resposta humana dentro do SLA (15 min); null = sem conversa respondida. */
   slaCompliance: number | null
@@ -164,37 +171,54 @@ export const EMPTY_REALTIME_STATUS: RealtimeStatus = {
 // fonte no backend e os que a D4 tirou (CSAT, NPS, SLA global, Ads, CTR,
 // opt-out, utilização). Slots salvos com esses ids são ignorados (loadSlots).
 export const KPI_CATALOG: KpiDefinition[] = [
-  { id: 'total_conversations',  label: 'Total de Conversas',      category: 'Atendimento', unit: 'count',      trendIsGood: 'up'     },
-  { id: 'active_conversations', label: 'Conversas Ativas',        category: 'Atendimento', unit: 'count',      trendIsGood: 'neutral'},
-  { id: 'queued',               label: 'Em Fila',                  category: 'Atendimento', unit: 'count',      trendIsGood: 'down'   },
-  { id: 'resolved',             label: 'Resolvidas',               category: 'Atendimento', unit: 'count',      trendIsGood: 'up'     },
-  { id: 'abandoned',            label: 'Abandonadas',              category: 'Atendimento', unit: 'count',      trendIsGood: 'down' },
-  { id: 'resolution_rate',      label: 'Taxa de Resolução',        category: 'Atendimento', unit: 'percent',    trendIsGood: 'up'     },
-  { id: 'abandon_rate',         label: 'Taxa de Abandono',         category: 'Atendimento', unit: 'percent',    trendIsGood: 'down' },
-  { id: 'first_response_time',  label: 'TMR (1ª Resposta)',        category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down'   },
-  { id: 'avg_resolution_time',  label: 'Tempo Médio Resolução',    category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down' },
-  { id: 'recontact_rate',       label: 'Taxa de Recontato',        category: 'Qualidade',   unit: 'percent',    trendIsGood: 'down' },
-  { id: 'msgs_received',        label: 'Msgs Recebidas',           category: 'Volume',      unit: 'count',      trendIsGood: 'neutral'},
-  { id: 'msgs_sent',            label: 'Msgs Enviadas',            category: 'Volume',      unit: 'count',      trendIsGood: 'neutral'},
-  { id: 'new_contacts',         label: 'Novos Contatos',           category: 'Volume',      unit: 'count',      trendIsGood: 'up'     },
-  { id: 'bot_deflection',       label: 'Deflexão do Bot',          category: 'Bot',         unit: 'percent',    trendIsGood: 'up' },
-  { id: 'bot_resolved',         label: 'Resolvidas pelo Bot',      category: 'Bot',         unit: 'count',      trendIsGood: 'up' },
-  { id: 'agents_online',        label: 'Agentes Online',           category: 'Equipe',      unit: 'count',      trendIsGood: 'neutral'},
+  { id: 'total_conversations',  label: 'Atendimentos',             category: 'Atendimento', unit: 'count',      trendIsGood: 'up',
+    help: 'Atendimentos iniciados no período: contatos novos mais os clientes que voltaram (conversa reaberta). Cada volta do cliente é um atendimento.' },
+  { id: 'active_conversations', label: 'Conversas Ativas',         category: 'Atendimento', unit: 'count',      trendIsGood: 'neutral',
+    help: 'Conversas abertas neste momento (não segue o período).' },
+  { id: 'queued',               label: 'Em Fila',                  category: 'Atendimento', unit: 'count',      trendIsGood: 'down',
+    help: 'Conversas pendentes sem dono neste momento — a mesma aba Fila das Conversas (não segue o período).' },
+  { id: 'resolved',             label: 'Resolvidas',               category: 'Atendimento', unit: 'count',      trendIsGood: 'up',
+    help: 'Conversas marcadas como resolvidas dentro do período (e que seguem resolvidas).' },
+  { id: 'abandoned',            label: 'Arquivadas',               category: 'Atendimento', unit: 'count',      trendIsGood: 'down',
+    help: 'Conversas arquivadas no período — encerradas pela IA ou por uma pessoa porque o cliente parou de responder. Não mede cliente que desistiu de esperar.' },
+  { id: 'resolution_rate',      label: 'Taxa de Resolução',        category: 'Atendimento', unit: 'percent',    trendIsGood: 'up',
+    help: 'Dos atendimentos iniciados no período, quantos já estão resolvidos. Não é "Resolvidas ÷ Atendimentos": Resolvidas conta também atendimentos de antes do período.' },
+  { id: 'abandon_rate',         label: 'Taxa de Arquivamento',     category: 'Atendimento', unit: 'percent',    trendIsGood: 'down',
+    help: 'Dos atendimentos iniciados no período, quantos foram arquivados.' },
+  { id: 'first_response_time',  label: 'Tempo de Resposta',        category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
+    help: 'Mediana do tempo entre o cliente começar a falar e a primeira resposta da IA ou de uma pessoa. Resposta automática por regra e campanha não contam; quem ficou sem resposta aparece à parte.' },
+  { id: 'human_first_response', label: '1ª Resposta Humana',       category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
+    help: 'Mediana do tempo até a primeira mensagem de uma pessoa em cada atendimento, contado de quando a conversa passou para a equipe (ou do início, se a pessoa assumiu antes). O tempo em que a IA atendia não entra.' },
+  { id: 'avg_resolution_time',  label: 'Tempo de Resolução',       category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
+    help: 'Mediana do tempo entre o início do atendimento e a resolução, nas conversas resolvidas no período. Cliente que voltou conta do dia em que voltou, não do primeiro contato.' },
+  { id: 'recontact_rate',       label: 'Taxa de Recontato',        category: 'Qualidade',   unit: 'percent',    trendIsGood: 'down',
+    help: 'Conversas que o cliente reabriu no período, sobre as resolvidas mais as reabertas. Nunca passa de 100%.' },
+  { id: 'msgs_received',        label: 'Msgs Recebidas',           category: 'Volume',      unit: 'count',      trendIsGood: 'neutral',
+    help: 'Mensagens que os clientes mandaram no período.' },
+  { id: 'msgs_sent',            label: 'Msgs Enviadas',            category: 'Volume',      unit: 'count',      trendIsGood: 'neutral',
+    help: 'Mensagens que saíram no período (sem as que falharam): de pessoas, da IA, de respostas automáticas e de campanhas.' },
+  { id: 'new_contacts',         label: 'Novos Contatos',           category: 'Volume',      unit: 'count',      trendIsGood: 'up',
+    help: 'Contatos cadastrados no período.' },
+  { id: 'bot_deflection',       label: 'Resolução pela IA',        category: 'Bot',         unit: 'percent',    trendIsGood: 'up',
+    help: 'Das conversas resolvidas no período, quantas a IA atendeu sem nenhuma mensagem de pessoa no atendimento. Conversa que a IA passou para a equipe não conta como sucesso da IA.' },
+  { id: 'bot_resolved',         label: 'Resolvidas pela IA',       category: 'Bot',         unit: 'count',      trendIsGood: 'up',
+    help: 'Conversas resolvidas no período em que a IA respondeu e nenhuma pessoa escreveu no atendimento.' },
+  { id: 'agents_online',        label: 'Pessoas Online',           category: 'Equipe',      unit: 'count',      trendIsGood: 'neutral',
+    help: 'Pessoas da equipe com o Oryon aberto agora (não inclui os agentes de IA).' },
   // ── Campanhas (Meta WhatsApp Business API) ──────────────────────────────────
-  // Signals available via status webhooks (sent/delivered/read/failed) and
-  // Meta's template analytics endpoint (clicks, replies, opt-outs).
-  // PL-C2-FAR-3: nenhum destes 8 é lido em `DashboardPage.fetchDashboard`
-  // hoje (fica em `hasData: false` até o webhook/endpoint existir).
-  { id: 'campaign_sent',          label: 'Msgs Enviadas (Disparos)',  category: 'Disparos',   unit: 'count',      trendIsGood: 'up' },
-  { id: 'campaign_delivery_rate', label: 'Taxa de Entrega',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'up' },
-  { id: 'campaign_read_rate',     label: 'Taxa de Leitura',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'up' },
-  { id: 'campaign_reply_rate',    label: 'Taxa de Resposta',          category: 'Disparos',   unit: 'percent',    trendIsGood: 'up' },
-  // ── Marketing (Meta Ads + Google Ads) ──────────────────────────────────────
-  // PL-C2-FAR-3: nenhum destes 8 tem fonte hoje (Meta/Google Ads não
-  // integrados no backend do Dashboard ainda).
+  { id: 'campaign_sent',          label: 'Disparos Enviados',         category: 'Disparos',   unit: 'count',      trendIsGood: 'up',
+    help: 'Mensagens de campanha que saíram no período, contando as que a Meta recusou (mesma regra do relatório da campanha). Inclui campanhas interrompidas.' },
+  { id: 'campaign_delivery_rate', label: 'Taxa de Entrega',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',
+    help: 'Dos disparos enviados no período, quantos chegaram ao celular (entregue, lida ou respondida).' },
+  { id: 'campaign_read_rate',     label: 'Taxa de Leitura',           category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',
+    help: 'Dos disparos entregues, quantos foram lidos (quem desligou a confirmação de leitura não aparece).' },
+  { id: 'campaign_reply_rate',    label: 'Taxa de Resposta',          category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',
+    help: 'Dos disparos entregues, quantos tiveram resposta do cliente.' },
   // ── Clínica (agentes de WhatsApp: agendar/cancelar consulta) ────────────────
-  { id: 'appointments_scheduled', label: 'Agendamentos Marcados',     category: 'Clínica',    unit: 'count',      trendIsGood: 'up'     },
-  { id: 'appointments_cancelled', label: 'Cancelamentos',             category: 'Clínica',    unit: 'count',      trendIsGood: 'down'   },
+  { id: 'appointments_scheduled', label: 'Agendamentos Marcados',     category: 'Clínica',    unit: 'count',      trendIsGood: 'up',
+    help: 'Agendamentos que os agentes de IA marcaram no período.' },
+  { id: 'appointments_cancelled', label: 'Cancelamentos',             category: 'Clínica',    unit: 'count',      trendIsGood: 'down',
+    help: 'Agendamentos cancelados pelos agentes de IA no período.' },
 ]
 
 // R2-DASH-07: a faixa do mock 1b tem 5 KPIs — o padrão acompanha (o usuário

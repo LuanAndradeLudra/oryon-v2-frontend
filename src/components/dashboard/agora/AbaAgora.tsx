@@ -177,7 +177,7 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
           A última atualização falhou. Os dados abaixo são de {d.atualizadoEm?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.
         </p>
       )}
-      <FaixaDoAgora fila={d.fila} linhas={d.linhas} linhasComIA={d.linhasComIA} verificarTotal={d.verificarTotal} totais={d.totais} />
+      <FaixaDoAgora fila={d.fila} linhas={d.linhas} linhasComIA={d.linhasComIA} verificarTotal={d.verificarTotal} totais={d.totais} resumo={d.resumo} agora={d.agora} />
       <VerificacaoAgora
         conversas={d.verificar}
         total={d.verificarTotal}

@@ -11,12 +11,12 @@ import type { AgentMetrics } from '@/types/dashboard'
 // definition propagates to every place the table is rendered, and so the
 // product team can iterate on copy without hunting through JSX.
 const COLUMN_TOOLTIPS: Record<string, string> = {
-  conversations:  'Conversas abertas atribuídas ao atendente agora (não segue o período).',
-  resolved:       'Conversas que o atendente resolveu no período escolhido.',
-  responseTime:   'TMR — Tempo Médio de Resposta. Quanto o atendente leva, em média, para enviar a primeira resposta após o cliente abrir a conversa. Média de todo o histórico (não segue o período).',
-  resolutionTime: 'Tempo médio entre o início da conversa e o momento em que ela foi marcada como resolvida. Média de todo o histórico (não segue o período).',
+  conversations:  'Atendimentos iniciados no período (contato novo ou cliente que voltou) que hoje estão com a pessoa.',
+  resolved:       'Conversas resolvidas no período que hoje estão com a pessoa.',
+  responseTime:   'Tempo médio da 1ª resposta desta pessoa nos atendimentos em que ela respondeu primeiro, no período. Conta de quando a conversa passou para a equipe (ou do início, se ela assumiu antes) — o tempo em que a IA atendia não entra.',
+  resolutionTime: 'Tempo médio entre o início do atendimento e a resolução, nas conversas resolvidas no período que estão com a pessoa. Cliente que voltou conta do dia em que voltou.',
   csat:           'Satisfação do cliente (CSAT) — média das avaliações recebidas em uma escala de 0 a 5. Disponível quando a pesquisa de satisfação estiver ativa.',
-  sla:            'SLA de primeira resposta — das conversas do período que um atendente respondeu, quantas tiveram a primeira resposta humana em até 15 minutos.',
+  sla:            'Das 1ªs respostas que a pessoa deu no período, quantas saíram em até 15 minutos depois de a conversa passar para a equipe.',
   utilization:    'Utilização da capacidade do atendente. 100% indica saturação (a partir de 20 conversas abertas simultâneas).',
 }
 
@@ -170,9 +170,9 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
             <tr className="border-b border-surface-700">
               <Th label="Agente"         sortKey="name"               />
               <Th label="Status"         sortKey="isOnline"           />
-              <Th label="Conversas"      sortKey="conversationsToday" tooltip={COLUMN_TOOLTIPS.conversations}  />
+              <Th label="Atendimentos"   sortKey="conversationsToday" tooltip={COLUMN_TOOLTIPS.conversations}  />
               <Th label="Resolvidas"     sortKey="resolvedToday"      tooltip={COLUMN_TOOLTIPS.resolved}       />
-              <Th label="TMR"            sortKey="avgResponseTime"    tooltip={COLUMN_TOOLTIPS.responseTime}   />
+              <Th label="1ª resposta"    sortKey="avgResponseTime"    tooltip={COLUMN_TOOLTIPS.responseTime}   />
               <Th label="Resolução"      sortKey="avgResolutionTime"  tooltip={COLUMN_TOOLTIPS.resolutionTime} />
               <Th label="SLA 15 min"     sortKey="slaCompliance"      tooltip={COLUMN_TOOLTIPS.sla}            />
             </tr>
@@ -212,12 +212,12 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
 
                 {/* Conversations */}
                 <td className="px-4 py-3.5 text-sm text-surface-200 font-semibold tabular-nums">
-                  {agent.conversationsToday || '—'}
+                  {agent.conversationsToday.toLocaleString('pt-BR')}
                 </td>
 
                 {/* Resolved */}
                 <td className="px-4 py-3.5 text-sm text-surface-200 tabular-nums">
-                  {agent.resolvedToday || '—'}
+                  {agent.resolvedToday.toLocaleString('pt-BR')}
                 </td>
 
                 {/* First response time */}

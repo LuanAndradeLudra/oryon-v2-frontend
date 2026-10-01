@@ -49,8 +49,12 @@ function servidor(filtros: Filtros = {}, page = 1, limit = 100) {
   return Promise.resolve({ data: { data, total: l.length, hasMore: page * limit < l.length, page, limit, statusCounts: {} } })
 }
 const list = vi.fn((filtros: Filtros, page?: number, limit?: number) => servidor(filtros, page, limit))
+/** `GET /home/queue` (M5). Padrão: indisponível — a faixa conta pela lista. */
+let resumoDaFila: Record<string, unknown> | null = null
+const apiGet = vi.fn((url: string) => (url === '/home/queue' && resumoDaFila ? Promise.resolve({ data: resumoDaFila }) : Promise.reject(new Error('sem resumo'))))
 
 vi.mock('@/services/api', () => ({
+  api: { get: (...a: unknown[]) => apiGet(...(a as [string])) },
   conversationsApi: { list: (...a: unknown[]) => list(...(a as [Filtros, number, number])), assign: (...a: unknown[]) => assign(...(a as [])) },
   usersApi: {
     available: () => Promise.resolve({ data: [
@@ -96,7 +100,7 @@ function montar(url = '/dashboard') {
 }
 
 beforeEach(() => {
-  assign.mockClear(); list.mockClear(); toast.mockClear()
+  assign.mockClear(); list.mockClear(); toast.mockClear(); apiGet.mockClear(); resumoDaFila = null
   aguardando = CONVERSAS
   aVerificar = []
 })
@@ -128,6 +132,17 @@ describe('Dashboard · aba Agora', () => {
     expect(within(faixa).getByText('42 min')).toBeInTheDocument()
     expect(within(faixa).getByText('2 de 2')).toBeInTheDocument()
     expect(within(faixa).getByText('conectadas · 1 com IA')).toBeInTheDocument()
+  })
+
+  it('M5: maior espera e janelas vêm do servidor (fila inteira), não da lista carregada', async () => {
+    // A lista só tem esperas de minutos; o servidor sabe de uma de 5 h fora da lista.
+    resumoDaFila = { esperando: 3, semDono: 2, maiorEsperaMin: 300, janelaFechando: 2, janelaFechada: 1 }
+    montar()
+    const faixa = await screen.findByTestId('faixa-do-agora')
+    await waitFor(() => expect(within(faixa).getByText('5 h')).toBeInTheDocument())
+    expect(within(faixa).queryByText('42 min')).not.toBeInTheDocument()
+    expect(within(faixa).getByText('1 já fechou · só modelo')).toBeInTheDocument()
+    expect(apiGet).toHaveBeenCalledWith('/home/queue')
   })
 
   it('Assumir atribui a mim e abre a conversa', async () => {

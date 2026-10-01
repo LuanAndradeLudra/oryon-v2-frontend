@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, HelpCircle } from 'lucide-react'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
 import type { KpiId, KpiMetric } from '@/types/dashboard'
@@ -36,7 +37,15 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
 
   return (
     <div data-spotlight-target="kpi-cell" className="flex flex-col px-3.5 py-3 min-w-0">
-      <span className="text-[11px] font-medium text-surface-400 truncate">{metric.label}</span>
+      <span className="flex items-center gap-1 min-w-0">
+        <span className="text-[11px] font-medium text-surface-400 truncate">{metric.label}</span>
+        {/* Revisão 30/09: todo indicador diz o que conta. */}
+        {metric.help && (
+          <Tooltip content={metric.help} side="top" wide>
+            <HelpCircle className="w-3 h-3 flex-shrink-0 text-surface-600 hover:text-surface-400 transition-colors" aria-label={`O que é ${metric.label}`} />
+          </Tooltip>
+        )}
+      </span>
       <div className="font-extrabold tabular-nums tracking-[-0.02em] leading-[1.15] font-display text-[26px] text-surface-100">
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
@@ -75,13 +84,14 @@ const KPI_ESCOPO: Partial<Record<KpiId, string>> = {
   active_conversations: 'agora',
   queued: 'agora',
   agents_online: 'agora',
-  new_contacts: 'últimos 7 dias',
 }
 
 function apoioDo(metric: KpiMetric, queued: number): { text: string; tone: 'warn' | 'muted' } | undefined {
   if (metric.id === 'active_conversations' && queued > 0) return { text: `agora · ${queued} na fila`, tone: 'warn' }
   const escopo = KPI_ESCOPO[metric.id]
-  return escopo ? { text: escopo, tone: 'muted' } : undefined
+  if (escopo) return { text: escopo, tone: 'muted' }
+  // Revisão 30/09: o detalhe real do número (média, sem resposta, base da taxa…).
+  return metric.detail ? { text: metric.detail, tone: 'muted' } : undefined
 }
 
 function KpiStrip({ metrics, queued }: { metrics: KpiMetric[]; queued: number }) {

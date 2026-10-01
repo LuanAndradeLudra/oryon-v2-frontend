@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { conversationsApi, usersApi, whatsappNumbersApi, type AvailableUser } from '@/services/api'
+import { api, conversationsApi, usersApi, whatsappNumbersApi, type AvailableUser } from '@/services/api'
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
 import { connectSocket } from '@/services/socket'
 import { calcularLinhasComIA, montarFila, type ItemDaFila, type LinhasComIA } from '@/lib/filaAgora'
@@ -46,10 +46,25 @@ export interface TotaisDaFila {
   iaPassouSemDono: number
 }
 
+/**
+ * Revisão das métricas (30/09, M5): `GET /home/queue` — calculado no servidor
+ * sobre a fila INTEIRA (a lista acima tem teto e vem pela mais recente, então
+ * a maior espera ficava de fora). A espera conta da última mensagem do CLIENTE.
+ */
+export interface ResumoDaFila {
+  maiorEsperaMin: number | null
+  janelaFechando: number
+  janelaFechada: number
+  /** Quando foi lido — a espera anda com o relógio do painel. */
+  lidoEm: number
+}
+
 export interface DashboardAgora {
   fila: ItemDaFila[]
   /** null até a primeira leitura. */
   totais: TotaisDaFila | null
+  /** Resumo do servidor (maior espera, janelas); null se a leitura falhou. */
+  resumo: ResumoDaFila | null
   /** O backend tinha mais conversas aguardando do que a fila leu. */
   filaTruncada: boolean
   equipe: AvailableUser[]
@@ -122,6 +137,7 @@ export function useDashboardAgora(): DashboardAgora {
   const [conversas, setConversas] = useState<Conversation[]>([])
   const [filaTruncada, setFilaTruncada] = useState(false)
   const [totais, setTotais] = useState<TotaisDaFila | null>(null)
+  const [resumo, setResumo] = useState<ResumoDaFila | null>(null)
   const [equipe, setEquipe] = useState<AvailableUser[]>([])
   const [agentes, setAgentes] = useState<AgentConfig[] | null>(null)
   const [linhas, setLinhas] = useState<WhatsAppNumberDetailed[]>([])
@@ -137,7 +153,7 @@ export function useDashboardAgora(): DashboardAgora {
     try {
       // A fila vem com folga e é ordenada no cliente pela maior espera: o
       // backend só ordena pela mensagem mais recente (P1 do SCRUM-1161).
-      const [semDono, aguardando, totalGeral, revisar, pessoas, numeros, ias] = await Promise.all([
+      const [semDono, aguardando, totalGeral, revisar, pessoas, numeros, ias, fila] = await Promise.all([
         lerTodas(PENDENTES_SEM_DONO),
         lerTodas(PENDENTES_AGUARDANDO),
         contarEsperando(),
@@ -145,6 +161,7 @@ export function useDashboardAgora(): DashboardAgora {
         usersApi.available().catch(() => ({ data: [] as AvailableUser[] })),
         whatsappNumbersApi.listDetailed().catch(() => ({ data: [] as WhatsAppNumberDetailed[] })),
         listAgents().catch(() => null),
+        api.get<Omit<ResumoDaFila, 'lidoEm'>>('/home/queue').catch(() => null),
       ])
       if (!vivo.current) return
       // A lista: as pendentes sem dono (a aba Fila, inteira) + as com dono em
@@ -170,6 +187,13 @@ export function useDashboardAgora(): DashboardAgora {
         setVerificar(rev)
         setVerificarTotal(revisar.data?.total ?? rev.length)
       }
+      // Falhou só o resumo: a faixa volta a contar pela lista (como antes).
+      setResumo(fila?.data ? {
+        maiorEsperaMin: typeof fila.data.maiorEsperaMin === 'number' ? fila.data.maiorEsperaMin : null,
+        janelaFechando: fila.data.janelaFechando ?? 0,
+        janelaFechada: fila.data.janelaFechada ?? 0,
+        lidoEm: Date.now(),
+      } : null)
       setEquipe(Array.isArray(pessoas.data) ? pessoas.data : [])
       setLinhas(Array.isArray(numeros.data) ? numeros.data : [])
       setAgentes(Array.isArray(ias) ? ias : null)
@@ -208,5 +232,5 @@ export function useDashboardAgora(): DashboardAgora {
   const fila = useMemo(() => montarFila(conversas, linhasComIA, agora), [conversas, linhasComIA, agora])
   const recarregar = useCallback(() => { void carregar() }, [carregar])
 
-  return { fila, totais, filaTruncada, equipe, agentes, linhas, linhasComIA, verificar, verificarTotal, carregando, erro, atualizadoEm, recarregar, agora }
+  return { fila, totais, resumo, filaTruncada, equipe, agentes, linhas, linhasComIA, verificar, verificarTotal, carregando, erro, atualizadoEm, recarregar, agora }
 }

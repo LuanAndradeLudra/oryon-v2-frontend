@@ -1,14 +1,19 @@
 import { buildEmptySnapshot, type DashboardSnapshot, type KpiMetric } from '@/types/dashboard'
 import type { HomeStats } from '@/types'
+import { formatKpiValue } from '@/components/dashboard/utils'
 
 /**
  * Monta o snapshot da aba Relatórios a partir de `/home/stats` e
  * `/home/snapshot` (ambos já pedidos com `?range=`), sem rede — testável.
  *
- * K1 (release 2026-09-29): lê TODOS os campos que o backend já calcula (antes
- * vários iam como 0 fixo). Campo ausente ou `null` vira `null` → "—" na tela,
- * nunca um zero que parece dado real (regra 6). O PR #193 do dev externo foi
- * a especificação do mapeamento (D2).
+ * K1 (release 2026-09-29): lê TODOS os campos que o backend já calcula. Campo
+ * ausente ou `null` vira `null` → "—" na tela, nunca um zero que parece dado
+ * real (regra 6).
+ *
+ * Revisão das métricas (30/09): tempos pela MEDIANA (a média vai na linha de
+ * apoio — uma espera de madrugada não puxa o número), quem ficou sem resposta
+ * aparece, e cada taxa diz a base dela. As definições estão no `help` do
+ * catálogo e no cabeçalho do `dashboard.service.ts` do backend.
  *
  * `atividade` não entra: tem janela própria (4 h) e é buscada à parte.
  */
@@ -20,6 +25,7 @@ type SnapshotCru = {
   volumeChart?: DashboardSnapshot['volumeChart']
   heatmap?: DashboardSnapshot['heatmap']
   avgResolutionTimeTenant?: number | null
+  medianResolutionTimeTenant?: number | null
 } | null
 
 /** Número do backend ou `null` (ausente, nulo, NaN). */
@@ -27,32 +33,46 @@ function n(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null
 }
 
+/** Minutos do backend → segundos; 0 ou ausente = sem dado. */
+function seg(min: unknown): number | null {
+  const m = n(min)
+  return m !== null && m > 0 ? m * 60 : null
+}
+
+const fmtSeg = (s: number | null) => formatKpiValue(s, 'seconds')
+const plural = (q: number, um: string, varios: string) => `${q.toLocaleString('pt-BR')} ${q === 1 ? um : varios}`
+
 export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot {
   const snap = buildEmptySnapshot()
   const x = s as HomeStats & Record<string, unknown>
-  const avgResp = n(x.avgResponseMinutes)
 
-  const realKpis: Record<string, number | null> = {
+  const resolvidas = n(x.conversationsResolvedToday)
+  const coorte = n(x.cohortConversations)
+  const semResposta = n(x.unansweredCycles) ?? 0
+  const humanas = n(x.humanFirstResponseCount) ?? 0
+  const sla = n(x.humanFirstResponseSlaRate)
+  const enviadasPor = (x.messagesSentBy ?? null) as { operator?: number; ai?: number; rule?: number; campaign?: number } | null
+  const mediaResolucao = n(db?.avgResolutionTimeTenant)
+
+  const valores: Record<string, number | null> = {
     'total_conversations':    n(x.totalConversations),
-    // Estes dois são "agora" (a faixa diz), não do período.
+    // Estes três são "agora" (a faixa diz), não do período.
     'active_conversations':   n(x.conversationsOpen),
-    // K7: fila = pendentes sem dono.
     'queued':                 n(x.queueCount),
-    'resolved':               n(x.conversationsResolvedToday),
+    'agents_online':          n(x.agentsOnline),
+    'resolved':               resolvidas,
     'abandoned':              n(x.abandonedCount),
     'resolution_rate':        n(x.resolutionRate),
     'abandon_rate':           n(x.abandonRate),
-    // Sem resposta nenhuma no período, o backend manda 0: é "sem dado", não "0 s".
-    'first_response_time':    avgResp !== null && avgResp > 0 ? avgResp * 60 : null,
-    'avg_resolution_time':    n(db?.avgResolutionTimeTenant) || null,
+    'first_response_time':    seg(x.medianResponseMinutes ?? x.avgResponseMinutes),
+    'human_first_response':   seg(x.humanFirstResponseMedianMinutes),
+    'avg_resolution_time':    (n(db?.medianResolutionTimeTenant) ?? mediaResolucao) || null,
     'recontact_rate':         n(x.recontactRate),
     'msgs_received':          n(x.messagesReceivedToday),
     'msgs_sent':              n(x.messagesSentToday),
-    'new_contacts':           n(x.newContactsThisWeek),
+    'new_contacts':           n(x.newContactsInPeriod ?? x.newContactsThisWeek),
     'bot_deflection':         n(x.botDeflectionRate),
     'bot_resolved':           n(x.botResolved),
-    // K6-FE: sem presença no backend ainda (null) → "—".
-    'agents_online':          n(x.agentsOnline),
     'campaign_sent':          n(x.campaignSent),
     'campaign_delivery_rate': n(x.campaignDeliveryRate),
     'campaign_read_rate':     n(x.campaignReadRate),
@@ -60,7 +80,38 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
     'appointments_scheduled': n(x.appointmentsScheduled),
     'appointments_cancelled': n(x.appointmentsCancelled),
   }
-  snap.kpis = snap.kpis.map((kpi: KpiMetric) => ({ ...kpi, value: realKpis[kpi.id] ?? null, trend: 0 }))
+
+  const detalhes: Record<string, string | null> = {
+    'total_conversations': n(x.newConversations) !== null && n(x.reopenedConversations) !== null
+      ? `${plural(n(x.newConversations)!, 'novo', 'novos')} · ${plural(n(x.reopenedConversations)!, 'voltou', 'voltaram')}`
+      : null,
+    'resolution_rate': coorte !== null ? `de ${plural(coorte, 'atendimento iniciado', 'atendimentos iniciados')}` : null,
+    'abandon_rate': coorte !== null ? `de ${plural(coorte, 'atendimento iniciado', 'atendimentos iniciados')}` : null,
+    'first_response_time': [
+      seg(x.avgResponseMinutes) !== null ? `média ${fmtSeg(seg(x.avgResponseMinutes))}` : null,
+      semResposta > 0 ? `${plural(semResposta, 'sem resposta', 'sem resposta')}` : null,
+    ].filter(Boolean).join(' · ') || null,
+    'human_first_response': humanas > 0
+      ? `${sla !== null ? `${sla}% em até ${n(x.slaTargetMinutes) ?? 15} min · ` : ''}${plural(humanas, 'atendimento', 'atendimentos')}`
+      : 'nenhuma resposta de pessoa no período',
+    'avg_resolution_time': mediaResolucao ? `média ${fmtSeg(mediaResolucao)}` : null,
+    'bot_deflection': resolvidas !== null && resolvidas > 0 ? `${n(x.botResolved) ?? 0} de ${resolvidas} resolvidas` : null,
+    'msgs_sent': enviadasPor
+      ? [
+          enviadasPor.operator ? `pessoas ${enviadasPor.operator.toLocaleString('pt-BR')}` : null,
+          enviadasPor.ai ? `IA ${enviadasPor.ai.toLocaleString('pt-BR')}` : null,
+          enviadasPor.rule ? `automáticas ${enviadasPor.rule.toLocaleString('pt-BR')}` : null,
+          enviadasPor.campaign ? `campanhas ${enviadasPor.campaign.toLocaleString('pt-BR')}` : null,
+        ].filter(Boolean).join(' · ') || null
+      : null,
+  }
+
+  snap.kpis = snap.kpis.map((kpi: KpiMetric) => ({
+    ...kpi,
+    value: valores[kpi.id] ?? null,
+    detail: detalhes[kpi.id] ?? null,
+    trend: 0,
+  }))
 
   const sd = db?.statusDistribution
   snap.statusDistribution = sd

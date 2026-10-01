@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { formatarEspera, janelaFechada, janelaFechando, PRAZO_RESPOSTA_MIN, type ItemDaFila } from '@/lib/filaAgora'
 import type { WhatsAppNumberDetailed } from '@/types'
-import type { TotaisDaFila } from '@/hooks/useDashboardAgora'
+import type { ResumoDaFila, TotaisDaFila } from '@/hooks/useDashboardAgora'
 
 // Faixa do "agora" (direção A): seis contagens do momento. As da fila vêm dos
 // totais EXATOS do servidor (as mesmas consultas da aba Fila da inbox); maior
@@ -17,18 +17,25 @@ interface Props {
   verificarTotal: number
   /** Totais do servidor; sem eles (primeira carga), conta pela lista. */
   totais?: TotaisDaFila | null
+  /** Maior espera e janelas, do servidor sobre a fila inteira (M5). */
+  resumo?: ResumoDaFila | null
+  /** Relógio do painel — a espera anda entre as leituras. */
+  agora?: number
 }
 
 function conectada(l: WhatsAppNumberDetailed): boolean {
   return String(l.status).toLowerCase() === 'connected'
 }
 
-export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais = null }: Props) {
-  const fechando = fila.filter(janelaFechando).length
-  const fechadas = fila.filter(janelaFechada).length
+export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais = null, resumo = null, agora = Date.now() }: Props) {
+  // Revisão 30/09 (M5): do servidor, sobre a fila inteira; sem o resumo, pela lista carregada.
+  const fechando = resumo ? resumo.janelaFechando : fila.filter(janelaFechando).length
+  const fechadas = resumo ? resumo.janelaFechada : fila.filter(janelaFechada).length
   const esperando = totais?.esperando ?? fila.length
   const semDono = totais?.semDono ?? fila.filter((i) => i.semDono).length
-  const maior = fila[0]?.esperaMin ?? null
+  const maior = resumo
+    ? (resumo.maiorEsperaMin === null ? null : resumo.maiorEsperaMin + Math.max(0, Math.floor((agora - resumo.lidoEm) / 60_000)))
+    : fila[0]?.esperaMin ?? null
   const passouTotal = totais?.iaPassou ?? fila.filter((i) => i.iaPassou).length
   const passouSemDono = totais?.iaPassouSemDono ?? fila.filter((i) => i.iaPassou && i.semDono).length
   const conectadas = linhas.filter(conectada)
