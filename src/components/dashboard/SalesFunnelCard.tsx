@@ -52,12 +52,12 @@ export function SalesFunnelCard() {
   }, [])
 
   if (loading) {
-    return <div className="bg-surface-800 border border-surface-700 rounded-lg h-56 animate-pulse" />
+    return <div className="bg-surface-800 border border-surface-700 rounded-lg h-full min-h-56 animate-pulse" />
   }
 
   if (!pipeline) {
     return (
-      <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+      <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden h-full flex flex-col">
         {/* PL-C3-FAR-eixo10: h-10 fixo, não min-h-10 — mesma medida exata dos
             irmãos VolumeChart/FilaAgoraCard na mesma linha do grid (40px). */}
         <div className="flex items-center h-10 px-3.5 border-b border-surface-700">
@@ -65,7 +65,7 @@ export function SalesFunnelCard() {
           <span className="text-[11.5px] text-surface-500 ml-2">em aberto por etapa</span>
         <EscopoDoCartao className="ml-2">agora</EscopoDoCartao>
         </div>
-        <EmptyState icon={Milestone} title="Nenhum funil configurado" className="py-8" />
+        <EmptyState icon={Milestone} title="Nenhum funil configurado" className="py-8 flex-1 mx-3.5 mb-3.5 items-center justify-center text-center" />
       </div>
     )
   }
@@ -96,7 +96,7 @@ export function SalesFunnelCard() {
   }
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden h-full flex flex-col">
       {/* PL-C3-FAR-eixo10: h-10 fixo, mesma medida dos irmãos do grid. */}
       <div className="flex items-center h-10 px-3.5 border-b border-surface-700">
         <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
@@ -111,9 +111,9 @@ export function SalesFunnelCard() {
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState icon={Milestone} title="Sem etapas em aberto" className="py-8" />
+        <EmptyState icon={Milestone} title="Sem etapas em aberto" className="py-8 flex-1 mx-3.5 mb-3.5 items-center justify-center text-center" />
       ) : (
-        <div>
+        <div className="flex-1 flex flex-col">
           {/* R2-DASH-10 (canvas 1b): grid 1.4fr 80px 120px 1.6fr 90px; cabeçalho
               h30 --sf2 11/600 --tx2; linhas h36 13px; números à direita. */}
           <div className="grid grid-cols-[1.4fr_80px_120px_1.6fr_90px] items-center h-[30px] px-3.5 border-b border-surface-700 bg-[var(--sf2)] text-[11px] font-semibold text-surface-400">
@@ -151,7 +151,8 @@ export function SalesFunnelCard() {
               </div>
             )
           })}
-          <p className="px-3.5 py-2 border-t border-surface-700 text-[11px] text-surface-500">
+          {/* A nota desce para o pé do cartão quando a linha é mais alta que o funil. */}
+          <p className="mt-auto px-3.5 py-2 border-t border-surface-700 text-[11px] text-surface-500">
             * Avançam: em todo o histórico do funil (não segue o período). Negócios e valor são de agora.
           </p>
         </div>

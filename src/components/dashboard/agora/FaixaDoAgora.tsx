@@ -40,7 +40,7 @@ interface Celula { id: string; grupo: string; rotulo: string; valor: string; not
 const FILETE: Record<Tom, string> = { alerta: 'var(--color-danger)', atencao: 'var(--color-status-pending)' }
 
 function rolarAte(seletor: string) {
-  document.querySelector(seletor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  document.querySelector(seletor)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
 }
 
 function conectada(l: WhatsAppNumberDetailed): boolean {

@@ -70,10 +70,12 @@ export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
         </div>
         {!volumeSeguePeriodo(range) && <EscopoDoCartao className="ml-auto">{ESCOPO.seteDias}</EscopoDoCartao>}
       </div>
-      {/* Altura FIXA (26/09): com `flex-1` num cartão de altura indefinida, os
-          100% do ResponsiveContainer resolviam para zero e o gráfico sumia —
-          medido na demonstração da landing, mesmo layout do app. */}
-      <div className="h-[170px] flex-shrink-0 pt-3.5 px-3.5 pb-2">
+      {/* Altura MÍNIMA fixa (26/09): com só `flex-1` num cartão de altura
+          indefinida, os 100% do ResponsiveContainer resolviam para zero e o
+          gráfico sumia (medido na demonstração da landing). O piso de 170 px
+          garante isso; ao lado de um cartão mais alto (PO 01/10), o gráfico
+          cresce até a altura da linha em vez de deixar um vão embaixo. */}
+      <div className="flex-1 min-h-[170px] pt-3.5 px-3.5 pb-2">
         {semMensagem ? (
           // P6: gráfico vazio não desenha eixos em branco — "Hoje" pode não
           // ter mensagem nenhuma ainda (dia começando, fora do horário).

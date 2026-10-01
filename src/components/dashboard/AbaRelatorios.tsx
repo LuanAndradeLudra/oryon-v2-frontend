@@ -179,7 +179,7 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
         className={cn('space-y-3.5 transition-opacity', r.atualizando && 'opacity-60')}
         aria-busy={r.atualizando || undefined}
       >
-        <KpiGrid metrics={snapshot.kpis} customizerOpen={personalizando} onCustomizerClose={() => setPersonalizando(false)} />
+        <KpiGrid metrics={snapshot.kpis} customizerOpen={personalizando} onCustomizerClose={() => setPersonalizando(false)} podeEditarMetas={podeVerAtividade} onMetasSalvas={r.recarregar} />
 
         {/* Seção desligada por padrão (flag dashboardAiInsights) — não
             montar evita a chamada generateDashboardInsights() e o gasto
@@ -188,7 +188,10 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
           <AiInsightsSection kpis={snapshot.kpis} />
         )}
 
-        <div className="grid grid-cols-12 gap-3.5 items-start">
+        {/* PO 01/10: os cartões lado a lado têm a MESMA altura (antes
+            `items-start` deixava o volume e o funil mais baixos que os
+            vizinhos, com um vão embaixo). Cada cartão é `h-full`. */}
+        <div className="grid grid-cols-12 gap-3.5 items-stretch">
           <div className="col-span-12 xl:col-span-8">
             <VolumeChart data={snapshot.volumeChart} range={r.periodoCarregado ?? periodo} />
           </div>
@@ -198,7 +201,7 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-3.5 items-start">
+        <div className="grid grid-cols-12 gap-3.5 items-stretch">
           <div className={cn('col-span-12', podeVerAtividade && 'xl:col-span-8')}>
             <SalesFunnelCard />
           </div>
