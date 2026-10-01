@@ -179,8 +179,11 @@ function PosterDaDemo({ rota }: { rota: string }) {
 }
 
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, pausado = false, manterMontado = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
+  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, pausado = false, manterMontado = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso, alturaMax,
 }: {
+  /** A altura máxima da moldura inteira (px), quando o pai fixa a grade (abas
+   *  da home): substitui o orçamento calculado pela altura da tela. */
+  alturaMax?: number
   titulo: string
   /** Rota em que o app nasce. */
   rota: string
@@ -311,7 +314,9 @@ export function DemoRecorte({
     const medir = () => {
       // O teto de altura é do desktop; no celular (tela alta e estreita) manda
       // a altura da tela — com o teto, a moldura encolhia para 260 px de largura.
-      const orcamento = celular
+      const orcamento = alturaMax && !celular
+        ? alturaMax
+        : celular
         ? Math.max(ALTURA.min, window.innerHeight - foraDoRecorte)
         // Teto que acompanha a altura da tela: 419 px até ~900 de altura (o
         // tamanho pedido pelo PO em 26/09), mais em telas altas — em 1920 × 1080
@@ -325,7 +330,7 @@ export function DemoRecorte({
     medir()
     window.addEventListener('resize', medir)
     return () => window.removeEventListener('resize', medir)
-  }, [regiao.w, regiao.h, celular, foraDoRecorte])
+  }, [regiao.w, regiao.h, celular, foraDoRecorte, alturaMax])
   const [tela, setTela] = useState(0)
   useLayoutEffect(() => {
     const el = telaRef.current
@@ -360,7 +365,10 @@ export function DemoRecorte({
       const rota = w?.__demoRota ? new URL(w.__demoRota(), 'http://x').pathname : null
       const texto = iframeRef.current?.contentDocument?.body?.innerText ?? ''
       const chegou = (!alvo || rota === alvo) && texto !== textoAntes
-      if (chegou || performance.now() - inicio > 600) { setTrocando(false); return }
+      const decorrido = performance.now() - inicio
+      // Mínimo de 450 ms: o esqueleto da tela nova tem tempo de aparecer e a
+      // troca não pisca; teto de 900 ms se o app não avisar.
+      if ((chegou && decorrido > 450) || decorrido > 900) { setTrocando(false); return }
       quadro = requestAnimationFrame(checar)
     }
     quadro = requestAnimationFrame(checar)
@@ -378,8 +386,10 @@ export function DemoRecorte({
             <div
               ref={telaRef}
               inert
-              className={cn('relative w-full overflow-hidden pointer-events-none select-none', esmaecerBase && '[mask-image:linear-gradient(to_bottom,#000_78%,transparent)]')}
-              style={{ aspectRatio: `${regiao.w} / ${regiao.h}` }}
+              className={cn('relative w-full overflow-hidden pointer-events-none select-none transition-[height] duration-700 ease-[cubic-bezier(.65,0,.35,1)] motion-reduce:transition-none', esmaecerBase && '[mask-image:linear-gradient(to_bottom,#000_78%,transparent)]')}
+              // Com a largura medida, a altura é explícita e TRANSICIONA quando a
+              // etapa muda de enquadramento; antes da medida, o aspect-ratio.
+              style={tela > 0 ? { height: Math.round(tela * regiao.h / regiao.w) } : { aspectRatio: `${regiao.w} / ${regiao.h}` }}
             >
               {montar && (
                 <iframe
@@ -387,18 +397,19 @@ export function DemoRecorte({
                   src={src}
                   title={`Oryon em demonstração: ${titulo}`}
                   tabIndex={-1}
-                  className="absolute left-0 top-0 border-0 origin-top-left transition-opacity duration-150"
+                  className={cn('absolute left-0 top-0 border-0 origin-top-left transition-[opacity,filter] ease-out', pronta && !trocando ? 'duration-500' : 'duration-200')}
                   style={{
                     width: app.w, height: app.h,
                     transform: `translate(${-regiao.x * escala}px, ${-regiao.y * escala}px) scale(${escala})`,
                     opacity: pronta && !trocando ? 1 : 0,
+                    filter: pronta && !trocando ? 'blur(0px)' : 'blur(6px)',
                     colorScheme: 'normal',
                   }}
                 />
               )}
               <div
-                className="absolute inset-0 transition-opacity duration-500"
-                style={{ opacity: pronta ? 0 : 1, visibility: pronta ? 'hidden' : 'visible' }}
+                className={cn('absolute inset-0 transition-[opacity,visibility] duration-300', trocando && 'motion-safe:animate-pulse')}
+                style={{ opacity: pronta && !trocando ? 0 : 1, visibility: pronta && !trocando ? 'hidden' : 'visible' }}
               >
                 <PosterDaDemo rota={rota} />
               </div>

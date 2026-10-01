@@ -72,6 +72,15 @@ const RECORTES: Record<string, Recorte> = {
   painel: { x: 62, y: 56, w: 1218, h: 382 },
 }
 
+/** Nas abas da home a grade é a mesma em todas as etapas (PO, 30/09): as telas
+ *  panorâmicas (funil, painel) ganham um enquadramento mais alto para encher a
+ *  coluna da tela em vez de virar uma faixa fina. */
+const RECORTES_GRADE: Partial<Record<string, Recorte>> = {
+  funil: { x: 334, y: 136, w: 778, h: 500 },
+  painel: { x: 62, y: 56, w: 1218, h: 664 },
+}
+const RECORTE_DO_BLOCO: Record<string, string> = { funil: 'funil', medir: 'painel' }
+
 interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; recorte: Recorte; titulo: string }
 
 const HISTORIAS: Record<string, Historia> = {
@@ -165,18 +174,22 @@ const CONTAGENS_CAMPANHA = (() => {
 function Surgir({ chave, children, className }: { chave: string | number; children: ReactNode; className?: string }) {
   const semMovimento = useReducedMotion()
   return (
-    <AnimatePresence mode="popLayout" initial={false}>
-      <motion.div
-        key={chave}
-        className={className}
-        initial={semMovimento ? false : { opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={semMovimento ? undefined : { opacity: 0 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    // relative: a peça que sai (absolute no popLayout) fica presa aqui dentro.
+    // Antes o ancestral posicionado era a seção, e a peça piscava sobre o título.
+    <div className="relative min-w-0">
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.div
+          key={chave}
+          className={className}
+          initial={semMovimento ? false : { opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={semMovimento ? undefined : { opacity: 0, transition: { duration: 0.25 } }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   )
 }
 
@@ -394,18 +407,39 @@ const RESERVAS: Record<string, HeroState[]> = {
   equipe: ['avanco', 'ganho'], funil: ['etiqueta', 'avanco'],
 }
 
+/**
+ * Cada evidência entra quando a etapa troca (abas da home): espera a tela ao
+ * lado carregar a rota nova (~0,45 s) e sobe com desfoque, uma depois da outra.
+ * Na primeira pintura não anima (o Revelar de dentro já cuida da entrada).
+ */
+function EntradaDaEtapa({ i, className, children }: { i: number; className?: string; children: ReactNode }) {
+  const semMovimento = useReducedMotion()
+  const primeira = useRef(true)
+  useEffect(() => { primeira.current = false }, [])
+  return (
+    <motion.div
+      className={className}
+      initial={semMovimento || primeira.current ? false : { opacity: 0, y: 14, filter: 'blur(6px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      transition={{ duration: 0.6, delay: 0.45 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
 /** Uma evidência: o componente real em cima, a frase embaixo. */
-function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean; at: HeroState; cena: HeroCena; ciclo: number }) {
+function Beneficio({ bloco, i, c, esticar, at, cena, ciclo, compacto = false }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean; at: HeroState; cena: HeroCena; ciclo: number; compacto?: boolean }) {
   return (
     // Esticada, a evidência divide a altura do palco (flex-1): a folga vai para
     // a área do visual, centrado — nunca um vão entre as duas.
-    <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-w-0', esticar && 'flex-1')}>
+    <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-h-0 min-w-0', esticar && 'flex-1')}>
       {/* Todas as evidências no mesmo desenho (visual em cima, frase embaixo) e
           com a altura da vizinha: o painel (06) tinha visual e frase lado a
           lado, e a grade ficava desalinhada com cartões de alturas diferentes. */}
-      <div className="flex h-full w-full flex-col overflow-hidden rounded-xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
         <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5 [[data-theme=light]_&]:bg-surface-900">
-          <div aria-hidden inert data-evidencia className="pointer-events-none grid min-w-0 select-none [zoom:0.8]">
+          <div aria-hidden inert data-evidencia className={cn('pointer-events-none grid min-w-0 select-none', compacto ? '[zoom:0.66]' : '[zoom:0.8]')}>
             {RESERVAS[bloco]?.map((estado) => (
               <div key={estado} className="invisible min-w-0 [grid-area:1/1]" data-reserva>
                 <VisualCartao bloco={bloco} i={i} at={estado} cena="agente-catalogo" ciclo={0} />
@@ -418,22 +452,23 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
         </div>
         {/* Lote 4 (30/09): sem o ponto teal — ele era sempre igual e só
             decorava; os pontos ficam onde dizem IA × pessoa. */}
-        <div className="px-5 pb-4 pt-3.5">
-          <p className="text-[15px] font-semibold leading-snug text-surface-50">{c.titulo}</p>
-          <p className="mt-1 max-w-[52ch] text-[14px] leading-relaxed text-surface-400">{c.texto}</p>
+        <div className={compacto ? 'px-4 pb-3 pt-2.5' : 'px-5 pb-4 pt-3.5'}>
+          <p className={cn('font-semibold leading-snug text-surface-50', compacto ? 'text-[14px]' : 'text-[15px]')}>{c.titulo}</p>
+          <p className={cn('mt-1 max-w-[52ch] text-surface-400', compacto ? 'text-[13px] leading-snug' : 'text-[14px] leading-relaxed')}>{c.texto}</p>
         </div>
       </div>
     </Revelar>
   )
 }
 
-function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = false, pausado = false }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void; semRotulo?: boolean; manterMontado?: boolean; pausado?: boolean }) {
+function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = false, pausado = false, caberNaSecao = false }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void; semRotulo?: boolean; manterMontado?: boolean; pausado?: boolean; caberNaSecao?: boolean }) {
   const h = HISTORIAS[b.id]
   const arranjo = COMPOSICAO[b.id]
   const ref = useRef<HTMLElement | null>(null)
   const editorialRef = useRef<HTMLDivElement>(null)
   const composicaoRef = useRef<HTMLDivElement>(null)
   const [escala, setEscala] = useState(1)
+  const [alturaGrade, setAlturaGrade] = useState(0)
   // Fit the complete composition, not each window independently. offsetHeight
   // is in unscaled CSS pixels, so applying zoom cannot feed back into sizing.
   useLayoutEffect(() => {
@@ -442,11 +477,28 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
     if (!composicao || !editorial) return
     const medir = () => {
       const desktop = window.innerWidth >= 1024
-      const disponivel = window.innerHeight - 96 - editorial.offsetHeight - 24 - 24
+      let disponivel = window.innerHeight - 96 - editorial.offsetHeight - 24 - 24
+      if (caberNaSecao) {
+        // Abas da home (30/09, PO): a seção inteira cabe na tela, sem rolar —
+        // do título da seção ao link embaixo. O orçamento é a altura da tela
+        // menos o menu fixo (64), tudo o que vem antes da composição dentro da
+        // seção e o link depois dela (~44).
+        const secao = composicao.closest('section')
+        const antes = secao ? composicao.getBoundingClientRect().top - secao.getBoundingClientRect().top : 0
+        disponivel = window.innerHeight - 64 - antes - 44 - 12
+      }
+      if (caberNaSecao) {
+        // Grade única: a altura vem só da tela (não do conteúdo da etapa), então
+        // é a mesma nas seis abas; sem zoom.
+        const alvo = desktop ? Math.round(Math.min(600, Math.max(380, disponivel))) : 0
+        setAlturaGrade((a) => (Math.abs(a - alvo) > 2 ? alvo : a))
+        setEscala(1)
+        return
+      }
       const natural = composicao.offsetHeight
-      // Só encolhe se não couber na altura (30/09): o fator fixo de 0,92 deixava
-      // toda composição 8 % mais estreita que o texto acima — um vão à direita.
-      setEscala(desktop && natural > 0 ? Math.min(1, Math.max(1, disponivel) / natural) : 1)
+      // Só encolhe se não couber na altura (30/09); nunca abaixo de 0,7 (legível).
+      const nova = desktop && natural > 0 ? Math.min(1, Math.max(0.7, Math.max(1, disponivel) / natural)) : 1
+      setEscala((e) => (Math.abs(e - nova) > 0.008 ? nova : e))
     }
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
     ro?.observe(composicao)
@@ -454,7 +506,7 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
     window.addEventListener('resize', medir)
     medir()
     return () => { ro?.disconnect(); window.removeEventListener('resize', medir) }
-  }, [])
+  }, [caberNaSecao])
   // Largura REAL do artigo — decide o arranjo (não o breakpoint da viewport).
   const [largura, setLargura] = useState(0)
   useLayoutEffect(() => {
@@ -499,7 +551,10 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
     setCenaAtual(cena)
     if (indice === 0) setCiclo((n) => n + 1)
   }, [])
-  const colunas = !aoLado ? undefined
+  const grade = caberNaSecao && alturaGrade > 0 && !semTela
+  const recorteAtual = (grade && RECORTES_GRADE[RECORTE_DO_BLOCO[b.id] ?? '']) || h.recorte
+  const colunas = grade ? `minmax(0, 1.45fr) minmax(${EVIDENCIAS_MIN}px, 1fr)`
+    : !aoLado ? undefined
     : tresColunas ? `${palco}px minmax(0, 1fr) minmax(0, 1fr)`
     // Conversas usam duas colunas; relatórios verticais preservam sua largura.
     : arranjo === 'vertical' ? `${palco}px minmax(0, 1fr)`
@@ -509,7 +564,7 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
     <article
       id={`plataforma-${b.id}`}
       data-bloco={b.id}
-      data-arranjo={!aoLado ? 'empilhado' : tresColunas ? 'tres-colunas' : 'lado'}
+      data-arranjo={grade ? 'grade' : !aoLado ? 'empilhado' : tresColunas ? 'tres-colunas' : 'lado'}
       ref={(el) => { ref.current = el; registrar(el) }}
       className="scroll-mt-24"
     >
@@ -529,43 +584,45 @@ function ArtigoRecurso({ b, n, registrar, semRotulo = false, manterMontado = fal
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={b.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4, transition: { duration: 0.15 } }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className={cn(semRotulo && 'lg:grid lg:grid-cols-[minmax(0,.85fr)_minmax(0,1.15fr)] lg:items-baseline lg:gap-10')}
+            initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -6, filter: 'blur(4px)', transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
             <h3 className={cn(!semRotulo && 'mt-2.5', ' font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.25rem,1.65vw,1.5rem)] text-balance')}>
               {b.destaque}
             </h3>
-            <p className="mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
+            <p className={cn('mt-2.5 max-w-[62ch] text-[15px] sm:text-[16.5px] leading-relaxed text-surface-400 text-pretty', semRotulo && 'lg:mt-0')}>{b.texto}</p>
           </motion.div>
         </AnimatePresence>
       </Revelar></div>
 
-      <div className="mt-6 flex justify-start" data-composicao-envelope>
+      <div className={cn('flex', escala < 1 ? 'justify-center' : 'justify-start', semRotulo ? 'mt-5' : 'mt-6')} data-composicao-envelope>
       <div ref={composicaoRef} data-composicao-recurso className="grid shrink-0 gap-4 sm:gap-5"
-        style={{ width: largura || '100%', zoom: escala, ...(colunas ? { gridTemplateColumns: colunas, gap: VAO } : {}) }}>
+        style={{ width: largura || '100%', zoom: escala, ...(colunas ? { gridTemplateColumns: colunas, gap: VAO } : {}), ...(grade ? { height: alturaGrade } : {}) }}>
         {/* A operação, na tela. */}
         {/* Com manterMontado (abas da home), a tela nunca sai da árvore: nas
             etapas sem tela (celular) ela só fica escondida e parada — o MESMO
             app atende as seis abas, e sair dele custaria remontá-lo (~1,3 s). */}
         {(!semTela || manterMontado) && (
-        <Revelar atraso={0.1} className={cn('min-w-0 self-start', semTela && 'hidden')}>
+        <Revelar atraso={0.1} className={cn('min-w-0', grade ? 'flex h-full items-start justify-start' : 'self-start', semTela && 'hidden')}>
           {/* Embaixo, a tela nunca passa do tamanho real do app (1×) nem de
               1000 px: com só o teto de 1000 px, o funil (região estreita) saía
               a 1,3× — maior e mais cortado que as outras telas da página. */}
-          <DemoRecorte className={arranjo === 'abaixo' ? 'mx-auto' : undefined} style={arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} esmaecerBase={b.id === 'funil'} pausado={semTela || pausado} manterMontado={manterMontado} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
+          <DemoRecorte className={!grade && arranjo === 'abaixo' ? 'mx-auto' : undefined} style={grade ? { maxWidth: limite || undefined } : arranjo === 'abaixo' ? { maxWidth: Math.min(1000, h.recorte.w + 12) } : undefined} alturaMax={grade ? alturaGrade : undefined} esmaecerBase={b.id === 'funil'} pausado={semTela || pausado} manterMontado={manterMontado} onPasso={onPasso} titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={recorteAtual} onLimite={setLimite}
             foraDoRecorte={aoLado ? 330 : 170} />
         </Revelar>
         )}
 
         {/* As evidências: ao lado (empilhadas, dividindo a altura do palco), em
             duas colunas altas (vertical) ou embaixo. */}
-        {tresColunas
-          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)
+        {tresColunas && !grade
+          ? b.cartoes.map((c, i) => <EntradaDaEtapa key={`${b.id}-${c.titulo}`} i={i} className="grid min-w-0"><Beneficio bloco={b.id} i={i} c={c} esticar at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} compacto={semRotulo} /></EntradaDaEtapa>)
           : (
-            <div className={aoLado ? 'flex h-full min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
-              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)}
+            <div className={grade || aoLado ? 'flex h-full min-h-0 min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
+              {/* Na grade única, os dois cartões dividem a altura em partes iguais. */}
+              {b.cartoes.map((c, i) => <EntradaDaEtapa key={`${b.id}-${c.titulo}`} i={i} className={cn('grid min-w-0', grade ? 'min-h-0 flex-1 basis-0 grid-rows-[minmax(0,1fr)]' : aoLado && 'flex-1')}><Beneficio bloco={b.id} i={i} c={c} esticar={grade || aoLado} at={semTela ? passoSemTela : passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} compacto={semRotulo} /></EntradaDaEtapa>)}
             </div>
           )}
       </div>
@@ -783,7 +840,7 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
   const b = plataforma.blocos[idx]
   const pagina = paginasPlataforma.find((p) => (p.blocos as readonly string[]).includes(b.id))
   return (
-    <section id="como-funciona" data-section="como-funciona" aria-labelledby="como-funciona-titulo" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
+    <section id="como-funciona" data-section="como-funciona" aria-labelledby="como-funciona-titulo" className="relative scroll-mt-16 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:pb-14 lg:pt-10">
       <div className="landing-container">
         <Revelar className="max-w-[64rem]">
           <h2 id="como-funciona-titulo" className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.7rem,3vw,2.5rem)] text-balance text-surface-50">{home.comoFunciona.titulo}</h2>
@@ -795,7 +852,7 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
             cortada (30/09). */}
         {/* As etapas como índice (P4, 30/09): número em mono + nome sobre uma
             régua, a ativa sublinhada — sem pílulas. */}
-        <div className="relative mt-8">
+        <div className="relative mt-8 lg:mt-6">
         <div role="tablist" aria-label={home.comoFunciona.abasLabel} className="landing-abas pr-10">
           {plataforma.blocos.map((bl, i) => (
             <button
@@ -824,10 +881,10 @@ export function SecaoComoFunciona({ numero }: { numero?: string } = {}) {
             menu). Antes cada aba montava o app do zero (~1,3 s de espera, medido
             no build de produção), e carregar as seis juntas custaria ~6× a
             memória de uma demonstração. */}
-        <div id="etapa-painel" role="tabpanel" aria-labelledby={`etapa-aba-${b.id}`} className="mt-8">
-          <ArtigoRecurso b={b} n={idx + 1} registrar={NOOP_REGISTRO} semRotulo manterMontado pausado={pausado} />
+        <div id="etapa-painel" role="tabpanel" aria-labelledby={`etapa-aba-${b.id}`} className="mt-8 lg:mt-6">
+          <ArtigoRecurso b={b} n={idx + 1} registrar={NOOP_REGISTRO} semRotulo manterMontado pausado={pausado} caberNaSecao />
           {pagina && (
-            <Link to={rotaPlataforma(pagina.slug)} className="mt-6 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+            <Link to={rotaPlataforma(pagina.slug)} className="mt-6 lg:mt-4 inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
               {home.comoFunciona.saibaMais}: {pagina.menu} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           )}
