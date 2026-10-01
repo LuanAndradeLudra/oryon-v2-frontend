@@ -1326,8 +1326,13 @@ export interface WhatsAppNumberDetailed extends WhatsAppNumber {
   wabaName?: string
   verifiedName?: string
   phoneNumberId: string
-  qualityRating: 'green' | 'yellow' | 'red' | 'unknown'
+  /** O backend manda MAIÚSCULAS (GREEN…); telas antigas usavam minúsculas. */
+  qualityRating: 'green' | 'yellow' | 'red' | 'unknown' | 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN'
+  /** @deprecated o backend nunca mandou — ver `messagingLimitTier`. */
   messagingLimit?: string
+  /** Plano MA (MA-4.5): limite de envio da Meta (TIER_*) e máximo diário. */
+  messagingLimitTier?: string | null
+  maxDailyConversations?: number | null
   connectedAt?: string
   agentId?: string | null
   agentName?: string | null
@@ -1438,7 +1443,8 @@ export interface HomeStats {
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────
 
-export type TemplateStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAUSED' | 'DISABLED'
+// Plano MA: a Meta também arquiva, exclui e está excluindo (o backend grava).
+export type TemplateStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAUSED' | 'DISABLED' | 'ARCHIVED' | 'DELETED' | 'PENDING_DELETION'
 
 export type TemplateHeaderType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT'
 
@@ -1478,6 +1484,19 @@ export interface WhatsAppTemplate {
   // Set by Migration #045 on legacy rows in multi-WABA tenants. UI
   // should surface a badge and block submit-to-Meta until assigned.
   needsWabaAssignment?: boolean
+  // ── Avisos da Meta (plano MA, migration 128) ─────────────────────────────
+  metaTemplateId?: string | null
+  /** GREEN | YELLOW | RED | UNKNOWN */
+  qualityScore?: string | null
+  /** Sinal que não tira do ar: FLAGGED | LIMIT_EXCEEDED | LOCKED | IN_APPEAL */
+  metaFlag?: string | null
+  /** Motivo da pausa/desativação (já em português quando conhecido). */
+  metaStatusReason?: string | null
+  /** DISABLED: quando a Meta desliga de vez. */
+  disableDate?: string | null
+  /** Mudança de categoria avisada pela Meta, e quando vale. */
+  pendingCategory?: string | null
+  pendingCategoryAt?: string | null
   createdAt: string
   updatedAt: string
 }

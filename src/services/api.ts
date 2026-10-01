@@ -1895,6 +1895,9 @@ export interface WhatsappLineHealth {
   verifiedName: string | null
   status: string
   qualityRating: string
+  /** Plano MA (MA-4.5): limite de envio da Meta e máximo diário. */
+  messagingLimitTier?: string | null
+  maxDailyConversations?: number | null
   isActive: boolean
   isPrimary: boolean
   hasSystemUserToken: boolean
