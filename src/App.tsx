@@ -76,7 +76,6 @@ const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m =
 const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
 const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
 const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
-const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m => ({ default: m.PricingPage })))
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
@@ -290,8 +289,10 @@ function AnimatedRoutes() {
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de agentes"><AdminAgentEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
 
-          {/* Public pricing */}
-          <Route path="/pricing" element={<PricingPage />} />
+          {/* /pricing fora do ar (SCRUM-1204, Termos 4.1 c): o que a página
+              comercial exibe vale como Proposta, e a contratação passa pela
+              equipe. Links antigos caem na página inicial. */}
+          <Route path="/pricing" element={<Navigate to="/" replace />} />
 
           {/* Canva OAuth callback — public, opened as popup */}
           <Route path="/canva/callback" element={<CanvaCallbackPage />} />
