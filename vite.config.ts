@@ -200,7 +200,11 @@ const sentryPlugins = sentryAuthToken
       project: sentryProject,
       authToken: sentryAuthToken,
       release: sentryRelease ? { name: sentryRelease } : undefined,
-      sourcemaps: { assets: './dist/**' },
+      // Revisão 02/10: 'hidden' só tira o comentário do bundle — os .map
+      // continuavam em dist/ e eram publicados (código-fonte inteiro, com os
+      // comentários internos, a um palpite de URL). Depois de enviados ao
+      // Sentry, saem do que vai para o ar.
+      sourcemaps: { assets: './dist/**', filesToDeleteAfterUpload: ['./dist/**/*.map'] },
       // Don't fail the build if Sentry is unreachable — sourcemap upload is
       // observability infra, not a release blocker.
       errorHandler: (err) => { console.warn('[sentry-vite-plugin]', err.message) },
