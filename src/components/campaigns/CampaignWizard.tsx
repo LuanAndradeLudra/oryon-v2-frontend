@@ -34,6 +34,8 @@ import type {
   WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
   ContactCustomFieldDef,
 } from '@/types'
+import { billingWarningOf } from '@/lib/planLimit'
+import { showToast } from '@/hooks/useToast'
 
 interface CampaignWizardProps {
   open: boolean
@@ -365,6 +367,10 @@ export function CampaignWizard({
       } as any)
 
       let finalCampaign = res.data
+      // SCRUM-1207: campanhas por mês são franquia medida — passar do limite
+      // não bloqueia, só avisa.
+      const franchiseWarning = billingWarningOf(res.data)
+      if (franchiseWarning) showToast(franchiseWarning, 'warning', undefined, 8000)
 
       // Quando o modo é "agora", disparar imediatamente após criar.
       if (scheduleMode === 'now') {

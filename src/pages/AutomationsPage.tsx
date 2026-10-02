@@ -37,6 +37,7 @@ import { TYPE_CONFIG } from '@/components/automations/TypeBadge'
 import { showToast } from '@/hooks/useToast'
 import { relativeDate, cn } from '@/lib/utils'
 import type { Automation, AutomationType, AutomationStatus } from '@/types'
+import { planLimitMessage } from '@/lib/planLimit'
 
 // ── Filtros ──────────────────────────────────────────────────────────────────
 
@@ -304,8 +305,8 @@ export function AutomationsPage() {
     try {
       const res = await automationsApi.toggle(automation.id)
       setAutomations(prev => prev.map(a => a.id === automation.id ? res.data : a))
-    } catch {
-      showToast('Não foi possível alterar o status da automação', 'error')
+    } catch (err) {
+      showToast(planLimitMessage(err) ?? 'Não foi possível alterar o status da automação', 'error')
     }
   }
 
@@ -358,10 +359,23 @@ export function AutomationsPage() {
     const targets = selectedItems.filter(a => activate ? a.status !== 'active' : a.status === 'active')
     clearSelection()
     if (targets.length === 0) return
-    const results = await Promise.allSettled(targets.map(a => automationsApi.toggle(a.id)))
+    // Em série (SCRUM-1207): em paralelo, todas as ativações liam a mesma
+    // contagem no backend e passavam juntas do limite de automações ativas.
+    // Ao bater no limite, as restantes nem são tentadas (falhariam igual).
     const updated: Automation[] = []
     let failed = 0
-    results.forEach((r) => { if (r.status === 'fulfilled') updated.push(r.value.data); else failed++ })
+    let limitMsg: string | null = null
+    for (const [i, a] of targets.entries()) {
+      try {
+        const res = await automationsApi.toggle(a.id)
+        updated.push(res.data)
+      } catch (err) {
+        failed++
+        limitMsg = limitMsg ?? planLimitMessage(err)
+        if (limitMsg && activate) { failed += targets.length - i - 1; break }
+      }
+    }
+    if (limitMsg) showToast(limitMsg, 'error')
     if (updated.length) setAutomations(prev => prev.map(a => updated.find(u => u.id === a.id) ?? a))
     const verb = activate ? 'ativada(s)' : 'desativada(s)'
     if (failed === 0) showToast(`${updated.length} ${verb}`, 'success')

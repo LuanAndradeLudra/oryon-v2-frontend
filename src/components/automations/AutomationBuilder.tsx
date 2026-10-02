@@ -8,6 +8,7 @@ import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
 import { Banner } from '@/components/ui/Banner'
 import { cn } from '@/lib/utils'
+import { planLimitMessage } from '@/lib/planLimit'
 import { TYPE_CONFIG } from './TypeBadge'
 import { flowSummary, triggerChipLabel, actionLabel } from './automationText'
 import {
@@ -153,8 +154,9 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
       dirtyRef.current = false
       onSaved(res.data)
       onClose()
-    } catch {
-      setError('Erro ao salvar. Tente novamente.')
+    } catch (err) {
+      // SCRUM-1207: 403 de limite do plano / conta suspensa traz a mensagem pronta.
+      setError(planLimitMessage(err) ?? 'Erro ao salvar. Tente novamente.')
     } finally {
       setSaving(false)
     }
