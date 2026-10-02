@@ -51,7 +51,7 @@ function agente(
     status,
     system_prompt: id === 'ag-recepcao' ? PROMPT_RECEPCAO : `Você é o ${nome} da ${PERFIL.empresa}. ${objetivo}`,
     handoff_rules: { rules: id === 'ag-recepcao' ? REGRAS_RECEPCAO : [] },
-    channels: { whatsapp: { number: '+55 47 3030-1100', enabled: status === 'active' } },
+    channels: { whatsapp: { number: '+55 47 3000-0100', enabled: status === 'active' } },
     wizard_config: {},
     crm_capabilities: crm ?? { capabilities: [] },
     ai_handoff_pause_minutes: null,

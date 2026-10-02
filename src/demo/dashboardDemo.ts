@@ -17,6 +17,7 @@ import {
 } from '@/components/landing/stage/hero/heroRealData'
 import type { HeroState } from '@/components/landing/stage/hero/heroStory'
 import { hoursAgo, minutesAgo } from '@/components/landing/stage/hero/heroClock'
+import { setorDaDemo } from '@/components/landing/stage/hero/perfisDemo'
 
 /** Os números de hoje. Mudam com a história: a Ana assume e fecha a venda.
  *  Abertas e na fila são CONTADAS da mesma lista de Conversas da história —
@@ -24,7 +25,8 @@ import { hoursAgo, minutesAgo } from '@/components/landing/stage/hero/heroClock'
 export function heroHomeStats(at: HeroState): HomeStats {
   const fechou = reached(at, 'ganho')
   const lista = heroConversations(at)
-  const naFila = lista.filter((c) => c.status === 'pending').length
+  // A Marina e, na clínica, os outros pacientes da fila do painel (backend.ts).
+  const naFila = lista.filter((c) => c.status === 'pending').length + (setorDaDemo() === 'clinica' ? 4 : 0)
   return {
     conversationsOpen: lista.filter((c) => c.status === 'open').length,
     conversationsResolvedToday: fechou ? 38 : 37,
@@ -44,6 +46,24 @@ export function heroHomeStats(at: HeroState): HomeStats {
     myMessagesSentToday: 96,
     totalConversations: 51 + naFila,
     unassignedCount: naFila,
+    // 02/10 (PO): os indicadores da aba Relatórios que saíam vazios ("—").
+    resolutionRate: fechou ? 87 : 86,
+    abandonRate: 3,
+    abandonedCount: 1,
+    recontactRate: 12,
+    medianResponseSeconds: 42,
+    respondedCycles: 46,
+    humanFirstResponseMedianSeconds: 240,
+    humanFirstResponseCount: 11,
+    botDeflectionRate: 64,
+    botResolved: 24,
+    newContactsInPeriod: 64,
+    campaignSent: 477,
+    campaignDeliveryRate: 98,
+    campaignReadRate: 73,
+    campaignReplyRate: 12,
+    appointmentsScheduled: 18,
+    appointmentsCancelled: 2,
   } as HomeStats
 }
 
@@ -53,9 +73,9 @@ export function heroEquipeDisponivel(at: HeroState) {
   const ana = reached(at, 'assumido') ? 5 : 4
   return [
     { id: HERO_USER.id, firstName: HERO_USER.firstName, lastName: HERO_USER.lastName ?? null, email: HERO_USER.email, role: 'agent', departmentId: null, isOnline: true, activeConversations: ana },
-    { id: 'demo-user-2', firstName: 'Bruno', lastName: 'Lima', email: 'bruno@clinicavitalis.com.br', role: 'agent', departmentId: null, isOnline: true, activeConversations: 3 },
-    { id: 'demo-user-3', firstName: 'Carla', lastName: 'Mendes', email: 'carla@clinicavitalis.com.br', role: 'supervisor', departmentId: null, isOnline: true, activeConversations: 2 },
-    { id: 'demo-user-4', firstName: 'Diego', lastName: 'Souza', email: 'diego@clinicavitalis.com.br', role: 'agent', departmentId: null, isOnline: false, activeConversations: 0 },
+    { id: 'demo-user-2', firstName: 'Bruno', lastName: 'Lima', email: 'bruno@clinicavitalis.example', role: 'agent', departmentId: null, isOnline: true, activeConversations: 3 },
+    { id: 'demo-user-3', firstName: 'Carla', lastName: 'Mendes', email: 'carla@clinicavitalis.example', role: 'supervisor', departmentId: null, isOnline: true, activeConversations: 2 },
+    { id: 'demo-user-4', firstName: 'Diego', lastName: 'Souza', email: 'diego@clinicavitalis.example', role: 'agent', departmentId: null, isOnline: false, activeConversations: 0 },
   ]
 }
 

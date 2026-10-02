@@ -78,7 +78,7 @@ export const HERO = {
 
 export const HERO_LINE: WhatsAppNumber = {
   id: 'demo-line-1',
-  displayPhoneNumber: '+55 47 3030-1100',
+  displayPhoneNumber: '+55 47 3000-0100',
   status: 'connected',
 } as WhatsAppNumber
 
@@ -157,7 +157,7 @@ const OUTRAS = PERFIL.conversas
 export const HERO_OTHER_CONVERSATIONS: Conversation[] = OUTRAS.map((c, i) => ({
   id: `demo-conv-${i + 1}`,
   tenantId: TENANT,
-  contact: contactOf(`demo-c-${i + 1}`, c.nome, `55479990070${20 + i}`),
+  contact: contactOf(`demo-c-${i + 1}`, c.nome, `5547900000${300 + i}`),
   whatsappNumber: HERO_LINE,
   status: 'open',
   channel: 'whatsapp',
@@ -411,12 +411,14 @@ export const HERO_TEMPLATE_TRECHO = PERFIL.modelo.trecho
  * WhatsApp da Marina e abre a conversa. Os números sobem enquanto o roteiro
  * está em `inicio` (a campanha está saindo) e assentam depois.
  */
-const BASE_RETORNO = 1_240
+// 02/10: a base cabe no que o assistente "Nova campanha" lê (até 500
+// contatos), para o alcance estimado bater com o relatório (cena de Disparos).
+const BASE_RETORNO = 486
 export function heroCampaigns(at: HeroState): Campaign[] {
   const saindo = at === 'inicio'
   const stats = saindo
-    ? { total: BASE_RETORNO, sent: 1_180, delivered: 1_096, read: 612, failed: 9, replied: 74, conversions: 17 }
-    : { total: BASE_RETORNO, sent: 1_231, delivered: 1_204, read: 871, failed: 9, replied: 138, conversions: 26 }
+    ? { total: BASE_RETORNO, sent: 452, delivered: 431, read: 238, failed: 9, replied: 29, conversions: 6 }
+    : { total: BASE_RETORNO, sent: 477, delivered: 468, read: 341, failed: 9, replied: 54, conversions: 11 }
   const base = { tenantId: TENANT, variableMappings: [], createdByUserId: HERO_USER.id, whatsappNumberId: HERO_LINE.id }
   return [
     {
@@ -468,8 +470,8 @@ export function heroNotifications(at: HeroState): AppNotification[] {
   // A campanha termina de sair logo depois da cena de Disparos.
   if (reached(at, 'demanda')) out.push({
     id: 'nt-campanha', type: 'campaign_complete', title: `${HERO_CAMPANHA_NOME} concluída`,
-    description: '1.231 enviadas · 1.204 entregues', link: '/campaigns', isRead: true, createdAt: minutesAgo(40),
-    metadata: { campaignName: HERO_CAMPANHA_NOME, sent: 1_231, failed: 9 },
+    description: '477 enviadas · 468 entregues', link: '/campaigns', isRead: true, createdAt: minutesAgo(40),
+    metadata: { campaignName: HERO_CAMPANHA_NOME, sent: 477, failed: 9 },
   })
   out.push({
     id: 'nt-atribuida', type: 'conversation_assigned', title: 'Conversa atribuída a você',

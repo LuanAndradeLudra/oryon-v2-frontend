@@ -212,8 +212,8 @@ function VisualFila() {
 
 const NUMEROS = [
   { numero: HERO_LINE.displayPhoneNumber, setor: 'Recepção', agente: HERO.agent },
-  { numero: '+55 47 3030-1200', setor: 'Comercial', agente: 'Agente Comercial' },
-  { numero: '+55 47 3030-1300', setor: 'Exames', agente: 'Agente Resultados' },
+  { numero: '+55 47 3000-0200', setor: 'Comercial', agente: 'Agente Comercial' },
+  { numero: '+55 47 3000-0300', setor: 'Exames', agente: 'Agente Resultados' },
 ]
 
 function VisualNumeros() {

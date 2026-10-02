@@ -65,6 +65,9 @@ export interface PerfilDemo {
   /** Textos que só existem quando a tela pintou (o diretor espera por eles)
    *  e o que a câmera aponta nas telas do agente. */
   sinais: { conhecimento: string; catalogo: string }
+  /** O teste do agente no "Como funciona" (02/10): a pergunta é sobre o item
+   *  que a cena acabou de liberar no catálogo, e a resposta sai dele. */
+  testeDoAgente?: { pergunta: string; resposta: string }
 }
 
 const PROMPT_CLINICA = [
@@ -87,7 +90,7 @@ const CLINICA: PerfilDemo = {
   empresa: 'Clínica Vitalis',
   cidade: 'Joinville',
   uf: 'SC',
-  pessoa: { nome: 'Marina Alves', primeiro: 'Marina', telefone: '+55 47 99900-7010', waId: '5547999007010', email: 'marina.alves@gmail.com' },
+  pessoa: { nome: 'Marina Alves', primeiro: 'Marina', telefone: '+55 47 90000-0201', waId: '5547900000201', email: 'marina.alves@email.example' },
   agente: {
     nome: 'Agente Recepção', icone: '🩺', setor: 'Recepção',
     objetivo: 'Atende pacientes, informa valores e convênios, oferece horários da agenda e marca consultas. Chama uma pessoa para encaixes e urgências.',
@@ -97,7 +100,7 @@ const CLINICA: PerfilDemo = {
       { id: 'ag-posconsulta', nome: 'Agente Pós-consulta', icone: '🤝', setor: 'Cuidado continuado', objetivo: 'Acompanha o pós-consulta e lembra o retorno.', status: 'paused', conversas: 402 },
     ],
   },
-  atendente: { primeiro: 'Ana', sobrenome: 'Prado', email: 'ana@clinicavitalis.com.br' },
+  atendente: { primeiro: 'Ana', sobrenome: 'Prado', email: 'ana@clinicavitalis.example' },
   profissional: 'Dra. Helena',
   etiquetas: [{ nome: 'Unimed', cor: '#2DD4BF' }, { nome: 'Dermatologia', cor: '#60A5FA' }, { nome: 'retorno', cor: '#FBBF24' }],
   situacoes: [
@@ -187,6 +190,10 @@ const CLINICA: PerfilDemo = {
   ],
   atribuida: { contato: 'Joana Freitas', descricao: 'Joana Freitas · Consulta · Dr. Paulo' },
   sinais: { conhecimento: 'Convênios aceitos', catalogo: 'Consulta de retorno' },
+  testeDoAgente: {
+    pergunta: 'Quanto custa o laser fracionado?',
+    resposta: 'O laser fracionado custa R$ 450 por sessão, e também tem o pacote de três. A avaliação é com a Dra. Helena: quer que eu veja um horário para você?',
+  },
 }
 
 // ─── Imobiliária: Rafael, o apartamento no Centro e o corretor Marcos ────────
@@ -195,7 +202,7 @@ const IMOBILIARIA: PerfilDemo = {
   empresa: 'Casa Nova Imóveis',
   cidade: 'Joinville',
   uf: 'SC',
-  pessoa: { nome: 'Rafael Souza', primeiro: 'Rafael', telefone: '+55 47 99812-4410', waId: '5547998124410', email: 'rafael.souza@gmail.com' },
+  pessoa: { nome: 'Rafael Souza', primeiro: 'Rafael', telefone: '+55 47 90000-0202', waId: '5547900000202', email: 'rafael.souza@email.example' },
   agente: {
     nome: 'Agente Imóveis', icone: '🏠', setor: 'Atendimento',
     objetivo: 'Responde sobre os imóveis cadastrados, o condomínio e as regras de cada prédio. Chama o corretor do imóvel para combinar a visita.',
@@ -219,7 +226,7 @@ const IMOBILIARIA: PerfilDemo = {
       { id: 'ag-contratos', nome: 'Agente Contratos', icone: '📄', setor: 'Locação', objetivo: 'Lembra vencimentos e envia a segunda via do boleto.', status: 'paused', conversas: 640 },
     ],
   },
-  atendente: { primeiro: 'Marcos', sobrenome: 'Teixeira', email: 'marcos@casanovaimoveis.com.br' },
+  atendente: { primeiro: 'Marcos', sobrenome: 'Teixeira', email: 'marcos@casanovaimoveis.example' },
   profissional: 'Paula Rezende',
   etiquetas: [{ nome: 'Centro', cor: '#2DD4BF' }, { nome: 'Aluguel', cor: '#60A5FA' }, { nome: 'visita', cor: '#FBBF24' }],
   situacoes: [
@@ -317,7 +324,7 @@ const LOJA: PerfilDemo = {
   empresa: 'Loja Aurora',
   cidade: 'Joinville',
   uf: 'SC',
-  pessoa: { nome: 'Beatriz Lima', primeiro: 'Bia', telefone: '+55 47 99731-2268', waId: '5547997312268', email: 'bia.lima@gmail.com' },
+  pessoa: { nome: 'Beatriz Lima', primeiro: 'Bia', telefone: '+55 47 90000-0203', waId: '5547900000203', email: 'bia.lima@email.example' },
   agente: {
     nome: 'Agente Vendas', icone: '🛍️', setor: 'Vendas',
     objetivo: 'Responde sobre estoque, preço, pagamento e retirada dos produtos cadastrados. Chama uma vendedora para separar e concluir a venda.',
@@ -341,7 +348,7 @@ const LOJA: PerfilDemo = {
       { id: 'ag-trocas', nome: 'Agente Trocas', icone: '🔁', setor: 'Trocas', objetivo: 'Explica a política de trocas e abre o pedido de troca.', status: 'paused', conversas: 515 },
     ],
   },
-  atendente: { primeiro: 'Luana', sobrenome: 'Prates', email: 'lu@lojaaurora.com.br' },
+  atendente: { primeiro: 'Luana', sobrenome: 'Prates', email: 'lu@lojaaurora.example' },
   profissional: 'Sérgio Matos',
   etiquetas: [{ nome: 'Calçados', cor: '#2DD4BF' }, { nome: 'Retirada', cor: '#60A5FA' }, { nome: 'reserva', cor: '#FBBF24' }],
   situacoes: [
@@ -439,7 +446,7 @@ const CONTABILIDADE: PerfilDemo = {
   empresa: 'Prisma Contábil',
   cidade: 'Joinville',
   uf: 'SC',
-  pessoa: { nome: 'Paulo Mendes', primeiro: 'Paulo', telefone: '+55 47 99645-1907', waId: '5547996451907', email: 'paulo.mendes@gmail.com' },
+  pessoa: { nome: 'Paulo Mendes', primeiro: 'Paulo', telefone: '+55 47 90000-0204', waId: '5547900000204', email: 'paulo.mendes@email.example' },
   agente: {
     nome: 'Agente Atendimento', icone: '📊', setor: 'Atendimento',
     objetivo: 'Responde prazos e listas de documentos com o conteúdo do escritório e etiqueta cada conversa por assunto. Chama o contador quando o caso pede análise.',
@@ -463,7 +470,7 @@ const CONTABILIDADE: PerfilDemo = {
       { id: 'ag-guias', nome: 'Agente Guias', icone: '📅', setor: 'Fiscal', objetivo: 'Envia as guias de imposto e lembra os vencimentos.', status: 'paused', conversas: 2_210 },
     ],
   },
-  atendente: { primeiro: 'Renato', sobrenome: 'Cardoso', email: 'renato@prismacontabil.com.br' },
+  atendente: { primeiro: 'Renato', sobrenome: 'Cardoso', email: 'renato@prismacontabil.example' },
   profissional: 'Cláudia Neves',
   etiquetas: [{ nome: 'IRPF', cor: '#2DD4BF' }, { nome: 'Pessoa física', cor: '#60A5FA' }, { nome: 'nota fiscal', cor: '#FBBF24' }],
   situacoes: [
@@ -561,7 +568,7 @@ const JURIDICO: PerfilDemo = {
   empresa: 'Moura & Lima Advocacia',
   cidade: 'Joinville',
   uf: 'SC',
-  pessoa: { nome: 'Fernanda Costa', primeiro: 'Fernanda', telefone: '+55 47 99508-3341', waId: '5547995083341', email: 'fernanda.costa@gmail.com' },
+  pessoa: { nome: 'Fernanda Costa', primeiro: 'Fernanda', telefone: '+55 47 90000-0205', waId: '5547900000205', email: 'fernanda.costa@email.example' },
   agente: {
     nome: 'Agente Triagem', icone: '⚖️', setor: 'Triagem',
     objetivo: 'Faz as perguntas de triagem definidas pelo escritório e pede os documentos de cada tipo de caso. Passa a triagem pronta para o advogado; não orienta sobre o caso.',
@@ -585,7 +592,7 @@ const JURIDICO: PerfilDemo = {
       { id: 'ag-cobranca', nome: 'Agente Cobrança', icone: '💳', setor: 'Financeiro', objetivo: 'Envia boletos de honorários e lembra vencimentos.', status: 'paused', conversas: 298 },
     ],
   },
-  atendente: { primeiro: 'Carolina', sobrenome: 'Lima', email: 'carolina@mouraelima.adv.br' },
+  atendente: { primeiro: 'Carolina', sobrenome: 'Lima', email: 'carolina@mouraelima.example' },
   profissional: 'Dr. Ricardo Moura',
   etiquetas: [{ nome: 'Trabalhista', cor: '#2DD4BF' }, { nome: 'Primeiro contato', cor: '#60A5FA' }, { nome: 'rescisão', cor: '#FBBF24' }],
   situacoes: [
