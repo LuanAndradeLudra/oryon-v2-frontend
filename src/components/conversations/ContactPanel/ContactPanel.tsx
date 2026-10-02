@@ -244,6 +244,22 @@ export function ContactPanel({
           </div>
         </div>
 
+        {/* Revisão 02/10: os modais ficam FORA das seções recolhíveis — a seção
+            recolhida não monta os filhos, e "Atribuir", "Transferir" e "Editar"
+            etiquetas (que ficam no cabeçalho, sempre visível) não abriam nada. */}
+          <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Atribuir usuário" className="max-w-sm">
+            <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
+              onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
+          </Modal>
+          {/* Transferir — endpoint/handler distinto de "Atribuir" (R13): já
+              existia no hook (useConversations.transferUser → PATCH .../transfer). */}
+          <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transferir conversa" className="max-w-sm">
+            <UserPickerList users={allUsers.filter((u) => u.id !== assignedUser?.id)}
+              onSelect={(user) => { if (user) onTransfer(user); setTransferOpen(false) }} />
+          </Modal>
+          <Modal open={tagOpen} onClose={() => setTagOpen(false)} title="Gerenciar etiquetas" className="max-w-md">
+            <TagPickerContent allTags={allTags} selectedTags={tags} onAdd={onAddTag} onRemove={onRemoveTag} onCreate={onCreateTag} onDelete={onDeleteTag} />
+          </Modal>
         {/* DADOS */}
         <CollapsibleSection
           title="Dados"
@@ -265,16 +281,6 @@ export function ContactPanel({
           }
         >
           <InfoTable rows={dadosRows} />
-          <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Atribuir usuário" className="max-w-sm">
-            <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
-              onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
-          </Modal>
-          {/* Transferir — endpoint/handler distinto de "Atribuir" (R13): já
-              existia no hook (useConversations.transferUser → PATCH .../transfer). */}
-          <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transferir conversa" className="max-w-sm">
-            <UserPickerList users={allUsers.filter((u) => u.id !== assignedUser?.id)}
-              onSelect={(user) => { if (user) onTransfer(user); setTransferOpen(false) }} />
-          </Modal>
         </CollapsibleSection>
 
         {/* ETIQUETAS · N */}
@@ -288,9 +294,6 @@ export function ContactPanel({
             </button>
           }
         >
-          <Modal open={tagOpen} onClose={() => setTagOpen(false)} title="Gerenciar etiquetas" className="max-w-md">
-            <TagPickerContent allTags={allTags} selectedTags={tags} onAdd={onAddTag} onRemove={onRemoveTag} onCreate={onCreateTag} onDelete={onDeleteTag} />
-          </Modal>
           {tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
