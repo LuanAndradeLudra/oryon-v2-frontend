@@ -1,7 +1,7 @@
-// ─── BillingSettings — status pagamento + packs do backend (5.4 e 5.5) ──────────
-// 5.4: se getPaymentStatus falha, mostra estado de erro e desabilita os CTAs de
-//      pagamento (não assume "novo cliente" → evita cobrança duplicada).
-// 5.5: os pacotes de crédito vêm do backend (getCreditPacks), não hardcoded.
+// ─── BillingSettings — status e ausência de autoatendimento ─────────────────────
+// 5.4: se getPaymentStatus falha, mostra estado de erro (não assume "novo cliente").
+// SCRUM-1204 (Termos 4.1 c): a tela não oferece contratar, trocar de plano nem
+// comprar créditos — isso passa pela equipe a partir da Proposta.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -21,7 +21,7 @@ vi.mock('@/hooks/useBilling', () => ({
 vi.mock('@/services/billingApi', () => ({
   billingApi: {
     getPlans: vi.fn(), getPaymentStatus: vi.fn(), getCreditPacks: vi.fn(),
-    getBilling: vi.fn(), getTransactions: vi.fn(),
+    getBilling: vi.fn(), getTransactions: vi.fn(), getInvoices: vi.fn(), cancel: vi.fn(),
   },
 }))
 
@@ -37,33 +37,36 @@ const OK_STATUS = {
 
 beforeEach(() => {
   Object.values(mockApi).forEach((fn) => fn.mockReset())
-  mockApi.getPlans.mockResolvedValue([])
+  mockApi.getInvoices.mockResolvedValue([])
 })
 
 describe('BillingSettings — status indisponível (5.4)', () => {
-  it('mostra banner de erro e desabilita a compra de pacotes', async () => {
-    mockApi.getCreditPacks.mockResolvedValue([{ credits: 250, valueCents: 12500 }])
+  it('mostra banner de erro', async () => {
     mockApi.getPaymentStatus.mockRejectedValue(new Error('down'))
 
     render(<BillingSettings />)
 
     await waitFor(() => expect(screen.getByText('Status de cobrança indisponível')).toBeInTheDocument())
-    const packBtn = screen.getByText('250').closest('button')!
-    expect(packBtn).toBeDisabled()
   })
 })
 
-describe('BillingSettings — packs do backend (5.5)', () => {
-  it('renderiza os pacotes vindos do backend (não a lista hardcoded)', async () => {
-    mockApi.getCreditPacks.mockResolvedValue([{ credits: 300, valueCents: 15000 }])
-    mockApi.getPaymentStatus.mockResolvedValue(OK_STATUS)
+describe('BillingSettings — sem autoatendimento (SCRUM-1204, Termos 4.1 c)', () => {
+  it('não oferece contratar, fazer upgrade nem comprar pacote', async () => {
+    mockApi.getPaymentStatus.mockResolvedValue({ ...OK_STATUS, subscribed: false })
 
     render(<BillingSettings />)
 
-    await waitFor(() => expect(screen.getByText('300')).toBeInTheDocument())
-    // o valor hardcoded antigo (250) não deve aparecer
-    expect(screen.queryByText('250')).not.toBeInTheDocument()
-    const packBtn = screen.getByText('300').closest('button')!
-    expect(packBtn).not.toBeDisabled()
+    await waitFor(() => expect(screen.getByText('Mudar de plano ou comprar créditos')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: /contratar/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /upgrade/i })).not.toBeInTheDocument()
+    expect(screen.queryByText(/comprar créditos avulsos/i)).not.toBeInTheDocument()
+    expect(mockApi.getCreditPacks).not.toHaveBeenCalled()
+  })
+
+  it('não menciona gateway mock', async () => {
+    mockApi.getPaymentStatus.mockResolvedValue(OK_STATUS)
+    render(<BillingSettings />)
+    await waitFor(() => expect(screen.getByText('Plano atual')).toBeInTheDocument())
+    expect(screen.queryByText(/mock/i)).not.toBeInTheDocument()
   })
 })
