@@ -6,6 +6,7 @@ import type { TimelineEntry } from '@/components/conversations/ContactPanel/Conv
 import type { AppNotification } from '@/hooks/useNotifications'
 import { dayAt, daysAgo, hoursAgo, justNow, minutesAgo } from './heroClock'
 import type { HeroState } from './heroStory'
+import { PERFIL } from './perfisDemo'
 
 /**
  * A FONTE ÚNICA de dados de demonstração do Hero.
@@ -14,6 +15,10 @@ import type { HeroState } from './heroStory'
  * mensagens, atividades, funil, etapas e o registro do atendimento — sai daqui,
  * derivado do estado corrente da história. O card do quadro é o MESMO objeto
  * `Deal` que o painel mostra; não existe um segundo conjunto de dados.
+ *
+ * O PERFIL (02/10): os textos — empresa, pessoas, mensagens, funil, catálogo —
+ * vêm de `perfisDemo.ts`, um por área da página /solucoes. A clínica é o
+ * perfil padrão (Hero, páginas de produto); os ids internos não mudam.
  *
  * A HISTÓRIA (persona decidida pelo PO em 26/09: clínica — a vertical de hoje;
  * a copy pública fala "cliente" e "atendimento" para valer para qualquer
@@ -55,20 +60,20 @@ export function reached(at: HeroState, key: HeroState): boolean {
 // ─── Pessoas e linha ──────────────────────────────────────────────────────────
 
 export const HERO = {
-  person: 'Marina Alves',
-  company: 'Clínica Vitalis',
-  phone: '+55 47 99900-7010',
-  agent: 'Agente Recepção',
-  atendente: 'Ana Prado',
-  doctor: 'Dra. Helena',
-  dealTitle: 'Retorno · Dra. Helena',
-  amountCents: 18_000,
-  tag: 'retorno',
-  demand: 'Oi! Quero marcar o retorno com a Dra. Helena. Tem horário à tarde essa semana?',
-  answer: 'Oi, Marina! O retorno com a Dra. Helena custa R$ 180 no particular. Pela Unimed, basta levar a guia. Tenho quinta às 14h30 e sexta às 15h. Qual horário você prefere?',
-  confirm: 'Perfeito! Quinta às 14h30.',
-  ask: 'Consigo falar com alguém? Queria ver se dá um encaixe antes, é meio urgente.',
-  human: 'Oi, Marina! Aqui é a Ana, da recepção. Consegui um encaixe amanhã às 9h com a Dra. Helena. Já deixei reservado pra você.',
+  person: PERFIL.pessoa.nome,
+  company: PERFIL.empresa,
+  phone: PERFIL.pessoa.telefone,
+  agent: PERFIL.agente.nome,
+  atendente: `${PERFIL.atendente.primeiro} ${PERFIL.atendente.sobrenome}`,
+  doctor: PERFIL.profissional,
+  dealTitle: PERFIL.negocio.titulo,
+  amountCents: PERFIL.negocio.cents,
+  tag: PERFIL.etiquetas[2].nome,
+  demand: PERFIL.mensagens.demanda,
+  answer: PERFIL.mensagens.resposta,
+  confirm: PERFIL.mensagens.confirma,
+  ask: PERFIL.mensagens.pedido.texto,
+  human: PERFIL.mensagens.humano,
 } as const
 
 export const HERO_LINE: WhatsAppNumber = {
@@ -77,29 +82,25 @@ export const HERO_LINE: WhatsAppNumber = {
   status: 'connected',
 } as WhatsAppNumber
 
-export const HERO_TAGS: Tag[] = [
-  { id: 'tg-unimed', name: 'Unimed', color: '#2DD4BF' },
-  { id: 'tg-derma', name: 'Dermatologia', color: '#60A5FA' },
-  { id: 'tg-retorno', name: HERO.tag, color: '#FBBF24' },
-]
+export const HERO_TAGS: Tag[] = (['tg-unimed', 'tg-derma', 'tg-retorno'] as const).map((id, i) => ({
+  id, name: PERFIL.etiquetas[i].nome, color: PERFIL.etiquetas[i].cor,
+}))
 
 export const HERO_USER: User = {
   id: 'demo-user-1',
   tenantId: TENANT,
-  email: 'ana@clinicavitalis.com.br',
-  firstName: 'Ana',
-  lastName: 'Prado',
+  email: PERFIL.atendente.email,
+  firstName: PERFIL.atendente.primeiro,
+  lastName: PERFIL.atendente.sobrenome,
   role: 'agent',
   isActive: true,
 } as User
 
 // ─── Situação do contato (≠ etapa do registro, ≠ etiqueta, ≠ status) ─────────
 
-export const HERO_CONTACT_STAGES: TenantStage[] = [
-  { id: 'cs-1', tenantId: TENANT, key: 'novo',           label: 'Novo',           color: '#64748B', order: 1, isTerminal: false, createdAt: daysAgo(60) },
-  { id: 'cs-2', tenantId: TENANT, key: 'em-agendamento', label: 'Em agendamento', color: '#38BDF8', order: 2, isTerminal: false, createdAt: daysAgo(60) },
-  { id: 'cs-3', tenantId: TENANT, key: 'paciente',       label: 'Paciente',       color: '#22C55E', order: 3, isTerminal: true,  createdAt: daysAgo(60) },
-]
+export const HERO_CONTACT_STAGES: TenantStage[] = PERFIL.situacoes.map((s, i) => ({
+  id: `cs-${i + 1}`, tenantId: TENANT, key: s.key, label: s.label, color: s.color, order: i + 1, isTerminal: i === 2, createdAt: daysAgo(60),
+}))
 
 // ─── Contato e conversa ───────────────────────────────────────────────────────
 
@@ -108,12 +109,12 @@ function contactOf(id: string, name: string, waId: string, extra: Partial<Contac
 }
 
 export function heroContact(at: HeroState): Contact {
-  return contactOf('demo-c-0', HERO.person, '5547999007010', {
-    stage: reached(at, 'situacao') ? 'em-agendamento' : 'novo',
+  return contactOf('demo-c-0', HERO.person, PERFIL.pessoa.waId, {
+    stage: reached(at, 'situacao') ? PERFIL.situacoes[1].key : PERFIL.situacoes[0].key,
     tags: reached(at, 'etiqueta') ? HERO_TAGS : HERO_TAGS.slice(0, 2),
-    city: 'Joinville',
-    state: 'SC',
-    email: 'marina.alves@gmail.com',
+    city: PERFIL.cidade,
+    state: PERFIL.uf,
+    email: PERFIL.pessoa.email,
     source: 'whatsapp',
   } as Partial<Contact>)
 }
@@ -151,13 +152,7 @@ export function heroConversation(at: HeroState): Conversation {
 }
 
 /** As demais linhas do inbox — densidade real, com tempos plausíveis. */
-const OUTRAS = [
-  { nome: 'Rafaela Couto',  previa: 'Perfeito, obrigada!',                        min: 12,  naoLidas: 0, ia: false },
-  { nome: 'Bruno Antunes',  previa: 'Consigo remarcar pra semana que vem?',       min: 27,  naoLidas: 2, ia: true },
-  { nome: 'Joana Freitas',  previa: 'Vocês atendem Bradesco Saúde?',              min: 43,  naoLidas: 0, ia: false },
-  { nome: 'Diego Ramos',    previa: 'Confirmado, até quinta!',                    min: 96,  naoLidas: 0, ia: false },
-  { nome: 'Lúcia Martins',  previa: 'Obrigada pelo lembrete!',                    min: 150, naoLidas: 0, ia: true },
-]
+const OUTRAS = PERFIL.conversas
 
 export const HERO_OTHER_CONVERSATIONS: Conversation[] = OUTRAS.map((c, i) => ({
   id: `demo-conv-${i + 1}`,
@@ -208,20 +203,22 @@ function msg(
  * "agora" da demonstração — nunca a um horário fixo.
  */
 export function heroMessages(at: HeroState): Message[] {
-  const out: Message[] = [
-    msg(1, 'inbound', 'Bom dia! A Dra. Helena tem horário essa semana?', dayAt(1, 9, 12)),
-    msg(2, 'outbound', 'Bom dia, Marina! A Dra. Helena atende de terça a sexta, à tarde. Quer que eu veja um horário pra você?', dayAt(1, 9, 13), 'ia'),
-    msg(3, 'inbound', 'Vou ver com o trabalho e te falo.', dayAt(1, 9, 21)),
-    // O histórico de ontem TERMINA com o agente: sem isto, o primeiro quadro
-    // abria com a linha da protagonista marcada em vermelho ("sem resposta").
-    msg(4, 'outbound', 'Combinado! Qualquer coisa é só chamar. 😊', dayAt(1, 9, 22), 'ia'),
-  ]
+  // O histórico de ontem TERMINA com o agente: sem isto, o primeiro quadro
+  // abria com a linha da protagonista marcada em vermelho ("sem resposta").
+  const out: Message[] = PERFIL.mensagens.ontem.map(([dir, texto, h, m], i) =>
+    msg(i + 1, dir, texto, dayAt(1, h, m), dir === 'outbound' ? 'ia' : 'cliente'))
   // O disparo da campanha: é ele que reabre a conversa de ontem.
   out.push(msg(10, 'outbound', HERO_TEMPLATE_TEXTO, minutesAgo(6), 'campanha'))
   if (reached(at, 'demanda')) out.push(msg(5, 'inbound', HERO.demand, minutesAgo(4)))
   if (reached(at, 'resposta')) out.push(msg(6, 'outbound', HERO.answer, minutesAgo(3), 'ia'))
   if (reached(at, 'confirma')) out.push(msg(7, 'inbound', HERO.confirm, minutesAgo(2)))
-  if (reached(at, 'pedido')) out.push(msg(8, 'inbound', HERO.ask, minutesAgo(1)))
+  // O pedido de uma pessoa: na clínica, a cliente pede; nas outras áreas, a
+  // própria IA avisa que vai chamar quem cuida (como nos iPhones da home).
+  if (reached(at, 'pedido')) {
+    out.push(PERFIL.mensagens.pedido.autor === 'ia'
+      ? msg(8, 'outbound', HERO.ask, minutesAgo(1), 'ia')
+      : msg(8, 'inbound', HERO.ask, minutesAgo(1)))
+  }
   if (reached(at, 'humano')) out.push(msg(9, 'outbound', HERO.human, justNow(), 'pessoa'))
   return out
 }
@@ -242,18 +239,19 @@ export const HERO_STAGE_GANHO = 'ps-confirmado'
  * Confirmado. A IA leva de Avaliação para Agendado (etapa não terminal);
  * Confirmado é terminal e só a PESSOA chega lá — a IA é recusada pelo backend.
  */
-export const HERO_PIPELINE_STAGES: PipelineStage[] = [
-  { id: 'ps-contato',            tenantId: TENANT, pipelineId: 'pl-consultas', key: 'contato',   label: 'Contato',         color: '#64748B', order: 1, isWon: false, isLost: false },
-  { id: HERO_STAGE_QUALIFICACAO, tenantId: TENANT, pipelineId: 'pl-consultas', key: 'avaliacao', label: 'Avaliação',       color: '#38BDF8', order: 2, isWon: false, isLost: false, probability: 30 },
-  { id: HERO_STAGE_PROPOSTA,     tenantId: TENANT, pipelineId: 'pl-consultas', key: 'agendado',  label: 'Agendado',        color: '#A78BFA', order: 3, isWon: false, isLost: false, probability: 60 },
-  { id: 'ps-guia',               tenantId: TENANT, pipelineId: 'pl-consultas', key: 'guia',      label: 'Aguardando guia', color: '#FBBF24', order: 4, isWon: false, isLost: false, probability: 80 },
-  { id: HERO_STAGE_GANHO,        tenantId: TENANT, pipelineId: 'pl-consultas', key: 'confirmado', label: 'Confirmado',     color: '#22C55E', order: 5, isWon: true,  isLost: false },
-]
+const ETAPA_IDS = ['ps-contato', HERO_STAGE_QUALIFICACAO, HERO_STAGE_PROPOSTA, 'ps-guia', HERO_STAGE_GANHO] as const
+const PROBABILIDADE = [undefined, 30, 60, 80, undefined]
+
+export const HERO_PIPELINE_STAGES: PipelineStage[] = PERFIL.funil.etapas.map((e, i) => ({
+  id: ETAPA_IDS[i], tenantId: TENANT, pipelineId: 'pl-consultas', key: e.key, label: e.label, color: e.color,
+  order: i + 1, isWon: i === 4, isLost: false, ...(PROBABILIDADE[i] ? { probability: PROBABILIDADE[i] } : {}),
+}))
+const ETAPA = (i: number) => PERFIL.funil.etapas[i].label
 
 export const HERO_PIPELINE: Pipeline = {
   id: 'pl-consultas',
   tenantId: TENANT,
-  name: 'Consultas',
+  name: PERFIL.funil.nome,
   color: '#2DD4BF',
   order: 1,
   isDefault: true,
@@ -281,12 +279,12 @@ export function heroDeal(at: HeroState): Deal {
     stageId: ganho ? HERO_STAGE_GANHO : avancou ? HERO_STAGE_PROPOSTA : HERO_STAGE_QUALIFICACAO,
     amountCents: HERO.amountCents,
     currency: 'BRL',
-    description: 'Dermatologia · retorno em até 30 dias',
+    description: PERFIL.negocio.descricao,
     // O item do catálogo que compõe o valor — sem ele o painel mostrava
     // "Total R$ 0,00".
     lineItems: [{
-      id: 'li-retorno', kind: 'catalog', productId: 'pr-retorno', productName: 'Consulta de retorno',
-      variationLabel: 'Particular', unitPriceCents: 18_000, quantity: 1, order: 1,
+      id: 'li-retorno', kind: 'catalog', productId: PERFIL.negocio.item.produtoId, productName: PERFIL.negocio.item.nome,
+      variationLabel: PERFIL.negocio.item.variacao, unitPriceCents: PERFIL.negocio.cents, quantity: 1, order: 1,
     }],
     originConversationId: 'demo-conv-0',
     originKind: 'manual',
@@ -311,23 +309,9 @@ export function heroDeal(at: HeroState): Deal {
  * Sempre ACRESCENTAR no fim: o `contactId` sai do índice (demo-dc-3/5 são
  * citados no relatório da campanha).
  */
-const OUTROS = [
-  { id: 'd-1',  title: 'Consulta · Dr. Paulo',      person: 'Joana Freitas',  stageId: 'ps-contato',            cents: 25_000, dias: 1 },
-  { id: 'd-2',  title: 'Avaliação estética',        person: 'Bruno Antunes',  stageId: 'ps-contato',            cents: 15_000, dias: 3 },
-  { id: 'd-3',  title: 'Check-up · 3 exames',       person: 'Diego Ramos',    stageId: HERO_STAGE_QUALIFICACAO, cents: 42_000, dias: 2 },
-  { id: 'd-4',  title: 'Consulta · Dra. Helena',    person: 'Carla Mendes',   stageId: HERO_STAGE_QUALIFICACAO, cents: 25_000, dias: 1 },
-  { id: 'd-5',  title: 'Laser · 3 sessões',         person: 'Rafaela Couto',  stageId: HERO_STAGE_PROPOSTA,     cents: 135_000, dias: 3 },
-  { id: 'd-6',  title: 'Consulta pediátrica',       person: 'Lúcia Martins',  stageId: 'ps-guia',               cents: 22_000, dias: 2 },
-  { id: 'd-7',  title: 'Retorno · Dr. Paulo',       person: 'Otávio Lima',    stageId: HERO_STAGE_QUALIFICACAO, cents: 18_000, dias: 4 },
-  { id: 'd-8',  title: 'Peeling · 2 sessões',       person: 'Beatriz Nunes',  stageId: HERO_STAGE_PROPOSTA,     cents: 70_000, dias: 1 },
-  { id: 'd-9',  title: 'Consulta · Dra. Helena',    person: 'Sérgio Tavares', stageId: 'ps-guia',               cents: 25_000, dias: 5 },
-  { id: 'd-10', title: 'Mapeamento de pintas',      person: 'Helena Duarte',  stageId: 'ps-contato',            cents: 32_000, dias: 1 },
-  // Um quarto card em Avaliação e um terceiro nas etapas seguintes dão
-  // contexto sem empurrar a ficha da Marina para fora da tomada no Hero.
-  { id: 'd-11', title: 'Consulta · Dr. Paulo',      person: 'Renata Souza',   stageId: HERO_STAGE_QUALIFICACAO, cents: 25_000, dias: 2 },
-  { id: 'd-13', title: 'Consulta pediátrica',       person: 'Paula Andrade',  stageId: HERO_STAGE_PROPOSTA,     cents: 22_000, dias: 2 },
-  { id: 'd-16', title: 'Consulta · Dra. Helena',    person: 'Eduardo Pires',  stageId: 'ps-guia',               cents: 25_000, dias: 1 },
-]
+/** Os ids dos outros registros — fixos, o perfil só troca os textos. */
+const IDS_OUTROS = ['d-1', 'd-2', 'd-3', 'd-4', 'd-5', 'd-6', 'd-7', 'd-8', 'd-9', 'd-10', 'd-11', 'd-13', 'd-16']
+const OUTROS = PERFIL.negocios.map((d, i) => ({ id: IDS_OUTROS[i], title: d.title, person: d.person, stageId: ETAPA_IDS[d.etapa], cents: d.cents, dias: d.dias }))
 
 const HERO_OTHER_DEALS: Deal[] = OUTROS.map((d, i) => ({
   id: d.id,
@@ -377,9 +361,9 @@ export function heroTimeline(at: HeroState): TimelineEntry[] {
   const out: TimelineEntry[] = [
     pessoa('t0', 'Modelo de mensagem enviado', 'template_sent', 6, { templateName: HERO_TEMPLATE.name }),
   ]
-  if (reached(at, 'situacao')) out.push(agente('t1', 'Situação do contato: Novo → Em agendamento', 'update_contact', 3))
+  if (reached(at, 'situacao')) out.push(agente('t1', `Situação do contato: ${PERFIL.situacoes[0].label} → ${PERFIL.situacoes[1].label}`, 'update_contact', 3))
   if (reached(at, 'etiqueta')) out.push(agente('t2', `Adicionou a etiqueta "${HERO.tag}" à conversa`, 'add_tag_to_conversation', 3))
-  if (reached(at, 'avanco')) out.push(agente('t3', 'Moveu o negócio de Avaliação para Agendado', 'manage_deal_pipeline', 2))
+  if (reached(at, 'avanco')) out.push(agente('t3', `Moveu o negócio de ${ETAPA(1)} para ${ETAPA(2)}`, 'manage_deal_pipeline', 2))
   if (reached(at, 'assumido')) out.push(agente('t4', `Chamou ${HERO.atendente} para a conversa`, 'assign_conversation', 1))
   if (reached(at, 'ganho')) {
     out.push(pessoa('t5', `"${HERO.dealTitle}" confirmado`, 'deal_won', 0, {
@@ -399,26 +383,28 @@ export function heroTimeline(at: HeroState): TimelineEntry[] {
 export const HERO_TEMPLATE: WhatsAppTemplate = {
   id: 'tp-retorno',
   tenantId: TENANT,
-  name: 'retorno_setembro',
+  name: PERFIL.modelo.nome,
   language: 'pt_BR',
   category: 'MARKETING',
   status: 'APPROVED',
-  body: 'Olá, {{1}}! Já está na hora do seu retorno com a Dra. Helena. Abrimos novos horários para setembro. Quer que eu procure um para você?',
-  footer: 'Clínica Vitalis',
+  body: PERFIL.modelo.corpo,
+  footer: PERFIL.modelo.rodape,
   buttons: [
-    { type: 'QUICK_REPLY', text: 'Quero marcar' },
-    { type: 'QUICK_REPLY', text: 'Agora não' },
+    { type: 'QUICK_REPLY', text: PERFIL.modelo.botoes[0] },
+    { type: 'QUICK_REPLY', text: PERFIL.modelo.botoes[1] },
   ],
   bodyVariables: ['nome'],
   whatsappNumberId: 'demo-line-1',
   createdAt: '2026-09-01T12:00:00.000Z',
   updatedAt: '2026-09-01T12:00:00.000Z',
 }
-export const HERO_TEMPLATE_VARIAVEIS = { '1': 'Marina' }
+export const HERO_TEMPLATE_VARIAVEIS = { '1': PERFIL.pessoa.primeiro }
 const HERO_TEMPLATE_TEXTO = HERO_TEMPLATE.body.replace('{{1}}', HERO_TEMPLATE_VARIAVEIS['1']).replace(/\*/g, '')
 
 /** O nome da campanha da história, usado onde ela é citada por fora. */
-export const HERO_CAMPANHA_NOME = 'Retorno · setembro'
+export const HERO_CAMPANHA_NOME = PERFIL.modelo.campanha
+/** Um trecho do modelo que só aparece na mensagem da campanha (o foco do diretor). */
+export const HERO_TEMPLATE_TRECHO = PERFIL.modelo.trecho
 
 /**
  * As campanhas do tenant. A de retorno é a da história: é ela que chega no
@@ -435,7 +421,7 @@ export function heroCampaigns(at: HeroState): Campaign[] {
   return [
     {
       ...base, id: 'cp-retorno', name: HERO_CAMPANHA_NOME, templateId: 'tp-retorno',
-      templateName: 'retorno_setembro', segment: { type: 'tag', tagIds: ['tg-derma'] },
+      templateName: PERFIL.modelo.nome, segment: { type: 'tag', tagIds: ['tg-derma'] },
       status: saindo ? 'sending' : 'sent', sentAt: hoursAgo(1), createdAt: daysAgo(1), stats,
     },
     {
@@ -463,29 +449,10 @@ export function heroCampaigns(at: HeroState): Campaign[] {
 
 /** O catálogo da clínica. A consulta de retorno a R$ 180 é o item que o Agente
  *  Recepção consulta para responder a Marina. */
-export const HERO_PRODUCTS: Product[] = [
-  {
-    id: 'pr-consulta', name: 'Consulta dermatológica', sku: 'CONS', category: 'Consultas', active: true, order: 1,
-    description: 'Primeira consulta, com avaliação completa.',
-    priceVariations: [
-      { id: 'pv-cons-part', label: 'Particular', amountCents: 25_000, currency: 'BRL', order: 1 },
-      { id: 'pv-cons-conv', label: 'Convênio · com guia', amountCents: 0, currency: 'BRL', order: 2 },
-    ],
-  },
-  {
-    id: 'pr-retorno', name: 'Consulta de retorno', sku: 'RET', category: 'Consultas', active: true, order: 2,
-    description: 'Retorno em até 30 dias após a consulta.',
-    priceVariations: [
-      { id: 'pv-ret-part', label: 'Particular', amountCents: 18_000, currency: 'BRL', order: 1 },
-      { id: 'pv-ret-conv', label: 'Convênio · com guia', amountCents: 0, currency: 'BRL', order: 2 },
-    ],
-  },
-  {
-    id: 'pr-laser', name: 'Laser fracionado', sku: 'LAS', category: 'Procedimentos', active: true, order: 3,
-    description: 'Sessão avulsa ou pacote de três.',
-    priceVariations: [{ id: 'pv-laser', label: 'Por sessão', amountCents: 45_000, currency: 'BRL', order: 1 }],
-  },
-]
+export const HERO_PRODUCTS: Product[] = PERFIL.produtos.map((p, i) => ({
+  id: p.id, name: p.name, sku: p.sku, category: p.category, active: true, order: i + 1, description: p.description,
+  priceVariations: p.precos.map((v, j) => ({ id: v.id, label: v.label, amountCents: v.cents, currency: 'BRL', order: j + 1 })),
+}))
 
 // ─── Notificações ─────────────────────────────────────────────────────────────
 
@@ -506,8 +473,8 @@ export function heroNotifications(at: HeroState): AppNotification[] {
   })
   out.push({
     id: 'nt-atribuida', type: 'conversation_assigned', title: 'Conversa atribuída a você',
-    description: 'Joana Freitas · Consulta · Dr. Paulo', link: '/conversations', isRead: true, createdAt: hoursAgo(3),
-    metadata: { contactName: 'Joana Freitas' },
+    description: PERFIL.atribuida.descricao, link: '/conversations', isRead: true, createdAt: hoursAgo(3),
+    metadata: { contactName: PERFIL.atribuida.contato },
   })
   return out
 }
@@ -519,8 +486,8 @@ export function heroNotifications(at: HeroState): AppNotification[] {
  */
 export function heroHistoricoGanho(): DealStageHistoryEntry[] {
   return [
-    { id: 'h-3', fromStageId: HERO_STAGE_PROPOSTA, fromStageLabel: 'Agendado', toStageId: HERO_STAGE_GANHO, toStageLabel: 'Confirmado', movedByKind: 'user', movedByActorName: HERO.atendente, createdAt: minutesAgo(1) },
-    { id: 'h-2', fromStageId: HERO_STAGE_QUALIFICACAO, fromStageLabel: 'Avaliação', toStageId: HERO_STAGE_PROPOSTA, toStageLabel: 'Agendado', movedByKind: 'ai', movedByActorName: HERO.agent, createdAt: minutesAgo(6) },
-    { id: 'h-1', fromStageId: 'ps-contato', fromStageLabel: 'Contato', toStageId: HERO_STAGE_QUALIFICACAO, toStageLabel: 'Avaliação', movedByKind: 'user', movedByActorName: HERO.atendente, createdAt: daysAgo(2) },
+    { id: 'h-3', fromStageId: HERO_STAGE_PROPOSTA, fromStageLabel: ETAPA(2), toStageId: HERO_STAGE_GANHO, toStageLabel: ETAPA(4), movedByKind: 'user', movedByActorName: HERO.atendente, createdAt: minutesAgo(1) },
+    { id: 'h-2', fromStageId: HERO_STAGE_QUALIFICACAO, fromStageLabel: ETAPA(1), toStageId: HERO_STAGE_PROPOSTA, toStageLabel: ETAPA(2), movedByKind: 'ai', movedByActorName: HERO.agent, createdAt: minutesAgo(6) },
+    { id: 'h-1', fromStageId: 'ps-contato', fromStageLabel: ETAPA(0), toStageId: HERO_STAGE_QUALIFICACAO, toStageLabel: ETAPA(1), movedByKind: 'user', movedByActorName: HERO.atendente, createdAt: daysAgo(2) },
   ] as DealStageHistoryEntry[]
 }

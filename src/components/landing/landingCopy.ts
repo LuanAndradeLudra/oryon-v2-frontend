@@ -82,15 +82,21 @@ export const hero = {
   // CRM sem depender do lead para explicar a categoria do produto.
   // 30/09 (PO): título 2 + subtítulo sobre o VALOR do agente — sem falar de
   // funil e sem prometer que ele não erra (a equipe assume quando precisa).
-  title: 'Seu WhatsApp atende, vende e organiza.',
-  lead: 'Um agente de inteligência artificial responde seus clientes a qualquer hora, com as informações da sua empresa, e chama sua equipe quando uma pessoa precisa assumir.',
+  // 02/10 (reescrita de vendas): a dor mais comum do dono — cliente sem
+  // resposta — vira a promessa; o mecanismo (IA + organização + equipe) vai
+  // para o apoio. "Vende" saiu do título: quem fecha a venda é uma pessoa.
+  title: 'Nenhum cliente sem resposta no WhatsApp.',
+  lead: 'Um agente de IA responde na hora, de dia ou de noite, com as informações da sua empresa. Organiza cada venda e chama sua equipe quando uma pessoa precisa assumir.',
+  /** A redução de risco logo abaixo dos botões: o diferencial que antes só
+   *  aparecia na seção de implantação. Fatos do serviço, sem número. */
+  garantias: ['Configuramos com você', 'Você testa antes de ligar', 'WhatsApp oficial da Meta'],
   stageLabel: 'Demonstração animada do produto',
 } as const
 
 export const trust = {
   // Reposicionado (26/09) logo depois da Plataforma: quem acabou de ver a IA
   // agir pergunta primeiro "posso confiar?" — e só depois "dá trabalho?".
-  eyebrow: 'Limites da IA',
+  eyebrow: 'Você no controle',
   // 26/09 (PO): NENHUMA promessa de que a IA não erra ou não inventa — isso
   // acontece e não se garante na venda. A seção diz o contrário da concorrência:
   // nenhuma IA acerta sempre; a Oryon é feita para que o erro custe pouco.
@@ -108,7 +114,7 @@ export const trust = {
       titulo: 'A IA pode, se você ligar',
       itens: [
         { texto: 'Responder com o que você cadastrou', nota: 'instruções, documentos e serviços' },
-        { texto: 'Marcar a situação e as etiquetas do cliente', nota: 'fica no registro' },
+        { texto: 'Atualizar a ficha e as etiquetas do cliente', nota: 'fica no registro' },
         { texto: 'Avançar a venda para a próxima etapa', nota: 'nunca a última' },
         { texto: 'Chamar a sua equipe', nota: 'encaixes, urgências e fora do escopo' },
       ],
@@ -178,7 +184,7 @@ export function linkContato(): string {
 export const plataforma = {
   eyebrow: 'Plataforma',
   title: 'Veja o atendimento acontecer.',
-  titleCinza: 'A conversa avança enquanto o cadastro e as vendas se atualizam.',
+  titleCinza: 'A conversa anda, e a ficha do cliente e as vendas se atualizam junto.',
   contexto: 'Demonstração completa · uma clínica atendendo pelo WhatsApp',
   /**
    * Os três ATOS (26/09): seis capítulos com a mesma anatomia cansavam no
@@ -186,73 +192,75 @@ export const plataforma = {
    * abre com uma frase e agrupa os capítulos pelo id.
    */
   atos: [
-    { id: 'ia',     numero: 'I',   titulo: 'A IA responde',           frase: 'Seu conteúdo orienta cada resposta no WhatsApp.', blocos: ['conhecer', 'atender'] },
-    { id: 'venda',  numero: 'II',  titulo: 'O atendimento avança',    frase: 'A IA avança a venda e chama sua equipe quando é hora de assumir.', blocos: ['funil', 'equipe'] },
-    { id: 'escala', numero: 'III', titulo: 'Clientes voltam',        frase: 'Campanhas reabrem conversas e o painel mostra o resultado.', blocos: ['campanhas', 'medir'] },
+    { id: 'ia',     numero: 'I',   titulo: 'A IA responde',           frase: 'Seu cliente é atendido na hora, com as informações da sua empresa.', blocos: ['conhecer', 'atender'] },
+    { id: 'venda',  numero: 'II',  titulo: 'O atendimento avança',    frase: 'A venda anda durante a conversa, e sua equipe entra na hora de fechar.', blocos: ['funil', 'equipe'] },
+    { id: 'escala', numero: 'III', titulo: 'Clientes voltam',        frase: 'Quem já comprou volta a conversar, e você vê o resultado.', blocos: ['campanhas', 'medir'] },
   ],
   // Ordem (26/09, aprovada pelo PO): conhecer → atender → funil → equipe →
   // reativar → medir. O funil vem ANTES da equipe porque o clímax da história
   // (a pessoa confirma, e o negócio vai para a etapa final) pertence ao
   // capítulo da equipe — e ele precisa vir depois de o funil andar sozinho.
+  // 02/10 (reescrita de vendas): cada capítulo diz o que o dono ganha — a
+  // promessa (`destaque`) cabe numa linha da lista de "Como funciona".
   blocos: [
     {
       id: 'conhecer',
       indice: 'Ensinar a IA',
-      destaque: 'Suas informações orientam cada resposta.',
-      texto: 'Você cadastra serviços, valores, regras e dúvidas frequentes. O agente responde com base nisso.',
+      destaque: 'Ensine uma vez o que sua equipe repete todo dia.',
+      texto: 'Serviços, valores, regras e dúvidas frequentes: você cadastra uma vez, e a IA usa em cada resposta. Mudou um valor, muda num lugar só.',
       cartoes: [
-        { titulo: 'Resposta baseada no que você cadastrou.', texto: 'Os valores vêm da sua lista de serviços e produtos. As regras vêm dos seus documentos.' },
-        { titulo: 'Informação mudou? Atualize uma vez.', texto: 'Mude o valor ou o documento, e as próximas respostas já saem atualizadas.' },
+        { titulo: 'Respostas com as informações da sua empresa.', texto: 'Os valores saem da sua lista de serviços e produtos, e as regras, dos seus documentos.' },
+        { titulo: 'Mudou o valor, muda a resposta.', texto: 'Atualize a informação uma vez, e as próximas conversas já usam o valor novo.' },
       ],
     },
     {
       id: 'atender',
-      indice: 'Atender com IA',
-      destaque: 'O cliente é atendido mesmo fora do horário.',
-      texto: 'O cliente pede um horário à noite. O agente responde na hora e já deixa o contato organizado.',
+      indice: 'Atender a qualquer hora',
+      destaque: 'Quem chama à noite é atendido à noite.',
+      texto: 'O cliente pede um horário tarde da noite. A IA responde na hora, e de manhã sua equipe já encontra o pedido organizado.',
       cartoes: [
-        { titulo: 'O cadastro do cliente se atualiza sozinho.', texto: 'Durante a conversa, o agente marca a situação do cliente e aplica etiquetas. O histórico mostra o que aconteceu e quem fez.' },
-        { titulo: 'O cliente continua no WhatsApp.', texto: 'Sem instalar outro aplicativo ou preencher um formulário.' },
+        { titulo: 'A ficha do cliente se preenche durante a conversa.', texto: 'A IA marca em que pé o cliente está e coloca etiquetas. Sua equipe não precisa digitar isso depois, e o histórico mostra quem fez cada mudança.' },
+        { titulo: 'O cliente não sai do WhatsApp.', texto: 'Nada de aplicativo novo ou formulário: ele fala com você onde já está.' },
       ],
     },
     {
       id: 'funil',
-      indice: 'Organizar as vendas',
-      destaque: 'A venda avança junto com a conversa.',
-      texto: 'Se você permitir, o agente passa a venda para a próxima etapa conforme a conversa anda. A equipe vê etapa, itens e valor no mesmo lugar.',
+      indice: 'Ver as vendas',
+      destaque: 'Saiba quanto está em negociação agora.',
+      texto: 'Cada conversa vira uma venda no funil, com itens e valor. Se você permitir, a IA avança a etapa conforme a conversa anda, e você vê o total em aberto sem pedir relatório a ninguém.',
       cartoes: [
-        { titulo: 'Itens e valores em cada venda.', texto: 'Produtos, quantidades e valores entram a partir da sua lista de serviços e produtos.' },
-        { titulo: 'Histórico de cada movimento.', texto: 'Veja quando a etapa mudou e se foi o agente ou uma pessoa.' },
+        { titulo: 'Itens e valores em cada venda.', texto: 'Produtos, quantidades e valores entram direto da sua lista de serviços e produtos.' },
+        { titulo: 'Cada movimento com nome.', texto: 'Você sabe quando a venda mudou de etapa e se foi a IA ou alguém da equipe.' },
       ],
     },
     {
       id: 'equipe',
       indice: 'Passar para a equipe',
-      destaque: 'A equipe assume com todo o contexto.',
-      texto: 'Quando o cliente pede ajuda, a IA transfere a conversa, avisa a pessoa certa e mantém o histórico à vista.',
+      destaque: 'Sua equipe entra sem perguntar tudo de novo.',
+      texto: 'Quando o cliente precisa de uma pessoa, a IA chama quem cuida do assunto e deixa a conversa inteira à vista. O cliente não repete nada.',
       cartoes: [
-        { titulo: 'A pessoa certa recebe o aviso.', texto: 'A atendente abre a conversa já sabendo o que foi pedido e respondido.' },
-        { titulo: 'A decisão final continua humana.', texto: 'A IA registra e avança as etapas. Só uma pessoa marca o negócio como ganho ou perdido.' },
+        { titulo: 'O aviso vai para quem resolve.', texto: 'A atendente abre a conversa já sabendo o que foi pedido e o que foi respondido.' },
+        { titulo: 'Quem fecha a venda é a sua equipe.', texto: 'A IA registra e avança as etapas. Marcar como ganha ou perdida é sempre de uma pessoa.' },
       ],
     },
     {
       id: 'campanhas',
       indice: 'Trazer clientes de volta',
-      destaque: 'Campanhas trazem clientes de volta.',
-      texto: 'Envie mensagens para quem já é seu cliente, com modelos aprovados pela Meta. Quem responde cai direto no atendimento.',
+      destaque: 'Quem já comprou é a venda mais fácil.',
+      texto: 'Mande uma mensagem para quem já é seu cliente, com modelos aprovados pela Meta. Quem responde cai direto no atendimento.',
       cartoes: [
-        { titulo: 'Mensagem com o nome de cada cliente.', texto: 'Use o nome do cliente e botões de resposta rápida para facilitar o retorno.' },
-        { titulo: 'O resultado em um relatório.', texto: 'Veja quem recebeu, quem leu e quem respondeu a cada campanha.' },
+        { titulo: 'Cada cliente recebe pelo nome.', texto: 'A mensagem leva o nome da pessoa e botões para responder com um toque.' },
+        { titulo: 'Você vê quem voltou.', texto: 'O relatório mostra quem recebeu, quem leu e quem respondeu a cada campanha.' },
       ],
     },
     {
       id: 'medir',
       indice: 'Acompanhar os resultados',
-      destaque: 'Veja onde o atendimento precisa de atenção.',
-      texto: 'Um painel mostra quem está sendo atendido, quem está esperando e como foi a semana.',
+      destaque: 'Saiba agora quem está esperando resposta.',
+      texto: 'Um painel mostra quem está sendo atendido, quem está na fila e como foi a semana, sem você abrir conversa por conversa.',
       cartoes: [
-        { titulo: 'Status de cada conversa.', texto: 'Veja quantas estão ativas, na fila ou resolvidas no dia.' },
-        { titulo: 'Atividade recente, com responsável.', texto: 'Transferências e conversas resolvidas entram no histórico com quem fez cada ação.' },
+        { titulo: 'O dia de atendimento num olhar.', texto: 'Conversas ativas, na fila e resolvidas no dia.' },
+        { titulo: 'Quem fez o quê.', texto: 'Transferências e conversas resolvidas ficam registradas com o nome de quem agiu.' },
       ],
     },
   ],
@@ -261,73 +269,33 @@ export const plataforma = {
 // ─── Rodada (b), 26/09: as seções que quebram as objeções que a Plataforma não
 // quebra. Cada afirmação abaixo tem prova no código (ver RETOMADA-LANDING-LOOP.md).
 
-/** "Serve para mim?" — clínicas como caso completo (a vertical de hoje);
- *  os outros segmentos como cenários, sem prometer o que não foi feito. */
-export const area = {
-  eyebrow: 'Para a sua área',
-  title: 'Veja como uma clínica usa a Oryon.',
-  titleCinza: 'O mesmo fluxo pode atender outros negócios de serviço.',
-  lead: 'Na clínica, o agente consulta informações sobre consultas, convênios e agenda. Em outras operações, você configura o conteúdo, o catálogo, o funil e as regras de transferência.',
-  caso: {
-    rotulo: 'Caso completo',
-    titulo: 'Clínicas e consultórios',
-    texto: 'O agente responde às dúvidas recorrentes e organiza cada novo atendimento. A recepção assume encaixes, urgências e dúvidas clínicas.',
-    itens: [
-      'Informa valores e convênios a partir do catálogo e da base de conhecimento',
-      'Consulta horários quando a agenda está integrada à Oryon',
-      'Encaminha a marcação e registra o atendimento no funil',
-      'Chama a recepção para encaixes, urgências e dúvidas clínicas',
-      'Reativa pacientes com campanhas de retorno',
-    ],
-    /** Honesto: a agenda só entra com a integração feita na implantação. */
-    nota: 'A consulta à agenda depende da integração com o sistema da clínica, feita na implantação.',
-  },
-  cenarios: [
-    {
-      titulo: 'Contabilidade',
-      exemplo: '“Qual o prazo pra mandar as notas de agosto?”',
-      texto: 'Responde dúvidas sobre prazos e documentos usando o conteúdo do escritório. O contador entra quando o caso é específico.',
-    },
-    {
-      titulo: 'Jurídico',
-      exemplo: '“Preciso de orientação sobre uma rescisão.”',
-      texto: 'Faz a triagem inicial e pede os documentos definidos pelo escritório. O advogado assume quando o assunto exige análise.',
-    },
-    {
-      titulo: 'Serviços em geral',
-      exemplo: '“Vocês fazem entrega no sábado?”',
-      texto: 'Consulta o catálogo e as regras de atendimento, organiza o primeiro contato e chama a equipe quando alguém precisa assumir.',
-    },
-  ],
-} as const
-
 /** "Perco o controle?" — setores, papéis, auditoria e chat interno: fatos do produto. */
 export const equipe = {
   eyebrow: 'A equipe no comando',
-  title: 'Dê a cada pessoa o acesso certo.',
-  titleCinza: 'Permissões, responsáveis e histórico no mesmo lugar.',
+  title: 'Saiba quem falou o quê com cada cliente.',
+  titleCinza: 'Acessos por função e histórico de cada ação.',
   // 30/09 (PO): as permissões por setor vão ser corrigidas no produto — até
   // lá, a página não vende a matriz de permissões (o cartão "Setores" saiu).
-  lead: 'Organize o atendimento por setor, defina o acesso de cada perfil e consulte o histórico das ações da equipe.',
+  lead: 'Cada pessoa vê e faz só o que cabe à função dela. Cada mudança fica registrada com nome e hora, e a equipe combina o atendimento sem sair da Oryon.',
   cartoes: [
-    { key: 'papeis', titulo: 'Acessos por perfil', texto: 'Dono, administrador, supervisor e agente têm acessos diferentes de acordo com a função.' },
-    { key: 'auditoria', titulo: 'Quem mudou o quê', texto: 'A linha do tempo mostra quem alterou o quê e quando.' },
-    { key: 'chat', titulo: 'Chat interno da equipe', texto: 'A equipe usa canais, mensagens diretas e menções sem sair da Oryon.' },
+    { key: 'papeis', titulo: 'Acesso de acordo com a função', texto: 'Dono, administrador, supervisor e atendente têm acessos diferentes.' },
+    { key: 'auditoria', titulo: 'Nada muda sem deixar rastro', texto: 'O histórico mostra quem alterou cada coisa e quando.' },
+    { key: 'chat', titulo: 'A equipe conversa por dentro', texto: 'Canais, mensagens diretas e menções, separados da conversa com o cliente.' },
   ],
 } as const
 
 /** "E se ninguém responder?" — notificações, aviso de espera, fila, vários números. */
 export const resposta = {
   eyebrow: 'Fila e avisos',
-  title: 'A equipe vê o que precisa de resposta.',
-  titleCinza: 'Transferências, fila e avisos aparecem juntos.',
-  lead: 'Quando a IA transfere uma conversa ou alguém fica esperando, a Oryon destaca o caso no painel e envia um alerta ao celular quando essa opção está ativa.',
+  title: 'Nenhuma conversa fica sem dono.',
+  titleCinza: 'A fila mostra o que espera resposta, e os avisos chamam quem precisa agir.',
+  lead: 'Quando a IA passa uma conversa para a equipe ou um cliente fica esperando, a Oryon mostra o caso no painel e avisa no celular de quem precisa responder, se essa opção estiver ligada.',
   cartoes: [
-    { key: 'notificacoes', titulo: 'Cada aviso chega com contexto.', texto: 'Transferências, conversas atribuídas, campanhas concluídas, menções e alertas de conexão aparecem no app e podem chegar ao celular.' },
-    { key: 'espera', titulo: 'Aviso quando a resposta atrasa.', texto: 'Se uma conversa atribuída fica sem resposta além do tempo definido, o responsável recebe um aviso.' },
-    { key: 'fila', titulo: 'Fila e atribuição', texto: 'As conversas transferidas pela IA entram na fila. A equipe pode assumir, escolher um responsável ou transferir para outro setor.' },
+    { key: 'notificacoes', titulo: 'Cada aviso diz do que se trata.', texto: 'Transferências, conversas atribuídas, campanhas concluídas e menções aparecem no app e podem chegar ao celular.' },
+    { key: 'espera', titulo: 'Demorou, o responsável fica sabendo.', texto: 'Se uma conversa atribuída passa do tempo que você definiu, quem cuida dela recebe um aviso.' },
+    { key: 'fila', titulo: 'Toda conversa tem responsável', texto: 'O que a IA passa para a equipe entra na fila. Alguém assume, escolhe um responsável ou transfere para outro setor.' },
     // 30/09 (PO): mais de um número, sim — conforme o plano contratado.
-    { key: 'numeros', titulo: 'Números diferentes, uma caixa de entrada', texto: 'Conforme o plano, recepção, comercial e pós-atendimento podem usar números e agentes diferentes na mesma tela de Conversas.' },
+    { key: 'numeros', titulo: 'Os clientes ficam com a empresa', texto: 'Conforme o plano, recepção, comercial e pós-venda usam números e agentes próprios, na mesma caixa de entrada. O histórico fica na Oryon, não no celular de quem atende.' },
   ],
 } as const
 
@@ -385,7 +353,7 @@ export const implantacao = {
   ],
   /** O que muda depois do ar — tudo na própria Oryon, sem depender de nós. */
   depois: {
-    titulo: 'Depois da implantação, sua equipe faz os ajustes.',
+    titulo: 'Depois, sua equipe ajusta sozinha, sem depender de ninguém.',
     itens: [
       {
         key: 'ajuste',
@@ -400,7 +368,7 @@ export const implantacao = {
       {
         key: 'acompanhar',
         titulo: 'Acompanhe pelo painel.',
-        texto: 'Veja fila, conversas abertas, volume de atendimento e equipe online em um só lugar.',
+        texto: 'Veja quem está na fila, o volume da semana e quem da equipe está online.',
       },
     ],
   },
@@ -408,7 +376,7 @@ export const implantacao = {
 
 export const perguntas = {
   eyebrow: 'Perguntas',
-  title: 'Dúvidas comuns antes de começar.',
+  title: 'O que todo dono pergunta antes de começar.',
   titleCinza: 'Respostas diretas.',
   /** As que abrem a home (ciclo noturno, 30/09): as objeções de quem decide a
    *  compra, na ordem em que costumam aparecer. */
@@ -509,40 +477,40 @@ export const paginasPlataforma = [
   {
     slug: 'atendimento-ia',
     menu: 'Atendimento com IA',
-    resumo: 'A IA responde com o que você cadastrou.',
-    titulo: 'A IA atende com o conteúdo da sua empresa.',
-    cinza: 'Sua equipe decide quando assumir.',
-    lead: 'O agente usa as instruções, os documentos e a lista de serviços que você cadastrou, responde no WhatsApp e mantém o cadastro do cliente em dia. Você testa antes de ligar e define o que ele pode fazer.',
+    resumo: 'Respostas na hora, com o que sua empresa sabe.',
+    titulo: 'Seu cliente atendido na hora, a qualquer hora.',
+    cinza: 'E sua equipe decide quando assumir.',
+    lead: 'A IA usa as instruções, os documentos e a lista de serviços da sua empresa, responde no WhatsApp e deixa a ficha de cada cliente em dia. Você testa antes de ligar e define o que ela pode fazer.',
     blocos: ['conhecer', 'atender'],
     extras: ['limites'],
   },
   {
     slug: 'funil',
     menu: 'Funil e vendas',
-    resumo: 'O negócio avança durante a conversa.',
-    titulo: 'A venda avança enquanto a conversa acontece.',
-    cinza: 'A equipe assume com todo o contexto.',
-    lead: 'O agente passa a venda para a próxima etapa, registra itens e valores e chama a pessoa certa quando é hora de fechar.',
+    resumo: 'Quanto está em negociação, agora.',
+    titulo: 'Cada conversa vira uma venda que você acompanha.',
+    cinza: 'E sua equipe entra na hora de fechar.',
+    lead: 'A IA registra itens e valores, avança a venda para a próxima etapa e chama quem cuida do cliente quando é hora de fechar. Você vê o total em aberto sem pedir relatório.',
     blocos: ['funil', 'equipe'],
     extras: [],
   },
   {
     slug: 'disparos',
     menu: 'Campanhas e resultados',
-    resumo: 'Campanhas que reabrem conversas.',
-    titulo: 'Traga contatos de volta pelo WhatsApp.',
-    cinza: 'E acompanhe o resultado no painel.',
-    lead: 'Envie mensagens para quem já é seu cliente, com modelos aprovados pela Meta, e veja quem recebeu, leu e respondeu. O painel mostra onde o atendimento precisa de atenção.',
+    resumo: 'Clientes antigos de volta à conversa.',
+    titulo: 'Traga de volta quem já comprou de você.',
+    cinza: 'E veja quem respondeu.',
+    lead: 'Mande mensagens para a sua base de clientes com modelos aprovados pela Meta e veja quem recebeu, leu e respondeu. O painel mostra onde o atendimento precisa de atenção.',
     blocos: ['campanhas', 'medir'],
     extras: [],
   },
   {
     slug: 'equipe',
     menu: 'Equipe e controle',
-    resumo: 'Acessos, fila e avisos.',
-    titulo: 'Sua equipe no comando do atendimento.',
-    cinza: 'Acessos, fila e avisos no mesmo lugar.',
-    lead: 'Cada pessoa com o acesso certo, a fila do que precisa de resposta e avisos quando alguém fica esperando.',
+    resumo: 'Nenhuma conversa sem dono.',
+    titulo: 'Saiba o que acontece no seu WhatsApp.',
+    cinza: 'Mesmo quando você não está olhando.',
+    lead: 'Cada pessoa com o acesso da sua função, uma fila do que espera resposta e avisos quando um cliente fica esperando.',
     blocos: [],
     extras: ['equipe', 'resposta'],
   },
@@ -556,7 +524,7 @@ export const home = {
   /** A dor e a virada (ciclo noturno, 30/09): o que acontece hoje no WhatsApp
    *  de quem compra, em palavras simples, e o que muda. Sem números. */
   dor: {
-    eyebrow: 'Por que a Oryon',
+    eyebrow: 'O mesmo cliente, duas respostas',
     /** O título muda com o setor do carrossel (PO, 30/09): cada segmento tem
      *  um valor próprio. Clínica e loja: agilidade com volume alto. Imobiliária:
      *  o interesse não esfria. Contabilidade e jurídico: triagem e menos carga
@@ -564,22 +532,22 @@ export const home = {
     setores: {
       clinica: {
         titulo: 'Na clínica cheia, marca quem responde primeiro.',
-        apoio: 'O agente responde na hora, com convênios, valores e horários que a clínica cadastrou, e chama a recepção para confirmar.',
+        apoio: 'A resposta sai na hora, com os convênios, valores e horários da clínica, e a recepção só entra para confirmar.',
       },
       imobiliaria: {
         titulo: 'O interesse no imóvel não espera o corretor voltar.',
-        apoio: 'O agente responde sobre os imóveis que você cadastrou e chama o corretor certo para combinar a visita.',
+        apoio: 'A IA responde sobre os imóveis da sua carteira e chama o corretor do imóvel para combinar a visita.',
       },
       loja: {
-        titulo: 'Na loja, a venda fica com quem responde primeiro.',
-        apoio: 'Estoque, preço e retirada respondidos na hora, enquanto a equipe atende o balcão.',
+        titulo: 'Na loja, quem demora a responder vende para o concorrente.',
+        apoio: 'Estoque, valor e retirada respondidos na hora, enquanto a equipe atende o balcão.',
       },
       contabilidade: {
-        titulo: 'Menos tempo do contador com as mesmas perguntas.',
+        titulo: 'Seu contador para de responder a mesma pergunta o dia todo.',
         apoio: 'Prazos e documentos respondidos com o conteúdo do escritório. O contador entra quando o caso pede análise.',
       },
       juridico: {
-        titulo: 'O advogado recebe a triagem pronta.',
+        titulo: 'O advogado já começa com a triagem pronta.',
         apoio: 'O agente faz as perguntas definidas pelo escritório e pede os documentos. Orientação sobre o caso fica com o advogado.',
       },
     },
@@ -594,11 +562,13 @@ export const home = {
     andamento: 'Conversa em andamento…',
     /** Celular: com as duas conversas vistas, o botão do setor seguinte ("Próximo: Imobiliária"). */
     proximo: 'Próximo:',
+    /** /solucoes: com as duas conversas terminadas, recomeça a área. */
+    verDeNovo: 'Ver de novo',
   },
   /** A chamada no meio da página, depois das áreas. */
   chamada: {
-    titulo: 'Quer ver a Oryon com o conteúdo da sua empresa?',
-    texto: 'Mostramos na prática, com exemplos da sua área, e tiramos suas dúvidas.',
+    titulo: 'Cada mensagem sem resposta é um cliente indo para o concorrente.',
+    texto: 'Na demonstração, você vê a Oryon respondendo as perguntas que seus clientes fazem todo dia.',
   },
   comoFunciona: {
     eyebrow: 'Como funciona',
@@ -616,71 +586,111 @@ export const home = {
   },
 } as const
 
-/** As áreas (30/09): a mesma plataforma em operações diferentes, cada uma com
- *  uma simulação (dados fictícios). Nada aqui é integração pronta que não
- *  exista: o que muda de uma área para outra é o conteúdo e as regras que a
- *  empresa cadastra. */
+/** A PÁGINA "PARA A SUA ÁREA" (/solucoes, 02/10): uma área por vez, com as
+ *  mesmas áreas e conversas da seção "Por que a Oryon" da home. As chaves de
+ *  `areas` são os ids de home/dorConversas.ts. Nada aqui é integração pronta
+ *  que não exista: o que muda de uma área para outra é o conteúdo e as regras
+ *  que a empresa cadastra. */
 export const solucoes = {
   eyebrow: 'Para a sua área',
-  titulo: 'Um jeito de atender, várias áreas.',
-  cinza: 'Veja simulações em operações diferentes.',
-  lead: 'Clínica, escritório, imobiliária ou loja: o atendimento é o mesmo, o que muda é o que você cadastra. Escolha uma área e veja uma conversa acontecendo.',
-  aviso: 'Simulação com dados fictícios.',
-  registroTitulo: 'O que a Oryon registra',
-  registroSub: 'Cada ação do agente, com hora e responsável.',
-  registroVazio: 'As ações do agente aparecem aqui conforme a conversa acontece.',
-  verTodas: 'Ver todas as áreas',
-  abasLabel: 'Escolher área',
-  paginaTitulo: 'A Oryon em operações diferentes.',
-  paginaCinza: 'O mesmo atendimento, com o conteúdo de cada área.',
-  areas: [
-    {
-      id: 'clinicas',
-      nome: 'Clínicas e consultórios',
-      titulo: 'Valores, convênios e horários sem fila de espera.',
-      texto: 'O agente informa valores e convênios com base no que a clínica cadastrou e chama a recepção para encaixes, urgências e dúvidas clínicas.',
-      itens: ['Valores e convênios vindos do que a clínica cadastrou', 'Horários quando a agenda está integrada à Oryon', 'Recepção chamada para urgências e dúvidas clínicas'],
+  paginaTitulo: 'A Oryon no dia a dia da sua área.',
+  paginaCinza: 'Escolha a sua área e veja a mesma conversa duas vezes, sem a Oryon e com a Oryon.',
+  abasLabel: 'Escolher a área',
+  /** Os atos da página, na ordem: a cliente no celular, a equipe no computador, a IA. */
+  atos: {
+    dia: 'Um dia no WhatsApp',
+    tela: 'Na tela da sua equipe',
+    ia: 'O que a IA usa para responder',
+  },
+  /** As telas do app usam os dados de exemplo da demonstração (02/10): são
+   *  outra conversa, não a dos iPhones — a copy não diz "a mesma conversa". */
+  telaAviso: 'Telas reais da Oryon, com dados de exemplo.',
+  /** Os momentos da tela do app: cada um leva a tela àquele trecho. */
+  momentosLabel: 'Momentos do atendimento',
+  /** O convite do fim (a área entra no título; o formulário vem preenchido). */
+  ctaTexto: 'Mostramos na prática, com exemplos da sua área, e tiramos suas dúvidas.',
+  areas: {
+    clinica: {
+      tela: {
+        titulo: 'Cada conversa da clínica, organizada na Oryon.',
+        /** Os quatro momentos da história do app (sincronizados com a tela). */
+        marcos: [
+          { titulo: 'A conversa chega na caixa de entrada', texto: 'A IA responde na hora, com os valores, convênios e horários da clínica.' },
+          { titulo: 'O contato se organiza', texto: 'Situação e etiquetas mudam conforme a conversa anda.' },
+          { titulo: 'A venda anda no funil', texto: 'De Avaliação para Agendado, com o histórico de cada movimento.' },
+          { titulo: 'A recepção assume', texto: 'Com a conversa inteira à vista, quando a cliente pede uma pessoa.' },
+        ],
+      },
+      ia: 'A IA responde com o que a clínica ensinou.',
+      itens: ['Valores e convênios da tabela da clínica', 'Horários, quando a agenda está integrada à Oryon', 'Urgências e dúvidas clínicas vão direto para a recepção'],
+      cta: 'Quer ver a Oryon com o conteúdo da sua clínica?',
     },
-    {
-      id: 'contabilidade',
-      nome: 'Contabilidade',
-      titulo: 'Prazos e documentos respondidos na hora.',
-      texto: 'O agente responde dúvidas recorrentes sobre prazos e documentos com o conteúdo do escritório e passa para o contador quando o caso é específico.',
-      itens: ['Prazos e listas de documentos do próprio escritório', 'Etiqueta por assunto para organizar a demanda', 'Contador chamado quando o caso exige análise'],
+    imobiliaria: {
+      tela: {
+        titulo: 'Cada interesse em imóvel, organizado na Oryon.',
+        marcos: [
+          { titulo: 'A conversa chega na caixa de entrada', texto: 'A IA responde com o imóvel, o condomínio e as regras de cada prédio.' },
+          { titulo: 'O contato se organiza', texto: 'Situação e etiquetas mudam conforme a conversa anda.' },
+          { titulo: 'A venda anda no funil', texto: 'De Qualificação para Visita, com o histórico de cada movimento.' },
+          { titulo: 'O corretor assume', texto: 'Com a conversa inteira à vista, para combinar a visita.' },
+        ],
+      },
+      ia: 'A IA responde com os imóveis da sua carteira.',
+      itens: ['Imóveis, condomínio e regras de cada prédio', 'Cada interesse vira uma venda em andamento', 'O corretor entra para combinar a visita'],
+      cta: 'Quer ver a Oryon com os imóveis da sua imobiliária?',
     },
-    {
-      id: 'juridico',
-      nome: 'Jurídico',
-      titulo: 'Triagem organizada antes do advogado entrar.',
-      texto: 'O agente faz a triagem inicial, pede os documentos definidos pelo escritório e não dá orientação sobre o caso: quem analisa é o advogado.',
-      itens: ['Perguntas de triagem definidas pelo escritório', 'Lista de documentos antes da primeira reunião', 'Advogado chamado para qualquer orientação'],
+    loja: {
+      tela: {
+        titulo: 'Cada pedido da loja, organizado na Oryon.',
+        marcos: [
+          { titulo: 'A conversa chega na caixa de entrada', texto: 'A IA responde com o estoque, o valor e a retirada da loja.' },
+          { titulo: 'O contato se organiza', texto: 'Situação e etiquetas mudam conforme a conversa anda.' },
+          { titulo: 'A venda anda no funil', texto: 'De Interesse para Reservado, com o histórico de cada movimento.' },
+          { titulo: 'A vendedora assume', texto: 'Com a conversa inteira à vista, para separar o produto.' },
+        ],
+      },
+      ia: 'A IA responde com o estoque e as condições da loja.',
+      itens: ['Produtos, valores e formas de pagamento da loja', 'Cada interesse registrado para a equipe acompanhar', 'A vendedora entra para separar e fechar a venda'],
+      cta: 'Quer ver a Oryon com os produtos da sua loja?',
     },
-    {
-      id: 'imobiliarias',
-      nome: 'Imobiliárias',
-      titulo: 'Imóveis certos para cada pedido.',
-      texto: 'O agente apresenta os imóveis que você cadastrou, registra o interesse de cada cliente e chama o corretor para combinar a visita.',
-      itens: ['Imóveis vindos do que você cadastrou', 'Cada interesse registrado como uma venda em andamento', 'Corretor chamado para combinar a visita'],
+    contabilidade: {
+      tela: {
+        titulo: 'Cada dúvida do escritório, organizada na Oryon.',
+        marcos: [
+          { titulo: 'A conversa chega na caixa de entrada', texto: 'A IA responde com os prazos e a lista de documentos do escritório.' },
+          { titulo: 'O contato se organiza', texto: 'Situação e etiquetas mudam conforme a conversa anda.' },
+          { titulo: 'O atendimento anda no funil', texto: 'De Orientação para Aguardando documentos, com o histórico de cada movimento.' },
+          { titulo: 'O contador assume', texto: 'Só no caso que pede análise, com a conversa inteira à vista.' },
+        ],
+      },
+      ia: 'A IA responde com os prazos e as listas do escritório.',
+      itens: ['Prazos e documentos do calendário do escritório', 'Cada conversa etiquetada por assunto', 'O contador entra só quando o caso pede análise'],
+      cta: 'Quer ver a Oryon com o conteúdo do seu escritório?',
     },
-    {
-      id: 'varejo',
-      nome: 'Varejo e lojas',
-      titulo: 'Estoque, tamanho e reserva pelo WhatsApp.',
-      texto: 'O agente responde sobre produtos e condições que a loja cadastrou, registra o interesse e chama um vendedor para concluir a venda.',
-      itens: ['Produtos e condições cadastrados pela loja', 'Cada interesse registrado para a equipe acompanhar', 'Vendedor chamado para concluir a venda'],
+    juridico: {
+      tela: {
+        titulo: 'Cada triagem do escritório, organizada na Oryon.',
+        marcos: [
+          { titulo: 'A conversa chega na caixa de entrada', texto: 'A IA faz as perguntas de triagem que o escritório definiu.' },
+          { titulo: 'O contato se organiza', texto: 'Situação e etiquetas mudam conforme a conversa anda.' },
+          { titulo: 'O caso anda no funil', texto: 'De Triagem para Documentos, com o histórico de cada movimento.' },
+          { titulo: 'A advogada assume', texto: 'Com a triagem pronta e a conversa inteira à vista.' },
+        ],
+      },
+      ia: 'A IA faz a triagem do jeito do escritório.',
+      itens: ['Perguntas de triagem definidas pelo escritório', 'Documentos pedidos antes da primeira reunião', 'Toda orientação sobre o caso fica com o advogado'],
+      cta: 'Quer ver a Oryon com a triagem do seu escritório?',
     },
-  ],
+  },
 } as const
-
-export type AreaSolucao = (typeof solucoes.areas)[number]
 
 /** O formulário de demonstração — a conversão da página enquanto o WhatsApp
  *  comercial não tem número. */
 export const formDemo = {
   eyebrow: 'Demonstração',
-  titulo: 'Veja a Oryon no seu atendimento.',
+  titulo: 'Veja a Oryon atendendo os seus clientes.',
   cinza: 'Mostramos na prática.',
-  lead: 'Nossa equipe entra em contato para marcar uma demonstração com o conteúdo da sua área.',
+  lead: 'Numa conversa curta, mostramos a Oryon respondendo as perguntas que seus clientes fazem e organizando as vendas do jeito da sua empresa.',
   depoisTitulo: 'O que acontece depois',
   mensagemExemplo: 'Ex.: respondemos muitas mensagens fora do horário…',
   /** A mensagem é opcional e começa recolhida (formulário compacto, 01/10). */
@@ -689,7 +699,7 @@ export const formDemo = {
   depois: [
     { titulo: 'Você envia o pedido', texto: 'Só os dados básicos da sua operação.' },
     { titulo: 'Nossa equipe fala com você', texto: 'Pelo WhatsApp ou pelo e-mail informado, para combinar o melhor horário.' },
-    { titulo: 'Você vê a Oryon funcionando', texto: 'Com exemplos da sua área e espaço para todas as suas perguntas.' },
+    { titulo: 'Você vê a Oryon com o seu conteúdo', texto: 'As perguntas dos seus clientes, as etapas das suas vendas e tempo para todas as suas dúvidas.' },
   ],
   campos: {
     nome: 'Seu nome',

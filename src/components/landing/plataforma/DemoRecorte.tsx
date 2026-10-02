@@ -186,9 +186,27 @@ function PosterDaDemo({ rota }: { rota: string }) {
 }
 
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, pausado = false, manterMontado = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
-  alturaMax, ampliacaoMax = AMPLIACAO_MAX, aoTerminar,
+  titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, esmaecerDireita = false, pausado = false, manterMontado = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
+  alturaMax, ampliacaoMax = AMPLIACAO_MAX, aoTerminar, layoutDesktop = false, salto, camera = false, setor, quadroParado,
 }: {
+  /** O cue mostrado sem movimento (padrão: o último). */
+  quadroParado?: number
+  /** A área do app de demonstração (`perfisDemo.ts`): sem ela, a clínica. */
+  setor?: string
+  /** A região muda com a história (página /solucoes, 02/10): o app desliza e
+   *  aproxima até ela, e a demonstração mostra o detalhe (`detalhe=1` no
+   *  diretor: o painel do contato rola, o sino abre). As regiões mantêm a
+   *  proporção da moldura, que não muda de tamanho. */
+  camera?: boolean
+  /** Pula a história para um cue (a lista de momentos clicável da /solucoes).
+   *  Objeto novo a cada clique: clicar duas vezes no mesmo momento recomeça dele. */
+  salto?: { indice: number }
+  /** O app no layout de computador também no celular (página /solucoes,
+   *  02/10): o recorte vale em qualquer tela, em vez do app inteiro de celular. */
+  layoutDesktop?: boolean
+  /** A borda direita da região some num degradê — para regiões que cortam
+   *  linhas longas (a lista de conhecimento): o texto continua, não acaba. */
+  esmaecerDireita?: boolean
   /** Altura máxima da moldura inteira (px), quando o pai fixa a composição
    *  (o "Como funciona" da home): substitui o orçamento pela altura da tela. */
   alturaMax?: number
@@ -229,11 +247,15 @@ export function DemoRecorte({
   const telaRef = useRef<HTMLDivElement>(null)
   const semMovimento = useReducedMotion()
   const celular = !useMediaQuery('(min-width: 768px)')
+  // O app de celular (390 × 600) só quando a página não pede o de computador.
+  const appCelular = celular && !layoutDesktop
 
   // ── Montar perto da tela, UM POR VEZ (filaDeMontagem); desmontar depois que sai ─
   const [montar, setMontar] = useState(() => typeof IntersectionObserver === 'undefined')
   const [pronta, setPronta] = useState(false)
   const [trocando, setTrocando] = useState(false)
+  /** A cortina cobre a moldura inteira (o fim do laço), não só o conteúdo. */
+  const [veuInteiro, setVeuInteiro] = useState(false)
   const pedidoRef = useRef<number | null>(null)
   const manterRef = useRef(manterMontado)
   manterRef.current = manterMontado
@@ -312,9 +334,14 @@ export function DemoRecorte({
   const foco = useFocoDaDemo(iframeRef)
 
   // ── A mini-história do bloco ───────────────────────────────────────────────
-  const { state, composition, index } = useHeroTimeline<HeroState, HeroCena>({
-    cues, tailMs: 900, hostRef, staticIndex: cues.length - 1, enabled: pronta && !pausado, aoTerminar,
+  const { state, composition, index, irPara } = useHeroTimeline<HeroState, HeroCena>({
+    cues, tailMs: 900, hostRef, staticIndex: quadroParado ?? cues.length - 1, enabled: pronta && !pausado, aoTerminar,
   })
+  // O salto pedido por quem compõe a página; com o app ainda carregando, vale
+  // quando ele fica pronto.
+  useEffect(() => {
+    if (salto && pronta) irPara(salto.indice)
+  }, [salto, pronta, irPara])
   // Na troca de história, o app só muda de tela depois que o véu cobriu o
   // conteúdo: a tela anterior nunca aparece trocando por baixo dele. "História
   // nova" é outra lista de cues (os roteiros são constantes do módulo).
@@ -348,8 +375,8 @@ export function DemoRecorte({
   }, [pronta, tema])
 
   // ── Geometria: largura disponível, orçamento de altura, teto de ampliação ─
-  const regiao = celular ? { x: 0, y: 0, w: APP_CELULAR.w, h: APP_CELULAR.h } : recorte
-  const app = celular ? APP_CELULAR : APP
+  const regiao = appCelular ? { x: 0, y: 0, w: APP_CELULAR.w, h: APP_CELULAR.h } : recorte
+  const app = appCelular ? APP_CELULAR : APP
   const avisar = useRef(onLimite)
   useLayoutEffect(() => { avisar.current = onLimite }, [onLimite])
   useLayoutEffect(() => {
@@ -366,13 +393,13 @@ export function DemoRecorte({
         : Math.min(Math.min(560, Math.max(ALTURA.max, window.innerHeight * 0.47 - 4)), Math.max(ALTURA.min, window.innerHeight - foraDoRecorte))
       // A borda da bandeja (12 px) e a barra de título (30 px) ficam fora da região.
       const porAltura = (orcamento - 36) * (regiao.w / regiao.h) + 12
-      const porAmpliacao = regiao.w * (celular ? 1 : ampliacaoMax) + 12
+      const porAmpliacao = regiao.w * (appCelular ? 1 : ampliacaoMax) + 12
       avisar.current?.(Math.floor(Math.min(porAltura, porAmpliacao)))
     }
     medir()
     window.addEventListener('resize', medir)
     return () => window.removeEventListener('resize', medir)
-  }, [regiao.w, regiao.h, celular, foraDoRecorte, alturaMax, ampliacaoMax])
+  }, [regiao.w, regiao.h, celular, appCelular, foraDoRecorte, alturaMax, ampliacaoMax])
   const [tela, setTela] = useState(0)
   useLayoutEffect(() => {
     const el = telaRef.current
@@ -384,7 +411,7 @@ export function DemoRecorte({
     return () => ro?.disconnect()
   }, [])
   const escala = tela > 0 ? tela / regiao.w : 0.7
-  const appInteiro = !celular && recorte.x === 0 && recorte.y === 0 && recorte.w === APP.w && recorte.h === APP.h
+  const appInteiro = !appCelular && recorte.x === 0 && recorte.y === 0 && recorte.w === APP.w && recorte.h === APP.h
 
   // TROCA DE HISTÓRIA no mesmo app (etapas do "Como funciona"): um véu cobre
   // o conteúdo (VEU_ENTRADA_MS), o app troca de tela por baixo e o véu sai
@@ -409,9 +436,30 @@ export function DemoRecorte({
   }, [cues])
   useEffect(() => () => clearTimeout(fimTroca.current), [])
 
+  // FIM DO LAÇO com câmera (Hero do celular, 02/10): na cena de reinício a
+  // moldura escurece por inteiro, o app volta ao começo coberto e a cortina
+  // só sai quando a primeira tela da história pintou de novo — como o palco
+  // do desktop. Sem isso, a volta ao começo aparecia como um corte seco.
+  useEffect(() => {
+    if (!camera || !pronta || composition !== 'reinicio' || semMovimento) return
+    const primeira = cues[0]?.composition
+    inicioTroca.current = performance.now()
+    esperaPintura.current = { rota: primeira && primeira !== 'reinicio' ? new URL(HERO_ROTAS[primeira], 'http://x').pathname : null }
+    setVeuInteiro(true)
+    setTrocando(true)
+    clearTimeout(fimTroca.current)
+    fimTroca.current = setTimeout(() => { esperaPintura.current = null; setTrocando(false) }, 5000)
+  }, [camera, pronta, composition, cues, semMovimento])
+  // A cortina inteira só volta a ser a de conteúdo depois de sumir.
+  useEffect(() => {
+    if (trocando || !veuInteiro) return
+    const id = setTimeout(() => setVeuInteiro(false), 800)
+    return () => clearTimeout(id)
+  }, [trocando, veuInteiro])
+
   // `modo=recorte`: o app das abas troca para QUALQUER tela também no celular
   // (no Hero, o celular só navega entre conversa e negócio).
-  const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}&modo=recorte`)
+  const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}&modo=recorte${camera ? '&detalhe=1' : ''}${setor ? `&setor=${setor}` : ''}`)
 
   return (
     <div className={cn('w-full', className)} style={style}>
@@ -420,7 +468,11 @@ export function DemoRecorte({
             <div
               ref={telaRef}
               inert
-              className={cn('relative w-full overflow-hidden pointer-events-none select-none', esmaecerBase && '[mask-image:linear-gradient(to_bottom,#000_78%,transparent)]')}
+              className={cn(
+                'relative w-full overflow-hidden pointer-events-none select-none',
+                esmaecerBase && '[mask-image:linear-gradient(to_bottom,#000_78%,transparent)]',
+                esmaecerDireita && '[mask-image:linear-gradient(to_right,#000_80%,transparent)]',
+              )}
               style={{ aspectRatio: `${regiao.w} / ${regiao.h}` }}
             >
               {montar && (
@@ -429,7 +481,7 @@ export function DemoRecorte({
                   src={src}
                   title={`Oryon em demonstração: ${titulo}`}
                   tabIndex={-1}
-                  className="absolute left-0 top-0 border-0 origin-top-left transition-opacity duration-500"
+                  className={cn('absolute left-0 top-0 border-0 origin-top-left', camera ? 'transition-[opacity,transform] duration-[900ms] ease-[cubic-bezier(.65,0,.35,1)] motion-reduce:transition-none' : 'transition-opacity duration-500')}
                   style={{
                     width: app.w, height: app.h,
                     transform: `translate(${-regiao.x * escala}px, ${-regiao.y * escala}px) scale(${escala})`,
@@ -459,9 +511,10 @@ export function DemoRecorte({
                 aria-hidden
                 className={cn(
                   'pointer-events-none absolute bottom-0 right-0 bg-surface-950 transition-opacity motion-reduce:transition-none',
-                  trocando ? 'opacity-100 duration-150 ease-out' : 'opacity-0 duration-[380ms] ease-in-out',
+                  // O fim do laço escurece e volta devagar; a troca de etapa, rápida.
+                  trocando ? (veuInteiro ? 'opacity-100 duration-700 ease-in-out' : 'opacity-100 duration-150 ease-out') : (veuInteiro ? 'opacity-0 duration-700 ease-in-out' : 'opacity-0 duration-[380ms] ease-in-out'),
                 )}
-                style={appInteiro ? { left: MENU_LATERAL * escala, top: BARRA_TOPO * escala } : { left: 0, top: 0 }}
+                style={appInteiro && !veuInteiro ? { left: MENU_LATERAL * escala, top: BARRA_TOPO * escala } : { left: 0, top: 0 }}
               >
                 {/* A tela nova carregando: uma linha fina no topo do conteúdo,
                     como a navegação de um app — o véu nunca parece parado. */}

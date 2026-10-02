@@ -41,7 +41,7 @@ export function estadoAtual(): HeroState { return estado }
  * usá-la aqui fazia a Marina conversar com a própria empresa. Nome provisório,
  * trocar só aqui.
  */
-const TENANT = { id: 'demo-tenant', nome: 'Clínica Vitalis' }
+const TENANT = { id: 'demo-tenant', nome: HERO.company }
 
 function daysAgoIso(d: number) {
   return new Date(Date.now() - d * 86_400_000).toISOString()
@@ -387,7 +387,7 @@ export function instalarBackendDemo() {
   rota('whatsapp/numbers', eq('get', '/whatsapp/numbers'), () => ({
     // O Agente Recepção atende a linha (é por isto que a fila do Dashboard
     // sabe o que a IA está cuidando).
-    data: [{ ...HERO_LINE, qualityRating: 'GREEN', messagingLimit: 'TIER_10K', agentId: 'ag-recepcao', agentName: 'Agente Recepção' }],
+    data: [{ ...HERO_LINE, qualityRating: 'GREEN', messagingLimit: 'TIER_10K', agentId: 'ag-recepcao', agentName: HERO.agent }],
   }))
 
   // ── Disparos ──────────────────────────────────────────────────────────────

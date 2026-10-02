@@ -6,11 +6,10 @@
  * Um setor por vez, em carrossel: clínica, imobiliária, loja, contabilidade
  * e jurídico. O título da seção muda com o setor (copy em landingCopy.ts).
  *
- * Dados fictícios, como `solucoes/simulacoes.ts`, e fora de `landingCopy.ts`
- * de propósito: a copy da landing não pode ter número (regra P14, testada) e
- * uma conversa tem hora e valor. A seção avisa "Conversas de exemplo.".
+ * Dados fictícios, fora de `landingCopy.ts` de propósito: a copy da landing
+ * não pode ter número (regra P14, testada) e uma conversa tem hora e valor. A seção avisa "Conversas de exemplo.".
  *
- * Regras de roteiro (as mesmas das simulações por área):
+ * Regras de roteiro (as mesmas na página /solucoes, que mostra uma área por vez):
  *  • a IA responde com o que a empresa cadastrou e CHAMA a pessoa para o que é
  *    da pessoa (confirmar, combinar visita, concluir a venda);
  *  • nada de módulo desligado nem vocabulário banido no que vai para a tela

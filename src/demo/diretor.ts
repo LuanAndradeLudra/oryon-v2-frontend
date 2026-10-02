@@ -20,8 +20,9 @@ import { definirEstado, estadoAtual } from './backend'
 import { emitirDoServidor } from './preparar'
 import { requisicoesEmVoo } from './guards'
 import {
-  HERO, HERO_USER, heroContact, heroConversation, heroDeal, heroMessages, heroNotifications, reached,
+  HERO, HERO_TEMPLATE_TRECHO, HERO_USER, heroContact, heroConversation, heroDeal, heroMessages, heroNotifications, reached,
 } from '@/components/landing/stage/hero/heroRealData'
+import { PERFIL } from '@/components/landing/stage/hero/perfisDemo'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '@/components/landing/stage/hero/heroStory'
 import { recortarForma, raiosDoElemento, type RaiosFoco } from '@/components/landing/stage/hero/focoGeometry'
 
@@ -206,11 +207,11 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
 const PRONTA_CENA: Partial<Record<HeroCena, string>> = {
   disparos: 'Convite webinar',
   relatorio: 'Funil de engajamento',
-  conversa: 'Rafaela Couto',
-  funil: 'Migração de base',
+  conversa: PERFIL.conversas[0].nome,
+  funil: HERO.dealTitle,
   'agente-instrucoes': 'Use só valores e condições',
-  'agente-conhecimento': 'Convênios aceitos',
-  'agente-catalogo': 'Consulta de retorno',
+  'agente-conhecimento': PERFIL.sinais.conhecimento,
+  'agente-catalogo': PERFIL.sinais.catalogo,
   'agente-capacidades': 'Encerrar e reabrir conversas',
   'agente-capacidades-funil': 'Encerrar e reabrir conversas',
   painel: 'Volume de Mensagens',
@@ -266,7 +267,10 @@ export function instalarDiretor() {
     if (e.origin !== location.origin) return
     const d = e.data
     if (!d || d.canal !== CANAL) return
-    if (d.tipo === 'passo') aplicarPasso(d.estado, d.cena)
+    if (d.tipo === 'passo') {
+      aplicarPasso(d.estado, d.cena)
+      aplicarDetalhe(d.estado, d.cena)
+    }
     if (d.tipo === 'tema') aplicarTema(d.tema)
   })
 }
@@ -306,14 +310,14 @@ export const FOCOS: Partial<Record<HeroState, Alvo>> = {
   // A campanha chegando: a mensagem do modelo na conversa da Marina. Não há
   // mudança de estado no primeiro passo — a tomada sai ao chegar na cena
   // (`alvoAoChegar`).
-  inicio: { texto: 'Já está na hora do seu retorno', mensagem: 'demo-m-10', bolha: true },
+  inicio: { texto: HERO_TEMPLATE_TRECHO, mensagem: 'demo-m-10', bolha: true },
   // Os trechos saem da própria mensagem: um texto escrito à mão aqui ficava
   // para trás quando a história mudava, e a legenda passava sem destaque.
   demanda: { texto: HERO.demand.slice(0, 18), mensagem: 'demo-m-5', bolha: true },
-  resposta: { texto: 'O retorno com a Dra. Helena', mensagem: 'demo-m-6', bolha: true },
+  resposta: { texto: HERO.answer.slice(0, 18), mensagem: 'demo-m-6', bolha: true },
   confirma: { texto: HERO.confirm.slice(0, 18), mensagem: 'demo-m-7', bolha: true },
   pedido: { texto: HERO.ask.slice(0, 18), mensagem: 'demo-m-8', bolha: true },
-  avanco: { texto: 'Retorno · Dra. Helena', bolha: true },
+  avanco: { texto: HERO.dealTitle, bolha: true },
   humano: { texto: HERO.human.slice(0, 18), mensagem: 'demo-m-9', bolha: true },
 }
 
@@ -362,12 +366,12 @@ function acharAlvo(alvo: Alvo): HTMLElement | null {
 const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
   disparos: { texto: 'Retorno · setembro', bolha: true },
   relatorio: { texto: 'Funil de engajamento', bloco: true },
-  funil: { texto: 'Retorno · Dra. Helena', bolha: true },
+  funil: { texto: HERO.dealTitle, bolha: true },
   // O agente: a regra que manda usar só o catálogo; o documento da condição de
   // setembro; o produto que a resposta cita.
   'agente-instrucoes': { texto: 'Use só valores e condições' },
-  'agente-conhecimento': { texto: 'Convênios aceitos', bolha: true },
-  'agente-catalogo': { texto: 'Consulta de retorno', bolha: true },
+  'agente-conhecimento': { texto: PERFIL.sinais.conhecimento, bolha: true },
+  'agente-catalogo': { texto: PERFIL.sinais.catalogo, bolha: true },
   // Limites da IA: chamar uma pessoa (permitido) e mover o negócio — onde a
   // própria tela diz que fechar venda nunca é permitido. O card do funil fica
   // abaixo da dobra do app: a câmera rola até ele.
@@ -545,4 +549,59 @@ export function avisarQuandoPronta() {
     setTimeout(checar, 120)
   }
   checar()
+}
+
+// ─── Detalhe (página /solucoes, 02/10): a câmera da landing aproxima ─────────
+//
+// Com `detalhe=1`, a landing aproxima a moldura do app em dois momentos que
+// quase não mudam a tela inteira, e o próprio app mostra a mudança:
+//  • situação e etiqueta: o painel do contato rola até a Timeline;
+//  • a recepção assume: o sino da barra do topo abre com a notificação.
+// O Hero e as páginas de produto não passam `detalhe` e seguem como antes.
+
+const DETALHE = new URLSearchParams(location.search).get('detalhe') === '1'
+
+const FOCOS_DETALHE: Partial<Record<HeroState, Alvo>> = {
+  situacao: { texto: 'Situação do contato' },
+  etiqueta: { texto: 'Adicionou a etiqueta' },
+  assumido: { texto: 'pediu transferência', bolha: true },
+}
+
+function botaoDoSino(): HTMLButtonElement | null {
+  return [...document.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')]
+    .find((b) => (b.getAttribute('aria-label') ?? '').startsWith('Notificações')) ?? null
+}
+
+function sinoAberto(abrir: boolean) {
+  const b = botaoDoSino()
+  if (!b) return
+  if ((b.getAttribute('aria-expanded') === 'true') !== abrir) b.click()
+}
+
+function aplicarDetalhe(estado: HeroState, cena: HeroCena) {
+  if (!DETALHE) return
+  // O sino abre só enquanto a notificação é a novidade; quando a pessoa
+  // entra, fecha e o destaque vai para a mensagem dela (FOCOS.humano).
+  const comSino = cena === 'conversa' && estado === 'assumido'
+  // A notificação chega pelo servidor da demonstração: o sino abre depois dela.
+  setTimeout(() => sinoAberto(comSino), comSino ? 450 : 0)
+  // Situação e etiqueta: a Timeline inteira à vista, no alto do painel.
+  if (cena === 'conversa' && (estado === 'situacao' || estado === 'etiqueta')) setTimeout(timelineNoTopo, 250)
+  const alvo = cena === 'conversa' ? FOCOS_DETALHE[estado] : undefined
+  if (alvo) focarAlvo(alvo, comSino ? 900 : 350)
+}
+
+/** Rola só o painel do contato até a Timeline ficar no alto, com o histórico
+ *  inteiro abaixo (o `rolarAte` centraliza um item só). */
+function timelineNoTopo() {
+  const titulo = acharTexto(document.getElementById('main-content') ?? document.body, 'Timeline')
+  let cont = titulo?.parentElement ?? null
+  while (cont && cont !== document.body) {
+    const oy = getComputedStyle(cont).overflowY
+    if ((oy === 'auto' || oy === 'scroll') && cont.scrollHeight > cont.clientHeight) break
+    cont = cont.parentElement
+  }
+  if (!titulo || !cont || cont === document.body) return
+  const topo = cont.scrollTop + (titulo.getBoundingClientRect().top - cont.getBoundingClientRect().top) - 12
+  cont.scrollTo({ top: Math.max(0, topo), behavior: 'smooth' })
 }

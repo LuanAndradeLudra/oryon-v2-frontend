@@ -145,13 +145,19 @@ export function useHeroTimeline<S extends string, C extends string>(
    * pausar congela o que falta, retomar continua dali.
    */
   const restante = useRef<number | null>(null)
+  /** De qual cue (e de qual pulo) é o saldo: pular para outro capítulo não
+   *  pode herdar o que sobrava do cue anterior (02/10: o capítulo pulado
+   *  durava só o saldo do anterior e acabava no meio). */
+  const donoDoSaldo = useRef<{ index: number; runId: number; cues: unknown } | null>(null)
 
   useEffect(() => {
     if (!running || index >= cues.length) return
     const atual = cues[index]
     const proximo = cues[index + 1]
     const cheio = Math.max(120, (proximo ? proximo.t - atual.t : total - atual.t))
-    const espera = restante.current ?? cheio
+    const dono = donoDoSaldo.current
+    const saldoValido = dono !== null && dono.index === index && dono.runId === runId && dono.cues === cues
+    const espera = (saldoValido ? restante.current : null) ?? cheio
     const inicio = Date.now()
     const id = setTimeout(() => {
       restante.current = null
@@ -164,6 +170,7 @@ export function useHeroTimeline<S extends string, C extends string>(
       // Só guarda saldo quando a interrupção NÃO foi o fim do cue: trocar de
       // cue zera o saldo logo acima, e sair da viewport ou pausar preserva.
       restante.current = gasto < espera ? Math.max(120, espera - gasto) : null
+      donoDoSaldo.current = { index, runId, cues }
     }
   }, [running, index, cues, total, runId])
 
@@ -183,15 +190,19 @@ export function useHeroTimeline<S extends string, C extends string>(
 
   const togglePause = useCallback(() => setPaused((p) => !p), [])
   const restart = useCallback(() => { restante.current = null; setIndex(0); setPaused(false); setRunId((n) => n + 1) }, [])
+  // Sem movimento, o quadro parado é o `staticIndex` — até a pessoa escolher outro.
+  const [escolhido, setEscolhido] = useState<number | null>(null)
   const irPara = useCallback((i: number) => {
     restante.current = null
-    setIndex(Math.max(0, Math.min(cues.length - 1, i)))
+    const alvo = Math.max(0, Math.min(cues.length - 1, i))
+    setIndex(alvo)
+    setEscolhido(alvo)
     setRunId((n) => n + 1)
   }, [cues.length])
 
   // Limitado à lista atual: no render em que a história troca, o índice da
   // anterior ainda não foi zerado.
-  const efetivo = Math.min(canAnimate ? index : staticIndex, cues.length - 1)
+  const efetivo = Math.min(canAnimate ? index : escolhido ?? staticIndex, cues.length - 1)
 
   /**
    * Cada camada vale até ser trocada: o cue que move só a câmera não mexe no

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { LandingLayout } from '@/components/landing/LandingLayout'
@@ -6,6 +6,8 @@ import { Trust } from '@/components/landing/sections'
 import { BotaoLanding } from '@/components/landing/ui/BotaoLanding'
 import { Capitulo } from '@/components/landing/plataforma/SecoesVenda'
 import { home, LANDING_ROUTES, paginasPlataforma, rotaPlataforma, solucoes } from '@/components/landing/landingCopy'
+import { SEGMENTO_DO_FORM, useAreaDaPagina } from '@/components/landing/solucoes/areas'
+import { SeletorDeArea } from '@/components/landing/solucoes/SeletorDeArea'
 
 /**
  * As PÁGINAS PÚBLICAS além da home (30/09, modelo Attio): uma por grupo de
@@ -15,16 +17,16 @@ import { home, LANDING_ROUTES, paginasPlataforma, rotaPlataforma, solucoes } fro
  */
 
 const SecaoCapitulos = lazy(() => import('@/components/landing/plataforma/SecaoPlataforma').then((m) => ({ default: m.SecaoCapitulos })))
-const SecaoSolucoes = lazy(() => import('@/components/landing/solucoes/SecaoSolucoes').then((m) => ({ default: m.SecaoSolucoes })))
-const SecaoArea = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoArea })))
+const PainelDaArea = lazy(() => import('@/components/landing/solucoes/PainelDaArea').then((m) => ({ default: m.PainelDaArea })))
 const SecaoEquipe = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoEquipe })))
 const SecaoResposta = lazy(() => import('@/components/landing/plataforma/SecoesProva').then((m) => ({ default: m.SecaoResposta })))
 const SecaoImplantacao = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoImplantacao })))
 const SecaoPerguntas = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoPerguntas })))
 const SecaoDemonstracao = lazy(() => import('@/components/landing/demonstracao/FormDemonstracao').then((m) => ({ default: m.SecaoDemonstracao })))
 
-/** O topo de uma página: eyebrow, H1 (destaque + cinza), lead e a conversão. */
-function TopoDaPagina({ eyebrow, titulo, cinza, lead }: { eyebrow: string; titulo: string; cinza: string; lead: string }) {
+/** O topo de uma página: eyebrow, H1 (destaque + cinza), lead e a conversão —
+ *  ou, no lugar do botão, as ações da página (o seletor de área da /solucoes). */
+function TopoDaPagina({ eyebrow, titulo, cinza, lead, acoes }: { eyebrow: string; titulo: string; cinza: string; lead: string; acoes?: ReactNode }) {
   return (
     <section data-section="topo" className="bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_420px)] pb-12 pt-14 sm:pb-14 sm:pt-20">
       <div className="landing-container">
@@ -33,7 +35,7 @@ function TopoDaPagina({ eyebrow, titulo, cinza, lead }: { eyebrow: string; titul
         {/* Lote 2 (30/09): a antiga continuação cinza do H1 abre o parágrafo. */}
         <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{lead ? `${cinza} ${lead}` : cinza}</p>
         <div className="mt-7 flex flex-wrap gap-2.5">
-          <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta>{home.ctaPrincipal}</BotaoLanding>
+          {acoes ?? <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta>{home.ctaPrincipal}</BotaoLanding>}
         </div>
       </div>
     </section>
@@ -82,14 +84,22 @@ export function PlataformaPage() {
   )
 }
 
+/** Para a sua área (02/10): o seletor de área no topo, a área contada em atos
+ *  (PainelDaArea) e o pedido de demonstração já com a área escolhida. */
 export function SolucoesPage() {
+  const { area, escolher } = useAreaDaPagina()
   return (
     <LandingLayout>
-      <TopoDaPagina eyebrow={solucoes.eyebrow} titulo={solucoes.paginaTitulo} cinza={solucoes.paginaCinza} lead="" />
+      <TopoDaPagina
+        eyebrow={solucoes.eyebrow}
+        titulo={solucoes.paginaTitulo}
+        cinza={solucoes.paginaCinza}
+        lead=""
+        acoes={<SeletorDeArea area={area} escolher={escolher} />}
+      />
       <Suspense fallback={<div className="min-h-[60vh]" />}>
-        <SecaoSolucoes completa />
-        <SecaoArea />
-        <SecaoDemonstracao origem="solucoes" />
+        <PainelDaArea area={area} />
+        <SecaoDemonstracao origem={`solucoes/${area}`} segmento={SEGMENTO_DO_FORM[area]} />
       </Suspense>
     </LandingLayout>
   )

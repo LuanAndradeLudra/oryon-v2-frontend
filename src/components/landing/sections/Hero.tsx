@@ -1,4 +1,7 @@
 import { HeroPalco } from '@/components/landing/stage/hero/HeroPalco'
+import { HeroPalcoCelular } from '@/components/landing/stage/hero/HeroPalcoCelular'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { hero, home, LANDING_ROUTES } from '../landingCopy'
@@ -26,6 +29,9 @@ import { hero, home, LANDING_ROUTES } from '../landingCopy'
  * e simulações usam o conteúdo real do software — nada desenhado à mão.
  */
 export function Hero() {
+  // Abaixo de 768 px, o palco é o app de computador com câmera (02/10, PO);
+  // do tablet para cima, o palco com as janelas satélite.
+  const celular = !useMediaQuery('(min-width: 768px)')
   return (
     <section
       id="inicio"
@@ -73,7 +79,9 @@ export function Hero() {
           palco criavam dois eixos brigando na primeira dobra. */}
       <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-6 text-center">
         <h1
-          className="reveal font-display font-extrabold text-surface-50 text-[clamp(30px,min(8.2vw,16px+5.333svh),72px)] leading-[0.95] tracking-[clamp(-2.2px,2.08px-0.3733svh,-1.1px)]"
+          // Desktop (02/10, PO): a headline numa linha só. Ela pode passar da coluna
+          // de 1120 px (centrada na tela) e o tamanho acompanha a largura da tela.
+          className="reveal font-display font-extrabold text-balance text-surface-50 text-[clamp(30px,min(8.2vw,16px+5.333svh),72px)] leading-[0.95] tracking-[clamp(-2.2px,2.08px-0.3733svh,-1.1px)] lg:relative lg:left-1/2 lg:w-max lg:-translate-x-1/2 lg:whitespace-nowrap lg:text-[min(4.4vw,64px,16px+5.333svh)]"
           style={{ ['--d' as string]: '0ms' }}
         >
           {hero.title}
@@ -100,6 +108,20 @@ export function Hero() {
             {home.ctaSecundario}
           </a>
         </div>
+        {/* A redução de risco (reescrita de vendas, 02/10): o que o dono teme ao
+            comprar mais um sistema — configurar sozinho, ligar sem ver, conexão
+            não oficial — respondido logo abaixo dos botões. */}
+        <ul
+          className="reveal mt-[clamp(10px,1.4svh,14px)] flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-surface-400"
+          style={{ ['--d' as string]: '240ms' }}
+        >
+          {hero.garantias.map((g) => (
+            <li key={g} className="inline-flex items-center gap-1.5">
+              <Check className="h-3.5 w-3.5 text-[var(--landing-destaque)]" strokeWidth={2.4} aria-hidden />
+              {g}
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div
@@ -113,7 +135,7 @@ export function Hero() {
         className="reveal mx-auto mt-[var(--hero-gap-editorial)] w-full max-w-[1120px] xl:max-w-[1560px] px-4 sm:px-6 xl:px-3"
         style={{ ['--d' as string]: '270ms' }}
       >
-        <HeroPalco />
+        {celular ? <HeroPalcoCelular /> : <HeroPalco />}
       </div>
     </section>
   )

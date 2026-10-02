@@ -72,10 +72,19 @@ const OPCOES_AREA: OpcaoLista[] = formDemo.segmentos.map((s) => ({ valor: s, rot
 /** O tamanho da equipe num medidor de quatro barras (uma por faixa). */
 const OPCOES_EQUIPE: OpcaoLista[] = formDemo.tamanhos.map((t, i) => ({ valor: t, rotulo: t, icone: <Medidor nivel={i + 1} /> }))
 
-export function FormDemonstracao({ origem }: { origem: string }) {
+export function FormDemonstracao({ origem, segmento = '' }: { origem: string; segmento?: string }) {
   const semMovimento = useReducedMotion()
-  const [dados, setDados] = useState<PedidoDemonstracao>({ ...VAZIO, origem })
+  const [dados, setDados] = useState<PedidoDemonstracao>({ ...VAZIO, origem, segmento })
   const [erros, setErros] = useState<Erros>({})
+  // A página de uma área (/solucoes, 02/10) já preenche a área de atuação e
+  // troca de área com o formulário montado: a origem acompanha sempre; a área,
+  // só enquanto a pessoa não escolheu outra no menu.
+  const [escolheuArea, setEscolheuArea] = useState(false)
+  const [daPagina, setDaPagina] = useState({ origem, segmento })
+  if (daPagina.origem !== origem || daPagina.segmento !== segmento) {
+    setDaPagina({ origem, segmento })
+    setDados((d) => ({ ...d, origem, segmento: escolheuArea ? d.segmento : segmento }))
+  }
   const [estado, setEstado] = useState<'editando' | 'enviando' | 'enviado' | 'falhou'>('editando')
   const avisoId = useId()
   // A mensagem é opcional: começa recolhida atrás de um link e, aberta, recebe
@@ -85,6 +94,7 @@ export function FormDemonstracao({ origem }: { origem: string }) {
   useEffect(() => { if (comMensagem) mensagemRef.current?.focus() }, [comMensagem])
 
   const mudar = (campo: keyof PedidoDemonstracao) => (v: string) => {
+    if (campo === 'segmento') setEscolheuArea(true)
     setDados((d) => ({ ...d, [campo]: v }))
     if (erros[campo]) setErros((e) => ({ ...e, [campo]: undefined }))
   }
@@ -216,7 +226,7 @@ export function FormDemonstracao({ origem }: { origem: string }) {
 }
 
 /** A seção de fecho: o convite e o formulário lado a lado. */
-export function SecaoDemonstracao({ origem, comoPagina = false }: { origem: string; comoPagina?: boolean; numero?: string }) {
+export function SecaoDemonstracao({ origem, comoPagina = false, segmento }: { origem: string; comoPagina?: boolean; numero?: string; segmento?: string }) {
   return (
     <section id="demonstracao" data-section="demonstracao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-24">
       <div className="landing-container relative grid gap-10 lg:grid-cols-[minmax(0,.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-16">
@@ -253,7 +263,7 @@ export function SecaoDemonstracao({ origem, comoPagina = false }: { origem: stri
           </Revelar>
         </div>
         <Revelar atraso={0.15}>
-          <FormDemonstracao origem={origem} />
+          <FormDemonstracao origem={origem} segmento={segmento} />
         </Revelar>
       </div>
     </section>
