@@ -8,14 +8,16 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Tabs } from '@/components/ui/Tabs'
 import { ProvisionForm } from '@/components/admin/billing/ProvisionForm'
 import { PendingActivations } from '@/components/admin/billing/PendingActivations'
+import { AdminInvoices } from '@/components/admin/billing/AdminInvoices'
 import { Portfolio } from '@/components/admin/billing/Portfolio'
 import { CatalogManager } from '@/components/admin/billing/CatalogManager'
 
-type BillingTab = 'provision' | 'pending' | 'portfolio' | 'catalog'
+type BillingTab = 'provision' | 'pending' | 'invoices' | 'portfolio' | 'catalog'
 
 const TABS: Array<{ id: BillingTab; label: string; hint: string }> = [
   { id: 'provision', label: 'Nova conta', hint: 'Cria a conta do cliente com as condições da Proposta assinada' },
   { id: 'pending', label: 'Pendentes de ativação', hint: 'Contas cujo administrador ainda não fez o primeiro acesso' },
+  { id: 'invoices', label: 'Faturas', hint: 'Baixa manual, nota de crédito, contestações e índice de correção' },
   { id: 'portfolio', label: 'Carteira', hint: 'Contratos, renovações, inadimplência, troca de plano e conciliação' },
   { id: 'catalog', label: 'Catálogo', hint: 'Planos-modelo e pacotes — valem só para contas novas' },
 ]
@@ -37,6 +39,7 @@ export function AdminBillingPage() {
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {tab === 'provision' && <ProvisionForm onProvisioned={() => setReloadKey((k) => k + 1)} />}
         {tab === 'pending' && <PendingActivations reloadKey={reloadKey} />}
+        {tab === 'invoices' && <AdminInvoices />}
         {tab === 'portfolio' && <Portfolio />}
         {tab === 'catalog' && <CatalogManager />}
       </div>

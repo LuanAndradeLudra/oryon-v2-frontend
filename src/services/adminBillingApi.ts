@@ -3,6 +3,10 @@
 // Tudo em /admin/billing/*, protegido por @Roles(SUPER_ADMIN) no backend.
 
 import { api } from './api'
+import { openPdfInNewTab } from '@/lib/openPdf'
+
+/** A lista de faturas do operador vem paginada de 200 em 200 (`offset`). */
+export const ADMIN_INVOICES_PAGE = 200
 
 export type PlanTierId = 'start' | 'professional' | 'scale' | 'enterprise'
 export type ContractTermId = 'annual' | 'semiannual' | 'monthly'
@@ -160,6 +164,78 @@ export interface PendingActivation {
   daysPending: number
 }
 
+export interface InvoiceLine {
+  id: string
+  kind: string
+  description: string
+  quantity: number
+  unitPriceCents: number
+  amountCents: number
+}
+
+export interface AdminInvoiceRow {
+  id: string
+  tenantId: string
+  companyName: string | null
+  contractId: string | null
+  number: string | null
+  kind: string
+  status: string
+  amountCents: number
+  competenceMonth: string | null
+  dueAt: string | null
+  paidAt: string | null
+  paidAmountCents: number | null
+  disputeReason: string | null
+  disputedAmountCents: number | null
+  description: string | null
+  issuedAt: string
+  /** Nota de crédito: a fatura estornada. */
+  referenceInvoiceId?: string | null
+}
+
+export interface LateCharges {
+  daysLate: number
+  principalCents: number
+  fineCents: number
+  interestCents: number
+  correctionCents: number
+  totalCents: number
+  missingIndexMonths: string[]
+}
+
+export interface InvoiceDetail {
+  invoice: AdminInvoiceRow & { lines: InvoiceLine[]; usageReport: unknown }
+  charges: LateCharges
+  paymentInstructions: string
+}
+
+export interface IndexRateRow { id: string; indexCode: string; month: string; ratePct: number }
+
+export const INVOICE_STATUS_LABEL: Record<string, string> = {
+  pending: 'Em aberto',
+  past_due: 'Vencida',
+  paid: 'Paga',
+  canceled: 'Cancelada',
+  failed: 'Falhou',
+  disputed: 'Em contestação',
+  refunded: 'Estornada',
+}
+
+export const INVOICE_KIND_LABEL: Record<string, string> = {
+  subscription: 'Mensalidade/parcela',
+  setup: 'Setup',
+  overage: 'Excedente',
+  credit_pack: 'Pacote',
+  upgrade_difference: 'Diferença de upgrade',
+  credit_note: 'Nota de crédito',
+}
+
+/** Abre um PDF autenticado (cookie) numa aba nova. Rejeita com mensagem legível. */
+export function openPdf(path: string): Promise<void> {
+  return openPdfInNewTab(async () => (await api.get(path, { responseType: 'blob' })).data as Blob)
+}
+
 export interface PortfolioRow {
   tenantId: string
   contractId: string
@@ -251,6 +327,40 @@ export const adminBillingApi = {
   },
   async accelerate(contractId: string, body: { dueInDays?: number; reason: string }): Promise<{ accelerated: number; dueAt: string }> {
     return (await api.post(`/admin/billing/contracts/${contractId}/accelerate`, body)).data
+  },
+  async listInvoices(filter: { status?: string; tenantId?: string; overdue?: boolean; offset?: number } = {}): Promise<AdminInvoiceRow[]> {
+    const params: Record<string, string> = {}
+    if (filter.status) params.status = filter.status
+    if (filter.tenantId) params.tenantId = filter.tenantId
+    if (filter.overdue) params.overdue = '1'
+    if (filter.offset) params.offset = String(filter.offset)
+    return (await api.get<AdminInvoiceRow[]>('/admin/billing/invoices', { params })).data
+  },
+  /** `at` (AAAA-MM-DD): encargos calculados naquela data (baixa com data retroativa). */
+  async invoiceDetail(id: string, at?: string): Promise<InvoiceDetail> {
+    return (await api.get<InvoiceDetail>(`/admin/billing/invoices/${id}`, { params: at ? { at } : undefined })).data
+  },
+  async registerPayment(id: string, body: { paidAt?: string; amountCents?: number; note?: string }) {
+    return (await api.post<{ reactivated: boolean; remainingOverdue: number }>(`/admin/billing/invoices/${id}/payment`, body)).data
+  },
+  async creditNote(id: string, body: { amountCents: number; reason: string }) {
+    return (await api.post(`/admin/billing/invoices/${id}/credit-note`, body)).data
+  },
+  async resolveDispute(id: string, body: { acceptedCents: number; note: string }) {
+    return (await api.post(`/admin/billing/invoices/${id}/dispute/resolve`, body)).data
+  },
+  async indexRates(): Promise<IndexRateRow[]> {
+    return (await api.get<IndexRateRow[]>('/admin/billing/index-rates')).data
+  },
+  /** Correção pelo IPCA ligada? (DECISOES A16: desligada até o contador validar.) */
+  async indexRatesStatus(): Promise<{ correctionEnabled: boolean }> {
+    return (await api.get<{ correctionEnabled: boolean }>('/admin/billing/index-rates/status')).data
+  },
+  async upsertIndexRate(month: string, ratePct: number) {
+    return (await api.put(`/admin/billing/index-rates/IPCA/${month}`, { ratePct })).data
+  },
+  async runIssuance(): Promise<{ issued: number; overage: number; dueSoon: number }> {
+    return (await api.post('/admin/billing/issuance/run')).data
   },
   async listCatalog(): Promise<CatalogPlan[]> {
     return (await api.get<CatalogPlan[]>('/admin/billing/catalog/plans')).data
