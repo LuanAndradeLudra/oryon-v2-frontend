@@ -208,7 +208,8 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
       // PL-5-2: Handshake não existe no set da casa (`src/lib/icons.tsx`) e cai
       // no lucide-react de verdade, cujo traço padrão é 2 — mais pesado que o
       // 1.75 dos 11 vizinhos desta mesma barra. Mesmo motivo do LineChart abaixo.
-      icon: <Handshake className="w-[16.5px] h-[16.5px]" strokeWidth={1.75} />,
+      // PO 02/10: o aperto de mão ocupa mais área que os vizinhos — 15 px.
+      icon: <Handshake className="w-[15px] h-[15px]" strokeWidth={1.75} />,
       label: 'Funis',
       href: '/pipelines',
     }] : []),
