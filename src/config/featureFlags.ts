@@ -119,7 +119,9 @@ const FLAGS_BASE = {
  * desenvolvimento (`import.meta.env.DEV`). Em build (homologação/produção) a
  * variável é ignorada e valem os valores de `FLAGS_BASE`.
  */
-const FLAGS_TODAS = import.meta.env.DEV && import.meta.env.VITE_FLAGS_TODAS === 'true'
+// Nos testes (Vitest roda em modo dev) a chave é ignorada: o resultado não pode
+// depender do .env.local de quem roda a suíte.
+const FLAGS_TODAS = import.meta.env.DEV && import.meta.env.MODE !== 'test' && import.meta.env.VITE_FLAGS_TODAS === 'true'
 
 export const FEATURE_FLAGS: Record<keyof typeof FLAGS_BASE, boolean> = FLAGS_TODAS
   ? (Object.fromEntries(Object.keys(FLAGS_BASE).map((k) => [k, true])) as Record<keyof typeof FLAGS_BASE, boolean>)
