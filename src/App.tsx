@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect, Component, Suspense } from 'react'
+import { useEffect, useState, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
 import * as Sentry from '@sentry/react'
@@ -70,6 +70,7 @@ const WelcomePage       = lazyRoute(() => import('@/pages/WelcomePage').then(m =
 const ForgotPasswordPage = lazyRoute(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
+const FirstAccessPage     = lazyRoute(() => import('@/pages/FirstAccessPage').then(m => ({ default: m.FirstAccessPage })))
 const RegisterPage       = lazyRoute(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
 const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
 const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
@@ -100,6 +101,10 @@ const AdminBillingPage         = lazyRoute(() => import('@/pages/admin/AdminBill
 
 import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
 import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
+import { TermsAcceptanceModal } from '@/components/terms/TermsAcceptanceModal'
+import { firstAccessRequired } from '@/lib/firstAccessGate'
+import { isOwnerTier } from '@/lib/roleHelpers'
+import { ErrorState } from '@/components/ui/ErrorState'
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
@@ -114,6 +119,56 @@ function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to="/set-password" replace />
   }
   return <>{children}</>
+}
+
+/**
+ * SCRUM-1212 — "cliente não entra na plataforma sem concluir as etapas".
+ * Enquanto o contrato do tenant está pendente, o DONO vai para
+ * /first-access (termos + dados da empresa). Staff Oryon e demais papéis
+ * passam direto. Falha ao consultar NÃO libera: tela de erro com
+ * "Tentar de novo" (a falha não fica em cache).
+ */
+function FirstAccessGate({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const [state, setState] = useState<'checking' | 'required' | 'ok' | 'error'>('checking')
+  const [attempt, setAttempt] = useState(0)
+  const mustCheck = !!user && isOwnerTier(user.role) && !isOryonStaff(user.role)
+
+  useEffect(() => {
+    if (!mustCheck || !user) { setState('ok'); return }
+    let alive = true
+    firstAccessRequired(user.id)
+      .then((req) => { if (alive) setState(req ? 'required' : 'ok') })
+      .catch(() => { if (alive) setState('error') })
+    return () => { alive = false }
+  }, [mustCheck, user, attempt])
+
+  if (state === 'checking') return null
+  if (state === 'error') {
+    return (
+      <div className="flex items-center justify-center h-screen w-screen bg-surface-950 px-4">
+        <ErrorState
+          className="max-w-md w-full"
+          title="Não foi possível verificar o seu acesso"
+          hint="Confira a sua conexão. Assim que a verificação responder, você segue para a plataforma."
+          retryLabel="Tentar de novo"
+          onRetry={() => { setState('checking'); setAttempt((n) => n + 1) }}
+        />
+      </div>
+    )
+  }
+  if (state === 'required') return <Navigate to="/first-access" replace />
+  return <>{children}</>
+}
+
+/** Pedido de re-aceite de termos (SCRUM-777) — montado uma vez, fora das telas de entrada. */
+function GlobalTermsPrompt() {
+  const { isAuthenticated, user } = useAuth()
+  const location = useLocation()
+  const excluded = ['/login', '/activate', '/first-access', '/register', '/forgot-password', '/reset-password', '/set-password']
+  // Staff Oryon não é parte do contrato do cliente — não aceita termos por ele.
+  if (!isAuthenticated || isOryonStaff(user?.role) || excluded.some((p) => location.pathname.startsWith(p))) return null
+  return <TermsAcceptanceModal />
 }
 
 function OnboardingGate({ children }: { children: ReactNode }) {
@@ -137,11 +192,13 @@ function OnboardingGate({ children }: { children: ReactNode }) {
 function ProtectedRoute({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
-      <OnboardingGate>
-        <AppShell>
-          {children}
-        </AppShell>
-      </OnboardingGate>
+      <FirstAccessGate>
+        <OnboardingGate>
+          <AppShell>
+            {children}
+          </AppShell>
+        </OnboardingGate>
+      </FirstAccessGate>
     </RequireAuth>
   )
 }
@@ -192,15 +249,23 @@ function AnimatedRoutes() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/activate" element={<ActivateAccountPage />} />
 
+          {/* Primeiro acesso do cliente (SCRUM-1212): termos + dados da
+              empresa → ativa o contrato. Tela cheia, fora do AppShell. */}
+          <Route path="/first-access" element={
+            <RequireAuth><FirstAccessPage /></RequireAuth>
+          } />
+
           {/* Password setup gate */}
           <Route path="/set-password" element={
             <RequireAuth><SetPasswordPage /></RequireAuth>
           } />
 
           {/* Primeiro uso — protegido por login, mas FORA do OnboardingGate
-              (é o destino dele) e fora do AppShell (é tela cheia). */}
+              (é o destino dele) e fora do AppShell (é tela cheia). Fica
+              DENTRO do FirstAccessGate: sem termos e dados fiscais o dono não
+              chega ao wizard (sem loop: /first-access está fora do portão). */}
           <Route path="/setup" element={
-            <RequireAuth><SetupPage /></RequireAuth>
+            <RequireAuth><FirstAccessGate><SetupPage /></FirstAccessGate></RequireAuth>
           } />
 
           {/* Protected */}
@@ -346,6 +411,7 @@ export default function App() {
                     <CopilotPanel />
                   </Suspense>
                   <GlobalToastContainer />
+                  <GlobalTermsPrompt />
                 </div>
               </DealPanelProvider>
               </MediaViewerProvider>

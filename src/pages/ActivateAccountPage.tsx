@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { firstAccessApi } from '@/services/firstAccessApi'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -16,6 +17,8 @@ export function ActivateAccountPage() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [expired, setExpired] = useState(false)
+  const [resent, setResent] = useState<string | null>(null)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -36,11 +39,14 @@ export function ActivateAccountPage() {
     setLoading(true)
     try {
       await activateAccount(token.trim(), password)
-      navigate('/home', { replace: true })
+      // SCRUM-1212: o dono ainda passa por termos e dados da empresa; a
+      // página devolve para /home quando não há primeiro acesso pendente.
+      navigate('/first-access', { replace: true })
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response
-        ?.data?.message
+      const resp = (err as { response?: { status?: number; data?: { message?: string | string[] } } })?.response
+      const msg = resp?.data?.message
       const text = Array.isArray(msg) ? msg[0] : msg
+      if (resp?.status === 401) setExpired(true)
       setError(text ?? 'Não foi possível ativar a conta. Verifique o link ou peça um novo convite.')
     } finally {
       setLoading(false)
@@ -137,6 +143,24 @@ export function ActivateAccountPage() {
           {error && (
             <Banner variant="danger">{error}</Banner>
           )}
+
+          {expired && !resent && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const r = await firstAccessApi.resendLink(token.trim())
+                  setResent(r.message)
+                } catch {
+                  setResent('Não foi possível pedir um novo link agora. Fale com a equipe Oryon.')
+                }
+              }}
+              className="text-sm text-brand-400 hover:text-brand-300 underline underline-offset-2"
+            >
+              Pedir um novo link por e-mail
+            </button>
+          )}
+          {resent && <Banner variant="info">{resent}</Banner>}
 
           <button
             type="submit"
