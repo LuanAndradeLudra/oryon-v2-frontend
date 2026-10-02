@@ -8,6 +8,7 @@ import { setTokens, clearTokens, getRefreshToken } from '@/services/auth-storage
 import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBackend } from '@/services/push-registration'
 import { SKIP_AUTH_REFRESH, renovarSessao } from '@/services/api'
 import { resetBillingState } from '@/hooks/useBilling'
+import { resetLinhasComIA } from '@/hooks/useLinhasComIA'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -215,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Zera o store module-scoped de billing (SCRUM-172) para não vazar
     // saldo/plano do tenant que saiu para a próxima sessão.
     resetBillingState()
+    resetLinhasComIA()
     try {
       const body = isNativePlatform() ? { refreshToken: refreshToken ?? undefined } : {}
       await axios.post(`${API}/auth/logout`, body, {
