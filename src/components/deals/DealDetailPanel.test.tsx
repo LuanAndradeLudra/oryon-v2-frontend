@@ -65,6 +65,25 @@ beforeEach(() => {
   conversationsApi.list.mockResolvedValue({ data: { data: [] } })
 })
 
+// Revisão 02/10: o painel troca de negócio sem desmontar; a resposta atrasada
+// do negócio anterior não pode ocupar a ficha do atual.
+describe('DealDetailPanel — troca rápida de negócio', () => {
+  it('a carga atrasada de A, chegando depois da de B, não substitui B', async () => {
+    const B: Deal = { ...DEAL, id: 'd2', title: 'Negócio do Bruno' }
+    let soltarA: (v: unknown) => void = () => {}
+    dealsApi.get.mockImplementation((id: string) => (id === 'd1'
+      ? new Promise((r) => { soltarA = r })
+      : Promise.resolve({ data: B })))
+    const { rerender } = render(<DealDetailPanel dealId="d1" />)
+    rerender(<DealDetailPanel dealId="d2" />)
+    expect((await screen.findAllByText('Negócio do Bruno')).length).toBeGreaterThan(0)
+    soltarA({ data: DEAL })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByText('Negócio da Ana')).toBeNull()
+    expect(screen.getAllByText('Negócio do Bruno').length).toBeGreaterThan(0)
+  })
+})
+
 describe('DealDetailPanel — estados de carregamento', () => {
   it('mostra um spinner enquanto carrega', () => {
     dealsApi.get.mockReturnValue(new Promise(() => {})) // nunca resolve

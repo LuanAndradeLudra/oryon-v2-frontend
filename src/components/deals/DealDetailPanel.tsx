@@ -95,19 +95,32 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual, aba, 
     setContato(null)
   }
 
+  // Revisão 02/10: o painel troca de negócio sem desmontar. Resposta que chega
+  // depois da troca (carga, histórico, salvar, mover) é do negócio ANTERIOR e
+  // não pode ocupar a ficha — senão a edição seguinte ia para o negócio errado.
+  // (Atualizado em efeito declarado ANTES do que busca: roda primeiro.)
+  const dealAtual = useRef(dealId)
+  useEffect(() => { dealAtual.current = dealId }, [dealId])
+  const gravarSeAtual = useCallback((d: Deal | null | undefined) => {
+    if (d && d.id === dealAtual.current) setDeal(d)
+  }, [])
+
   const loadDeal = useCallback(() => {
-    dealsApi.get(dealId)
-      .then((res) => { setDeal(res.data); setLoadState('ok') })
+    const id = dealId
+    dealsApi.get(id)
+      .then((res) => { if (id !== dealAtual.current) return; setDeal(res.data); setLoadState('ok') })
       .catch((err) => {
+        if (id !== dealAtual.current) return
         const status = statusFromError(err)
         setLoadState(status === 'other' ? 'error' : status)
       })
   }, [dealId])
 
   const loadHistory = useCallback(() => {
-    dealsApi.history(dealId)
-      .then((res) => setHistory(res.data))
-      .catch(() => setHistory('error'))
+    const id = dealId
+    dealsApi.history(id)
+      .then((res) => { if (id === dealAtual.current) setHistory(res.data) })
+      .catch(() => { if (id === dealAtual.current) setHistory('error') })
   }, [dealId])
 
   // Busca os dados do negócio (e o scroll ao topo, que é DOM — legitimamente
@@ -169,12 +182,12 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual, aba, 
     setDeal({ ...deal, ...patch } as Deal)
     try {
       const res = await dealsApi.update(deal.id, patch)
-      setDeal(res.data)
+      gravarSeAtual(res.data)
     } catch (err: unknown) {
-      setDeal(previous)
+      gravarSeAtual(previous)
       toast(getApiErrorMessage(err, 'Não foi possível salvar.'), 'error')
     }
-  }, [deal, toast])
+  }, [deal, toast, gravarSeAtual])
 
   const handleMoveToStage = useCallback((stage: PipelineStage) => {
     if (!deal) return
@@ -199,12 +212,12 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual, aba, 
      * o backend exige `closeReason` e devolveria 400 `close_reason_required`.
      */
     dealsApi.moveStage(deal.id, stage.id)
-      .then((res) => setDeal(res.data))
+      .then((res) => gravarSeAtual(res.data))
       .catch((err: unknown) => {
-        setDeal((d) => (d ? { ...d, stageId: previousStageId } : d))
+        setDeal((d) => (d && d.id === deal.id ? { ...d, stageId: previousStageId } : d))
         toast(getApiErrorMessage(err, `Não foi possível mover o ${noun}.`), 'error')
       })
-  }, [deal, toast, noun])
+  }, [deal, toast, noun, gravarSeAtual])
 
   const handleCloseWithReason = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return
@@ -222,9 +235,9 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual, aba, 
   const handleTransferPipeline = useCallback((pipelineId: string) => {
     if (!deal) return
     dealsApi.movePipeline(deal.id, pipelineId)
-      .then((res) => { setDeal(res.data); toast(`${Noun} transferido de funil.`, 'success') })
+      .then((res) => { gravarSeAtual(res.data); toast(`${Noun} transferido de funil.`, 'success') })
       .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível transferir o ${noun}.`), 'error'))
-  }, [deal, toast, Noun, noun])
+  }, [deal, toast, Noun, noun, gravarSeAtual])
 
   const handleDelete = useCallback(() => {
     if (!deal) return
