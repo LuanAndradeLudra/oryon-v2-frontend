@@ -60,6 +60,8 @@ import {
 import { cn } from '@/lib/utils'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { isRouteVisible } from '@/config/featureFlags'
+import { useModuleAccess } from '@/hooks/useAccountState'
+import { moduleForPath } from '@/lib/billingModules'
 import { notificationLinkAllowed } from '@/lib/billingLinks'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import {
@@ -1379,9 +1381,15 @@ export function TopBar() {
   const { user }  = useAuth()
   const { userEmail, isFeatureVisible: isFeatureVisibleForUser } = useFeatureVisibility()
 
+  // SCRUM-1210: módulo não contratado também some da busca/paleta.
+  const moduleAllowed = useModuleAccess()
   const visibleSearchIndex = useMemo(
-    () => SEARCH_INDEX.filter((item) => isRouteVisible(item.href, userEmail)),
-    [userEmail],
+    () => SEARCH_INDEX.filter((item) => {
+      const moduleKey = moduleForPath(item.href)
+      if (moduleKey && !moduleAllowed(moduleKey)) return false
+      return isRouteVisible(item.href, userEmail)
+    }),
+    [userEmail, moduleAllowed],
   )
   const { open: openCopilot } = useCopilotContext()
   const { pageActions } = useTopBarActions()
@@ -1581,7 +1589,7 @@ export function TopBar() {
         {/* Copilot drawer shortcut — mirrors the admin + route gate used by
              the CopilotPanel itself, so the button only shows where the drawer
              can actually render. */}
-        {isFeatureVisibleForUser('copilot') && isAdminTier(user?.role) && !location.pathname.startsWith('/copilot') && (
+        {isFeatureVisibleForUser('copilot') && isAdminTier(user?.role) && moduleAllowed('copilot') && !location.pathname.startsWith('/copilot') && (
           <button
             onClick={() => openCopilot()}
             title="Abrir Copilot"

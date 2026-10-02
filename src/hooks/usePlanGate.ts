@@ -1,40 +1,10 @@
-// ─── usePlanGate ──────────────────────────────────────────────────────────────
-// Hook to check if a feature / module is available on the current tenant plan.
-// Returns { allowed, upgrade } — upgrade is the minimum tier that unlocks it.
+// ─── useCreditGate ────────────────────────────────────────────────────────────
+// SCRUM-1210: o `usePlanGate` (módulo pelo tier fixo do plans.ts) saiu — era
+// código morto e contrariava a regra de que os módulos vêm do CONTRATO (ver
+// useAccountState/moduleEnabled). Fica só o gate de saldo.
 
 import { useMemo } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import type { PlanTier, PlanModuleAccess } from '@/types'
-import { PLANS, PLAN_ORDER, canAccessModule } from '@/config/plans'
 import { useBilling } from '@/hooks/useBilling'
-
-interface PlanGateResult {
-  /** true if current plan includes this module */
-  allowed: boolean
-  /** lowest tier that unlocks the module (null if already allowed) */
-  upgrade: PlanTier | null
-  /** current tier */
-  tier: PlanTier
-}
-
-export function usePlanGate(module: keyof PlanModuleAccess): PlanGateResult {
-  const { user } = useAuth()
-
-  // Fall back to 'essential' if we can't determine the tenant plan.
-  // In a real app, the tenant plan comes from AuthContext / tenant context.
-  const tier = (user as { tenantPlan?: PlanTier } | null)?.tenantPlan ?? 'essential'
-
-  return useMemo<PlanGateResult>(() => {
-    const allowed = canAccessModule(tier, module)
-
-    if (allowed) return { allowed: true, upgrade: null, tier }
-
-    // Find the lowest plan that grants access
-    const upgrade = PLAN_ORDER.find((t) => PLANS[t].modules[module]) ?? null
-
-    return { allowed: false, upgrade: upgrade as PlanTier | null, tier }
-  }, [tier, module])
-}
 
 // ─── Credit balance gate ───────────────────────────────────────────────────────
 

@@ -24,6 +24,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useModuleAccess } from '@/hooks/useAccountState'
+import { moduleForPath } from '@/lib/billingModules'
 import { cn } from '@/lib/utils'
 
 interface Item {
@@ -98,6 +100,8 @@ export function MorePage() {
   const isSuperAdmin = isOryonStaff(user?.role)
   const { isRouteVisible } = useFeatureVisibility()
   const multiPipeline = useMultiPipeline()
+  // SCRUM-1210: módulo não contratado some daqui também (não só do menu desktop).
+  const moduleAllowed = useModuleAccess()
 
   const handleLogout = () => {
     logout()
@@ -110,6 +114,8 @@ export function MorePage() {
       items: section.items.filter((item) => {
         if (item.superAdminOnly && !isSuperAdmin) return false
         if (item.requiresMultiPipeline && !multiPipeline) return false
+        const moduleKey = moduleForPath(item.href)
+        if (moduleKey && !moduleAllowed(moduleKey)) return false
         return isRouteVisible(item.href)
       }),
     }))
