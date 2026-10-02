@@ -158,22 +158,30 @@ export function BancadaDeTeste({
     setTexto('')
     setErro(null)
     setPensando(true)
+    // Revisão 02/10: "Nova conversa" com a resposta pendente — a resposta antiga
+    // caía sozinha na conversa nova (e virava histórico dela). A geração da
+    // sessão muda ao recomeçar: resposta de outra geração é descartada.
+    const daGeracao = geracao.current
+    const valeAinda = () => daGeracao === geracao.current
     try {
       const r = await chatWithAgent(
         promptDeTeste(agentRef.current),
         conversa.map((m) => ({ role: m.papel, content: m.texto })),
         { sessionId: sessao.current ?? undefined, agentId: agent.id },
       )
+      if (!valeAinda()) return
       setMensagens((m) => [...m, {
         id: `a-${Date.now()}`, papel: 'assistant', texto: r.message, em: new Date(),
         debug: { toolCalls: r.toolCalls, turnSummary: r.turnSummary, guard: r.guard, simulated: r.simulated },
       }])
       if (!avisouTeste.current) { avisouTeste.current = true; onTestou() }
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'O agente não respondeu.')
+      if (valeAinda()) setErro(e instanceof Error ? e.message : 'O agente não respondeu.')
     } finally {
-      setPensando(false)
-      requestAnimationFrame(() => entrada.current?.focus())
+      if (valeAinda()) {
+        setPensando(false)
+        requestAnimationFrame(() => entrada.current?.focus())
+      }
     }
   }
 
@@ -181,6 +189,7 @@ export function BancadaDeTeste({
     fecharSessao()
     setMensagens([])
     setErro(null)
+    setPensando(false)
     setRevendo(null)
     abrirSessao()
     entrada.current?.focus()
