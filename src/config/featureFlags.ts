@@ -130,33 +130,14 @@ export const FEATURE_FLAGS: Record<keyof typeof FLAGS_BASE, boolean> = FLAGS_TOD
 export type FeatureFlag = keyof typeof FLAGS_BASE
 
 /**
- * E-mails com acesso antecipado a features com `FEATURE_FLAGS[flag] === false`.
- * Comparação case-insensitive após trim.
+ * Revisão 02/10: a lista de e-mails de beta testers saía no pacote que a
+ * landing baixa (dado pessoal exposto) e não liberava nada (nenhuma flag
+ * estava sob ela). Acesso antecipado, quando voltar, é flag do TENANT no
+ * backend — nunca lista no frontend. `userEmail` fica na assinatura para não
+ * mexer nos chamadores.
  */
-export const BETA_TESTER_EMAILS: readonly string[] = [
-  'luanandradeti100@gmail.com',
-  'luanandradeti10@gmail.com',
-  'joaolucasrdugin@gmail.com'
-]
-
-/** Flags desligadas globalmente que beta testers podem ver. */
-const BETA_GATED_FLAGS = new Set<FeatureFlag>()
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase()
-}
-
-export function isBetaTester(userEmail?: string | null): boolean {
-  if (!userEmail?.trim()) return false
-  const normalized = normalizeEmail(userEmail)
-  return BETA_TESTER_EMAILS.some((e) => normalizeEmail(e) === normalized)
-}
-
-export const isFeatureVisible = (flag: FeatureFlag, userEmail?: string | null): boolean => {
-  const base = FEATURE_FLAGS[flag]
-  if (!base && BETA_GATED_FLAGS.has(flag) && isBetaTester(userEmail)) return true
-  return base
-}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const isFeatureVisible = (flag: FeatureFlag, _userEmail?: string | null): boolean => FEATURE_FLAGS[flag]
 
 // Order matters: more specific prefixes (e.g. /settings/billing) must come
 // before broader ones (/settings) — first match wins.
