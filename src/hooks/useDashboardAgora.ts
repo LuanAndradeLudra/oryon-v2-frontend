@@ -148,8 +148,12 @@ export function useDashboardAgora(): DashboardAgora {
   const [atualizadoEm, setAtualizadoEm] = useState<Date | null>(null)
   const [agora, setAgora] = useState(() => Date.now())
   const vivo = useRef(true)
+  const geracao = useRef(0)
 
   const carregar = useCallback(async () => {
+    // LOG-FE-01: só a carga mais nova pode publicar o estado do painel.
+    const minhaGeracao = ++geracao.current
+    const aindaAtual = () => vivo.current && minhaGeracao === geracao.current
     try {
       // A fila vem com folga e é ordenada no cliente pela maior espera: o
       // backend só ordena pela mensagem mais recente (P1 do SCRUM-1161).
@@ -163,18 +167,19 @@ export function useDashboardAgora(): DashboardAgora {
         listAgents().catch(() => null),
         api.get<Omit<ResumoDaFila, 'lidoEm'>>('/home/queue').catch(() => null),
       ])
-      if (!vivo.current) return
+      if (!aindaAtual()) return
       // A lista: as pendentes sem dono (a aba Fila, inteira) + as com dono em
       // que ninguém respondeu ainda.
       const lista = [...semDono.lista]
       for (const c of aguardando.lista) if (c.assignedUser && !lista.some((x) => x.id === c.id)) lista.push(c)
-      setConversas(lista)
-      setFilaTruncada(semDono.truncada || aguardando.truncada)
       // "IA passou": o mesmo recorte, só nas linhas com IA ligada.
       const linhasLidas = Array.isArray(numeros.data) ? numeros.data : []
       const idsComIA = [...calcularLinhasComIA(linhasLidas, Array.isArray(ias) ? ias : null)]
       const porLinha = await Promise.all(idsComIA.map((id) => contarEsperando({ whatsappNumberId: id })))
-      if (!vivo.current) return
+      if (!aindaAtual()) return
+      // Publica o retrato inteiro de uma vez, somente depois de todas as leituras.
+      setConversas(lista)
+      setFilaTruncada(semDono.truncada || aguardando.truncada)
       setTotais({
         esperando: totalGeral.esperando,
         semDono: totalGeral.semDono,
@@ -201,9 +206,9 @@ export function useDashboardAgora(): DashboardAgora {
       setAtualizadoEm(new Date())
       setAgora(Date.now())
     } catch {
-      if (vivo.current) setErro(true)
+      if (aindaAtual()) setErro(true)
     } finally {
-      if (vivo.current) setCarregando(false)
+      if (aindaAtual()) setCarregando(false)
     }
   }, [])
 
