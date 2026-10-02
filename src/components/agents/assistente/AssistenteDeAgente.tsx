@@ -322,7 +322,12 @@ export function AssistenteDeAgente({
       const { agentId: novoId, version: versaoPublicada, factsDoc } = await publishSpecDraft(draftId)
       idPublicado = novoId
       setPublicadoId(novoId)
-      try { localStorage.removeItem(chaveRascunho(user?.tenantId, agentId)) } catch { /* sem storage */ }
+      // Revisão 02/10: só esquece o ponteiro se ele ainda aponta para ESTE
+      // rascunho — outra aba pode ter começado outro, que ficaria órfão.
+      try {
+        const chave = chaveRascunho(user?.tenantId, agentId)
+        if (localStorage.getItem(chave) === draftId) localStorage.removeItem(chave)
+      } catch { /* sem storage */ }
       const numeroId = spec.channel.whatsappNumberId
       const motivoSemLinha = numeroId ? await ligarLinha(numeroId, novoId) : null
       if (motivoSemLinha && numeroId) setSemLinha({ numeroId, motivo: motivoSemLinha })

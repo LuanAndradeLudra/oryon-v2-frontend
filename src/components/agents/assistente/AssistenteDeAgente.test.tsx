@@ -238,6 +238,31 @@ describe('AssistenteDeAgente', () => {
     await waitFor(() => expect(api.rodarBateria).toHaveBeenCalledTimes(1))
     expect(api.rodarBateria.mock.calls[0][0]).toMatchObject({ trigger: 'publish', tests: [{ question: 'Oi' }] })
   })
+
+  it('publicar não apaga o ponteiro de outro rascunho começado em outra aba', async () => {
+    localStorage.setItem('oryon:agentes:assistente:t1', 'draft-1')
+    const pronta = {
+      ...specVazia(),
+      identity: { name: 'Serrinha', goal: 'atender_agendar' as const, segment: 'Clínica' },
+      persona: { tone: 'acolhedor' as const, text: 'Você é a Serrinha, recepcionista virtual.' },
+      flow: { text: 'Cumprimente e entenda o pedido antes de responder.' },
+      tests: [{ question: 'Oi', answer: 'Olá!', verdict: 'boa' as const }],
+    }
+    api.getSpecDraft.mockResolvedValue({ ...DRAFT, step: 7, spec: pronta })
+    api.getSpecReadiness.mockResolvedValue({ ready: true, items: [{ id: 'identidade', label: 'ok', ok: true, blocking: true }] })
+    api.publishSpecDraft.mockImplementation(async () => {
+      localStorage.setItem('oryon:agentes:assistente:t1', 'draft-outra-aba')
+      return { agentId: 'agent-1', version: 1, alreadyPublished: false }
+    })
+    api.getAgent.mockResolvedValue({ id: 'agent-1' })
+    const onCreated = vi.fn()
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={onCreated} />)
+    const publicar = await screen.findByRole('button', { name: 'Publicar agente' })
+    await waitFor(() => expect(publicar).not.toBeDisabled())
+    await act(async () => { fireEvent.click(publicar) })
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBe('draft-outra-aba')
+  })
 })
 
 describe('revisar agente existente', () => {
