@@ -232,16 +232,22 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
 
       {/* D10 — rotina (pausa, atribuição, ações no CRM…) atrás deste botão;
           transferências, falhas e bloqueios aparecem sempre. */}
-      {onAlternarEventos && rotina > 0 && (
-        <div className="flex justify-center pb-2">
-          <button
-            type="button"
-            onClick={onAlternarEventos}
-            aria-pressed={mostrarEventos}
-            className="text-[11px] font-medium text-surface-500 hover:text-surface-300 px-2 py-0.5 rounded-xs border border-surface-700"
-          >
-            {mostrarEventos ? 'Ocultar eventos' : `Mostrar eventos (${rotina})`}
-          </button>
+      {/* PO 01/10: os eventos chegam ~400 ms DEPOIS das mensagens; quando o
+          botão entrava no fluxo, empurrava a conversa para baixo (e flutuando
+          ele cobria o separador de data). O espaço fica SEMPRE reservado: o
+          botão aparece num lugar que já existia. */}
+      {onAlternarEventos && (
+        <div className="flex justify-center items-center h-6 mb-2">
+          {rotina > 0 && (
+            <button
+              type="button"
+              onClick={onAlternarEventos}
+              aria-pressed={mostrarEventos}
+              className="text-[11px] font-medium text-surface-400 hover:text-surface-200 px-2 py-0.5 rounded-xs border border-surface-700"
+            >
+              {mostrarEventos ? 'Ocultar eventos' : `Mostrar eventos (${rotina})`}
+            </button>
+          )}
         </div>
       )}
 
