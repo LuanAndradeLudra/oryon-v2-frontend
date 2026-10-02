@@ -106,7 +106,9 @@ export function AssistenteDeAgente({
     if (tentativa > 0) setSalvo('salvando')
     const iniciar = async () => {
       let guardado: string | null = draftInicial ?? null
-      if (draftInicial) { try { localStorage.setItem(chave, draftInicial) } catch { /* sem storage */ } }
+      // Revisão 02/10: abrir o rascunho de um colega não toma o lugar do
+      // rascunho que ESTA pessoa tinha em andamento — só ocupa o ponteiro vazio.
+      if (draftInicial) { try { if (!localStorage.getItem(chave)) localStorage.setItem(chave, draftInicial) } catch { /* sem storage */ } }
       else { try { guardado = localStorage.getItem(chave) } catch { /* sem storage */ } }
       try {
         if (guardado) {

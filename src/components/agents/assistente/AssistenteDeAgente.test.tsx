@@ -638,6 +638,16 @@ describe('linha de WhatsApp', () => {
     expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBe('draft-do-supervisor')
   })
 
+  it('abrir o rascunho de um colega não troca o rascunho que eu tinha em andamento', async () => {
+    localStorage.setItem('oryon:agentes:assistente:t1', 'draft-meu')
+    api.getSpecDraft.mockResolvedValue({ ...DRAFT, id: 'draft-do-supervisor', step: 7, spec: PRONTA })
+    api.getSpecReadiness.mockResolvedValue({ ready: true, items: [] })
+    render(<AssistenteDeAgente draftInicial="draft-do-supervisor" onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByRole('button', { name: 'Publicar agente' })).toBeInTheDocument()
+    expect(api.getSpecDraft).toHaveBeenCalledWith('draft-do-supervisor')
+    expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBe('draft-meu')
+  })
+
   it('ensaio: grava o rascunho e pede ao servidor que compile; na revisão, com o agente real e ferramentas simuladas', async () => {
     api.createSpecDraft.mockResolvedValue({ draft: { ...DRAFT, agent_id: 'bia', spec: PRONTA, step: 6 }, repeatedFacts: [], editedOutside: [] })
     api.chatWithAgent.mockResolvedValue({ message: 'Oi! Posso ajudar.', toolCalls: [] })
