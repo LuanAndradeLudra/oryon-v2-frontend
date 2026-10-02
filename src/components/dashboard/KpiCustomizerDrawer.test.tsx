@@ -108,6 +108,15 @@ describe('DC-5/DC-6 — densidade, destaque e metas', () => {
     expect(onMetasSalvas).toHaveBeenCalled()
   })
 
+  it('"1.440" é mil quatrocentos e quarenta, não 1,44', async () => {
+    get.mockResolvedValue({ data: {} })
+    put.mockResolvedValue({ data: {} })
+    render(<KpiCustomizerDrawer open onClose={() => undefined} slots={SLOTS} defaults={SLOTS} onSave={vi.fn()} podeEditarMetas />)
+    fireEvent.change(await screen.findByLabelText('Tempo de resposta (mediana) até'), { target: { value: '1.440' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(put).toHaveBeenCalledWith('/home/goals', { tempoRespostaMin: 1440 }))
+  })
+
   it('meta fora do intervalo trava o Salvar e diz o limite', async () => {
     get.mockResolvedValue({ data: {} })
     render(<KpiCustomizerDrawer open onClose={() => undefined} slots={SLOTS} defaults={SLOTS} onSave={vi.fn()} podeEditarMetas />)

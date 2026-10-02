@@ -6,7 +6,7 @@ import { Drawer } from '@/components/ui/Drawer'
 import { Button } from '@/components/ui/Button'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { KPI_CATALOG, type KpiId } from '@/types/dashboard'
-import { CAMPOS_DAS_METAS, type CampoDaMeta, type MetasDoPainel } from '@/lib/metasDoPainel'
+import { CAMPOS_DAS_METAS, lerNumeroDaMeta, type CampoDaMeta, type MetasDoPainel } from '@/lib/metasDoPainel'
 import { DESTAQUE_MAX, type Densidade } from './kpiIdentidade'
 
 // Personalizar indicadores (28/09) — no mesmo desenho do "Configurar colunas"
@@ -177,7 +177,7 @@ export function KpiCustomizerDrawer({
     for (const c of CAMPOS_DAS_METAS) {
       const t = metas[c.campo].trim()
       if (!t) continue
-      const v = Number(t.replace(',', '.'))
+      const v = lerNumeroDaMeta(t)
       if (!Number.isFinite(v) || v < c.min || v > c.max) out[c.campo] = `Entre ${c.min} e ${c.max.toLocaleString('pt-BR')}`
     }
     return out
@@ -188,7 +188,7 @@ export function KpiCustomizerDrawer({
     for (const c of CAMPOS_DAS_METAS) {
       if (metas[c.campo].trim() === metasSalvas[c.campo].trim()) continue
       const t = metas[c.campo].trim()
-      out[c.campo] = t ? Number(t.replace(',', '.')) : null
+      out[c.campo] = t ? lerNumeroDaMeta(t) : null
     }
     return Object.keys(out).length > 0 ? out : null
   }, [podeEditarMetas, metas, metasSalvas])

@@ -38,6 +38,18 @@ export const CAMPOS_DAS_METAS: Array<{
   { campo: 'taxaResposta',              kpi: 'campaign_reply_rate',    rotulo: 'Resposta aos disparos de pelo menos', unidade: '%',   sentido: 'maior', min: 1, max: 100 },
 ]
 
+/**
+ * Lê o número digitado no jeito brasileiro. Revisão 02/10: "1.440" (como o
+ * próprio limite aparece na tela) virava 1,44 — o ponto de milhar era lido
+ * como decimal e a meta de 24 h passava a ser de 1 minuto e pouco.
+ */
+export function lerNumeroDaMeta(texto: string): number {
+  const t = texto.trim().replace(/\s/g, '')
+  if (t.includes(',')) return Number(t.replace(/\./g, '').replace(',', '.'))
+  if (/^\d{1,3}(\.\d{3})+$/.test(t)) return Number(t.replace(/\./g, ''))
+  return Number(t)
+}
+
 const FATOR = { min: 60, h: 3600, '%': 1 } as const
 
 /**
