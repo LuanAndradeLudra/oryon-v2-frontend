@@ -160,7 +160,98 @@ export interface PendingActivation {
   daysPending: number
 }
 
+export interface PortfolioRow {
+  tenantId: string
+  contractId: string
+  companyName: string | null
+  tier: PlanTierId
+  displayName: string
+  term: ContractTermId
+  paymentMethod: PaymentMethodId
+  installments: number
+  contractedMonthlyCents: number
+  status: string
+  suspended: boolean
+  startsAt: string
+  endsAt: string | null
+  autoRenew: boolean
+  /** Cancelamento registrado (A18): encerra em `effectiveAt`; `afterRenewal` = renova uma vez antes. */
+  cancellation?: { effectiveAt: string; afterRenewal: boolean } | null
+  overdueCount: number
+  overdueCents: number
+  oldestDueAt: string | null
+}
+
+export interface CatalogHistoryRow {
+  id: string
+  entity: 'plan' | 'pack'
+  entityKey: string
+  changedBy: string | null
+  changedByName: string | null
+  before: Record<string, unknown> | null
+  after: Record<string, unknown>
+  createdAt: string
+}
+
+export interface CreditPackRow { id: string; credits: number; valueCents: number; active: boolean; sortOrder: number; updatedAt?: string }
+
+/** A carteira volta limitada aos contratos mais recentes; `truncated` avisa o corte. */
+export interface PortfolioResult { rows: PortfolioRow[]; truncated: boolean }
+
+export interface PlanChangeDecision {
+  mode: 'upgrade_next_cycle_price' | 'upgrade_difference_invoice' | 'upgrade_recalculated_installments' | 'downgrade_scheduled'
+  isUpgrade: boolean
+  newContractedMonthlyCents: number
+  monthsRemaining: number
+  differenceCents: number
+  message: string
+}
+
 export const adminBillingApi = {
+  async portfolio(): Promise<PortfolioResult> {
+    const data = (await api.get<PortfolioResult | PortfolioRow[]>('/admin/billing/portfolio')).data
+    // Tolerância ao formato antigo (array) enquanto o backend é atualizado.
+    return Array.isArray(data) ? { rows: data, truncated: false } : data
+  },
+  async reconciliation(): Promise<unknown> {
+    return (await api.get('/admin/billing/reconciliation')).data
+  },
+  async packs(): Promise<CreditPackRow[]> {
+    return (await api.get<CreditPackRow[]>('/admin/billing/catalog/packs')).data
+  },
+  async upsertPlan(tier: PlanTierId, body: {
+    displayName: string; priceMonthlyCents: number; monthlyCredits?: number | null; active?: boolean
+    entitlements?: Partial<Record<EntitlementKeyId, number | null>>; modules?: Record<string, boolean>; overagePriceCents?: number | null
+    expectedUpdatedAt?: string
+  }): Promise<{ warnings: string[] }> {
+    return (await api.put(`/admin/billing/catalog/plans/${tier}`, body)).data
+  },
+  async upsertPack(credits: number, body: { valueCents: number; active?: boolean; sortOrder?: number; expectedUpdatedAt?: string }): Promise<{ warnings: string[] }> {
+    return (await api.put(`/admin/billing/catalog/packs/${credits}`, body)).data
+  },
+  async catalogHistory(): Promise<CatalogHistoryRow[]> {
+    return (await api.get<CatalogHistoryRow[]>('/admin/billing/catalog/history')).data
+  },
+  async catalogWarnings(): Promise<string[]> {
+    return (await api.get<string[]>('/admin/billing/catalog/warnings')).data
+  },
+  async previewPlanChange(tenantId: string, body: { tier: PlanTierId; contractedMonthlyCents?: number }): Promise<PlanChangeDecision> {
+    return (await api.post<PlanChangeDecision>(`/admin/billing/accounts/${tenantId}/change-plan/preview`, body)).data
+  },
+  async changePlan(tenantId: string, body: { tier: PlanTierId; contractedMonthlyCents?: number }): Promise<{ message: string }> {
+    return (await api.post(`/admin/billing/accounts/${tenantId}/change-plan`, body)).data
+  },
+  /** Prévia do cancelamento pela regra da 18.1.2 (A18). */
+  async cancelPreview(tenantId: string): Promise<{ afterRenewal: boolean; effectiveAt: string; currentEndsAt: string | null; alreadyCanceled: boolean; message: string }> {
+    return (await api.get(`/admin/billing/accounts/${tenantId}/cancel/preview`)).data
+  },
+  /** Cancelamento pedido pelo cliente à equipe (A5: não há botão na plataforma). */
+  async cancelContract(tenantId: string, reason: string): Promise<{ afterRenewal: boolean; effectiveAt: string; message: string }> {
+    return (await api.post(`/admin/billing/accounts/${tenantId}/cancel`, { reason })).data
+  },
+  async accelerate(contractId: string, body: { dueInDays?: number; reason: string }): Promise<{ accelerated: number; dueAt: string }> {
+    return (await api.post(`/admin/billing/contracts/${contractId}/accelerate`, body)).data
+  },
   async listCatalog(): Promise<CatalogPlan[]> {
     return (await api.get<CatalogPlan[]>('/admin/billing/catalog/plans')).data
   },
