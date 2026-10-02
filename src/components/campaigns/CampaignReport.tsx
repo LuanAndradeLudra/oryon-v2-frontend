@@ -278,14 +278,20 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   // D7 — cada percentual com a base escrita na tela: entregues e falhas sobre
   // as ENVIADAS; lidas e respostas sobre as ENTREGUES. Excluídos e opt-out à
   // parte, fora de toda base. Sem base (0), mostra "—", não "0%".
-  const funnel = analytics?.funnel
+  // Revisão 02/10: campanha antiga (sem linhas em campaign_recipients) chega
+  // com o funil todo zerado e os números reais no `stats` gravado — o funil só
+  // vale quando há destinatários registrados; senão o relatório zerava.
+  const funilBruto = analytics?.funnel
+  const funnel = funilBruto && ((funilBruto.sent ?? 0) + (funilBruto.failed ?? 0) + (funilBruto.pending ?? 0) + (funilBruto.cancelled ?? 0)) > 0
+    ? funilBruto
+    : undefined
   const sent      = funnel?.sent ?? stats.sent
   const delivered = funnel?.delivered ?? stats.delivered
   const read      = funnel?.read ?? stats.read
   const replied   = funnel?.replied ?? stats.replied ?? 0
   const failed    = funnel?.failed ?? stats.failed
-  const excluded  = funnel?.excluded ?? stats.excluded ?? 0
-  const optedOut  = funnel?.optedOut ?? stats.optedOut ?? 0
+  const excluded  = funilBruto?.excluded ?? stats.excluded ?? 0
+  const optedOut  = funilBruto?.optedOut ?? stats.optedOut ?? 0
   const pending   = funnel?.pending ?? 0
   // "Enviadas" = tudo que tentamos mandar (aceitas pela Meta + falhas): é a
   // base de entregues e de falhas (D7), então as duas somam no máximo 100%.

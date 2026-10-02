@@ -59,6 +59,27 @@ describe('CampaignReport com o payload real do backend', () => {
     expect(screen.getAllByText('8').length).toBeGreaterThan(0)
   })
 
+  // Revisão 02/10: campanha antiga, sem linhas em campaign_recipients — o backend
+  // manda o funil zerado e o stats gravado com os números reais. O relatório
+  // mostrava tudo zerado porque `funnel?.x ?? stats.x` nunca caía no stats.
+  it('campanha antiga (funil zerado) usa o stats gravado em vez de zerar o relatório', async () => {
+    getAnalytics.mockResolvedValue({
+      data: {
+        campaignId: 'c1',
+        stats: { total: 10, sent: 9, delivered: 7, read: 4, failed: 1, replied: 2 },
+        funnel: { pending: 0, sent: 0, delivered: 0, read: 0, replied: 0, failed: 0, cancelled: 0, excluded: 0, optedOut: 0 },
+        failures: [],
+      },
+    })
+    getConversations.mockResolvedValue({ data: [] })
+    render(
+      <MemoryRouter>
+        <CampaignReport campaign={campaign} onClose={() => undefined} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getAllByText('7').length).toBeGreaterThan(0))
+  })
+
   it('prefere o stats do /analytics ao da lista (que pode estar velho)', async () => {
     getAnalytics.mockResolvedValue({
       data: {
