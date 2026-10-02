@@ -179,6 +179,9 @@ function FieldRenderer({
   return <SecretAwareStringField name={name} prop={prop} required={required} label={label} hint={hint} value={value} onChange={onChange} />
 }
 
+/** Marca do servidor para "segredo já guardado" (agent-server `SECRET_SENTINEL`). */
+const SEGREDO_GUARDADO = '__SECRET_SET__'
+
 function SecretAwareStringField({
   name,
   prop,
@@ -197,6 +200,13 @@ function SecretAwareStringField({
 }) {
   const [revealed, setRevealed] = useState(false)
   const isSecret = !!prop.secret
+  // Revisão 02/10: a marca de "segredo guardado" virava o valor do campo — colar
+  // o token novo com o cursor no fim mandava "__SECRET_SET__abc…", gravado como
+  // credencial. Agora o campo fica vazio com o aviso no placeholder; apagar o
+  // que foi digitado volta a manter o segredo guardado.
+  const [tinhaGuardado, setTinhaGuardado] = useState(false)
+  if (isSecret && value === SEGREDO_GUARDADO && !tinhaGuardado) setTinhaGuardado(true)
+  const mostrado = isSecret && value === SEGREDO_GUARDADO ? '' : value
   return (
     <div>
       {label}
@@ -204,9 +214,9 @@ function SecretAwareStringField({
         <Input
           type={isSecret && !revealed ? 'password' : 'text'}
           autoComplete={isSecret ? 'new-password' : 'off'}
-          value={typeof value === 'string' ? value : (value === undefined || value === null ? '' : String(value))}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={isSecret ? '••••••••' : `valor para ${name}`}
+          value={typeof mostrado === 'string' ? mostrado : (mostrado === undefined || mostrado === null ? '' : String(mostrado))}
+          onChange={(e) => onChange(isSecret && tinhaGuardado && e.target.value === '' ? SEGREDO_GUARDADO : e.target.value)}
+          placeholder={isSecret ? (tinhaGuardado ? 'Salvo — digite para substituir' : '••••••••') : `valor para ${name}`}
           className={isSecret ? 'pr-10' : undefined}
         />
         {isSecret && (
