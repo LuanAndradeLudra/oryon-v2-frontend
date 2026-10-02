@@ -1,11 +1,12 @@
 // ─── BillingSettings ─────────────────────────────────────────────────────────
-// Settings section: plano, uso de créditos e extrato — ledger + gateway mock.
+// Settings section: plano, uso de créditos, extrato e faturas.
+// Sem autoatendimento (SCRUM-1204, Termos 4.1 c): contratar, trocar de plano e
+// comprar créditos passam pela equipe Oryon a partir da Proposta.
 
 import { useEffect, useState } from 'react'
 import {
   Zap, TrendingUp, Users, Smartphone, Bot, RefreshCw,
-  ChevronRight, CheckCircle2, AlertTriangle, ArrowUpRight,
-  Receipt, Loader2,
+  AlertTriangle, Receipt, Loader2, MessageCircle,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { SettingsSection } from '../SettingsSection'
@@ -15,25 +16,8 @@ import {
 } from '@/config/plans'
 import { useBilling } from '@/hooks/useBilling'
 import { billingApi } from '@/services/billingApi'
-import type {
-  CreditTransaction, PlanOption, PaymentStatus, BackendPlanTier, CreditPack,
-} from '@/services/billingApi'
-import { CheckoutModal, type CheckoutIntent } from '@/components/settings/modals/CheckoutModal'
+import type { CreditTransaction, PaymentStatus } from '@/services/billingApi'
 import { ConfirmModal } from '@/components/ui/Modal'
-
-// Tiers contratáveis do backend, em ordem. enterprise é "sob consulta" (não
-// self-serve). O próximo tier de upgrade sai daqui, não do PLAN_ORDER do front.
-const BACKEND_ORDER: BackendPlanTier[] = ['start', 'professional', 'scale', 'enterprise']
-
-function nextBackendTier(current: BackendPlanTier): BackendPlanTier | null {
-  const i = BACKEND_ORDER.indexOf(current)
-  const next = BACKEND_ORDER[i + 1]
-  return next && next !== 'enterprise' ? next : null
-}
-
-// Pacotes de crédito vêm do backend (GET /settings/billing/credit-packs) —
-// preço/quantidade são fonte de verdade server-side (SCRUM-154). O front só
-// exibe; o backend valida o valor no buy-credits.
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -61,13 +45,13 @@ function CreditBar({ used, total }: { used: number; total: number | null }) {
       {warning && (
         <p className="text-xs text-status-pending flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5" />
-          Você usou {Math.round(pct)}% dos créditos. Considere fazer upgrade.
+          Você usou {Math.round(pct)}% da franquia do mês.
         </p>
       )}
       {danger && (
         <p className="text-xs text-red-400 flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5" />
-          Créditos esgotados — o Copilot é bloqueado e o atendimento sinaliza recarga.
+          Franquia do mês esgotada. O atendimento continua e o consumo extra entra como excedente, conforme o seu contrato.
         </p>
       )}
     </div>
@@ -125,108 +109,19 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
   )
 }
 
-function UpgradeCard({
-  currentTier, nextPlan, isSubscribed, onUpgrade, disabled,
-}: {
-  currentTier: BackendPlanTier
-  nextPlan: PlanOption | null
-  isSubscribed: boolean
-  onUpgrade: (intent: CheckoutIntent) => void
-  disabled?: boolean
-}) {
-  if (!nextPlan) return null
-
-  const currentFront = mapBackendTier(currentTier)
-  const nextFront = mapBackendTier(nextPlan.tier)
-  const priceMonthly = Math.round(nextPlan.priceMonthlyCents / 100)
-
-  // Módulos que o próximo tier desbloqueia (grade do front, via mapeamento).
-  const newModules = Object.entries(PLANS[nextFront].modules)
-    .filter(([key, val]) => val && !PLANS[currentFront].modules[key as keyof typeof PLANS[typeof nextFront]['modules']])
-    .map(([key]) => MODULE_LABELS[key as keyof typeof MODULE_LABELS] ?? key)
-    .filter(Boolean)
-    .slice(0, 4)
-
-  return (
-    <div className="rounded-2xl border border-brand-500/30 bg-gradient-to-br from-brand-950/40 to-surface-900 p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowUpRight className="w-4 h-4 text-brand-400" />
-            <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">Upgrade disponível</span>
-          </div>
-          <h3 className="text-lg font-bold text-surface-50">Plano {nextPlan.displayName}</h3>
-          <p className="text-2xl font-bold text-brand-400 mt-1">
-            R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}<span className="text-sm text-surface-400 font-normal">/mês</span>
-          </p>
-          {nextPlan.monthlyCredits != null && (
-            <p className="text-xs text-surface-400 mt-0.5">
-              ≈ {nextPlan.monthlyCredits.toLocaleString('pt-BR')} atendimentos/mês
-            </p>
-          )}
-        </div>
-      </div>
-
-      {newModules.length > 0 && (
-        <ul className="mt-4 space-y-1.5">
-          {newModules.map((label) => (
-            <li key={label} className="flex items-center gap-2 text-sm text-surface-300">
-              <CheckCircle2 className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
-              {label}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <button
-        disabled={disabled}
-        onClick={() => onUpgrade({
-          kind: isSubscribed ? 'change' : 'subscribe',
-          tier: nextPlan.tier,
-          plan: nextPlan,
-        })}
-        className="mt-5 w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors text-surface-950 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-600"
-      >
-        {isSubscribed ? 'Fazer upgrade' : 'Contratar'} {nextPlan.displayName}
-        <ChevronRight className="w-4 h-4" />
-      </button>
-    </div>
-  )
-}
-
-const MODULE_LABELS: Partial<Record<string, string>> = {
-  agentBuilder:        'Agent Builder — crie agentes de IA',
-  nexus:               'Nexus — chat interno da equipe',
-  marketing:           'Marketing Attribution completo',
-  apiAccess:           'Acesso à API',
-  webhooks:            'Webhooks avançados',
-  advancedAnalytics:   'Analytics avançado',
-  customReports:       'Relatórios customizados',
-  prioritySupport:     'Suporte prioritário 4h',
-  dedicatedOnboarding: 'Onboarding dedicado',
-  sla:                 'SLA de uptime 99,5%',
-  subAccounts:         'Sub-contas para agências',
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BillingSettings() {
   const { billing, transactions, loading, error, refetch } = useBilling({ transactions: true })
-  const [plans, setPlans] = useState<PlanOption[]>([])
   const [status, setStatus] = useState<PaymentStatus | null>(null)
   // Falha ao carregar payment-status NÃO assume "novo cliente" (evita cobrança duplicada).
   const [statusError, setStatusError] = useState(false)
-  const [packs, setPacks] = useState<CreditPack[]>([])
   const [invoices, setInvoices] = useState<import('@/services/billingApi').BillingInvoiceRow[]>([])
-  const [intent, setIntent] = useState<CheckoutIntent | null>(null)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [canceling, setCanceling] = useState(false)
 
   useEffect(() => {
     let alive = true
-    // Planos e pacotes são independentes do status — carregam à parte.
-    billingApi.getPlans().then((p) => { if (alive) setPlans(p) }).catch(() => {})
-    billingApi.getCreditPacks().then((cp) => { if (alive) setPacks(cp) }).catch(() => {})
     billingApi.getInvoices().then((inv) => { if (alive) setInvoices(inv) }).catch(() => {})
     billingApi.getPaymentStatus()
       .then((s) => { if (alive) { setStatus(s); setStatusError(false) } })
@@ -234,11 +129,7 @@ export function BillingSettings() {
     return () => { alive = false }
   }, [])
 
-  function openCredits(pack: CreditPack) {
-    setIntent({ kind: 'credits', packCredits: pack.credits, valueCents: pack.valueCents })
-  }
-
-  function onCheckoutDone() {
+  function onStatusChanged() {
     void refetch()
     billingApi.getPaymentStatus()
       .then((s) => { setStatus(s); setStatusError(false) })
@@ -249,7 +140,7 @@ export function BillingSettings() {
     setCanceling(true)
     try {
       await billingApi.cancel()
-      onCheckoutDone()
+      onStatusChanged()
       setCancelOpen(false)
     } finally {
       setCanceling(false)
@@ -279,11 +170,8 @@ export function BillingSettings() {
   const plan = PLANS[frontTier]
   const priceMonthly = Math.round(billing.plan.priceMonthlyCents / 100)
   const atendimentos = billing.plan.monthlyCredits
-  const backendTier = billing.plan.tier as BackendPlanTier
   const isCanceled = billing.status === 'canceled' || status?.status === 'canceled'
   const isSubscribed = (status?.subscribed ?? false) && !isCanceled
-  const nextTier = nextBackendTier(backendTier)
-  const nextPlan = nextTier ? plans.find((p) => p.tier === nextTier) ?? null : null
   const isPastDue = billing.status === 'past_due' || status?.status === 'past_due'
   const accessUntil = billing.planResetsAt
     ? new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -294,18 +182,17 @@ export function BillingSettings() {
     <div>
 
       {/* Alertas de cobrança (nível de página) */}
-      {(statusError || isPastDue || isCanceled || (!!status && !isSubscribed && !isCanceled)) && (
+      {(statusError || isPastDue || isCanceled) && (
         <div className="space-y-3 pt-2">
-          {/* Status do gateway indisponível: bloqueia CTAs de pagamento */}
+          {/* Status de cobrança indisponível */}
           {statusError && (
             <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-surface-200">
                 <p className="font-medium">Status de cobrança indisponível</p>
                 <p className="text-surface-400 text-xs mt-0.5">
-                  Não foi possível confirmar sua assinatura agora. Contratar, trocar de
-                  plano e comprar créditos estão temporariamente desabilitados para
-                  evitar cobrança duplicada. Tente novamente em instantes.
+                  Não foi possível confirmar a situação da sua assinatura agora. Tente
+                  novamente em instantes.
                 </p>
               </div>
             </div>
@@ -318,7 +205,7 @@ export function BillingSettings() {
               <div className="text-sm text-surface-200">
                 <p className="font-medium">Pagamento em atraso</p>
                 <p className="text-surface-400 text-xs mt-0.5">
-                  Regularize a cobrança para manter o plano ativo. O acesso é restabelecido na confirmação do pagamento.
+                  Há fatura vencida. Regularize o pagamento para evitar a suspensão da conta; o acesso é restabelecido quando todas as faturas vencidas forem pagas.
                 </p>
               </div>
             </div>
@@ -333,35 +220,12 @@ export function BillingSettings() {
                 <p className="text-surface-400 text-xs mt-0.5">
                   {accessUntil
                     ? <>Você mantém o acesso até {accessUntil}. Não haverá nova cobrança.</>
-                    : <>O acesso foi encerrado. Contrate um plano para reativar.</>}
+                    : <>O acesso foi encerrado. Fale com a equipe Oryon para reativar.</>}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Contratação (quando ainda não há assinatura paga) — nunca em statusError */}
-          {status && !statusError && !isSubscribed && !isCanceled && (
-            <div className="rounded-2xl border border-brand-500/30 bg-brand-950/20 p-4 flex items-center justify-between gap-4">
-              <div className="text-sm">
-                <p className="font-medium text-surface-100">Ative sua assinatura</p>
-                <p className="text-surface-400 text-xs mt-0.5">Contrate o plano {billing.plan.displayName} (gateway mock confirma na hora).</p>
-              </div>
-              <button
-                onClick={() => setIntent({
-                  kind: 'subscribe', tier: backendTier,
-                  plan: plans.find((p) => p.tier === backendTier) ?? {
-                    tier: backendTier, displayName: billing.plan.displayName,
-                    priceMonthlyCents: billing.plan.priceMonthlyCents, currency: billing.plan.currency,
-                    monthlyCredits: billing.plan.monthlyCredits, tokensPerCredit: billing.plan.tokensPerCredit,
-                    features: billing.plan.features,
-                  },
-                })}
-                className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-semibold text-sm whitespace-nowrap"
-              >
-                Contratar
-              </button>
-            </div>
-          )}
         </div>
       )}
 
@@ -427,47 +291,18 @@ export function BillingSettings() {
         )}
       </SettingsSection>
 
-      {/* Upgrade CTA */}
-      {nextPlan && (
-        <SettingsSection
-          title="Upgrade"
-          description="Desbloqueie mais módulos e créditos no próximo plano."
-        >
-          <UpgradeCard
-            currentTier={backendTier}
-            nextPlan={nextPlan}
-            isSubscribed={isSubscribed}
-            onUpgrade={setIntent}
-            disabled={statusError}
-          />
-        </SettingsSection>
-      )}
-
-      {/* Pacotes de crédito */}
+      {/* Mudanças no contrato passam pela equipe (Termos 4.1 c) */}
       <SettingsSection
-        title="Comprar créditos avulsos"
-        description="Pacotes não renovam — somam ao saldo atual. Ideal para picos de atendimento."
+        title="Mudar de plano ou comprar créditos"
+        description="Upgrade, pacotes de créditos e mudanças no contrato são feitos pela equipe Oryon, com uma nova Proposta."
       >
-        {packs.length === 0 ? (
-          <p className="text-sm text-surface-500 py-2">Pacotes indisponíveis no momento.</p>
-        ) : (
-          <div className="grid grid-cols-3 gap-2">
-            {packs.map((pack) => (
-              <button
-                key={pack.credits}
-                onClick={() => openCredits(pack)}
-                disabled={statusError}
-                className="rounded-xl border border-surface-700 hover:border-brand-500 hover:bg-surface-800 transition-colors p-3 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-surface-700 disabled:hover:bg-transparent"
-              >
-                <p className="text-sm font-bold text-surface-100">{pack.credits.toLocaleString('pt-BR')}</p>
-                <p className="text-[11px] text-surface-500">créditos</p>
-                <p className="text-xs text-brand-400 font-semibold mt-1">
-                  R$ {(pack.valueCents / 100).toLocaleString('pt-BR')}
-                </p>
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex items-start gap-3 text-sm text-surface-300">
+          <MessageCircle className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
+          <p>
+            Fale com o seu gerente de conta ou com o suporte Oryon. As condições novas
+            valem a partir da assinatura da Proposta.
+          </p>
+        </div>
       </SettingsSection>
 
       {/* Extrato de créditos */}
@@ -518,16 +353,6 @@ export function BillingSettings() {
           </ul>
         )}
       </SettingsSection>
-
-      {/* Checkout (Pix / cartão) */}
-      {intent && (
-        <CheckoutModal
-          open
-          intent={intent}
-          onClose={() => setIntent(null)}
-          onDone={onCheckoutDone}
-        />
-      )}
 
       {/* Cancelamento (fim do ciclo) */}
       <ConfirmModal

@@ -453,7 +453,7 @@ export function WelcomePage() {
               <h4 className={`text-xs font-semibold uppercase tracking-widest mb-4 ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>Produto</h4>
               <ul className="flex flex-col gap-2.5">
                 <li>
-                  <Link to="/pricing" className={`text-sm transition-colors hover:text-brand-400 ${textSec}`}>Planos</Link>
+                  <a href="mailto:contato@oryonsolutions.com" className={`text-sm transition-colors hover:text-brand-400 ${textSec}`}>Fale com vendas</a>
                 </li>
               </ul>
             </div>
