@@ -74,6 +74,8 @@ interface ScheduleToolbarProps {
   onAgentFilterChange: (v: string | null) => void
   typeFilter: string | null
   onTypeFilterChange: (v: string | null) => void
+  /** Ação primária da página (PO 01/10: saiu da TopBar), à direita dos filtros. */
+  actions?: React.ReactNode
 }
 
 export function ScheduleToolbar({
@@ -88,6 +90,7 @@ export function ScheduleToolbar({
   onAgentFilterChange,
   typeFilter,
   onTypeFilterChange,
+  actions,
 }: ScheduleToolbarProps) {
   return (
     <div className="flex items-center gap-2 h-11 px-4 border-b border-surface-700 bg-surface-800 flex-shrink-0 flex-wrap">
@@ -133,6 +136,7 @@ export function ScheduleToolbar({
           value={typeFilter}
           onChange={onTypeFilterChange}
         />
+        {actions}
       </div>
     </div>
   )

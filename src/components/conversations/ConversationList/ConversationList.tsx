@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, MessageSquareOff } from 'lucide-react'
+import { Loader2, MessageSquareOff, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { ConversationItem } from './ConversationItem'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -54,6 +55,9 @@ interface ConversationListProps {
    *  backend fora do ar, a tela dizia que não havia conversas. */
   erro?: string | null
   onTentarDeNovo?: () => void
+  /** PO 01/10: "Nova conversa" saiu da TopBar e mora ao lado da busca (desktop;
+   *  no celular segue o botão flutuante). Sem a prop, o botão não aparece. */
+  onNewConversation?: () => void
 }
 
 export function ConversationList({
@@ -62,6 +66,7 @@ export function ConversationList({
   activeId, offFilterId = null, filters, allTags, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
   scrollPositionRef, roundedBottomRight = false, aviso = null, erro = null, onTentarDeNovo,
+  onNewConversation,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
@@ -185,7 +190,11 @@ export function ConversationList({
             needsReviewCount={needsReviewCount}
             counts={counts}
           />
-
+          {onNewConversation && (
+            <Button size="sm" iconOnly aria-label="Nova conversa" title="Nova conversa" onClick={onNewConversation}>
+              <Plus className="w-4 h-4" strokeWidth={2.2} />
+            </Button>
+          )}
         </div>
       </div>
 

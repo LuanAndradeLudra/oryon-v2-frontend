@@ -394,15 +394,19 @@ export function ContactsPage() {
           implementações: há duas portas para a mesma sala. */}
       {/* R2-1C-PIX-02 (medido ao vivo): era um botão à mão (30px, 12/500,
           raio 8) — vira o primitivo Button neutral sm (28px, 12/600, raio 7). */}
-      <Button
-        size="sm"
-        variant="neutral"
-        leftIcon={<Settings2 className="w-3.5 h-3.5" />}
-        onClick={() => setShowCRMConfig(true)}
-        data-testid="crm-config-link"
-      >
-        Configurar
-      </Button>
+      {/* PO 01/10: no desktop "Configurar" desce para a barra da lista (junto de
+          Importar e Novo lead); a TopBar só o mostra no celular. */}
+      {isMobile && (
+        <Button
+          size="sm"
+          variant="neutral"
+          leftIcon={<Settings2 className="w-3.5 h-3.5" />}
+          onClick={() => setShowCRMConfig(true)}
+          data-testid="crm-config-link"
+        >
+          Configurar
+        </Button>
+      )}
       {/* Direção A: no desktop, Importar e Novo lead moram na barra da lista
           (à direita do seletor Lista|Tabela); aqui ficam só no mobile. */}
       {isMobile && (
@@ -601,6 +605,9 @@ export function ContactsPage() {
                   { value: 'table', label: <span className="sr-only @[720px]:not-sr-only">Tabela</span>, icon: Table },
                 ]}
               />
+              <Button size="sm" variant="neutral" leftIcon={<Settings2 className="w-3.5 h-3.5" />} onClick={() => setShowCRMConfig(true)} title="Configurar CRM" data-testid="crm-config-link">
+                <span className="sr-only @[720px]:not-sr-only">Configurar</span>
+              </Button>
               <Button size="sm" variant="neutral" leftIcon={<Upload className="w-3.5 h-3.5" />} onClick={() => setShowImport(true)} title="Importar contatos">
                 <span className="sr-only @[720px]:not-sr-only">Importar</span>
               </Button>

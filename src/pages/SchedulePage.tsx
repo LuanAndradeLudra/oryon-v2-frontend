@@ -11,7 +11,7 @@ import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
-import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
+import { useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { ScheduleToolbar, type ScheduleViewMode } from '@/components/schedule/ScheduleToolbar'
 import { ScheduleWeekGrid } from '@/components/schedule/ScheduleWeekGrid'
 import { ScheduleListView } from '@/components/schedule/ScheduleListView'
@@ -44,12 +44,6 @@ export function SchedulePage() {
 
   const aguardandoCount = events.filter((e) => e.status === 'aguardando').length
 
-  useRegisterTopBarActions(
-    <Button size="sm" variant="primary" leftIcon={<Plus className="w-3.5 h-3.5" />} title="Exemplo — criação real de agendamento fica para outro épico">
-      Novo agendamento
-    </Button>,
-    [],
-  )
 
   // SCHED-HEADER-02 (spec/2d-agendamentos.GAPS.md): as contagens vivem no
   // subtítulo do TopBar, não concatenadas no período da toolbar (esse fica
@@ -78,6 +72,12 @@ export function SchedulePage() {
         agentFilter={agentFilter}
         onAgentFilterChange={setAgentFilter}
         typeFilter={typeFilter}
+        actions={
+          // PO 01/10: a ação de criar saiu da TopBar para a linha do navegador de semana.
+          <Button size="sm" variant="primary" leftIcon={<Plus className="w-3.5 h-3.5" />} title="Exemplo — criação real de agendamento fica para outro épico">
+            Novo agendamento
+          </Button>
+        }
         onTypeFilterChange={setTypeFilter}
       />
 

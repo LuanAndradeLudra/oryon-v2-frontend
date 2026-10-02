@@ -668,7 +668,7 @@ export function ConversationsPage() {
   return (
     <>
       {/* CONV-HDR (spec 1d): contagens + chip da linha + "Nova conversa" na TopBar do Shell. */}
-      {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} onNewConversation={openNewConversation} />}
+      {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} />}
 
       {/* 1 — Conversation list. Mobile and desktop render the SAME list with
           the same props — only the outer wrapper differs (mobile adds the
@@ -682,6 +682,8 @@ export function ConversationsPage() {
           loadingMore,
           hasMore,
           onLoadMore: loadMore,
+          // Desktop: "+" ao lado da busca; no celular segue o botão flutuante.
+          onNewConversation: isMobile ? undefined : openNewConversation,
           statusCounts,
           needsReviewCount,
           activeId: activeConversation?.id ?? null,

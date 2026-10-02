@@ -11,7 +11,6 @@ import { CampaignWizard } from './CampaignWizard'
 import { CampaignReport } from './CampaignReport'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { cn } from '@/lib/utils'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -95,23 +94,6 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
   // reporta em vez de duplicar o fetch lá em cima.
   useEffect(() => { onCountChange?.(campaigns.length) }, [campaigns.length, onCountChange])
 
-  // CAMP-HDR-04/05 (spec 2c): "Nova campanha" vive no TopBar, não numa
-  // toolbar própria — mesmo slot que AgentsPage já usa pra "Novo agente".
-  // sm (32px) + ícone 14px, mesma lógica de gate de linha WhatsApp de sempre.
-  useRegisterTopBarActions(
-    <Button
-      size="sm"
-      variant="neutral"
-      onClick={() => hasWhatsappLine && setWizardOpen(true)}
-      disabled={!hasWhatsappLine}
-      title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar campanhas' : undefined}
-      leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}
-    >
-      Nova campanha
-    </Button>,
-    [hasWhatsappLine],
-  )
-
   const handleCreated = useCallback((camp: Campaign) => {
     setCampaigns((prev) => {
       // Remove duplicata caso o wizard já tenha feito o envio e
@@ -165,8 +147,7 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
         </div>
       )}
 
-      {/* Toolbar — CTA principal saiu daqui pro TopBar (CAMP-HDR-04),
-          fica só o filtro de status/linha. flex-wrap (SCRUM-1070): em telas
+      {/* Toolbar — filtro de status/linha + "Nova campanha" à direita. flex-wrap (SCRUM-1070): em telas
           estreitas o SegmentedControl + LineFilterChip quebram linha em vez
           de sair cortados da barra. */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0 flex-wrap">
@@ -178,6 +159,20 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
         />
 
         <LineFilterChip value={lineFilter} onChange={setLineFilter} />
+
+        {/* PO 01/10: "Nova campanha" voltou da TopBar para a barra da lista
+            (revoga CAMP-HDR-04/05) — perto do que ela cria. */}
+        <Button
+          size="sm"
+          variant="primary"
+          className="ml-auto"
+          onClick={() => hasWhatsappLine && setWizardOpen(true)}
+          disabled={!hasWhatsappLine}
+          title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar campanhas' : undefined}
+          leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}
+        >
+          Nova campanha
+        </Button>
       </div>
 
       {/* Conteúdo — cards com o resultado embutido (SCRUM-1097, 22/09).

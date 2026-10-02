@@ -3,7 +3,6 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import { Plus } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { getAgentRuntimeFlags, listSpecDrafts, type AgentConfigWithTools, type SpecDraft } from '@/services/agentsApi'
 import { AgentBuilderWizard } from '@/components/agents/AgentBuilderWizard'
 import { AssistenteDeAgente } from '@/components/agents/assistente/AssistenteDeAgente'
@@ -66,12 +65,6 @@ export function AgentsPage() {
     return () => { vivo = false }
   }, [assistenteNovo, agentId, criando, continuando])
 
-  useRegisterTopBarActions(
-    <Button size="sm" onClick={() => setCriando(true)} leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}>
-      Novo agente
-    </Button>,
-    [],
-  )
 
   const aoCriar = (agent: AgentConfigWithTools) => {
     setCriando(false)
@@ -87,12 +80,21 @@ export function AgentsPage() {
   } else if (agentId && ehSecao(secao)) {
     conteudo = <PaginaDoAgente key={agentId} agentId={agentId} secao={secao} />
   } else {
+    // PO 01/10: a ação de criar sai da TopBar e mora no cabeçalho da lista
+    // (só desktop — no celular a lista já traz o "+" no próprio cabeçalho).
     conteudo = (
-      <ListaDeAgentes
-        onNovo={() => setCriando(true)}
-        rascunhos={rascunhos}
-        onContinuarRascunho={(d) => setContinuando({ draftId: d.id, agentId: d.agent_id })}
-      />
+      <div className="flex min-w-0 flex-1 min-h-0 flex-col">
+        <div className="hidden md:flex items-center justify-end px-8 pt-5 -mb-2">
+          <Button size="sm" onClick={() => setCriando(true)} leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}>
+            Novo agente
+          </Button>
+        </div>
+        <ListaDeAgentes
+          onNovo={() => setCriando(true)}
+          rascunhos={rascunhos}
+          onContinuarRascunho={(d) => setContinuando({ draftId: d.id, agentId: d.agent_id })}
+        />
+      </div>
     )
   }
 
