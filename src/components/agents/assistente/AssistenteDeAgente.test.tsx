@@ -188,6 +188,28 @@ describe('AssistenteDeAgente', () => {
     expect(await screen.findByText('Não salvo no servidor')).toBeInTheDocument()
   })
 
+  it('fechar logo depois de editar grava a edição pendente (não espera o respiro)', async () => {
+    const onClose = vi.fn()
+    render(<AssistenteDeAgente onClose={onClose} onCreated={() => {}} />)
+    await waitFor(() => expect(api.createSpecDraft).toHaveBeenCalled())
+    await screen.findByText('Rascunho salvo')
+    fireEvent.change(screen.getByLabelText('Tipo de negócio'), { target: { value: 'Clínica' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(onClose).toHaveBeenCalled()
+    expect(api.saveSpecDraft).toHaveBeenCalledTimes(1)
+    expect(api.saveSpecDraft.mock.calls[0][1].identity.segment).toBe('Clínica')
+  })
+
+  it('falhou ao criar o rascunho: "Tentar de novo" cria e sai do "Não salvo"', async () => {
+    api.createSpecDraft.mockRejectedValueOnce(new Error('Servidor indisponível'))
+    render(<AssistenteDeAgente onClose={() => {}} onCreated={() => {}} />)
+    expect(await screen.findByText('Não salvo no servidor')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+    expect(await screen.findByText('Rascunho salvo')).toBeInTheDocument()
+    expect(api.createSpecDraft).toHaveBeenCalledTimes(2)
+    expect(localStorage.getItem('oryon:agentes:assistente:t1')).toBe('draft-1')
+  })
+
   it('publica numa chamada, liga o número escolhido e abre o agente criado', async () => {
     localStorage.setItem('oryon:agentes:assistente:t1', 'draft-1')
     const pronta = {

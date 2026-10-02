@@ -95,11 +95,15 @@ export function AssistenteDeAgente({
   const [religando, setReligando] = useState(false)
   const [abrindo, setAbrindo] = useState(false)
   const rolagem = useRef<HTMLDivElement>(null)
+  // Revisão 02/10: falha ao abrir/criar o rascunho deixava "Não salvo no
+  // servidor" para sempre — sem como tentar de novo sem fechar.
+  const [tentativa, setTentativa] = useState(0)
 
   // Retoma o rascunho aberto (M15) ou cria um no servidor.
   useEffect(() => {
     let vivo = true
     const chave = chaveRascunho(user?.tenantId, agentId)
+    if (tentativa > 0) setSalvo('salvando')
     const iniciar = async () => {
       let guardado: string | null = draftInicial ?? null
       if (draftInicial) { try { localStorage.setItem(chave, draftInicial) } catch { /* sem storage */ } }
@@ -161,7 +165,7 @@ export function AssistenteDeAgente({
     // agentes, para dizer QUEM deixa de atender se a linha for escolhida.
     void lerLinhas(() => vivo)
     return () => { vivo = false }
-  }, [user?.tenantId, agentId, draftInicial])
+  }, [user?.tenantId, agentId, draftInicial, tentativa])
 
   /** Lê as linhas; se a leitura falhar, a etapa "No ar" avisa em vez de mostrar "nenhuma linha". */
   async function lerLinhas(vivo: () => boolean = () => true) {
@@ -184,14 +188,35 @@ export function AssistenteDeAgente({
   }, [agentId, numeros, draftId])
 
   // Salva no servidor a cada mudança (com um respiro para não salvar a cada tecla).
+  // Revisão 02/10: fechar dentro do respiro perdia a última edição — o que
+  // ficou pendente é gravado ao fechar (e ao desmontar).
+  const ultimo = useRef({ draftId, spec, etapa })
+  ultimo.current = { draftId, spec, etapa }
+  const pendente = useRef(false)
+  const descarregar = useCallback(() => {
+    if (!pendente.current) return
+    pendente.current = false
+    const { draftId: id, spec: s, etapa: e } = ultimo.current
+    if (id) void saveSpecDraft(id, s, e).catch(() => {})
+  }, [])
+  useEffect(() => descarregar, [descarregar])
+
   useEffect(() => {
     if (!draftId || !carregado.current) return
     setSalvo('salvando')
+    pendente.current = true
     const t = setTimeout(() => {
+      pendente.current = false
       saveSpecDraft(draftId, spec, etapa).then(() => setSalvo('salvo')).catch(() => setSalvo('sem-servidor'))
     }, 700)
     return () => clearTimeout(t)
   }, [spec, etapa, draftId])
+
+  const tentarDeNovo = () => {
+    if (!draftId) { setTentativa((n) => n + 1); return }
+    setSalvo('salvando')
+    saveSpecDraft(draftId, spec, etapa).then(() => setSalvo('salvo')).catch(() => setSalvo('sem-servidor'))
+  }
 
   // O ensaio compila o rascunho SALVO: grava já, sem esperar o respiro.
   const salvarAgora = useCallback(async () => {
@@ -390,9 +415,14 @@ export function AssistenteDeAgente({
             <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-surface-400" aria-live="polite">
               {salvo === 'salvando' && <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando</>}
               {salvo === 'salvo' && <><Cloud className="h-3.5 w-3.5" /> Rascunho salvo</>}
-              {salvo === 'sem-servidor' && <><CloudOff className="h-3.5 w-3.5 text-danger" /> Não salvo no servidor</>}
+              {salvo === 'sem-servidor' && (
+                <>
+                  <CloudOff className="h-3.5 w-3.5 text-danger" /> Não salvo no servidor
+                  <button type="button" onClick={tentarDeNovo} className="font-semibold text-surface-200 underline underline-offset-2 hover:text-surface-50">Tentar de novo</button>
+                </>
+              )}
             </span>
-            <Button variant="ghost" size="md" iconOnly aria-label="Fechar" onClick={onClose} disabled={publicando}>
+            <Button variant="ghost" size="md" iconOnly aria-label="Fechar" onClick={() => { descarregar(); onClose() }} disabled={publicando}>
               <X className="h-5 w-5" />
             </Button>
           </header>
