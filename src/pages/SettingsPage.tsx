@@ -1,5 +1,5 @@
 import { isOwnerTier } from '@/lib/roleHelpers'
-import { useParams, useSearchParams, Navigate } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -38,6 +38,7 @@ import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSetti
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 import { ConnectorsSettings } from '@/components/settings/sections/ConnectorsSettings'
+import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health', 'whatsapp-profile',
@@ -142,7 +143,7 @@ export function SettingsPage() {
   if (!section || !VALID_SECTIONS.includes(section) || gatedOut) {
     // Redirecionamentos levam o caminho de volta junto (antes o `voltarPara`
     // se perdia aqui e a faixa "Voltar para…" sumia).
-    return <Navigate to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
+    return <NavegarSePresente to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
   }
 
   // Esconder o item do menu nao impede ninguem de digitar /settings/billing —
@@ -150,14 +151,14 @@ export function SettingsPage() {
   // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
   // o comentario do featureFlags.ts cita para campaigns.
   if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
-    return <Navigate to={preservarVolta('/settings/account', searchParams)} replace />
+    return <NavegarSePresente to={preservarVolta('/settings/account', searchParams)} replace />
   }
   // D12 — Conectores escondidos: a URL direta também fecha.
   if (section === 'connectors' && !isFeatureVisible('connectorsSelfService')) {
-    return <Navigate to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
+    return <NavegarSePresente to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
   }
   if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
-    return <Navigate to={preservarVolta('/settings/company', searchParams)} replace />
+    return <NavegarSePresente to={preservarVolta('/settings/company', searchParams)} replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]

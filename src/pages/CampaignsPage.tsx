@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Send } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 
@@ -11,6 +11,7 @@ import { Tabs, type TabOption } from '@/components/ui/Tabs'
 import { CampaignsTab } from '@/components/campaigns/CampaignsTab'
 import { TemplatesTab } from '@/components/campaigns/TemplatesTab'
 import { AttributionTab } from '@/components/campaigns/AttributionTab'
+import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 
 type Tab = 'campaigns' | 'templates' | 'attribution'
 
@@ -41,7 +42,7 @@ export function CampaignsPage() {
   const campaignsEnabled = isFeatureVisible('campaigns')
 
   if (!campaignsEnabled) {
-    return <Navigate to="/home" replace />
+    return <NavegarSePresente to="/home" replace />
   }
 
   // CAMP-TABS-01..06 (spec 2c): tablist artesanal (teal, 12px, ícones,

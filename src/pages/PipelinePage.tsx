@@ -2,7 +2,7 @@
 // uma tela própria (antes vivia dentro de /contacts, atrás de um segmented
 // control) para caber os relatórios (D1/934) sem espremer o board.
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useNavigate, useSearchParams, useLocation, Navigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { AlertTriangle, ChevronDown, Check, Search, X, Settings2, Plus } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { pipelinesApi } from '@/services/api'
@@ -19,6 +19,7 @@ import { PipelineBoardTab } from '@/components/deals/PipelineBoardTab'
 import { PipelineReportsTab } from '@/components/deals/reports/PipelineReportsTab'
 import { isReportPeriod, type ReportPeriod } from '@/lib/reportPeriods'
 import type { Pipeline } from '@/types'
+import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 
 type Tab = 'board' | 'list' | 'reports'
 
@@ -254,7 +255,7 @@ export function PipelinePage() {
   ])
 
   if (saindo) return null
-  if (!id) return <Navigate to="/home" replace />
+  if (!id) return <NavegarSePresente to="/home" replace />
 
   if (loading) {
     return (
@@ -283,8 +284,8 @@ export function PipelinePage() {
   // já fazia. Sem nenhum funil disponível, não há pra onde cair: volta pra Home.
   if (!pipeline || pipeline.isArchived) {
     const fallback = getDefaultPipeline(pipelines)
-    if (fallback) return <Navigate to={`/pipelines/${fallback.id}${queryParaOutroFunil(searchParams)}`} replace />
-    return <Navigate to="/home" replace />
+    if (fallback) return <NavegarSePresente to={`/pipelines/${fallback.id}${queryParaOutroFunil(searchParams)}`} replace />
+    return <NavegarSePresente to="/home" replace />
   }
 
   // Início da barra: [seletor no mobile] · visão (Quadro | Relatórios — as visões

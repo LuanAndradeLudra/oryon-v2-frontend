@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Handshake, MessageSquare, Megaphone, Workflow, History } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -46,6 +46,7 @@ import { ConversationsTab } from '@/components/contacts/tabs/ConversationsTab'
 
 import type { Contact } from '@/types'
 import type { ContactNote, ContactTask } from '@/types/contactProfile'
+import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 
 const PROFILE_TAB_IDS = ['activity', 'conversations', 'deals', 'campaigns', 'automations'] as const
 type ProfileTabId = (typeof PROFILE_TAB_IDS)[number]
@@ -198,9 +199,9 @@ export function ContactProfilePage() {
   // ~120 ms sob a rota NOVA, sem o `id`: sem esta guarda, sair do perfil pelo
   // menu redirecionava para /contacts em vez da tela clicada.
   if (!location.pathname.startsWith('/contacts/')) return null
-  if (!id) return <Navigate to="/contacts" replace />
+  if (!id) return <NavegarSePresente to="/contacts" replace />
   if (!isFeatureVisible('contactProfilePage', user?.email)) {
-    return <Navigate to={`/contacts?contact=${id}`} replace />
+    return <NavegarSePresente to={`/contacts?contact=${id}`} replace />
   }
 
   const userName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Você'

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 
@@ -10,6 +10,7 @@ import { PaginaDoAgente } from '@/components/agents/pagina/PaginaDoAgente'
 import { ListaDeAgentes } from '@/components/agents/pagina/ListaDeAgentes'
 import { ehSecao, rotaDoAgente, secaoDaAbaAntiga, SECAO_PADRAO } from '@/components/agents/pagina/secoesDoAgente'
 import { Button } from '@/components/ui/Button'
+import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 
 /**
  * Agentes IA (direção D, 27/09).
@@ -74,9 +75,9 @@ export function AgentsPage() {
 
   let conteudo
   if (!agentId && legado) {
-    conteudo = <Navigate to={rotaDoAgente(legado, secaoDaAbaAntiga(searchParams.get('tab')))} replace />
+    conteudo = <NavegarSePresente to={rotaDoAgente(legado, secaoDaAbaAntiga(searchParams.get('tab')))} replace />
   } else if (agentId && !ehSecao(secao)) {
-    conteudo = <Navigate to={rotaDoAgente(agentId, SECAO_PADRAO)} replace />
+    conteudo = <NavegarSePresente to={rotaDoAgente(agentId, SECAO_PADRAO)} replace />
   } else if (agentId && ehSecao(secao)) {
     conteudo = <PaginaDoAgente key={agentId} agentId={agentId} secao={secao} />
   } else {
