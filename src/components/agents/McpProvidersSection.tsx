@@ -35,6 +35,7 @@ import { usePlanGate } from '@/hooks/usePlanGate'
 import { isOwnerTier } from '@/lib/roleHelpers'
 import { PLANS } from '@/config/plans'
 import { cn } from '@/lib/utils'
+import { mcpPrecisaToken, podeAnexarMcp } from './mcpAnexar'
 
 interface Props {
   agentId: string
@@ -250,11 +251,11 @@ function AttachMcpModal({
       .finally(() => setTemplatesLoading(false))
   }, [])
 
-  const canSubmit =
-    authValue.trim().length > 0 &&
-    (mode === 'verified'
-      ? templateId.length > 0
-      : name.trim().length > 0 && endpointUrl.trim().length > 0 && riskAccepted)
+  // Revisão 02/10: "Nenhuma (endpoint público)" esconde o campo de token, mas
+  // o botão exigia token sempre — ficava desabilitado para sempre; e um token
+  // digitado antes de trocar para "Nenhuma" ia escondido no envio.
+  const precisaToken = mcpPrecisaToken(mode, authType)
+  const canSubmit = podeAnexarMcp({ mode, authType, authValue, templateId, name, endpointUrl, riskAccepted })
 
   async function handleSubmit() {
     setSubmitting(true)
@@ -263,7 +264,7 @@ function AttachMcpModal({
         ...(mode === 'verified'
           ? { template_id: templateId }
           : { name: name.trim(), endpoint_url: endpointUrl.trim(), auth_type: authType }),
-        auth_value: authValue.trim(),
+        ...(precisaToken ? { auth_value: authValue.trim() } : {}),
       })
       toast('Servidor MCP anexado', 'success')
       onAttached()
@@ -343,7 +344,7 @@ function AttachMcpModal({
           </>
         )}
 
-        {authType !== 'none' || mode === 'verified' ? (
+        {precisaToken ? (
           <FormField label={mode === 'verified' ? 'Credencial' : 'Token / chave'} required>
             <Input
               type="password"
