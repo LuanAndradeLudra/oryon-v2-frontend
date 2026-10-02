@@ -1,5 +1,7 @@
 // ─── Billing API ──────────────────────────────────────────────────────────────
-// Ledger + payment gateway (mock hoje). Tenant via sessão JWT/cookie.
+// Leitura do ledger, faturas e status. Contratação, troca de plano e compra de
+// créditos saíram do autoatendimento (SCRUM-1204, Termos 4.1 c). Nenhum dado
+// de cartão passa pela Oryon. Tenant via sessão JWT/cookie.
 
 import { api } from './api'
 
@@ -70,8 +72,6 @@ export interface CreditTransaction {
   createdAt: string
 }
 
-export type BillingMethod = 'PIX' | 'CREDIT_CARD'
-
 export interface PlanOption {
   tier: BackendPlanTier
   displayName: string
@@ -100,36 +100,6 @@ export interface PaymentStatus {
 }
 
 
-export interface PayerInput {
-  name?: string
-  email?: string
-  cpfCnpj?: string
-  postalCode?: string
-  addressNumber?: string
-  phone?: string
-}
-
-export interface CardInput {
-  holderName: string
-  number: string
-  expiryMonth: string
-  expiryYear: string
-  ccv: string
-}
-
-export interface CheckoutResult {
-  provider?: string
-  subscriptionId?: string
-  payment: {
-    id: string
-    status: string
-    value: number
-    billingType: string
-    invoiceUrl?: string
-    pix?: { encodedImage: string; payload: string; expirationDate?: string }
-  }
-}
-
 export const billingApi = {
   async getBilling(): Promise<BillingSnapshot> {
     const res = await api.get<BillingSnapshot>('/settings/billing')
@@ -157,31 +127,8 @@ export const billingApi = {
     const res = await api.get<BillingInvoiceRow[]>('/settings/billing/invoices')
     return res.data
   },
-  async subscribe(input: {
-    tier: BackendPlanTier
-    billingType: BillingMethod
-    payer?: PayerInput
-    card?: CardInput
-  }): Promise<CheckoutResult> {
-    const res = await api.post<CheckoutResult>('/settings/billing/subscribe', input)
-    return res.data
-  },
-  async changePlan(tier: BackendPlanTier): Promise<{ applied: 'now' | 'next_cycle' }> {
-    const res = await api.post('/settings/billing/change-plan', { tier })
-    return res.data
-  },
   async cancel(): Promise<{ canceled: boolean; accessUntil: string | null }> {
     const res = await api.post('/settings/billing/cancel')
-    return res.data
-  },
-  async buyCredits(input: {
-    packCredits: number
-    valueCents: number
-    billingType: BillingMethod
-    payer?: PayerInput
-    card?: CardInput
-  }): Promise<CheckoutResult> {
-    const res = await api.post<CheckoutResult>('/settings/billing/buy-credits', input)
     return res.data
   },
 }
