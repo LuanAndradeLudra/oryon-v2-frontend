@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios'
+import { CopilotBlockedError, type CopilotBlockKind } from '@/lib/copilotBlock'
 import type { CopilotAttachment, CopilotMessage } from '@/contexts/CopilotContext'
 import type { TaskPlan, PlanStepStatus } from '@/types/agent-events'
 
@@ -92,6 +93,15 @@ export async function* runCopilotTurnBackend(
 
   if (!response.ok) {
     const body = await response.text().catch(() => '')
+    // 402 e bloqueio de cobranca, e desde a SCRUM-804 vem com a causa tipada no
+    // corpo. Erro proprio para a UI ramificar por classe em vez de adivinhar
+    // pela mensagem — que era o que fazia contrato vencido virar "sem credito".
+    if (response.status === 402) {
+      let parsed: { error?: string; kind?: CopilotBlockKind; reason?: string; code?: string } = {}
+      try { parsed = JSON.parse(body) } catch { /* agent antigo: corpo nao-JSON */ }
+      // SCRUM-1210: o agent manda o motivo em `code` (desde a mudança da 7.3.2).
+      throw new CopilotBlockedError(parsed.error ?? '', parsed.kind, parsed.reason ?? parsed.code)
+    }
     throw new Error(`Agent Server error ${response.status}: ${body}`)
   }
 
