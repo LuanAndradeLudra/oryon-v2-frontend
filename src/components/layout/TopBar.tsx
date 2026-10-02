@@ -24,6 +24,7 @@ import {
 import { cn, getInitials } from '@/lib/utils'
 import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
 import { isRouteVisible } from '@/config/featureFlags'
+import { papelAlcancaSecao } from '@/components/settings/SettingsLayout'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useTheme, type Theme } from '@/hooks/useTheme'
 import { Avatar } from '@/components/ui/Avatar'
@@ -1236,8 +1237,10 @@ export function TopBar() {
   const { userEmail, isFeatureVisible: isFeatureVisibleForUser } = useFeatureVisibility()
 
   const visibleSearchIndex = useMemo(
-    () => SEARCH_INDEX.filter((item) => isRouteVisible(item.href, userEmail)),
-    [userEmail],
+    () => SEARCH_INDEX.filter((item) => isRouteVisible(item.href, userEmail)
+      // Revisão 02/10: a busca não oferece seção de Configurações que o papel não abre.
+      && (item.type !== 'settings' || !user?.role || papelAlcancaSecao(item.href.replace('/settings/', ''), user.role))),
+    [userEmail, user?.role],
   )
   const { open: openCopilot } = useCopilotContext()
   const { pageActions, pageSubtitle: dynamicSubtitle } = useTopBarActions()

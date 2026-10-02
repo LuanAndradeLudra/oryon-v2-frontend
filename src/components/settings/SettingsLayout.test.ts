@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { visibleSettingsNav, firstVisibleSection, MULTI_PIPELINE_SECTIONS } from './SettingsLayout'
+import { visibleSettingsNav, firstVisibleSection, MULTI_PIPELINE_SECTIONS, papelAlcancaSecao } from './SettingsLayout'
 
 const sectionsOf = (role: string, opts?: { multiPipeline?: boolean }) =>
   visibleSettingsNav(role, opts).flatMap((d) => d.clusters.flatMap((c) => c.items.map((i) => i.section)))
@@ -64,5 +64,20 @@ describe('visibleSettingsNav · situação do contato (F13-903)', () => {
 
   it('é só para admin (mesma regra do resto do cluster CRM)', () => {
     expect(sectionsOf('agent')).not.toContain('stages')
+  })
+})
+
+// Revisão 02/10 — a URL direta e a busca não podem abrir seção de administrador.
+describe('papelAlcancaSecao', () => {
+  it('supervisor e atendente não alcançam seção de administrador; admin alcança', () => {
+    expect(papelAlcancaSecao('numbers', 'supervisor')).toBe(false)
+    expect(papelAlcancaSecao('audit', 'agent')).toBe(false)
+    expect(papelAlcancaSecao('numbers', 'admin')).toBe(true)
+    expect(papelAlcancaSecao('account', 'agent')).toBe(true)
+  })
+
+  it('seção de dono exige o dono', () => {
+    expect(papelAlcancaSecao('billing', 'admin')).toBe(false)
+    expect(papelAlcancaSecao('billing', 'business_admin')).toBe(true)
   })
 })

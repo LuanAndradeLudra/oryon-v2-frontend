@@ -203,6 +203,21 @@ export function visibleSettingsNav(currentRole: string, opts: SettingsNavOptions
     .filter((d) => d.clusters.length > 0)
 }
 
+/**
+ * O papel alcança a seção? Revisão 02/10: o menu escondia as seções de
+ * administrador, mas a URL direta e a busca do topo abriam a tela para
+ * supervisor/atendente. Seção fora do menu não é restringida aqui.
+ */
+export function papelAlcancaSecao(section: string, currentRole: string): boolean {
+  const item = SETTINGS_NAV.flatMap((d) => d.clusters.flatMap((c) => c.items)).find((i) => i.section === section)
+  if (!item) return true
+  const isAdmin = currentRole === 'admin' || currentRole === 'business_admin' || currentRole === 'super_admin'
+  if (item.adminOnly && !isAdmin) return false
+  if (item.ownerOnly && !isOwnerTier(currentRole)) return false
+  if (item.supervisorOnly && currentRole === 'agent') return false
+  return true
+}
+
 /** Primeira seção visível para o papel — destino do redirect de /settings. */
 export function firstVisibleSection(currentRole: string, opts: SettingsNavOptions = {}): string {
   return visibleSettingsNav(currentRole, opts)[0]?.clusters[0]?.items[0]?.section ?? 'account'

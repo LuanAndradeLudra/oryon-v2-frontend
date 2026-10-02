@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { SettingsLayout, firstVisibleSection, MULTI_PIPELINE_SECTIONS } from '@/components/settings/SettingsLayout'
+import { SettingsLayout, firstVisibleSection, MULTI_PIPELINE_SECTIONS, papelAlcancaSecao } from '@/components/settings/SettingsLayout'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { destinoDeVolta, preservarVolta } from '@/lib/voltarPara'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
@@ -159,6 +159,10 @@ export function SettingsPage() {
   }
   if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
     return <NavegarSePresente to={preservarVolta('/settings/company', searchParams)} replace />
+  }
+  // Revisão 02/10: seção de administrador aberta por URL/busca fecha para os demais papéis.
+  if (user?.role && !papelAlcancaSecao(section, user.role)) {
+    return <NavegarSePresente to={preservarVolta(`/settings/${firstVisibleSection(user.role, { multiPipeline })}`, searchParams)} replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]
