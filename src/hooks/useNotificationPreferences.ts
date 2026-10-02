@@ -11,6 +11,7 @@ export type NotificationCategory =
   | 'campaigns'
   | 'automations'
   | 'security'
+  | 'billing'
 
 /**
  * Phase 19: shape returned by `GET /notification-preferences`. Each row is

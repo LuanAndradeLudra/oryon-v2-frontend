@@ -7,10 +7,11 @@
  */
 
 import type { AppNotification, NotificationMetaKnown } from '@/hooks/useNotifications'
+import { BILLING_SETTINGS_PATH, billingSettingsEnabled } from './billingLinks'
 
 // ── Category / visual mapping ──────────────────────────────────────────────
 
-export type Category = 'conversations' | 'team' | 'campaigns' | 'automations' | 'security' | 'unknown'
+export type Category = 'conversations' | 'team' | 'campaigns' | 'automations' | 'security' | 'billing' | 'unknown'
 
 /** Maps the 14 backend notification types to the 5 UI categories. The left
  *  accent strip color comes from here. */
@@ -29,6 +30,9 @@ export const TYPE_TO_CATEGORY: Record<string, Category> = {
   automation_note: 'automations',
   whatsapp_integration_error: 'security',
   security_alert: 'security',
+  // SCRUM-1206 — cobrança (antes caía em "desconhecido", sem ícone nem filtro).
+  billing_alert: 'billing',
+  billing_update: 'billing',
 }
 
 /** Single source of truth for the per-category visual palette. Used by the
@@ -51,6 +55,7 @@ export const CATEGORY_STYLE: Record<Category, {
   campaigns:     { stripClass: 'border-l-info',       iconBg: 'bg-info/15',       iconText: 'text-info',       label: 'Campanhas',  chip: 'var(--color-info)' },
   automations:   { stripClass: 'border-l-warning',    iconBg: 'bg-warning/15',    iconText: 'text-warning',    label: 'Automações', chip: 'var(--color-warning)' },
   security:      { stripClass: 'border-l-danger',     iconBg: 'bg-danger/15',     iconText: 'text-danger',     label: 'Segurança',  chip: 'var(--color-danger)' },
+  billing:       { stripClass: 'border-l-accent-amber', iconBg: 'bg-accent-amber/15', iconText: 'text-accent-amber', label: 'Cobrança', chip: 'var(--color-accent-amber)' },
   unknown:       { stripClass: 'border-l-surface-600', iconBg: 'bg-surface-700/40', iconText: 'text-surface-400', label: '—',        chip: 'var(--color-status-muted)' },
 }
 
@@ -209,6 +214,14 @@ export function inlineActionFor(n: AppNotification): InlineAction | null {
       return { label: 'Ver integração', href: '/settings/numbers', variant: 'primary' }
     case 'security_alert':
       return { label: 'Minha conta', href: '/settings/account' }
+    case 'billing_alert':
+    case 'billing_update': {
+      // O destino vem em `n.link` (ex.: /settings/billing?invoice=…); metadata não tem link.
+      const href = n.link ?? BILLING_SETTINGS_PATH
+      // CL5 — com a tela de cobrança desligada o link cairia em "Minha conta".
+      if (href.startsWith(BILLING_SETTINGS_PATH) && !billingSettingsEnabled()) return null
+      return { label: 'Ver cobrança', href, variant: 'primary' }
+    }
     default:
       return null
   }
@@ -238,6 +251,9 @@ export function emptyStateFor(
   }
   if (category === 'security') {
     return { title: 'Tudo seguro ✓', hint: 'Nenhum alerta de segurança pendente.' }
+  }
+  if (category === 'billing') {
+    return { title: 'Nenhum aviso de cobrança', hint: 'Faturas, pagamentos e vencimentos aparecem aqui.' }
   }
   return filter === 'unread'
     ? { title: 'Você está em dia ✨', hint: 'Sem notificações não lidas.' }
