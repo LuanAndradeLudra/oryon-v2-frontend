@@ -4,6 +4,7 @@
 // de cartão passa pela Oryon. Tenant via sessão JWT/cookie.
 
 import { api } from './api'
+import { openPdfInNewTab } from '@/lib/openPdf'
 
 export type BackendPlanTier = 'start' | 'professional' | 'scale' | 'enterprise'
 
@@ -53,6 +54,18 @@ export interface BillingInvoiceRow {
   competenceMonth: string | null
   description: string | null
   createdAt: string
+  /** Resposta da equipe à contestação (quando houve). */
+  disputeResolution: string | null
+  /** Total − notas de crédito. */
+  netDueCents: number
+  /** Dias corridos de atraso no calendário de Brasília (0 se não vencida). */
+  daysLate: number
+  /** daysLate ≥ 1, netDueCents > 0 e status pending/past_due — calculado no backend. */
+  overdue: boolean
+  /** Nota de crédito: a fatura estornada. */
+  referenceInvoiceId?: string | null
+  /** CL7 — preenchido quando o cliente já contestou (uma contestação por fatura). */
+  disputedAt?: string | null
 }
 
 export type CreditTransactionType = 'debit' | 'grant' | 'reset' | 'refund' | 'adjustment'
@@ -100,7 +113,98 @@ export interface PaymentStatus {
 }
 
 
+export type PaymentMethodId = 'card_monthly' | 'pix_invoice' | 'upfront_pix' | 'upfront_card'
+
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethodId, string> = {
+  card_monthly: 'Cartão — cobrança mensal',
+  pix_invoice: 'Fatura mensal por Pix',
+  upfront_pix: 'À vista no Pix',
+  upfront_card: 'À vista no cartão',
+}
+
+export type EntitlementKeyId = 'users' | 'waNumbers' | 'agents' | 'automations' | 'pipelines' | 'customFields' | 'campaignsPerMonth'
+
+/** GET /settings/billing/contract (SCRUM-1210) — o contrato, não a tabela. */
+export interface ClientContract {
+  contract: {
+    displayName: string
+    tier: string
+    term: 'annual' | 'semiannual' | 'monthly'
+    termMonths: number
+    installments: number
+    contractedMonthlyCents: number
+    paymentMethod: PaymentMethodId
+    billingDay: number
+    startsAt: string
+    endsAt: string | null
+    autoRenew: boolean
+    monthlyCredits: number | null
+    overage: { priceCents: number; onNextInvoice: boolean; policy: string }
+    entitlements: Partial<Record<EntitlementKeyId, number | null>>
+    modules: Record<string, boolean>
+    proposalRef: string | null
+    status: string
+    /** Cancelamento registrado pela equipe (A18). `afterRenewal`: renova uma vez antes de encerrar. */
+    cancellation?: { requestedAt: string; effectiveAt: string; afterRenewal: boolean } | null
+  } | null
+  state: { status: string; suspended: boolean; canCreateResources: boolean; accessUntil: string | null }
+  usage: Partial<Record<EntitlementKeyId, number | null>>
+  cycle: {
+    creditsTotal: number | null
+    creditsUsed: number
+    overageCredits: number
+    startsAt: string | null
+    resetsAt: string | null
+    pendingOverageCredits: number
+  } | null
+  nextInvoice: { id: string; number: string | null; dueAt: string | null; amountCents: number } | null
+}
+
+export interface InvoiceLineRow { id: string; kind: string; description: string; quantity: number; unitPriceCents: number; amountCents: number }
+
+export interface UsageReportView {
+  periodStart: string
+  periodEnd: string
+  totalCredits: number
+  services: number
+  byFeature: Array<{ feature: string; source: string | null; credits: number; count: number }>
+}
+
+export interface InvoiceDetailView {
+  invoice: BillingInvoiceRow & { amountCents: number | null; issuedAt: string; lines: InvoiceLineRow[]; usageReport: UsageReportView | null; disputeReason: string | null }
+  charges: { daysLate: number; principalCents: number; fineCents: number; interestCents: number; correctionCents: number; totalCents: number; missingIndexMonths: string[] }
+  paymentInstructions: string
+}
+
+export interface DebtView {
+  state: { suspended: boolean }
+  items: Array<{ id: string; number: string | null; kind: string; dueAt: string | null; amountCents: number; updatedCents: number; daysLate: number }>
+  totalCents: number
+  totalUpdatedCents: number
+  paymentInstructions: string
+}
+
+/** Abre um PDF autenticado (cookie) numa aba nova. Rejeita com mensagem legível. */
+export function openInvoicePdf(invoiceId: string, secondCopy = false): Promise<void> {
+  return openPdfInNewTab(
+    async () => (await api.get(`/settings/billing/invoices/${invoiceId}/pdf${secondCopy ? '?secondCopy=1' : ''}`, { responseType: 'blob' })).data as Blob,
+    secondCopy ? 'fatura-2a-via.pdf' : 'fatura.pdf',
+  )
+}
+
 export const billingApi = {
+  async getContract(): Promise<ClientContract> {
+    return (await api.get<ClientContract>('/settings/billing/contract')).data
+  },
+  async getDebt(): Promise<DebtView> {
+    return (await api.get<DebtView>('/settings/billing/debt')).data
+  },
+  async getInvoice(id: string): Promise<InvoiceDetailView> {
+    return (await api.get<InvoiceDetailView>(`/settings/billing/invoices/${id}`)).data
+  },
+  async disputeInvoice(id: string, reason: string, amountCents?: number): Promise<BillingInvoiceRow> {
+    return (await api.post<BillingInvoiceRow>(`/settings/billing/invoices/${id}/dispute`, { reason, amountCents })).data
+  },
   async getBilling(): Promise<BillingSnapshot> {
     const res = await api.get<BillingSnapshot>('/settings/billing')
     return res.data
@@ -125,10 +229,6 @@ export const billingApi = {
   },
   async getInvoices(): Promise<BillingInvoiceRow[]> {
     const res = await api.get<BillingInvoiceRow[]>('/settings/billing/invoices')
-    return res.data
-  },
-  async cancel(): Promise<{ canceled: boolean; accessUntil: string | null }> {
-    const res = await api.post('/settings/billing/cancel')
     return res.data
   },
 }

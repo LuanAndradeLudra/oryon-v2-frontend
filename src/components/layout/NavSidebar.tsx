@@ -37,6 +37,8 @@ import { useInternalChat } from '@/contexts/InternalChatContext'
 import { conversationsApi } from '@/services/api'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useModuleAccess } from '@/hooks/useAccountState'
+import { MODULE_BY_ROUTE } from '@/lib/billingModules'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -205,6 +207,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   const navigate = useNavigate()
   const activeHref = '/' + location.pathname.split('/')[1]
   const { user, organizationConfigured, logout } = useAuth()
+  const moduleAllowed = useModuleAccess()
   const { isRouteVisible, isFeatureVisible } = useFeatureVisibility()
   const { checklist } = useSetupChecklist(user?.id)
   const { vocab } = useTenantVocab()
@@ -225,25 +228,34 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   // Listen for real-time unread updates via socket
   useEffect(() => {
     let socket: ReturnType<typeof import('@/services/socket').connectSocket> | null = null
+    let alive = true
+    const onUnread = (payload: { total: number }) => setWhatsappUnread(payload.total)
+    // Update unread count when new messages come in (via conversation:updated)
+    const onConversationUpdated = () => refreshUnread()
     import('@/services/socket').then(({ connectSocket }) => {
+      if (!alive) return
       socket = connectSocket()
-      socket.on('unread:update', (payload: { total: number }) => {
-        setWhatsappUnread(payload.total)
-      })
-      // Update unread count when new messages come in (via conversation:updated)
-      socket.on('conversation:updated', () => {
-        refreshUnread()
-      })
+      socket.on('unread:update', onUnread)
+      socket.on('conversation:updated', onConversationUpdated)
     })
     return () => {
-      socket?.off('unread:update')
-      socket?.off('conversation:updated')
+      alive = false
+      // Só os handlers deste componente: o socket é compartilhado (SCRUM-1210).
+      socket?.off('unread:update', onUnread)
+      socket?.off('conversation:updated', onConversationUpdated)
     }
   }, [refreshUnread])
 
   const handleLogout = () => {
     logout()
     navigate('/login', { replace: true })
+  }
+
+  // SCRUM-1210 — módulo não contratado some do menu (só `false` explícito no
+  // contrato; contratos antigos sem a lista continuam vendo tudo).
+  const moduleVisible = (href: string) => {
+    const key = MODULE_BY_ROUTE[href]
+    return !key || moduleAllowed(key)
   }
 
   const geralItems = [
@@ -288,7 +300,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
     { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
     { icon: <CopilotMark className="w-[16.5px] h-[16.5px]" />,   label: 'Copilot AI', href: '/copilot',
       nudge: !checklist.copilot ? 'Setup' : undefined },
-  ].filter((item) => isRouteVisible(item.href))
+  ].filter((item) => isRouteVisible(item.href) && moduleVisible(item.href))
 
   const internalChatItem = {
     icon: <MessagesSquare className="w-[16.5px] h-[16.5px]" />,
@@ -296,7 +308,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
     href: '/team',
     badge: internalUnread > 0 ? internalUnread : undefined,
   }
-  const internalChatVisible = isRouteVisible(internalChatItem.href)
+  const internalChatVisible = isRouteVisible(internalChatItem.href) && moduleVisible(internalChatItem.href)
   const settingsVisible = isRouteVisible('/settings')
   // Oryon staff only — never shown to a customer's business_admin even if
   // they discover the URL (the route guard + agent-server gate also block them).

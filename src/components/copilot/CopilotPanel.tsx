@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { CopilotBlockNotice } from './CopilotBlockNotice'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { X, Send, Square, Loader2, Paperclip, FileText, Palette } from 'lucide-react'
@@ -10,6 +11,7 @@ import { useCopilot } from '@/hooks/useCopilot'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { useModuleAccess } from '@/hooks/useAccountState'
 import {
   ACCEPTED_ATTACHMENT_TYPES,
   MAX_ATTACHMENT_BYTES,
@@ -196,7 +198,7 @@ function PresetPicker({
 
 function ChatWindow() {
   const { close, messages, setMessages, preloadedMessage, clearPreload } = useCopilotContext()
-  const { status, activeToolName, activeAgentLabel, error, sendMessage, abort, resolveBatch } = useCopilot(messages, setMessages)
+  const { status, activeToolName, activeAgentLabel, error, blocked, sendMessage, abort, resolveBatch } = useCopilot(messages, setMessages)
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<CopilotAttachment[]>([])
   const [attachError, setAttachError] = useState<string | null>(null)
@@ -349,6 +351,11 @@ function ChatWindow() {
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Bloqueio de cobranca — antes do erro: e condicao da conta, nao falha do turno */}
+      <AnimatePresence>
+        {blocked && <CopilotBlockNotice notice={blocked} compact />}
       </AnimatePresence>
 
       {/* Error */}
@@ -533,10 +540,14 @@ export function CopilotPanel() {
   const { isOpen, close } = useCopilotContext()
   const { user } = useAuth()
   const location = useLocation()
+  const moduleAllowed = useModuleAccess()
 
   // Copilot is exclusive to admin-tier roles (tenant owner + promoted admins
   // + Oryon staff who may be debugging the tenant's setup).
   if (!isAdminTier(user?.role)) return null
+
+  // SCRUM-1210: Copilot fora do contrato (só `false` explícito) — sem painel global.
+  if (!moduleAllowed('copilot')) return null
 
   // Hide floating panel on the dedicated Copilot page
   if (location.pathname.startsWith('/copilot')) return null

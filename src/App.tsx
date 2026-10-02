@@ -104,6 +104,11 @@ import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
 import { TermsAcceptanceModal } from '@/components/terms/TermsAcceptanceModal'
 import { firstAccessRequired } from '@/lib/firstAccessGate'
 import { isOwnerTier } from '@/lib/roleHelpers'
+import { useAccountState, moduleEnabled } from '@/hooks/useAccountState'
+import { useAppSocketBridge } from '@/hooks/useAppSocketBridge'
+import { SuspendedScreen } from '@/components/billing/SuspendedScreen'
+import { ModuleNotContracted } from '@/components/billing/ModuleNotContracted'
+import { isPathUnder, moduleForPath } from '@/lib/billingModules'
 import { ErrorState } from '@/components/ui/ErrorState'
 
 // ── Route guards ──────────────────────────────────────────────────────────────
@@ -161,6 +166,44 @@ function FirstAccessGate({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+/**
+ * SCRUM-1210 — conta suspensa por inadimplência: login liberado, mas as telas
+ * mostram a dívida (dono) ou o aviso para procurar o administrador (demais).
+ * Cobrança e dados da empresa continuam acessíveis para o dono regularizar.
+ * Staff Oryon não é afetado. Falha ao consultar não bloqueia.
+ */
+const SUSPENDED_ALLOWED = ['/settings/billing', '/settings/company', '/settings/account']
+function SuspendedGate({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  const { state } = useAccountState()
+  if (!state?.suspended || isOryonStaff(user?.role)) return <>{children}</>
+  // Segmento exato: `startsWith` liberava /settings/company-brain.
+  if (SUSPENDED_ALLOWED.some((p) => isPathUnder(location.pathname, p))) return <>{children}</>
+  return <SuspendedScreen isOwner={state.isOwner} />
+}
+
+/**
+ * SCRUM-1210 — módulo não contratado: some do menu, do "Mais" e da busca, e a
+ * URL direta cai no aviso (só `false` explícito no contrato; contratos antigos
+ * sem a lista veem tudo). Staff Oryon não é afetado.
+ */
+function ModuleGate({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  const { state } = useAccountState()
+  const key = moduleForPath(location.pathname)
+  if (!key || isOryonStaff(user?.role) || moduleEnabled(state, key)) return <>{children}</>
+  return <ModuleNotContracted module={key} isOwner={!!state?.isOwner} />
+}
+
+/** Sinais do socket que valem no app inteiro (cobrança, estado da conta, token) — SCRUM-1210. */
+function AppSocketBridge() {
+  const { isAuthenticated, user } = useAuth()
+  useAppSocketBridge(isAuthenticated, user?.id)
+  return null
+}
+
 /** Pedido de re-aceite de termos (SCRUM-777) — montado uma vez, fora das telas de entrada. */
 function GlobalTermsPrompt() {
   const { isAuthenticated, user } = useAuth()
@@ -173,6 +216,7 @@ function GlobalTermsPrompt() {
 
 function OnboardingGate({ children }: { children: ReactNode }) {
   const { organizationConfigured, user } = useAuth()
+  const { state: account, loaded: accountLoaded } = useAccountState()
   // Oryon staff (super_admin) must always reach the app shell — they may
   // be inspecting a half-configured tenant precisely to debug what the
   // wizard left undone. Without this bypass, super_admin gets trapped in
@@ -183,8 +227,21 @@ function OnboardingGate({ children }: { children: ReactNode }) {
   // F13-899: o wizard virou rota (`/setup`) — retomável e linkável. O gate só
   // redireciona; o bloqueio de mobile e o provider de linha WhatsApp moram na
   // página. `/setup` fica FORA deste gate, senão o redirect entraria em loop.
+  // Conta suspensa passa direto: o SuspendedGate decide (cobrança e 2ª via
+  // precisam abrir mesmo sem o /setup concluído — as faturas correm desde a
+  // data da Proposta, com ou sem primeiro acesso).
+  // Na carga a frio o estado da conta ainda não chegou: esperar (loader) em
+  // vez de mandar para /setup uma conta que pode estar suspensa. O fetch já
+  // começou no efeito do useAccountState; falha conta como carregado.
   if (!organizationConfigured) {
-    return <Navigate to="/setup" replace />
+    if (!accountLoaded) {
+      return (
+        <div className="flex items-center justify-center h-screen w-screen bg-surface-950">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )
+    }
+    if (!account?.suspended) return <Navigate to="/setup" replace />
   }
   return <>{children}</>
 }
@@ -195,7 +252,9 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
       <FirstAccessGate>
         <OnboardingGate>
           <AppShell>
-            {children}
+            <SuspendedGate>
+              <ModuleGate>{children}</ModuleGate>
+            </SuspendedGate>
           </AppShell>
         </OnboardingGate>
       </FirstAccessGate>
@@ -412,6 +471,7 @@ export default function App() {
                   </Suspense>
                   <GlobalToastContainer />
                   <GlobalTermsPrompt />
+                  <AppSocketBridge />
                 </div>
               </DealPanelProvider>
               </MediaViewerProvider>
