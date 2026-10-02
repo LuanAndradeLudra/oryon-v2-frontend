@@ -1,5 +1,6 @@
 import type { Deal } from '@/types'
 import { stuckDaysInStage } from './dealCard'
+import { diaDaPrevisao } from './previsaoDeFechamento'
 
 /**
  * Lentes do funil (direção C · Quadro + lentes, decisão do PO de 27/09).
@@ -46,7 +47,7 @@ export function matchesLens(deal: LensDeal, lens: FunnelLens, userId: string | n
       return deal.status === 'open' && !deal.expectedCloseAt
     case 'previsao-vencida': {
       if (deal.status !== 'open' || !deal.expectedCloseAt) return false
-      const t = new Date(deal.expectedCloseAt).getTime()
+      const t = diaDaPrevisao(deal.expectedCloseAt)?.getTime() ?? NaN
       if (!Number.isFinite(t)) return false
       const inicioDoDia = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
       return t < inicioDoDia

@@ -11,6 +11,7 @@ import { pipelineKindOf, pipelineKindOption, terminalLabelsOf, pipelineNoun, TER
 import { originInfo, movedByChip, timeInStage, stuckDaysInStage, boardStats, entrySources } from '@/lib/dealCard'
 import { dealProbability } from '@/lib/dealProbability'
 import type { Deal, Pipeline, PipelineStage, User } from '@/types'
+import { previsaoCurta } from '@/lib/previsaoDeFechamento'
 
 interface DealsBoardProps {
   stages: PipelineStage[]
@@ -822,7 +823,7 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
   const owner = deal.ownerUserId ? users.find((u) => u.id === deal.ownerUserId) ?? null : null
   const ownerLabel = !deal.ownerUserId ? 'Sem dono' : owner ? `${owner.firstName} ${owner.lastName ?? ''}`.trim() : 'Atribuído'
   const forecast = deal.expectedCloseAt
-    ? new Date(deal.expectedCloseAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    ? previsaoCurta(deal.expectedCloseAt)
     : null
 
   return (

@@ -1,4 +1,5 @@
 import type { Deal } from '@/types'
+import { diaDaPrevisao } from './previsaoDeFechamento'
 
 /**
  * Filtros e resumo da barra do board de Funis (R2-1E-BAR, RODADA-2.md).
@@ -36,7 +37,7 @@ export function matchesCloseDate(
   if (filter === 'all') return true
   if (filter === 'none') return !deal.expectedCloseAt
   if (!deal.expectedCloseAt) return false
-  const t = new Date(deal.expectedCloseAt).getTime()
+  const t = diaDaPrevisao(deal.expectedCloseAt)?.getTime() ?? NaN
   if (!Number.isFinite(t)) return false
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
   if (filter === 'overdue') return deal.status === 'open' && t < dayStart

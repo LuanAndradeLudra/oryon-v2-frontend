@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { dealProbability } from '@/lib/dealProbability'
 import { originInfo, timeInStage, stuckDaysInStage } from '@/lib/dealCard'
 import type { Deal, Pipeline, PipelineStage, User } from '@/types'
+import { diaDaPrevisao, previsaoCurta } from '@/lib/previsaoDeFechamento'
 
 export type ListSort = 'etapa' | 'valor' | 'previsao' | 'parado'
 
@@ -61,7 +62,7 @@ export function DealsList({
     const chave = (d: Deal): number => {
       switch (sort) {
         case 'valor': return d.amountCents ?? 0
-        case 'previsao': return d.expectedCloseAt ? new Date(d.expectedCloseAt).getTime() : Number.POSITIVE_INFINITY
+        case 'previsao': return diaDaPrevisao(d.expectedCloseAt)?.getTime() ?? Number.POSITIVE_INFINITY
         case 'parado': {
           const raw = d.stageEnteredAt ?? d.updatedAt ?? d.createdAt
           return raw ? -new Date(raw).getTime() : 0
@@ -251,7 +252,7 @@ export function DealsList({
               const st = stageById.get(d.stageId)
               const dono = d.ownerUserId ? userById.get(d.ownerUserId) : undefined
               const parado = stuckDaysInStage(d)
-              const prev = d.expectedCloseAt ? new Date(d.expectedCloseAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—'
+              const prev = previsaoCurta(d.expectedCloseAt) ?? '—'
               return (
                 <tr
                   key={d.id}

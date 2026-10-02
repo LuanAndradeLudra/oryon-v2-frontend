@@ -3,6 +3,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { MockBadge } from './MockBadge'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import type { Deal, DealStatus } from '@/types/contactProfile'
+import { previsaoCurta } from '@/lib/previsaoDeFechamento'
 
 interface DealsTabMockProps {
   deals: Deal[]
@@ -49,7 +50,7 @@ export function DealsTabMock({ deals }: DealsTabMockProps) {
             <p className="text-xs text-surface-500 mt-0.5">
               {deal.stageLabel}
               {deal.expectedCloseAt && deal.status === 'open'
-                ? ` · previsão ${new Date(deal.expectedCloseAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+                ? ` · previsão ${previsaoCurta(deal.expectedCloseAt)}`
                 : ''}
             </p>
           </div>
