@@ -101,6 +101,7 @@ const AdminBillingPage         = lazyRoute(() => import('@/pages/admin/AdminBill
 
 import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
 import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
+import { TermsAcceptanceModal } from '@/components/terms/TermsAcceptanceModal'
 import { firstAccessRequired } from '@/lib/firstAccessGate'
 import { isOwnerTier } from '@/lib/roleHelpers'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -158,6 +159,16 @@ function FirstAccessGate({ children }: { children: ReactNode }) {
   }
   if (state === 'required') return <Navigate to="/first-access" replace />
   return <>{children}</>
+}
+
+/** Pedido de re-aceite de termos (SCRUM-777) — montado uma vez, fora das telas de entrada. */
+function GlobalTermsPrompt() {
+  const { isAuthenticated, user } = useAuth()
+  const location = useLocation()
+  const excluded = ['/login', '/activate', '/first-access', '/register', '/forgot-password', '/reset-password', '/set-password']
+  // Staff Oryon não é parte do contrato do cliente — não aceita termos por ele.
+  if (!isAuthenticated || isOryonStaff(user?.role) || excluded.some((p) => location.pathname.startsWith(p))) return null
+  return <TermsAcceptanceModal />
 }
 
 function OnboardingGate({ children }: { children: ReactNode }) {
@@ -400,6 +411,7 @@ export default function App() {
                     <CopilotPanel />
                   </Suspense>
                   <GlobalToastContainer />
+                  <GlobalTermsPrompt />
                 </div>
               </DealPanelProvider>
               </MediaViewerProvider>
