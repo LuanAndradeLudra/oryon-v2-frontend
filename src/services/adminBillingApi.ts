@@ -160,7 +160,39 @@ export interface PendingActivation {
   daysPending: number
 }
 
+export interface CatalogHistoryRow {
+  id: string
+  entity: 'plan' | 'pack'
+  entityKey: string
+  changedBy: string | null
+  changedByName: string | null
+  before: Record<string, unknown> | null
+  after: Record<string, unknown>
+  createdAt: string
+}
+
+export interface CreditPackRow { id: string; credits: number; valueCents: number; active: boolean; sortOrder: number; updatedAt?: string }
+
 export const adminBillingApi = {
+  async packs(): Promise<CreditPackRow[]> {
+    return (await api.get<CreditPackRow[]>('/admin/billing/catalog/packs')).data
+  },
+  async upsertPlan(tier: PlanTierId, body: {
+    displayName: string; priceMonthlyCents: number; monthlyCredits?: number | null; active?: boolean
+    entitlements?: Partial<Record<EntitlementKeyId, number | null>>; modules?: Record<string, boolean>; overagePriceCents?: number | null
+    expectedUpdatedAt?: string
+  }): Promise<{ warnings: string[] }> {
+    return (await api.put(`/admin/billing/catalog/plans/${tier}`, body)).data
+  },
+  async upsertPack(credits: number, body: { valueCents: number; active?: boolean; sortOrder?: number; expectedUpdatedAt?: string }): Promise<{ warnings: string[] }> {
+    return (await api.put(`/admin/billing/catalog/packs/${credits}`, body)).data
+  },
+  async catalogHistory(): Promise<CatalogHistoryRow[]> {
+    return (await api.get<CatalogHistoryRow[]>('/admin/billing/catalog/history')).data
+  },
+  async catalogWarnings(): Promise<string[]> {
+    return (await api.get<string[]>('/admin/billing/catalog/warnings')).data
+  },
   async listCatalog(): Promise<CatalogPlan[]> {
     return (await api.get<CatalogPlan[]>('/admin/billing/catalog/plans')).data
   },
