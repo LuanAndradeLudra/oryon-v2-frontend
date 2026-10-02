@@ -16,7 +16,6 @@ import {
   User as UserIcon,
   Bell,
   Handshake,
-  Calendar,
   type LucideIcon,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -50,7 +49,6 @@ const SECTIONS: Section[] = [
       { href: '/team', label: 'Nexus', description: 'Chat interno da equipe', Icon: MessagesSquare },
       { href: '/dashboard', label: 'Dashboard', description: 'KPIs e relatorios', Icon: BarChart3 },
       { href: '/campaigns', label: 'Disparos', description: 'Campanhas em massa', Icon: Send },
-      { href: '/schedule', label: 'Agendamentos', description: 'Agenda semanal (exemplo)', Icon: Calendar },
       { href: '/marketing', label: 'Marketing', description: 'Meta Ads e funil', Icon: Megaphone },
       { href: '/automations', label: 'Automacoes', description: 'Fluxos automaticos', Icon: Workflow },
       { href: '/agents', label: 'Agentes IA', description: 'Assistentes autonomos', Icon: Bot },

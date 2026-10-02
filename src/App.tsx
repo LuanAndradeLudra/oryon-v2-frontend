@@ -78,7 +78,6 @@ const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').t
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
 const RegisterPage       = lazyRoute(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
 const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
-const SchedulePage      = lazyRoute(() => import('@/pages/SchedulePage').then(m => ({ default: m.SchedulePage })))
 const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
 const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
 const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
@@ -253,9 +252,6 @@ function AnimatedRoutes() {
           } />
           {/* Leva 9 (SCRUM-1107) — casca visual de Agendamentos, dado de
               exemplo fixo, sem integração real de agenda por trás. */}
-          <Route path="/schedule" element={
-            <ProtectedRoute><SchedulePage /></ProtectedRoute>
-          } />
           {/* Raiz de settings = hub navegável (mapa das configurações) */}
           <Route path="/settings" element={
             <ProtectedRoute><SettingsPage /></ProtectedRoute>

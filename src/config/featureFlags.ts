@@ -9,11 +9,6 @@ const FLAGS_BASE = {
   contacts: true,
   nexus: false,
   campaigns: true,
-  // Leva 9 (SCRUM-1107) — casca visual de Agendamentos, ainda sem
-  // integração real de agenda. Rota/flag ligados; o item de menu na
-  // NavSidebar/BottomTabBar (fora do escopo desta leva) é adicionado à
-  // parte pelo Maestro.
-  schedule: true,
   // Ocultos por enquanto, a pedido do PO (02/09) — some do menu, rota e
   // backend seguem intactos.
   marketing: false,
@@ -170,7 +165,6 @@ const ROUTE_FLAGS: Array<[string, FeatureFlag]> = [
   ['/contacts', 'contacts'],
   ['/team', 'nexus'],
   ['/campaigns', 'campaigns'],
-  ['/schedule', 'schedule'],
   ['/marketing', 'marketing'],
   ['/automations', 'automations'],
   ['/agents', 'agents'],

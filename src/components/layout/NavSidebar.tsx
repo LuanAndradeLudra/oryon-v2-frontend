@@ -14,7 +14,6 @@ import {
   LineChart,
   PanelLeft,
   Handshake,
-  Calendar,
   Inbox,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
@@ -224,7 +223,6 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     },
     // SCRUM-1107: casca visual da tela de Agendamentos (rota+flag já
     // existiam, só faltava o item de menu).
-    { icon: <Calendar className="w-[16.5px] h-[16.5px]" />, label: 'Agendamentos', href: '/schedule' },
     { icon: <Megaphone className="w-[16.5px] h-[16.5px]" />, label: 'Marketing',   href: '/marketing' },
     { icon: <Workflow className="w-[16.5px] h-[16.5px]" />,   label: 'Automações',  href: '/automations' },
     { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
