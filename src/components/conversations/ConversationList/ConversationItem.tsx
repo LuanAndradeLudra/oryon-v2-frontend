@@ -166,6 +166,9 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               <span
                 className={cn(
                   'inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold flex-shrink-0',
+                  // Contraste 01/10 (PO, 4D): no claro, chip neutro + ponto colorido.
+                  '!bg-surface-800 !text-surface-200 shadow-[inset_0_0_0_1px_#3A4D4D] gap-1',
+                  '[[data-theme=light]_&]:!bg-white [[data-theme=light]_&]:!text-[#1F2937] [[data-theme=light]_&]:shadow-[inset_0_0_0_1px_#C9CFDA]',
                   // Cor do status de destino (azul/âmbar/verde), não "aviso" genérico.
                   conversation.status === 'open'
                     ? 'bg-status-open/[.14] text-status-open'
@@ -175,6 +178,13 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 )}
                 title={`Movida para "${statusLabel(conversation.status)}" — não corresponde mais ao filtro atual`}
               >
+                <span
+                  aria-hidden
+                  className={cn(
+                    'inline-block w-1.5 h-1.5 rounded-full',
+                    conversation.status === 'open' ? 'bg-status-open' : conversation.status === 'pending' ? 'bg-[#F59E0B]' : 'bg-[#16A34A]',
+                  )}
+                />
                 {statusLabel(conversation.status)}
               </span>
             )}

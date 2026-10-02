@@ -1398,13 +1398,6 @@ export function TopBar() {
       {/* Right: page-specific actions + global buttons */}
       <div className="ml-auto flex items-center gap-1.5">
 
-        {/* Workspace readiness indicator — pill when there's one pending
-            setup blocker, icon + dropdown when there are multiple. Replaces
-            the full-width WorkspaceReadinessBanner that used to eat ~70px
-            above every operational page. Renders nothing when there are no
-            unmet blockers, so well-configured tenants see zero chrome. */}
-        <TopBarReadinessIndicator />
-
         {/* Page actions slot */}
         {pageActions && (
           <>
@@ -1456,6 +1449,11 @@ export function TopBar() {
           </button>
         )}
 
+        {/* Workspace readiness — botão de ícone (alerta + ponto âmbar) entre a
+            busca e as notificações (PO 01/10). Não renderiza nada quando não
+            há pendência obrigatória. */}
+        <TopBarReadinessIndicator />
+
         {/* Notifications */}
         <div className="relative" ref={notifRef}>
           <button
@@ -1464,13 +1462,13 @@ export function TopBar() {
             aria-haspopup="dialog"
             aria-expanded={notifOpen}
             aria-label={unreadCount > 0 ? `Notificações (${unreadCount > 9 ? '9+' : unreadCount} não lidas)` : 'Notificações'}
-            className="relative flex items-center justify-center w-7 h-7 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
+            className="relative flex items-center justify-center w-7 h-7 rounded-sm text-surface-400 [html:not([data-theme=light])_&]:text-[#E3EBEB] hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
               /* PL-5-4: canvas 7a põe o contador DENTRO do alvo (top 2 / right 0),
                  14px e min-width 14 — não pendurado 2px fora do botão a 16px. */
-              <span className="absolute top-0.5 right-0 min-w-[14px] h-3.5 px-[3px] rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 flex items-center justify-center">
+              <span className="absolute top-0.5 right-0 min-w-[14px] h-3.5 px-[3px] rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}

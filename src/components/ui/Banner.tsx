@@ -36,7 +36,7 @@ export function Banner({ variant = 'warning', icon = true, action, className, ch
   return (
     <div
       role={variant === 'danger' || variant === 'warning' ? 'alert' : 'status'}
-      className={cn('flex items-start gap-2 rounded-xs border px-2.5 py-[9px] text-xs leading-snug', className)}
+      className={cn('banner-tinta flex items-start gap-2 rounded-xs border px-2.5 py-[9px] text-xs leading-snug', className)}
       style={{
         ['--chip' as string]: chip,
         backgroundColor: 'color-mix(in srgb, var(--chip) 12%, transparent)',

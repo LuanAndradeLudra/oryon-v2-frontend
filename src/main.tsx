@@ -7,6 +7,7 @@ import './lib/cryptoPolyfill'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './styles/contraste.css' // auditoria de contraste 01/10 — depois do index.css
 import './lib/emojiText' // registers <em-emoji> web component globally
 import App from './App.tsx'
 // Registra interceptors 401→refresh→/login antes de qualquer request axios.

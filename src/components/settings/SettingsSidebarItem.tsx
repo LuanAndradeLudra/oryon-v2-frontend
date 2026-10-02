@@ -41,7 +41,7 @@ export function SettingsSidebarItem({ section, label, adminOnly, currentRole, ne
         'flex items-center pr-[10px] text-[12.5px] transition-colors duration-100',
         nested ? 'h-[26px] pl-[22px]' : 'h-7 pl-[10px]',
         isActive
-          ? 'text-surface-100 font-semibold bg-[var(--rowhover)]'
+          ? 'text-surface-100 font-semibold bg-[var(--rowhover)] [[data-theme=light]_&]:bg-accent-soft'
           : 'text-surface-400 hover:text-surface-100 rounded-md',
       )}
     >

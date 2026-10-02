@@ -90,7 +90,9 @@ function LogoSection({ onToggle }: { onToggle?: () => void }) {
           >
             {/* A sidebar é sempre escura (nos dois temas): palavra clara e o
                 ponto da órbita na cor de fundo escuro, fixos — não os do tema. */}
-            <OryonLogo variant="wordmark" accentColor="#2DD4BF" className="h-5 text-[#F1FBF9]" />
+            {/* Centro óptico: os minúsculos (x-height, sem a perna do "y") ficavam
+                2,85 px acima do centro do símbolo — medido no navegador, 01/10. */}
+            <OryonLogo variant="wordmark" accentColor="#2DD4BF" className="h-5 text-[#F1FBF9] relative top-[3px]" />
           </motion.span>
         )}
       </AnimatePresence>

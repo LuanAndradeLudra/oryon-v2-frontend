@@ -298,7 +298,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
             className={cn(
               'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors',
               tab === t.id
-                ? 'bg-brand-500/10 text-brand-400'
+                ? 'bg-[#ECF1F1] text-[#0A0F0F] [[data-theme=light]_&]:bg-[#1A1F2E] [[data-theme=light]_&]:text-white'
                 : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
             )}
           >

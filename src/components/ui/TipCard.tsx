@@ -25,9 +25,16 @@ export function TipCard({ icon, title, description, onDismiss, children, classNa
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.3 }}
-      className={cn('flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-lg px-5 py-4', className)}
+      className={cn(
+        'flex items-start gap-4 bg-[#1A2424] border border-[#2E4040] rounded-lg px-5 py-4',
+        // Auditoria de contraste 01/10: no claro o brand-950 é branco — o card
+        // sumia na página (fundo = página, borda 1,17:1). PO (2G): cinza-azulado
+        // neutro + ícone branco em quadrado teal sólido.
+        '[[data-theme=light]_&]:bg-[#F1F5F9] [[data-theme=light]_&]:border-[#CBD5E1]',
+        className,
+      )}
     >
-      <div className="w-8 h-8 rounded-md bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <div className="w-8 h-8 rounded-md bg-[#0F766E] [&_svg]:!text-white flex items-center justify-center flex-shrink-0 mt-0.5">
         {icon}
       </div>
       <div className="flex-1 min-w-0">

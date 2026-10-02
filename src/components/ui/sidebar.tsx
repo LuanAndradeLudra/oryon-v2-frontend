@@ -168,8 +168,10 @@ export const SidebarLink = memo(function SidebarLink({
         // ótico numa coluna de ícones lê como barra torta. Medido ao vivo.
         animate && !open && 'justify-center px-0 gap-0',
         active
-          ? 'text-black font-semibold'
-          : 'text-surface-400 hover:bg-white/10 hover:text-white',
+          // PO 01/10: ativo em destaque só no ícone — traço mais grosso (1,75 → 2,25).
+          ? 'text-black font-semibold [&_svg]:[stroke-width:2.25]'
+          // PO 01/10: rótulo e ícone quase brancos nos dois temas (eram #8FA5A5).
+          : 'text-[#E3EBEB] hover:bg-white/10 hover:text-white',
       )}
     >
       {/* Pílula ativa compartilhada (layoutId): ao trocar de página ela
@@ -193,7 +195,7 @@ export const SidebarLink = memo(function SidebarLink({
         {badge !== undefined && badge > 0 && animate && !open && (
           <span
             aria-label={`${badge} não lidas`}
-            className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-3xs font-bold flex items-center justify-center tabular-nums"
+            className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-3xs font-bold [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center tabular-nums"
           >
             {badge > 99 ? '99+' : badge}
           </span>
@@ -207,7 +209,11 @@ export const SidebarLink = memo(function SidebarLink({
       {/* Label — CSS transition instead of AnimatePresence */}
       <span
         className={cn(
-          'relative z-10 flex items-center gap-2 text-[13px] font-medium whitespace-pre overflow-hidden',
+          'relative z-10 flex items-center gap-2 text-[13px] whitespace-pre overflow-hidden',
+          // Compensação ótica (PO 01/10): no mesmo peso, o texto escuro na pílula
+          // clara parece mais fino que o claro na barra escura — o ativo sobe um
+          // degrau (500 → 600) para manter a MESMA espessura visual, sem negrito.
+          active ? 'font-semibold' : 'font-medium',
           'transition-opacity duration-150',
           // PL-5-3: `flex-1` só quando expandida. Recolhido, o rótulo tem
           // largura 0 mas `flex: 1 1 0%` ainda o faz CRESCER e ocupar a sobra,
@@ -220,15 +226,24 @@ export const SidebarLink = memo(function SidebarLink({
         {badge !== undefined && badge > 0 && (
           <span
             aria-label={`${badge} não lidas`}
-            className="ml-auto min-w-[18px] h-[18px] px-[5px] rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-[10.5px] font-bold flex items-center justify-center tabular-nums"
+            className="ml-auto min-w-[18px] h-[18px] px-[5px] rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-[10.5px] font-bold [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center tabular-nums"
           >
             {badge > 99 ? '99+' : badge}
           </span>
         )}
         {nudge && (
-          <span className="text-3xs font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap">
+          <span className="text-3xs font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap hidden">
             {nudge}
           </span>
+        )}
+        {/* Contraste 01/10 (PO, 3F): a novidade é só um ponto âmbar (o chip acima fica oculto). */}
+        {nudge && (
+          <span
+            role="img"
+            aria-label={nudge}
+            title={nudge}
+            className="inline-block w-[7px] h-[7px] rounded-full bg-[#FBBF24] flex-shrink-0"
+          />
         )}
       </span>
     </span>
