@@ -13,7 +13,7 @@ function readSession() {
     }
   } catch { return { userId: null, tenantId: null, actorName: null } }
 }
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   X, ChevronRight, ChevronLeft, Check, Search, Loader2, Calendar,
   Users, Tag as TagIcon, BarChart2, UserCheck, SlidersHorizontal, Info,
@@ -34,6 +34,7 @@ import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { TemplatePreview } from './TemplatePreview'
 import { SummaryRow } from './SummaryRow'
+import { modeloCombinaComLinha } from './modeloDaLinha'
 import type {
   Campaign, Contact, ContactIntent, ContactSource, ContactSentiment,
   WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
@@ -108,6 +109,11 @@ export function CampaignWizard({
   open, onClose, onCreated, initialContactIds, initialName,
 }: CampaignWizardProps) {
   const [step, setStep] = useState<Step>(1)
+  const semMovimento = useReducedMotion()
+  // O sentido da troca de passo (avançar ou voltar), para a animação do conteúdo.
+  const passoAnterior = useRef<Step>(1)
+  const direcaoDoPasso = step >= passoAnterior.current ? 1 : -1
+  useEffect(() => { passoAnterior.current = step }, [step])
   const sessionIdRef = useRef(`wiz-campaign-${Date.now()}`)
   const completedRef = useRef(false)
 
@@ -340,6 +346,10 @@ export function CampaignWizard({
 
   const handleSubmit = async () => {
     if (!selectedTemplate) return
+    if (!modeloCombinaComLinha(selectedTemplate, whatsappNumberId || null)) {
+      setError('O modelo escolhido é de outra linha. Escolha o modelo de novo.')
+      return
+    }
     setSaving(true); setError('')
     const { userId, tenantId, actorName } = readSession()
     appLogger.logWizardEvent({
@@ -465,7 +475,13 @@ export function CampaignWizard({
                 <WhatsappLineRow
                   whatsappNumberId={whatsappNumberId || null}
                   variant="callout"
-                  onLineChange={(id) => setWhatsappNumberId(id)}
+                  onLineChange={(id) => {
+                    setWhatsappNumberId(id)
+                    // Revisão 02/10: modelo é da conta (WABA) da linha — trocar
+                    // para outra linha com o modelo escolhido mandava o disparo
+                    // por uma linha que não tem esse modelo aprovado.
+                    if (!modeloCombinaComLinha(selectedTemplate, id)) setSelectedTemplate(null)
+                  }}
                 />
               </div>
 
@@ -484,6 +500,17 @@ export function CampaignWizard({
 
               {/* Step content */}
               <div className="flex-1 overflow-y-auto px-5 py-[18px]">
+                {/* A troca de passo (02/10): o conteúdo novo entra com um esmaecer e um
+                    deslize curto no sentido do avanço, em vez de trocar seco. */}
+                <AnimatePresence mode="wait" initial={false} custom={direcaoDoPasso}>
+                <motion.div
+                  key={step}
+                  custom={direcaoDoPasso}
+                  initial={semMovimento ? false : { opacity: 0, x: 14 * direcaoDoPasso }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={semMovimento ? undefined : { opacity: 0, x: -10 * direcaoDoPasso }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                >
                 {step === 1 && (
                   <>
                     <Step1
@@ -579,6 +606,8 @@ export function CampaignWizard({
                       ?? waNumbers.find((n) => n.id === whatsappNumberId)?.displayPhoneNumber}
                   />
                 )}
+                </motion.div>
+                </AnimatePresence>
                 {error && (
                   <Banner variant="danger" className="mt-4">{error}</Banner>
                 )}
@@ -659,6 +688,30 @@ export function CampaignWizard({
 // Regra: referência sendo código do próprio autor não dispensa checar se ELE
 // usa primitivo — se não usa, aponta, não copia (mesmo reflexo que já apliquei
 // ao não mexer no WizardProgress).
+
+/**
+ * Uma expansão vertical do passo (02/10): o que aparece quando a pessoa escolhe
+ * uma opção — o alcance estimado, a lista de etiquetas — cresce e esmaece em
+ * vez de empurrar o resto de uma vez. Sem movimento, aparece direto.
+ */
+function Expandir({ aberto, children }: { aberto: boolean; children: React.ReactNode }) {
+  const semMovimento = useReducedMotion()
+  return (
+    <AnimatePresence initial={false}>
+      {aberto && (
+        <motion.div
+          initial={semMovimento ? false : { height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={semMovimento ? undefined : { height: 0, opacity: 0 }}
+          transition={{ height: { duration: 0.32, ease: [0.22, 1, 0.36, 1] }, opacity: { duration: 0.22 } }}
+          style={{ overflow: 'hidden' }}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 function Faixa({ label, required, hint, right, children }: {
   label: string
@@ -867,7 +920,7 @@ function Step2({
   // explícito — mesmo defeito já achado em Automações (Farol) e Funis. Receita
   // igual à pílula de tipo de cabeçalho do TemplateCreator.tsx (irmão neste
   // diretório, direção C aprovada): h-7/rounded-sm/px-2.5/11.5px.
-  const chipBase = 'flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-[11.5px] font-medium transition-colors'
+  const chipBase = 'flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-[11.5px] font-medium transition-colors duration-200'
   const chipOn   = 'border-transparent text-white'
   const chipOff  = 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]'
   // Seleção genérica (sem cor de dado por trás, ex. sim/não, fonte, engajamento):
@@ -895,15 +948,25 @@ function Step2({
                 aria-checked={isSelected}
                 onClick={() => onSegmentType(opt.value)}
                 className={cn(
-                  'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
+                  'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors duration-200',
                   isSelected ? 'border-brand-500' : 'border-transparent hover:border-surface-600',
                 )}
               >
                 <div className={cn(
-                  'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                  'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-200',
                   isSelected ? 'border-brand-500' : 'border-surface-600'
                 )}>
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-brand-500" />}
+                  <AnimatePresence initial={false}>
+                    {isSelected && (
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-brand-500"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        transition={{ type: 'spring', stiffness: 520, damping: 28 }}
+                      />
+                    )}
+                  </AnimatePresence>
                 </div>
                 <Icon className="w-4 h-4 flex-shrink-0 text-surface-500" />
                 <div className="flex-1">
@@ -917,18 +980,18 @@ function Step2({
       </Faixa>
 
       {/* Reach estimate */}
-      {estimatedReach !== null && (
+      <Expandir aberto={estimatedReach !== null}>
         <div className="border-t border-surface-700 py-4">
           <Banner variant={estimatedReach === 0 ? 'danger' : 'success'}>
             {estimatedReach === 0
               ? 'Nenhum contato corresponde aos filtros selecionados'
-              : `Alcance estimado: ${estimatedReach} contato${estimatedReach === 1 ? '' : 's'}`}
+              : `Alcance estimado: ${estimatedReach ?? 0} contato${estimatedReach === 1 ? '' : 's'}`}
           </Banner>
         </div>
-      )}
+      </Expandir>
 
       {/* Tag picker */}
-      {segmentType === 'tag' && (
+      <Expandir aberto={segmentType === 'tag'}>
         <Faixa label="Tags" hint="contatos com qualquer uma serão incluídos">
           {tags.length === 0 ? (
             <p className="text-xs text-surface-600">Nenhuma tag cadastrada.</p>
@@ -948,10 +1011,10 @@ function Step2({
             </div>
           )}
         </Faixa>
-      )}
+      </Expandir>
 
       {/* Stage picker */}
-      {segmentType === 'stage' && (
+      <Expandir aberto={segmentType === 'stage'}>
         <Faixa label="Estágios" hint="contatos em qualquer um serão incluídos">
           {stages.length === 0 ? (
             <p className="text-xs text-surface-600">Nenhum estágio configurado no CRM.</p>
@@ -971,7 +1034,7 @@ function Step2({
             </div>
           )}
         </Faixa>
-      )}
+      </Expandir>
 
       {/* Manual contact picker */}
       {segmentType === 'manual' && (
@@ -1391,15 +1454,25 @@ function Step4({
                 aria-checked={isSelected}
                 onClick={() => onScheduleMode(opt.value)}
                 className={cn(
-                  'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
+                  'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors duration-200',
                   isSelected ? 'border-brand-500' : 'border-transparent hover:border-surface-600',
                 )}
               >
                 <div className={cn(
-                  'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                  'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-200',
                   isSelected ? 'border-brand-500' : 'border-surface-600'
                 )}>
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-brand-500" />}
+                  <AnimatePresence initial={false}>
+                    {isSelected && (
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-brand-500"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        transition={{ type: 'spring', stiffness: 520, damping: 28 }}
+                      />
+                    )}
+                  </AnimatePresence>
                 </div>
                 <Icon className="w-4 h-4 flex-shrink-0 text-surface-500" />
                 <div className="flex-1">
