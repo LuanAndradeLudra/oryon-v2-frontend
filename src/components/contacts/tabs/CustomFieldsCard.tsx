@@ -151,6 +151,14 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
   const [saving, setSaving] = useState(false)
   const [defs, setDefs] = useState<ContactCustomFieldDef[]>([])
   const [fields, setFields] = useState<ContactCustomField[]>(contact.customFields ?? [])
+  // Revisão 02/10: trocar de contato sem remontar (ficha acoplada, ↑↓)
+  // mantinha os campos do anterior — e salvar gravava os de A em B.
+  const [contatoDosCampos, setContatoDosCampos] = useState(contact.id)
+  if (contatoDosCampos !== contact.id) {
+    setContatoDosCampos(contact.id)
+    setEditing(false)
+    setFields(contact.customFields ?? [])
+  }
 
   useEffect(() => {
     contactsApi.getCustomFieldDefs().then((r) => setDefs(r.data)).catch(() => {})
@@ -193,7 +201,7 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
   }
 
   const actions = !editing ? (
-    <button onClick={() => setEditing(true)} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+    <button onClick={() => setEditing(true)} aria-label="Editar campos personalizados" className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
       <Pencil className="w-3 h-3" />
     </button>
   ) : (

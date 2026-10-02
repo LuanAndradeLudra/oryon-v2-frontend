@@ -40,6 +40,18 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = fal
     state: contact.state,
     country: contact.country,
   })
+  // Revisão 02/10: a ficha acoplada de Contatos não remonta ao trocar de
+  // contato (↑↓) — sem isto o formulário seguia com os dados do anterior e
+  // "Salvar" gravava os dados de A no contato B.
+  const [contatoDoForm, setContatoDoForm] = useState(contact.id)
+  if (contatoDoForm !== contact.id) {
+    setContatoDoForm(contact.id)
+    setEditing(false)
+    setForm({
+      email: contact.email, company: contact.company, jobTitle: contact.jobTitle,
+      industry: contact.industry, city: contact.city, state: contact.state, country: contact.country,
+    })
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -60,7 +72,7 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = fal
   }
 
   const actions = !editing ? (
-    <button onClick={() => setEditing(true)} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+    <button onClick={() => setEditing(true)} aria-label="Editar dados" className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
       <Pencil className="w-3 h-3" />
     </button>
   ) : (
