@@ -2,7 +2,7 @@
 // `false` = oculto da sidebar/busca/atalhos. Rotas, código e backend permanecem
 // intactos — a página continua acessível digitando a URL diretamente, salvo
 // guardas explícitas na página (ex.: campaigns).
-export const FEATURE_FLAGS = {
+const FLAGS_BASE = {
   home: true,
   dashboard: true,
   conversations: true,
@@ -118,7 +118,19 @@ export const FEATURE_FLAGS = {
   campaignReportLegacyTabs: false,
 } as const
 
-export type FeatureFlag = keyof typeof FEATURE_FLAGS
+/**
+ * Teste local de ponta a ponta (PO 01/10): `VITE_FLAGS_TODAS=true` no
+ * `.env.local` liga TODAS as flags de tela acima — mas só no servidor de
+ * desenvolvimento (`import.meta.env.DEV`). Em build (homologação/produção) a
+ * variável é ignorada e valem os valores de `FLAGS_BASE`.
+ */
+const FLAGS_TODAS = import.meta.env.DEV && import.meta.env.VITE_FLAGS_TODAS === 'true'
+
+export const FEATURE_FLAGS: Record<keyof typeof FLAGS_BASE, boolean> = FLAGS_TODAS
+  ? (Object.fromEntries(Object.keys(FLAGS_BASE).map((k) => [k, true])) as Record<keyof typeof FLAGS_BASE, boolean>)
+  : FLAGS_BASE
+
+export type FeatureFlag = keyof typeof FLAGS_BASE
 
 /**
  * E-mails com acesso antecipado a features com `FEATURE_FLAGS[flag] === false`.
