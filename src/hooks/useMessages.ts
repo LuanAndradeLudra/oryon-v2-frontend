@@ -10,13 +10,23 @@ export function useMessages(conversationId: string | null) {
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const pageRef = useRef(1)
+  // Revisão 02/10: troca rápida de conversa (J/K) — a resposta atrasada da
+  // conversa anterior sobrescrevia a lista da atual, e o retorno de um envio
+  // caía na conversa errada. Só aplica o que ainda é da conversa à vista e da
+  // busca mais recente.
+  const conversaAtual = useRef(conversationId)
+  conversaAtual.current = conversationId
+  const buscaAtual = useRef(0)
 
   const fetchMessages = useCallback(async (reset = true) => {
     if (!conversationId) return
+    const minha = ++buscaAtual.current
+    const valeAinda = () => minha === buscaAtual.current && conversaAtual.current === conversationId
     setLoading(true)
     try {
       const page = reset ? 1 : pageRef.current
       const { data } = await withRetry(() => messagesApi.list(conversationId, page, 50))
+      if (!valeAinda()) return
       if (reset) {
         setMessages(data.data.reverse())
         pageRef.current = 2
@@ -26,7 +36,7 @@ export function useMessages(conversationId: string | null) {
       }
       setHasMore(data.data.length === 50)
     } finally {
-      setLoading(false)
+      if (valeAinda()) setLoading(false)
     }
   }, [conversationId])
 
@@ -115,6 +125,12 @@ export function useMessages(conversationId: string | null) {
 
       try {
         const { data } = await messagesApi.send(conversationId, dto)
+        // Trocou de conversa durante o envio: a mensagem já está salva no
+        // servidor e aparece quando voltar — não entra na lista da outra.
+        if (conversaAtual.current !== conversationId) {
+          if (objectUrl) URL.revokeObjectURL(objectUrl)
+          return
+        }
         // Substitui a bolha otimista pela real. Se o socket `message:new`
         // já tiver entregue a mesma mensagem enquanto o POST ainda estava em
         // voo (self-echo — ver handler em ChatWindow), ela já está na lista
@@ -144,6 +160,7 @@ export function useMessages(conversationId: string | null) {
         const failedMessage = (err as { response?: { data?: { failedMessage?: Message } } })?.response?.data
           ?.failedMessage
         if (failedMessage && objectUrl) URL.revokeObjectURL(objectUrl) // a bolha passa a usar a URL do servidor
+        if (conversaAtual.current !== conversationId) throw err
         setMessages((prev) => {
           if (failedMessage) {
             const withoutTemp = prev.filter((m) => m.id !== tempId)
