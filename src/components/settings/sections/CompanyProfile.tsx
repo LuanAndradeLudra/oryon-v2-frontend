@@ -16,6 +16,8 @@ import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { TipCard } from '@/components/ui/TipCard'
 import type { Tenant } from '@/types'
 import { api } from '@/services/api'
+import { isAdminTier } from '@/lib/roleHelpers'
+import { CompanyFiscal } from './CompanyFiscal'
 
 
 const TIMEZONES = [
@@ -35,6 +37,9 @@ const LANGUAGES = [
 export function CompanyProfile() {
   const { toast } = useToast()
   const { user } = useAuth()
+  // O backend só aceita o PATCH de admin/business_admin (super_admin passa no
+  // RolesGuard) — os demais veem os dados, sem o botão que a API recusaria.
+  const canEdit = isAdminTier(user?.role)
   const { checklist, markDone } = useSetupChecklist(user?.id)
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [form, setForm] = useState({
@@ -68,9 +73,10 @@ export function CompanyProfile() {
     setLoading(true)
     try {
       // Map frontend field names to NestJS DTO field names
+      // E-mail vazio não vai: o DTO valida @IsEmail e '' seria recusado.
       await api.patch('/settings/company', {
         businessName: form.name,
-        businessEmail: form.email,
+        businessEmail: form.email.trim() || undefined,
       })
       toast('Perfil da empresa salvo com sucesso.', 'success')
       markDone('company')
@@ -166,6 +172,7 @@ export function CompanyProfile() {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="Nome da empresa"
+              disabled={!canEdit}
             />
           </FormField>
 
@@ -196,6 +203,7 @@ export function CompanyProfile() {
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               placeholder="contato@empresa.com"
+              disabled={!canEdit}
             />
           </FormField>
 
@@ -216,10 +224,16 @@ export function CompanyProfile() {
           </FormField>
         </div>
 
-        <div className="flex justify-end mt-4">
-          <Button onClick={save} loading={loading}>Salvar alterações</Button>
-        </div>
+        {canEdit ? (
+          <div className="flex justify-end mt-4">
+            <Button onClick={save} loading={loading}>Salvar alterações</Button>
+          </div>
+        ) : (
+          <p className="mt-4 text-xs text-surface-500">Só administradores da conta podem alterar estes dados.</p>
+        )}
       </SettingsSection>
+
+      <CompanyFiscal />
     </div>
   )
 }
