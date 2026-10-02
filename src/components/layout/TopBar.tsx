@@ -3,13 +3,48 @@ import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send,
-  Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2,
-  Smartphone, CreditCard, UserPlus, Zap, X, Tag, Clock,
-  Filter, Download, PlusCircle, ArrowRight, ChevronRight,
-  LayoutGrid, KanbanSquare, FileText, Inbox,
-  Globe, Users2, BellRing, Plug, BookOpen,
-  AlertCircle, AtSign, Megaphone as MegaphoneIcon, ShieldAlert, UserCheck,
+  Search,
+  Bell,
+  Sparkles,
+  Home,
+  MessageSquare,
+  BarChart3,
+  Users,
+  Send,
+  Megaphone,
+  Workflow,
+  Bot,
+  MessagesSquare,
+  Settings,
+  Building2,
+  Smartphone,
+  CreditCard,
+  UserPlus,
+  Zap,
+  X,
+  Tag,
+  Clock,
+  Filter,
+  Download,
+  PlusCircle,
+  ArrowRight,
+  ChevronRight,
+  LayoutGrid,
+  KanbanSquare,
+  FileText,
+  Inbox,
+  Globe,
+  Users2,
+  BellRing,
+  Plug,
+  BookOpen,
+  AlertCircle,
+  AtSign,
+  Megaphone as MegaphoneIcon,
+  ShieldAlert,
+  UserCheck,
+  AlertTriangle,
+  Receipt,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
@@ -25,6 +60,7 @@ import {
 import { cn } from '@/lib/utils'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { isRouteVisible } from '@/config/featureFlags'
+import { notificationLinkAllowed } from '@/lib/billingLinks'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import {
   categoryOf,
@@ -184,6 +220,8 @@ const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   automation_note: Zap,
   whatsapp_integration_error: Plug,
   security_alert: ShieldAlert,
+  billing_alert: AlertTriangle,
+  billing_update: Receipt,
 }
 
 function iconFor(type: string): React.ComponentType<{ className?: string }> {
@@ -1012,7 +1050,8 @@ function isValidLink(link: string | null | undefined): boolean {
   const trimmed = link.trim()
   if (!trimmed.startsWith('/')) return false
   if (trimmed.includes('/undefined') || trimmed.includes('/null')) return false
-  return true
+  // CL5 — aviso de cobrança com a tela de cobrança desligada cairia em "Minha conta".
+  return notificationLinkAllowed(trimmed)
 }
 
 type NotifFilter = 'all' | 'unread'
@@ -1026,6 +1065,7 @@ const CATEGORY_CHIPS: Array<{ key: string; label: string; types: string[] }> = [
   { key: 'campaigns', label: 'Campanhas', types: ['campaign_complete', 'campaign_failed'] },
   { key: 'automations', label: 'Automações', types: ['automation_executed', 'automation_note'] },
   { key: 'security', label: 'Segurança', types: ['whatsapp_integration_error', 'security_alert'] },
+  { key: 'billing', label: 'Cobrança', types: ['billing_alert', 'billing_update'] },
 ]
 
 function NotificationsPanel() {

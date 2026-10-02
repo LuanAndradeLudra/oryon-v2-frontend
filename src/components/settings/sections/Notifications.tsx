@@ -23,6 +23,7 @@ const CATEGORY_LABELS: Record<NotificationCategory, string> = {
   campaigns: 'Campanhas',
   automations: 'Automações',
   security: 'Segurança & integrações',
+  billing: 'Cobrança',
 }
 
 const CATEGORY_ORDER: NotificationCategory[] = [
@@ -31,6 +32,7 @@ const CATEGORY_ORDER: NotificationCategory[] = [
   'campaigns',
   'automations',
   'security',
+  'billing',
 ]
 
 const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
@@ -39,6 +41,7 @@ const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
   campaigns: 'Andamento e resultado dos envios em massa.',
   automations: 'Execuções e falhas das suas automações.',
   security: 'Alertas críticos e erros de integração. Alguns são obrigatórios e não podem ser desativados.',
+  billing: 'Faturas, vencimentos, pagamentos e avisos de suspensão. Os alertas de atraso e suspensão são obrigatórios (Termos 17.2).',
 }
 
 export function Notifications() {

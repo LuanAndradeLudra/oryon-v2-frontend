@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import { useNotifications, type AppNotification } from '@/hooks/useNotifications'
 import { formatRelativeTime, cn } from '@/lib/utils'
+import { notificationLinkAllowed } from '@/lib/billingLinks'
 
 // ─── Agrupamento por dia ─────────────────────────────────────────────────────
 // "Hoje" / "Ontem" / data absoluta (dd 'de' MMMM). Agrupa itens adjacentes,
@@ -48,7 +49,8 @@ export function NotificationsPage() {
         // silencioso — UI ja foi marcada como lida e proximo reload corrige
       }
     }
-    if (n.link) navigate(n.link)
+    // CL5 — sem a tela de cobrança, o link de cobrança cairia em "Minha conta".
+    if (n.link && notificationLinkAllowed(n.link)) navigate(n.link)
   }
 
   return (

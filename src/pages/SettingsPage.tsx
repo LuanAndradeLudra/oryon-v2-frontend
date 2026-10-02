@@ -12,7 +12,7 @@ import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
+import { billingSettingsEnabled } from '@/lib/billingLinks'
 
 // Sections
 import { CompanyProfile }   from '@/components/settings/sections/CompanyProfile'
@@ -120,7 +120,6 @@ export function SettingsPage() {
   const banner = useDesktopRecommendedBanner(`settings/${section}`)
   const isMobile = useIsMobile()
   const navigate = useNavigate()
-  const { isFeatureVisible } = useFeatureVisibility()
   const [searchParams] = useSearchParams()
   const volta = destinoDeVolta(searchParams)
 
@@ -141,7 +140,9 @@ export function SettingsPage() {
   // e quem ja tinha a tela salva continuaria entrando. Como a tela nao deveria
   // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
   // o comentario do featureFlags.ts cita para campaigns.
-  if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
+  // CL5 — mesma fonte dos links de cobrança (billingLinks): com a tela
+  // desligada nenhum atalho aponta para cá; a guarda cobre a URL digitada.
+  if (section === 'billing' && !billingSettingsEnabled(user?.email)) {
     return <Navigate to="/settings/account" replace />
   }
   if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
