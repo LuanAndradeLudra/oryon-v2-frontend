@@ -189,7 +189,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
         <div className="flex justify-end gap-2 pt-1 flex-wrap">
           <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
           {blockedByNoNumbers ? (
-            <Link to="/settings/numbers" className="inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-sm text-[13px] font-semibold bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-90 transition">
+            <Link to="/settings/numbers" className="inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-sm text-[13px] font-semibold bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] text-white hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] transition">
               <ExternalLink className="w-4 h-4" />Conectar número para salvar
             </Link>
           ) : (

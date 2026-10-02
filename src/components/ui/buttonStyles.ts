@@ -11,15 +11,17 @@ export type ButtonSize = 'sm' | 'md' | 'lg'
 
 // SCRUM-1097 (Leva 1) — vocabulário de botão reestilizado (tela 1a):
 // raio único 7px, sem sombra decorativa, anel de foco teal uniforme, texto 13px/600.
-//   primary   → tokens --color-btn-primary-{bg,fg} (desvio de AA no claro)
+//   primary   → gradiente teal do avatar de operador + texto branco (PO 01/10)
 //   neutral   → fundo surface + borda de ênfase --bd2
 //   secondary → acento suave, sem borda
 //   ghost     → texto --tx2, hover em --rowhover (não teal)
 //   danger    → --color-btn-danger-{bg,fg} (#B91C1C sólido nos dois temas)
 export const buttonVariantStyles: Record<ButtonVariant, string[]> = {
   primary: [
-    'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] font-semibold',
-    'hover:brightness-90',
+    // PO 01/10: o mesmo gradiente do avatar de operador, nos dois temas; o
+    // hover escurece um tom (sem "luz"). Texto branco (≥7:1 nas duas pontas).
+    'bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] text-white font-semibold',
+    'hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)]',
     'focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-[0.45]',
   ],
@@ -66,6 +68,8 @@ export const buttonIconOnlyStyles: Record<ButtonSize, string> = {
 
 export const buttonBaseStyles = [
   'inline-flex items-center justify-center',
+  // Rótulo de botão não quebra ("Nova conversa" virava 2 linhas no topo).
+  'whitespace-nowrap',
   'transition-all duration-150',
   'cursor-pointer select-none',
   'disabled:cursor-not-allowed',

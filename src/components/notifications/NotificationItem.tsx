@@ -128,7 +128,7 @@ export function NotificationItem({
             className={cn(
               'h-7 px-2 rounded-xs text-[11px] font-semibold mr-0.5',
               action.variant === 'primary'
-                ? 'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-90'
+                ? 'bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] text-white hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)]'
                 : 'text-surface-200 hover:bg-[var(--rowhover)]',
             )}
           >

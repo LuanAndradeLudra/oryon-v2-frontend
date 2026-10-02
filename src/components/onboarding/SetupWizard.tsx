@@ -279,7 +279,7 @@ function StepChrome({
               type="button"
               onClick={onContinue}
               data-testid="setup-continue"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-sm bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] text-white text-sm font-semibold transition-all"
             >
               {continueLabel} <ArrowRight className="w-4 h-4" />
             </button>
@@ -620,7 +620,7 @@ function HubStep({
               onClick={onContinue}
               disabled={!canContinue}
               data-testid="setup-continue"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-sm bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all"
             >
               Concluir <ArrowRight className="w-4 h-4" />
             </button>
@@ -681,7 +681,7 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
         <div className="flex flex-col gap-3 w-full">
           <button
             onClick={() => goTo('/agents')}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-sm bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] text-white text-sm font-semibold transition-all"
           >
             <Bot className="w-4 h-4" />
             Criar meu primeiro agente de IA

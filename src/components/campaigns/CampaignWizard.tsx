@@ -1891,7 +1891,7 @@ function ContactListModal({
         <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
           <button
             onClick={onClose}
-            className="w-full py-2 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-110 text-[var(--color-btn-primary-fg)] text-sm font-medium transition-all"
+            className="w-full py-2 rounded-sm bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] text-white text-sm font-medium transition-all"
           >
             Fechar e continuar
           </button>
