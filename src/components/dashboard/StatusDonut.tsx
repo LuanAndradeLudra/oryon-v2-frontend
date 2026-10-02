@@ -12,8 +12,19 @@ import { EscopoDoCartao } from './EscopoDoCartao'
  * "agora" e somava as resolvidas de todo o histórico — por isso o centro mostra
  * só o que está em andamento, e a lista diz o recorte de cada linha.
  */
-export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: { data: StatusDistribution; escopo?: string; periodo?: string }) {
+export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: { data: StatusDistribution | null; escopo?: string; periodo?: string }) {
   const C = useChartColors()
+  if (!data) {
+    return (
+      <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
+        <div className="flex items-center gap-2 mb-3">
+          <p className="text-sm font-semibold text-surface-100">Status das Conversas</p>
+          {escopo && <EscopoDoCartao className="ml-auto">{escopo}</EscopoDoCartao>}
+        </div>
+        <div className="flex flex-1 items-center justify-center text-sm text-surface-500">Status indisponível</div>
+      </div>
+    )
+  }
   const SLICES = [
     { key: 'pending' as const,   label: 'Pendentes',   recorte: 'agora',   color: C.away    },
     { key: 'open' as const,      label: 'Ativas',      recorte: 'agora',   color: C.brand   },

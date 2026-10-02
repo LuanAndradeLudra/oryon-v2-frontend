@@ -194,7 +194,9 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
   const sd = db?.statusDistribution
   snap.statusDistribution = sd
     ? { open: sd.open ?? 0, pending: sd.pending ?? 0, resolved: sd.resolved ?? 0, abandoned: sd.abandoned ?? 0 }
-    : { open: s.conversationsOpen ?? 0, pending: s.queueCount ?? 0, resolved: s.conversationsResolvedToday ?? 0, abandoned: 0 }
+    // UI-FE-01: stats e snapshot têm recortes diferentes; sem o snapshot, não
+    // há distribuição honesta para desenhar.
+    : null
 
   snap.tagVolumes = Array.isArray(db?.tagVolumes) ? db.tagVolumes : []
   snap.agentMetrics = Array.isArray(db?.agentMetrics) ? db.agentMetrics : []

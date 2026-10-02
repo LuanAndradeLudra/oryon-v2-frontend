@@ -154,7 +154,8 @@ export interface RealtimeStatus {
 export interface DashboardSnapshot {
   kpis: KpiMetric[]
   volumeChart: VolumeDataPoint[]
-  statusDistribution: StatusDistribution
+  /** `null` quando /home/snapshot não veio; a UI mostra indisponibilidade. */
+  statusDistribution: StatusDistribution | null
   tagVolumes: TagVolume[]
   csatChart: CsatDataPoint[]
   heatmap: HeatmapCell[]
@@ -251,7 +252,7 @@ export function buildEmptySnapshot(): DashboardSnapshot {
   return {
     kpis,
     volumeChart: [],
-    statusDistribution: { open: 0, pending: 0, resolved: 0, abandoned: 0 },
+    statusDistribution: null,
     tagVolumes: [],
     csatChart: [],
     heatmap: [],

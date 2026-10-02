@@ -22,6 +22,12 @@ function responder(range: string, resolvidas: number) {
 function falhar(range: string) {
   for (const p of pendentes.filter((x) => x.range === range && x.url === '/home/stats')) p.reject(new Error('falhou'))
 }
+function falharSnapshot(range: string) {
+  for (const p of pendentes.filter((x) => x.range === range && x.url === '/home/snapshot')) p.reject(new Error('snapshot falhou'))
+}
+function responderStats(range: string, resolvidas: number) {
+  for (const p of pendentes.filter((x) => x.range === range && x.url === '/home/stats')) p.resolve(stats(resolvidas))
+}
 const resolvidasDe = (r: { snapshot: { kpis: Array<{ id: string; value: number | null }> } | null }) =>
   r.snapshot?.kpis.find((k) => k.id === 'resolved')?.value
 
@@ -81,6 +87,22 @@ describe('useRelatoriosDoPainel', () => {
     expect(result.current.periodoCarregado).toBe('7d')
     expect(resolvidasDe(result.current)).toBe(5)
     expect(result.current.atualizando).toBe(false)
+  })
+
+  it('UI-FE-01: falha do snapshot não inventa status, preserva o período anterior e a data dele', async () => {
+    const { result, rerender } = renderHook(({ p }: { p: DateRange }) => useRelatoriosDoPainel(p), { initialProps: { p: '7d' as DateRange } })
+    await act(async () => { responder('7d', 5) })
+    await waitFor(() => expect(result.current.atualizadoEm).not.toBeNull())
+    const dataAnterior = result.current.atualizadoEm
+    rerender({ p: 'month' })
+    await act(async () => {
+      responderStats('month', 1)
+      falharSnapshot('month')
+    })
+    await waitFor(() => expect(result.current.erro).toBe(true))
+    expect(result.current.periodoCarregado).toBe('7d')
+    expect(resolvidasDe(result.current)).toBe(5)
+    expect(result.current.atualizadoEm).toBe(dataAnterior)
   })
 
   it('falha sem dado nenhum: não fica carregando para sempre', async () => {

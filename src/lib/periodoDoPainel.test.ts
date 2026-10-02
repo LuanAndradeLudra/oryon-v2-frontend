@@ -22,7 +22,7 @@ describe('período do Dashboard', () => {
 })
 
 describe('montarSnapshot', () => {
-  it('usa os números do backend e cai nas contagens de stats sem snapshot', () => {
+  it('usa os números do backend sem fabricar a distribuição de status sem snapshot', () => {
     // K1: a taxa vem do backend (resolutionRate), o front não recalcula.
     const s = { conversationsOpen: 4, queueCount: 2, conversationsResolvedToday: 3, totalConversations: 12, resolutionRate: 25, appointmentsScheduled: 7 } as unknown as HomeStats
     const snap = montarSnapshot(s, null)
@@ -31,7 +31,7 @@ describe('montarSnapshot', () => {
     expect(kpi('resolved')).toBe(3)
     expect(kpi('resolution_rate')).toBe(25)
     expect(kpi('appointments_scheduled')).toBe(7)
-    expect(snap.statusDistribution).toEqual({ open: 4, pending: 2, resolved: 3, abandoned: 0 })
+    expect(snap.statusDistribution).toBeNull()
     expect(snap.volumeChart).toEqual([])
   })
 })

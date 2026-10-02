@@ -25,4 +25,10 @@ describe('StatusDonut — R1', () => {
     expect(screen.getAllByText('· nos últimos 7 dias')).toHaveLength(2)
     expect(screen.getAllByText('· agora')).toHaveLength(2)
   })
+
+  it('UI-FE-01: sem distribuição do servidor, informa indisponibilidade em vez de desenhar zeros', () => {
+    render(<StatusDonut data={null} />)
+    expect(screen.getByText('Status indisponível')).toBeInTheDocument()
+    expect(screen.queryByText('em andamento')).toBeNull()
+  })
 })

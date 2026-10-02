@@ -101,7 +101,7 @@ export function useRelatoriosDoPainel(periodo: DateRange, podeVerAtividade = tru
     const minha = ++seq.current
     try {
       const [{ data: db }, { data: stats }] = await comTeto(Promise.all([
-        api.get('/home/snapshot', { params: { range: p, compare: 1 } }).catch(() => ({ data: null })),
+        api.get('/home/snapshot', { params: { range: p, compare: 1 } }),
         api.get<HomeStats>('/home/stats', { params: { range: p, compare: 1 } }),
       ]))
       if (!vivo.current || minha !== seq.current) return
