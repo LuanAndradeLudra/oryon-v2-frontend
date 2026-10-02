@@ -13,9 +13,28 @@
  * não precisa ser compartilhável — ver `voltarPara` em `ContactProfilePage`.)
  */
 
-/** Só caminho interno: nada de `http://`, `//host` ou `javascript:`. */
+const ORIGEM_FICTICIA = 'http://oryon.local'
+
+/**
+ * Só caminho interno: nada de `http://`, `//host` ou `javascript:`.
+ *
+ * Revisão 02/10: "começa com / e não com //" não bastava — o navegador trata
+ * `\` como `/` e descarta TAB/quebra de linha, então `/\evil.com` e
+ * `/<TAB>/evil.com` viravam https://evil.com (redirecionamento aberto). Recusa
+ * esses caracteres e confere com o próprio parser de URL que a origem não muda.
+ */
 function ehCaminhoInterno(valor: string): boolean {
-  return valor.startsWith('/') && !valor.startsWith('//')
+  if (!valor.startsWith('/') || valor.startsWith('//')) return false
+  for (const ch of valor) {
+    const c = ch.charCodeAt(0)
+    // 92 = barra invertida; < 32 e 127 = caracteres de controle (TAB, quebra de linha…)
+    if (c === 92 || c < 32 || c === 127) return false
+  }
+  try {
+    return new URL(valor, ORIGEM_FICTICIA).origin === ORIGEM_FICTICIA
+  } catch {
+    return false
+  }
 }
 
 /**
