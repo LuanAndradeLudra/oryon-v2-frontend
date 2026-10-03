@@ -63,9 +63,12 @@ export function SecaoDor() {
   // Lado a lado, fim do setor: os aparelhos deslizam e entra o próximo.
   useEffect(() => {
     if (!ladoALado || msSem < total) return
-    setDirecao(1)
-    setIndice((i) => (i + 1) % SETORES.length)
-    zerar()
+    const quadro = requestAnimationFrame(() => {
+      setDirecao(1)
+      setIndice((i) => (i + 1) % SETORES.length)
+      zerar()
+    })
+    return () => cancelAnimationFrame(quadro)
   }, [ladoALado, msSem, total, zerar])
 
   function escolher(id: string) {
@@ -93,13 +96,13 @@ export function SecaoDor() {
   const ids = SETORES.map((s) => s.id)
 
   return (
-    <section id="por-que" data-section="dor" className="relative scroll-mt-16 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20 lg:pb-14 lg:pt-12">
+    <section id="por-que" data-section="dor" className="relative scroll-mt-16 landing-tom-elevado pt-16 pb-8 sm:py-20 lg:pb-14 lg:pt-12">
       <div className="landing-container">
         {/* O cabeçalho da seção com o índice de setores no canto direito (desktop),
             na linha do título; no celular, o índice desce e fica centralizado. */}
         <Revelar>
           <Capitulo rotulo={dor.eyebrow} className="mb-6" />
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
             {/* Os títulos de todos os setores ocupam a mesma célula da grade: a
                 altura é a do maior e a troca é um cruzamento, sem a página pular.
                 Só o do setor ativo fica visível (e acessível). */}
@@ -219,7 +222,7 @@ export function SecaoDor() {
           </div>
         </Revelar>
 
-        <p className="mt-10 flex items-center justify-center gap-2 lg:mt-8 text-[12.5px] text-surface-500">
+        <p className="mt-3 flex items-center justify-center gap-2 sm:mt-10 lg:mt-8 text-[12.5px] text-surface-500">
           <Info className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
           {dor.aviso}
         </p>

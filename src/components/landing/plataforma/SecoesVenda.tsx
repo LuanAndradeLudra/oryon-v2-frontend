@@ -96,7 +96,7 @@ const ICONES_DEPOIS = { ajuste: PencilLine, crescer: Layers, acompanhar: LayoutD
  */
 export function SecaoImplantacao({ compacta = false, numero }: { compacta?: boolean; numero?: string }) {
   return (
-    <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-[var(--landing-palco)] py-16 sm:py-20">
+    <section id="implantacao" data-section="implantacao" className="relative scroll-mt-20 bg-surface-950 py-16 sm:py-20">
       <div className="landing-container">
         {/* Lote 3 (30/09): o título em cima e os dias numa linha do tempo
             HORIZONTAL (Dia 1 → Dia 7) a partir de 768 px; no celular, a mesma
@@ -111,7 +111,7 @@ export function SecaoImplantacao({ compacta = false, numero }: { compacta?: bool
               return (
                 <li key={p.titulo} className="relative grid grid-cols-[72px_14px_minmax(0,1fr)] gap-x-3 border-b border-[var(--landing-borda)] py-5 md:block md:border-b-0 md:py-0">
                     <span className="pt-[3px] font-mono text-[11.5px] tracking-[.02em] text-surface-500 md:block md:pt-0">{DIAS_PASSO[i]}</span>
-                    <span aria-hidden className={cn('mt-[8px] h-[7px] w-[7px] rounded-full md:relative md:mt-[9px] md:block md:h-[9px] md:w-[9px] md:ring-4 md:ring-[var(--landing-palco)]', voce ? 'bg-[#F5B544]' : 'bg-[var(--landing-destaque)]')} />
+                    <span aria-hidden className={cn('mt-[8px] h-[7px] w-[7px] rounded-full md:relative md:mt-[9px] md:block md:h-[9px] md:w-[9px] md:ring-4 md:ring-surface-950', voce ? 'bg-[#F5B544]' : 'bg-[var(--landing-destaque)]')} />
                     <div className="min-w-0 md:mt-5">
                       <p className="text-[16px] font-semibold leading-snug text-surface-50">{p.titulo}</p>
                       <p className="mt-1 text-[14.5px] leading-relaxed text-surface-400 text-pretty">{p.texto}</p>
@@ -212,7 +212,7 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
   // Na home, as objeções escolhidas em perguntas.naHome, na ordem delas.
   const naHome = perguntas.naHome.map((p) => todas.find((q) => q.pergunta === p)).filter((q): q is (typeof todas)[number] => !!q)
   return (
-    <section id="perguntas" data-section="perguntas" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-14">
+    <section id="perguntas" data-section="perguntas" {...(comoPagina ? {} : { 'data-tom': 'claro', 'data-theme': 'light' })} className={cn('relative scroll-mt-20 py-16 sm:py-20 lg:py-14', comoPagina && 'border-t border-[var(--landing-borda)] bg-surface-950')}>
       {/* Lote 3 (30/09): coluna única de leitura — título em cima, perguntas
           embaixo, e o próximo passo no fim. Antes eram três seções seguidas no
           mesmo formato "título à esquerda, conteúdo à direita". */}

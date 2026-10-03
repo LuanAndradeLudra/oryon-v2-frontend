@@ -1899,10 +1899,10 @@ h1, h2, h3 {
   align-items: center;
   gap: 14px;
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 12px;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: var(--color-surface-400);
+  color: var(--color-surface-300);
   & > [data-numero] { letter-spacing: .04em; color: var(--landing-destaque); }
   &::after { content: ''; flex: 1 1 auto; height: 1px; background: var(--landing-borda); }
 }
@@ -1972,6 +1972,56 @@ h1, h2, h3 {
 /* Landing · SUPERFÍCIES DO NAVEGADOR (redesenho do formulário, 30/09): seleção,
    cursor e o autopreenchimento do Chrome com as cores do tema, não as do
    navegador (o autofill pintava os campos de amarelo/azul no escuro). */
+/* RITMO DE TONS (auditoria 03/10, aprovada pelo PO — A/B/C/D).
+   Antes, as seções alternavam #060909 e #0A1010 — diferença que o olho não
+   vê, e a página lia como um bloco só. Agora cada tom tem papel fixo:
+     base      #060909  — a vitrine (hero, telas do produto, implantação);
+     elevado   #101A1A  — prova e argumento (dor, limites da IA);
+     marca     teal escuro com brilho — só nos dois momentos de decisão
+               (chamada do meio e demonstração);
+     claro     a escala prata da landing — uma pausa de leitura (perguntas).
+   C: o texto de apoio e os rótulos sobem um degrau (≥ 7:1 sobre a base). */
+[data-landing-root] {
+  --landing-elevado: #101A1A;
+  --color-surface-400: #A9BEBE;
+  --color-surface-500: #84999A;
+}
+[data-theme='light'] [data-landing-root] { --landing-elevado: #D5D5D9; }
+.landing-tom-elevado { background-color: var(--landing-elevado); }
+.landing-faixa-marca {
+  --landing-borda: rgba(94, 234, 212, .16);
+  background:
+    radial-gradient(60% 90% at 85% 0%, rgba(45, 212, 191, .20), transparent 70%),
+    radial-gradient(50% 80% at 0% 100%, rgba(20, 184, 166, .12), transparent 70%),
+    #04201E;
+}
+[data-theme='light'] [data-landing-root] .landing-faixa-marca {
+  --landing-borda: rgba(15, 118, 110, .22);
+  background:
+    radial-gradient(60% 90% at 85% 0%, rgba(45, 212, 191, .28), transparent 70%),
+    #CDEDE8;
+}
+/* A seção clara dentro da página escura: a mesma escala prata do tema claro
+   da landing, aplicada só a ela (data-theme="light" liga os utilitários
+   [[data-theme=light]_&] dos componentes). */
+[data-landing-root] [data-tom='claro'] {
+  --color-surface-950: #ECECEF;
+  --color-surface-900: #E1E1E4;
+  --color-surface-800: #FFFFFF;
+  --color-surface-700: #C6C6CC;
+  --color-surface-600: #626269;
+  --color-surface-500: #52525A;
+  --color-surface-400: #3F3F46;
+  --color-surface-300: #2A2A30;
+  --color-surface-200: #26262B;
+  --color-surface-100: #1C1C20;
+  --color-surface-50: #111113;
+  --landing-borda: #CFCFD5;
+  --landing-cartao: #FFFFFF;
+  --landing-destaque: #0F766E;
+  background-color: #ECECEF;
+  color-scheme: light;
+}
 [data-landing-root] ::selection { background: rgba(45, 212, 191, .3); color: #F6FAFA; }
 [data-landing-root] input, [data-landing-root] textarea { caret-color: #2DD4BF; }
 [data-landing-root] input:-webkit-autofill,

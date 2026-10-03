@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils'
  * Só da landing: o botão do app (`Button`/`buttonStyles`) não muda.
  */
 
-type Variante = 'primario' | 'secundario' | 'fantasma'
+type Variante = 'primario' | 'marca' | 'secundario' | 'fantasma'
 type Tamanho = 'md' | 'lg'
 
 const BASE = cn(
@@ -47,6 +47,14 @@ const VARIANTES: Record<Variante, string> = {
     '[[data-theme=light]_&]:text-white [[data-theme=light]_&]:bg-[linear-gradient(180deg,#2a2b2f_0%,#0b0c0e_100%)]',
     '[[data-theme=light]_&]:shadow-[inset_0_1px_0_rgba(255,255,255,.18),0_1px_2px_rgba(0,0,0,.3),0_10px_24px_-12px_rgba(0,0,0,.55)]',
     '[[data-theme=light]_&]:hover:bg-[linear-gradient(180deg,#3a3b40_0%,#141518_100%)]',
+  ),
+  // B da auditoria de 03/10 (PO aprovou): nas faixas de marca, o botão leva a
+  // cor da marca — teal cheio com texto escuro (≈ 10:1).
+  marca: cn(
+    'text-[#032320] bg-[linear-gradient(180deg,#5EEAD4_0%,#2DD4BF_100%)]',
+    'shadow-[inset_0_1px_0_rgba(255,255,255,.55),inset_0_-1px_0_rgba(0,0,0,.12),0_1px_2px_rgba(0,0,0,.4),0_12px_32px_-12px_rgba(45,212,191,.6)]',
+    'hover:bg-[linear-gradient(180deg,#7FF0DE_0%,#3EE0CA_100%)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,.6),0_1px_2px_rgba(0,0,0,.4),0_16px_40px_-12px_rgba(45,212,191,.75)]',
+    '[[data-theme=light]_&]:text-white [[data-theme=light]_&]:bg-[linear-gradient(180deg,#14A394_0%,#0F766E_100%)]',
   ),
   secundario: cn(
     'text-surface-50 bg-white/[.04] backdrop-blur-sm',

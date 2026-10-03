@@ -88,7 +88,7 @@ export const hero = {
   title: 'Nenhum cliente sem resposta no WhatsApp.',
   lead: 'Um agente de IA responde na hora, de dia ou de noite, com as informações da sua empresa. Organiza cada venda e chama sua equipe quando uma pessoa precisa assumir.',
   /** Celular (02/10, PO): o apoio em duas linhas, para o palco caber na primeira tela. */
-  leadCurto: 'Um agente de IA responde na hora e chama sua equipe quando precisa.',
+  leadCurto: 'Um agente de IA que responde na hora, vende por você e chama sua equipe quando precisa.',
   /** A redução de risco logo abaixo dos botões: o diferencial que antes só
    *  aparecia na seção de implantação. Fatos do serviço, sem número. */
   garantias: ['Configuramos com você', 'Você testa antes de ligar', 'WhatsApp oficial da Meta'],

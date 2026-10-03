@@ -214,7 +214,7 @@ export function FormDemonstracao({ origem, segmento = '' }: { origem: string; se
         </p>
       )}
 
-      <BotaoLanding type="submit" tamanho="lg" seta carregando={estado === 'enviando'} className="mt-6 w-full">
+      <BotaoLanding type="submit" variante="marca" tamanho="lg" seta carregando={estado === 'enviando'} className="mt-6 w-full">
         {estado === 'enviando' ? formDemo.enviando : formDemo.enviar}
       </BotaoLanding>
       <p id={avisoId} className="mt-3 text-center text-[12.5px] leading-relaxed text-surface-500 text-balance">
@@ -228,7 +228,7 @@ export function FormDemonstracao({ origem, segmento = '' }: { origem: string; se
 /** A seção de fecho: o convite e o formulário lado a lado. */
 export function SecaoDemonstracao({ origem, comoPagina = false, segmento }: { origem: string; comoPagina?: boolean; numero?: string; segmento?: string }) {
   return (
-    <section id="demonstracao" data-section="demonstracao" className="relative scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-24">
+    <section id="demonstracao" data-section="demonstracao" className="relative scroll-mt-20 landing-faixa-marca py-16 sm:py-24">
       <div className="landing-container relative grid gap-10 lg:grid-cols-[minmax(0,.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-16">
         {/* O convite acompanha o formulário enquanto a pessoa preenche. */}
         <div className="lg:sticky lg:top-28">

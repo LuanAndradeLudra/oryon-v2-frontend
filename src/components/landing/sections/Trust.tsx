@@ -72,7 +72,7 @@ export function Trust({ compacto = false, numero }: { compacto?: boolean; numero
     <section
       id="confianca"
       data-section="confianca"
-      className="scroll-mt-20 border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20 lg:py-10"
+      className="landing-tom-elevado scroll-mt-20 py-16 sm:py-20 lg:py-10"
     >
       <div className="landing-container">
         <motion.div

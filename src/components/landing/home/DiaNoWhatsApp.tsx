@@ -190,6 +190,11 @@ function Checklist({ lado, com, ms, compacto = false }: { lado: Lado; com: boole
  * "sem resposta"), quantas vezes a cliente ficou sem resposta e o resultado.
  * Sem a Oryon, o relógio sobe em vermelho; com a Oryon, "na hora".
  */
+/** O rótulo de cada bloco do placar (mono, caixa alta). */
+function RotuloDoPlacar({ children }: { children: ReactNode }) {
+  return <p className="font-mono text-[10.5px] uppercase tracking-[.08em] text-surface-500">{children}</p>
+}
+
 const COR_DO_TOM = { ruim: 'text-[#F87171]', bom: 'text-[var(--landing-destaque)]', pessoa: 'text-[#F5B544]' } as const
 
 function Placar({ setor, lado, com, ms }: { setor: Setor; lado: Lado; com: boolean; ms: number }) {
@@ -206,13 +211,10 @@ function Placar({ setor, lado, com, ms }: { setor: Setor; lado: Lado; com: boole
   // empresa e, com a Oryon, a linha em que a equipe é chamada.
   const primeiraResposta = lado.passos.find((p) => p.tipo === 'msg' && !p.minha)?.t ?? Infinity
   const equipeChamada = lado.checklist.find((it) => it.pessoa)?.t ?? Infinity
-  const Rotulo = ({ children }: { children: ReactNode }) => (
-    <p className="font-mono text-[10.5px] uppercase tracking-[.08em] text-surface-500">{children}</p>
-  )
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-4 pt-2">
       <div>
-        <Rotulo>Espera</Rotulo>
+        <RotuloDoPlacar>Espera</RotuloDoPlacar>
         <p className={cn('mt-1 font-display text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums', com || espera > 0 ? cor : 'text-surface-500')}>
           {com ? 'na hora' : duracao(espera)}
         </p>
@@ -223,7 +225,7 @@ function Placar({ setor, lado, com, ms }: { setor: Setor; lado: Lado; com: boole
         const atual = [...marcos].reverse().find((m) => m.t <= ms) ?? marcos[0]
         return (
           <div key={b.rotulo}>
-            <Rotulo>{b.rotulo}</Rotulo>
+            <RotuloDoPlacar>{b.rotulo}</RotuloDoPlacar>
             <p className={cn('mt-1 text-[17px] font-semibold leading-tight', atual?.tom ? COR_DO_TOM[atual.tom] : 'text-surface-500')}>
               {atual?.texto ?? '—'}
             </p>
@@ -231,7 +233,7 @@ function Placar({ setor, lado, com, ms }: { setor: Setor; lado: Lado; com: boole
         )
       })}
       <div>
-        <Rotulo>Quem respondeu</Rotulo>
+        <RotuloDoPlacar>Quem respondeu</RotuloDoPlacar>
         <p className={cn('mt-1 text-[17px] font-semibold leading-tight', ms < primeiraResposta ? 'text-surface-500' : com ? cor : 'text-surface-300')}>
           {ms < primeiraResposta ? 'Ninguém' : !com ? setor.quemAtrasou : ms < equipeChamada ? 'Agente IA' : (
             <>Agente IA <span className="text-[#F5B544]">+ {setor.quemEntra}</span></>
@@ -239,7 +241,7 @@ function Placar({ setor, lado, com, ms }: { setor: Setor; lado: Lado; com: boole
         </p>
       </div>
       <div className="border-t border-white/[.08] pt-4">
-        <Rotulo>{home.dor.resultado}</Rotulo>
+        <RotuloDoPlacar>{home.dor.resultado}</RotuloDoPlacar>
         <div className="relative mt-1.5 min-h-[44px]">
           <AnimatePresence initial={false} mode="popLayout">
             {feito ? (
@@ -302,7 +304,7 @@ const ESCALA_NO_CELULAR = 0.54
  * A linha do checklist acende no momento em que a conversa a prova. Os
  * relógios são de quem compõe (cada conversa anda só enquanto é a da vez).
  */
-export function DiaNoCelular({ setor, lado, onLado, msSem, msCom, fimSem, fimCom, raizRef, rodape }: {
+export function DiaNoCelular({ setor, lado, onLado, msSem, msCom, fimSem, raizRef, rodape }: {
   setor: Setor
   lado: LadoDoDia
   onLado: (lado: LadoDoDia) => void
@@ -334,11 +336,10 @@ export function DiaNoCelular({ setor, lado, onLado, msSem, msCom, fimSem, fimCom
 
   return (
     <div ref={raizRef} className="flex w-full flex-col items-center gap-3">
-      <div role="tablist" aria-label={home.dor.alternarLabel} className="relative grid w-full grid-cols-2 rounded-full bg-white/[.04] p-1 ring-1 ring-inset ring-white/[.08]">
+      <div role="tablist" aria-label={home.dor.alternarLabel} className="relative grid w-full max-w-[280px] grid-cols-2 rounded-full bg-white/[.04] p-1 ring-1 ring-inset ring-white/[.08]">
         {(['sem', 'com'] as const).map((l) => {
           const ativo = l === lado
           const ehCom = l === 'com'
-          const andou = Math.min(1, (ehCom ? msCom / fimCom : msSem / fimSem) || 0)
           return (
             <button
               key={l}
@@ -366,12 +367,6 @@ export function DiaNoCelular({ setor, lado, onLado, msSem, msCom, fimSem, fimCom
                 {ehCom ? <Check className="h-3.5 w-3.5" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
                 {ehCom ? home.dor.comOryon : home.dor.semOryon}
               </span>
-              {/* O andamento da conversa da vez: a linha enche até o fim dela. */}
-              {ativo && !semMovimento && (
-                <span aria-hidden className="absolute inset-x-6 bottom-[3px] h-[2px] overflow-hidden rounded-full bg-white/[.08]">
-                  <span className="block h-full origin-left" style={{ transform: `scaleX(${andou})`, background: ehCom ? 'var(--landing-destaque)' : '#F87171' }} />
-                </span>
-              )}
             </button>
           )
         })}

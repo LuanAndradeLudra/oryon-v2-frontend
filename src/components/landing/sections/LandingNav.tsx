@@ -154,8 +154,8 @@ export function LandingNav() {
                       onClick={() => setMenuAberto(false)}
                       className="rounded-lg px-3 py-2.5 transition-colors hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                     >
-                      <span className="block text-[13px] font-semibold text-surface-100">{p.menu}</span>
-                      <span className="mt-0.5 block text-[12px] leading-snug text-surface-500">{p.resumo}</span>
+                      <span className="block text-[16px] font-semibold text-surface-100 md:text-[13px]">{p.menu}</span>
+                      <span className="mt-0.5 block text-[13px] leading-snug text-surface-500 md:text-[12px]">{p.resumo}</span>
                     </Link>
                   ))}
                 </div>
@@ -163,7 +163,7 @@ export function LandingNav() {
                 <div className="mt-1 border-t border-[var(--landing-borda)] pt-1 lg:hidden">
                   {LINKS.map((l) => (
                     <Link key={l.to} data-menu-link to={l.to} onClick={() => setMenuAberto(false)}
-                      className="block rounded-lg px-3 py-2.5 text-[13px] font-semibold text-surface-100 hover:bg-[var(--rowhover)]">
+                      className="block rounded-lg px-3 py-2.5 text-[16px] font-semibold text-surface-100 hover:bg-[var(--rowhover)] md:text-[13px]">
                       {l.label}
                     </Link>
                   ))}

@@ -50,7 +50,7 @@ export function Hero() {
         </a>}
       </div>
       <ul
-        className="reveal mt-[clamp(10px,1.4svh,14px)] flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-surface-400"
+        className={cn("reveal flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-surface-400", celular ? "mt-8" : "mt-[clamp(10px,1.4svh,14px)]")}
         style={{ ['--d' as string]: '240ms' }}
       >
         {hero.garantias.map((g) => (
@@ -74,7 +74,7 @@ export function Hero() {
         // propósito, mas nunca pode criar rolagem horizontal na página.
         // `isolate`: o véu do holofote (z 40, dentro da seção) nunca passa por
         // cima do menu fixo quando a página rola.
-        'relative isolate overflow-x-clip scroll-mt-16 pb-14 sm:pb-16',
+        'relative isolate overflow-x-clip scroll-mt-16 pb-7 sm:pb-16',
         // Espaçamento do conjunto título → narração → palco em TOKENS (25/09):
         // encolhem juntos em telas baixas, para o conjunto caber na altura.
         'pt-[var(--hero-gap-topo)]',
