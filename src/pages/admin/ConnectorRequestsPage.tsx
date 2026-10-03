@@ -6,7 +6,7 @@
 // connector and changing its status are the only actions, matching the
 // epic's guard-rail against "signal = build without review".
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Inbox, Loader2 } from 'lucide-react'
 import {
   listConnectorRequestsForStaff,
@@ -37,7 +37,11 @@ export function ConnectorRequestsPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
 
+  // Revisão 02/10: trocar o filtro rápido deixava a resposta do filtro
+  // anterior, chegando por último, preencher a lista sob o filtro novo.
+  const carga = useRef(0)
   const reload = useCallback(async () => {
+    const minha = ++carga.current
     setLoading(true)
     setLoadError(null)
     try {
@@ -45,25 +49,29 @@ export function ConnectorRequestsPage() {
         listConnectorRequestsForStaff(statusFilter || undefined),
         listAllConnectorsForStaff(),
       ])
+      if (minha !== carga.current) return
       setRows(requests)
       setConnectors(allConnectors)
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : String(err))
+      if (minha === carga.current) setLoadError(err instanceof Error ? err.message : String(err))
     } finally {
-      setLoading(false)
+      if (minha === carga.current) setLoading(false)
     }
   }, [statusFilter])
 
   useEffect(() => { void reload() }, [reload])
 
   async function handleTriage(row: ConnectorRequestRow, patch: { status?: string; staff_notes?: string; connector_id?: string | null }) {
-    const prev = rows
+    // Revisão 02/10: o rollback restaurava a lista INTEIRA de antes — uma falha
+    // em A desfazia na tela a edição de B que já tinha salvado. Agora só a
+    // linha que falhou volta.
+    const anterior = rows.find((r) => r.id === row.id) ?? row
     setRows((cur) => cur.map((r) => (r.id === row.id ? { ...r, ...patch } as ConnectorRequestRow : r)))
     try {
       const updated = await triageConnectorRequest(row.id, patch)
       setRows((cur) => cur.map((r) => (r.id === row.id ? updated : r)))
     } catch (err) {
-      setRows(prev)
+      setRows((cur) => cur.map((r) => (r.id === row.id ? anterior : r)))
       toast(err instanceof Error ? err.message : String(err), 'error')
     }
   }
