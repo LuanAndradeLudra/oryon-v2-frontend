@@ -46,7 +46,7 @@ import type { HeroCena, HeroState } from '../stage/hero/heroStory'
 const NOOP = () => {}
 
 /** As contagens da campanha CONCLUÍDA — os mesmos números da notificação que
- *  aparece em cima delas no cartão ("1.231 enviadas · 9 falhas"). */
+ *  aparece em cima delas no cartão ("477 enviadas · 9 falhas"). */
 const CONTAGENS_CAMPANHA = (() => {
   const st = heroCampaigns('ganho')[0].stats
   const v = (x: number | undefined) => x ?? 0

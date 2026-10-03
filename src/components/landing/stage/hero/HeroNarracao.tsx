@@ -56,7 +56,7 @@ export function HeroNarracao({ texto, className, pilulaRef }: {
           <motion.span
             key={texto}
             layout="position"
-            className="text-[13.5px] sm:text-[14px] font-medium leading-[1.35] tracking-[-0.01em] text-balance"
+            className="text-center text-[13.5px] sm:text-[14px] font-medium leading-[1.35] tracking-[-0.01em] text-balance"
             initial={{ opacity: 0, filter: 'blur(4px)' }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, filter: 'blur(3px)' }}

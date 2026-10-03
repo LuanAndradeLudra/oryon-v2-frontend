@@ -180,7 +180,10 @@ const ASSENTAR_MAX_MS = 1500
  * `palcoRef`, desenha também o conector; sem eles, só o contorno (recortes da
  * seção Plataforma, celular).
  */
-export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaSecao = false, funil = false }: {
+export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaSecao = false, funil = false, lados }: {
+  /** Os lados por onde o conector pode chegar (padrão: todos). No celular, só
+   *  por cima: a pílula fica logo acima da janela e não há corredor lateral. */
+  lados?: readonly Lado[]
   tomada: Tomada | null
   /** Mede o alvo a cada quadro (px relativos a `base`, o retângulo da raiz). */
   medir: (base: DOMRect) => MedidaDoAlvo | null
@@ -310,6 +313,7 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
         const trava = ladoTravado.current?.id === id ? ladoTravado.current.lado : null
         if (trava) ordem.sort((a, b) => (a === trava ? -1 : b === trava ? 1 : 0))
         for (const lado of ordem) {
+          if (lados && !lados.includes(lado)) continue
           const pts = rotas[lado]
           if (!pts || !livre(pts)) continue
           ladoTravado.current = { id, lado }
@@ -368,7 +372,7 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
       window.removeEventListener('resize', acordar)
       window.removeEventListener('message', acordar)
     }
-  }, [id, raizRef, anotacaoRef, palcoRef, veuNaSecao, funil])
+  }, [id, raizRef, anotacaoRef, palcoRef, veuNaSecao, funil, lados])
 
   if (!tomada || !geo) return null
   const saindo = tomada.saindo || !geo.anelVisivel

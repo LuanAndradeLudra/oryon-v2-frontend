@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { motion, useReducedMotion, type MotionValue } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { HERO } from './heroRealData'
 
 /**
  * A BANDEJA — a moldura de todas as janelas do palco (a âncora e as
@@ -23,9 +22,11 @@ import { HERO } from './heroRealData'
  * O conteúdo de dentro é SEMPRE do produto; a bandeja é só a moldura em volta.
  */
 export function Bandeja({
-  titulo, children, className, style, conteudoClassName,
+  titulo, children, className, style, conteudoClassName, acoes,
 }: {
   titulo: string
+  /** No canto direito da barra de título (a pausa do Hero no celular). */
+  acoes?: ReactNode
   children: ReactNode
   className?: string
   style?: CSSProperties
@@ -49,6 +50,7 @@ export function Bandeja({
         <span className="w-[9px] h-[9px] rounded-full bg-[#FEBC2E]" />
         <span className="w-[9px] h-[9px] rounded-full bg-[#28C840]" />
         <span className="ml-2 text-[11.5px] font-medium text-[var(--bandeja-titulo)] truncate">{titulo}</span>
+        {acoes && <span className="ml-auto flex flex-none items-center">{acoes}</span>}
       </div>
       <div
         className={cn(
@@ -194,9 +196,3 @@ export function SateliteAparelho({
   )
 }
 
-export const TITULOS_SATELITES = {
-  celular: `WhatsApp · ${HERO.person}`,
-  notificacoes: 'Notificações',
-  linhaDoTempo: `${HERO.person} · atividade`,
-  negocio: 'Negócio · Consultas',
-}

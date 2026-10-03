@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { pedirMontagem, tornarVisivel, cancelarMontagem, liberar } from './filaDeMontagem'
 import { useReducedMotion } from 'framer-motion'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -34,6 +34,23 @@ const APP = { w: 1280, h: 720 }
  *  cortaria a mensagem mais nova, que chega embaixo. */
 const APP_CELULAR = { w: 390, h: 600 }
 const CANAL = 'oryon-hero'
+/** O conector no celular só chega por cima (a pílula fica logo acima da janela). */
+const LADO_DE_CIMA = ['topo'] as const
+
+/** Uma caixa na proporção do app que contém o retângulo com folga, dentro dele. */
+function enquadrar(r: Recorte, app: { w: number; h: number }): Recorte {
+  const folga = 32
+  const proporcao = app.w / app.h
+  let w = r.w + folga * 2
+  let h = r.h + folga * 2
+  if (w / h < proporcao) w = h * proporcao
+  else h = w / proporcao
+  w = Math.min(app.w, w)
+  h = Math.min(app.h, h)
+  const x = Math.max(0, Math.min(app.w - w, r.x + r.w / 2 - w / 2))
+  const y = Math.max(0, Math.min(app.h - h, r.y + r.h / 2 - h / 2))
+  return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) }
+}
 /** Ampliação máxima de uma região (1 = tamanho real do app). */
 const AMPLIACAO_MAX = 0.87
 /** Cabeçalho fixo + frase do bloco + moldura + folgas, fora do recorte. */
@@ -46,6 +63,21 @@ const MENU_LATERAL = 62
 const BARRA_TOPO = 48
 /** Quanto o véu leva para cobrir o conteúdo antes de o app trocar de tela. */
 const VEU_ENTRADA_MS = 160
+/**
+ * O VÉU DAS DEMONSTRAÇÕES CONDUZIDAS (02/10, PO: "antes de a cena acabar, um
+ * véu que escurece a tela, e então um carregamento suave"). No último trecho
+ * da etapa (o cue final, que dura o `tailMs`), a moldura inteira escurece
+ * devagar e a tela desfoca; já no escuro, o app troca de tela e a câmera volta
+ * ao plano geral sem ninguém ver; quando a tela nova pintou, o véu clareia
+ * devagar. Trocar de etapa no meio (um clique na aba) escurece mais rápido.
+ * Antes (véu de 150 ms só sobre o conteúdo) a troca era um apagão, e com a
+ * câmera fechada a barra do topo e o menu ficavam à mostra.
+ */
+const VEU_ESCURECER_MS = 800
+const VEU_ESCURECER_RAPIDO_MS = 320
+const VEU_CLAREAR_MS = 760
+/** O mínimo coberto numa troca pedida no meio (o escurecer rápido e um respiro). */
+const VEU_MIN_MS = 480
 /** Evita remontar uma demonstração quando a pessoa apenas compara dois itens
  *  do índice em sequência. A página continua liberando iframes distantes. */
 const DESMONTAR_APOS_MS = 10_000
@@ -187,7 +219,7 @@ function PosterDaDemo({ rota }: { rota: string }) {
 
 export function DemoRecorte({
   titulo, rota, estado, cues, recorte, className, style, esmaecerBase = false, esmaecerDireita = false, pausado = false, manterMontado = false, onLimite, foraDoRecorte = FORA_DO_RECORTE, onPasso,
-  alturaMax, ampliacaoMax = AMPLIACAO_MAX, aoTerminar, layoutDesktop = false, salto, camera = false, setor, quadroParado,
+  alturaMax, ampliacaoMax = AMPLIACAO_MAX, aoTerminar, layoutDesktop = false, conduzida = false, anotacaoRef, acoesDaMoldura, veuDoCapitulo = false, cursorNaPassagem = false, tamanhoDoApp, salto, camera = false, setor, quadroParado,
 }: {
   /** O cue mostrado sem movimento (padrão: o último). */
   quadroParado?: number
@@ -204,6 +236,24 @@ export function DemoRecorte({
   /** O app no layout de computador também no celular (página /solucoes,
    *  02/10): o recorte vale em qualquer tela, em vez do app inteiro de celular. */
   layoutDesktop?: boolean
+  /** O cursor virtual navega pelas telas no lugar do holofote ("Como funciona"). */
+  conduzida?: boolean
+  /** A pílula da narração logo acima da janela (Hero do celular): com ela, o
+   *  destaque ganha o conector que desce da pílula até a borda da janela, como
+   *  no palco do desktop. */
+  anotacaoRef?: RefObject<HTMLElement | null>
+  /** Na barra de título da moldura, à direita (a pausa do Hero no celular). */
+  acoesDaMoldura?: React.ReactNode
+  /** O véu da troca de capítulo, desenhado por quem compõe (Hero do celular). */
+  veuDoCapitulo?: boolean
+  /** O cursor só na transferência para a equipe: clica na notificação e em
+   *  "Assumir" (a tela da equipe na /solucoes). */
+  cursorNaPassagem?: boolean
+  /** A tela em que o app de computador é desenhado (padrão 1280 × 720). O
+   *  "Como funciona" no celular (02/10, PO) usa 1024 × 768: a moldura fica 4:3,
+   *  mais alta, e o texto 25% maior, sem corte — o app se reorganiza como num
+   *  notebook menor. Recortes e quadros passam a ser nessa medida. */
+  tamanhoDoApp?: { w: number; h: number }
   /** A borda direita da região some num degradê — para regiões que cortam
    *  linhas longas (a lista de conhecimento): o texto continua, não acaba. */
   esmaecerDireita?: boolean
@@ -258,7 +308,7 @@ export function DemoRecorte({
   const [veuInteiro, setVeuInteiro] = useState(false)
   const pedidoRef = useRef<number | null>(null)
   const manterRef = useRef(manterMontado)
-  manterRef.current = manterMontado
+  useLayoutEffect(() => { manterRef.current = manterMontado }, [manterMontado])
   useEffect(() => {
     const el = hostRef.current
     if (!el || typeof IntersectionObserver === 'undefined') return
@@ -303,11 +353,15 @@ export function DemoRecorte({
   // declarado antes do ouvinte de mensagens, que o encerra no aviso "pintou".
   const historiaAnterior = useRef(cues)
   const inicioTroca = useRef(0)
+  // Conduzida e com movimento: a troca de etapa é a dissolvência.
+  const dissolver = conduzida && !semMovimento
+  const dissolverRef = useRef(dissolver)
+  useLayoutEffect(() => { dissolverRef.current = dissolver }, [dissolver])
   const esperaPintura = useRef<{ rota: string | null } | null>(null)
   const fimTroca = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const encerrarTroca = () => {
     clearTimeout(fimTroca.current)
-    const falta = 380 - (performance.now() - inicioTroca.current)
+    const falta = (dissolverRef.current ? VEU_MIN_MS : 380) - (performance.now() - inicioTroca.current)
     if (falta > 0) fimTroca.current = setTimeout(() => setTrocando(false), falta)
     else setTrocando(false)
     esperaPintura.current = null
@@ -332,11 +386,33 @@ export function DemoRecorte({
     return () => window.removeEventListener('message', onMsg)
   }, [])
   const foco = useFocoDaDemo(iframeRef)
+  const appDeComputador = tamanhoDoApp ?? APP
+
+  // O QUADRO pedido pelo app (02/10): no assistente "Nova campanha", o diretor
+  // avisa onde o modal está, e a câmera enquadra o modal inteiro, acompanhando
+  // quando ele cresce. Sem quadro, vale o recorte de quem chama.
+  const [quadroDoApp, setQuadroDoApp] = useState<Recorte | null>(null)
+  useEffect(() => {
+    if (!camera) return
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== location.origin || !iframeRef.current || e.source !== iframeRef.current.contentWindow) return
+      const d = e.data as { canal?: string; tipo?: string; rect?: Recorte | null }
+      if (d?.canal === CANAL && d.tipo === 'quadro') setQuadroDoApp(d.rect ? enquadrar(d.rect, appDeComputador) : null)
+    }
+    window.addEventListener('message', onMsg)
+    return () => window.removeEventListener('message', onMsg)
+  }, [camera, appDeComputador])
 
   // ── A mini-história do bloco ───────────────────────────────────────────────
-  const { state, composition, index, irPara } = useHeroTimeline<HeroState, HeroCena>({
+  const { state, composition, index, irPara, running } = useHeroTimeline<HeroState, HeroCena>({
     cues, tailMs: 900, hostRef, staticIndex: quadroParado ?? cues.length - 1, enabled: pronta && !pausado, aoTerminar,
   })
+  // O ESCURECER DO FIM DA ETAPA: o último cue (o rabo da história) com o relógio
+  // andando. Pausado, a tela não escurece.
+  const escurecendo = dissolver && pronta && running && cues.length > 1 && index === cues.length - 1
+  const coberta = dissolver && (escurecendo || trocando)
+  const escuroRef = useRef(false)
+  useLayoutEffect(() => { escuroRef.current = escurecendo }, [escurecendo])
   // O salto pedido por quem compõe a página; com o app ainda carregando, vale
   // quando ele fica pronto.
   useEffect(() => {
@@ -351,11 +427,11 @@ export function DemoRecorte({
     const enviar = () => iframeRef.current?.contentWindow?.postMessage({ canal: CANAL, tipo: 'passo', estado: state, cena: composition }, location.origin)
     if (historiaPostada.current !== cues) {
       historiaPostada.current = cues
-      const id = setTimeout(enviar, VEU_ENTRADA_MS)
+      const id = setTimeout(enviar, dissolver ? (escuroRef.current ? 0 : VEU_ESCURECER_RAPIDO_MS) : VEU_ENTRADA_MS)
       return () => clearTimeout(id)
     }
     enviar()
-  }, [pronta, state, composition, cues])
+  }, [pronta, state, composition, cues, dissolver])
   // O passo também sai para o artigo: os cartões de evidência ao lado reagem
   // à MESMA história que a tela conta (e sabem quando o laço recomeça).
   const avisarPasso = useRef(onPasso)
@@ -375,8 +451,8 @@ export function DemoRecorte({
   }, [pronta, tema])
 
   // ── Geometria: largura disponível, orçamento de altura, teto de ampliação ─
-  const regiao = appCelular ? { x: 0, y: 0, w: APP_CELULAR.w, h: APP_CELULAR.h } : recorte
-  const app = appCelular ? APP_CELULAR : APP
+  const regiao = appCelular ? { x: 0, y: 0, w: APP_CELULAR.w, h: APP_CELULAR.h } : (quadroDoApp ?? recorte)
+  const app = appCelular ? APP_CELULAR : appDeComputador
   const avisar = useRef(onLimite)
   useLayoutEffect(() => { avisar.current = onLimite }, [onLimite])
   useLayoutEffect(() => {
@@ -411,7 +487,7 @@ export function DemoRecorte({
     return () => ro?.disconnect()
   }, [])
   const escala = tela > 0 ? tela / regiao.w : 0.7
-  const appInteiro = !appCelular && recorte.x === 0 && recorte.y === 0 && recorte.w === APP.w && recorte.h === APP.h
+  const appInteiro = !appCelular && recorte.x === 0 && recorte.y === 0 && recorte.w === app.w && recorte.h === app.h
 
   // TROCA DE HISTÓRIA no mesmo app (etapas do "Como funciona"): um véu cobre
   // o conteúdo (VEU_ENTRADA_MS), o app troca de tela por baixo e o véu sai
@@ -429,10 +505,11 @@ export function DemoRecorte({
     const navega = rotaNova !== null && rotaNova !== rotaAtual
     inicioTroca.current = performance.now()
     esperaPintura.current = { rota: navega ? rotaNova : null }
-    setTrocando(true)
+    const quadro = requestAnimationFrame(() => setTrocando(true))
     clearTimeout(fimTroca.current)
     // Teto: o app não avisou (rota igual, ou a demonstração parada).
     fimTroca.current = setTimeout(() => { esperaPintura.current = null; setTrocando(false) }, navega ? 2200 : 520)
+    return () => cancelAnimationFrame(quadro)
   }, [cues])
   useEffect(() => () => clearTimeout(fimTroca.current), [])
 
@@ -445,10 +522,10 @@ export function DemoRecorte({
     const primeira = cues[0]?.composition
     inicioTroca.current = performance.now()
     esperaPintura.current = { rota: primeira && primeira !== 'reinicio' ? new URL(HERO_ROTAS[primeira], 'http://x').pathname : null }
-    setVeuInteiro(true)
-    setTrocando(true)
+    const quadro = requestAnimationFrame(() => { setVeuInteiro(true); setTrocando(true) })
     clearTimeout(fimTroca.current)
     fimTroca.current = setTimeout(() => { esperaPintura.current = null; setTrocando(false) }, 5000)
+    return () => cancelAnimationFrame(quadro)
   }, [camera, pronta, composition, cues, semMovimento])
   // A cortina inteira só volta a ser a de conteúdo depois de sumir.
   useEffect(() => {
@@ -459,15 +536,37 @@ export function DemoRecorte({
 
   // `modo=recorte`: o app das abas troca para QUALQUER tela também no celular
   // (no Hero, o celular só navega entre conversa e negócio).
-  const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}&modo=recorte${camera ? '&detalhe=1' : ''}${setor ? `&setor=${setor}` : ''}`)
+  // O laço da MESMA etapa (sem avanço automático): do escuro do fim, o app
+  // volta ao começo coberto e o véu clareia quando a primeira tela pintou.
+  const indiceAnterior = useRef(index)
+  useEffect(() => {
+    const vinha = indiceAnterior.current
+    indiceAnterior.current = index
+    if (!dissolver || vinha !== cues.length - 1 || index !== 0 || historiaAnterior.current !== cues) return
+    const primeira = cues[0]?.composition
+    inicioTroca.current = performance.now()
+    esperaPintura.current = { rota: primeira && primeira !== 'reinicio' ? new URL(HERO_ROTAS[primeira], 'http://x').pathname : null }
+    const quadro = requestAnimationFrame(() => setTrocando(true))
+    clearTimeout(fimTroca.current)
+    fimTroca.current = setTimeout(() => { esperaPintura.current = null; setTrocando(false) }, 2200)
+    return () => cancelAnimationFrame(quadro)
+  }, [dissolver, index, cues])
+
+  const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}&modo=recorte${camera ? '&detalhe=1' : ''}${conduzida ? '&cursor=1' : ''}${cursorNaPassagem ? '&mao=1' : ''}${setor ? `&setor=${setor}` : ''}`)
 
   return (
     <div className={cn('w-full', className)} style={style}>
-        <div ref={hostRef} className="relative" aria-hidden>
-          <Bandeja titulo={titulo} className="w-full">
+        <div ref={hostRef} className="relative">
+          <Bandeja titulo={titulo} className="w-full" acoes={acoesDaMoldura}>
             <div
               ref={telaRef}
               inert
+              aria-hidden
+              // A janela não rola nunca (02/10): um foco ou um scrollIntoView de
+              // dentro do app (antes de o diretor instalar as guardas) rolava este
+              // contêiner — o conhecimento da /solucoes aparecia 39 px abaixo do
+              // recorte, sem o título. Rolou, volta a zero.
+              onScroll={(e) => { e.currentTarget.scrollTop = 0; e.currentTarget.scrollLeft = 0 }}
               className={cn(
                 'relative w-full overflow-hidden pointer-events-none select-none',
                 esmaecerBase && '[mask-image:linear-gradient(to_bottom,#000_78%,transparent)]',
@@ -481,11 +580,21 @@ export function DemoRecorte({
                   src={src}
                   title={`Oryon em demonstração: ${titulo}`}
                   tabIndex={-1}
-                  className={cn('absolute left-0 top-0 border-0 origin-top-left', camera ? 'transition-[opacity,transform] duration-[900ms] ease-[cubic-bezier(.65,0,.35,1)] motion-reduce:transition-none' : 'transition-opacity duration-500')}
+                  className={cn('absolute left-0 top-0 border-0 origin-top-left', dissolver
+                    ? ''
+                    : camera
+                    ? cn('transition-[opacity,transform] motion-reduce:transition-none', conduzida ? 'duration-[1250ms] ease-[cubic-bezier(.4,0,.1,1)]' : 'duration-[900ms] ease-[cubic-bezier(.65,0,.35,1)]')
+                    : 'transition-opacity duration-500')}
                   style={{
                     width: app.w, height: app.h,
                     transform: `translate(${-regiao.x * escala}px, ${-regiao.y * escala}px) scale(${escala})`,
                     opacity: pronta ? 1 : 0,
+                    ...(dissolver ? {
+                      filter: coberta ? 'blur(4px)' : 'blur(0px)',
+                      transition: coberta
+                        ? `opacity 500ms ease, filter ${escurecendo ? VEU_ESCURECER_MS : VEU_ESCURECER_RAPIDO_MS}ms cubic-bezier(.45,0,.55,1)`
+                        : `opacity 500ms ease, filter ${VEU_CLAREAR_MS}ms cubic-bezier(.2,0,.1,1), transform 1250ms cubic-bezier(.4,0,.1,1)`,
+                    } : {}),
                     colorScheme: 'normal',
                   }}
                 />
@@ -498,7 +607,7 @@ export function DemoRecorte({
               </div>
               {/* O contorno do alvo, recortado pela janela (sem conector: aqui a
                   frase do bloco já está colada ao recorte). */}
-              {!semMovimento && pronta && (
+              {!semMovimento && pronta && !anotacaoRef && (
                 <HeroFoco
                   tomada={foco}
                   medir={(base) => foco && medirNoIframe(foco, iframeRef.current, null, telaRef.current, base)}
@@ -509,8 +618,31 @@ export function DemoRecorte({
                   menu lateral e a barra do topo ficam fora dele. */}
               <div
                 aria-hidden
+                className="pointer-events-none absolute inset-0 bg-surface-950"
+                style={{ opacity: veuDoCapitulo ? 1 : 0, transition: veuDoCapitulo ? 'opacity 800ms cubic-bezier(.45,0,.55,1)' : 'opacity 760ms cubic-bezier(.2,0,.1,1)' }}
+              />
+              {dissolver && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 bg-surface-950"
+                  style={{
+                    opacity: coberta ? 1 : 0,
+                    transition: coberta
+                      ? `opacity ${escurecendo ? VEU_ESCURECER_MS : VEU_ESCURECER_RAPIDO_MS}ms cubic-bezier(.45,0,.55,1)`
+                      : `opacity ${VEU_CLAREAR_MS}ms cubic-bezier(.2,0,.1,1)`,
+                  }}
+                >
+                  {/* A tela nova demorando: a linha de carregando, depois de 0,7 s no escuro. */}
+                  <span className={cn('absolute inset-x-0 top-0 h-[2px] overflow-hidden transition-opacity duration-300', trocando ? 'opacity-100 delay-700' : 'opacity-0')}>
+                    <span className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-[var(--landing-destaque)] opacity-70 [animation:landing-veu-carregando_1.1s_cubic-bezier(.45,0,.55,1)_infinite]" />
+                  </span>
+                </div>
+              )}
+              <div
+                aria-hidden
                 className={cn(
                   'pointer-events-none absolute bottom-0 right-0 bg-surface-950 transition-opacity motion-reduce:transition-none',
+                  dissolver && 'hidden',
                   // O fim do laço escurece e volta devagar; a troca de etapa, rápida.
                   trocando ? (veuInteiro ? 'opacity-100 duration-700 ease-in-out' : 'opacity-100 duration-150 ease-out') : (veuInteiro ? 'opacity-0 duration-700 ease-in-out' : 'opacity-0 duration-[380ms] ease-in-out'),
                 )}
@@ -526,6 +658,18 @@ export function DemoRecorte({
               </div>
             </div>
           </Bandeja>
+          {/* Com a pílula da narração: o foco (véu e conector) desenhado sobre a
+              moldura inteira — o conector sai da pílula, acima da janela. */}
+          {!semMovimento && pronta && anotacaoRef && (
+            <HeroFoco
+              tomada={foco}
+              medir={(base) => foco && medirNoIframe(foco, iframeRef.current, hostRef.current, telaRef.current, base)}
+              raizRef={hostRef}
+              anotacaoRef={anotacaoRef}
+              palcoRef={hostRef}
+              lados={LADO_DE_CIMA}
+            />
+          )}
         </div>
     </div>
   )

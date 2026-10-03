@@ -1,20 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
 import { Pause, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { DemoRecorte, type Recorte } from '../../plataforma/DemoRecorte'
-import { APP_INTEIRO } from '../../plataforma/historias'
 import { HeroCapitulosLinha } from './HeroCapitulosLinha'
 import { HeroNarracao } from './HeroNarracao'
 import {
-  HERO_CAPITULOS, HERO_ROTAS, HERO_TAIL_MS, batidaDe,
+  HERO_CAPITULOS, HERO_ROTAS, HERO_TAIL_MS, batidaCurtaDe,
   type HeroCapitulo, type HeroCapituloId, type HeroCena, type HeroState,
 } from './heroStory'
 import type { HeroCue } from './useHeroTimeline'
 
 /**
  * O PALCO DO HERO NO CELULAR (02/10, PO) — o mesmo padrão da página /solucoes:
- * o app no layout de COMPUTADOR, numa moldura de proporção fixa (16:9), com
+ * o app no layout de COMPUTADOR, numa moldura de proporção fixa (4:3), com
  * uma câmera que só aproxima no que, no desktop, surge como janela satélite.
  * Substitui o app de celular, que só mostrava a conversa e a ficha do
  * negócio; agora a história é a mesma do
@@ -35,17 +34,27 @@ import type { HeroCue } from './useHeroTimeline'
  * relatório se leem com o holofote (o contorno no alvo), sem zoom. A câmera
  * só aproxima no que, no desktop, é uma janela satélite que surge: a
  * atividade do contato (a Timeline, com o painel rolado até ela) e as
- * notificações (o sino aberto). Regiões em 16:9, medidas no app de
- * computador (1280 × 720): a moldura nunca muda de tamanho.
+ * notificações (o sino aberto). Regiões em 4:3, medidas no app de
+ * computador desenhado em 1024 × 768: a moldura nunca muda de tamanho.
  */
-const R_TIMELINE: Recorte = { x: 640, y: 360, w: 640, h: 360 }
-const R_NOTIFICACOES: Recorte = { x: 640, y: 28, w: 640, h: 360 }
+/**
+ * A JANELA (02/10, PO): a mesma do "Como funciona" no celular — o app desenhado
+ * numa tela de 1024 × 768 e a moldura em 4:3, um terço mais alta que a 16:9 e
+ * com o texto 25% maior, sem corte. As regiões são nessa medida e mantêm a
+ * força de zoom de antes (2× nas janelas satélite, 1,5× na mensagem e no card).
+ */
+const APP_DO_HERO = { w: 1024, h: 768 }
+const APP_INTEIRO: Recorte = { x: 0, y: 0, ...APP_DO_HERO }
+/** A Timeline no painel do contato (à direita, embaixo). */
+const R_TIMELINE: Recorte = { x: 512, y: 384, w: 512, h: 384 }
+/** O sino aberto, no alto à direita. */
+const R_NOTIFICACOES: Recorte = { x: 512, y: 28, w: 512, h: 384 }
 /** O zoom leve em cada mensagem (1,5×): a coluna da conversa, com a mensagem
  *  mais nova — que entra embaixo — à vista. */
-const R_MENSAGEM: Recorte = { x: 274, y: 170, w: 853, h: 480 }
+const R_MENSAGEM: Recorte = { x: 202, y: 216, w: 683, h: 512 }
 /** O mesmo zoom leve no card do negócio, no funil: as colunas Avaliação e
  *  Agendado, com o card antes e depois de a IA avançá-lo. */
-const R_NEGOCIO: Recorte = { x: 167, y: 60, w: 853, h: 480 }
+const R_NEGOCIO: Recorte = { x: 212, y: 90, w: 683, h: 512 }
 /** Quanto o zoom leve (mensagem ou card) fica no ar antes de a câmera voltar. */
 const ZOOM_MENSAGEM_MS = 3000
 
@@ -72,7 +81,10 @@ const CUES: readonly Cue[] = [
   { t: PASSO * 6 + 11000, composition: 'conversa' },
   S(PASSO * 6 + 12500, 'pedido'),
   S(PASSO * 7 + 12500, 'assumido'),
-  S(PASSO * 8 + 12500, 'humano'),
+  // A transferência com a mão (02/10, PO): o cursor clica no aviso e em
+  // "Assumir"; a recepção entra logo depois do segundo clique (3 s depois do
+  // aviso) e a mensagem dela fica o tempo que sobra até o "ganho".
+  S(PASSO * 7 + 15500, 'humano'),
   S(PASSO * 9 + 12500, 'ganho'),
   { t: PASSO * 10 + 12500, composition: 'relatorio' },
   // O relatório fica 14 s (a gaveta leva um instante para abrir e os números
@@ -93,6 +105,11 @@ const CAPITULOS: readonly HeroCapitulo[] = HERO_CAPITULOS.map((c) => ({
     : indice((x) => x.composition === 'relatorio'),
 }))
 
+/** Onde começa cada capítulo depois do primeiro (o fim do laço já tem a cortina). */
+const CORTES = new Set(CAPITULOS.slice(1).map((c) => c.cue))
+/** Quanto antes do corte a tela começa a escurecer. */
+const VEU_ANTES_MS = 800
+
 function capituloDe(cena: HeroCena, index: number): HeroCapituloId {
   if (cena === 'disparos' || cena === 'relatorio' || cena === 'reinicio') return 'disparos'
   if (cena === 'funil') return 'funil'
@@ -110,6 +127,7 @@ function regiaoDe(estado: HeroState, cena: HeroCena, zoomMensagem: boolean): Rec
 
 export function HeroPalcoCelular({ className }: { className?: string }) {
   const semMovimento = useReducedMotion()
+  const pilulaRef = useRef<HTMLDivElement>(null)
   const [pausado, setPausado] = useState(false)
   const [passo, setPasso] = useState<{ estado: HeroState; cena: HeroCena; indice: number }>({ estado: 'inicio', cena: 'conversa', indice: 0 })
   const [rodando, setRodando] = useState(false)
@@ -127,6 +145,26 @@ export function HeroPalcoCelular({ className }: { className?: string }) {
     return () => window.clearTimeout(id)
   }, [zoomPasso])
   const zoomMensagem = zoomPasso !== null && !semMovimento
+
+  /*
+   * O VÉU ENTRE OS CAPÍTULOS (02/10, PO): como no "Como funciona", a tela
+   * escurece devagar no fim de cada capítulo (os últimos 800 ms) e clareia
+   * devagar depois que o próximo começa — a troca de tela acontece no escuro.
+   */
+  const [veuCapitulo, setVeuCapitulo] = useState(false)
+  useEffect(() => {
+    if (semMovimento || pausado || !rodando) return
+    const i = passo.indice
+    if (CORTES.has(i)) {
+      // Começou um capítulo: clareia quando a tela nova assentou.
+      const id = window.setTimeout(() => setVeuCapitulo(false), 650)
+      return () => window.clearTimeout(id)
+    }
+    const proximo = CUES[i + 1]
+    if (!proximo || !CORTES.has(i + 1)) return
+    const id = window.setTimeout(() => setVeuCapitulo(true), Math.max(0, proximo.t - CUES[i].t - VEU_ANTES_MS))
+    return () => window.clearTimeout(id)
+  }, [passo.indice, pausado, rodando, semMovimento])
 
   // Os capítulos embaixo, como no desktop: clicar pula a história para ele.
   const duracoes = useMemo(() => {
@@ -149,7 +187,7 @@ export function HeroPalcoCelular({ className }: { className?: string }) {
 
   return (
     <div className={cn('relative w-full', className)}>
-      <HeroNarracao texto={batidaDe(passo.estado, passo.cena)} className="relative z-[45] mb-[var(--hero-gap-palco,16px)] px-1" />
+      <HeroNarracao pilulaRef={pilulaRef} texto={batidaCurtaDe(passo.estado, passo.cena)} className="relative z-[45] mb-[var(--hero-gap-palco,16px)] px-1" />
       <div
         role="img"
         aria-label="Demonstração da Oryon: uma campanha chega no WhatsApp de uma cliente, o Agente IA atende, atualiza o contato e avança o negócio no funil, e uma atendente assume e fecha a venda."
@@ -157,8 +195,22 @@ export function HeroPalcoCelular({ className }: { className?: string }) {
         <DemoRecorte
           layoutDesktop
           camera
+          tamanhoDoApp={APP_DO_HERO}
+          cursorNaPassagem
+          anotacaoRef={pilulaRef}
+          veuDoCapitulo={veuCapitulo && !pausado && !semMovimento}
+          titulo="Telas reais da Oryon · dados de exemplo"
+          acoesDaMoldura={!semMovimento && (
+            <button
+              type="button"
+              onClick={() => setPausado((p) => !p)}
+              aria-label={pausado ? 'Retomar a demonstração' : 'Pausar a demonstração'}
+              className="pointer-events-auto -mr-1 rounded-md p-1 text-[var(--bandeja-titulo)] transition-colors hover:text-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)]"
+            >
+              {pausado ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+            </button>
+          )}
           manterMontado
-          titulo="Oryon"
           rota={HERO_ROTAS.conversa}
           estado="inicio"
           cues={CUES}
@@ -178,19 +230,6 @@ export function HeroPalcoCelular({ className }: { className?: string }) {
           chaveProgresso={`${capitulo}-${saltos}`}
           onIr={irParaCapitulo}
         />
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] text-surface-500">Telas reais da Oryon · dados de demonstração.</p>
-          {!semMovimento && (
-            <button
-              type="button"
-              onClick={() => setPausado((p) => !p)}
-              aria-label={pausado ? 'Retomar a demonstração' : 'Pausar a demonstração'}
-              className="flex-shrink-0 rounded-md p-1.5 text-surface-500 transition-colors hover:text-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)]"
-            >
-              {pausado ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-            </button>
-          )}
-        </div>
       </div>
     </div>
   )

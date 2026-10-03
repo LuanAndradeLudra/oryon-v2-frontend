@@ -24,7 +24,12 @@ const S = (t: number, state: HeroState): Cue => ({ t, state })
  */
 export const APP_INTEIRO: Recorte = { x: 0, y: 0, w: 1280, h: 720 }
 
-export interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; titulo: string }
+/**
+ * `cuesConduzidas` (02/10, PO): o roteiro do "Como funciona" da home, em que
+ * um cursor virtual navega pelo app no lugar do holofote — mais longo, porque
+ * cada clique leva o tempo de uma mão. As páginas de produto seguem com `cues`.
+ */
+export interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; cuesConduzidas?: readonly Cue[]; titulo: string }
 
 export const HISTORIAS: Record<string, Historia> = {
   // A configuração do agente, aba por aba: instruções → conhecimento → catálogo.
@@ -36,6 +41,15 @@ export const HISTORIAS: Record<string, Historia> = {
       { t: 4600, composition: 'agente-conhecimento' },
       { t: 9400, composition: 'agente-catalogo' },
       { t: 14800, composition: 'agente-catalogo' },
+    ],
+    // Conduzido: lê a regra, abre o documento dos convênios, libera mais um
+    // item do catálogo e testa o agente na bancada — a resposta sai das fontes.
+    cuesConduzidas: [
+      { t: 0, state: 'inicio', composition: 'agente-instrucoes' },
+      { t: 4000, composition: 'agente-conhecimento' },
+      { t: 12600, composition: 'agente-catalogo' },
+      { t: 18200, composition: 'agente-teste' },
+      { t: 31500, composition: 'agente-teste' },
     ],
   },
   atender: {
@@ -72,9 +86,19 @@ export const HISTORIAS: Record<string, Historia> = {
     // direita da tela) mostrava só faixas vazias até a gaveta abrir.
     // Campanha CONCLUÍDA (estado 'ganho'): em 'inicio' ela ainda está saindo e
     // o funil do relatório contradizia os números dos cartões ao lado.
+    // 02/10 (PO): a cena mostra a CRIAÇÃO da campanha — da lista de Disparos,
+    // o botão "Nova campanha" e o assistente passo a passo, cada passo com
+    // tempo para ver o que se configura — e depois o resultado no relatório.
+    // É a etapa mais longa da seção.
     cues: [
-      { t: 0, state: 'ganho', composition: 'relatorio' },
-      { t: 9600, composition: 'relatorio' },
+      { t: 0, state: 'ganho', composition: 'disparos' },
+      { t: 2200, composition: 'campanha-nova' },
+      { t: 10200, composition: 'campanha-publico' },
+      { t: 17200, composition: 'campanha-variaveis' },
+      { t: 22700, composition: 'campanha-agendamento' },
+      { t: 28200, composition: 'campanha-revisao' },
+      { t: 35200, composition: 'relatorio' },
+      { t: 47500, composition: 'relatorio' },
     ],
   },
   // O Dashboard no momento em que a Marina espera na fila: o holofote passa
@@ -90,6 +114,15 @@ export const HISTORIAS: Record<string, Historia> = {
       { t: 7000, composition: 'painel-indicadores' },
       { t: 11600, composition: 'painel-volume' },
       { t: 16200, composition: 'painel-volume' },
+    ],
+    // Conduzido: a fila ao vivo, filtra quem está sem dono e passa a conversa
+    // mais antiga para alguém da equipe; depois os indicadores e o volume.
+    cuesConduzidas: [
+      { t: 0, state: 'assumido', composition: 'painel' },
+      { t: 2600, composition: 'painel-fila' },
+      { t: 11600, composition: 'painel-indicadores' },
+      { t: 15600, composition: 'painel-volume' },
+      { t: 22500, composition: 'painel-volume' },
     ],
   },
 }

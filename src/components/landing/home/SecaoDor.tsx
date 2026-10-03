@@ -8,7 +8,7 @@ import { Capitulo, Revelar } from '../plataforma/SecoesVenda'
 import { teclasDasAbas } from '../ui/abasTeclado'
 import { BotaoLanding } from '../ui/BotaoLanding'
 import { BotaoPausa } from '../ui/BotaoPausa'
-import { GRADE_DO_DIA, Metade } from './DiaNoWhatsApp'
+import { DiaNoCelular, GRADE_DO_DIA, Metade, type LadoDoDia } from './DiaNoWhatsApp'
 import { RITMO, SETORES } from './dorConversas'
 import { useNaFaixaCentral, useRelogiosDoDia } from './relogiosDoDia'
 
@@ -44,8 +44,10 @@ export function SecaoDor() {
   // Do md para cima as duas conversas ficam lado a lado (vê-se as duas ao
   // mesmo tempo); abaixo, empilhadas (uma por vez).
   const ladoALado = useMediaQuery('(min-width: 768px)')
-  const [refSem, semNaVista] = useNaFaixaCentral()
-  const [refCom, comNaVista] = useNaFaixaCentral()
+  // Celular (02/10, PO): um aparelho só, com a chave entre as duas conversas;
+  // só a conversa da vez anda, e só com o aparelho na vista.
+  const [refCelular, celularNaVista] = useNaFaixaCentral()
+  const [lado, setLado] = useState<LadoDoDia>('sem')
   const [indice, setIndice] = useState(0)
   const [direcao, setDirecao] = useState(1)
   const [pausado, setPausado] = useState(false)
@@ -54,7 +56,8 @@ export function SecaoDor() {
   // Um relógio por conversa (tempo real); os roteiros correm em tempo de
   // roteiro (RITMO mais devagar). Lado a lado, os dois andam juntos.
   const { msSem, msCom, total, fimSem, fimCom, zerar } = useRelogiosDoDia(setor, {
-    ativo: !pausado && !semMovimento, ladoALado, naTela, semNaVista, comNaVista,
+    ativo: !pausado && !semMovimento, ladoALado, naTela,
+    semNaVista: celularNaVista && lado === 'sem', comNaVista: celularNaVista && lado === 'com',
   })
 
   // Lado a lado, fim do setor: os aparelhos deslizam e entra o próximo.
@@ -70,6 +73,7 @@ export function SecaoDor() {
     if (novo === indice) return
     setDirecao(novo > indice ? 1 : -1)
     setIndice(novo)
+    setLado('sem')
     zerar()
   }
 
@@ -95,7 +99,7 @@ export function SecaoDor() {
             na linha do título; no celular, o índice desce e fica centralizado. */}
         <Revelar>
           <Capitulo rotulo={dor.eyebrow} className="mb-6" />
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
             {/* Os títulos de todos os setores ocupam a mesma célula da grade: a
                 altura é a do maior e a troca é um cruzamento, sem a página pular.
                 Só o do setor ativo fica visível (e acessível). */}
@@ -157,7 +161,7 @@ export function SecaoDor() {
         </Revelar>
 
         <Revelar atraso={0.1}>
-          <div ref={ref} className="mx-auto mt-10 max-w-[1080px] lg:mt-6">
+          <div ref={ref} className="mx-auto mt-6 max-w-[1080px]">
             {/* overflow-x: clip corta o deslizar nas bordas sem cortar a sombra dos aparelhos. */}
             <div id="dor-painel" role="tabpanel" aria-labelledby={`dor-aba-${setor.id}`} className="relative overflow-x-clip">
               <AnimatePresence initial={false} mode="popLayout" custom={direcao}>
@@ -173,22 +177,41 @@ export function SecaoDor() {
                   animate="fica"
                   exit={semMovimento ? undefined : 'sai'}
                   transition={{ duration: 0.8, ease: [0.65, 0, 0.35, 1] }}
-                  className={GRADE_DO_DIA}
+                  className={ladoALado ? GRADE_DO_DIA : undefined}
                 >
-                  <Metade raizRef={refSem} setor={setor} com={false} ms={agoraSem} />
-                  <Metade raizRef={refCom} setor={setor} com ms={agoraCom} />
-                  {/* Celular: com as duas conversas vistas até o fim, o próximo setor. */}
-                  {terminaram && (
-                    <motion.div
-                      className="flex justify-center md:hidden"
-                      initial={semMovimento ? false : { opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <BotaoLanding variante="secundario" tamanho="lg" seta onClick={irParaOProximo}>
-                        {dor.proximo} {proximo.rotulo}
-                      </BotaoLanding>
-                    </motion.div>
+                  {ladoALado ? (
+                    <>
+                      <Metade setor={setor} com={false} ms={agoraSem} />
+                      <Metade setor={setor} com ms={agoraCom} />
+                    </>
+                  ) : (
+                    <DiaNoCelular
+                      raizRef={refCelular}
+                      setor={setor}
+                      lado={lado}
+                      onLado={setLado}
+                      msSem={msSem}
+                      msCom={msCom}
+                      fimSem={fimSem}
+                      fimCom={fimCom}
+                      rodape={
+                        // Com as duas conversas vistas até o fim, o próximo setor.
+                        // A altura fica reservada: o botão entra sem empurrar a página.
+                        <div className="flex h-10 justify-center">
+                          {terminaram && (
+                            <motion.div
+                              initial={semMovimento ? false : { opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                            >
+                              <BotaoLanding variante="secundario" seta onClick={irParaOProximo}>
+                                {dor.proximo} {proximo.rotulo}
+                              </BotaoLanding>
+                            </motion.div>
+                          )}
+                        </div>
+                      }
+                    />
                   )}
                 </motion.div>
               </AnimatePresence>

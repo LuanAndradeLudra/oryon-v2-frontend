@@ -34,7 +34,10 @@ export function instalarArmazenamentoIsolado() {
 
 // ─── Guarda de rede ───────────────────────────────────────────────────────────
 
-export interface RespostaDemo { status?: number; data?: unknown }
+/** `atrasoMs`: a resposta demora (a bancada de teste "pensando", 02/10). */
+export interface RespostaDemo { status?: number; data?: unknown; atrasoMs?: number }
+
+const esperar = (ms?: number) => (ms ? new Promise((r) => setTimeout(r, ms)) : null)
 export type Rota = (ctx: { method: string; url: string; body?: unknown; params?: URLSearchParams }) => RespostaDemo | undefined
 
 /** Rotas atendidas. Registrada aqui para o teste poder falhar quando faltar uma. */
@@ -103,6 +106,7 @@ export function instalarGuardaDeRede() {
       }
       const body = typeof config.data === 'string' ? JSON.parse(config.data || 'null') : config.data
       const r = atender(config.method ?? 'get', url, body)
+      await esperar(r.atrasoMs)
       return { data: r.data ?? null, status: r.status ?? 200, statusText: 'OK', headers: {}, config }
     } finally {
       // Solta no próximo macrotask: o componente ainda precisa receber a
@@ -121,10 +125,12 @@ export function instalarGuardaDeRede() {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
     if (/^(https?:)?\/\//.test(url) && !url.startsWith(location.origin)) {
       const r = atender(init?.method ?? 'GET', url, init?.body)
+      await esperar(r.atrasoMs)
       return new Response(JSON.stringify(r.data ?? null), { status: r.status ?? 200, headers: { 'Content-Type': 'application/json' } })
     }
     if (url.includes('/api/')) {
       const r = atender(init?.method ?? 'GET', url, init?.body)
+      await esperar(r.atrasoMs)
       return new Response(JSON.stringify(r.data ?? null), { status: r.status ?? 200, headers: { 'Content-Type': 'application/json' } })
     }
     // Recursos do próprio Vite (módulos, css, fontes) seguem normalmente.

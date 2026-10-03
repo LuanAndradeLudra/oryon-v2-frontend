@@ -7,12 +7,18 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { home, paginasPlataforma, plataforma, rotaPlataforma } from '../landingCopy'
 import { BotaoPausa } from '../ui/BotaoPausa'
 import { Revelar } from './SecoesVenda'
-import { DemoRecorte } from './DemoRecorte'
+import { DemoRecorte, type Recorte } from './DemoRecorte'
 import { APP_INTEIRO, HISTORIAS } from './historias'
+import type { HeroCena, HeroState } from '../stage/hero/heroStory'
 
 /**
- * COMO FUNCIONA (home de venda) — opção A, decidida com o PO em 30/09: as seis
+ * COMO FUNCIONA (home de venda) — opção A, decidida com o PO em 30/09: as
  * etapas numa lista à esquerda e UMA janela do app, fixa, à direita.
+ *
+ * 02/10 (PO): a seção virou "o que mais a Oryon faz" — só as três etapas que
+ * o palco do Hero NÃO mostra (ensinar a IA, campanhas, painel). Atender, funil
+ * e equipe já passam no Hero; repeti-los duas seções abaixo era a mesma
+ * história duas vezes. Os seis capítulos continuam nas páginas de produto.
  *
  * O que a estrutura anterior (abas em cima, tela + dois cartões embaixo) fazia
  * de errado, medido em 1440 × 900: o texto da etapa tinha uma ou duas linhas e
@@ -28,12 +34,21 @@ import { APP_INTEIRO, HISTORIAS } from './historias'
  *  • o tamanho da janela vem só da tela do navegador: a seção inteira (título,
  *    lista, janela e legenda) cabe numa tela de desktop, sem rolar;
  *  • a lista tem altura fixa (nome + promessa, uma linha cada) e as legendas
- *    das seis etapas ocupam a mesma célula da grade (vale a mais alta).
+ *    das etapas ocupam a mesma célula da grade (vale a mais alta).
  *
  * As etapas avançam sozinhas quando a mini-história da etapa termina (a barra
  * da etapa ativa mostra o andamento); pausar para tudo. No celular e no tablet
  * a lista vira uma faixa rolável acima da janela.
  */
+
+// ── Celular (02/10, PO) ─────────────────────────────────────────────────────
+// O app no layout de COMPUTADOR, desenhado numa tela de 1024 × 768: a moldura
+// fica 4:3 (um terço mais alta que a 16:9) e o texto 25% maior, sem corte — o
+// app se reorganiza como num notebook menor. Sem zoom em destaques. O que abre
+// por cima (o assistente "Nova campanha", a bancada de teste, a gaveta do
+// relatório) o próprio app avisa onde está, e a moldura o segue (DemoRecorte).
+const APP_NO_CELULAR = { w: 1024, h: 768 }
+const APP_INTEIRO_NO_CELULAR: Recorte = { x: 0, y: 0, ...APP_NO_CELULAR }
 
 /** Altura do menu fixo da landing. */
 const MENU_FIXO = 64
@@ -45,7 +60,9 @@ const VAO_LEGENDA = 14
 /** Abaixo disso a janela fica pequena demais para ler; a seção passa a rolar. */
 const MOLDURA_MIN = 300
 
-const BLOCOS = plataforma.blocos
+/** As etapas da home: as que o Hero não mostra. */
+const ETAPAS_DA_HOME = ['conhecer', 'campanhas', 'medir'] as const
+const BLOCOS = plataforma.blocos.filter((b) => (ETAPAS_DA_HOME as readonly string[]).includes(b.id))
 const N = BLOCOS.length
 const paginaDo = (id: string) => paginasPlataforma.find((p) => (p.blocos as readonly string[]).includes(id))
 
@@ -74,7 +91,9 @@ export function SecaoComoFunciona() {
   const [pausado, setPausado] = useState(false)
   const b = BLOCOS[ativo]
   const h = HISTORIAS[b.id]
-  const duracao = h.cues[h.cues.length - 1].t + 900
+  // O cursor navega pelo app (02/10, PO): o roteiro conduzido, quando há.
+  const cues = h.cuesConduzidas ?? h.cues
+  const duracao = cues[cues.length - 1].t + 900
 
   // ── Geometria: tudo sai da tela do navegador, nada do conteúdo da etapa ──
   const [geo, setGeo] = useState<{ alturaMax: number; larguraMax: number } | null>(null)
@@ -115,7 +134,9 @@ export function SecaoComoFunciona() {
   // A barra de andamento começa quando a história da etapa começa de fato
   // (o app pronto e na tela), não no clique.
   const [inicio, setInicio] = useState({ etapa: -1, n: 0 })
-  const aoPassar = useCallback((_estado: unknown, _cena: unknown, indice: number) => {
+  // No celular, o app de 1024 × 768; o enquadramento vem do próprio app.
+  const celular = !useMediaQuery('(min-width: 768px)')
+  const aoPassar = useCallback((_estado: HeroState, _cena: HeroCena, indice: number) => {
     if (indice === 0) setInicio((v) => ({ etapa: ativoRef.current, n: v.n + 1 }))
   }, [])
   const andando = autoplay && naTela && abaVisivel
@@ -161,7 +182,7 @@ export function SecaoComoFunciona() {
           style={geo ? { gridTemplateColumns: `minmax(0, 1fr) ${palco}px`, columnGap: VAO_COLUNAS } : undefined}
         >
           {/* ── Esquerda: o título em cima, as etapas embaixo ─────────────── */}
-          <div className="flex min-w-0 flex-col gap-8 lg:justify-between lg:gap-6">
+          <div className="flex min-w-0 flex-col gap-8 lg:justify-center lg:gap-10">
             <Revelar>
               <h2 id="como-funciona-titulo" className="font-display font-bold tracking-[-0.03em] leading-[1.06] text-[clamp(1.6rem,min(2.7vw,5.2vh),2.5rem)] text-balance text-surface-50">
                 {home.comoFunciona.titulo}
@@ -242,8 +263,12 @@ export function SecaoComoFunciona() {
                   titulo="Oryon"
                   rota={h.rota}
                   estado={h.estado}
-                  cues={h.cues}
-                  recorte={APP_INTEIRO}
+                  cues={cues}
+                  recorte={celular ? APP_INTEIRO_NO_CELULAR : APP_INTEIRO}
+                  tamanhoDoApp={celular ? APP_NO_CELULAR : undefined}
+                  layoutDesktop
+                  conduzida
+                  camera={celular}
                   alturaMax={geo?.alturaMax}
                   ampliacaoMax={1}
                   onLimite={setLimite}
@@ -257,7 +282,7 @@ export function SecaoComoFunciona() {
                   <BotaoPausa pausado={pausado} onAlternar={() => setPausado((p) => !p)} className="absolute right-1.5 top-[2px] z-10 h-[26px] w-[26px]" />
                 )}
               </div>
-              {/* As legendas das seis etapas na mesma célula: a altura é a da
+              {/* As legendas das etapas na mesma célula: a altura é a da
                   maior, e a troca é um cruzamento — nada abaixo se mexe. */}
               <div ref={legendaRef} className="mt-3.5 grid">
                 {BLOCOS.map((bl, i) => {

@@ -41,9 +41,13 @@ export type HeroCena =
   // Seção Plataforma (26/09): a configuração do agente e o Dashboard — cada
   // cena é uma aba ou um ponto da MESMA tela real; o Hero não as usa.
   | 'agente-instrucoes' | 'agente-conhecimento' | 'agente-catalogo'
+  // "Como funciona" conduzido (02/10): o teste do agente, na bancada.
+  | 'agente-teste'
   // Seção Limites da IA: a aba Capacidades do mesmo agente.
   | 'agente-capacidades' | 'agente-capacidades-funil'
   | 'painel' | 'painel-fila' | 'painel-indicadores' | 'painel-volume'
+  // Disparos (02/10): o assistente "Nova campanha", passo a passo.
+  | 'campanha-nova' | 'campanha-publico' | 'campanha-variaveis' | 'campanha-agendamento' | 'campanha-revisao'
 
 export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   disparos: '/campaigns',
@@ -54,6 +58,8 @@ export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   'agente-instrucoes': '/agents/ag-recepcao/instrucoes',
   'agente-conhecimento': '/agents/ag-recepcao/conhecimento',
   'agente-catalogo': '/agents/ag-recepcao/catalogo',
+  // A bancada de teste abre por cima da tela em que se está (o Catálogo).
+  'agente-teste': '/agents/ag-recepcao/catalogo',
   'agente-capacidades': '/agents/ag-recepcao/capacidades',
   'agente-capacidades-funil': '/agents/ag-recepcao/capacidades',
   // O Dashboard abre na aba Agora (a fila); os indicadores e o volume moram na
@@ -62,6 +68,12 @@ export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   'painel-fila': '/dashboard',
   'painel-indicadores': '/dashboard?aba=relatorios',
   'painel-volume': '/dashboard?aba=relatorios',
+  // O assistente é um modal por cima da lista de Disparos.
+  'campanha-nova': '/campaigns',
+  'campanha-publico': '/campaigns',
+  'campanha-variaveis': '/campaigns',
+  'campanha-agendamento': '/campaigns',
+  'campanha-revisao': '/campaigns',
 }
 
 type Cue = HeroCue<HeroState, HeroCena>
@@ -174,8 +186,33 @@ export function capituloDe(estado: HeroState, cena: HeroCena, index: number): He
  * na tela. Cada frase foi conferida contra a auditoria de capacidades: a IA
  * não define valor, não se pausa e não fecha venda.
  */
+/**
+ * A narração do CELULAR (02/10, PO): as mesmas batidas em até ~38 caracteres,
+ * para a pílula caber numa linha só (a frase quebrando empurrava a leitura).
+ */
+export function batidaCurtaDe(estado: HeroState, cena: HeroCena): string {
+  if (cena === 'disparos') return 'A campanha sai para os pacientes'
+  if (cena === 'relatorio') return 'O relatório mostra quem leu e respondeu'
+  if (cena === 'funil') {
+    return estado === 'avanco' ? 'A IA move o negócio para Agendado' : 'O negócio da Marina entra em Avaliação'
+  }
+  switch (estado) {
+    case 'inicio': return 'A campanha chega no WhatsApp da Marina'
+    case 'demanda': return 'Marina pede horário com a Dra. Helena'
+    case 'resposta': return 'A IA responde com valor e horários'
+    case 'confirma': return 'A Marina escolhe quinta às 14h30'
+    case 'situacao': return 'A IA atualiza a situação da Marina'
+    case 'etiqueta': return 'A IA etiqueta a conversa: "retorno"'
+    case 'avanco': return 'O atendimento já está em Agendado'
+    case 'pedido': return 'Marina pede ajuda com um encaixe'
+    case 'assumido': return 'A IA chama Ana com todo o histórico'
+    case 'humano': return 'Ana responde e a IA pausa'
+    case 'ganho': return 'Ana confirma e move para Confirmado'
+  }
+}
+
 export function batidaDe(estado: HeroState, cena: HeroCena): string {
-  if (cena === 'disparos') return 'A campanha de retorno sai para 1.240 pacientes'
+  if (cena === 'disparos') return 'A campanha de retorno sai para 486 pacientes'
   if (cena === 'relatorio') return 'O relatório mostra quem recebeu, leu e respondeu à campanha'
   if (cena === 'funil') {
     return estado === 'avanco'

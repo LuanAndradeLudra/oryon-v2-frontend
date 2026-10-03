@@ -2,7 +2,7 @@
 // restrição entre largura e altura, com piso de legibilidade, e antes de
 // encolher o texto além do alvo a tela do app fica mais baixa.
 import { describe, it, expect } from 'vitest'
-import { enquadrar } from './HeroPalco'
+import { enquadrar } from './enquadramento'
 
 const EXTRA_H = 92 // moldura + folgas do palco
 const altura = (q: { fit: number; h: number }) => (q.h + EXTRA_H) * q.fit

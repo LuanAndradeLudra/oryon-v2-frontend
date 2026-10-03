@@ -9,7 +9,9 @@ import {
   type HeroCapitulo, type HeroCapituloId, type HeroCena, type HeroState,
 } from './heroStory'
 import { reached } from './heroRealData'
-import { Bandeja, Satelite, SateliteAparelho, TITULOS_SATELITES, type PoseSatelite } from './HeroSatelites'
+import { Bandeja, Satelite, SateliteAparelho, type PoseSatelite } from './HeroSatelites'
+import { TITULOS_SATELITES } from './titulosSatelites'
+import { APP_CELULAR, APP_H, EXTRA_H, PALCO_W, enquadrar } from './enquadramento'
 import { HeroCapitulosLinha } from './HeroCapitulosLinha'
 import { HeroFoco, medirNoElemento, medirNoIframe, useFocoDaDemo, type Tomada } from './HeroFoco'
 import { HeroNarracao } from './HeroNarracao'
@@ -82,19 +84,14 @@ const ConteudoNegocio = lazy(() => carregar().then((m) => ({ default: m.Conteudo
 // ─── Geometria do palco (coordenadas de desenho) ─────────────────────────────
 
 const APP_W = 1280
-const APP_H = { max: 720, min: 560 }
-const APP_CELULAR = { w: 390, h: { max: 760, min: 560 } }
 /** Tela do aparelho satélite: o app mobile a 60 %. */
 const TELA_APARELHO = { w: 390 * 0.6, h: 760 * 0.6 }
-const PALCO_W = 1560
 /** O palco é a tela do app + moldura (36) + folga das satélites embaixo (34) + topo (22). */
-const EXTRA_H = 92
 const ANCORA = { x: 134, y: 22 }
 /** Corredores laterais do conector, fora do palco (px de tela, não escalados). */
 const CORREDOR = 40
 
 /** Metas de escala: o texto do app a 14 px vira ~11 px no alvo e ~8 px no piso. */
-const FIT = { alvo: 0.8, piso: 0.58 }
 
 /**
  * DIAGONAIS — as duas janelas satélite ficam sempre em cantos opostos.
@@ -136,30 +133,12 @@ function visibilidade(estado: HeroState, cena: HeroCena) {
   }
 }
 
-/**
- * O ENQUADRAMENTO — escala e altura da tela do app para um viewport.
- * `largura`: a coluna do palco; `altura`: o que sobra da tela abaixo do topo
- * do palco, já descontados os controles de baixo.
- */
-export function enquadrar(largura: number, altura: number, celular: boolean, corredor: number) {
-  if (celular) {
-    // No celular manda a leitura: a largura define a escala e só a altura da
-    // tela do app se ajusta (nunca o texto).
-    const fit = Math.min(1, largura / (APP_CELULAR.w + 12))
-    const h = Math.round(Math.min(APP_CELULAR.h.max, Math.max(APP_CELULAR.h.min, altura / fit - 36)))
-    return { fit, h }
-  }
-  const fitW = Math.min(1, (largura - 2 * corredor) / PALCO_W)
-  let fit = Math.min(fitW, FIT.alvo)
-  const h = Math.round(Math.min(APP_H.max, Math.max(APP_H.min, altura / fit - EXTRA_H)))
-  // Tela alta: a tela do app já está inteira — o palco pode crescer até a largura.
-  if (h === APP_H.max) fit = Math.min(fitW, altura / (APP_H.max + EXTRA_H))
-  // Tela baixa: a tela do app já está no mínimo — só então o texto encolhe, até o piso.
-  else if (h === APP_H.min) fit = Math.min(fitW, Math.max(FIT.piso, altura / (APP_H.min + EXTRA_H)))
-  return { fit: Math.round(fit * 1000) / 1000, h }
-}
 
 const CANAL = 'oryon-hero'
+/** Onde começa cada capítulo depois do primeiro (o fim do laço já tem a cortina). */
+const CORTES_DOS_CAPITULOS = new Set(HERO_CAPITULOS.slice(1).map((c) => c.cue))
+/** Quanto antes do corte a tela começa a escurecer. */
+const VEU_ANTES_MS = 800
 
 function temaDaPagina(): 'dark' | 'light' {
   if (typeof document === 'undefined') return 'dark'
@@ -284,6 +263,25 @@ export function HeroPalco({ className }: { className?: string }) {
     return out
   }, [])
   const capitulo = capituloDe(state, composition, index)
+
+  /*
+   * O VÉU ENTRE OS CAPÍTULOS (02/10, PO — o mesmo do Hero no celular): nos
+   * últimos 800 ms de cada capítulo a tela principal escurece devagar; a troca
+   * acontece no escuro e o véu clareia depois que o próximo começa.
+   */
+  const [veuCapitulo, setVeuCapitulo] = useState(false)
+  useEffect(() => {
+    if (semMovimento || !running) return
+    if (CORTES_DOS_CAPITULOS.has(index)) {
+      const id = window.setTimeout(() => setVeuCapitulo(false), 650)
+      return () => window.clearTimeout(id)
+    }
+    const proximo = HERO_CUES[index + 1]
+    if (!proximo || !CORTES_DOS_CAPITULOS.has(index + 1)) return
+    const id = window.setTimeout(() => setVeuCapitulo(true), Math.max(0, proximo.t - HERO_CUES[index].t - VEU_ANTES_MS))
+    return () => window.clearTimeout(id)
+  }, [index, running, semMovimento])
+  const veuAceso = veuCapitulo && running && !semMovimento
   const batida = batidaDe(state, composition)
   /** Conta os pulos por clique — reinicia a barra e força o corte de câmera. */
   const [saltos, setSaltos] = useState(0)
@@ -473,6 +471,12 @@ export function HeroPalco({ className }: { className?: string }) {
             />
             <Bandeja titulo="Oryon" className="hero-ancora h-full w-full">
               <div className="absolute inset-0">
+                {/* O véu do fim do capítulo (por cima da cena). */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 z-[1] bg-surface-950"
+                  style={{ opacity: veuAceso ? 1 : 0, transition: veuAceso ? 'opacity 800ms cubic-bezier(.45,0,.55,1)' : 'opacity 760ms cubic-bezier(.2,0,.1,1)' }}
+                />
                 <div ref={cenaRef} className="absolute inset-0">
                   {montar && (
                     <iframe

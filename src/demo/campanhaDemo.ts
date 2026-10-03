@@ -3,7 +3,7 @@ import type { CampaignAnalytics, CampaignConversationSummary } from '@/types'
 /**
  * O relatório da campanha "Renovação Pro" (`CampaignReport` real, aberto pela
  * cena de Disparos com `?report=`). Números coerentes com `heroCampaigns`:
- * 1.231 enviadas, 871 lidas, 138 respostas — e a Marina entre as conversões.
+ * 477 enviadas, 341 lidas, 54 respostas — e a Marina entre as conversões.
  */
 
 const agora = () => Date.now()
@@ -11,7 +11,7 @@ const minAtras = (m: number) => new Date(agora() - m * 60_000).toISOString()
 
 export const ANALYTICS_RENOVACAO: CampaignAnalytics = {
   campaignId: 'cp-retorno',
-  churnBreakdown: { optOut: 6, blocked: 1, invalidNumber: 9, undelivered: 18, noInteraction: 312 },
+  churnBreakdown: { optOut: 3, blocked: 1, invalidNumber: 7, undelivered: 2, noInteraction: 127 },
   conversionEvents: [
     { contactId: 'demo-c-0', contactName: 'Marina Alves', convertedAt: minAtras(4), type: 'replied', detail: 'Pediu horário de retorno com a Dra. Helena' },
     { contactId: 'demo-dc-3', contactName: 'Carla Mendes', convertedAt: minAtras(22), type: 'stage_changed', detail: 'Consulta · Dra. Helena → Avaliação' },
@@ -19,14 +19,14 @@ export const ANALYTICS_RENOVACAO: CampaignAnalytics = {
   ],
   engagementTimeline: [
     { label: '0h', read: 0, replied: 0, converted: 0 },
-    { label: '1h', read: 402, replied: 51, converted: 9 },
-    { label: '6h', read: 688, replied: 97, converted: 17 },
-    { label: '12h', read: 812, replied: 124, converted: 22 },
-    { label: '24h', read: 871, replied: 138, converted: 26 },
+    { label: '1h', read: 158, replied: 21, converted: 4 },
+    { label: '6h', read: 271, replied: 38, converted: 7 },
+    { label: '12h', read: 318, replied: 48, converted: 9 },
+    { label: '24h', read: 341, replied: 54, converted: 11 },
   ],
   attributionBreakdown: [
-    { source: 'whatsapp', label: 'Base de clientes', contactCount: 1_012, readCount: 734, replyCount: 118, conversionCount: 23, readRate: 0.725, conversionRate: 0.023 },
-    { source: 'import', label: 'Importação · feira de setembro', contactCount: 228, readCount: 137, replyCount: 20, conversionCount: 3, readRate: 0.601, conversionRate: 0.013 },
+    { source: 'whatsapp', label: 'Base de clientes', contactCount: 402, readCount: 287, replyCount: 47, conversionCount: 10, readRate: 0.714, conversionRate: 0.025 },
+    { source: 'import', label: 'Importação · feira de setembro', contactCount: 84, readCount: 54, replyCount: 7, conversionCount: 1, readRate: 0.643, conversionRate: 0.012 },
   ],
   aiInsights: [
     'As respostas se concentram na primeira hora: 37 % das leituras e das respostas vieram nesse intervalo.',

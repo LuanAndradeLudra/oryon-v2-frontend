@@ -183,8 +183,11 @@ export function WhatsAppIphone({ at, cena }: { at: HeroState; cena: HeroCena }) 
  */
 export function TelaWhatsApp({
   hora, children, digitado = '', digitando = false, escala = 0.6, subtitulo = 'Conta comercial',
-  empresa = 'Clínica Vitalis', iniciais = 'VS', corAvatar = '#0F766E',
+  empresa = 'Clínica Vitalis', iniciais = 'VS', corAvatar = '#0F766E', altura = 760,
 }: {
+  /** A altura da tela (padrão 760). Mais baixa, a conversa — ancorada embaixo —
+   *  mostra as mensagens mais novas, como um celular que rolou. */
+  altura?: number
   hora: string
   /** A empresa da conversa (a seção "Por que a Oryon" troca de setor). */
   empresa?: string
@@ -199,7 +202,7 @@ export function TelaWhatsApp({
   return (
     <div
       className="relative flex flex-col overflow-hidden origin-top-left"
-      style={{ width: 390, height: 760, transform: `scale(${escala})`, fontFamily: FONTE_WA, background: WA.papel }}
+      style={{ width: 390, height: altura, transform: `scale(${escala})`, fontFamily: FONTE_WA, background: WA.papel }}
     >
       {/* ── Barra de status do iOS ── */}
       <div className="flex h-[54px] flex-shrink-0 items-center justify-between px-[34px] pt-[6px]" style={{ background: BARRA_IOS }}>

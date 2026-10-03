@@ -2,6 +2,7 @@ import { useCallback, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Check, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { home, solucoes } from '../landingCopy'
 import { DiaNoWhatsApp } from '../home/DiaNoWhatsApp'
 import { DemoRecorte, type Recorte } from '../plataforma/DemoRecorte'
@@ -39,8 +40,10 @@ const HISTORIA_CLINICA: readonly Cue[] = [
   { t: 15000, state: 'etiqueta', composition: 'funil' },
   S(17200, 'avanco'),
   { t: 22600, state: 'pedido', composition: 'conversa' },
-  S(25000, 'assumido'), S(27800, 'humano'),
-  S(31800, 'humano'),
+  // A transferência (02/10): o tempo da mão — o clique no aviso e no
+  // "Assumir" — e a recepção entra logo depois do segundo clique.
+  S(25000, 'assumido'), S(28000, 'humano'),
+  S(32000, 'humano'),
 ]
 
 /** Em que momento da história a tela está (o destaque da lista ao lado). */
@@ -57,6 +60,18 @@ function momentoDe(estado: HeroState, cena: HeroCena) {
 /** O conhecimento, medido no app de computador (02/10): o título e os
  *  primeiros documentos. */
 const R_CONHECIMENTO: Recorte = { x: 298, y: 140, w: 460, h: 400 }
+
+/**
+ * NO CELULAR (02/10, PO): as janelas da /solucoes seguem as do "Como funciona"
+ * e do Hero — o app desenhado numa tela de 1024 × 768 e a moldura em 4:3, um
+ * terço mais alta e com o texto 25% maior, sem corte (a lista de conversas e o
+ * painel do contato estreitam na demonstração, e a conversa ganha largura).
+ * No desktop, nada muda (1280 × 720).
+ */
+const APP_NO_CELULAR = { w: 1024, h: 768 }
+const APP_INTEIRO_NO_CELULAR: Recorte = { x: 0, y: 0, ...APP_NO_CELULAR }
+/** O conhecimento em 1024: o título e os dois primeiros documentos, em 4:3. */
+const R_CONHECIMENTO_NO_CELULAR: Recorte = { x: 296, y: 136, w: 560, h: 420 }
 const CONHECIMENTO: readonly Cue[] = [{ t: 0, state: 'inicio', composition: 'agente-conhecimento' }]
 
 // ── Peças ────────────────────────────────────────────────────────────────────
@@ -146,14 +161,24 @@ function Momentos({ area, atual, escolher }: { area: AreaId; atual: number; esco
 // O painel do contato rola até o fim: a Timeline fica no pé dele (y 476 a 720).
 const R_CONTATO: Recorte = { x: 640, y: 360, w: 640, h: 360 }
 const R_SINO: Recorte = { x: 640, y: 28, w: 640, h: 360 }
+// No celular (1024 × 768, 4:3): as mesmas duas aproximações (2×), medidas nas
+// cinco áreas — a Timeline no pé do painel do contato, o sino no alto à direita.
+const R_CONTATO_NO_CELULAR: Recorte = { x: 512, y: 384, w: 512, h: 384 }
+const R_SINO_NO_CELULAR: Recorte = { x: 512, y: 28, w: 512, h: 384 }
 
-function regiaoDe(estado: HeroState, cena: HeroCena): Recorte {
-  if (cena !== 'conversa') return APP_INTEIRO
-  if (estado === 'situacao' || estado === 'etiqueta') return R_CONTATO
+/**
+ * A DIREÇÃO (02/10, PO: "câmera de tripé"): plano geral o tempo todo; a câmera
+ * só fecha no que, no desktop do Hero, é uma janela satélite — a atividade do
+ * contato e o sino da transferência — e volta.
+ */
+function regiaoDe(estado: HeroState, cena: HeroCena, celular: boolean): Recorte {
+  const inteiro = celular ? APP_INTEIRO_NO_CELULAR : APP_INTEIRO
+  if (cena !== 'conversa') return inteiro
+  if (estado === 'situacao' || estado === 'etiqueta') return celular ? R_CONTATO_NO_CELULAR : R_CONTATO
   // Aproxima rápido no sino quando a notificação chega e afasta quando a
   // pessoa entra — o destaque passa para a mensagem dela.
-  if (estado === 'assumido') return R_SINO
-  return APP_INTEIRO
+  if (estado === 'assumido') return celular ? R_SINO_NO_CELULAR : R_SINO
+  return inteiro
 }
 
 /** O app grande, em todas as telas (02/10, PO): no celular também é a tela
@@ -174,6 +199,7 @@ function AtoDaTela({ area }: { area: AreaId }) {
     setSalto({ indice: INICIO_DO_MOMENTO[i] })
   }, [])
   const { tela } = solucoes.areas[area]
+  const celular = !useMediaQuery('(min-width: 768px)')
   return (
     <section data-section="tela" aria-label={solucoes.atos.tela} className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-16 sm:py-20">
       <div className="landing-container">
@@ -186,7 +212,9 @@ function AtoDaTela({ area }: { area: AreaId }) {
             rota={HERO_ROTAS.conversa}
             estado="inicio"
             cues={HISTORIA_CLINICA}
-            recorte={regiaoDe(passo.estado, passo.cena)}
+            cursorNaPassagem
+            recorte={regiaoDe(passo.estado, passo.cena, celular)}
+            tamanhoDoApp={celular ? APP_NO_CELULAR : undefined}
             setor={area}
             pausado={pausado}
             onPasso={aoPassar}
@@ -201,6 +229,7 @@ function AtoDaTela({ area }: { area: AreaId }) {
 
 function AtoDaIa({ area, fundo }: { area: AreaId; fundo: string }) {
   const copia = solucoes.areas[area]
+  const celular = !useMediaQuery('(min-width: 768px)')
   return (
     <section data-section="ia" aria-label={solucoes.atos.ia} className={cn('relative border-t border-[var(--landing-borda)] py-16 sm:py-20', fundo)}>
       <div className={cn('landing-container grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center lg:gap-16')}>
@@ -216,7 +245,8 @@ function AtoDaIa({ area, fundo }: { area: AreaId; fundo: string }) {
               rota={HERO_ROTAS['agente-conhecimento']}
               estado="inicio"
               cues={CONHECIMENTO}
-              recorte={R_CONHECIMENTO}
+              recorte={celular ? R_CONHECIMENTO_NO_CELULAR : R_CONHECIMENTO}
+              tamanhoDoApp={celular ? APP_NO_CELULAR : undefined}
               setor={area}
               pausado
             />

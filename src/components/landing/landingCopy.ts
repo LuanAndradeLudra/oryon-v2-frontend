@@ -87,6 +87,8 @@ export const hero = {
   // para o apoio. "Vende" saiu do título: quem fecha a venda é uma pessoa.
   title: 'Nenhum cliente sem resposta no WhatsApp.',
   lead: 'Um agente de IA responde na hora, de dia ou de noite, com as informações da sua empresa. Organiza cada venda e chama sua equipe quando uma pessoa precisa assumir.',
+  /** Celular (02/10, PO): o apoio em duas linhas, para o palco caber na primeira tela. */
+  leadCurto: 'Um agente de IA responde na hora e chama sua equipe quando precisa.',
   /** A redução de risco logo abaixo dos botões: o diferencial que antes só
    *  aparecia na seção de implantação. Fatos do serviço, sem número. */
   garantias: ['Configuramos com você', 'Você testa antes de ligar', 'WhatsApp oficial da Meta'],
@@ -520,7 +522,7 @@ export type PaginaPlataforma = (typeof paginasPlataforma)[number]
 
 export const home = {
   ctaPrincipal: 'Agendar demonstração',
-  ctaSecundario: 'Ver como funciona',
+  ctaSecundario: 'Ver o que mais ela faz',
   /** A dor e a virada (ciclo noturno, 30/09): o que acontece hoje no WhatsApp
    *  de quem compra, em palavras simples, e o que muda. Sem números. */
   dor: {
@@ -553,6 +555,8 @@ export const home = {
     },
     comOryon: 'Com a Oryon',
     semOryon: 'Sem a Oryon',
+    /** Celular: a chave entre as duas conversas (um aparelho só, 02/10). */
+    alternarLabel: 'Ver a conversa sem ou com a Oryon',
     /** As conversas têm hora e valor: dizem que são exemplo (lote 3, 30/09). */
     aviso: 'Conversas de exemplo.',
     /** O carrossel de setores (o roteiro de cada um mora em
@@ -571,10 +575,12 @@ export const home = {
     texto: 'Na demonstração, você vê a Oryon respondendo as perguntas que seus clientes fazem todo dia.',
   },
   comoFunciona: {
-    eyebrow: 'Como funciona',
-    titulo: 'Da primeira mensagem ao negócio fechado.',
+    // 02/10 (PO): só o que o Hero não mostra — a configuração da IA, as
+    // campanhas e o painel.
+    eyebrow: 'Além do atendimento',
+    titulo: 'O que mais a Oryon faz por você.',
     cinza: 'Telas reais da Oryon, com dados de exemplo.',
-    abasLabel: 'Etapas do atendimento',
+    abasLabel: 'Recursos da Oryon',
     saibaMais: 'Ver os detalhes',
   },
   limites: {

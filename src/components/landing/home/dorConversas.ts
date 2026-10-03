@@ -29,6 +29,8 @@ export type PassoDia =
 export interface ItemChecklist {
   t: number
   texto: string
+  /** A versão do celular: a coluna estreita ao lado do aparelho (02/10). */
+  curto?: string
   /** A linha é da pessoa da equipe (âmbar), não do agente. */
   pessoa?: boolean
 }
@@ -37,11 +39,25 @@ export interface Lado {
   passos: PassoDia[]
   checklist: ItemChecklist[]
   /** O desfecho, no pé do checklist, no tempo `resultado.t`. */
-  resultado: { t: number; texto: string }
+  /** `curto`: a versão do celular (coluna estreita ao lado do aparelho, 02/10). */
+  resultado: { t: number; texto: string; curto?: string }
 }
+
+/** Um valor do placar do celular: vale a partir do tempo `t` (de roteiro). */
+export interface Marco { t: number; texto: string; tom?: 'ruim' | 'bom' | 'pessoa' }
+
+/** Um bloco do placar próprio do setor (02/10, PO): a dor daquele negócio,
+ *  sem e com a Oryon, mudando no momento em que a conversa prova. */
+export interface BlocoDoPlacar { rotulo: string; sem: Marco[]; com: Marco[] }
 
 export interface Setor {
   id: string
+  /** O placar do celular: os blocos próprios do setor (entre a espera e quem respondeu). */
+  placar: BlocoDoPlacar[]
+  /** "Quem respondeu" sem a Oryon: quem da equipe respondeu, tarde. */
+  quemAtrasou: string
+  /** "Quem respondeu" com a Oryon, quando a pessoa entra: "Agente IA + recepção". */
+  quemEntra: string
   /** O nome na aba. */
   rotulo: string
   empresa: string
@@ -75,6 +91,12 @@ export function duracaoDoSetor(s: Setor) {
 export const SETORES: Setor[] = [
   {
     id: 'clinica',
+    quemEntra: 'recepção',
+    quemAtrasou: 'Recepção, atrasada',
+    placar: [
+      { rotulo: 'Convênio', sem: [{ t: 0, texto: '—' }, { t: 1300, texto: 'Sem resposta', tom: 'ruim' }, { t: 5900, texto: 'Respondido tarde', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 1300, texto: 'Unimed confirmado', tom: 'bom' }] },
+      { rotulo: 'Horário', sem: [{ t: 0, texto: '—' }, { t: 9400, texto: 'Só à tarde', tom: 'ruim' }, { t: 10300, texto: 'Perdido', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 2000, texto: 'Duas opções', tom: 'bom' }, { t: 6100, texto: 'Segunda de manhã', tom: 'bom' }] },
+    ],
     rotulo: 'Clínica',
     empresa: 'Clínica Vitalis',
     iniciais: 'VS',
@@ -94,12 +116,12 @@ export const SETORES: Setor[] = [
         { t: 10300, tipo: 'msg', texto: 'Já marquei em outro lugar. Obrigada!', hora: '12:25', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Recepção ocupada com o telefone e o balcão' },
-        { t: 3100, texto: 'Cliente cobrou uma resposta' },
-        { t: 5900, texto: 'Primeira resposta uma hora e meia depois' },
-        { t: 7600, texto: 'Conversa parada de novo' },
+        { t: 1300, texto: 'Recepção ocupada com o telefone e o balcão', curto: 'Recepção no telefone' },
+        { t: 3100, texto: 'Cliente cobrou uma resposta', curto: 'Cliente cobrou resposta' },
+        { t: 5900, texto: 'Primeira resposta uma hora e meia depois', curto: 'Uma hora e meia de espera' },
+        { t: 7600, texto: 'Conversa parada de novo', curto: 'Parada de novo' },
       ],
-      resultado: { t: 10300, texto: 'Cliente marcou em outro lugar' },
+      resultado: { t: 10300, texto: 'Cliente marcou em outro lugar', curto: 'Marcou em outro lugar' },
     },
     com: {
       passos: [
@@ -115,17 +137,23 @@ export const SETORES: Setor[] = [
         { t: 6900, tipo: 'selo', texto: 'Recepção avisada', tom: 'pessoa' },
       ],
       checklist: [
-        { t: 1300, texto: 'Respondida na hora, com a recepção cheia' },
-        { t: 2000, texto: 'Convênio e horários do que a clínica cadastrou' },
-        { t: 4400, texto: 'Valor da consulta informado sem fila' },
-        { t: 6100, texto: 'Etapa da venda registrada na conversa' },
-        { t: 6900, texto: 'Recepção chamada para confirmar', pessoa: true },
+        { t: 1300, texto: 'Respondida na hora, com a recepção cheia', curto: 'Na hora, recepção cheia' },
+        { t: 2000, texto: 'Convênio e horários do que a clínica cadastrou', curto: 'Convênio do seu cadastro' },
+        { t: 4400, texto: 'Valor da consulta informado sem fila', curto: 'Valor sem fila' },
+        { t: 6100, texto: 'Etapa da venda registrada na conversa', curto: 'Venda registrada' },
+        { t: 6900, texto: 'Recepção chamada para confirmar', curto: 'Recepção chamada', pessoa: true },
       ],
-      resultado: { t: 6900, texto: 'Horário escolhido em três minutos' },
+      resultado: { t: 6900, texto: 'Horário escolhido em três minutos', curto: 'Horário em três minutos' },
     },
   },
   {
     id: 'imobiliaria',
+    quemEntra: 'corretor',
+    quemAtrasou: 'Corretor, atrasado',
+    placar: [
+      { rotulo: 'Dúvida do pet', sem: [{ t: 0, texto: '—' }, { t: 3100, texto: 'Sem resposta', tom: 'ruim' }, { t: 7600, texto: 'Ignorada', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 2000, texto: 'Respondida', tom: 'bom' }] },
+      { rotulo: 'Visita', sem: [{ t: 0, texto: '—' }, { t: 10300, texto: 'Com a concorrência', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 5200, texto: 'Corretor chamado', tom: 'pessoa' }, { t: 6800, texto: 'No mesmo dia', tom: 'bom' }] },
+    ],
     rotulo: 'Imobiliária',
     empresa: 'Casa Nova Imóveis',
     iniciais: 'CN',
@@ -145,12 +173,12 @@ export const SETORES: Setor[] = [
         { t: 10300, tipo: 'msg', texto: 'Já fechei visita com outra imobiliária. Valeu!', hora: '15:18', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Corretores na rua, ninguém no WhatsApp' },
-        { t: 3100, texto: 'Cliente repetiu a pergunta' },
-        { t: 5900, texto: 'Primeira resposta uma hora e meia depois' },
-        { t: 7600, texto: 'Dúvida do pet ficou para depois' },
+        { t: 1300, texto: 'Corretores na rua, ninguém no WhatsApp', curto: 'Corretores na rua' },
+        { t: 3100, texto: 'Cliente repetiu a pergunta', curto: 'Cliente repetiu' },
+        { t: 5900, texto: 'Primeira resposta uma hora e meia depois', curto: 'Uma hora e meia de espera' },
+        { t: 7600, texto: 'Dúvida do pet ficou para depois', curto: 'Pet sem resposta' },
       ],
-      resultado: { t: 10300, texto: 'Visita fechada com a concorrência' },
+      resultado: { t: 10300, texto: 'Visita fechada com a concorrência', curto: 'Visitou a concorrência' },
     },
     com: {
       passos: [
@@ -166,16 +194,22 @@ export const SETORES: Setor[] = [
         { t: 6800, tipo: 'msg', texto: 'Combinado!', hora: '13:10', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Respondida na hora, no sábado' },
-        { t: 2000, texto: 'Pet e condomínio do que você cadastrou' },
-        { t: 3600, texto: 'Interesse registrado como venda em andamento' },
-        { t: 5200, texto: 'Corretor chamado para combinar a visita', pessoa: true },
+        { t: 1300, texto: 'Respondida na hora, no sábado', curto: 'Resposta no sábado' },
+        { t: 2000, texto: 'Pet e condomínio do que você cadastrou', curto: 'Pet e condomínio cadastrados' },
+        { t: 3600, texto: 'Interesse registrado como venda em andamento', curto: 'Venda em andamento' },
+        { t: 5200, texto: 'Corretor chamado para combinar a visita', curto: 'Corretor chamado', pessoa: true },
       ],
-      resultado: { t: 6800, texto: 'Visita combinada no mesmo dia' },
+      resultado: { t: 6800, texto: 'Visita combinada no mesmo dia', curto: 'Visita no mesmo dia' },
     },
   },
   {
     id: 'loja',
+    quemEntra: 'vendedora',
+    quemAtrasou: 'Vendedora, atrasada',
+    placar: [
+      { rotulo: 'Estoque', sem: [{ t: 0, texto: '—' }, { t: 3100, texto: 'Sem resposta', tom: 'ruim' }, { t: 7600, texto: 'Conferido à mão', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 2000, texto: 'Confirmado na hora', tom: 'bom' }] },
+      { rotulo: 'Produto', sem: [{ t: 0, texto: 'Esperando a loja', tom: 'ruim' }, { t: 10300, texto: 'Vendido em outro site', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 5200, texto: 'Vendedora chamada', tom: 'pessoa' }, { t: 6800, texto: 'Separado', tom: 'bom' }] },
+    ],
     rotulo: 'Loja',
     empresa: 'Loja Aurora',
     iniciais: 'LA',
@@ -195,12 +229,12 @@ export const SETORES: Setor[] = [
         { t: 10300, tipo: 'msg', texto: 'Já comprei em outro site. Obrigada!', hora: '12:03', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Equipe no balcão, WhatsApp esperando' },
-        { t: 3100, texto: 'Cliente cobrou uma resposta' },
-        { t: 5900, texto: 'Primeira resposta mais de uma hora depois' },
-        { t: 7600, texto: 'Estoque conferido à mão' },
+        { t: 1300, texto: 'Equipe no balcão, WhatsApp esperando', curto: 'Equipe no balcão' },
+        { t: 3100, texto: 'Cliente cobrou uma resposta', curto: 'Cliente cobrou resposta' },
+        { t: 5900, texto: 'Primeira resposta mais de uma hora depois', curto: 'Mais de uma hora de espera' },
+        { t: 7600, texto: 'Estoque conferido à mão', curto: 'Estoque conferido à mão' },
       ],
-      resultado: { t: 10300, texto: 'Venda feita em outro site' },
+      resultado: { t: 10300, texto: 'Venda feita em outro site', curto: 'Comprou em outro site' },
     },
     com: {
       passos: [
@@ -216,16 +250,22 @@ export const SETORES: Setor[] = [
         { t: 6800, tipo: 'msg', texto: 'Obrigada!!', hora: '10:17', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Respondida na hora, com a loja cheia' },
-        { t: 2000, texto: 'Estoque e preço do que a loja cadastrou' },
-        { t: 3600, texto: 'Interesse registrado para a equipe acompanhar' },
-        { t: 5200, texto: 'Vendedora chamada para concluir a venda', pessoa: true },
+        { t: 1300, texto: 'Respondida na hora, com a loja cheia', curto: 'Na hora, loja cheia' },
+        { t: 2000, texto: 'Estoque e preço do que a loja cadastrou', curto: 'Estoque e preço cadastrados' },
+        { t: 3600, texto: 'Interesse registrado para a equipe acompanhar', curto: 'Interesse registrado' },
+        { t: 5200, texto: 'Vendedora chamada para concluir a venda', curto: 'Vendedora chamada', pessoa: true },
       ],
-      resultado: { t: 6800, texto: 'Produto separado em três minutos' },
+      resultado: { t: 6800, texto: 'Produto separado em três minutos', curto: 'Separado em três minutos' },
     },
   },
   {
     id: 'contabilidade',
+    quemEntra: 'contador',
+    quemAtrasou: 'Contador, atrasado',
+    placar: [
+      { rotulo: 'Dúvidas de rotina', sem: [{ t: 0, texto: '—' }, { t: 1300, texto: 'Esperando o contador', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 2000, texto: 'Resolvidas', tom: 'bom' }] },
+      { rotulo: 'Caso urgente', sem: [{ t: 0, texto: '—' }, { t: 9400, texto: 'Misturado na fila', tom: 'ruim' }, { t: 10300, texto: 'Ficou para trás', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 3600, texto: 'Separado', tom: 'bom' }, { t: 5200, texto: 'Com o contador', tom: 'pessoa' }] },
+    ],
     rotulo: 'Contabilidade',
     empresa: 'Prisma Contábil',
     iniciais: 'PC',
@@ -245,12 +285,12 @@ export const SETORES: Setor[] = [
         { t: 10300, tipo: 'msg', texto: 'E a nota? Preciso resolver ainda hoje.', hora: '11:28', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Dúvida de rotina esperando o contador' },
-        { t: 3100, texto: 'Cliente cobrou uma resposta' },
-        { t: 5900, texto: 'Recado anotado à mão para depois da reunião' },
-        { t: 9400, texto: 'Caso urgente misturado às perguntas simples' },
+        { t: 1300, texto: 'Dúvida de rotina esperando o contador', curto: 'Rotina esperando o contador' },
+        { t: 3100, texto: 'Cliente cobrou uma resposta', curto: 'Cliente cobrou resposta' },
+        { t: 5900, texto: 'Recado anotado à mão para depois da reunião', curto: 'Recado anotado à mão' },
+        { t: 9400, texto: 'Caso urgente misturado às perguntas simples', curto: 'Urgente no meio da fila' },
       ],
-      resultado: { t: 10300, texto: 'O que era urgente ficou para trás' },
+      resultado: { t: 10300, texto: 'O que era urgente ficou para trás', curto: 'O urgente ficou para trás' },
     },
     com: {
       passos: [
@@ -266,16 +306,22 @@ export const SETORES: Setor[] = [
         { t: 6800, tipo: 'msg', texto: 'Mandando!', hora: '09:21', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Prazo e documentos do conteúdo do escritório' },
-        { t: 2000, texto: 'Dúvida de rotina resolvida sem o contador' },
-        { t: 3600, texto: 'Conversa etiquetada por assunto' },
-        { t: 5200, texto: 'Contador chamado só para o caso da nota', pessoa: true },
+        { t: 1300, texto: 'Prazo e documentos do conteúdo do escritório', curto: 'Prazos do seu cadastro' },
+        { t: 2000, texto: 'Dúvida de rotina resolvida sem o contador', curto: 'Rotina sem o contador' },
+        { t: 3600, texto: 'Conversa etiquetada por assunto', curto: 'Etiquetada por assunto' },
+        { t: 5200, texto: 'Contador chamado só para o caso da nota', curto: 'Contador só na nota', pessoa: true },
       ],
-      resultado: { t: 6800, texto: 'Contador só no que pede análise' },
+      resultado: { t: 6800, texto: 'Contador só no que pede análise', curto: 'Contador só na análise' },
     },
   },
   {
     id: 'juridico',
+    quemEntra: 'advogada',
+    quemAtrasou: 'Escritório, atrasado',
+    placar: [
+      { rotulo: 'Triagem', sem: [{ t: 0, texto: '—' }, { t: 5900, texto: 'Refeita do zero', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 1300, texto: 'Em andamento', tom: 'bom' }, { t: 3600, texto: 'Pronta', tom: 'bom' }] },
+      { rotulo: 'Documentos', sem: [{ t: 0, texto: '—' }, { t: 9400, texto: 'Nenhum pedido', tom: 'ruim' }], com: [{ t: 0, texto: '—' }, { t: 4400, texto: 'Pedidos', tom: 'bom' }] },
+    ],
     rotulo: 'Jurídico',
     empresa: 'Moura & Lima Advocacia',
     iniciais: 'ML',
@@ -295,12 +341,12 @@ export const SETORES: Setor[] = [
         { t: 10300, tipo: 'msg', texto: 'Tá. Vou procurar outro escritório também.', hora: '16:20', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Advogada em audiência, conversa parada' },
-        { t: 3100, texto: 'Cliente cobrou uma resposta' },
-        { t: 5900, texto: 'Equipe refez a triagem do zero' },
-        { t: 9400, texto: 'Nenhum documento pedido até agora' },
+        { t: 1300, texto: 'Advogada em audiência, conversa parada', curto: 'Advogada em audiência' },
+        { t: 3100, texto: 'Cliente cobrou uma resposta', curto: 'Cliente cobrou resposta' },
+        { t: 5900, texto: 'Equipe refez a triagem do zero', curto: 'Triagem refeita do zero' },
+        { t: 9400, texto: 'Nenhum documento pedido até agora', curto: 'Nenhum documento pedido' },
       ],
-      resultado: { t: 10300, texto: 'Cliente procurando outro escritório' },
+      resultado: { t: 10300, texto: 'Cliente procurando outro escritório', curto: 'Foi para outro escritório' },
     },
     com: {
       passos: [
@@ -316,12 +362,12 @@ export const SETORES: Setor[] = [
         { t: 6800, tipo: 'msg', texto: 'Pode, sim. Obrigada!', hora: '15:41', minha: true },
       ],
       checklist: [
-        { t: 1300, texto: 'Perguntas de triagem definidas pelo escritório' },
-        { t: 3600, texto: 'Respostas registradas na conversa' },
-        { t: 4400, texto: 'Documentos pedidos antes da reunião' },
-        { t: 5200, texto: 'Orientação sobre o caso fica com a advogada', pessoa: true },
+        { t: 1300, texto: 'Perguntas de triagem definidas pelo escritório', curto: 'Triagem do escritório' },
+        { t: 3600, texto: 'Respostas registradas na conversa', curto: 'Respostas registradas' },
+        { t: 4400, texto: 'Documentos pedidos antes da reunião', curto: 'Documentos antes da reunião' },
+        { t: 5200, texto: 'Orientação sobre o caso fica com a advogada', curto: 'Caso com a advogada', pessoa: true },
       ],
-      resultado: { t: 6800, texto: 'Reunião marcada com a triagem pronta' },
+      resultado: { t: 6800, texto: 'Reunião marcada com a triagem pronta', curto: 'Reunião com triagem pronta' },
     },
   },
 ]
