@@ -61,6 +61,7 @@ export function TestAgentSkillModal({ open, onClose, skill }: Props) {
       <SkillTemplateTester
         template={template}
         initialConfig={skill.config}
+        agentSkillId={skill.skill_id}
       />
     </Modal>
   )

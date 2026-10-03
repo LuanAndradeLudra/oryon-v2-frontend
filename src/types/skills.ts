@@ -137,6 +137,8 @@ export interface AgentSkillWithTemplate {
 // ─── Tester payloads ────────────────────────────────────────────────────────
 
 export interface TesterRequest {
+  /** Skill anexada sendo testada: o servidor troca a marca de segredo pelo valor guardado. */
+  agent_skill_id?: string
   config?: Record<string, unknown>
   inputs?: Record<string, unknown>
   contact?: { phone?: string; name?: string; id?: string }

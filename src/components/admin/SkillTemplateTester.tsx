@@ -22,6 +22,8 @@ interface Props {
    * against the values the agent actually uses. Defaults to {}.
    */
   initialConfig?: Record<string, unknown>
+  /** Id da skill anexada (TestAgentSkillModal): os segredos mascarados usam o valor guardado. */
+  agentSkillId?: string
   /** Same as initialConfig, but for the inputs section. Defaults to {}. */
   initialInputs?: Record<string, unknown>
 }
@@ -46,7 +48,7 @@ function previewToolResult(body: unknown): string {
   return tag + 'Operação não pôde ser concluída.'
 }
 
-export function SkillTemplateTester({ template, initialConfig, initialInputs }: Props) {
+export function SkillTemplateTester({ template, initialConfig, initialInputs, agentSkillId }: Props) {
   const [config, setConfig] = useState<Record<string, unknown>>(initialConfig ?? {})
   const [inputs, setInputs] = useState<Record<string, unknown>>(initialInputs ?? {})
   const [running, setRunning] = useState(false)
@@ -81,7 +83,7 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs }: 
     setError(null)
     setResult(null)
     try {
-      const r = await testSkillTemplate(template.id, { config, inputs })
+      const r = await testSkillTemplate(template.id, { config, inputs, ...(agentSkillId ? { agent_skill_id: agentSkillId } : {}) })
       setResult(r)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
