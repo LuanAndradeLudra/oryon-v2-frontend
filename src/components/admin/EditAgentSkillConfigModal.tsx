@@ -77,7 +77,10 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
       const all = await listSkillTemplateInstances(skill.template_id)
       // Drop the current instance so the operator can't accidentally
       // "copy from itself" (a no-op that would still toast success).
-      setOtherInstances(all.filter((i) => i.id !== skill.skill_id))
+      // Revisão 03/10: só agentes da MESMA empresa — a lista vem de todas
+      // (tela da equipe Oryon) e copiar de outra levava a configuração (e,
+      // antes da máscara no servidor, o token) de uma clínica para outra.
+      setOtherInstances(all.filter((i) => i.id !== skill.skill_id && i.tenant_id === (tenantId ?? skill.tenant_id)))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

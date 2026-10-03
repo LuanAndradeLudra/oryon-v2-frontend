@@ -29,6 +29,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getApiErrorMessage } from '@/lib/utils'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { haSobreposicaoAberta } from '@/lib/sobreposicaoAberta'
 import type {
   Conversation, ConversationFilters,
   SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew,
@@ -469,6 +470,7 @@ export function ConversationsPage() {
       if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
       const key = e.key.toLowerCase()
       if (!['j', 'k', 'e', 'r'].includes(key)) return
+      if (haSobreposicaoAberta()) return
 
       const { conversations: list, activeConversation: active } = shortcutsRef.current
       if (list.length === 0) return

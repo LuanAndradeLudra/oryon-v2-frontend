@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
@@ -57,11 +57,27 @@ export function useContactPipelines(
   const [closeTarget, setCloseTarget] = useState<CloseTarget | null>(null)
   const [history, setHistory] = useState<Record<string, DealStageHistoryEntry[] | 'loading' | undefined>>({})
 
+  // Revisão 03/10: o painel de Conversas não remonta ao trocar de conversa
+  // (J/K). Sem isto, os negócios do contato ANTERIOR ficavam na tela (até a
+  // lista nova chegar, ou para sempre se a antiga chegasse depois) — e
+  // "vincular", "mover" e "fechar" agiam neles com a conversa nova.
+  const [contatoDosDeals, setContatoDosDeals] = useState(contactId)
+  if (contatoDosDeals !== contactId) {
+    setContatoDosDeals(contactId)
+    setDeals(null)
+    setError('')
+    setHistory({})
+    setCloseTarget(null)
+  }
+  const contatoAtual = useRef(contactId)
+  useEffect(() => { contatoAtual.current = contactId }, [contactId])
+
   const load = useCallback(() => {
     if (!enabled) return
-    dealsApi.list(contactId)
-      .then((r) => { setDeals(Array.isArray(r.data) ? r.data : []); setError('') })
-      .catch((e: unknown) => { setDeals([]); setError(getApiErrorMessage(e, 'Não foi possível carregar os funis.')) })
+    const id = contactId
+    dealsApi.list(id)
+      .then((r) => { if (id === contatoAtual.current) { setDeals(Array.isArray(r.data) ? r.data : []); setError('') } })
+      .catch((e: unknown) => { if (id === contatoAtual.current) { setDeals([]); setError(getApiErrorMessage(e, 'Não foi possível carregar os funis.')) } })
   }, [contactId, enabled])
 
   useEffect(() => { load() }, [load])

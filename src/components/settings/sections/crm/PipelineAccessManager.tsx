@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
@@ -30,21 +30,29 @@ export function PipelineAccessManager({ pipeline, onChanged }: PipelineAccessMan
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
 
+  // Revisão 03/10: trocar de funil no seletor não remonta este painel. A
+  // resposta atrasada do funil anterior preenchia os setores sob o título do
+  // novo — e "Salvar" gravava o acesso de A no funil B.
+  const funilAtual = useRef(pipeline.id)
+  useEffect(() => { funilAtual.current = pipeline.id }, [pipeline.id])
   const load = useCallback(async () => {
+    const id = pipeline.id
     setLoading(true)
+    setDirty(false)
     try {
       const [depsRes, accessRes] = await Promise.all([
         departmentsApi.list(),
-        pipelinesApi.getAccess(pipeline.id),
+        pipelinesApi.getAccess(id),
       ])
+      if (id !== funilAtual.current) return
       setDepartments(depsRes.data)
       setImplicitAll(accessRes.data.implicitAll)
       setSelected(new Set(accessRes.data.departmentIds))
       setDirty(false)
     } catch (err: unknown) {
-      toast(getApiErrorMessage(err, 'Erro ao carregar acesso do funil.'), 'error')
+      if (id === funilAtual.current) toast(getApiErrorMessage(err, 'Erro ao carregar acesso do funil.'), 'error')
     } finally {
-      setLoading(false)
+      if (id === funilAtual.current) setLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pipeline.id])

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Plus, Pencil, GripVertical, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -43,8 +43,14 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
   const [editOutcome, setEditOutcome] = useState<'won' | 'lost' | 'any'>('lost')
   const [savingFreeToggle, setSavingFreeToggle] = useState(false)
 
+  // Revisão 03/10: resposta do tipo de funil anterior não toma a lista do atual.
+  const tipoAtual = useRef(kind)
+  useEffect(() => { tipoAtual.current = kind }, [kind])
   const load = useCallback(() => {
-    pipelinesApi.manageCloseReasons(kind).then((res) => setReasons(res.data)).catch(() => setReasons([]))
+    const k = kind
+    pipelinesApi.manageCloseReasons(k)
+      .then((res) => { if (k === tipoAtual.current) setReasons(res.data) })
+      .catch(() => { if (k === tipoAtual.current) setReasons([]) })
   }, [kind])
 
   useEffect(() => { setReasons(null); load() }, [load])
