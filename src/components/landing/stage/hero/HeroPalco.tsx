@@ -466,8 +466,8 @@ export function HeroPalco({ className }: { className?: string }) {
             {/* Luz de palco sob a âncora (profundidade por luz, no escuro). */}
             <div
               aria-hidden
-              className="absolute -inset-x-10 -bottom-16 top-1/3 -z-10 rounded-[40px] blur-3xl opacity-60 [[data-theme=light]_&]:opacity-30"
-              style={{ background: 'color-mix(in srgb, var(--color-brand-500) 22%, transparent)' }}
+              className="absolute -inset-x-12 -bottom-10 top-[12%] -z-10 rounded-[40px] blur-3xl opacity-80 [[data-theme=light]_&]:opacity-30"
+              style={{ background: 'radial-gradient(60% 60% at 50% 45%, color-mix(in srgb, var(--color-brand-500) 40%, transparent), color-mix(in srgb, var(--color-brand-500) 10%, transparent) 60%, transparent 80%)' }}
             />
             <Bandeja titulo="Oryon" className="hero-ancora h-full w-full">
               <div className="absolute inset-0">

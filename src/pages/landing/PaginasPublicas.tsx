@@ -35,7 +35,7 @@ function TopoDaPagina({ eyebrow, titulo, cinza, lead, acoes }: { eyebrow: string
         {/* Lote 2 (30/09): a antiga continuação cinza do H1 abre o parágrafo. */}
         <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-surface-400 sm:text-[18px] text-pretty">{lead ? `${cinza} ${lead}` : cinza}</p>
         <div className="mt-7 flex flex-wrap gap-2.5">
-          {acoes ?? <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta>{home.ctaPrincipal}</BotaoLanding>}
+          {acoes ?? <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta className="rounded-lg">{home.ctaPrincipal}</BotaoLanding>}
         </div>
       </div>
     </section>

@@ -2022,6 +2022,45 @@ h1, h2, h3 {
   background-color: #ECECEF;
   color-scheme: light;
 }
+/* PALCO DO HERO EM DESTAQUE (03/10, PO aprovou 1-2-3 da análise do Hero).
+   2 — a moldura se descola do chão: tampa um degrau mais clara, contorno de
+   ~16% com reflexo de 1 px no topo e sombra longa tingida de teal (a preta
+   sumia sobre preto). Só no Hero; as outras bandejas não mudam. */
+[data-landing-root] #inicio {
+  --bandeja-bg: #1D2828;
+  --bandeja-titulo: #A9BEBE;
+}
+[data-landing-root] #inicio .hero-bandeja {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .14),
+    0 2px 6px rgba(0, 0, 0, .5),
+    0 30px 90px -20px rgba(45, 212, 191, .5);
+}
+[data-theme='light'] [data-landing-root] #inicio { --bandeja-bg: #ECEEF2; --bandeja-titulo: #4B5263; }
+[data-theme='light'] [data-landing-root] #inicio .hero-bandeja {
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, .16), 0 24px 60px -18px rgba(15, 23, 42, .35), 0 30px 90px -24px rgba(15, 118, 110, .30);
+}
+/* 1 — a luz atrás da tela (holofote saindo de trás da moldura). */
+.hero-luz-palco {
+  position: absolute;
+  inset: -2% -12% -10%;
+  z-index: -1;
+  border-radius: 40px;
+  filter: blur(40px);
+  background: radial-gradient(closest-side, rgba(45, 212, 191, .45), rgba(45, 212, 191, .2) 70%, transparent 100%);
+  pointer-events: none;
+}
+/* No celular a moldura ocupa quase toda a largura: a luz transborda mais
+   (laterais e embaixo) e com mais força, senão fica escondida atrás dela. */
+@media (max-width: 767px) {
+  .hero-luz-palco {
+    inset: -14% -8% -28%;
+    filter: blur(22px);
+    background: radial-gradient(closest-side, rgba(45, 212, 191, .6), rgba(45, 212, 191, .45) 80%, transparent 100%);
+  }
+}
+[data-theme='light'] .hero-luz-palco { opacity: .45; }
 [data-landing-root] ::selection { background: rgba(45, 212, 191, .3); color: #F6FAFA; }
 [data-landing-root] input, [data-landing-root] textarea { caret-color: #2DD4BF; }
 [data-landing-root] input:-webkit-autofill,

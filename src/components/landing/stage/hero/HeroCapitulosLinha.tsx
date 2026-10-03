@@ -27,7 +27,7 @@ export function HeroCapitulosLinha({
   return (
     <nav aria-label="Capítulos da demonstração" className={cn('flex justify-center', className)}>
       <style>{'@keyframes hero-linha-progresso{from{transform:scaleX(0)}to{transform:scaleX(1)}}'}</style>
-      <ol className="grid w-full grid-cols-2 gap-x-2 gap-y-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-1">
+      <ol className="grid w-full grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-1">
         {capitulos.map((c, i) => {
           const eAtivo = i === iAtivo
           return (

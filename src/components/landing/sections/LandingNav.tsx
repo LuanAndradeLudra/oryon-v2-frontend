@@ -196,10 +196,10 @@ export function LandingNav() {
           </BotaoLanding>
           {/* No celular (ciclo noturno, 30/09) a conversão não some da barra:
               o mesmo rótulo do resto da página, em tamanho compacto (lote 2). */}
-          <BotaoLanding to={LANDING_ROUTES.demonstracao} className="h-10 px-2.5 text-[12.5px] sm:hidden">
+          <BotaoLanding to={LANDING_ROUTES.demonstracao} className="h-10 rounded-lg px-2.5 text-[12.5px] sm:hidden">
             {home.ctaPrincipal}
           </BotaoLanding>
-          <BotaoLanding to={LANDING_ROUTES.demonstracao} className="hidden sm:inline-flex">
+          <BotaoLanding to={LANDING_ROUTES.demonstracao} className="hidden rounded-lg sm:inline-flex">
             {home.ctaPrincipal}
           </BotaoLanding>
           {/* Celular: o menu da página (Plataforma, as outras páginas e Entrar). */}

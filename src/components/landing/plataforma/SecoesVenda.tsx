@@ -233,7 +233,7 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
               <BotaoContato longo={false} />
-              <BotaoLanding to={LANDING_ROUTES.demonstracao} variante="secundario" seta>{home.ctaPrincipal}</BotaoLanding>
+              <BotaoLanding to={LANDING_ROUTES.demonstracao} seta className="rounded-lg">{home.ctaPrincipal}</BotaoLanding>
               <Link to={LANDING_ROUTES.perguntas} className="inline-flex items-center gap-1.5 rounded-sm text-[14px] font-medium text-[var(--landing-destaque)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
                 {home.perguntas.verTodas} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
@@ -253,7 +253,7 @@ export function SecaoPerguntas({ limite, comoPagina = false, numero }: { limite?
           ))}
           <Revelar className="flex flex-wrap gap-3 pt-2">
             <BotaoContato longo={false} />
-            <BotaoLanding to={LANDING_ROUTES.demonstracao} variante="secundario" seta>{home.ctaPrincipal}</BotaoLanding>
+            <BotaoLanding to={LANDING_ROUTES.demonstracao} seta className="rounded-lg">{home.ctaPrincipal}</BotaoLanding>
           </Revelar>
         </div>
         )}

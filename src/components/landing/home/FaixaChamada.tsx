@@ -22,7 +22,7 @@ export function FaixaChamada() {
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-surface-300 sm:text-[16.5px] text-pretty">{chamada.texto}</p>
             </div>
-            <BotaoLanding to={LANDING_ROUTES.demonstracao} variante="marca" tamanho="lg" seta className="self-start md:self-auto md:flex-none">
+            <BotaoLanding to={LANDING_ROUTES.demonstracao} tamanho="lg" seta className="rounded-lg self-start md:self-auto md:flex-none">
               {home.ctaPrincipal}
             </BotaoLanding>
           </div>

@@ -189,9 +189,11 @@ export function HeroPalcoCelular({ className }: { className?: string }) {
     <div className={cn('relative w-full', className)}>
       <HeroNarracao pilulaRef={pilulaRef} texto={batidaCurtaDe(passo.estado, passo.cena)} className="relative z-[45] mb-[var(--hero-gap-palco,16px)] px-1" />
       <div
+        className="relative isolate"
         role="img"
         aria-label="Demonstração da Oryon: uma campanha chega no WhatsApp de uma cliente, o Agente IA atende, atualiza o contato e avança o negócio no funil, e uma atendente assume e fecha a venda."
       >
+        <div aria-hidden className="hero-luz-palco" />
         <DemoRecorte
           layoutDesktop
           camera

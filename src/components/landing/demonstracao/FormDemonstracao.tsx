@@ -214,7 +214,7 @@ export function FormDemonstracao({ origem, segmento = '' }: { origem: string; se
         </p>
       )}
 
-      <BotaoLanding type="submit" variante="marca" tamanho="lg" seta carregando={estado === 'enviando'} className="mt-6 w-full">
+      <BotaoLanding type="submit" tamanho="lg" seta carregando={estado === 'enviando'} className="mt-6 w-full rounded-lg">
         {estado === 'enviando' ? formDemo.enviando : formDemo.enviar}
       </BotaoLanding>
       <p id={avisoId} className="mt-3 text-center text-[12.5px] leading-relaxed text-surface-500 text-balance">

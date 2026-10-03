@@ -285,7 +285,7 @@ function Convite({ area, fundo }: { area: AreaId; fundo: string }) {
               <h2 className="font-display text-[clamp(1.6rem,2.8vw,2.3rem)] font-bold leading-[1.08] tracking-[-0.03em] text-surface-50 text-balance">{titulo}</h2>
               <p className="mt-3 text-[15px] leading-relaxed text-surface-400 sm:text-[16.5px] text-pretty">{solucoes.ctaTexto}</p>
             </div>
-            <BotaoLanding href="#demonstracao" tamanho="lg" seta className="self-start md:flex-none md:self-auto">
+            <BotaoLanding href="#demonstracao" tamanho="lg" seta className="rounded-lg self-start md:flex-none md:self-auto">
               {home.ctaPrincipal}
             </BotaoLanding>
           </div>

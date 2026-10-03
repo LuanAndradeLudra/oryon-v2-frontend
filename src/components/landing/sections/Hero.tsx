@@ -41,7 +41,7 @@ export function Hero() {
         className={cn('reveal flex flex-wrap items-center justify-center gap-x-4 gap-y-3', celular ? 'mt-6' : 'mt-[clamp(12px,1.8svh,18px)]')}
         style={{ ['--d' as string]: '180ms' }}
       >
-        <BotaoLanding to={LANDING_ROUTES.demonstracao} seta className="h-11 px-5 text-[14.5px]">{home.ctaPrincipal}</BotaoLanding>
+        <BotaoLanding to={LANDING_ROUTES.demonstracao} seta className="h-11 rounded-lg px-5 text-[14.5px]">{home.ctaPrincipal}</BotaoLanding>
         {!celular && <a
           href="#como-funciona"
           className="rounded-sm px-2 text-[14.5px] font-medium text-surface-300 transition-colors hover:text-surface-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
@@ -82,7 +82,7 @@ export function Hero() {
         // pertence à demonstração, não aos botões.
         '[--hero-gap-topo:clamp(20px,4.2svh,48px)] [--hero-gap-editorial:clamp(20px,3.4svh,36px)] [--hero-gap-palco:clamp(8px,1.4svh,16px)]',
         // relevo sutil só de token: do degrau 900 ao piso 950
-        'bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_480px)]',
+        'bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_220px)] md:bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_320px)]',
       )}
     >
       {/* A ATMOSFERA cobre a SEÇÃO INTEIRA (30/09): campo teal vindo de baixo e
@@ -91,7 +91,7 @@ export function Hero() {
           (-z-10 dentro do isolate da seção). */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div
-          className="absolute inset-0 opacity-70 [[data-theme=light]_&]:opacity-60"
+          className="absolute inset-0 opacity-25 [[data-theme=light]_&]:opacity-40"
           style={{
             background: 'radial-gradient(75% 55% at 50% 82%, color-mix(in srgb, var(--color-brand-500) 30%, transparent) 0%, color-mix(in srgb, var(--color-brand-500) 10%, transparent) 50%, transparent 78%)',
             maskImage: 'linear-gradient(to bottom, black 0%, black 78%, transparent 100%)',
