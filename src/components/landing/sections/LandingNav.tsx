@@ -78,7 +78,7 @@ export function LandingNav() {
       // backdrop-filter na própria barra, ela viraria a "raiz" do desfoque e o
       // painel de vidro do menu Plataforma só desfocaria o conteúdo dela, não a
       // página embaixo.
-      className="sticky top-0 z-40 h-16 border-b border-surface-700 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[color-mix(in_srgb,var(--color-surface-950)_72%,transparent)] before:backdrop-blur-md before:content-['']"
+      className="sticky top-0 z-40 h-16 border-b border-surface-700 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[color-mix(in_srgb,var(--color-surface-950)_94%,transparent)] before:backdrop-blur-md before:content-['']"
     >
       <div className="landing-container flex h-full items-center gap-2 sm:gap-6">
         <Link
