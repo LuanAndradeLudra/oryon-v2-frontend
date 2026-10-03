@@ -145,9 +145,13 @@ export function useConversations(filters: ConversationFilters = {}) {
     if (loadingMoreLockRef.current || !hasMore) return
     loadingMoreLockRef.current = true
     const next = pageRef.current + 1
+    // Revisão 03/10: a página seguinte do filtro ANTERIOR (chip trocado durante
+    // a carga) era anexada à lista do filtro novo.
+    const daCarga = fetchTokenRef.current
     setLoadingMore(true)
     try {
       const { data } = await withRetry(() => conversationsApi.list(filtersRef.current, next, PAGE_SIZE))
+      if (fetchTokenRef.current !== daCarga) return
       setConversations((prev) => {
         const seen = new Set(prev.map((c) => c.id))
         const incoming = data.data.filter((c) => !seen.has(c.id))

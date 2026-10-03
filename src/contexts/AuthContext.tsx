@@ -9,6 +9,7 @@ import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBa
 import { SKIP_AUTH_REFRESH, renovarSessao } from '@/services/api'
 import { resetBillingState } from '@/hooks/useBilling'
 import { resetLinhasComIA } from '@/hooks/useLinhasComIA'
+import { limparSessao } from '@/lib/limpezaDaSessao'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -217,6 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // saldo/plano do tenant que saiu para a próxima sessão.
     resetBillingState()
     resetLinhasComIA()
+    limparSessao()
     try {
       const body = isNativePlatform() ? { refreshToken: refreshToken ?? undefined } : {}
       await axios.post(`${API}/auth/logout`, body, {

@@ -31,6 +31,10 @@ export function useConversationFromUrl({
   // Callbacks entram por ref: o efeito reage a dados, não à identidade das funções.
   const cbRef = useRef({ onFoundInList, onFetched, fetchById })
   useEffect(() => { cbRef.current = { onFoundInList, onFetched, fetchById } })
+  // Revisão 03/10: a busca por id que volta depois de o usuário clicar em outra
+  // conversa não pode tirá-lo de lá (nem limpar o filtro de datas).
+  const urlAtual = useRef(urlId)
+  useEffect(() => { urlAtual.current = urlId }, [urlId])
 
   useEffect(() => {
     if (!urlId) { handledRef.current = null; return }
@@ -47,8 +51,9 @@ export function useConversationFromUrl({
     if (loading) return
 
     handledRef.current = urlId
-    cbRef.current.fetchById(urlId)
-      .then((c) => cbRef.current.onFetched(c))
+    const pedido = urlId
+    cbRef.current.fetchById(pedido)
+      .then((c) => { if (urlAtual.current === pedido) cbRef.current.onFetched(c) })
       .catch(() => { /* id inválido ou sem permissão — o estado vazio explica; não tenta de novo */ })
   }, [urlId, conversations, loading, activeId])
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { whatsappNumbersApi } from '@/services/api'
+import { aoSairDaSessao } from '@/lib/limpezaDaSessao'
 
 /**
  * Onde cada agente atende, lido das LINHAS (`whatsapp_numbers.agentId`), que
@@ -19,6 +20,9 @@ export interface LinhaDoAgente {
 
 let pedido: Promise<LinhaDoAgente[]> | null = null
 let falhou = false
+// Revisão 03/10: o cache sobrevivia ao logout — a conta seguinte via as linhas
+// da anterior (todo agente no ar aparecia sem número).
+aoSairDaSessao(() => { pedido = null; falhou = false })
 
 /** Todas as linhas do tenant, com uma consulta por carga de página. */
 export function carregarLinhas(forcar = false): Promise<LinhaDoAgente[]> {
