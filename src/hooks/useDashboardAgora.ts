@@ -7,6 +7,14 @@ import type { Conversation, ConversationFilters, WhatsAppNumberDetailed } from '
 
 /** Recarga periódica (decisão do PO: o painel atualiza sozinho a cada minuto). */
 const RECARGA_MS = 60_000
+/**
+ * Revisão 02/10: cada `message:new`/`conversation:*` disparava, com 1 s de
+ * respiro, a carga inteira (15–25 requisições). Num tenant com mensagem a cada
+ * 2–3 s isso virava uma rajada contínua por aba aberta. Agora: no máximo uma
+ * carga em voo, com pelo menos este intervalo entre cargas puxadas por evento,
+ * e nada enquanto a aba está escondida (recarrega ao voltar).
+ */
+export const MIN_ENTRE_RECARGAS_MS = 5_000
 /** A espera exibida anda sem recarregar: recalcula a cada 30 s. */
 const RELOGIO_MS = 30_000
 /**
@@ -214,22 +222,48 @@ export function useDashboardAgora(): DashboardAgora {
 
   useEffect(() => {
     vivo.current = true
-    void carregar()
-    const recarga = setInterval(() => void carregar(), RECARGA_MS)
-    const relogio = setInterval(() => setAgora(Date.now()), RELOGIO_MS)
     let espera: ReturnType<typeof setTimeout> | undefined
+    let emVoo = false
+    let pendente = false
+    let sujo = false
+    let ultima = 0
+    const escondida = () => typeof document !== 'undefined' && document.hidden
+    const disparar = async () => {
+      if (emVoo) { pendente = true; return }
+      emVoo = true
+      ultima = Date.now()
+      try {
+        await carregar()
+      } finally {
+        emVoo = false
+        if (pendente && vivo.current) { pendente = false; agendar() }
+      }
+    }
+    const agendar = () => {
+      clearTimeout(espera)
+      const falta = Math.max(1_000, MIN_ENTRE_RECARGAS_MS - (Date.now() - ultima))
+      espera = setTimeout(() => void disparar(), falta)
+    }
+    void disparar()
+    const recarga = setInterval(() => { if (!escondida()) void disparar(); else sujo = true }, RECARGA_MS)
+    const relogio = setInterval(() => setAgora(Date.now()), RELOGIO_MS)
     const socket = connectSocket()
     const aoEvento = () => {
-      clearTimeout(espera)
-      espera = setTimeout(() => void carregar(), 1_000)
+      if (escondida()) { sujo = true; return }
+      agendar()
+    }
+    const aoVoltar = () => {
+      if (!escondida() && sujo) { sujo = false; agendar() }
     }
     for (const e of EVENTOS) socket.on(e, aoEvento)
+    document.addEventListener('visibilitychange', aoVoltar)
     return () => {
       vivo.current = false
       clearInterval(recarga)
       clearInterval(relogio)
       clearTimeout(espera)
       for (const e of EVENTOS) socket.off(e, aoEvento)
+      document.removeEventListener('visibilitychange', aoVoltar)
     }
   }, [carregar])
 
