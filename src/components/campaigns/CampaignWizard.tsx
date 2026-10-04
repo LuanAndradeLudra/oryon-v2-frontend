@@ -242,9 +242,16 @@ export function CampaignWizard({
   // dois pede confirmação hoje; Esc ficar de fora era a mesma falha "Esc
   // vaza" já registrada em outras telas do produto, não uma proteção
   // deliberada contra perda de dado).
+  //
+  // Revisão final 04/10: Esc fechava o assistente INTEIRO junto com a lista de
+  // contatos aberta por cima, e apagava nome, modelo, segmento e variáveis sem
+  // aviso. Agora a lista consome o próprio Esc (captura) e, com algo
+  // preenchido, Esc não fecha — sair é pelo X, um gesto deliberado.
+  const temDadosRef = useRef(false)
+  temDadosRef.current = !!campaignName.trim() || !!selectedTemplate
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !temDadosRef.current) onClose() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose])
@@ -1846,9 +1853,15 @@ function ContactListModal({
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    // Captura + stopImmediatePropagation: o Esc fecha só esta lista, não o
+    // assistente que está por baixo (revisão final 04/10).
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopImmediatePropagation()
+      onClose()
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
   }, [onClose])
 
   const segmented = useMemo(() => {
