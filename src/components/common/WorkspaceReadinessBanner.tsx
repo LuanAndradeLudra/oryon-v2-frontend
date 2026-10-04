@@ -19,6 +19,8 @@ import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { AlertTriangle, AlertCircle, CheckCircle, ChevronRight, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import {
   unmetBlockersAffecting,
   unmetChecks,
@@ -107,6 +109,11 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
 // ─── Checklist (Home) ────────────────────────────────────────────────────────
 
 function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; className?: string }) {
+  // Revisão final 04/10: os passos (criar setor, conectar agente, funil) são
+  // de administrador. O atendente via botões que levavam a telas que ele não
+  // abre — agora vê a lista como informação, sem ação.
+  const { user } = useAuth()
+  const podeAgir = isAdminTier(user?.role)
   const blockers = checks.filter((c) => c.severity === 'blocker')
   const warnings = checks.filter((c) => c.severity === 'warning')
   const hasBlockers = blockers.length > 0
@@ -118,13 +125,15 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
     ? `Falta${blockers.length > 1 ? 'm' : ''} ${plural(blockers.length, 'passo obrigatório', 'passos obrigatórios')}${
         warnings.length > 0 ? ` e ${plural(warnings.length, 'recomendado', 'recomendados')}` : ''}`
     : `${warnings.length} sugest${warnings.length > 1 ? 'ões' : 'ão'} pendente${warnings.length > 1 ? 's' : ''}`
-  const description = hasBlockers
-    ? 'Resolva os itens abaixo para destravar o uso completo do CRM.'
-    : 'Estes itens não bloqueiam o uso, mas melhoram a experiência.'
+  const description = !podeAgir
+    ? 'Peça a um administrador da empresa para concluir estes passos.'
+    : hasBlockers
+      ? 'Resolva os itens abaixo para destravar o uso completo do CRM.'
+      : 'Estes itens não bloqueiam o uso, mas melhoram a experiência.'
   const list = (
     <ul className="space-y-2 mt-3">
       {[...blockers, ...warnings].map((c) => (
-        <ChecklistItem key={c.id} check={c} />
+        <ChecklistItem key={c.id} check={c} podeAgir={podeAgir} />
       ))}
     </ul>
   )
@@ -169,7 +178,7 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
   )
 }
 
-function ChecklistItem({ check }: { check: WorkspaceCheck }) {
+function ChecklistItem({ check, podeAgir = true }: { check: WorkspaceCheck; podeAgir?: boolean }) {
   const isBlocker = check.severity === 'blocker'
   return (
     // Eixo 10: surface-900 no claro é quase idêntico ao branco do card por
@@ -193,7 +202,7 @@ function ChecklistItem({ check }: { check: WorkspaceCheck }) {
         </p>
         <p className="text-[11px] text-surface-500 mt-0.5">{check.description}</p>
       </div>
-      {check.cta && (
+      {check.cta && podeAgir && (
         <LinkComVolta
           to={check.cta.href}
           className={cn(

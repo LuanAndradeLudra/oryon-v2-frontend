@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
-import { isOryonStaff } from '@/lib/roleHelpers'
+import { isAdminTier, isOryonStaff } from '@/lib/roleHelpers'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TagsProvider }         from '@/contexts/TagsContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
@@ -132,12 +132,25 @@ function OnboardingGate({ children }: { children: ReactNode }) {
   if (isOryonStaff(user?.role)) {
     return <>{children}</>
   }
+  // Revisão final 04/10: a configuração inicial é do administrador. Atendente
+  // ou supervisor convidado antes de o dono terminar caía no /setup, os dados
+  // não eram salvos (403) e mesmo assim a empresa ficava "configurada".
+  if (!isAdminTier(user?.role)) {
+    return <>{children}</>
+  }
   // F13-899: o wizard virou rota (`/setup`) — retomável e linkável. O gate só
   // redireciona; o bloqueio de mobile e o provider de linha WhatsApp moram na
   // página. `/setup` fica FORA deste gate, senão o redirect entraria em loop.
   if (!organizationConfigured) {
     return <Navigate to="/setup" replace />
   }
+  return <>{children}</>
+}
+
+/** O /setup também fecha pela URL para quem não é administrador. */
+function SoAdminNoSetup({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  if (user && !isAdminTier(user.role) && !isOryonStaff(user.role)) return <Navigate to="/home" replace />
   return <>{children}</>
 }
 
@@ -212,7 +225,7 @@ function AnimatedRoutes() {
           {/* Primeiro uso — protegido por login, mas FORA do OnboardingGate
               (é o destino dele) e fora do AppShell (é tela cheia). */}
           <Route path="/setup" element={
-            <RequireAuth><SetupPage /></RequireAuth>
+            <RequireAuth><SoAdminNoSetup><SetupPage /></SoAdminNoSetup></RequireAuth>
           } />
 
           {/* Protected */}
