@@ -273,16 +273,16 @@ function AnimatedRoutes() {
             <ProtectedRoute><SettingsPage /></ProtectedRoute>
           } />
           <Route path="/copilot" element={
-            <ProtectedRoute><CopilotPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><CopilotPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/marketing" element={
-            <ProtectedRoute><MarketingPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><MarketingPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/automations" element={
-            <ProtectedRoute><AutomationsPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><AutomationsPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/team" element={
-            <ProtectedRoute><TeamChatPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><TeamChatPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/agents" element={
             <ProtectedRoute><AgentsPage /></ProtectedRoute>
