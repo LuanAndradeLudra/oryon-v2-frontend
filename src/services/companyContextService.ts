@@ -147,12 +147,15 @@ async function fetchHubFromBackend(tenantId: string): Promise<CompanyHubData | n
 }
 
 async function saveHubToBackend(tenantId: string, data: CompanyHubData): Promise<void> {
-  await fetch(`${API}/context/brain`, {
+  const res = await fetch(`${API}/context/brain`, {
     method: 'PATCH',
     headers: headers(),
     credentials: 'include',
     body: JSON.stringify(data),
   })
+  // Revisão final 04/10: resposta de erro (403/500) também é falha — antes
+  // só a falha de rede chegava ao catch de quem chama.
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
 }
 
 /**

@@ -13,7 +13,7 @@ import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowle
 import { useAuth } from '@/contexts/AuthContext'
 import { showToast } from '@/hooks/useToast'
 import {
-  loadHub, loadHubAsync, saveHub, hubToBrandLinks, hubHasContent,
+  loadHub, loadHubAsync, saveHubAndWait, hubToBrandLinks, hubHasContent,
   DEFAULT_HUB, type CompanyHubData,
 } from '@/services/companyContextService'
 import { appLogger } from '@/services/appLogger'
@@ -558,13 +558,14 @@ const HUB_PRESENCE_FIELDS: { key: 'website' | 'instagram' | 'facebook' | 'linked
   { key: 'whatsapp',  label: 'WhatsApp',   placeholder: '+55 11 9...' },
 ]
 
-function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<React.SetStateAction<WizardData>> }) {
+export function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<React.SetStateAction<WizardData>> }) {
   const { tenantId } = readSession()
   const [hub, setHub] = useState<CompanyHubData>(DEFAULT_HUB)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
+  const [erroAoSalvar, setErroAoSalvar] = useState<string | null>(null)
 
   useEffect(() => {
     if (!tenantId) { setLoading(false); return }
@@ -608,18 +609,23 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
     setSavedAt(null)
   }
 
-  const handleSave = () => {
+  // Revisão final 04/10: mostrava "Salvo" depois de 250 ms sem conferir a
+  // resposta — sem permissão (403) ou com o servidor fora, a alteração sumia
+  // ao recarregar. Agora espera o servidor e só marca "Salvo" se gravou.
+  const handleSave = async () => {
     if (!tenantId || saving) return
     setSaving(true)
-    // Persist hub to backend; the live-mirror useEffect already keeps wizard
-    // data in sync, so downstream steps see the values immediately.
-    saveHub(tenantId, hub)
-    // Brief async tick so the saving spinner is perceivable.
-    setTimeout(() => {
-      setSaving(false)
+    setErroAoSalvar(null)
+    const r = await saveHubAndWait(tenantId, hub)
+    setSaving(false)
+    if (r === 'ok') {
       setDirty(false)
       setSavedAt(Date.now())
-    }, 250)
+      return
+    }
+    setErroAoSalvar(r === 'forbidden'
+      ? 'Só um administrador pode salvar o Contexto da IA.'
+      : 'Não foi possível salvar agora. Tente de novo.')
   }
 
   return (
@@ -649,6 +655,9 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             >
               Não salvo
             </span>
+          )}
+          {erroAoSalvar && (
+            <span role="alert" className="text-[11px] text-danger">{erroAoSalvar}</span>
           )}
           {!dirty && savedAt && (
             <span
