@@ -92,7 +92,8 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
 
         <OndeOAgenteFalha agentId={agent.id} />
 
-        <TurnosGravados agentId={agent.id} />
+        {/* Revisão final 04/10: turnos trazem mensagens de clientes — gestão. */}
+        {podeVerMetricas && <TurnosGravados agentId={agent.id} />}
 
         <Bloco
           titulo="Uso das ferramentas"
