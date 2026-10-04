@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { BarChart3, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getToolMetrics, type AgentConfigWithTools, type ToolMetricRow } from '@/services/agentsApi'
+import { useAuth } from '@/contexts/AuthContext'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -47,16 +48,23 @@ function Numero({ rotulo, valor, detalhe }: { rotulo: string; valor: string; det
 export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
   const [params, setParams] = useSearchParams()
   const periodo: Periodo = (['1', '7', '30'] as const).includes(params.get('periodo') as Periodo) ? params.get('periodo') as Periodo : '7'
-  const [linhas, setLinhas] = useState<ToolMetricRow[] | null>(null)
-  const [indisponivel, setIndisponivel] = useState(false)
+  const [linhasLidas, setLinhas] = useState<ToolMetricRow[] | null>(null)
+  const [indisponivelLido, setIndisponivel] = useState(false)
+  // Revisão 03/10: as métricas das ferramentas são de gestão (supervisor para
+  // cima) — o atendente não chama a rota, vê o aviso de indisponível.
+  const { user } = useAuth()
+  const podeVerMetricas = user?.role !== 'agent'
+  const linhas = podeVerMetricas ? linhasLidas : []
+  const indisponivel = podeVerMetricas ? indisponivelLido : true
 
   useEffect(() => {
+    if (!podeVerMetricas) return
     let vivo = true
     getToolMetrics(Number(periodo))
       .then((r) => { if (vivo) { setLinhas(r.tools); setIndisponivel(false) } })
       .catch(() => { if (vivo) { setLinhas([]); setIndisponivel(true) } })
     return () => { vivo = false }
-  }, [periodo])
+  }, [periodo, podeVerMetricas])
 
   const mudarPeriodo = (p: Periodo) => setParams((prev) => {
     const n = new URLSearchParams(prev)

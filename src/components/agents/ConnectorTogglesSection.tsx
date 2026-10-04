@@ -34,7 +34,10 @@ interface Props {
 /** D12 — escondido com a flag connectorsSelfService desligada (o agent-server responde 404). */
 export function ConnectorTogglesSection(props: Props) {
   const { isFeatureVisible } = useFeatureVisibility()
-  if (!isFeatureVisible('connectorsSelfService')) return null
+  const { user } = useAuth()
+  // Revisão 03/10: o agent-server só responde ao dono (DONO) — os demais papéis
+  // veriam a seção quebrada (403). A seção é de quem instala e liga conectores.
+  if (!isFeatureVisible('connectorsSelfService') || !isOwnerTier(user?.role)) return null
   return <ConnectorTogglesSectionVisivel {...props} />
 }
 
