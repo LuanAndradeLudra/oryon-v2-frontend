@@ -11,6 +11,7 @@ vi.mock('@/hooks/useLinhasComIA', () => ({ useLinhasDaIA: () => ({ conhecidas: f
 vi.mock('@/components/conversations/ConversionAnalysisPanel', () => ({ ConversionAnalysisPanel: () => null }))
 vi.mock('./ConversationActivitySection', () => ({ ConversationActivitySection: () => null }))
 vi.mock('./ContactPanelDeals', () => ({ ContactPanelDeals: () => null }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { role: 'admin' } }) }))
 
 import { ContactPanel } from './ContactPanel'
 import type { Conversation } from '@/types'
