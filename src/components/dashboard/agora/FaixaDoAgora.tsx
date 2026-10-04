@@ -5,6 +5,8 @@ import type { FiltroDaFila } from './FilaAoVivo'
 import { formatarEspera, janelaFechada, janelaFechando, PRAZO_RESPOSTA_MIN, type ItemDaFila } from '@/lib/filaAgora'
 import type { WhatsAppNumberDetailed } from '@/types'
 import type { ResumoDaFila, TotaisDaFila } from '@/hooks/useDashboardAgora'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 
 // Faixa do "agora" (direção A): seis contagens do momento. As da fila vêm dos
 // totais EXATOS do servidor (as mesmas consultas da aba Fila da inbox); maior
@@ -48,6 +50,10 @@ function conectada(l: WhatsAppNumberDetailed): boolean {
 }
 
 export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais = null, resumo = null, agora = Date.now(), onFiltro, filtroAtivo }: Props) {
+  // Revisão final 04/10: Configurações → Números é de administrador; para os
+  // demais papéis o link redirecionava em silêncio para outra tela.
+  const { user } = useAuth()
+  const abreLinhas = isAdminTier(user?.role)
   // Revisão 30/09 (M5): do servidor, sobre a fila inteira; sem o resumo, pela lista carregada.
   const fechando = resumo ? resumo.janelaFechando : fila.filter(janelaFechando).length
   const fechadas = resumo ? resumo.janelaFechada : fila.filter(janelaFechada).length
@@ -110,7 +116,7 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais
     {
       id: 'linhas',
       grupo: 'Linhas',
-      acao: { tipo: 'link', para: '/settings/numbers', rotulo: 'Abrir as linhas de WhatsApp' },
+      acao: abreLinhas ? { tipo: 'link', para: '/settings/numbers', rotulo: 'Abrir as linhas de WhatsApp' } : undefined,
       rotulo: 'Linhas de WhatsApp',
       valor: linhas.length === 0 ? '—' : `${conectadas.length} de ${linhas.length}`,
       nota: linhas.length === 0 ? 'nenhuma cadastrada' : `conectadas · ${comIA} com IA`,

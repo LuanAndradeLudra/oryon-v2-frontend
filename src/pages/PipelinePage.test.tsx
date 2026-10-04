@@ -10,6 +10,7 @@ import { TopBarActionsProvider, useTopBarActions } from '@/contexts/TopBarAction
 import { pipelinesApi } from '@/services/api'
 import type { Pipeline } from '@/types'
 
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { role: 'admin', tenantId: 't1' }, featureFlags: ['FF_MULTI_PIPELINE'] }) }))
 vi.mock('@/services/api', () => ({
   pipelinesApi: { list: vi.fn() },
 }))

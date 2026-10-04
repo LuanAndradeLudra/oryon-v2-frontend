@@ -102,7 +102,13 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
           {linhas === null ? (
             <Skeleton className="h-24 w-full bg-[var(--sf2)]" />
           ) : indisponivel ? (
-            <EmptyState icon={BarChart3} title="Registro de uso indisponível" hint="O registro das chamadas de ferramentas não está ligado nesta conta. Fale com a Oryon se quiser acompanhar." />
+            <EmptyState
+              icon={BarChart3}
+              title="Registro de uso indisponível"
+              hint={podeVerMetricas
+                ? 'O registro das chamadas de ferramentas não está ligado nesta conta. Fale com a Oryon se quiser acompanhar.'
+                : 'O uso das ferramentas é visto por supervisores e administradores.'}
+            />
           ) : linhas.length === 0 ? (
             <EmptyState icon={BarChart3} title="Nenhuma ferramenta chamada no período" hint="Quando o agente usar integrações ou skills, as chamadas aparecem aqui." />
           ) : (

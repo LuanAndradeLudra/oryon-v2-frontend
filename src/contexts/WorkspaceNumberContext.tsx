@@ -53,12 +53,14 @@ export function WorkspaceNumberProvider({ children }: { children: React.ReactNod
       return
     }
     try {
-      const { data } = await whatsappNumbersApi.list()
+      // Revisão final 04/10: /meta/numbers é só de administrador — para os
+      // demais papéis a lista vinha vazia e tudo aparecia como "sem linha".
+      // /whatsapp/numbers serve a todos os papéis e traz os mesmos campos.
+      const { data } = await whatsappNumbersApi.listDetailed()
       setNumbers((data ?? []).filter((n) => n.isActive !== false))
     } catch {
-      // Non-admin users may 403 on certain deployments; an empty list is
-      // safe — chips/callouts just render "sem linha" and the create
-      // forms still work (they fetch the list directly as a fallback).
+      // Falha de rede: lista vazia (os chips mostram "sem linha" e os
+      // formulários buscam a lista direto como alternativa).
       setNumbers([])
     } finally {
       setLoading(false)

@@ -54,6 +54,9 @@ interface Props {
 export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
   const { user } = useAuth()
   const staff = isOryonStaff(user?.role)
+  // Revisão final 04/10: ligar/desligar skill é de gestão (supervisor para
+  // cima) no agent-server; o atendente via o interruptor virar, voltar e um 403.
+  const podeAlternar = user?.role !== 'agent'
   const owner = isOwnerTier(user?.role)
   const conectoresVisiveis = useFeatureVisibility().isFeatureVisible('connectorsSelfService')
   const navigate = useNavigate()
@@ -253,6 +256,7 @@ export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
                 row={row}
                 toggling={togglingId === row.skill_id}
                 staff={staff}
+                podeAlternar={podeAlternar}
                 onToggle={() => toggle(row)}
                 onEdit={() => setEditing(row)}
                 onRemove={() => setRemoving(row)}
@@ -364,6 +368,7 @@ function SkillRow({
   row,
   toggling,
   staff,
+  podeAlternar = true,
   onToggle,
   onEdit,
   onRemove,
@@ -372,6 +377,7 @@ function SkillRow({
   row: AgentSkillWithTemplate
   toggling: boolean
   staff: boolean
+  podeAlternar?: boolean
   onToggle: () => void
   onEdit: () => void
   onRemove: () => void
@@ -379,7 +385,7 @@ function SkillRow({
 }) {
   const tam = useTamanhoDeToque()
   const description = row.llm_description_override?.trim() || row.template_llm_description
-  const disabled = toggling || !row.template_enabled
+  const disabled = toggling || !row.template_enabled || !podeAlternar
 
   return (
     <motion.div

@@ -120,7 +120,8 @@ export function TagsSettings() {
   const [saving, setSaving] = useState(false)
 
   const handleCreate = async () => {
-    if (!newName.trim()) return
+    // Revisão final 04/10: Enter + clique (ou Enter 2×) criava a etiqueta duplicada.
+    if (!newName.trim() || saving) return
     setSaving(true)
     try {
       await createTag(newName.trim(), newColor)

@@ -20,6 +20,8 @@ import { PipelineReportsTab } from '@/components/deals/reports/PipelineReportsTa
 import { isReportPeriod, type ReportPeriod } from '@/lib/reportPeriods'
 import type { Pipeline } from '@/types'
 import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 
 type Tab = 'board' | 'list' | 'reports'
 
@@ -36,6 +38,8 @@ export function PipelinePage() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const semMovimento = useReducedMotion()
+  const { user } = useAuth()
+  const podeConfigurarFunil = isAdminTier(user?.role)
   const [seletorAberto, setSeletorAberto] = useState(false)
   /**
    * Criação a partir do CABEÇALHO. Os diálogos vivem na aba do quadro; aqui só
@@ -348,7 +352,10 @@ export function PipelinePage() {
   const toolbarTrail = (
     <>
       {isMobile && novoNegocioBtn}
-      <button
+      {/* Revisão final 04/10: etapas, motivos e acesso são de administrador —
+          para os demais o painel falhava e o "Abrir em Configurações" caía em
+          outra tela sem explicação. */}
+      {podeConfigurarFunil && <button
         type="button"
         onClick={() => abrirConfig(true)}
         title={`Configurar etapas, motivos e acesso de "${pipeline.name}"`}
@@ -358,7 +365,7 @@ export function PipelinePage() {
       >
         <Settings2 className="w-3.5 h-3.5" />
         <span className="hidden md:inline">Etapas</span>
-      </button>
+      </button>}
     </>
   )
 
@@ -436,7 +443,7 @@ export function PipelinePage() {
         </AnimatePresence>
       </div>
 
-      <FunnelsConfigDrawer open={configAberto} onClose={() => abrirConfig(false)} />
+      <FunnelsConfigDrawer open={configAberto && podeConfigurarFunil} onClose={() => abrirConfig(false)} />
     </div>
   )
 }
