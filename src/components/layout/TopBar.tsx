@@ -30,6 +30,8 @@ import { useTheme, type Theme } from '@/hooks/useTheme'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { rotaPermitida } from '@/lib/rotasPorPapel'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import {
   categoryOf,
   CATEGORY_STYLE,
@@ -1235,12 +1237,14 @@ export function TopBar() {
   const navigate  = useNavigate()
   const { user }  = useAuth()
   const { userEmail, isFeatureVisible: isFeatureVisibleForUser } = useFeatureVisibility()
+  const multiPipeline = useMultiPipeline()
 
   const visibleSearchIndex = useMemo(
     () => SEARCH_INDEX.filter((item) => isRouteVisible(item.href, userEmail)
+      && rotaPermitida(item.href, { role: user?.role, multiPipeline })
       // Revisão 02/10: a busca não oferece seção de Configurações que o papel não abre.
       && (item.type !== 'settings' || !user?.role || papelAlcancaSecao(item.href.replace('/settings/', ''), user.role))),
-    [userEmail, user?.role],
+    [userEmail, user?.role, multiPipeline],
   )
   const { open: openCopilot } = useCopilotContext()
   const { pageActions, pageSubtitle: dynamicSubtitle } = useTopBarActions()

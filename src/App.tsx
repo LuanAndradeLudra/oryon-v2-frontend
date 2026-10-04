@@ -248,7 +248,7 @@ function AnimatedRoutes() {
             <ProtectedRoute><NotificationsPage /></ProtectedRoute>
           } />
           <Route path="/campaigns" element={
-            <ProtectedRoute><CampaignsPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><CampaignsPage /></RotaPorPapel></ProtectedRoute>
           } />
           {/* Leva 9 (SCRUM-1107) — casca visual de Agendamentos, dado de
               exemplo fixo, sem integração real de agenda por trás. */}
@@ -337,6 +337,7 @@ function AnimatedRoutes() {
 // ── Global toast container — reads do singleton em useToast.ts ──────────────
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
+import { RotaPorPapel } from '@/components/navegacao/RotaPorPapel'
 
 function GlobalToastContainer() {
   const { toasts, dismiss } = useToast()

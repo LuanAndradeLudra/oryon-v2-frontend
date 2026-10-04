@@ -30,6 +30,7 @@ import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { AiCreditsIndicator } from './AiCreditsIndicator'
 import { OryonLogo } from '@/components/brand/OryonLogo'
+import { rotaPermitida } from '@/lib/rotasPorPapel'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -228,7 +229,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
     { icon: <CopilotMark className="w-[16.5px] h-[16.5px]" />,   label: 'Copilot AI', href: '/copilot',
       nudge: !checklist.copilot ? 'Setup' : undefined },
-  ].filter((item) => isRouteVisible(item.href))
+  ].filter((item) => isRouteVisible(item.href) && rotaPermitida(item.href, { role: user?.role, multiPipeline }))
 
   const internalChatItem = {
     icon: <MessagesSquare className="w-[16.5px] h-[16.5px]" />,
