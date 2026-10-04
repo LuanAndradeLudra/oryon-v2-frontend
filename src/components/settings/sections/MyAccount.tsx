@@ -75,6 +75,11 @@ export function MyAccount() {
       toast('A senha deve ter no mínimo 8 caracteres.', 'error')
       return
     }
+    // Mesma regra do backend (ChangePasswordDto).
+    if (!/[a-z]/.test(pwForm.next) || !/[A-Z]/.test(pwForm.next) || !/\d/.test(pwForm.next)) {
+      toast('A senha deve ter ao menos uma letra maiúscula, uma minúscula e um número.', 'error')
+      return
+    }
     setSavingPw(true)
     try {
       // O 401 aqui é "senha atual errada", não sessão vencida: sem a marca,
@@ -84,7 +89,13 @@ export function MyAccount() {
       toast('Senha alterada com sucesso.', 'success')
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response?.status
-      toast(status === 401 ? 'Senha atual incorreta.' : 'Não foi possível alterar a senha. Tente de novo.', 'error')
+      toast(
+        status === 401 ? 'Senha atual incorreta.'
+          : status === 429 ? 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'
+          : status === 400 ? 'A senha nova não atende aos requisitos: mínimo 8 caracteres, com maiúscula, minúscula e número.'
+          : 'Não foi possível alterar a senha. Tente de novo.',
+        'error',
+      )
     } finally {
       setSavingPw(false)
     }
