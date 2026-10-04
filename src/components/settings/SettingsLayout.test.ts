@@ -81,3 +81,11 @@ describe('papelAlcancaSecao', () => {
     expect(papelAlcancaSecao('billing', 'business_admin')).toBe(true)
   })
 })
+
+describe('Contexto da IA (company-brain)', () => {
+  it('é só de administrador: supervisor não vê nem abre por URL', () => {
+    expect(papelAlcancaSecao('company-brain', 'supervisor')).toBe(false)
+    expect(papelAlcancaSecao('company-brain', 'admin')).toBe(true)
+    expect(sectionsOf('supervisor')).not.toContain('company-brain')
+  })
+})

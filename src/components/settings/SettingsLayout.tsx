@@ -136,7 +136,8 @@ export const SETTINGS_NAV: NavDomain[] = [
     clusters: [
       {
         items: [
-          { section: 'company-brain', label: 'Contexto da IA',    supervisorOnly: true },
+          // PO 04/10: só administradores — o backend só deixa admin sincronizar (o supervisor via a tela e a sincronização falhava).
+          { section: 'company-brain', label: 'Contexto da IA',    adminOnly: true },
           { section: 'quick-replies', label: 'Respostas rápidas', supervisorOnly: true },
         ],
       },
