@@ -4,8 +4,13 @@
 // dinheiro só em funil de venda, "Mover" com motivo no terminal, fechados com
 // histórico — e, sem o flag, a aba NÃO some: continua sendo a lista de negócios
 // do tenant de funil único.
+//
+// SCRUM-1097 (DRAWER-25/26/27): a UI virou uma tabela bordeada por linha (era
+// um card por registro do DealSummary) com um menu "···" agrupando
+// mover/editar/excluir — os testes abaixo seguem essa estrutura nova.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { escolherOpcao } from '@/test/escolherOpcao'
 
 const { api, openDeal, multi, socket } = vi.hoisted(() => ({
   api: { list: vi.fn(), moveStage: vi.fn(), setStatus: vi.fn(), history: vi.fn(), remove: vi.fn(), get: vi.fn(), create: vi.fn() },
@@ -13,7 +18,7 @@ const { api, openDeal, multi, socket } = vi.hoisted(() => ({
   multi: vi.fn(() => true),
   socket: { on: vi.fn(), off: vi.fn() },
 }))
-vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn(), list: vi.fn() }, usersApi: { list: vi.fn(() => Promise.resolve({ data: [] })) } }))
+vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn(), list: vi.fn(), getHistory: vi.fn(() => Promise.resolve({ data: { data: [] } })) }, usersApi: { list: vi.fn(() => Promise.resolve({ data: [] })) } }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
 // `useAddToPipeline` (por baixo de AddToPipelineMenu/NewDealDialog) ainda chama
 // useNavigate — sem Router no render de teste, precisa continuar mockado.
@@ -30,6 +35,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 }))
 
 import type { Deal, Pipeline, PipelineStage } from '@/types'
+import { contactsApi } from '@/services/api'
 const st = (id: string, label: string, order: number, extra: Partial<PipelineStage> = {}): PipelineStage => ({ id, tenantId: 't', pipelineId: 'p', key: id, label, color: '#111', order, isWon: false, isLost: false, ...extra })
 const SUPORTE: Pipeline = {
   id: 'p', tenantId: 't', name: 'Suporte', color: '#14b8a6', order: 0, isDefault: false, isArchived: false, kind: 'process', openDealsCount: 0,
@@ -70,12 +76,12 @@ const renderTab = () => render(<DealsTab contactId="c1" contactName="Mariana" />
 describe('DealsTab no Modelo B (SCRUM-921)', () => {
   it('mostra a ETAPA de cada registro e a contagem de abertos', async () => {
     renderTab()
-    await waitFor(() => expect(screen.getByTestId('deals-open-count')).toHaveTextContent('2 abertos'))
+    await waitFor(() => expect(screen.getByTestId('deals-open-count')).toHaveTextContent('2 Negócios abertos'))
     expect(api.list).toHaveBeenCalledWith('c1')
-    expect(screen.getByTestId('deal-stage-d1')).toHaveTextContent('Em atendimento')
-    expect(screen.getByTestId('deal-stage-d2')).toHaveTextContent('Proposta')
     expect(screen.getByTestId('deal-open-d1')).toHaveTextContent('Suporte')
-    expect(screen.getByTestId('deal-meta-d2')).toHaveTextContent('movido por Renata C. · origem Campanha · Promo Agosto')
+    expect(screen.getByTestId('deal-open-d1')).not.toHaveTextContent('Mariana')
+    expect(screen.getByTestId('deal-open-d2')).toHaveTextContent('Vendas')
+    expect(screen.getByTestId('deal-open-d2')).toHaveTextContent('Proposta')
   })
 
   it('dinheiro só em funil de VENDA — registro de processo não mostra R$ 0,00', async () => {
@@ -85,11 +91,11 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     expect(screen.getByTestId('deal-money-d2')).toHaveTextContent('2.500,00')
     expect(screen.getByTestId('deal-money-d2')).toHaveTextContent('1 item')
     // e o título próprio do negócio aparece; o do registro de processo (= nome
-    // do contato) não se repete dentro da ficha do próprio contato.
+    // do contato) não se repete dentro da linha do próprio contato.
     expect(screen.getByTestId('deal-open-d2')).toHaveTextContent('Plano Anual')
   })
 
-  it('"Mover" para etapa normal faz PATCH /deals/:id/stage e recarrega; "Abrir negócio" abre a FICHA (B2/928)', async () => {
+  it('"Mover" para etapa normal faz PATCH /deals/:id/stage e recarrega; a linha abre a FICHA (B2/928)', async () => {
     renderTab()
     await waitFor(() => expect(screen.getByTestId('deal-move-d1')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('deal-move-d1'))
@@ -108,14 +114,15 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     // funil de processo: "Cancelado", nunca "Perdido"
     expect(screen.queryByRole('menuitem', { name: /Perdido/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('menuitem', { name: /Cancelado \(com motivo\)/ }))
-    await waitFor(() => expect(screen.getByText('Cancelado — motivo')).toBeInTheDocument())
+    // heading, não texto solto: o botão de confirmar repete o mesmo verbo (DEAL-MODAL-13).
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mover para Cancelado' })).toBeInTheDocument())
     expect(api.setStatus).not.toHaveBeenCalled()
-    fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'cancelado_pelo_cliente' } })
+    escolherOpcao(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), 'cancelado_pelo_cliente')
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     await waitFor(() => expect(api.setStatus).toHaveBeenCalledWith('d1', { status: 'lost', closeReason: 'cancelado_pelo_cliente', closeNote: undefined }))
   })
 
-  it('fechados mostram terminal e motivo, e "ver histórico" busca as passagens', async () => {
+  it('fechados mostram terminal e motivo, e "histórico" busca as passagens', async () => {
     renderTab()
     await waitFor(() => expect(screen.getByTestId('deals-closed')).toBeInTheDocument())
     expect(screen.getByTestId('deals-closed')).toHaveTextContent('Suporte · Cancelado')
@@ -127,26 +134,40 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     expect(list).toHaveTextContent('Novo → Cancelado · Ana')
   })
 
+  it('DRAWER-29/30: "Atividade recente" mostra só eventos de negócio do histórico do contato', async () => {
+    vi.mocked(contactsApi.getHistory).mockResolvedValueOnce({ data: { data: [
+      { id: 'h1', contactId: 'c1', type: 'deal_won', actor: 'user', actorName: 'Ana', summary: 'ganhou o negócio Plano Anual', createdAt: '2026-08-01T00:00:00Z' },
+      { id: 'h2', contactId: 'c1', type: 'tag_added', actor: 'user', actorName: 'Ana', summary: 'adicionou a etiqueta VIP', createdAt: '2026-08-02T00:00:00Z' },
+    ] } } as never)
+    renderTab()
+    await waitFor(() => expect(screen.getByText('Atividade recente')).toBeInTheDocument())
+    expect(screen.getByText('Atividade recente').closest('div')).toHaveTextContent('ganhou o negócio Plano Anual')
+    expect(screen.queryByText(/adicionou a etiqueta/)).not.toBeInTheDocument()
+  })
+
   it('excluir chama DELETE /deals/:id e recarrega', async () => {
     renderTab()
-    await waitFor(() => expect(screen.getByTestId('deal-delete-d2')).toBeInTheDocument())
-    fireEvent.click(screen.getByTestId('deal-delete-d2'))
+    await waitFor(() => expect(screen.getByTestId('deal-move-d2')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('deal-move-d2'))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Excluir' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Excluir' }))
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith('d2'))
     await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
   })
 
-  it('sem o flag a aba NÃO some: lista os negócios, sem etapa nem mover, com "Novo"', async () => {
+  it('sem o flag a aba NÃO some: lista os negócios, sem etapa, com "Novo" e ainda pode editar/excluir', async () => {
     multi.mockReturnValue(false)
     renderTab()
     await waitFor(() => expect(api.list).toHaveBeenCalledWith('c1'))
     expect(await screen.findByTestId('deal-open-d2')).toBeInTheDocument()
-    expect(screen.queryByTestId('deal-stage-d2')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('deal-move-d2')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('deal-board-d2')).not.toBeInTheDocument()
+    expect(screen.getByTestId('deal-open-d2')).not.toHaveTextContent('Proposta')
     // sem funil no cache todo negócio é comercial — o valor continua aparecendo
     expect(screen.getByTestId('deal-money-d1')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Novo negócio/i })).toBeInTheDocument()
+    // "···" continua disponível (editar/excluir não dependem de funil), só sem itens de mover etapa
+    fireEvent.click(screen.getByTestId('deal-move-d2'))
+    expect(screen.getByRole('menuitem', { name: 'Editar' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Excluir' })).toBeInTheDocument()
   })
 })
 

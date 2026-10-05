@@ -16,7 +16,7 @@ interface ContactsHeaderProps {
 export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact, onImport, onConfigure }: ContactsHeaderProps) {
   const { vocab } = useTenantVocab()
   return (
-    <div className="flex items-center justify-between px-4 py-4 border-b border-surface-800 flex-shrink-0">
+    <div className="flex items-center justify-between px-4 py-4 border-b border-surface-700 flex-shrink-0">
       <div className="flex items-center gap-3">
         <h1 className="text-xl font-bold text-surface-50">{vocab.contacts}</h1>
         <span className="text-sm text-surface-500 bg-surface-800 px-2.5 py-0.5 rounded-full font-medium border border-surface-700">
@@ -32,7 +32,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
               viewMode === 'table'
-                ? 'bg-surface-700 text-surface-100 shadow-sm'
+                ? 'bg-surface-900 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200'
             )}
           >
@@ -44,7 +44,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
               viewMode === 'kanban'
-                ? 'bg-surface-700 text-surface-100 shadow-sm'
+                ? 'bg-surface-900 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200'
             )}
           >
@@ -72,7 +72,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
 
         <button
           onClick={onNewContact}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
           Novo Contato

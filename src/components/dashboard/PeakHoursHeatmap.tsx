@@ -4,18 +4,21 @@ import {
   CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 import { useChartColors } from '@/hooks/useChartColors'
+import { EscopoDoCartao } from './EscopoDoCartao'
 import type { HeatmapCell } from '@/types/dashboard'
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-// Aggregate heatmap cells into per-day buckets: manhã, tarde, noite
+// Agrega as células em faixas por dia. K10: a madrugada (0h–6h) entra —
+// antes as mensagens dessa faixa simplesmente sumiam do gráfico.
 function aggregate(data: HeatmapCell[]) {
   return DAYS.map((label, di) => {
     const dayRows = data.filter((c) => c.day === di)
+    const madrugada = dayRows.filter((c) => c.hour >= 0 && c.hour < 6).reduce((s, c) => s + c.value, 0)
     const manha   = dayRows.filter((c) => c.hour >= 6  && c.hour < 12).reduce((s, c) => s + c.value, 0)
     const tarde   = dayRows.filter((c) => c.hour >= 12 && c.hour < 18).reduce((s, c) => s + c.value, 0)
     const noite   = dayRows.filter((c) => c.hour >= 18 && c.hour < 24).reduce((s, c) => s + c.value, 0)
-    return { label, manha, tarde, noite }
+    return { label, madrugada, manha, tarde, noite }
   })
 }
 
@@ -46,22 +49,28 @@ function CustomTooltip({ active, payload, label }: {
   )
 }
 
-export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data }: { data: HeatmapCell[] }) {
+export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data, escopo }: { data: HeatmapCell[]; escopo?: string }) {
   const C = useChartColors()
   // aggregate() varre 168 células com 21 filter/reduce — só recalcula se data mudar
   const chartData = useMemo(() => aggregate(data), [data])
 
-  const BARS: { key: 'manha' | 'tarde' | 'noite'; label: string; color: string }[] = [
+  const BARS: { key: 'madrugada' | 'manha' | 'tarde' | 'noite'; label: string; color: string }[] = [
+    { key: 'madrugada', label: 'Madrugada (0h–6h)', color: C.purple },
     { key: 'manha', label: 'Manhã (6h–12h)',  color: C.brand },
     { key: 'tarde', label: 'Tarde (12h–18h)', color: C.online },
     { key: 'noite', label: 'Noite (18h–24h)', color: C.axis },
   ]
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
-      <div className="mb-4">
-        <p className="text-sm font-semibold text-surface-100">Horários de Pico</p>
-        <p className="text-xs text-surface-400 mt-0.5">Volume de conversas por período e dia da semana</p>
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+      <div className="mb-4 flex items-start gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-surface-100">Horários de Pico</p>
+          {/* Revisão 30/09 (D-e): só as mensagens RECEBIDAS — quando os clientes
+              escrevem. Disparo em massa não vira "pico". */}
+          <p className="text-xs text-surface-400 mt-0.5">Mensagens recebidas dos clientes por turno e dia da semana, somadas no período</p>
+        </div>
+        {escopo && <EscopoDoCartao className="ml-auto mt-0.5">{escopo}</EscopoDoCartao>}
       </div>
 
       <ResponsiveContainer width="100%" height={240}>

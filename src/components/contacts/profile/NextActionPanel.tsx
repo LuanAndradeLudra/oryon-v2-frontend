@@ -81,7 +81,7 @@ export function NextActionPanel({ tasks, aiSuggestion, onAddTask, onToggleTask }
                 'group/task flex items-start gap-2.5 rounded-lg px-3 py-3 border text-left w-full transition-colors cursor-pointer',
                 idx === 0
                   ? 'bg-surface-800/80 border-surface-700'
-                  : 'bg-transparent border-transparent hover:bg-surface-800/40',
+                  : 'bg-transparent border-transparent hover:bg-[var(--rowhover)]',
               )}
             >
               <span className="mt-0.5 text-surface-500 group-hover/task:text-brand-400 transition-colors flex-shrink-0">

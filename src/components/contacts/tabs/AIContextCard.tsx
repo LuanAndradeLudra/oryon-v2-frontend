@@ -74,7 +74,7 @@ function GeneratingState() {
           transition={{ duration: 2, repeat: Infinity }}
         >
           <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-brand-400" />
+            <Sparkles className="w-4 h-4 text-accent-dark" />
           </div>
         </motion.div>
         {/* Orbiting dots */}
@@ -121,7 +121,7 @@ function GeneratingState() {
           transition={{ duration: 0.2 }}
           className="flex items-center justify-center gap-2"
         >
-          <span className="text-brand-400">{LOADING_STEPS[stepIndex].icon}</span>
+          <span className="text-accent-dark">{LOADING_STEPS[stepIndex].icon}</span>
           <span className="text-[11px] text-surface-400">{LOADING_STEPS[stepIndex].text}</span>
         </motion.div>
       </AnimatePresence>
@@ -223,13 +223,15 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
   }, [justFinished])
 
   return (
-    <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      {/* Card header */}
+    <div>
+      {/* Header — mantém o badge "IA Contextual" e o mecanismo de colapso
+          próprios (diferente do padrão DADOS: este card é conteúdo gerado,
+          não campo administrativo, e o selo âmbar é o que marca essa
+          diferença). Só a caixa externa (borda/raio antigos) saiu daqui. */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 py-3 transition-colors',
-          hasData && !generating ? 'cursor-pointer hover:bg-surface-800/40' : '',
-          (!collapsed || !hasData || generating) && 'border-b border-surface-800',
+          'flex items-center justify-between py-2 transition-colors rounded-lg',
+          hasData && !generating ? 'cursor-pointer hover:bg-[var(--rowhover)] px-2 -mx-2' : '',
         )}
         onClick={hasData && !generating ? () => setCollapsed((v) => !v) : undefined}
       >
@@ -312,7 +314,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {/* Summary */}
               {contact.aiSummary && (
                 <Section label="Resumo analítico" icon={<Lightbulb className="w-3.5 h-3.5" />} iconColor="text-surface-500" delay={justFinished ? 0.1 : 0}>
-                  <p className="text-[13px] text-white leading-relaxed">{contact.aiSummary}</p>
+                  <p className="text-[13px] text-surface-200 leading-relaxed">{contact.aiSummary}</p>
                 </Section>
               )}
 
@@ -320,7 +322,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {contact.aiSentiment && contact.aiSentiment !== 'unknown' && (
                 <Section label="Sentimento geral das conversas" icon={SENTIMENT_CONFIG[contact.aiSentiment!].icon} iconColor={SENTIMENT_CONFIG[contact.aiSentiment!].iconColor} delay={justFinished ? 0.15 : 0}>
                   <span
-                    className="color-chip inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border"
+                    className="color-chip-soft inline-flex items-center gap-1.5 h-5 text-[11px] font-semibold px-[7px] rounded-[5px] border"
                     style={{ ['--chip']: SENTIMENT_CONFIG[contact.aiSentiment!].chip } as React.CSSProperties}
                   >
                     {SENTIMENT_CONFIG[contact.aiSentiment!].icon}{SENTIMENT_CONFIG[contact.aiSentiment!].label}
@@ -381,9 +383,9 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
 
               {/* Next Best Action */}
               {contact.aiNextBestAction && (
-                <Section label="Estratégia de abordagem recomendada" icon={<Sparkles className="w-3.5 h-3.5" />} iconColor="text-brand-400" delay={justFinished ? 0.7 : 0}>
-                  <div className="bg-brand-600/10 border border-brand-500/20 rounded-xl px-3.5 py-3">
-                    <p className="text-[13px] text-brand-300 leading-relaxed">{contact.aiNextBestAction}</p>
+                <Section label="Estratégia de abordagem recomendada" icon={<Sparkles className="w-3.5 h-3.5" />} iconColor="text-accent-dark" delay={justFinished ? 0.7 : 0}>
+                  <div className="bg-accent-soft border border-brand-500/25 rounded-lg px-3.5 py-3">
+                    <p className="text-[13px] text-accent-dark leading-relaxed">{contact.aiNextBestAction}</p>
                   </div>
                 </Section>
               )}
@@ -391,7 +393,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {/* Last Interaction Summary */}
               {contact.aiLastInteractionSummary && (
                 <Section label="Última interação" icon={<MessageSquareQuote className="w-3.5 h-3.5" />} iconColor="text-surface-500" delay={justFinished ? 0.85 : 0}>
-                  <div className="bg-surface-800/50 border border-surface-700/50 rounded-xl px-3.5 py-3">
+                  <div className="bg-surface-800/50 border border-surface-700 rounded-lg px-3.5 py-3">
                     <p className="text-[13px] text-surface-400 leading-relaxed italic">{contact.aiLastInteractionSummary}</p>
                   </div>
                 </Section>

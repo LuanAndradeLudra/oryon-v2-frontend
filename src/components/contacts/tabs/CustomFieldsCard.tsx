@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
-import { Pencil, Save, X as XIcon, Plus, Trash2, Settings2 } from 'lucide-react'
+import { Fragment, useState, useEffect } from 'react'
+import { Pencil, Save, X as XIcon, Plus, Trash2, Check } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
-import { contactsApi } from '@/services/api'
+import { SelectMenu } from '@/components/ui/SelectMenu'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { cn } from '@/lib/utils'
+import { contactsApi } from '@/services/api'
 import type { Contact, ContactCustomField, ContactCustomFieldDef } from '@/types'
 
 interface CustomFieldsCardProps {
@@ -11,6 +13,9 @@ interface CustomFieldsCardProps {
   onSave: (patch: Partial<Contact>) => Promise<void>
   /** Esconde o título "Campos Personalizados" quando uma seção já o rotula. */
   hideTitle?: boolean
+  /** DRAWER-15/16/21 (spec/1c-contatos.GAPS.md): seção plana do drawer de
+   *  contato — eyebrow sem acordeão, boolean com check verde "Sim". */
+  flat?: boolean
 }
 
 function FieldInput({
@@ -41,14 +46,15 @@ function FieldInput({
 
     case 'select':
       return (
-        <select
+        <SelectMenu
           value={field.value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+          aria-label={field.label}
+          className="h-auto w-full px-3 py-2 pr-8 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
         >
           <option value="">— Selecione —</option>
           {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
+        </SelectMenu>
       )
 
     case 'multiselect': {
@@ -97,9 +103,19 @@ function FieldInput({
   }
 }
 
-function FieldDisplay({ field }: { field: ContactCustomField }) {
+function FieldDisplay({ field, flat }: { field: ContactCustomField; flat?: boolean }) {
   if (field.type === 'boolean') {
-    return <p className="text-sm text-surface-200">{field.value === 'true' ? 'Sim' : 'Não'}</p>
+    const yes = field.value === 'true'
+    if (flat) {
+      return yes ? (
+        <p className="flex items-center gap-1 text-[12.5px] font-semibold text-success">
+          <Check className="w-3 h-3" strokeWidth={2.5} /> Sim
+        </p>
+      ) : (
+        <p className="text-[12.5px] font-medium text-surface-100">Não</p>
+      )
+    }
+    return <p className="text-sm text-surface-200">{yes ? 'Sim' : 'Não'}</p>
   }
   if (field.type === 'multiselect') {
     const items = field.value ? field.value.split('|').filter(Boolean) : []
@@ -107,26 +123,42 @@ function FieldDisplay({ field }: { field: ContactCustomField }) {
     return (
       <div className="flex flex-wrap gap-1">
         {items.map((item) => (
-          <span key={item} className="px-2 py-0.5 rounded-full text-xs bg-brand-900/30 border border-brand-800/50 text-brand-300">{item}</span>
+          <span key={item} className="px-2 py-0.5 rounded-full text-xs bg-accent-soft border border-brand-500/30 text-accent-dark">{item}</span>
         ))}
       </div>
     )
   }
   if (field.type === 'url' && field.value) {
     return (
-      <a href={field.value} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-400 hover:underline truncate block">
+      <a href={field.value} target="_blank" rel="noopener noreferrer" className="text-sm text-accent-dark hover:underline truncate block">
         {field.value}
       </a>
+    )
+  }
+  if (flat) {
+    const mono = field.type === 'number' || field.type === 'phone'
+    return (
+      <p className={cn('text-[12.5px] font-medium text-surface-100 break-words', mono && 'font-mono text-[11.5px]')}>
+        {field.value || '—'}
+      </p>
     )
   }
   return <p className="text-sm text-surface-200">{field.value || '—'}</p>
 }
 
-export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomFieldsCardProps) {
+export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = false }: CustomFieldsCardProps) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [defs, setDefs] = useState<ContactCustomFieldDef[]>([])
   const [fields, setFields] = useState<ContactCustomField[]>(contact.customFields ?? [])
+  // Revisão 02/10: trocar de contato sem remontar (ficha acoplada, ↑↓)
+  // mantinha os campos do anterior — e salvar gravava os de A em B.
+  const [contatoDosCampos, setContatoDosCampos] = useState(contact.id)
+  if (contatoDosCampos !== contact.id) {
+    setContatoDosCampos(contact.id)
+    setEditing(false)
+    setFields(contact.customFields ?? [])
+  }
 
   useEffect(() => {
     contactsApi.getCustomFieldDefs().then((r) => setDefs(r.data)).catch(() => {})
@@ -168,42 +200,53 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
     setEditing(false)
   }
 
-  return (
-    <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      <div className={cn('flex items-center px-4 py-3', hideTitle ? 'justify-end' : 'justify-between border-b border-surface-800')}>
-        {!hideTitle && <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2"><Settings2 className="w-4 h-4 text-surface-400" /> Campos Personalizados</h3>}
-        {!editing ? (
-          <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-        ) : (
-          <div className="flex items-center gap-1">
-            <button onClick={handleCancel} disabled={saving} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
-              <XIcon className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
-            >
-              <Save className="w-3 h-3" />
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </div>
-        )}
-      </div>
+  const actions = !editing ? (
+    <button onClick={() => setEditing(true)} aria-label="Editar campos personalizados" className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+      <Pencil className="w-3 h-3" />
+    </button>
+  ) : (
+    <div className="flex items-center gap-1">
+      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+        <XIcon className="w-3 h-3" />
+      </button>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
+      >
+        <Save className="w-2.5 h-2.5" />
+        {saving ? 'Salvando...' : 'Salvar'}
+      </button>
+    </div>
+  )
 
-      <div className="px-4 py-4 flex flex-col gap-3">
-        {fields.length === 0 && !editing && (
+  const body = (
+    <div className="flex flex-col gap-3">
+      {fields.length === 0 && !editing && (
           <p className="text-sm text-surface-600 py-1">Nenhum campo personalizado. Clique em editar para adicionar.</p>
         )}
 
-        {fields.map((field) => {
+        {/* R2-1C-DRAWER-03: no drawer (flat), leitura em grade rótulo | valor
+            (88px/1fr) como em DADOS — não mais rótulo caixa-alta empilhado. */}
+        {flat && !editing && fields.length > 0 && (
+          <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-1.5">
+            {fields.map((field) => (
+              <Fragment key={field.key}>
+                <p className="text-[12.5px] text-surface-400 truncate" title={field.label}>{field.label}</p>
+                <FieldDisplay field={field} flat />
+              </Fragment>
+            ))}
+          </div>
+        )}
+
+        {!(flat && !editing) && fields.map((field) => {
           const def = defs.find((d) => d.key === field.key)
           return (
             <div key={field.key}>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[11px] text-surface-500 font-medium uppercase tracking-wide">{field.label}</p>
+                <p className={cn(
+                  flat ? 'text-[11px] text-surface-500 font-semibold uppercase tracking-wide' : 'text-[11px] text-surface-500 font-medium uppercase tracking-wide',
+                )}>{field.label}</p>
                 {editing && (
                   <button onClick={() => handleRemoveField(field.key)} className="text-surface-600 hover:text-red-400 transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -212,21 +255,21 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
               </div>
               {editing
                 ? <FieldInput field={field} def={def} onChange={(v) => handleValueChange(field.key, v)} />
-                : <FieldDisplay field={field} />
+                : <FieldDisplay field={field} flat={flat} />
               }
             </div>
           )
         })}
 
         {editing && availableDefs.length > 0 && (
-          <div className="pt-2 border-t border-surface-800">
+          <div className="pt-2 border-t border-surface-700">
             <p className="text-[11px] text-surface-500 font-medium mb-2">Adicionar campo:</p>
             <div className="flex flex-wrap gap-1.5">
               {availableDefs.map((def) => (
                 <button
                   key={def.key}
                   onClick={() => handleAddField(def)}
-                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-surface-800 border border-surface-700 text-surface-300 hover:border-brand-500/40 hover:text-brand-300 transition-all"
+                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-surface-800 border border-surface-700 text-surface-300 hover:border-brand-500/40 hover:text-accent-dark transition-all"
                 >
                   <Plus className="w-3 h-3" /> {def.label}
                 </button>
@@ -234,7 +277,35 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
             </div>
           </div>
         )}
-      </div>
     </div>
+  )
+
+  if (flat) {
+    return (
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Campos personalizados</p>
+          {actions}
+        </div>
+        {body}
+      </section>
+    )
+  }
+
+  // ContactProfilePage já rotula a seção por fora (hideTitle) — nesse caso o
+  // card entrega só as ações + conteúdo, sem duplicar o cabeçalho colapsável.
+  if (hideTitle) {
+    return (
+      <div>
+        <div className="flex items-center justify-end mb-2">{actions}</div>
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <CollapsibleSection title="Campos personalizados" storageKey="contact-drawer.custom-fields" actions={actions}>
+      {body}
+    </CollapsibleSection>
   )
 }

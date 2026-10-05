@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react'
 import { Phone, Star, AlertTriangle, Loader2, Check, Bot, ShieldCheck, ShieldOff, Globe } from 'lucide-react'
 import { whatsappNumbersApi, type WhatsappLinesHealth, type WhatsappLineHealth } from '@/services/api'
 import { cn } from '@/lib/utils'
+import { qualidadeDoNumero, limiteDoNumero } from '@/lib/metaRotulos'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
@@ -68,7 +69,7 @@ export function WhatsAppHealth() {
       load()
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      setError(msg || 'Falha ao definir linha primária.')
+      setError(msg || 'Falha ao definir a linha principal.')
     } finally {
       setPromoting(null)
     }
@@ -77,7 +78,7 @@ export function WhatsAppHealth() {
   const header = (
     <SectionHeader
       title="Saúde das Linhas"
-      description="Estado de cada número WhatsApp: linha primária, recursos vinculados e pendências."
+      description="Estado da linha WhatsApp, dos recursos ligados a ela e das pendências."
     />
   )
 
@@ -118,6 +119,9 @@ export function WhatsAppHealth() {
   const needsAttentionTotal = data.lines.reduce((sum, l) =>
     sum + l.templates.needsAssignment + l.campaigns.needsAssignment + l.automations.needsAssignment, 0)
   const orphansTotal = data.orphans.templates + data.orphans.campaigns + data.orphans.automations
+  // Cada cliente tem UMA linha hoje: "Linhas ativas 1/1", o selo de principal
+  // e o "Tornar principal" só aparecem quando houver mais de uma ativa.
+  const variasLinhas = data.lines.filter((l) => l.isActive).length > 1
 
   return (
     <div>
@@ -126,15 +130,17 @@ export function WhatsAppHealth() {
       {/* Global summary — admin's "everything OK" / "something off" snapshot */}
       <SettingsSection
         title="Visão geral"
-        description="Linhas ativas e recursos que precisam de atenção."
+        description="Recursos que precisam de atenção."
       >
-        <div className="grid grid-cols-3 gap-6">
-          <SummaryStat
-            label="Linhas ativas"
-            value={data.lines.filter((l) => l.isActive).length}
-            total={data.lines.length}
-            icon={Phone}
-          />
+        <div className={variasLinhas ? 'grid grid-cols-3 gap-6' : 'grid grid-cols-2 gap-6'}>
+          {variasLinhas && (
+            <SummaryStat
+              label="Linhas ativas"
+              value={data.lines.filter((l) => l.isActive).length}
+              total={data.lines.length}
+              icon={Phone}
+            />
+          )}
           <SummaryStat
             label="Recursos sem linha"
             value={needsAttentionTotal}
@@ -152,13 +158,13 @@ export function WhatsAppHealth() {
       </SettingsSection>
 
       {error && (
-        <div className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+        <div className="mt-4 rounded-sm border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
           {error}
         </div>
       )}
 
       {/* Per-line rows — lista densa em largura total, divisores hairline */}
-      <div className="divide-y divide-surface-800/60">
+      <div className="divide-y divide-surface-700">
         {data.lines.map((line) => (
           <LineHealthRow
             key={line.id}
@@ -166,6 +172,7 @@ export function WhatsAppHealth() {
             onPromote={() => handlePromote(line.id)}
             promoting={promoting === line.id}
             disabled={promoting !== null && promoting !== line.id}
+            variasLinhas={variasLinhas}
           />
         ))}
       </div>
@@ -180,7 +187,7 @@ function SummaryStat({
   value: number
   total?: number
   tone?: 'default' | 'ok' | 'warning'
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
   tooltip?: string
 }) {
   const valueClass = tone === 'warning' ? 'text-status-pending' : 'text-surface-100'
@@ -188,7 +195,7 @@ function SummaryStat({
   return (
     <div title={tooltip}>
       <div className="flex items-center gap-2 text-3xs uppercase tracking-wide text-surface-400">
-        <Icon className="w-3 h-3" />
+        <Icon className="w-3 h-3" strokeWidth={1.75} />
         {label}
       </div>
       <div className={cn('text-2xl font-semibold mt-1', valueClass)}>
@@ -204,11 +211,14 @@ function LineHealthRow({
   onPromote,
   promoting,
   disabled,
+  variasLinhas,
 }: {
   line: WhatsappLineHealth
   onPromote: () => void
   promoting: boolean
   disabled: boolean
+  /** Com uma linha só, "principal" não significa nada: sem selo nem botão. */
+  variasLinhas: boolean
 }) {
   const needsAttention =
     line.templates.needsAssignment + line.campaigns.needsAssignment + line.automations.needsAssignment
@@ -219,38 +229,38 @@ function LineHealthRow({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <Phone className="w-4 h-4 text-brand-400 flex-shrink-0" />
+            <Phone className="w-4 h-4 text-brand-400 flex-shrink-0" strokeWidth={1.75} />
             <span className="text-sm font-semibold text-surface-100 truncate">
               {line.label || formatPhone(line.displayPhoneNumber)}
             </span>
-            {line.isPrimary && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-semibold bg-brand-cta/10 text-brand-cta border border-brand-cta/30">
-                <Star className="w-2.5 h-2.5" /> Primária
+            {variasLinhas && line.isPrimary && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-3xs font-semibold bg-brand-cta/10 text-brand-cta border border-brand-cta/30">
+                <Star className="w-2.5 h-2.5" /> Principal
               </span>
             )}
             {!line.isActive && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold bg-surface-700 text-surface-400 border border-surface-600">
+              <span className="inline-flex items-center h-5 px-[7px] rounded-[5px] text-[11px] font-bold bg-[var(--sf2)] text-surface-400 border border-surface-600">
                 Inativa
               </span>
             )}
             {line.hasSystemUserToken ? (
-              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-medium border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties} title="Token de system user presente">
-                <ShieldCheck className="w-2.5 h-2.5" />
+              <span className="color-chip-soft inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties} title="Token de system user presente">
+                <ShieldCheck className="w-3 h-3" />
                 Token OK
               </span>
             ) : (
-              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-medium border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties} title="Sem token — mensagens falharão">
-                <ShieldOff className="w-2.5 h-2.5" />
+              <span className="color-chip-soft inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties} title="Sem token — mensagens falharão">
+                <ShieldOff className="w-3 h-3" strokeWidth={1.75} />
                 Sem token
               </span>
             )}
             {line.agentId ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-medium bg-surface-700 text-surface-300 border border-surface-600">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-3xs font-medium bg-[var(--sf2)] text-surface-300 border border-surface-600">
                 <Bot className="w-2.5 h-2.5" />
                 IA atribuída
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-medium bg-surface-800 text-surface-500 border border-surface-700">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-3xs font-medium bg-surface-800 text-surface-500 border border-surface-700">
                 Sem IA
               </span>
             )}
@@ -261,14 +271,23 @@ function LineHealthRow({
           {line.wabaName && (
             <p className="text-2xs text-surface-500 mt-0.5">WABA: {line.wabaName}</p>
           )}
+          {/* Plano MA (MA-6.4): qualidade e limite de envio que a Meta informa. */}
+          <p className="text-2xs text-surface-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1">
+              <span className={cn('w-1.5 h-1.5 rounded-full', qualidadeDoNumero(line.qualityRating).cor)} aria-hidden />
+              Qualidade {qualidadeDoNumero(line.qualityRating).label.toLowerCase()}
+            </span>
+            <span aria-hidden>·</span>
+            <span>Limite: {limiteDoNumero(line.messagingLimitTier, line.maxDailyConversations) ?? 'a Meta ainda não informou'}</span>
+          </p>
         </div>
 
-        {!line.isPrimary && line.isActive && (
+        {variasLinhas && !line.isPrimary && line.isActive && (
           <button
             type="button"
             onClick={onPromote}
             disabled={disabled || promoting}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-2xs font-medium bg-surface-800 border border-surface-700/60 text-surface-200 hover:border-brand-500/40 hover:text-brand-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm text-2xs font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:border-brand-500/40 hover:text-brand-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
           >
             {promoting ? (
               <>
@@ -278,7 +297,7 @@ function LineHealthRow({
             ) : (
               <>
                 <Star className="w-3 h-3" />
-                Tornar primária
+                Tornar principal
               </>
             )}
           </button>
@@ -329,7 +348,7 @@ function LineHealthRow({
             line.departments.map((d) => (
               <span
                 key={d.id}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-3xs font-medium bg-surface-800 text-surface-300 border border-surface-700/60"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs text-3xs font-medium bg-surface-800 text-surface-300 border border-surface-700"
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: d.color }} />
                 {d.name}
@@ -338,7 +357,7 @@ function LineHealthRow({
           )}
         </div>
         {needsAttention > 0 && (
-          <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-3xs font-semibold border" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+          <span className="color-chip-soft inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
             <AlertTriangle className="w-3 h-3" />
             {needsAttention} sem linha
           </span>

@@ -21,8 +21,8 @@ function ConversationRow({ conversation, isOrigin, onOpenBeside }: { conversatio
   return (
     <div
       className={cn(
-        'flex items-start gap-2.5 px-3.5 py-3 rounded-xl border transition-colors',
-        isOrigin ? 'border-brand-500/40 bg-brand-500/5' : 'border-surface-800 bg-surface-900',
+        'flex items-start gap-2.5 px-3.5 py-3 rounded-lg border transition-colors',
+        isOrigin ? 'border-brand-500/40 bg-brand-500/5' : 'border-surface-700 bg-surface-900',
       )}
       data-testid={isOrigin ? 'deal-origin-conversation' : 'deal-other-conversation'}
     >
@@ -50,7 +50,7 @@ function ConversationRow({ conversation, isOrigin, onOpenBeside }: { conversatio
         onClick={onOpenBeside}
         title="Abrir ao lado"
         data-testid="deal-conversation-open-beside"
-        className="flex-shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+        className="flex-shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
       >
         Abrir ao lado <ArrowUpRight className="w-3 h-3" />
       </button>
@@ -96,7 +96,7 @@ export function DealConversationsTab({ contactId, originConversationId }: DealCo
   const others = conversations.filter((c) => c.id !== originConversationId)
 
   return (
-    <div className="flex flex-col gap-2.5 px-5 py-5">
+    <div className="flex flex-col gap-2.5 px-[18px] py-4">
       {origin && <ConversationRow conversation={origin} isOrigin onOpenBeside={() => openConversationBeside(origin.id)} />}
       {others.map((c) => (
         <ConversationRow key={c.id} conversation={c} isOrigin={false} onOpenBeside={() => openConversationBeside(c.id)} />

@@ -6,8 +6,10 @@ import { disconnectSocket } from '@/services/socket'
 import { isNativePlatform } from '@/config/env'
 import { setTokens, clearTokens, getRefreshToken } from '@/services/auth-storage'
 import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBackend } from '@/services/push-registration'
-import { SKIP_AUTH_REFRESH } from '@/services/api'
+import { SKIP_AUTH_REFRESH, renovarSessao } from '@/services/api'
 import { resetBillingState } from '@/hooks/useBilling'
+import { resetLinhasComIA } from '@/hooks/useLinhasComIA'
+import { limparSessao } from '@/lib/limpezaDaSessao'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -45,6 +47,11 @@ interface RegisterPayload {
   password: string
 }
 
+interface WaitlistResponse {
+  waitlisted: true
+  message: string
+}
+
 interface AuthContextValue {
   user: User | null
   token: string | null
@@ -55,12 +62,15 @@ interface AuthContextValue {
   featureFlags: string[]
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (payload: RegisterPayload) => Promise<void>
+  register: (payload: RegisterPayload) => Promise<WaitlistResponse>
   /** Invited agent: POST /auth/activate, then same session + cookies as register. */
   activateAccount: (token: string, password: string) => Promise<void>
   logout: () => void
   completePasswordChange: (newPassword: string, currentPassword?: string) => Promise<void>
   completeOnboarding: () => void
+  /** Atualiza campos do usuário da sessão (ex.: nome salvo em Minha conta)
+   *  para o resto da tela refletir sem recarregar. */
+  updateSessionUser: (patch: Partial<User>) => void
 }
 
 function loadSession(): AuthSession | null {
@@ -160,25 +170,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [hydrateFeatureFlags])
 
   const register = useCallback(async (payload: RegisterPayload) => {
-    const res = await axios.post<{
-      user: User; requiresPasswordChange: boolean; organizationConfigured?: boolean;
-    }>(`${API}/auth/register`, payload, { withCredentials: true })
-    const s: AuthSession = {
-      user: res.data.user,
-      requiresPasswordChange: res.data.requiresPasswordChange,
-      organizationConfigured: res.data.organizationConfigured ?? false,
-    }
-    saveSession(s)
-    setSession(s)
-    sessionStorage.removeItem('oryon_dismissed_banners')
-    hydrateFeatureFlags()
-    appLogger.logSessionEvent({
-      tenant_id: s.user.tenantId ?? null,
-      user_id:   s.user.id ?? null,
-      user_role: s.user.role ?? null,
-      event_type: 'login',
-    })
-  }, [hydrateFeatureFlags])
+    const res = await axios.post<WaitlistResponse>(
+      `${API}/auth/register`,
+      payload,
+      { withCredentials: true },
+    )
+    return res.data
+  }, [])
 
   const activateAccount = useCallback(async (token: string, password: string) => {
     disconnectSocket()
@@ -219,6 +217,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Zera o store module-scoped de billing (SCRUM-172) para não vazar
     // saldo/plano do tenant que saiu para a próxima sessão.
     resetBillingState()
+    resetLinhasComIA()
+    limparSessao()
     try {
       const body = isNativePlatform() ? { refreshToken: refreshToken ?? undefined } : {}
       await axios.post(`${API}/auth/logout`, body, {
@@ -268,10 +268,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(updated)
   }, [session])
 
+  const updateSessionUser = useCallback((patch: Partial<User>) => {
+    setSession((prev) => {
+      if (!prev) return prev
+      const updated: AuthSession = { ...prev, user: { ...prev.user, ...patch } }
+      saveSession(updated)
+      return updated
+    })
+  }, [])
+
   // ── Validate session on app load ────────────────────────────────────────
   useEffect(() => {
     if (!session?.user) return
-    axios.get<{ featureFlags?: string[] }>(`${API}/auth/me`, { withCredentials: true, ...SKIP_AUTH_REFRESH })
+    const me = () => axios.get<{ featureFlags?: string[] }>(`${API}/auth/me`, { withCredentials: true, ...SKIP_AUTH_REFRESH })
+    // 29/09: o token de acesso dura pouco. Ao abrir/recarregar o app depois
+    // que ele venceu, o /auth/me respondia 401 e a pessoa era deslogada na
+    // hora — com o cookie de renovação ainda válido. Agora: no 401, renova e
+    // confere de novo; só desloga se a renovação também falhar.
+    me()
+      .catch(async (err) => {
+        if (err?.response?.status !== 401) throw err
+        if (!(await renovarSessao())) throw err
+        return me()
+      })
       // Sessão válida: aproveita a mesma resposta para (re)hidratar as flags
       // por tenant — é aqui que um flag ligado/desligado no banco chega à UI
       // sem novo build (SCRUM-498).
@@ -323,6 +342,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       completePasswordChange,
       completeOnboarding,
+      updateSessionUser,
     }}>
       {children}
     </AuthContext.Provider>

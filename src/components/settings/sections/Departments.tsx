@@ -1,24 +1,34 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Plus, Pencil, Trash2, X, Check, Layers, Smartphone, ShieldCheck, ChevronDown, ExternalLink } from 'lucide-react'
+import { LinkDeConfiguracao as Link } from '../LinkDeConfiguracao'
+import { Plus, Pencil, Trash2, X, Check, Layers, Smartphone, ExternalLink } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
+import { Input } from '@/components/ui/Input'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
+import { Switch } from '@/components/ui/Switch'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
-import { cn, formatWaSelectLabel } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
+import { formatWaSelectLabel } from '@/lib/utils'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { departmentsApi, whatsappNumbersApi } from '@/services/api'
 import type { Department, DepartmentPermission, WhatsAppNumber } from '@/types'
 
 // ── Permission definitions ───────────────────────────────────────────────────
+// 29/09 (PO): a matriz saiu da tela — o sistema não aplica estas permissões
+// (card no Jira). O formulário só pergunta "Este setor atende conversas?",
+// que liga/desliga o grupo Atendimento (o que decide se o setor precisa de
+// linha). Permissões já gravadas nos setores ficam intactas. A lista segue
+// exportada porque a landing (SecoesProva) ainda a usa.
 
-const PERMISSION_GROUPS: {
+export const PERMISSION_GROUPS: {
   group: string
   perms: { key: DepartmentPermission; label: string }[]
 }[] = [
@@ -50,7 +60,6 @@ const PERMISSION_GROUPS: {
   },
 ]
 
-const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.perms.map((p) => p.key))
 
 const CONVERSATION_PERMISSIONS: DepartmentPermission[] = [
   'read_conversations', 'reply_conversations', 'archive_conversations', 'assign_conversations',
@@ -72,61 +81,12 @@ const DEFAULT_FORM: DeptFormState = {
   name: '', description: '', color: DEFAULT_ENTITY_COLOR, whatsappNumberId: '', permissions: [],
 }
 
-function PermissionMatrix({ value, onChange }: { value: DepartmentPermission[]; onChange: (p: DepartmentPermission[]) => void }) {
-  const toggle = (key: DepartmentPermission) => {
-    onChange(value.includes(key) ? value.filter((k) => k !== key) : [...value, key])
-  }
-  const toggleAll = () => {
-    onChange(value.length === ALL_PERMISSIONS.length ? [] : [...ALL_PERMISSIONS])
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <label className="flex items-center gap-2 cursor-pointer select-none">
-        <input type="checkbox" checked={value.length === ALL_PERMISSIONS.length} onChange={toggleAll}
-          className="w-4 h-4 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer" />
-        <span className="text-xs font-semibold text-surface-300">Selecionar todas</span>
-      </label>
-
-      {PERMISSION_GROUPS.map((group) => {
-        const groupKeys = group.perms.map((p) => p.key)
-        const allChecked = groupKeys.every((k) => value.includes(k))
-        const someChecked = groupKeys.some((k) => value.includes(k))
-        const toggleGroup = () => {
-          onChange(allChecked ? value.filter((k) => !groupKeys.includes(k)) : [...new Set([...value, ...groupKeys])])
-        }
-        return (
-          <div key={group.group}>
-            <label className="flex items-center gap-2 cursor-pointer select-none mb-2">
-              <input type="checkbox" checked={allChecked}
-                ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
-                onChange={toggleGroup}
-                className="w-4 h-4 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer" />
-              <span className="text-xs font-semibold text-surface-400 uppercase tracking-wide">{group.group}</span>
-            </label>
-            <div className="grid grid-cols-2 gap-1.5 pl-6">
-              {group.perms.map((perm) => (
-                <label key={perm.key} className="flex items-center gap-2 cursor-pointer select-none group">
-                  <input type="checkbox" checked={value.includes(perm.key)} onChange={() => toggle(perm.key)}
-                    className="w-3.5 h-3.5 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer" />
-                  <span className="text-xs text-surface-400 group-hover:text-surface-200 transition-colors">{perm.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
   title: string; initial: DeptFormState; saving: boolean; waNumbers: WhatsAppNumber[]
   onSave: (data: DeptFormState) => void; onCancel: () => void
 }) {
   const [form, setForm] = useState<DeptFormState>(initial)
   const [nameError, setNameError] = useState('')
-  const [permOpen, setPermOpen] = useState(true)
 
   const set = <K extends keyof DeptFormState>(key: K, val: DeptFormState[K]) =>
     setForm((f) => ({ ...f, [key]: val }))
@@ -135,8 +95,17 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
   const mustPickNumber = needsWhatsapp && waNumbers.length > 0
   const blockedByNoNumbers = needsWhatsapp && waNumbers.length === 0
 
-  const handlePermissionsChange = (p: DepartmentPermission[]) => {
-    setForm((f) => ({ ...f, permissions: p, whatsappNumberId: hasConversationModule(p) ? f.whatsappNumberId : '' }))
+  // Com uma linha só (o caso de todo cliente hoje), ela é a escolha: não há
+  // o que selecionar.
+  const unicaLinha = waNumbers.length === 1 ? waNumbers[0] : null
+
+  const handleAtendeConversas = (atende: boolean) => {
+    setForm((f) => {
+      const semAtendimento = f.permissions.filter((p) => !CONVERSATION_PERMISSIONS.includes(p))
+      const permissions = atende ? [...semAtendimento, ...CONVERSATION_PERMISSIONS] : semAtendimento
+      const whatsappNumberId = atende ? (f.whatsappNumberId || unicaLinha?.id || '') : ''
+      return { ...f, permissions, whatsappNumberId }
+    })
   }
 
   const handleSave = () => {
@@ -147,93 +116,80 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
   }
 
   return (
-    <div className="bg-surface-900 border border-brand-600/40 rounded-2xl p-5 mb-4">
+    <div className="border-y border-surface-700 py-5 mb-4">
       <div className="flex items-center justify-between mb-5">
-        <p className="text-xs font-semibold text-brand-400 uppercase tracking-widest">{title}</p>
-        <button onClick={onCancel} className="text-surface-500 hover:text-surface-300 transition-colors"><X className="w-4 h-4" /></button>
+        <p className="text-xs font-semibold text-accent-dark uppercase tracking-widest">{title}</p>
+        <Button variant="ghost" size="sm" iconOnly onClick={onCancel} aria-label="Fechar"><X className="w-4 h-4" /></Button>
       </div>
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
+          <FormField label="Nome" requirement="required" error={nameError || undefined}>
+            <Input autoFocus value={form.name} onChange={(e) => { set('name', e.target.value); setNameError('') }}
+              placeholder="Ex: Suporte, Marketing" />
+          </FormField>
           <div>
-            <label className="text-xs font-medium text-surface-400 uppercase tracking-wide block mb-1.5">Nome <span className="text-danger">*</span></label>
-            <input autoFocus value={form.name} onChange={(e) => { set('name', e.target.value); setNameError('') }}
-              placeholder="Ex: Suporte, Marketing"
-              className={cn('w-full bg-surface-800 border rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500', nameError ? 'border-danger' : 'border-surface-700')} />
-            {nameError && <p className="text-xs text-danger mt-1">{nameError}</p>}
-          </div>
-          <div>
-            <label className="text-xs font-medium text-surface-400 uppercase tracking-wide block mb-1.5">Cor</label>
-            <div className="w-9 h-9 rounded-xl border-2 border-surface-700 cursor-pointer" style={{ backgroundColor: form.color }} />
+            <p className="text-xs font-medium text-surface-400 mb-1.5">Cor</p>
+            <div className="w-9 h-9 rounded-md border-2 border-surface-700 cursor-pointer" style={{ backgroundColor: form.color }} />
           </div>
         </div>
 
         <ColorPicker value={form.color} onChange={(c) => set('color', c)} />
 
-        <div>
-          <label className="text-xs font-medium text-surface-400 uppercase tracking-wide block mb-1.5">Descrição <span className="text-surface-600">(opcional)</span></label>
-          <input value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Breve descrição do setor"
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500" />
-        </div>
+        <FormField label="Descrição" requirement="optional">
+          <Input value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Breve descrição do setor" />
+        </FormField>
 
-        {/* Permissions */}
-        <div className="bg-surface-800/40 border border-surface-700 rounded-xl overflow-hidden">
-          <button type="button" onClick={() => setPermOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 text-left">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-brand-400" />
-              <span className="text-sm font-medium text-surface-200">Permissões</span>
-              <ComingSoonBadge />
-              <span className="text-xs text-surface-500">{form.permissions.length}/{ALL_PERMISSIONS.length} selecionadas</span>
-            </div>
-            <ChevronDown className={cn('w-4 h-4 text-surface-400 transition-transform', permOpen && 'rotate-180')} />
-          </button>
-          {permOpen && (
-            <div className="px-4 pb-4 border-t border-surface-700 pt-3">
-              <p className="text-[11px] text-surface-500 mb-3">
-                Marque <span className="text-surface-400">Atendimento</span> (conversas) para vincular um número WhatsApp.
-                {' '}O sistema ainda não aplica estas permissões — as seleções ficam salvas para quando o controle de acesso por setor for lançado.
-              </p>
-              <PermissionMatrix value={form.permissions} onChange={handlePermissionsChange} />
-            </div>
-          )}
+        {/* Atende conversas? — substitui a matriz de permissões (não aplicada). */}
+        <div className="flex items-start justify-between gap-4 py-3 border-y border-surface-700">
+          <div>
+            <p className="text-sm font-medium text-surface-200">Este setor atende conversas?</p>
+            <p className="text-xs text-surface-500 mt-0.5">Ligado, o setor fica vinculado à linha de WhatsApp e entra na distribuição das conversas.</p>
+          </div>
+          <Switch checked={needsWhatsapp} onChange={handleAtendeConversas} aria-label="Este setor atende conversas" />
         </div>
 
         {/* WhatsApp — only with conversation permissions */}
         {needsWhatsapp && (
-          <div>
-            <label className="text-xs font-medium text-surface-400 uppercase tracking-wide block mb-1.5">
-              <Smartphone className="w-3 h-3 inline mr-1" />Número WhatsApp vinculado
-            </label>
-            {waNumbers.length === 0 ? (
+          waNumbers.length === 0 ? (
+            <div>
+              <p className="text-xs font-medium text-surface-400 mb-1.5">
+                <Smartphone className="w-3 h-3 inline mr-1" />Número WhatsApp vinculado
+              </p>
               <Banner variant="warning">
                 <p>Para atender conversas, conecte pelo menos um número WhatsApp.</p>
-                <Link to="/settings/numbers" className="mt-2 inline-flex items-center gap-1.5 font-semibold text-white underline underline-offset-2 hover:text-white/80">
+                {/* Eixo 10: sem cor fixa — Banner é suave (12% da cor
+                    semântica sobre o fundo da página) e o link herda essa
+                    cor; texto branco cru ficava sem contraste no claro. */}
+                <Link to="/settings/numbers" className="mt-2 inline-flex items-center gap-1.5 font-semibold underline underline-offset-2 hover:opacity-80">
                   <ExternalLink className="w-3.5 h-3.5" />Conectar primeiro número
                 </Link>
               </Banner>
-            ) : (
-              <div className="relative">
-                <select value={form.whatsappNumberId} onChange={(e) => set('whatsappNumberId', e.target.value)}
-                  className={cn('w-full appearance-none bg-surface-800 border rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 pr-8',
-                    mustPickNumber && !form.whatsappNumberId.trim() ? 'border-status-pending' : 'border-surface-700')}>
+              <p className="text-xs text-surface-600 mt-1">Atendentes deste setor só acessam conversas deste número.</p>
+            </div>
+          ) : (
+            <FormField
+              label={<><Smartphone className="w-3 h-3 inline mr-1" />Número WhatsApp vinculado</>}
+              hint="Atendentes deste setor só acessam conversas deste número."
+              error={mustPickNumber && !form.whatsappNumberId.trim() ? 'Escolha um número para salvar.' : undefined}
+            >
+              {unicaLinha ? (
+                <p className="text-sm text-surface-200">{formatWaSelectLabel(unicaLinha)}</p>
+              ) : (
+                <SelectMenu value={form.whatsappNumberId} onChange={(e) => set('whatsappNumberId', e.target.value)}>
                   <option value="">Selecione um número…</option>
                   {waNumbers.map((n) => <option key={n.id} value={n.id}>{formatWaSelectLabel(n)}</option>)}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
-              </div>
-            )}
-            <p className="text-xs text-surface-600 mt-1">Atendentes deste setor só acessam conversas deste número.</p>
-            {mustPickNumber && !form.whatsappNumberId.trim() && (
-              <p className="text-xs text-status-pending mt-1">Escolha um número para salvar.</p>
-            )}
-          </div>
+                </SelectMenu>
+              )}
+            </FormField>
+          )
         )}
 
         {/* Actions */}
         <div className="flex justify-end gap-2 pt-1 flex-wrap">
           <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
           {blockedByNoNumbers ? (
-            <Link to="/settings/numbers" className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors">
+            <Link to="/settings/numbers" className="inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-sm text-[13px] font-semibold bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] text-white hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] transition">
               <ExternalLink className="w-4 h-4" />Conectar número para salvar
             </Link>
           ) : (
@@ -252,19 +208,22 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
   )
 }
 
+/** `waNumbers` null = a lista de linhas não pôde ser lida (supervisor: a rota
+ *  é só admin). Aí a coluna da linha some em vez de dizer "Conectar número".
+ *  Sem `onEdit`/`onDelete` (quem só lê), os botões da linha não aparecem. */
 function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
-  dept: Department; waNumbers: WhatsAppNumber[]; onEdit: (d: Department) => void; onDelete: (d: Department) => void
+  dept: Department; waNumbers: WhatsAppNumber[] | null; onEdit?: (d: Department) => void; onDelete?: (d: Department) => void
 }) {
-  const linkedNumber = dept.whatsappNumberId ? waNumbers.find((n) => n.id === dept.whatsappNumberId) : null
+  const linkedNumber = dept.whatsappNumberId ? waNumbers?.find((n) => n.id === dept.whatsappNumberId) : null
   const deptNeedsWa = hasConversationModule(dept.permissions ?? [])
 
   return (
     // Gramática nova: linha de lista sem card — assenta direto no fundo,
     // separada por hairline (divide-y no container), hover sutil.
-    <div className="group hover:bg-surface-900/60 transition-colors">
+    <div className="group hover:bg-[var(--rowhover)] transition-colors">
       <div className="flex items-center justify-between gap-3 px-4 py-3.5">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center"
+          <div className="w-9 h-9 rounded-md flex-shrink-0 flex items-center justify-center"
             style={{ backgroundColor: `color-mix(in srgb, ${dept.color || 'var(--color-accent-violet)'} 13%, transparent)`, border: `2px solid color-mix(in srgb, ${dept.color || 'var(--color-accent-violet)'} 33%, transparent)` }}>
             <Layers className="w-4 h-4" style={{ color: dept.color || 'var(--color-accent-violet)' }} />
           </div>
@@ -275,7 +234,7 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
         </div>
 
         <div className="flex items-center gap-4 flex-shrink-0">
-          {deptNeedsWa ? (
+          {waNumbers === null ? null : deptNeedsWa ? (
             linkedNumber ? (
               <div className="hidden sm:flex items-center gap-1.5 text-xs text-surface-400">
                 <Smartphone className="w-3 h-3 text-status-active" /><span>{formatWaSelectLabel(linkedNumber)}</span>
@@ -289,30 +248,20 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
             <span className="hidden sm:block text-xs text-surface-600">Sem WhatsApp</span>
           )}
 
-          <div className="flex items-center gap-1 text-xs text-surface-500">
-            <ShieldCheck className="w-3 h-3" /><span>{dept.permissions?.length ?? 0}</span>
-          </div>
-
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors" title="Editar">
+          {/* Visíveis também ao Tab (focus-within) e em tela de toque (sem hover). */}
+          {onEdit && onDelete && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors" title="Editar" aria-label={`Editar setor ${dept.name}`}>
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir">
+            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir" aria-label={`Excluir setor ${dept.name}`}>
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
+          )}
         </div>
       </div>
 
-      {(dept.permissions?.length ?? 0) > 0 && (
-        <div className="px-4 pb-3 flex flex-wrap gap-1">
-          {dept.permissions.slice(0, 5).map((perm) => {
-            const label = PERMISSION_GROUPS.flatMap((g) => g.perms).find((p) => p.key === perm)?.label ?? perm
-            return <span key={perm} className="inline-flex px-1.5 py-0.5 bg-surface-800 border border-surface-700 text-surface-400 text-[10px] rounded-md">{label}</span>
-          })}
-          {dept.permissions.length > 5 && <span className="inline-flex px-1.5 py-0.5 text-surface-600 text-[10px]">+{dept.permissions.length - 5} mais</span>}
-        </div>
-      )}
     </div>
   )
 }
@@ -322,7 +271,11 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
 export function Departments() {
   const { toast } = useToast()
   const [departments, setDepartments] = useState<Department[]>([])
-  const [waNumbers, setWaNumbers] = useState<WhatsAppNumber[]>([])
+  const [waNumbers, setWaNumbers] = useState<WhatsAppNumber[] | null>([])
+  const { user: actor } = useAuth()
+  // Criar/editar/excluir setor é só admin+ no backend; o supervisor só lê.
+  const canEdit = isAdminTier(actor?.role)
+  const [deleting, setDeleting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [editTarget, setEditTarget] = useState<Department | null>(null)
@@ -335,7 +288,9 @@ export function Departments() {
     setFetchError(false)
     Promise.all([
       departmentsApi.list().then((r) => setDepartments(r.data)),
-      whatsappNumbersApi.list().then((r) => setWaNumbers(r.data)),
+      // A lista de linhas é só admin: se falhar, os setores aparecem mesmo
+      // assim (antes a tela inteira virava erro para o supervisor).
+      whatsappNumbersApi.list().then((r) => setWaNumbers(r.data)).catch(() => setWaNumbers(null)),
     ]).catch(() => setFetchError(true)).finally(() => setLoading(false))
   }, [reloadKey])
 
@@ -362,11 +317,12 @@ export function Departments() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return
+    setDeleting(true)
     try {
       await departmentsApi.remove(deleteTarget.id)
       setDepartments((d) => d.filter((x) => x.id !== deleteTarget.id))
       toast('Setor excluído.', 'success')
-    } catch { toast('Erro ao excluir.', 'error') } finally { setDeleteTarget(null) }
+    } catch { toast('Erro ao excluir.', 'error') } finally { setDeleting(false); setDeleteTarget(null) }
   }
 
   const editInitial = editTarget
@@ -378,7 +334,7 @@ export function Departments() {
       <div>
         <SectionHeader
           title="Setores"
-          description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
+          description="Organize a equipe em setores. Setores que atendem conversas ficam ligados à linha de WhatsApp."
         />
         <SkeletonList items={4} />
       </div>
@@ -390,7 +346,7 @@ export function Departments() {
       <div>
         <SectionHeader
           title="Setores"
-          description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
+          description="Organize a equipe em setores. Setores que atendem conversas ficam ligados à linha de WhatsApp."
         />
         <ErrorState compact onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }} />
       </div>
@@ -401,9 +357,9 @@ export function Departments() {
     <div>
       <SectionHeader
         title="Setores"
-        description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
+        description="Organize a equipe em setores. Setores que atendem conversas ficam ligados à linha de WhatsApp."
         action={
-          !creating && !editTarget && (
+          canEdit && !creating && !editTarget && (
             <Button onClick={() => setCreating(true)} leftIcon={<Plus className="w-4 h-4" />}>
               Novo setor
             </Button>
@@ -411,11 +367,14 @@ export function Departments() {
         }
       />
 
-      {creating && <DeptForm key="dept-form-new" title="Novo setor" initial={DEFAULT_FORM} saving={saving} waNumbers={waNumbers} onSave={handleCreate} onCancel={() => setCreating(false)} />}
-      {editTarget && <DeptForm key={`dept-form-${editTarget.id}`} title="Editar setor" initial={editInitial} saving={saving} waNumbers={waNumbers} onSave={handleSaveEdit} onCancel={() => setEditTarget(null)} />}
+      {creating && <DeptForm key="dept-form-new" title="Novo setor" initial={DEFAULT_FORM} saving={saving} waNumbers={waNumbers ?? []} onSave={handleCreate} onCancel={() => setCreating(false)} />}
+      {editTarget && <DeptForm key={`dept-form-${editTarget.id}`} title="Editar setor" initial={editInitial} saving={saving} waNumbers={waNumbers ?? []} onSave={handleSaveEdit} onCancel={() => setEditTarget(null)} />}
 
-      <div className="divide-y divide-surface-800/60">
-        {departments.map((dept) => <DeptCard key={dept.id} dept={dept} waNumbers={waNumbers} onEdit={setEditTarget} onDelete={setDeleteTarget} />)}
+      <div className="divide-y divide-surface-700">
+                {/* Editar com o "Novo setor" aberto fecha o novo: antes os dois formulários apareciam juntos. */}
+        {departments.map((dept) => <DeptCard key={dept.id} dept={dept} waNumbers={waNumbers}
+          onEdit={canEdit ? (d) => { setCreating(false); setEditTarget(d) } : undefined}
+          onDelete={canEdit ? setDeleteTarget : undefined} />)}
       </div>
 
       {departments.length === 0 && !creating && (
@@ -423,12 +382,15 @@ export function Departments() {
           icon={Layers}
           title="Nenhum setor criado"
           hint="Crie setores por equipe ou função. Vincule um WhatsApp quando o setor puder acessar conversas."
-          action={{ label: 'Criar primeiro setor', onClick: () => setCreating(true) }}
+          action={canEdit ? { label: 'Criar primeiro setor', onClick: () => setCreating(true) } : undefined}
         />
       )}
 
-      <ConfirmModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
-        title="Excluir setor" description={`Tem certeza que deseja excluir o setor "${deleteTarget?.name}"? Os usuários vinculados não serão afetados.`} confirmLabel="Excluir" danger />
+      {/* Texto fiel ao backend: a exclusão é física; users.departmentId vira
+          NULL (migration 029) e o pipeline_access do setor cai em cascata (097). */}
+      <ConfirmModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} loading={deleting}
+        title="Excluir setor" impact={{ label: `Setor ${deleteTarget?.name ?? ''}`.trim(), tone: 'danger' }}
+        description="Os usuários deste setor ficam sem setor e perdem os acessos a funis dados por ele. Esta ação não pode ser desfeita." confirmLabel="Excluir" danger />
     </div>
   )
 }

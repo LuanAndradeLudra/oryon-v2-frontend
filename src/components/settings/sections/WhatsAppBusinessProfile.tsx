@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Camera } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
+import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Avatar } from '@/components/ui/Avatar'
+import { Banner } from '@/components/ui/Banner'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
 import { useToast } from '@/hooks/useToast'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { api } from '@/services/api'
@@ -70,18 +74,19 @@ const EMPTY_FORM: ProfileForm = {
 export function WhatsAppBusinessProfile() {
   const { toast } = useToast()
   const { numbers, loading: loadingNumbers } = useWorkspaceNumber()
-  const [selectedId, setSelectedId] = useState<string>('')
+  // Linha escolhida na URL (`?linha=`); sem ela, a primeira (o caso comum: uma só).
+  const [linhaUrl, setSelectedId] = useEstadoNaUrl<string>('linha', { padrao: '' })
+  const selectedId = linhaUrl && numbers.some((n) => n.id === linhaUrl) ? linhaUrl : (numbers[0]?.id ?? '')
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM)
   const [loadingProfile, setLoadingProfile] = useState(false)
+  // O que veio da Meta: o salvar só envia o que mudou em relação a isto, e
+  // fica travado se a leitura falhou (antes, salvar com a leitura falha
+  // mandava websites: [] e a categoria padrão, apagando os reais na Meta).
+  const [original, setOriginal] = useState<ProfileForm | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    if (!selectedId && numbers.length > 0) {
-      setSelectedId(numbers[0].id)
-    }
-  }, [numbers, selectedId])
 
   useEffect(() => {
     if (!selectedId) return
@@ -90,9 +95,10 @@ export function WhatsAppBusinessProfile() {
 
   const loadProfile = async (numberId: string) => {
     setLoadingProfile(true)
+    setOriginal(null)
     try {
       const { data } = await api.get(`/meta/numbers/${numberId}/business-profile`)
-      setForm({
+      const lido: ProfileForm = {
         about: data.about ?? '',
         address: data.address ?? '',
         description: data.description ?? '',
@@ -100,18 +106,27 @@ export function WhatsAppBusinessProfile() {
         websites: [data.websites?.[0] ?? '', data.websites?.[1] ?? ''],
         vertical: data.vertical ?? 'UNDEFINED',
         profilePictureUrl: data.profile_picture_url ?? '',
-      })
+      }
+      setForm(lido)
+      setOriginal(lido)
     } catch {
-      toast('Erro ao carregar o perfil do WhatsApp.', 'error')
+      // Sem toast: o aviso fixo acima do formulário (com "Tentar de novo") já diz.
     } finally {
       setLoadingProfile(false)
     }
   }
 
   const save = async () => {
+    if (!original) return
+    const websites = form.websites.map((w) => w.trim()).filter(Boolean)
+    const invalido = websites.find((w) => !/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(w))
+    if (invalido) {
+      toast(`Site inválido: ${invalido}. Use o endereço completo, começando com https://`, 'error')
+      return
+    }
+    const sitesMudaram = websites.join('\n') !== original.websites.filter(Boolean).join('\n')
     setSaving(true)
     try {
-      const websites = form.websites.filter(Boolean)
       await api.patch(`/meta/numbers/${selectedId}/business-profile`, {
         // Omit blank fields instead of sending '' — the PATCH forwards every
         // included key straight to Meta, so a blank we never touched (e.g.
@@ -121,9 +136,12 @@ export function WhatsAppBusinessProfile() {
         address: form.address || undefined,
         description: form.description || undefined,
         email: form.email || undefined,
-        websites,
-        vertical: form.vertical,
+        // Sites e categoria só quando mudaram: são enviados mesmo vazios e
+        // substituem o que está na Meta.
+        ...(sitesMudaram ? { websites } : {}),
+        ...(form.vertical !== original.vertical ? { vertical: form.vertical } : {}),
       })
+      setOriginal({ ...form, websites: [websites[0] ?? '', websites[1] ?? ''] })
       toast('Perfil do WhatsApp atualizado.', 'success')
     } catch (err) {
       toast(extractErrorMessage(err, 'Erro ao salvar o perfil.'), 'error')
@@ -171,33 +189,42 @@ export function WhatsAppBusinessProfile() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <SectionHeader
         title="Perfil do WhatsApp"
         description="Edite o perfil do WhatsApp Business de cada número — foto, endereço, e-mail, descrição, sites e categoria."
       />
 
       {numbers.length === 0 ? (
-        <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 text-sm text-surface-400">
+        <div className="py-[22px] text-[13px] text-surface-500">
           Nenhuma linha WhatsApp conectada. Conecte um número em Configurações → Números WhatsApp.
         </div>
       ) : (
         <>
-          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
+          <SettingsSection title="Linha e foto" description="Escolha a linha WhatsApp e a foto de perfil exibida no WhatsApp Business.">
+            {/* Com uma linha só (o caso de todo cliente hoje) não há o que
+                escolher: mostra a linha em texto em vez de um seletor. */}
             <FormField label="Linha WhatsApp">
-              <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-                {numbers.map((n) => (
-                  <option key={n.id} value={n.id}>
-                    {formatWaSelectLabel(n)}
-                  </option>
-                ))}
-              </Select>
+              {numbers.length > 1 ? (
+                <SelectMenu value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+                  {numbers.map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {formatWaSelectLabel(n)}
+                    </option>
+                  ))}
+                </SelectMenu>
+              ) : (
+                <p className="text-sm text-surface-200">{selectedNumber ? formatWaSelectLabel(selectedNumber) : ''}</p>
+              )}
             </FormField>
 
             <div className="flex items-center gap-5 mt-5">
-              <div
-                className="relative group cursor-pointer"
+              <button
+                type="button"
+                className="relative group cursor-pointer rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500 disabled:cursor-wait"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                aria-label="Trocar foto de perfil"
               >
                 <Avatar
                   name={selectedNumber?.displayPhoneNumber ?? 'WA'}
@@ -211,26 +238,32 @@ export function WhatsAppBusinessProfile() {
                     <Camera className="w-4 h-4 text-white" />
                   )}
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png"
-                  hidden
-                  onChange={handlePhotoChange}
-                />
-              </div>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                hidden
+                onChange={handlePhotoChange}
+              />
               <div>
                 <p className="text-sm font-semibold text-surface-100">Foto de perfil</p>
                 <p className="text-xs text-surface-500">JPEG ou PNG, até 5MB.</p>
               </div>
             </div>
-          </div>
+          </SettingsSection>
 
-          <div className={loadingProfile ? 'opacity-50 pointer-events-none' : ''}>
-            <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-              <h3 className="text-sm font-semibold text-surface-300 mb-4">Perfil de negócio</h3>
-
-              <div className="grid grid-cols-1 gap-4">
+          {!loadingProfile && !original && selectedId && (
+            <Banner variant="danger" className="mb-4">
+              <p>Não foi possível ler o perfil desta linha na Meta. Para não sobrescrever os dados reais, o salvar fica bloqueado até a leitura dar certo.</p>
+              <button type="button" onClick={() => loadProfile(selectedId)} className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80">
+                Tentar de novo
+              </button>
+            </Banner>
+          )}
+          <div className={loadingProfile || !original ? 'opacity-50 pointer-events-none' : ''}>
+            <SettingsSection title="Perfil de negócio" description="Informações públicas do seu WhatsApp Business.">
+              <div className="grid grid-cols-1 gap-3">
                 <FormField
                   label="Recado (about)"
                   hint={`${form.about.length}/${ABOUT_MAX_LENGTH} caracteres`}
@@ -288,27 +321,20 @@ export function WhatsAppBusinessProfile() {
                 </FormField>
 
                 <FormField label="Categoria">
-                  <Select
+                  <SelectMenu
                     value={form.vertical}
                     onChange={(e) => setForm((f) => ({ ...f, vertical: e.target.value }))}
                   >
                     {VERTICAL_OPTIONS.map((v) => (
                       <option key={v.value} value={v.value}>{v.label}</option>
                     ))}
-                  </Select>
+                  </SelectMenu>
                 </FormField>
               </div>
-            </div>
+            </SettingsSection>
 
-            <div className="flex justify-end">
-              <button
-                onClick={save}
-                disabled={saving}
-                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
-              >
-                {saving && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                Salvar alterações
-              </button>
+            <div className="flex justify-end pt-[22px] border-t border-surface-700">
+              <Button variant="primary" onClick={save} loading={saving} disabled={!original}>Salvar alterações</Button>
             </div>
           </div>
         </>

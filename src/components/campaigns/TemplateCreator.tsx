@@ -2,14 +2,21 @@ import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Plus, Trash2, Bold, Italic, Strikethrough,
-  Info, ChevronDown, ChevronUp, ChevronRight, ChevronLeft,
-  CheckCircle2, Clock, Sparkles, Check,
+  ChevronDown, ChevronUp, ChevronRight, ChevronLeft,
+  CheckCircle2, Clock, Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { TemplatePreview } from './TemplatePreview'
+import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
+import { WizardProgress } from '@/components/ui/WizardProgress'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Input } from '@/components/ui/Input'
+import { SelectMenu } from '@/components/ui/SelectMenu'
+import { Textarea } from '@/components/ui/Textarea'
 import { SubcategoryPreview } from './SubcategoryPreview'
+import { SummaryRow } from './SummaryRow'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
@@ -311,14 +318,6 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
     createdAt: '', updatedAt: '',
   }
 
-  // ── Step subtitles ─────────────────────────────────────────────────────────
-
-  const stepSubtitles = [
-    `${CATEGORIES.find(c => c.value === category)?.label ?? 'Marketing'} · ${SUBCATEGORIES[category].find(s => s.value === subCategory)?.label ?? 'Padrão'}`,
-    `Corpo${headerType ? ' + cabeçalho' : ''}${footer ? ' + rodapé' : ''}`,
-    `${buttons.length} botã${buttons.length === 1 ? 'o' : 'ões'} · opcional`,
-    'Enviar para análise',
-  ]
 
   return (
     <div className="flex flex-col h-full bg-surface-950">
@@ -332,11 +331,34 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
           Templates
         </button>
         <div className="w-px h-4 bg-surface-700" />
-        <h1 className="text-sm font-semibold text-surface-100">
-          {editing ? 'Editar template' : 'Criar novo template'}
-        </h1>
-        <div className="ml-auto flex items-center gap-2 text-xs text-surface-400">
-          Passo {step} de 4 — {STEP_LABELS[step - 1]}
+
+        {/* Identidade da categoria — pedido do PO (22/09): assim que a
+            categoria é escolhida, o ícone dela acompanha o modelo por todo o
+            fluxo, como no painel da Meta. */}
+        <TemplateCategoryTile category={category} size={28} />
+        <div className="min-w-0">
+          <h1 className="text-[13px] font-semibold text-surface-50 leading-tight truncate">
+            {name.trim() || (editing ? 'Editar modelo' : 'Novo modelo')}
+          </h1>
+          <p className="text-[11px] text-surface-500 leading-tight">
+            {TEMPLATE_CATEGORIES[category].label}{language ? ` · ${language}` : ''}
+          </p>
+        </div>
+
+        {/* Trilha de passos: primitivo `WizardProgress`, NÃO uma versão à mão.
+            Eu havia escrito uma trilha própria aqui (bolinha de 14px) e o
+            Cartógrafo apontou que isso é o mesmo defeito que venho cobrando de
+            todo mundo — primitivo existente reimplementado ao lado. O
+            primitivo ainda tem respaldo melhor que a minha versão: os valores
+            dele (18px, fundo --acsoft, check) vêm do HTML do canvas
+            (CAMP-WIZ-07..13); os meus vinham de um mockup. Os três wizards do
+            produto passam a mostrar a mesma trilha. */}
+        <div className="ml-auto flex-none">
+          <WizardProgress
+            steps={STEP_LABELS}
+            currentStep={step}
+            onStepClick={(n) => setStep(n as StepNum)}
+          />
         </div>
       </div>
 
@@ -362,40 +384,6 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: step sidebar */}
-        <div className="w-44 border-r border-surface-700 py-6 px-3 flex flex-col gap-1 flex-shrink-0 bg-surface-950">
-          {([1, 2, 3, 4] as StepNum[]).map((s) => {
-            const done = s < step
-            const current = s === step
-            return (
-              <div
-                key={s}
-                className={cn(
-                  'flex items-start gap-3 px-3 py-2.5 rounded-xl transition-all',
-                  current ? 'bg-brand-500/10' : 'hover:bg-surface-800/50'
-                )}
-              >
-                <div className={cn(
-                  'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all mt-0.5',
-                  done    ? 'bg-brand-600 text-surface-950' :
-                  current ? 'bg-brand-600/20 border-2 border-brand-500 text-brand-400' :
-                             'bg-surface-800 text-surface-400 border border-surface-700'
-                )}>
-                  {done ? <Check className="w-3 h-3" /> : s}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={cn('text-xs font-semibold', current ? 'text-surface-50' : done ? 'text-surface-200' : 'text-surface-400')}>
-                    {STEP_LABELS[s - 1]}
-                  </p>
-                  <p className="text-[10px] text-surface-400 mt-0.5 leading-tight truncate">
-                    {stepSubtitles[s - 1]}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
         {/* CENTER: form */}
         <div className="flex-1 overflow-y-auto p-7 bg-surface-950">
           {step === 1 && (
@@ -480,17 +468,15 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
             )}
           </div>
           <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center">
-            {step === 1 ? (
+            {/* Uma prévia só. A versão antiga mostrava a compacta e, no
+                passo 4, somava uma "completa" embaixo — medido ao vivo:
+                duas prévias empilhadas no mesmo painel. Com a prévia fiel
+                (TemplatePreview reescrito) a completa cabe nos 340px do
+                painel em qualquer passo, então é ela o tempo todo. */}
+            {step === 1 || !body ? (
               <SubcategoryPreview category={category} subCategory={subCategory} />
-            ) : body ? (
-              <TemplatePreview template={previewTemplate} variables={previewVars} compact />
             ) : (
-              <SubcategoryPreview category={category} subCategory={subCategory} />
-            )}
-            {step === 4 && (
-              <div className="mt-4">
-                <TemplatePreview template={previewTemplate} variables={previewVars} />
-              </div>
+              <TemplatePreview template={previewTemplate} variables={previewVars} className="w-full" />
             )}
           </div>
         </div>
@@ -559,110 +545,61 @@ function StepCategoria({
   editing: boolean
   readOnly?: boolean
 }) {
+  // Referência: print do painel da Meta (22/09) — segmentado de 3 células com
+  // ícone + lista de rádio com título e descrição, linha selecionada com
+  // fundo suave. Sem cartões por categoria, sem faixa "como funciona".
+  const disponiveis = CATEGORIES.filter((c) => !c.comingSoon || c.value === category)
+  const emBreve = CATEGORIES.filter((c) => c.comingSoon && c.value !== category)
+  void editing
   return (
-    <div className="space-y-7">
-      {!editing && (
-        <div className="flex items-center gap-0 bg-brand-500/5 border border-brand-500/15 rounded-xl overflow-hidden text-[11px]">
-          <div className="flex items-center gap-2 px-3 py-2.5 flex-1 border-r border-brand-500/15">
-            <Sparkles className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-brand-300">1 · Preencha o modelo</p>
-              <p className="text-surface-400">Categoria, corpo e botões</p>
-            </div>
-          </div>
-          <ChevronRight className="w-3 h-3 text-surface-400 flex-shrink-0 mx-1" />
-          <div className="flex items-center gap-2 px-3 py-2.5 flex-1 border-r border-surface-700/50">
-            <Clock className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-surface-300">2 · Meta analisa</p>
-              <p className="text-surface-400">Processo automático · 24–48h</p>
-            </div>
-          </div>
-          <ChevronRight className="w-3 h-3 text-surface-400 flex-shrink-0 mx-1" />
-          <div className="flex items-center gap-2 px-3 py-2.5 flex-1">
-            <CheckCircle2 className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-surface-300">3 · Template aprovado</p>
-              <p className="text-surface-400">Disponível para campanhas</p>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col">
+      <Section title="Categoria" required badge="Define a cobrança e as regras de aprovação da Meta.">
+        <SegmentedControl
+          size="md"
+          className="w-full [&>*]:flex-1"
+          label="Categoria do modelo"
+          value={category}
+          onChange={(v) => { if (!readOnly) onCategory(v) }}
+          options={disponiveis.map((c) => ({ value: c.value, label: c.label, icon: c.icon }))}
+        />
+        <p className="text-[11px] text-surface-500 mt-2 leading-relaxed">
+          <span className="text-surface-300 font-semibold">Marketing</span> cobra por conversa aberta ·
+          <span className="text-surface-300 font-semibold"> Utilidade</span> tem tarifa reduzida
+          {emBreve.length > 0 && <> · {emBreve.map((c) => c.label).join(', ')} em breve</>}
+        </p>
+      </Section>
 
-      <Section title="Categoria" required>
-        <div className="grid grid-cols-3 gap-2">
-          {CATEGORIES.map(({ value, label, description, icon: Icon, comingSoon }) => {
-            // Keep the existing selection visible even if the category has
-            // since been flagged comingSoon — otherwise editing an old
-            // template would silently fail to render its category.
-            const disabled = !!comingSoon && category !== value
+      <Section title="Tipo" badge="Escolhe o modelo inicial do editor. Não é enviado à Meta.">
+        <div role="radiogroup" aria-label="Tipo do modelo" className="rounded-sm border border-surface-700 overflow-hidden">
+          {SUBCATEGORIES[category].map((sub) => {
+            const ativo = subCategory === sub.value
             return (
               <button
-                key={value}
-                onClick={() => { if (!disabled && !readOnly) onCategory(value) }}
-                disabled={disabled || readOnly}
-                title={disabled ? 'Em breve — esta categoria precisa de um fluxo dedicado e ainda não está disponível.' : undefined}
+                key={sub.value}
+                type="button"
+                role="radio"
+                aria-checked={ativo}
+                onClick={() => { if (!readOnly) onSubCategory(sub.value) }}
+                disabled={readOnly}
                 className={cn(
-                  'text-left p-3 rounded-xl border transition-all relative',
-                  category === value
-                    ? 'border-brand-500 bg-brand-500/10'
-                    : disabled
-                      ? 'border-surface-800 bg-surface-800/20 opacity-60 cursor-not-allowed'
-                      : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+                  'w-full flex items-start gap-3 px-3 py-2.5 text-left border-t border-surface-700 first:border-t-0 transition-colors',
+                  ativo ? 'bg-[var(--rowhover)]' : 'hover:bg-[var(--rowhover)]',
+                  readOnly && 'cursor-default',
                 )}
               >
-                {comingSoon && (
-                  <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-wide text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded">
-                    Em breve
-                  </span>
-                )}
-                <Icon className={cn('w-4 h-4 mb-2', category === value ? 'text-brand-400' : 'text-surface-400')} />
-                <p className="text-xs font-semibold text-surface-100">{label}</p>
-                <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">{description}</p>
+                <span className={cn(
+                  'mt-[3px] w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-none',
+                  ativo ? 'border-brand-500' : 'border-[var(--bd2)]',
+                )}>
+                  {ativo && <span className="w-[7px] h-[7px] rounded-full bg-brand-500" />}
+                </span>
+                <span className="min-w-0">
+                  <span className={cn('block text-[12.5px] leading-tight', ativo ? 'font-semibold text-surface-50' : 'font-medium text-surface-200')}>{sub.label}</span>
+                  <span className="block text-[11px] text-surface-500 mt-0.5 leading-snug">{sub.description}</span>
+                </span>
               </button>
             )
           })}
-        </div>
-
-        {/* Pricing note */}
-        <div className="mt-3 flex items-start gap-2 px-2.5 py-2 bg-surface-800/50 border border-surface-700/60 rounded-lg">
-          <Info className="w-3 h-3 text-surface-400 mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-surface-400 leading-relaxed">
-            <strong className="text-accent-amber">Marketing</strong> cobra por conversa aberta.
-            <strong className="text-accent-blue"> Utilidade</strong> tem tarifa reduzida (transacional).
-            <strong className="text-accent-violet"> Autenticação</strong> usa cobrança única por OTP.
-          </p>
-        </div>
-
-        {/* Subcategory */}
-        <p className="text-[11px] text-surface-400 mt-3 mb-1.5">
-          A subcategoria escolhe um <strong className="text-surface-300">modelo inicial</strong> para o editor — ela não é enviada para a Meta.
-        </p>
-        <div className="space-y-1.5">
-          {SUBCATEGORIES[category].map((sub) => (
-            <button
-              key={sub.value}
-              onClick={() => { if (!readOnly) onSubCategory(sub.value) }}
-              disabled={readOnly}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all',
-                subCategory === sub.value
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-700 bg-surface-800/30 hover:border-surface-600'
-              )}
-            >
-              <div className={cn(
-                'w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0',
-                subCategory === sub.value ? 'border-brand-500' : 'border-surface-600'
-              )}>
-                {subCategory === sub.value && <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />}
-              </div>
-              <div>
-                <span className="text-xs font-medium text-surface-200">{sub.label}</span>
-                <span className="text-[11px] text-surface-400 ml-2">{sub.description}</span>
-              </div>
-            </button>
-          ))}
         </div>
       </Section>
     </div>
@@ -670,6 +607,20 @@ function StepCategoria({
 }
 
 // ─── Step 2: Mensagem ─────────────────────────────────────────────────────────
+
+// Fora do render: componente criado dentro de outro remonta a cada render
+// (lint react/no-create-components-during-render) e perde foco/estado.
+function Contador({ n, max }: { n: number; max: number }) {
+  return (
+    <span className={cn(
+      'absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none',
+      n > max ? 'text-danger' : 'text-surface-500',
+    )}>{n}/{max}</span>
+  )
+}
+function Ajuda({ children, erro }: { children?: React.ReactNode; erro?: string }) {
+  return <p className={cn('text-[11px] mt-1.5 leading-snug', erro ? 'text-danger' : 'text-surface-500')}>{erro ?? children}</p>
+}
 
 function StepMensagem({
   name, onName, language, onLanguage,
@@ -705,237 +656,162 @@ function StepMensagem({
   readOnly?: boolean
 }) {
   const fieldDisabled = !!readOnly
+  // Direção C + referência de mercado (Meta, Twilio, Wati): contador DENTRO
+  // do campo à direita, tipo de cabeçalho em pílulas, sem caixas de "boas
+  // práticas". Campos são os PRIMITIVOS Input/Select/Textarea em `md` (36px,
+  // FIELD-03) — a primeira versão copiava valores à mão em 32px, fora da
+  // régua sm 28 / md 36 / lg 44 do sistema.
   return (
-    <div className="space-y-7">
-      {/* Section: Identificação */}
-      <Section title="Identificação" required>
-        <div className="space-y-3">
-          <div>
-            <FieldLabel>Nome do template</FieldLabel>
-            <input
+    <div className="flex flex-col">
+      <Section title="Nome" required badge="Minúsculas, números e _ · até 512">
+        <div className="flex gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Input
+              size="md"
+              error={errors.name}
               value={name}
               onChange={(e) => onName(e.target.value)}
               disabled={fieldDisabled}
               placeholder="ex: boas_vindas_novos_clientes"
-              className={cn(
-                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.name ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
-              )}
+              className="pr-16"
             />
-            {errors.name ? (
-              <p className="text-[11px] text-danger mt-1">{errors.name}</p>
-            ) : (
-              <p className="text-[11px] text-surface-400 mt-1">Apenas letras minúsculas, números e underscore ( _ )</p>
-            )}
+            <Contador n={name.length} max={512} />
           </div>
-          <div>
-            <FieldLabel>Idioma</FieldLabel>
-            <select
-              value={language}
-              onChange={(e) => onLanguage(e.target.value)}
-              disabled={fieldDisabled}
-              className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 pr-8 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-60"
-            >
-              {LANGUAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
+          <SelectMenu
+            size="md"
+            value={language}
+            onChange={(e) => onLanguage(e.target.value)}
+            disabled={fieldDisabled}
+            aria-label="Idioma"
+            className="w-44 flex-none"
+          >
+            {LANGUAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </SelectMenu>
         </div>
+        {errors.name && <Ajuda erro={errors.name} />}
       </Section>
 
-      {/* Section: Cabeçalho */}
-      <Section title="Cabeçalho" badge="Opcional">
-        <p className="text-[11px] text-surface-400 mb-3">
-          Adicione um texto ou mídia no topo da mensagem. A API do Meta analisa e aprova este conteúdo.
-        </p>
-        <div className="grid grid-cols-5 gap-2 mb-3">
-          {HEADER_TYPES.map((ht) => (
-            <button
-              key={ht.value}
-              onClick={() => { if (!fieldDisabled) onHeaderType(ht.value) }}
-              disabled={fieldDisabled}
-              className={cn(
-                'p-2.5 rounded-xl border text-center transition-all',
-                headerType === ht.value
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-700 bg-surface-800/40 hover:border-surface-600',
-                fieldDisabled && 'opacity-60 cursor-not-allowed',
-              )}
-            >
-              <p className={cn('text-xs font-medium', headerType === ht.value ? 'text-brand-300' : 'text-surface-300')}>{ht.label}</p>
-              <p className="text-[10px] text-surface-400 mt-0.5 leading-tight">{ht.desc}</p>
-            </button>
-          ))}
+      <Section title="Cabeçalho" badge="Opcional · uma mídia ou 60 caracteres">
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Tipo de cabeçalho">
+          {HEADER_TYPES.map((ht) => {
+            const ativo = headerType === ht.value
+            return (
+              <button
+                key={ht.value || 'none'}
+                type="button"
+                role="radio"
+                aria-checked={ativo}
+                title={ht.desc}
+                onClick={() => { if (!fieldDisabled) onHeaderType(ht.value) }}
+                disabled={fieldDisabled}
+                className={cn(
+                  'h-7 px-2.5 rounded-sm border text-[11.5px] transition-colors',
+                  ativo
+                    ? 'border-[var(--bd2)] bg-surface-800 text-surface-50 font-semibold'
+                    : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
+                  fieldDisabled && 'cursor-not-allowed',
+                )}
+              >{ht.label}</button>
+            )
+          })}
         </div>
         {headerType === 'TEXT' && (
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <FieldLabel>Texto do cabeçalho</FieldLabel>
-              <span className="text-[11px] text-surface-400">{headerText.length}/60</span>
+          <div className="mt-2.5">
+            <div className="relative">
+              <Input
+                size="md"
+                error={errors.headerText}
+                value={headerText}
+                onChange={(e) => onHeaderText(sanitizeHeaderText(e.target.value).slice(0, 60))}
+                disabled={fieldDisabled}
+                placeholder="Texto do cabeçalho — pode conter {{1}}"
+                className="pr-14"
+              />
+              <Contador n={headerText.length} max={60} />
             </div>
-            <input
-              value={headerText}
-              onChange={(e) => onHeaderText(sanitizeHeaderText(e.target.value).slice(0, 60))}
-              disabled={fieldDisabled}
-              placeholder="Texto do cabeçalho — pode conter {{1}}"
-              className={cn(
-                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.headerText ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
-              )}
-            />
-            {errors.headerText ? (
-              <p className="text-[11px] text-danger mt-1">{errors.headerText}</p>
-            ) : (
-              <p className="text-[11px] text-surface-400 mt-1">
-                Sem emojis, sem * _ ~ e sem quebra de linha — a Meta rejeita o template. Use o body ou o footer para isso.
-              </p>
-            )}
+            <Ajuda erro={errors.headerText}>Sem emoji, sem * _ ~ e sem quebra de linha — a Meta rejeita.</Ajuda>
           </div>
         )}
         {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && (
-          <div>
-            <FieldLabel>URL da amostra de mídia</FieldLabel>
-            <input
+          <div className="mt-2.5">
+            <Input
+              size="md"
+              error={errors.headerMediaUrl}
               value={headerMediaUrl}
               onChange={(e) => onHeaderMediaUrl(e.target.value)}
               disabled={fieldDisabled}
-              placeholder="https://exemplo.com/imagem.jpg"
-              className={cn(
-                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.headerMediaUrl ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
-              )}
+              placeholder="https://exemplo.com/amostra.jpg"
             />
-            {errors.headerMediaUrl ? (
-              <p className="text-[11px] text-danger mt-1">{errors.headerMediaUrl}</p>
-            ) : (
-              <p className="text-[11px] text-surface-400 mt-1">URL pública e acessível. A Meta usará esta amostra para revisar o template.</p>
-            )}
+            <Ajuda erro={errors.headerMediaUrl}>URL pública da amostra que a Meta usa na revisão. {HEADER_TYPES.find((h) => h.value === headerType)?.desc}.</Ajuda>
           </div>
         )}
       </Section>
 
-      {/* Section: Corpo */}
-      <Section title="Corpo" required>
-        <p className="text-[11px] text-surface-400 mb-3">
-          Escreva a mensagem principal. Use variáveis numéricas <code className="text-brand-400 bg-brand-400/10 px-1 rounded">{'{{1}}'}</code> para personalizar o conteúdo por destinatário.
-        </p>
-
-        {/* Best practices callout */}
-        <div className="mb-3 bg-surface-800/60 border border-surface-700/60 rounded-xl overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-surface-700/60">
-            <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0" />
-            <p className="text-[11px] font-semibold text-surface-300">Boas práticas para aprovação mais rápida</p>
-          </div>
-          <ul className="px-3 py-2 space-y-1">
-            {[
-              'Mantenha o corpo abaixo de 640 caracteres — melhora a taxa de entrega.',
-              'Evite maiúsculas excessivas, exclamações e linguagem de spam.',
-              'Não inclua links externos em templates de Utilidade ou Autenticação.',
-              'Preencha exemplos reais para cada {{variável}} — a Meta rejeita valores genéricos como "nome".',
-            ].map((tip, i) => (
-              <li key={i} className="flex items-start gap-1.5 text-[11px] text-surface-400">
-                <span className="text-brand-500 mt-0.5 flex-shrink-0">·</span>
-                {tip}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Formatting toolbar */}
-        <div className="flex items-center gap-1 mb-2 p-1.5 bg-surface-800 border border-surface-700 rounded-xl w-fit">
-          <ToolbarBtn onClick={() => wrapSelection('*')} title="Negrito (Ctrl+B)">
-            <Bold className="w-3.5 h-3.5" />
-          </ToolbarBtn>
-          <ToolbarBtn onClick={() => wrapSelection('_')} title="Itálico (Ctrl+I)">
-            <Italic className="w-3.5 h-3.5" />
-          </ToolbarBtn>
-          <ToolbarBtn onClick={() => wrapSelection('~')} title="Tachado">
-            <Strikethrough className="w-3.5 h-3.5" />
-          </ToolbarBtn>
-          <div className="w-px h-4 bg-surface-700 mx-1" />
-          <button
-            onClick={addVariable}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 text-xs font-medium transition-all"
-            title="Insere {{N}} na posição do cursor"
-          >
-            <Plus className="w-3 h-3" />
-            Adicionar variável
-          </button>
-        </div>
-
+      <Section title="Corpo" required badge="Até 1.024 caracteres · {{1}} vira o valor do contato">
         <div className="relative">
-          <textarea
+          <Textarea
+            size="md"
+            error={errors.body}
             ref={bodyRef}
             value={body}
             onChange={(e) => onBody(e.target.value)}
             disabled={fieldDisabled}
             rows={6}
             maxLength={1024}
-            placeholder="Olá, {{1}}! Sua mensagem aqui..."
-            className={cn(
-              'w-full bg-surface-800 border rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors resize-none',
-              errors.body ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
-            )}
+            placeholder="Olá, {{1}}! Sua mensagem aqui…"
+            className="pb-6 leading-[1.55] resize-y min-h-[120px]"
           />
-          <span className="absolute bottom-2.5 right-3 text-[11px] text-surface-400">{body.length}/1024</span>
+          <span className={cn('absolute right-2.5 bottom-2 text-[11px] tabular-nums pointer-events-none', body.length > 1024 ? 'text-danger' : 'text-surface-500')}>
+            {body.length}/1024
+          </span>
         </div>
-        {errors.body && (
-          <p className="text-[11px] text-danger mt-1.5">{errors.body}</p>
-        )}
-        {errors.vars && !errors.body && (
-          <p className="text-[11px] text-danger mt-1.5">{errors.vars}</p>
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <ToolbarBtn onClick={() => wrapSelection('*')} title="Negrito (Ctrl+B)"><Bold className="w-3.5 h-3.5" />Negrito</ToolbarBtn>
+          <ToolbarBtn onClick={() => wrapSelection('_')} title="Itálico (Ctrl+I)"><Italic className="w-3.5 h-3.5" />Itálico</ToolbarBtn>
+          <ToolbarBtn onClick={() => wrapSelection('~')} title="Tachado"><Strikethrough className="w-3.5 h-3.5" />Tachado</ToolbarBtn>
+          <ToolbarBtn onClick={addVariable} title="Insere {{N}} na posição do cursor" destaque><Plus className="w-3.5 h-3.5" />Variável</ToolbarBtn>
+        </div>
+        {(errors.body || errors.vars) ? (
+          <Ajuda erro={errors.body ?? errors.vars} />
+        ) : (
+          <Ajuda>Até 640 caracteres entregam melhor · evite caixa alta e exclamações · sem link em Utilidade ou Autenticação.</Ajuda>
         )}
 
-        {/* Variable examples */}
-        {varPositions.length > 0 ? (
-          <div className="mt-3 bg-surface-800/60 border border-surface-700 rounded-xl overflow-hidden">
-            <div className="flex items-start gap-2 px-3 py-2.5 border-b border-surface-700">
-              <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs font-medium text-surface-200">Como funcionam as variáveis</p>
-                <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">
-                  As variáveis são identificadas pela <strong className="text-surface-300">posição numérica</strong> — <code className="text-brand-400">{'{{1}}'}</code>, <code className="text-brand-400">{'{{2}}'}</code>… — não por nome.
-                  Forneça um <strong className="text-surface-300">valor de exemplo</strong> para cada uma: a Meta exige amostras reais para aprovar o template.
-                </p>
-              </div>
-            </div>
-            <div className="divide-y divide-surface-700/60">
+        {varPositions.length > 0 && (
+          <div className="mt-3 border-t border-surface-700 pt-3">
+            <p className="text-[11px] text-surface-500 mb-2 leading-snug">
+              Valor de exemplo para cada variável — a Meta exige amostras reais (não aceita "nome", "valor").
+            </p>
+            <div className="flex flex-col gap-1.5">
               {varPositions.map((pos, i) => (
-                <div key={pos} className="flex items-center gap-3 px-3 py-2.5">
-                  <span className="text-xs font-mono text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded w-10 text-center flex-shrink-0">
+                <div key={pos} className="flex items-center gap-2">
+                  <span className="h-9 w-14 flex-none inline-flex items-center justify-center rounded-sm border border-surface-700 bg-surface-900 font-mono text-[11.5px] text-surface-300">
                     {`{{${pos}}}`}
                   </span>
-                  <input
+                  <Input
+                    size="md"
                     value={varExamples[i] ?? ''}
                     onChange={(e) => onVarExamples(varExamples.map((x, idx) => idx === i ? e.target.value : x))}
-                    placeholder={`Valor de exemplo para a variável ${pos}`}
-                    className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+                    placeholder={`Exemplo para {{${pos}}} — ex: Ana`}
                   />
                 </div>
               ))}
             </div>
           </div>
-        ) : (
-          <div className="mt-2 flex items-center gap-2 text-[11px] text-surface-400">
-            <Info className="w-3 h-3 flex-shrink-0" />
-            Clique em <span className="text-brand-400 mx-0.5">+ Adicionar variável</span> para inserir <code className="text-brand-400">{'{{1}}'}</code> na posição do cursor.
-          </div>
         )}
       </Section>
 
-      {/* Section: Rodapé */}
-      <Section title="Rodapé" badge="Opcional">
-        <p className="text-[11px] text-surface-400 mb-2">
-          Texto exibido em cinza abaixo da mensagem. Não suporta variáveis nem formatação.
-        </p>
+      <Section title="Rodapé" badge="Opcional · 60 caracteres · sem variável">
         <div className="relative">
-          <input
+          <Input
+            size="md"
             value={footer}
             onChange={(e) => onFooter(e.target.value.slice(0, 60))}
             disabled={fieldDisabled}
-            placeholder="Ex: Oryon • Atendimento Digital"
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors pr-12"
+            placeholder="Ex: Equipe Oryon"
+            className="pr-14"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-surface-400">{footer.length}/60</span>
+          <Contador n={footer.length} max={60} />
         </div>
       </Section>
     </div>
@@ -961,161 +837,166 @@ function StepBotoes({
   readOnly?: boolean
 }) {
   const fieldDisabled = !!readOnly
+  // Direção C: sem cartão por botão nem caixa de aviso. Cada botão é uma
+  // faixa separada por 1px; o tipo é um Select sm; remover é a ação de
+  // linha padrão (28px, --rowhover). Os primitivos Select/Input fazem o
+  // campo — nada de valor copiado.
   return (
-    <div className="space-y-5">
-      {/* Info banner */}
-      <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-xl">
-        <Info className="w-3.5 h-3.5 text-surface-400 mt-0.5 flex-shrink-0" />
-        <p className="text-[11px] text-surface-400 leading-relaxed">
-          Botões são opcionais — pule este passo se não precisar. Você pode adicionar
-          até <strong className="text-surface-300">3 botões</strong> — a Meta rejeita templates com mais que isso.
-        </p>
-      </div>
-
-      {errors.buttonsGeneral && (
-        <Banner variant="danger">{errors.buttonsGeneral}</Banner>
-      )}
-
-      {/* Button list */}
-      <div className="space-y-2">
-        {buttons.map((btn, i) => {
-          const cfg = BUTTON_TYPES.find((t) => t.value === btn.type)
-          if (!cfg) return null
-          const Icon = cfg.icon
-          return (
-            <div key={i} className="bg-surface-800 border border-surface-700 rounded-2xl overflow-hidden">
-              <div className="flex items-center gap-3 px-3 py-2 border-b border-surface-700/60">
-                <Icon className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
-                <select
-                  value={btn.type}
-                  onChange={(e) => updateButton(i, 'type', e.target.value)}
-                  className="flex-1 appearance-none bg-transparent text-xs text-surface-300 focus:outline-none cursor-pointer"
-                >
-                  {availableButtonTypes.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => removeButton(i)}
-                  className="p-1 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-all flex-shrink-0"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="p-3 space-y-2">
+    <div className="flex flex-col">
+      <Section title="Botões" badge="Opcional · até 3 — a Meta rejeita mais que isso">
+        {errors.buttonsGeneral && <Banner variant="danger" className="mb-3">{errors.buttonsGeneral}</Banner>}
+        {buttons.length === 0 && (
+          <p className="text-[11px] text-surface-500 mb-2 leading-snug">
+            Nenhum botão. Resposta rápida, link, telefone ou copiar código — o contato vê cada um como uma linha azul (ou verde) abaixo da mensagem.
+          </p>
+        )}
+        <div className="flex flex-col">
+          {buttons.map((btn, i) => {
+            const cfg = BUTTON_TYPES.find((t) => t.value === btn.type)
+            if (!cfg) return null
+            const Icon = cfg.icon
+            return (
+              <div key={i} className="border-t border-surface-700 first:border-t-0 py-3 first:pt-0 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Icon className="w-3.5 h-3.5 text-surface-400 flex-none" />
+                  <SelectMenu
+                    size="sm"
+                    aria-label={`Tipo do botão ${i + 1}`}
+                    className="w-48"
+                    value={btn.type}
+                    onChange={(e) => updateButton(i, 'type', e.target.value)}
+                    disabled={fieldDisabled}
+                  >
+                    {availableButtonTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </SelectMenu>
+                  <span className="text-[11px] text-surface-500">Botão {i + 1} de 3</span>
+                  <button
+                    type="button"
+                    onClick={() => removeButton(i)}
+                    disabled={fieldDisabled}
+                    aria-label={`Remover botão ${i + 1}`}
+                    className="ml-auto w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-danger hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 <InputRow
                   value={btn.text}
                   onChange={(v) => updateButton(i, 'text', v)}
                   placeholder={
-                    btn.type === 'QUICK_REPLY'  ? 'Ex: Quero saber mais'   :
-                    btn.type === 'URL'          ? 'Ex: Ver oferta'          :
-                    btn.type === 'PHONE_NUMBER' ? 'Ex: Ligar agora'         :
-                    btn.type === 'FLOW'         ? 'Ex: Preencher formulário':
+                    btn.type === 'QUICK_REPLY'  ? 'Ex: Quero saber mais'    :
+                    btn.type === 'URL'          ? 'Ex: Ver oferta'           :
+                    btn.type === 'PHONE_NUMBER' ? 'Ex: Ligar agora'          :
+                    btn.type === 'FLOW'         ? 'Ex: Preencher formulário' :
                     'Copiar código'
                   }
-                  label="Texto do botão"
+                  label="Texto"
                   maxLength={25}
+                  disabled={fieldDisabled}
                 />
                 {btn.type === 'URL' && (
                   <>
-                    <InputRow
-                      value={btn.url}
-                      onChange={(v) => updateButton(i, 'url', v)}
-                      placeholder="https://seusite.com.br/promo/{{1}} (opcional)"
-                      label="URL de destino"
-                    />
+                    <InputRow value={btn.url} onChange={(v) => updateButton(i, 'url', v)} placeholder="https://seusite.com.br/promo/{{1}}" label="URL" disabled={fieldDisabled} />
                     {/\{\{1\}\}/.test(btn.url) && (
-                      <InputRow
-                        value={btn.urlExample}
-                        onChange={(v) => updateButton(i, 'urlExample', v)}
-                        placeholder="https://seusite.com.br/promo/abc123"
-                        label="URL de exemplo"
-                      />
+                      <InputRow value={btn.urlExample} onChange={(v) => updateButton(i, 'urlExample', v)} placeholder="https://seusite.com.br/promo/abc123" label="URL de exemplo" disabled={fieldDisabled} />
                     )}
                   </>
                 )}
                 {btn.type === 'PHONE_NUMBER' && (
-                  <InputRow value={btn.phoneNumber} onChange={(v) => updateButton(i, 'phoneNumber', v)} placeholder="+55 11 99999-9999" label="Número de telefone" />
-                )}
-                {errors.buttonByIndex?.[i] && (
-                  <p className="text-[11px] text-danger">{errors.buttonByIndex[i]}</p>
+                  <InputRow value={btn.phoneNumber} onChange={(v) => updateButton(i, 'phoneNumber', v)} placeholder="+55 11 99999-9999" label="Telefone" disabled={fieldDisabled} />
                 )}
                 {btn.type === 'FLOW' && (
-                  <InputRow value={btn.flowId} onChange={(v) => updateButton(i, 'flowId', v)} placeholder="ID do Flow no Meta Business Manager" label="Flow ID" />
+                  <InputRow value={btn.flowId} onChange={(v) => updateButton(i, 'flowId', v)} placeholder="ID do Flow no Meta Business Manager" label="Flow ID" disabled={fieldDisabled} />
                 )}
                 {btn.type === 'COPY_CODE' && (
-                  <p className="text-[11px] text-surface-400">
-                    O código OTP será copiado automaticamente ao toque. Nenhuma configuração adicional necessária.
-                  </p>
+                  <p className="text-[11px] text-surface-500 pl-[104px]">O código é copiado ao toque — nada mais a configurar.</p>
+                )}
+                {errors.buttonByIndex?.[i] && (
+                  <p className="text-[11px] text-danger pl-[104px]">{errors.buttonByIndex[i]}</p>
                 )}
               </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Add button picker */}
-      {buttons.length < 3 && (
-        <div>
-          <button
-            onClick={() => onShowAddButton(!showAddButton)}
-            disabled={fieldDisabled}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-600 hover:border-brand-500 rounded-xl text-xs text-surface-400 hover:text-brand-300 transition-all w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Adicionar botão
-            {showAddButton ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
-          </button>
-
-          <AnimatePresence>
-            {showAddButton && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: 'auto' }}
-                exit={{ opacity: 0, y: -4, height: 0 }}
-                transition={{ duration: 0.15 }}
-                className="overflow-hidden"
-              >
-                <div className="mt-2 bg-surface-800 border border-surface-700 rounded-xl overflow-hidden divide-y divide-surface-700/60">
-                  {availableButtonTypes.map((bt) => {
-                    const Icon = bt.icon
-                    const alreadyHasType = buttons.some((b) => b.type === bt.value)
-                    const isDisabledType = bt.comingSoon || (bt.value === 'COPY_CODE' && buttons.length > 0) || alreadyHasType
-                    return (
-                      <button
-                        key={bt.value}
-                        onClick={() => !isDisabledType && addButtonOfType(bt.value)}
-                        disabled={isDisabledType}
-                        title={bt.comingSoon ? 'Em breve — este tipo precisa de suporte dedicado e ainda não está disponível.' : undefined}
-                        className={cn(
-                          'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all',
-                          isDisabledType ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-700'
-                        )}
-                      >
-                        <Icon className="w-4 h-4 text-surface-400 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs font-medium text-surface-200">{bt.label}</p>
-                          <p className="text-[11px] text-surface-400">{bt.description}</p>
-                        </div>
-                        {bt.comingSoon ? (
-                          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded">Em breve</span>
-                        ) : alreadyHasType ? (
-                          <span className="ml-auto text-[10px] text-surface-400">Já adicionado</span>
-                        ) : null}
-                      </button>
-                    )
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            )
+          })}
         </div>
-      )}
+
+        {buttons.length < 3 && (
+          <div className={cn(buttons.length > 0 && 'mt-3 pt-3 border-t border-surface-700')}>
+            <Button
+              size="sm"
+              variant="neutral"
+              onClick={() => onShowAddButton(!showAddButton)}
+              disabled={fieldDisabled}
+              leftIcon={<Plus className="w-3.5 h-3.5" />}
+              rightIcon={showAddButton ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              aria-expanded={showAddButton}
+            >
+              Adicionar botão
+            </Button>
+            <AnimatePresence>
+              {showAddButton && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, y: -4, height: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 rounded-sm border border-surface-700 overflow-hidden">
+                    {availableButtonTypes.map((bt) => {
+                      const Icon = bt.icon
+                      const alreadyHasType = buttons.some((b) => b.type === bt.value)
+                      const isDisabledType = bt.comingSoon || (bt.value === 'COPY_CODE' && buttons.length > 0) || alreadyHasType
+                      return (
+                        <button
+                          key={bt.value}
+                          type="button"
+                          onClick={() => !isDisabledType && addButtonOfType(bt.value)}
+                          disabled={isDisabledType}
+                          className={cn(
+                            'w-full flex items-center gap-3 px-3 py-2.5 text-left border-t border-surface-700 first:border-t-0 transition-colors',
+                            isDisabledType ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--rowhover)]',
+                          )}
+                        >
+                          <Icon className="w-3.5 h-3.5 text-surface-400 flex-none" />
+                          <span className="min-w-0">
+                            <span className="block text-[12.5px] font-medium text-surface-200 leading-tight">{bt.label}</span>
+                            <span className="block text-[11px] text-surface-500 leading-snug">{bt.description}</span>
+                          </span>
+                          {bt.comingSoon
+                            ? <span className="ml-auto text-[11px] text-surface-500">em breve</span>
+                            : alreadyHasType
+                              ? <span className="ml-auto text-[11px] text-surface-500">já adicionado</span>
+                              : null}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </Section>
     </div>
   )
 }
 
 // ─── Step 4: Revisão ──────────────────────────────────────────────────────────
+// SummaryRow (antes LinhaResumo local) extraído pra ./SummaryRow.tsx — o
+// CampaignWizard tinha copiado esta receita à mão com medida diferente
+// (37-38px em vez de 29px, sem divisor). Agora as duas telas usam o mesmo
+// componente de domínio.
+function EtapaAprovacao({ n, titulo, sub, Icone, ativa }: { n: number; titulo: string; sub: string; Icone: typeof Sparkles; ativa?: boolean }) {
+  return (
+    <div className="flex items-start gap-2 min-w-0 flex-1">
+      <Icone className={cn('w-3.5 h-3.5 mt-px flex-none', ativa ? 'text-brand-400' : 'text-surface-500')} />
+      <div className="min-w-0">
+        <p className={cn('text-[12px] leading-tight', ativa ? 'font-semibold text-surface-50' : 'font-medium text-surface-300')}>{n} · {titulo}</p>
+        <p className="text-[11px] text-surface-500 leading-snug">{sub}</p>
+      </div>
+    </div>
+  )
+}
 
 function StepRevisao({
   name, category, subCategory, language, headerType, buttons, varExamples, error,
@@ -1129,78 +1010,34 @@ function StepRevisao({
   varExamples: string[]
   error: string
 }) {
+  // Direção C: o resumo é uma lista rótulo/valor em faixas, e o processo de
+  // aprovação vira uma linha de três passos — nada de cartões. A prévia
+  // completa já está no painel da direita.
   return (
-    <div className="space-y-5">
-      {/* Card: Sobre o template */}
-      <div className="bg-surface-800/50 border border-surface-700 rounded-2xl p-4 space-y-2">
-        <p className="text-xs font-bold text-surface-300 uppercase tracking-wider mb-3">Sobre o template</p>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Nome</span>
-          <span className="text-xs font-mono text-brand-300 bg-brand-400/10 px-2 py-0.5 rounded">{name || '—'}</span>
+    <div className="flex flex-col">
+      <Section title="Resumo" badge="Confira antes de enviar para análise">
+        <div className="flex flex-col">
+          <SummaryRow label="Nome" value={<span className="font-mono">{name || '—'}</span>} />
+          <SummaryRow label="Categoria" value={CATEGORY_LABELS[category]} />
+          <SummaryRow label="Tipo" value={SUBCATEGORY_LABELS[subCategory]} />
+          <SummaryRow label="Idioma" value={language} />
+          {headerType && <SummaryRow label="Cabeçalho" value={HEADER_TYPES.find((h) => h.value === headerType)?.label ?? headerType} />}
+          <SummaryRow label="Variáveis" value={varExamples.length === 0 ? 'nenhuma' : `${varExamples.length} · ${varExamples.join(' · ')}`} />
+          <SummaryRow label="Botões" value={buttons.length === 0 ? 'nenhum' : buttons.map((b) => b.text || '(sem texto)').join(' · ')} />
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Categoria</span>
-          <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{CATEGORY_LABELS[category]}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Subcategoria</span>
-          <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{SUBCATEGORY_LABELS[subCategory]}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Idioma</span>
-          <span className="text-xs text-surface-300">{language}</span>
-        </div>
-        {headerType && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-surface-400">Cabeçalho</span>
-            <span className="text-xs text-surface-300">{HEADER_TYPES.find(h => h.value === headerType)?.label ?? headerType}</span>
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Variáveis</span>
-          <span className="text-xs text-surface-300">{varExamples.length} variáve{varExamples.length === 1 ? 'l' : 'is'}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Botões</span>
-          <span className="text-xs text-surface-300">{buttons.length} botã{buttons.length === 1 ? 'o' : 'ões'}</span>
-        </div>
-      </div>
+      </Section>
 
-      {/* Card: Processo de aprovação */}
-      <div className="bg-surface-800/50 border border-surface-700 rounded-2xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-surface-700">
-          <p className="text-xs font-bold text-surface-200 uppercase tracking-wider">Processo de aprovação</p>
+      <Section title="Aprovação" badge="Processo automático da Meta">
+        <div className="flex items-start gap-3">
+          <EtapaAprovacao n={1} titulo="Enviado" sub="Submetido à Meta agora" Icone={Sparkles} ativa />
+          <ChevronRight className="w-3 h-3 text-surface-600 mt-1 flex-none" />
+          <EtapaAprovacao n={2} titulo="Em análise" sub="Costuma levar 24–48 h" Icone={Clock} />
+          <ChevronRight className="w-3 h-3 text-surface-600 mt-1 flex-none" />
+          <EtapaAprovacao n={3} titulo="Aprovado" sub="Disponível para disparos" Icone={CheckCircle2} />
         </div>
-        <div className="flex items-center gap-0 text-[11px] p-3">
-          <div className="flex items-center gap-2 px-2 py-2 flex-1 border-r border-surface-700">
-            <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-brand-300">1 · Enviado</p>
-              <p className="text-surface-400">Template submetido à Meta agora</p>
-            </div>
-          </div>
-          <ChevronRight className="w-3 h-3 text-surface-400 flex-shrink-0 mx-1" />
-          <div className="flex items-center gap-2 px-2 py-2 flex-1 border-r border-surface-700">
-            <Clock className="w-3 h-3 text-surface-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-surface-300">2 · Em análise</p>
-              <p className="text-surface-400">Processo automático · 24–48h</p>
-            </div>
-          </div>
-          <ChevronRight className="w-3 h-3 text-surface-400 flex-shrink-0 mx-1" />
-          <div className="flex items-center gap-2 px-2 py-2 flex-1">
-            <CheckCircle2 className="w-3 h-3 text-surface-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-surface-300">3 · Aprovado</p>
-              <p className="text-surface-400">Disponível para campanhas</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </Section>
 
-      {error && (
-        <Banner variant="danger">{error}</Banner>
-      )}
+      {error && <Banner variant="danger" className="mt-3">{error}</Banner>}
     </div>
   )
 }
@@ -1213,53 +1050,65 @@ function Section({ title, required, badge, children }: {
   badge?: string
   children: React.ReactNode
 }) {
+  // Direção C (aprovada 22/09): sem cartão, sem título em caixa alta. Cada
+  // grupo é uma faixa separada por linha de 1px, rótulo à esquerda em coluna
+  // fixa de 104px, campo à direita. Contraste por peso, não por cor.
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-xs font-bold text-surface-200 uppercase tracking-wider">{title}</h3>
-        {required && <span className="text-danger text-xs">*</span>}
-        {badge && <span className="text-[10px] text-surface-400 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full">{badge}</span>}
+    <div className="grid grid-cols-[104px_1fr] gap-x-4 py-4 border-t border-surface-700 first:border-t-0 first:pt-0">
+      <div className="pt-1.5">
+        <h3 className="text-[12.5px] font-bold text-surface-100 tracking-[-0.01em] leading-tight">
+          {title}{required && <span className="text-surface-500 font-normal"> *</span>}
+        </h3>
+        {badge && <p className="text-[11px] text-surface-500 mt-0.5 leading-snug">{badge}</p>}
       </div>
-      {children}
+      <div className="min-w-0">{children}</div>
     </div>
   )
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="text-xs font-medium text-surface-400 mb-1.5 block">{children}</label>
-}
-
-function ToolbarBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+function ToolbarBtn({ onClick, title, children, destaque }: {
+  onClick: () => void; title: string; children: React.ReactNode; destaque?: boolean
+}) {
+  // Pílula h-7 / raio 7 — mesma medida dos outros chips de barra do produto.
   return (
     <button
+      type="button"
       onClick={onClick}
       title={title}
-      className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
-    >
-      {children}
-    </button>
+      className={cn(
+        'h-7 px-2.5 rounded-sm border inline-flex items-center gap-1.5 text-[11.5px] transition-colors',
+        destaque
+          ? 'border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)]'
+          : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
+      )}
+    >{children}</button>
   )
 }
 
-function InputRow({ value, onChange, placeholder, label, maxLength }: {
+function InputRow({ value, onChange, placeholder, label, maxLength, disabled }: {
   value: string
   onChange: (v: string) => void
   placeholder: string
   label: string
   maxLength?: number
+  disabled?: boolean
 }) {
+  // Mesma gramática da faixa: rótulo à esquerda (88px, dentro da coluna de
+  // conteúdo da Section), campo = primitivo Input md, contador dentro.
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[11px] text-surface-400 w-24 flex-shrink-0">{label}</span>
-      <div className="flex-1 relative">
-        <input
+    <div className="flex items-center gap-3">
+      <span className="text-[11px] text-surface-500 w-[88px] flex-none">{label}</span>
+      <div className="flex-1 relative min-w-0">
+        <Input
+          size="md"
           value={value}
+          disabled={disabled}
           onChange={(e) => onChange(maxLength ? e.target.value.slice(0, maxLength) : e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+          className={maxLength ? 'pr-14' : undefined}
         />
         {maxLength && (
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-surface-400">
+          <span className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none', value.length >= maxLength ? 'text-danger' : 'text-surface-500')}>
             {value.length}/{maxLength}
           </span>
         )}

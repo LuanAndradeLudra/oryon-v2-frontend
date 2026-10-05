@@ -69,12 +69,12 @@ export function StageModal({ open, onClose, onSave, editStage }: StageModalProps
         <ColorPicker value={color} onChange={setColor} />
       </FormField>
 
-      <div className="flex items-center justify-between py-2 border-t border-surface-800">
+      <div className="flex items-center justify-between py-2 border-t border-surface-700">
         <div>
-          <p className="text-sm font-medium text-surface-200">Estágio terminal</p>
+          <p className="text-sm font-medium text-surface-200">Situação terminal</p>
           <p className="text-xs text-surface-500 mt-0.5">Ficará oculto por padrão no Kanban (ex: Churned, Inativo)</p>
         </div>
-        <Switch checked={isTerminal} onChange={setIsTerminal} />
+        <Switch checked={isTerminal} onChange={setIsTerminal} aria-label="Situação terminal" />
       </div>
     </FormDialog>
   )

@@ -3,6 +3,7 @@
 // mv_ai_cost_per_tenant_day (cross-tenant) + agent-server agent summaries.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
 import { Search } from 'lucide-react'
 import {
   fetchAgentSummary,
@@ -10,16 +11,19 @@ import {
   type AgentSummary,
   type CostRollupRow,
 } from '@/services/adminAiObservabilityApi'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 
 export function AiObservabilityPage() {
-  const [tenantId, setTenantId] = useState('')
-  const [since, setSince] = useState(defaultSince())
-  const [until, setUntil] = useState('')
-  const [agentId, setAgentId] = useState('')
+  // Filtros na URL (regra do PO). O "desde" padrão (30 dias) fica fora dela.
+  const [tenantId, setTenantId] = useEstadoNaUrl<string>('tenant', { padrao: '' })
+  const [since, setSince] = useEstadoNaUrl<string>('de', { padrao: defaultSince(), ler: (v) => v || defaultSince() })
+  const [until, setUntil] = useEstadoNaUrl<string>('ate', { padrao: '' })
+  const [agentId, setAgentId] = useEstadoNaUrl<string>('agente', { padrao: '' })
 
   const [rollup, setRollup] = useState<CostRollupRow[]>([])
   const [rollupLoading, setRollupLoading] = useState(false)
@@ -102,17 +106,13 @@ export function AiObservabilityPage() {
         subtitle="Rollup diário cross-tenant + drill por agent_id."
       />
 
-      <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
+      <div className="px-6 py-3 border-b border-r border-surface-700 flex flex-wrap items-end gap-3">
         <Field label="tenantId" value={tenantId} onChange={setTenantId} placeholder="opcional — UUID" wide />
         <Field label="since (date)" value={since} onChange={setSince} placeholder="YYYY-MM-DD" />
         <Field label="until (date)" value={until} onChange={setUntil} placeholder="YYYY-MM-DD" />
-        <button
-          onClick={() => void loadRollup()}
-          disabled={rollupLoading}
-          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs disabled:opacity-50"
-        >
+        <Button size="sm" variant="primary" onClick={() => void loadRollup()} disabled={rollupLoading}>
           Atualizar rollup
-        </button>
+        </Button>
       </div>
       </div>
 
@@ -142,7 +142,7 @@ export function AiObservabilityPage() {
 
           {rollup.length > 0 && (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-lg border border-surface-700 bg-surface-700 overflow-hidden mb-4">
                 <KpiCard label="Custo total (USD)" value={`$${totals.cost.toFixed(4)}`} />
                 <KpiCard label="Execuções" value={totals.exec.toLocaleString('pt-BR')} />
                 <KpiCard label="Input tokens" value={totals.input.toLocaleString('pt-BR')} />
@@ -150,10 +150,10 @@ export function AiObservabilityPage() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-xl border border-surface-700 bg-surface-900 p-3 overflow-x-auto">
-                  <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">Por feature</h3>
+                <div className="border-t border-surface-700 pt-3 overflow-x-auto">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-500 mb-2">Por feature</h3>
                   <table className="w-full text-sm">
-                    <tbody className="divide-y divide-surface-800">
+                    <tbody className="divide-y divide-surface-700">
                       {byFeature.map(([feature, v]) => (
                         <tr key={feature}>
                           <td className="py-1.5 text-surface-200 font-mono text-xs">{feature}</td>
@@ -165,19 +165,19 @@ export function AiObservabilityPage() {
                   </table>
                 </div>
 
-                <div className="rounded-xl border border-surface-700 bg-surface-900 p-3 max-h-[260px] overflow-auto">
-                  <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">Linhas brutas ({rollup.length})</h3>
+                <div className="border-t border-surface-700 pt-3 max-h-[260px] overflow-auto">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-500 mb-2">Linhas brutas ({rollup.length})</h3>
                   <table className="w-full text-xs">
                     <thead className="text-surface-500">
                       <tr>
-                        <th className="text-left py-1">day</th>
-                        <th className="text-left py-1">tenant</th>
-                        <th className="text-left py-1">feature</th>
-                        <th className="text-right py-1">exec</th>
-                        <th className="text-right py-1">$ usd</th>
+                        <th className="text-left py-1 text-[10px] font-bold uppercase tracking-wider">day</th>
+                        <th className="text-left py-1 text-[10px] font-bold uppercase tracking-wider">tenant</th>
+                        <th className="text-left py-1 text-[10px] font-bold uppercase tracking-wider">feature</th>
+                        <th className="text-right py-1 text-[10px] font-bold uppercase tracking-wider">exec</th>
+                        <th className="text-right py-1 text-[10px] font-bold uppercase tracking-wider">$ usd</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-surface-800">
+                    <tbody className="divide-y divide-surface-700">
                       {rollup.slice(0, 100).map((r, i) => (
                         <tr key={i}>
                           <td className="py-1 text-surface-300">{r.day}</td>
@@ -201,13 +201,9 @@ export function AiObservabilityPage() {
 
           <div className="flex items-end gap-3 mb-4">
             <Field label="agentId" value={agentId} onChange={setAgentId} placeholder="UUID" wide />
-            <button
-              onClick={() => void loadAgent()}
-              disabled={agentLoading || !agentId}
-              className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs disabled:opacity-50"
-            >
+            <Button size="sm" variant="primary" onClick={() => void loadAgent()} disabled={agentLoading || !agentId}>
               Buscar
-            </button>
+            </Button>
           </div>
 
           {agentError && (
@@ -222,7 +218,7 @@ export function AiObservabilityPage() {
 
           {agentSummary && !agentLoading && (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-lg border border-surface-700 bg-surface-700 overflow-hidden mb-4">
                 <KpiCard label="Execuções" value={agentSummary.totals.executions.toLocaleString('pt-BR')} />
                 <KpiCard
                   label="Status"
@@ -237,13 +233,13 @@ export function AiObservabilityPage() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-xl border border-surface-700 bg-surface-900 p-3 overflow-x-auto">
-                  <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">Top tools</h3>
+                <div className="border-t border-surface-700 pt-3 overflow-x-auto">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-500 mb-2">Top tools</h3>
                   {agentSummary.top_tools.length === 0 ? (
                     <p className="text-xs text-surface-500">Sem chamadas no período.</p>
                   ) : (
                     <table className="w-full text-sm">
-                      <tbody className="divide-y divide-surface-800">
+                      <tbody className="divide-y divide-surface-700">
                         {agentSummary.top_tools.map(t => (
                           <tr key={t.tool_name}>
                             <td className="py-1.5 text-surface-200 font-mono text-xs">{t.tool_name}</td>
@@ -256,8 +252,8 @@ export function AiObservabilityPage() {
                   )}
                 </div>
 
-                <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
-                  <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">RAG</h3>
+                <div className="border-t border-surface-700 pt-3">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-500 mb-2">RAG</h3>
                   <dl className="space-y-1 text-xs text-surface-300">
                     <Row k="queries" v={agentSummary.rag.queries.toLocaleString('pt-BR')} />
                     <Row k="hit rate (chunks≠[])" v={(agentSummary.rag.hit_rate * 100).toFixed(1) + '%'} />
@@ -306,14 +302,12 @@ function Field({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <input
+      <Input
+        size="sm"
         value={value}
         placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        className={
-          'px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 ' +
-          (wide ? 'w-72' : 'w-36')
-        }
+        className={wide ? 'w-72' : 'w-36'}
       />
     </label>
   )
@@ -321,7 +315,7 @@ function Field({
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
+    <div className="bg-[var(--sf)] px-3.5 py-3">
       <p className="text-[11px] uppercase tracking-wider text-surface-400">{label}</p>
       <p className="mt-1 text-lg font-semibold text-surface-100">{value}</p>
       {hint && <p className="text-[11px] text-surface-500 mt-0.5">{hint}</p>}
@@ -331,7 +325,7 @@ function KpiCard({ label, value, hint }: { label: string; value: string; hint?: 
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex justify-between border-b border-surface-700/50 last:border-0 py-0.5">
+    <div className="flex justify-between border-b border-surface-700 last:border-0 py-0.5">
       <dt className="text-surface-400">{k}</dt>
       <dd className="text-surface-200 font-mono">{v}</dd>
     </div>

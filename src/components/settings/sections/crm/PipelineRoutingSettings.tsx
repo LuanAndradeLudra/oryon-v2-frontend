@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Route } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { SectionHeader } from '@/components/settings/SectionHeader'
 import { Switch } from '@/components/ui/Switch'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { useToast } from '@/hooks/useToast'
 import { pipelineRoutingApi, pipelinesApi, whatsappNumbersApi, usersApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -132,18 +134,15 @@ export function PipelineRoutingSettings() {
 
   return (
     <>
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-surface-100">Roteamento por canal</h3>
-        <p className="text-xs text-surface-500 mt-0.5">
-          Define em qual pipeline um negócio é auto-criado quando chega mensagem em cada linha WhatsApp.
-          Linhas sem roteamento configurado usam o pipeline default do tenant e não criam negócio automaticamente.
-        </p>
-      </div>
+      <SectionHeader
+        title="Roteamento por canal"
+        description="Define em qual pipeline um negócio é auto-criado quando chega mensagem em cada linha WhatsApp. Linhas sem roteamento configurado usam o pipeline default do tenant e não criam negócio automaticamente."
+      />
 
       {numbers.length === 0 ? (
         <p className="text-sm text-surface-500 text-center py-10">Nenhuma linha WhatsApp conectada.</p>
       ) : (
-        <div className="space-y-3">
+        <div className="border-y border-surface-700 divide-y divide-surface-700">
           {numbers.map((n) => {
             const draft = drafts[n.id]
             if (!draft) return null
@@ -160,14 +159,17 @@ export function PipelineRoutingSettings() {
             return (
               <div
                 key={n.id}
-                className="bg-surface-900 border border-surface-800 rounded-2xl p-4 space-y-3"
+                className="py-4 space-y-3"
               >
                 <div className="flex items-center gap-2">
                   <Route className="w-4 h-4 text-surface-500 flex-shrink-0" />
                   <span className="text-sm font-medium text-surface-100">{n.label || n.displayPhoneNumber}</span>
                   <span className="text-xs text-surface-500">{n.displayPhoneNumber}</span>
                   {hasRouting && (
-                    <span className="text-[10px] text-brand-400 bg-brand-900/20 border border-brand-800/50 px-1.5 py-0.5 rounded-full ml-auto">
+                    <span
+                      className="text-[10px] font-semibold color-chip border px-1.5 py-0.5 rounded-xs ml-auto"
+                      style={{ ['--chip']: 'var(--color-success)', ['--chip-mix']: '70%' } as React.CSSProperties}
+                    >
                       Roteado
                     </span>
                   )}
@@ -175,8 +177,9 @@ export function PipelineRoutingSettings() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
-                    <label className="text-[11px] text-surface-500 mb-1 block">Pipeline</label>
-                    <Select
+                    <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Pipeline</label>
+                    <SelectMenu
+                      aria-label="Pipeline"
                       value={draft.pipelineId}
                       disabled={!canManage}
                       onChange={(e) => updateDraft(n.id, { pipelineId: e.target.value, defaultStageId: '' })}
@@ -185,12 +188,13 @@ export function PipelineRoutingSettings() {
                       {pipelineOptions.map((p) => (
                         <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (default)' : ''}{p.isArchived ? ' (arquivado)' : ''}</option>
                       ))}
-                    </Select>
+                    </SelectMenu>
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-surface-500 mb-1 block">Estágio inicial</label>
-                    <Select
+                    <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Estágio inicial</label>
+                    <SelectMenu
+                      aria-label="Estágio inicial"
                       value={draft.defaultStageId}
                       disabled={!canManage}
                       onChange={(e) => updateDraft(n.id, { defaultStageId: e.target.value })}
@@ -202,12 +206,13 @@ export function PipelineRoutingSettings() {
                         .map((s) => (
                           <option key={s.id} value={s.id}>{s.label}</option>
                         ))}
-                    </Select>
+                    </SelectMenu>
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-surface-500 mb-1 block">Dono do negócio</label>
-                    <Select
+                    <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Dono do negócio</label>
+                    <SelectMenu
+                      aria-label="Dono do negócio"
                       value={draft.ownerRule}
                       disabled={!canManage}
                       onChange={(e) => updateDraft(n.id, { ownerRule: e.target.value as OwnerRule })}
@@ -215,13 +220,14 @@ export function PipelineRoutingSettings() {
                       {(Object.keys(OWNER_RULE_LABELS) as OwnerRule[]).map((rule) => (
                         <option key={rule} value={rule}>{OWNER_RULE_LABELS[rule]}</option>
                       ))}
-                    </Select>
+                    </SelectMenu>
                   </div>
 
                   {draft.ownerRule === 'fixed_user' ? (
                     <div>
-                      <label className="text-[11px] text-surface-500 mb-1 block">Usuário</label>
-                      <Select
+                      <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Usuário</label>
+                      <SelectMenu
+                        aria-label="Usuário"
                         value={draft.ownerUserId}
                         disabled={!canManage}
                         onChange={(e) => updateDraft(n.id, { ownerUserId: e.target.value })}
@@ -230,7 +236,7 @@ export function PipelineRoutingSettings() {
                         {users.map((u) => (
                           <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
                         ))}
-                      </Select>
+                      </SelectMenu>
                     </div>
                   ) : (
                     <div className="flex items-end gap-2 pb-2">
@@ -238,6 +244,7 @@ export function PipelineRoutingSettings() {
                         checked={draft.autoCreateDeal}
                         onChange={() => updateDraft(n.id, { autoCreateDeal: !draft.autoCreateDeal })}
                         disabled={!canManage}
+                        aria-label={`Auto-criar negócio no 1º contato em ${n.label || n.displayPhoneNumber}`}
                       />
                       <span className="text-xs text-surface-400">Auto-criar negócio no 1º contato</span>
                     </div>
@@ -250,6 +257,7 @@ export function PipelineRoutingSettings() {
                       checked={draft.autoCreateDeal}
                       onChange={() => updateDraft(n.id, { autoCreateDeal: !draft.autoCreateDeal })}
                       disabled={!canManage}
+                      aria-label={`Auto-criar negócio no 1º contato em ${n.label || n.displayPhoneNumber}`}
                     />
                     <span className="text-xs text-surface-400">Auto-criar negócio no 1º contato</span>
                   </div>
@@ -258,21 +266,13 @@ export function PipelineRoutingSettings() {
                 {canManage && (
                   <div className="flex items-center gap-2 justify-end pt-1">
                     {hasRouting && (
-                      <button
-                        onClick={() => handleRemove(n.id)}
-                        disabled={removing === n.id}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-50"
-                      >
+                      <Button size="sm" variant="ghost" className="text-danger hover:bg-danger/10" onClick={() => handleRemove(n.id)} disabled={removing === n.id}>
                         {removing === n.id ? 'Removendo…' : 'Remover roteamento'}
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      onClick={() => handleSave(n.id)}
-                      disabled={saving === n.id}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all disabled:opacity-50"
-                    >
+                    <Button size="sm" variant="primary" onClick={() => handleSave(n.id)} disabled={saving === n.id}>
                       {saving === n.id ? 'Salvando…' : 'Salvar'}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

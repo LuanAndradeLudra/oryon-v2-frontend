@@ -20,6 +20,7 @@ import type {
 } from '@/types/skills'
 import { EditAgentSkillConfigModal } from './EditAgentSkillConfigModal'
 import { Tooltip } from '@/components/ui/Tooltip'
+import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 
@@ -86,7 +87,7 @@ export function SkillTemplateInstancesSection({ template }: Props) {
   }, [editing, template])
 
   return (
-    <section className="mt-8 bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+    <section className="mt-8 bg-surface-800 border border-surface-700 rounded-lg p-5">
       <header className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
@@ -109,15 +110,15 @@ export function SkillTemplateInstancesSection({ template }: Props) {
             está sem um campo obrigatório do schema atual.
           </p>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="neutral"
+          size="sm"
           onClick={reload}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs disabled:opacity-50"
+          leftIcon={<RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />}
         >
-          <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
           Recarregar
-        </button>
+        </Button>
       </header>
 
       {loading && (
@@ -143,7 +144,7 @@ export function SkillTemplateInstancesSection({ template }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[11px] uppercase tracking-wide text-surface-500 border-b border-surface-800">
+              <tr className="text-[11px] uppercase tracking-wide text-surface-500 border-b border-surface-700">
                 <th className="text-left font-medium py-2 pr-3">Agente</th>
                 <th className="text-left font-medium py-2 pr-3">Tenant</th>
                 <th className="text-left font-medium py-2 pr-3">Config</th>
@@ -200,7 +201,7 @@ function InstanceRow({
   }, [row.config])
 
   return (
-    <tr className="border-b border-surface-800/60 hover:bg-surface-900/30">
+    <tr className="border-b border-surface-700 hover:bg-[var(--rowhover)]">
       <td className="py-2.5 pr-3 text-surface-100 truncate max-w-[180px]">
         {row.agent_name}
       </td>
@@ -240,13 +241,9 @@ function InstanceRow({
       </td>
       <td className="py-2.5 text-right">
         <Tooltip content="Editar configuração desta instância" side="top">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
-          >
+          <Button variant="ghost" size="sm" iconOnly onClick={onEdit} aria-label="Editar configuração desta instância">
             <Pencil className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </Tooltip>
       </td>
     </tr>

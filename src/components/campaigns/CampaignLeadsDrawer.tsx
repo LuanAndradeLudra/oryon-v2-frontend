@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { X, Users, ExternalLink, Search, ChevronRight, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { attributionApi } from '@/services/api'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import type { CampaignLeadSummary } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -28,15 +29,28 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
   const navigate = useNavigate()
   const [leads, setLeads] = useState<CampaignLeadSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [outcomeFilter, setOutcomeFilter] = useState<CampaignLeadSummary['outcome'] | 'all'>('all')
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true)
+    setError(null)
     attributionApi.getCampaignLeads(campaignId)
       .then((r) => setLeads(r.data))
-      .catch(() => {})
+      .catch((err) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        setError(msg || 'Não foi possível carregar os leads desta campanha.')
+      })
       .finally(() => setLoading(false))
   }, [campaignId])
+
+  // PL-C2-BUS (P6): falha silenciosa (`.catch(() => {})`) fazia erro de rede
+  // parecer "campanha sem lead nenhum". O drawer só existe enquanto
+  // `leadsDrawer` (estado do componente pai) é truthy — trocar de campanha
+  // sempre fecha e reabre com um `campaignId` novo, então isto é, na prática,
+  // um efeito de montagem (mesmo padrão de AuditTrail.tsx).
+  useEffect(() => { void load() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [])
 
   const filtered = leads.filter((l) => {
     if (outcomeFilter !== 'all' && l.outcome !== outcomeFilter) return false
@@ -54,7 +68,9 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/70" onClick={onClose} />
+      {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/70 cru — preto
+          cru fica pesado demais no tema claro (MODAL-07). */}
+      <div className="fixed inset-0 z-40 bg-[var(--color-scrim-soft)]" onClick={onClose} />
 
       <motion.div
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
@@ -62,8 +78,8 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
         className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[480px] bg-surface-950 border-l overlay-frame flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-[#1877f2]/15 border border-[#1877f2]/20 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[#1877f2]/15 border border-[#1877f2]/20 flex items-center justify-center flex-shrink-0">
             <Users className="w-4 h-4 text-[#1877f2]" />
           </div>
           <div className="flex-1 min-w-0">
@@ -72,22 +88,23 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
               {loading ? 'Carregando...' : `${leads.length} lead${leads.length !== 1 ? 's' : ''} · Meta Ads`}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Outcome summary pills */}
-        {!loading && leads.length > 0 && (
-          <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
+        {/* Outcome summary pills — direção C: raio 5 (mesmo do .pill do
+            mockup), não pílula totalmente arredondada. */}
+        {!loading && !error && leads.length > 0 && (
+          <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <button
                 onClick={() => setOutcomeFilter('all')}
                 className={cn(
-                  'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
+                  'px-2.5 py-1 rounded-[5px] text-[11px] font-medium border transition-all',
                   outcomeFilter === 'all'
-                    ? 'bg-surface-700 border-surface-500 text-surface-100'
-                    : 'border-surface-800 text-surface-400 hover:text-surface-200',
+                    ? 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-100'
+                    : 'border-surface-700 text-surface-400 hover:text-surface-200',
                 )}
               >
                 Todos ({leads.length})
@@ -100,10 +117,10 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                     key={key}
                     onClick={() => setOutcomeFilter(outcomeFilter === key ? 'all' : key)}
                     className={cn(
-                      'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
+                      'px-2.5 py-1 rounded-[5px] text-[11px] font-medium border transition-all',
                       outcomeFilter === key
                         ? 'color-chip'
-                        : 'border-surface-800 text-surface-400 hover:text-surface-200',
+                        : 'border-surface-700 text-surface-400 hover:text-surface-200',
                     )}
                     style={outcomeFilter === key ? ({ ['--chip']: cfg.color } as React.CSSProperties) : {}}
                   >
@@ -115,16 +132,17 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
           </div>
         )}
 
-        {/* Search */}
-        {!loading && leads.length > 0 && (
-          <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
-            <div className="flex items-center gap-2 bg-surface-900 border border-surface-800 rounded-xl px-3 py-2">
+        {/* Search — alinhado ao padrão de Input do resto do produto (bd2,
+            rounded-sm, bg-surface-800), não um bloco à parte. */}
+        {!loading && !error && leads.length > 0 && (
+          <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
+            <div className="flex items-center gap-2 bg-surface-800 border border-[var(--bd2)] rounded-sm px-3 h-9">
               <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por nome ou telefone..."
-                className="flex-1 bg-transparent text-xs text-surface-200 placeholder:text-surface-500 outline-none"
+                className="flex-1 bg-transparent text-[13px] text-surface-100 placeholder:text-surface-500 outline-none"
               />
             </div>
           </div>
@@ -137,16 +155,18 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
               <Loader2 className="w-4 h-4 animate-spin text-brand-400" />
               Carregando leads...
             </div>
+          ) : error ? (
+            <ErrorState hint={error} onRetry={load} className="h-full justify-center" />
           ) : filtered.length === 0 ? (
             <EmptyState icon={Users} title="Nenhum lead encontrado" className="h-full justify-center" />
           ) : (
-            <div className="divide-y divide-surface-800/60">
+            <div className="divide-y divide-surface-700">
               {filtered.map((lead) => {
                 const outcome = OUTCOME_CONFIG[lead.outcome]
                 return (
                   <div
                     key={lead.id + lead.adName}
-                    className="group flex items-center gap-3 px-5 py-3 hover:bg-surface-900/60 transition-colors cursor-pointer"
+                    className="group flex items-center gap-3 px-5 py-3 hover:bg-[var(--rowhover)] transition-colors cursor-pointer"
                     onClick={() => handleOpenCRM(lead.id)}
                   >
                     {/* Stage color dot */}
@@ -157,23 +177,23 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-surface-200">{lead.name}</span>
                         <span
-                          className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                          className="color-chip px-1.5 py-0.5 rounded-full text-[10.5px] font-bold"
                           style={{ ['--chip']: outcome.color } as React.CSSProperties}
                         >
                           {outcome.label}
                         </span>
                       </div>
-                      <p className="text-[10px] text-surface-500 mt-0.5 truncate">
+                      <p className="text-[11px] text-surface-500 mt-0.5 truncate">
                         {lead.adName} · {lead.adSetName}
                       </p>
-                      <p className="text-[10px] text-surface-600 font-mono mt-0.5">{lead.phone}</p>
+                      <p className="text-[11px] text-surface-600 font-mono mt-0.5">{lead.phone}</p>
                     </div>
 
                     {/* Date + CRM arrow */}
                     <div className="flex-shrink-0 text-right flex items-center gap-2">
                       <div>
-                        <p className="text-[10px] text-surface-500">{fmt(lead.clickedAt)}</p>
-                        <p className="text-[9px] text-surface-600 mt-0.5">{lead.stage}</p>
+                        <p className="text-[11px] text-surface-500">{fmt(lead.clickedAt)}</p>
+                        <p className="text-[11px] text-surface-600 mt-0.5">{lead.stage}</p>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-surface-600 group-hover:text-surface-300 transition-colors" />
                     </div>
@@ -186,10 +206,10 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
 
         {/* Footer CTA */}
         {!loading && leads.length > 0 && (
-          <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
+          <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
             <button
               onClick={() => navigate('/contacts')}
-              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-surface-700 text-xs text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-all"
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-surface-700 text-xs text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-all"
             >
               <ExternalLink className="w-3 h-3" />
               Abrir todos os contatos no CRM

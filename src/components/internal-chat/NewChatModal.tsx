@@ -53,10 +53,10 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.16, ease: 'easeOut' }}
-        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface-900 rounded-2xl overlay-frame border overflow-hidden"
+        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface-900 rounded-xl overlay-frame border overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700">
           <h3 className="text-sm font-semibold text-surface-100">Nova mensagem direta</h3>
           <button
             onClick={onClose}
@@ -97,10 +97,10 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
                   key={u.id}
                   onClick={() => handleOpenDM(u)}
                   disabled={opening === u.id}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-800 transition-all text-left group"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-800 transition-all text-left group"
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-sm font-semibold text-surface-200">
+                    <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-sm font-semibold text-surface-200">
                       {u.firstName.charAt(0)}
                     </div>
                     <PresenceDot status={presenceStatus} className="absolute -bottom-0.5 -right-0.5" />

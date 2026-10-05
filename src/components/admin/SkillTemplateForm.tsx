@@ -22,7 +22,10 @@ import { CategoryPills } from './CategoryPills'
 import { ScopeSelector, type ScopeValue } from './ScopeSelector'
 import { useToast } from '@/hooks/useToast'
 import { createSkillTemplate, updateSkillTemplate, listSkillTemplateInstances } from '@/services/skillTemplatesApi'
+import { listAllConnectorsForStaff } from '@/services/connectorsApi'
+import type { ConnectorSummaryForStaff } from '@/types/connectors'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import type {
   SkillTemplate,
   JsonSchemaObject,
@@ -31,7 +34,7 @@ import type {
 } from '@/types/skills'
 import { cn } from '@/lib/utils'
 import {
-  Beaker, Loader2, Save, ShieldAlert, Copy, Check,
+  Beaker, Save, ShieldAlert, Copy, Check,
   IdCard, Bot, Settings as SettingsIcon, PlugZap,
   ArrowLeft, ArrowRight,
 } from 'lucide-react'
@@ -71,6 +74,9 @@ interface FormState {
   /** Operational instructions automatically injected into the system_prompt
    *  of every agent that has this skill attached. Empty string == no fragment. */
   prompt_fragment: string
+  /** SCRUM-1082 — empty string means "standalone, no connector" (null on
+   *  the wire). */
+  connectorId: string
 }
 
 const PROMPT_FRAGMENT_MAX = 2_000
@@ -93,6 +99,7 @@ function fromTemplate(t: SkillTemplate | null | undefined, fallbackTenantId: str
       scope: 'public',
       tenant_id: fallbackTenantId,
       prompt_fragment: '',
+      connectorId: '',
     }
   }
   const inputSchema = (t.input_schema && (t.input_schema as JsonSchemaObject).type === 'object')
@@ -117,6 +124,7 @@ function fromTemplate(t: SkillTemplate | null | undefined, fallbackTenantId: str
     scope: t.tenant_id ? 'private' : 'public',
     tenant_id: t.tenant_id ?? '',
     prompt_fragment: t.prompt_fragment ?? '',
+    connectorId: t.connector_id ?? '',
   }
 }
 
@@ -135,6 +143,9 @@ export function SkillTemplateForm({ template }: Props) {
   const isEdit = !!template
   const [form, setForm] = useState<FormState>(() => fromTemplate(template, user?.tenantId ?? ''))
   const [saving, setSaving] = useState(false)
+  // SCRUM-1082 — picker for grouping this template under a `connectors` row.
+  const [connectors, setConnectors] = useState<ConnectorSummaryForStaff[]>([])
+  useEffect(() => { listAllConnectorsForStaff().then(setConnectors).catch(() => setConnectors([])) }, [])
   // Cascade gate: when editing a field that every attached instance/agent
   // inherits (config_schema, webhook_path, http_method, timeout_ms,
   // prompt_fragment) and there are attached instances, the next Save click
@@ -272,6 +283,7 @@ export function SkillTemplateForm({ template }: Props) {
           mutates: form.mutates,
           // Empty string == "remove the fragment". Backend collapses to NULL.
           prompt_fragment: form.prompt_fragment.trim().length > 0 ? form.prompt_fragment : null,
+          connector_id: form.connectorId || null,
         })
         toast('Template atualizado', 'success')
         navigate(`/admin/skill-templates/${updated.id}`, { replace: true })
@@ -291,6 +303,7 @@ export function SkillTemplateForm({ template }: Props) {
           mutates: form.mutates,
           tenant_id: form.scope === 'private' ? form.tenant_id : null,
           prompt_fragment: form.prompt_fragment.trim().length > 0 ? form.prompt_fragment : null,
+          connector_id: form.connectorId || null,
         }
         const created = await createSkillTemplate(payload)
         toast('Template criado', 'success')
@@ -360,6 +373,17 @@ export function SkillTemplateForm({ template }: Props) {
             value={form.category}
             onChange={(v) => update('category', v)}
           />
+        </Field>
+        <Field
+          label="Conector"
+          hint="Agrupa este template sob um conector de 1ª classe (SCRUM-1071/1082) — várias skills do mesmo fornecedor (ex.: os 5 templates do Feegow) compartilham um conector. Deixe em branco pra um template standalone."
+        >
+          <Select value={form.connectorId} onChange={(e) => update('connectorId', e.target.value)}>
+            <option value="">— nenhum (standalone) —</option>
+            {connectors.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} ({c.status})</option>
+            ))}
+          </Select>
         </Field>
         <Field label="Escopo">
           <ScopeSelector
@@ -543,56 +567,39 @@ Depois de criar a consulta, envie uma confirmação amigável com emoji ✅.`}
           primary CTA on the last step. We expose the test shortcut and the
           submit only on the last step so the operator knows they reviewed
           everything before saving. */}
-      <div className="flex items-center justify-between gap-3 pt-4 border-t border-surface-800/60">
-        <button
-          type="button"
-          onClick={() => navigate('/admin/skill-templates')}
-          className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-colors"
-        >
+      <div className="flex items-center justify-between gap-3 pt-4 border-t border-surface-700">
+        <Button variant="ghost" onClick={() => navigate('/admin/skill-templates')}>
           Cancelar
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
           {!isFirstStep && (
-            <button
-              type="button"
-              onClick={goPrev}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> Voltar
-            </button>
+            <Button variant="ghost" onClick={goPrev} leftIcon={<ArrowLeft className="w-4 h-4" />}>
+              Voltar
+            </Button>
           )}
           {!isLastStep ? (
-            <button
-              type="button"
-              onClick={goNext}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-brand-600 text-surface-950 hover:bg-brand-500 active:scale-[0.98] transition-colors"
-            >
-              Continuar <ArrowRight className="w-4 h-4" />
-            </button>
+            <Button variant="primary" onClick={goNext} rightIcon={<ArrowRight className="w-4 h-4" />}>
+              Continuar
+            </Button>
           ) : (
             <>
               {isEdit && template && (
-                <button
-                  type="button"
+                <Button
+                  variant="neutral"
                   onClick={() => navigate(`/admin/skill-templates/${template.id}/test`)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-100 text-sm font-medium transition-colors"
+                  leftIcon={<Beaker className="w-4 h-4" />}
                 >
-                  <Beaker className="w-4 h-4" /> Testar
-                </button>
+                  Testar
+                </Button>
               )}
-              <button
-                type="button"
+              <Button
+                variant="primary"
                 onClick={() => handleSubmit()}
-                disabled={saving}
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-                  'bg-brand-600 text-surface-950 hover:bg-brand-500 active:scale-[0.98]',
-                  saving && 'opacity-60 cursor-not-allowed',
-                )}
+                loading={saving}
+                leftIcon={saving ? undefined : <Save className="w-4 h-4" />}
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {saving ? 'Salvando…' : isEdit ? 'Salvar alterações' : 'Criar template'}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -678,7 +685,7 @@ function Section({
     <section
       id={id}
       data-section={id}
-      className="bg-surface-900/50 border border-surface-800 rounded-xl p-5 scroll-mt-24"
+      className="bg-surface-800 border border-surface-700 rounded-lg p-5 scroll-mt-24"
     >
       <header className="mb-4">
         <h2 className="text-base font-semibold text-surface-100 mb-0.5">{title}</h2>
@@ -731,20 +738,20 @@ function SlugField({
 
   if (disabled) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-900 border border-surface-800">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-900 border border-surface-700">
         <code className="flex-1 font-mono text-sm text-surface-200 truncate">{value}</code>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => {
             navigator.clipboard?.writeText(value).catch(() => {})
             setCopied(true)
             setTimeout(() => setCopied(false), 1500)
           }}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] text-surface-300 hover:bg-surface-800 transition-colors"
+          leftIcon={copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
         >
-          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           {copied ? 'copiado' : 'copiar'}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -776,7 +783,7 @@ function DestructiveCallout({
         'flex items-start gap-3 p-3 rounded-lg border transition-colors',
         checked
           ? 'bg-status-pending-bg/40 border-status-pending-border'
-          : 'bg-surface-900 border-surface-800',
+          : 'bg-[var(--sf2)] border-surface-700',
       )}
     >
       <ShieldAlert

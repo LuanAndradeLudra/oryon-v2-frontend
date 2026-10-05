@@ -80,7 +80,7 @@ export function QuickReplyModal({ open, onClose, editing, onSave }: QuickReplyMo
 
       {/* Preview */}
       {form.body && (
-        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3">
+        <div className="bg-[var(--sf2)] border border-surface-700 rounded-md p-3">
           <p className="text-[10px] uppercase tracking-widest text-surface-500 mb-1.5">Preview</p>
           <p className="text-sm text-surface-200 whitespace-pre-wrap">{form.body}</p>
         </div>

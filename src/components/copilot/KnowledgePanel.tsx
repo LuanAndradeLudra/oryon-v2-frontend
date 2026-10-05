@@ -37,7 +37,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="border-b border-surface-800/60 last:border-0">
+    <div className="border-b border-surface-700 last:border-0">
       <button
         onClick={onToggle}
         className="w-full flex items-center gap-2.5 px-4 py-3.5 hover:bg-surface-800/30 transition-colors text-left group"
@@ -103,7 +103,7 @@ function InstructionsSection({ kb, setInstructions }: { kb: ReturnType<typeof us
           onBlur={handleBlur}
           placeholder="Ex: Sempre responda de forma objetiva. O tom deve ser profissional mas amigável. Foque em soluções práticas..."
           rows={4}
-          className="w-full bg-surface-800/40 border border-surface-700/50 rounded-xl px-3 py-2.5 text-xs text-surface-200 placeholder:text-surface-600 outline-none focus:border-brand-500/40 focus:ring-1 focus:ring-brand-500/15 resize-none leading-relaxed transition-colors"
+          className="w-full bg-surface-800/40 border border-surface-700/50 rounded-sm px-3 py-2.5 text-xs text-surface-200 placeholder:text-surface-600 outline-none focus:border-brand-500/40 focus:ring-1 focus:ring-brand-500/15 resize-none leading-relaxed transition-colors"
         />
         <AnimatePresence>
           {saved && (
@@ -146,7 +146,7 @@ function CompanyFieldRow({
 
   if (editing) {
     return (
-      <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-surface-800/50 border border-surface-700/50">
+      <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-surface-800/50 border border-surface-700/50">
         <input
           autoFocus
           value={label}
@@ -167,7 +167,7 @@ function CompanyFieldRow({
           </button>
           <button
             onClick={save}
-            className="text-3xs text-brand-400 hover:text-brand-300 font-medium"
+            className="text-3xs text-accent-dark hover:opacity-80 font-medium"
           >
             Salvar
           </button>
@@ -252,7 +252,7 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
       )}
 
       {adding ? (
-        <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-surface-800/50 border border-surface-700/50">
+        <div className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-surface-800/50 border border-surface-700/50">
           {showPresets ? (
             <>
               <p className="text-3xs text-surface-500 mb-1">Selecionar campo:</p>
@@ -261,7 +261,7 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
                   <button
                     key={p.label}
                     onClick={() => { setNewLabel(p.label); setShowPresets(false) }}
-                    className="text-left text-2xs text-surface-300 hover:text-brand-300 px-2 py-1 rounded-lg hover:bg-surface-700/50 transition-colors"
+                    className="text-left text-2xs text-surface-300 hover:text-accent-dark px-2 py-1 rounded-lg hover:bg-surface-700/50 transition-colors"
                   >
                     {p.label}
                   </button>
@@ -304,7 +304,7 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
                   <button
                     onClick={() => addField()}
                     disabled={!newLabel.trim()}
-                    className="text-3xs text-brand-400 hover:text-brand-300 font-medium disabled:opacity-40"
+                    className="text-3xs text-accent-dark hover:opacity-80 font-medium disabled:opacity-40"
                   >
                     Adicionar
                   </button>
@@ -360,7 +360,7 @@ function DocumentCard({
       <motion.div
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative group rounded-xl border border-surface-700/50 bg-surface-800/40 p-3 hover:border-surface-600/60 transition-colors"
+        className="relative group rounded-lg border border-surface-700/50 bg-surface-800/40 p-3 hover:border-surface-600/60 transition-colors"
       >
         <div className="flex items-start gap-2.5">
           <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', iconColor)}>
@@ -420,7 +420,7 @@ function TextDocEditor({
   const [content, setContent] = useState(initial?.content ?? '')
 
   return (
-    <div className="flex flex-col gap-2 p-3 rounded-xl border border-brand-500/25 bg-surface-800/50">
+    <div className="flex flex-col gap-2 p-3 rounded-lg border border-brand-500/25 bg-surface-800/50">
       <input
         autoFocus
         value={name}
@@ -612,12 +612,12 @@ export function KnowledgePanel({ isOpen, onClose, tenantId }: KnowledgePanelProp
           animate={{ width: 340, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-          className="flex-shrink-0 flex flex-col border-l border-surface-800/60 bg-surface-950/80 backdrop-blur-sm overflow-hidden"
+          className="flex-shrink-0 flex flex-col border-l border-surface-700 bg-surface-950/80 overflow-hidden"
           style={{ minWidth: 0 }}
         >
           {/* Header */}
-          <div className="flex-shrink-0 flex items-center gap-2.5 px-4 py-3.5 border-b border-surface-800/60">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-600/20 to-violet-600/20 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center gap-2.5 px-4 py-3.5 border-b border-surface-700">
+            <div className="w-7 h-7 rounded-lg bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
               <BookOpen className="w-3.5 h-3.5 text-brand-400" />
             </div>
             <div className="flex-1 min-w-0">
@@ -673,7 +673,7 @@ export function KnowledgePanel({ isOpen, onClose, tenantId }: KnowledgePanelProp
           </div>
 
           {/* Footer hint */}
-          <div className="flex-shrink-0 px-4 py-3 border-t border-surface-800/60">
+          <div className="flex-shrink-0 px-4 py-3 border-t border-surface-700">
             <p className="text-3xs text-surface-600 leading-relaxed text-center">
               Informações aqui são injetadas automaticamente no contexto da Oryon AI
             </p>

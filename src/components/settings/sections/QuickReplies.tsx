@@ -4,6 +4,7 @@ import axios from 'axios'
 import { api, cannedResponsesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { useEstadoNaUrl } from '@/hooks/useEstadoNaUrl'
 import { SectionHeader } from '../SectionHeader'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -52,36 +53,36 @@ function QuickReplyRow({
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (
-    <tr onContextMenu={onContextMenu} className="hover:bg-surface-900/60 transition-colors">
-      <td className="px-5 py-4">
-        <code className="shortcut-tag inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-brand-300 bg-brand-900/20 px-2 py-1 rounded-lg" title={response.shortcut}>
+    <tr onContextMenu={onContextMenu} className="hover:bg-[var(--rowhover)] transition-colors">
+      <td className="px-3 py-3 first:pl-0 last:pr-0">
+        <code className="shortcut-tag inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-accent-dark bg-accent-soft px-2 py-1 rounded-xs" title={response.shortcut}>
           {response.shortcut}
         </code>
       </td>
-      <td className="px-5 py-4">
+      <td className="px-3 py-3 first:pl-0 last:pr-0">
         <p className="text-sm font-medium text-surface-100">{response.title}</p>
       </td>
-      <td className="px-5 py-4 max-w-xs">
+      <td className="px-3 py-3 first:pl-0 last:pr-0 max-w-xs">
         <p className="text-xs text-surface-400 truncate">{response.body}</p>
       </td>
-      <td className="px-5 py-4">
+      <td className="px-3 py-3 first:pl-0 last:pr-0">
         <div>
           <p className="text-xs text-surface-300">{response.createdByName}</p>
           <p className="text-xs text-surface-500">{formatRelativeTime(response.createdAt)}</p>
         </div>
       </td>
-      <td className="px-5 py-4">
+      <td className="px-3 py-3 first:pl-0 last:pr-0">
         {canManage && (
           <div className="flex items-center gap-1 justify-end">
             <button
               onClick={() => onEdit(response)}
-              className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
+              className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onDelete(response)}
-              className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
+              className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -103,13 +104,21 @@ function errorMessage(e: unknown, fallback: string): string {
   return fallback
 }
 
-export function QuickReplies() {
+/**
+ * `buscaNaUrl`: em /settings a busca vai para a URL (regra do PO). Aberta num
+ * painel dentro de outra tela (ex.: compositor da conversa) fica local — a
+ * chave `busca` da conversa é a busca da inbox e não pode ser sobrescrita.
+ */
+export function QuickReplies({ buscaNaUrl = true }: { buscaNaUrl?: boolean } = {}) {
   const { toast } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
   const [responses, setResponses] = useState<CannedResponse[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [buscaUrl, setBuscaUrl] = useEstadoNaUrl<string>('busca', { padrao: '' })
+  const [buscaLocal, setBuscaLocal] = useState('')
+  const search = buscaNaUrl ? buscaUrl : buscaLocal
+  const setSearch = buscaNaUrl ? setBuscaUrl : setBuscaLocal
   const [modalOpen, setModalOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CannedResponse | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CannedResponse | null>(null)
@@ -219,15 +228,15 @@ export function QuickReplies() {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-800/60">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Atalho</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Título</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Preview</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Criado por</th>
-                <th className="px-5 py-3" />
+              <tr className="border-b border-surface-700">
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Atalho</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Título</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Preview</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Criado por</th>
+                <th className="px-3 py-2.5 first:pl-0 last:pr-0" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800/60">
+            <tbody className="divide-y divide-surface-700">
               {filtered.map((cr) => (
                 <QuickReplyRow
                   key={cr.id}
@@ -254,7 +263,8 @@ export function QuickReplies() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Excluir resposta rápida"
-        description={`Tem certeza que deseja excluir o atalho "${deleteTarget?.shortcut}"? Esta ação não pode ser desfeita.`}
+        impact={{ label: `Atalho ${deleteTarget?.shortcut ?? ''}`.trim(), tone: 'danger' }}
+        description="Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
       />

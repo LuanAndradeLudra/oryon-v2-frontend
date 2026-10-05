@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Maximize2, X, AlertTriangle, Sparkles, Search, Replace } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { getAgentServerAuth } from '@/services/copilotServiceBackend'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 
 // ─── Shared utility: ExpandableTextarea ────────────────────────────────────
 // Auto-grows with content (min 6 rows, max 20 rows inline). A button in the
@@ -68,7 +69,7 @@ export function ExpandableTextarea({
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="inline-flex items-center gap-1 text-3xs text-surface-400 hover:text-brand-300 transition-colors"
+            className="inline-flex items-center gap-1 text-3xs text-surface-400 hover:text-accent-dark transition-colors"
             aria-label="Abrir editor em tela cheia"
           >
             <Maximize2 className="h-3 w-3" />
@@ -129,8 +130,8 @@ function ExpandedEditorModal({
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="relative flex h-[88vh] w-[min(96vw,1100px)] flex-col overflow-hidden rounded-2xl border border-surface-700/60 bg-surface-900 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-surface-800 px-5 py-3">
+      <div className="relative flex h-[88vh] w-[min(96vw,1100px)] flex-col overflow-hidden rounded-xl border border-surface-700/60 bg-surface-900 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-surface-700 px-5 py-3">
           <h3 className="text-sm font-medium text-surface-100">{label}</h3>
           <div className="flex items-center gap-3">
             <span className="text-xs tabular-nums text-surface-400">
@@ -153,7 +154,7 @@ function ExpandedEditorModal({
           autoFocus
           className={`flex-1 resize-none bg-surface-900 px-6 py-4 text-surface-100 placeholder:text-surface-600 focus:outline-none ${fontClass}`}
         />
-        <div className="flex items-center justify-between border-t border-surface-800 px-5 py-2.5 text-2xs text-surface-500">
+        <div className="flex items-center justify-between border-t border-surface-700 px-5 py-2.5 text-2xs text-surface-500">
           <span>Esc para fechar. As alterações já estão salvas no card.</span>
           <button
             type="button"
@@ -361,7 +362,7 @@ export function SystemPromptApprovalPreview({
   return (
     <div className="space-y-3">
       {/* Agent reference */}
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
       </div>
@@ -476,7 +477,7 @@ export function KnowledgeDocApprovalPreview({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         {docId && (
@@ -502,16 +503,18 @@ export function KnowledgeDocApprovalPreview({
             </div>
             <div>
               <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Tipo</label>
-              <select
+              <SelectMenu
+                aria-label="Tipo"
                 value={String(input.sourceType ?? 'text')}
                 onChange={(e) => onChange('sourceType', e.target.value)}
-                className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+                chevronClassName="right-2 h-3 w-3"
+                className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
               >
                 <option value="text">Texto</option>
                 <option value="pdf">PDF</option>
                 <option value="url">URL</option>
                 <option value="file">Arquivo</option>
-              </select>
+              </SelectMenu>
             </div>
           </div>
           <ExpandableTextarea
@@ -627,7 +630,7 @@ export function HandoffRuleApprovalPreview({
   if (isRemove) {
     return (
       <div className="space-y-2.5">
-        <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+        <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
           <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
           <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         </div>
@@ -674,7 +677,7 @@ export function HandoffRuleApprovalPreview({
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
       </div>
@@ -709,27 +712,31 @@ export function HandoffRuleApprovalPreview({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Modo</label>
-          <select
+          <SelectMenu
+            aria-label="Modo"
             value={String(rule.matchMode ?? 'any_keyword')}
             onChange={(e) => updateRule('matchMode', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_MATCH_MODES.map((m) => (
-              <option key={m.value} value={m.value} className="bg-surface-900">{m.label}</option>
+              <option key={m.value} value={m.value}>{m.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Ação</label>
-          <select
+          <SelectMenu
+            aria-label="Ação"
             value={String(rule.action ?? 'human_handoff')}
             onChange={(e) => updateRule('action', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_ACTIONS.map((a) => (
-              <option key={a.value} value={a.value} className="bg-surface-900">{a.label}</option>
+              <option key={a.value} value={a.value}>{a.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       </div>
 
@@ -780,7 +787,7 @@ export function AgentConfigApprovalPreview({
   return (
     <div className="space-y-2.5">
       {!isCreate && (
-        <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+        <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
           <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
           <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
         </div>
@@ -835,15 +842,17 @@ export function AgentConfigApprovalPreview({
       {isStatus && (
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Novo status</label>
-          <select
+          <SelectMenu
+            aria-label="Novo status"
             value={String(input.status ?? 'draft')}
             onChange={(e) => onChange('status', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {AGENT_STATUSES.map((s) => (
-              <option key={s.value} value={s.value} className="bg-surface-900">{s.label}</option>
+              <option key={s.value} value={s.value}>{s.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       )}
     </div>
@@ -861,7 +870,7 @@ export function AgentFaqApprovalPreview({
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
       </div>
@@ -890,15 +899,17 @@ export function AgentFaqApprovalPreview({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Modo</label>
-          <select
+          <SelectMenu
+            aria-label="Modo"
             value={String(input.matchMode ?? 'any_keyword')}
             onChange={(e) => onChange('matchMode', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_MATCH_MODES.map((m) => (
-              <option key={m.value} value={m.value} className="bg-surface-900">{m.label}</option>
+              <option key={m.value} value={m.value}>{m.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Prioridade</label>
@@ -928,7 +939,7 @@ export function AgentToolHttpApprovalPreview({
 }: ApprovalPreviewProps) {
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
+      <div className="rounded-lg border border-surface-700 bg-surface-900/50 px-3 py-2">
         <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
       </div>
@@ -944,15 +955,17 @@ export function AgentToolHttpApprovalPreview({
         </div>
         <div>
           <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Método</label>
-          <select
+          <SelectMenu
+            aria-label="Método"
             value={String(input.method ?? 'GET')}
             onChange={(e) => onChange('method', e.target.value)}
-            className="rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => (
-              <option key={m} value={m} className="bg-surface-900">{m}</option>
+              <option key={m} value={m}>{m}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       </div>
       <div>
@@ -1034,7 +1047,7 @@ export function CompanyBrainApprovalPreview({
             minRows={6} maxRows={20}
           />
           {input.documents !== undefined && (
-            <div className="rounded-lg border border-surface-800 bg-surface-900/40 px-3 py-2 text-2xs text-surface-400">
+            <div className="rounded-lg border border-surface-700 bg-surface-900/40 px-3 py-2 text-2xs text-surface-400">
               {Array.isArray(input.documents) ? `${(input.documents as unknown[]).length} documento(s) na payload` : 'documents incluído'}
             </div>
           )}

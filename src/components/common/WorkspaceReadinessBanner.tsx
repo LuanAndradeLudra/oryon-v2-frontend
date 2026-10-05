@@ -15,9 +15,12 @@
 // render nothing — readiness is a nudge, not a hard gate.
 
 import { Link } from 'react-router-dom'
-import { AlertTriangle, AlertCircle, CheckCircle, ChevronRight } from 'lucide-react'
+import { LinkComVolta } from '@/components/ui/LinkComVolta'
+import { AlertTriangle, AlertCircle, CheckCircle, ChevronRight, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import {
   unmetBlockersAffecting,
   unmetChecks,
@@ -71,19 +74,24 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
       className={cn('rounded-none border-x-0 border-t-0', className)}
       action={
         <div className="flex items-center gap-2">
+          {/* Eixo 10: sem cor fixa — Banner é suave (12% da cor semântica) e
+              currentColor herda o --chip do próprio Banner; border-white/
+              bg-white/text-white ficavam sem contraste nenhum sobre um fundo
+              quase transparente no claro (mesma família do achado em
+              Departments.tsx). */}
           {primary.cta && (
-            <Link
+            <LinkComVolta
               to={primary.cta.href}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold border border-white/25 bg-white/15 hover:bg-white/25 text-white px-2.5 py-1 rounded-md transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-2.5 py-1 rounded-md transition-colors"
             >
               {primary.cta.label}
               <ChevronRight className="w-3 h-3" />
-            </Link>
+            </LinkComVolta>
           )}
           {remaining > 0 && (
             <Link
               to="/home"
-              className="text-[11px] text-white/80 hover:text-white underline underline-offset-2"
+              className="text-[11px] text-current opacity-80 hover:opacity-100 underline underline-offset-2"
               title="Ver lista completa de pendências na Home"
             >
               +{remaining} pendente{remaining > 1 ? 's' : ''}
@@ -101,20 +109,31 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
 // ─── Checklist (Home) ────────────────────────────────────────────────────────
 
 function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; className?: string }) {
+  // Revisão final 04/10: os passos (criar setor, conectar agente, funil) são
+  // de administrador. O atendente via botões que levavam a telas que ele não
+  // abre — agora vê a lista como informação, sem ação.
+  const { user } = useAuth()
+  const podeAgir = isAdminTier(user?.role)
   const blockers = checks.filter((c) => c.severity === 'blocker')
   const warnings = checks.filter((c) => c.severity === 'warning')
   const hasBlockers = blockers.length > 0
 
+  // Contraste 01/10: o título contava só os obrigatórios ("Faltam 1 passo")
+  // enquanto a lista mostrava também os recomendados.
+  const plural = (n: number, um: string, varios: string) => `${n} ${n > 1 ? varios : um}`
   const title = hasBlockers
-    ? `Faltam ${blockers.length} passo${blockers.length > 1 ? 's' : ''} para sua plataforma estar 100%`
+    ? `Falta${blockers.length > 1 ? 'm' : ''} ${plural(blockers.length, 'passo obrigatório', 'passos obrigatórios')}${
+        warnings.length > 0 ? ` e ${plural(warnings.length, 'recomendado', 'recomendados')}` : ''}`
     : `${warnings.length} sugest${warnings.length > 1 ? 'ões' : 'ão'} pendente${warnings.length > 1 ? 's' : ''}`
-  const description = hasBlockers
-    ? 'Resolva os itens abaixo para destravar o uso completo do CRM.'
-    : 'Estes itens não bloqueiam o uso, mas melhoram a experiência.'
+  const description = !podeAgir
+    ? 'Peça a um administrador da empresa para concluir estes passos.'
+    : hasBlockers
+      ? 'Resolva os itens abaixo para destravar o uso completo do CRM.'
+      : 'Estes itens não bloqueiam o uso, mas melhoram a experiência.'
   const list = (
     <ul className="space-y-2 mt-3">
       {[...blockers, ...warnings].map((c) => (
-        <ChecklistItem key={c.id} check={c} />
+        <ChecklistItem key={c.id} check={c} podeAgir={podeAgir} />
       ))}
     </ul>
   )
@@ -126,21 +145,26 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
   return (
     <div
       className={cn(
-        'rounded-xl border bg-surface-900/40 p-5',
-        hasBlockers ? 'border-danger/30' : 'border-surface-700',
+        'rounded-lg border p-5 bg-[#1A2424] border-[#2E4040]',
+        // PO 01/10 (2G, bordas só neutras): cinza-azulado + borda cinza (claro).
+        '[[data-theme=light]_&]:bg-[#F1F5F9] [[data-theme=light]_&]:border-[#CBD5E1]',
         className,
       )}
     >
       <div className="flex items-start gap-3">
+        {/* Claro (2G): guia de configuração, não erro — lista em quadrado teal sólido. */}
+        <span className="flex w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 bg-[#0F766E] text-white">
+          <ClipboardList className="w-5 h-5" />
+        </span>
         {hasBlockers ? (
           <span
-            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 color-chip"
+            className="hidden w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 color-chip-soft border"
             style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
           >
             <AlertTriangle className="w-5 h-5" />
           </span>
         ) : (
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-surface-800 text-surface-400">
+          <div className="hidden w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 bg-surface-800 text-surface-400">
             <CheckCircle className="w-5 h-5" />
           </div>
         )}
@@ -154,33 +178,43 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
   )
 }
 
-function ChecklistItem({ check }: { check: WorkspaceCheck }) {
+function ChecklistItem({ check, podeAgir = true }: { check: WorkspaceCheck; podeAgir?: boolean }) {
   const isBlocker = check.severity === 'blocker'
   return (
-    <li className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-surface-900/40 border border-surface-800">
+    // Eixo 10: surface-900 no claro é quase idêntico ao branco do card por
+    // trás (bg-surface-800) — a 40% de opacidade a linha some. --sf2 tem
+    // valor dedicado nos dois temas.
+    <li className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-surface-800 border border-[#2E4040] [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:border-[#C9CFDA]">
       <span
-        className="mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0 color-chip border"
+        className="hidden mt-0.5 w-5 h-5 rounded items-center justify-center flex-shrink-0 color-chip border"
         style={{ ['--chip']: isBlocker ? 'var(--color-danger)' : 'var(--color-warning)' } as React.CSSProperties}
       >
         {isBlocker ? <AlertTriangle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-surface-200">{check.label}</p>
+        <p className="text-xs font-medium text-surface-200 flex items-center gap-2 flex-wrap">
+          {check.label}
+          {/* Claro (4D): selo neutro + ponto na cor da severidade. */}
+          <span className="inline-flex items-center gap-1 h-[18px] px-1.5 rounded-[5px] border border-[#3A4D4D] bg-surface-900 text-[10.5px] font-semibold text-surface-200 [[data-theme=light]_&]:border-[#C9CFDA] [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:text-[#1F2937]">
+            <span aria-hidden className={cn('w-1.5 h-1.5 rounded-full', isBlocker ? 'bg-[#DC2626]' : 'bg-[#F59E0B]')} />
+            {isBlocker ? 'Obrigatório' : 'Recomendado'}
+          </span>
+        </p>
         <p className="text-[11px] text-surface-500 mt-0.5">{check.description}</p>
       </div>
-      {check.cta && (
-        <Link
+      {check.cta && podeAgir && (
+        <LinkComVolta
           to={check.cta.href}
           className={cn(
             'flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border',
             isBlocker
-              ? 'text-danger hover:text-white hover:bg-danger border-danger/40'
-              : 'text-surface-300 hover:text-white bg-surface-800 hover:bg-surface-700 border-surface-700',
+              ? 'bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] border-transparent [background-origin:border-box] text-white hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] [[data-theme=light]_&]:bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] [[data-theme=light]_&]:border-transparent [[data-theme=light]_&]:[background-origin:border-box] [[data-theme=light]_&]:text-white [[data-theme=light]_&]:hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)]'
+              : 'text-surface-200 hover:text-surface-100 bg-surface-900 hover:bg-surface-700 border-[#3A4D4D] [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:border-[#C9CFDA] [[data-theme=light]_&]:text-[#1F2937] [[data-theme=light]_&]:hover:bg-[#F1F5F9]',
           )}
         >
           {check.cta.label}
           <ChevronRight className="w-3 h-3" />
-        </Link>
+        </LinkComVolta>
       )}
     </li>
   )

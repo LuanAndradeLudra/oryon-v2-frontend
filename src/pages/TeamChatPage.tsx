@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, X, Hash, MessageSquareDot, Users, Info,
@@ -25,7 +26,7 @@ import { isAdminTier } from '@/lib/roleHelpers'
 import type { InternalChannel, InternalMessage } from '@/types'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Emoji } from '@/lib/emojiText'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
 
@@ -88,7 +89,7 @@ function ChannelRow({ channel, currentUserId, isActive, onClick }: {
           'w-full flex items-center gap-3 px-4 py-3 text-left transition-colors',
           isActive
             ? 'bg-surface-800 border-r-2 border-brand-500'
-            : 'hover:bg-surface-800/60',
+            : 'hover:bg-[var(--rowhover)]',
         )}
       >
         {/* Avatar */}
@@ -101,7 +102,7 @@ function ChannelRow({ channel, currentUserId, isActive, onClick }: {
               {status && <PresenceDot status={status} size="sm" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
             </>
           ) : (
-            <div className="w-9 h-9 rounded-full bg-surface-700 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-[var(--sf2)] flex items-center justify-center">
               {channel.emoji ? <Emoji native={channel.emoji} size="1.25rem" /> : <Hash className="w-4 h-4 text-surface-400" />}
             </div>
           )}
@@ -176,7 +177,7 @@ function SectorCard({ channel, onClick }: {
   const onlineCount = channel.memberIds.filter((id) => presence[id] === 'online').length
 
   return (
-    <div className="mx-3 rounded-xl border border-surface-700 bg-surface-900 overflow-hidden hover:border-surface-600 transition-colors">
+    <div className="mx-3 rounded-lg border border-surface-700 bg-surface-900 overflow-hidden hover:border-surface-600 transition-colors">
       <div className="h-1" style={{ background: channel.departmentColor ?? '#6366f1' }} />
       <div className="p-3">
         <div className="flex items-center gap-2.5 mb-2">
@@ -221,8 +222,9 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
   onCreateChannel: () => void
 }) {
   const { channels, activeChannelId, setActiveChannel, markAsRead, presence, loadingChannels } = useInternalChat()
-  const [tab, setTab] = useState<SidebarTab>('todos')
-  const [search, setSearch] = useState('')
+  // Aba e busca da barra lateral na URL (regra do PO).
+  const [tab, setTab] = useEstadoNaUrl<SidebarTab>('aba', { padrao: 'todos', ler: lerAbaTeamChat })
+  const [search, setSearch] = useEstadoNaUrl<string>('busca', { padrao: '' })
 
   const q = search.trim().toLowerCase()
   function matchName(ch: InternalChannel) {
@@ -267,10 +269,10 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
   const showSkeleton = loadingChannels && channels.length === 0
 
   return (
-    <div className="flex flex-col h-full w-full sm:w-[380px] bg-surface-950 border-r border-surface-800 flex-shrink-0">
+    <div className="flex flex-col h-full w-full sm:w-[380px] bg-surface-950 border-r border-surface-700 flex-shrink-0">
       {/* Search */}
       <div className="px-3 pt-3 pb-3 flex-shrink-0">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-sm bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
           <Search className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
           <input
             type="text"
@@ -296,8 +298,8 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
             className={cn(
               'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors',
               tab === t.id
-                ? 'bg-brand-500/10 text-brand-400'
-                : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800',
+                ? 'bg-[#ECF1F1] text-[#0A0F0F] [[data-theme=light]_&]:bg-[#1A1F2E] [[data-theme=light]_&]:text-white'
+                : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
             )}
           >
             {t.label}
@@ -460,19 +462,19 @@ function InfoPanel({ channel, currentUserId, onClose }: {
 
   return (
     <>
-    <div className="w-72 h-full border-l border-surface-800 flex flex-col bg-surface-950 flex-shrink-0 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 flex-shrink-0">
+    <div className="w-72 h-full border-l border-surface-700 flex flex-col bg-surface-950 flex-shrink-0 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700 flex-shrink-0">
         <span className="text-sm font-semibold text-surface-100">
           {isDM ? 'Sobre esta pessoa' : 'Sobre o canal'}
         </span>
-        <button onClick={onClose} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors">
+        <button onClick={onClose} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
         {/* Identity */}
-        <div className="flex flex-col items-center gap-3 pb-4 border-b border-surface-800 mb-4">
+        <div className="flex flex-col items-center gap-3 pb-4 border-b border-surface-700 mb-4">
           {isDM ? (
             <>
               <div className="relative">
@@ -490,7 +492,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
             </>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-xl bg-surface-800 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-lg bg-surface-800 flex items-center justify-center">
                 {channel.emoji ? <Emoji native={channel.emoji} size="2.25rem" /> : <Hash className="w-6 h-6 text-surface-400" />}
               </div>
               <div className="text-center">
@@ -529,7 +531,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
                 // Creator can remove anyone except themselves; everyone can leave themselves.
                 const canKick = isCreator && !isSelf
                 return (
-                  <div key={uid} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-800 transition-colors">
+                  <div key={uid} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--rowhover)] transition-colors">
                     <div className="relative flex-shrink-0">
                       <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white', avatarColor(name))}>
                         {name.charAt(0).toUpperCase()}
@@ -565,11 +567,11 @@ function InfoPanel({ channel, currentUserId, onClose }: {
 
         {/* Danger zone: leave / delete */}
         {(canDeleteChannel || (!isDM && !isCreator && channel.memberIds.includes(currentUserId))) && (
-          <div className="mt-6 pt-4 border-t border-surface-800 space-y-1.5">
+          <div className="mt-6 pt-4 border-t border-surface-700 space-y-1.5">
             {!isDM && !isCreator && channel.memberIds.includes(currentUserId) && (
               <button
                 onClick={handleLeave}
-                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sair do canal
@@ -657,7 +659,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
   }
 
   return (
-    <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-surface-800 bg-surface-950">
+    <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-surface-700 bg-surface-950">
       {showSearch ? (
         <div className="flex-1 flex items-center gap-3">
           <Search className="w-4 h-4 text-surface-400 flex-shrink-0" />
@@ -669,7 +671,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
             placeholder="Pesquisar mensagens…"
             className="flex-1 bg-transparent text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none"
           />
-          <button onClick={toggleSearch} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors">
+          <button onClick={toggleSearch} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -684,7 +686,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
                 {presenceStatus && <PresenceDot status={presenceStatus} size="md" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
                 {channel.emoji ? <Emoji native={channel.emoji} size="1.25rem" /> : <Hash className="w-4 h-4 text-surface-400" />}
               </div>
             )}
@@ -695,12 +697,12 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={toggleSearch} className="p-2 rounded-full text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors" title="Pesquisar">
+            <button onClick={toggleSearch} className="p-2 rounded-full text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors" title="Pesquisar">
               <Search className="w-4 h-4" />
             </button>
             <button
               onClick={onToggleInfo}
-              className={cn('p-2 rounded-full transition-colors', showInfo ? 'text-brand-400 bg-brand-500/15' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800')}
+              className={cn('p-2 rounded-full transition-colors', showInfo ? 'text-brand-400 bg-brand-500/15' : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]')}
               title="Informações"
             >
               <Info className="w-4 h-4" />
@@ -720,7 +722,7 @@ function EmptyState({ onNewChat }: { onNewChat: () => void }) {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-12">
-      <div className="w-20 h-20 rounded-2xl bg-surface-800 flex items-center justify-center">
+      <div className="w-20 h-20 rounded-lg bg-surface-800 flex items-center justify-center">
         <MessageSquareDot className="w-10 h-10 text-surface-500" />
       </div>
       <div>
@@ -746,6 +748,8 @@ function EmptyState({ onNewChat }: { onNewChat: () => void }) {
 
 const CURRENT_USER = { firstName: 'Admin', lastName: 'Oryon', avatarUrl: undefined }
 
+const lerAbaTeamChat = lerUmDe(['todos', 'setores', 'pessoas'] as const, 'todos')
+
 export function TeamChatPage() {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
@@ -765,7 +769,10 @@ export function TeamChatPage() {
 }
 
 function TeamChatPageDesktop() {
-  const { channels, activeChannelId } = useInternalChat()
+  const { channels, activeChannelId, setActiveChannel } = useInternalChat()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const channelParam = searchParams.get('channel')
+  const messageParam = searchParams.get('message')
   const { user } = useAuth()
   const [replyTo, setReplyTo]     = useState<InternalMessage | null>(null)
   const [showInfo, setShowInfo]   = useState(false)
@@ -775,6 +782,36 @@ function TeamChatPageDesktop() {
 
   const currentUserId = user?.id ?? ''
   const activeChannel = channels.find((c) => c.id === activeChannelId) ?? null
+
+  // Deep-link ?channel=<id>[&message=<id>] → URL para estado. Uma vez por valor
+  // de param, e só quando o canal já está carregado (senão espera `channels`).
+  const handledChannelParamRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!channelParam || handledChannelParamRef.current === channelParam) return
+    if (!channels.some((c) => c.id === channelParam)) return
+    handledChannelParamRef.current = channelParam
+    if (channelParam !== activeChannelId) setActiveChannel(channelParam)
+  }, [channelParam, channels, activeChannelId, setActiveChannel])
+
+  // Estado para URL: trocar de canal reflete ?channel= (e descarta ?message=,
+  // que era do canal anterior). replace, pra não empilhar histórico a cada clique.
+  // Só reage a MUDANÇA de canal — no mount o param manda (senão brigaria com o
+  // efeito acima quando o contexto já guarda outro canal ativo).
+  const prevActiveRef = useRef(activeChannelId)
+  useEffect(() => {
+    if (prevActiveRef.current === activeChannelId) return
+    prevActiveRef.current = activeChannelId
+    if (!activeChannelId || activeChannelId === channelParam) return
+    setSearchParams({ channel: activeChannelId }, { replace: true })
+  }, [activeChannelId, channelParam, setSearchParams])
+
+  const clearMessageParam = useCallback(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('message')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   useEffect(() => {
     setSearchQuery('')
@@ -844,6 +881,8 @@ function TeamChatPageDesktop() {
                 currentUserId={currentUserId}
                 onReply={(msg) => setReplyTo(msg)}
                 searchQuery={searchQuery}
+                highlightMessageId={channelParam === activeChannel.id ? messageParam : null}
+                onHighlightDone={clearMessageParam}
               />
               <MessageInput
                 channelId={activeChannel.id}

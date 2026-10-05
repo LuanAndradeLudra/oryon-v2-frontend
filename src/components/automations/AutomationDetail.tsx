@@ -1,3 +1,4 @@
+import { useComVolta } from '@/hooks/useComVolta'
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -85,13 +86,16 @@ function DetailMenu({ automation, onEdit, onDuplicate, onDuplicateToLine, onDele
     return () => window.removeEventListener('click', h)
   }, [open])
 
-  const item = 'w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors'
+  // Eixo 10: mesmas medidas do item do primitivo ui/Dropdown.tsx (h-[30px]
+  // px-2 rounded-[5px] text-[13px] + hover --rowhover) — este menu é feito à
+  // mão (não usa <Dropdown>), mas a MEDIDA da peça deve ser a mesma.
+  const item = 'w-full flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] text-[13px] text-left transition-colors'
 
   return (
     <div className="relative">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
-        className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+        className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-colors"
         title="Mais ações"
         aria-label="Mais ações"
       >
@@ -104,21 +108,21 @@ function DetailMenu({ automation, onEdit, onDuplicate, onDuplicateToLine, onDele
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute right-0 top-full mt-1 w-52 rounded-xl overlay-surface border py-1 z-30"
+            className="absolute right-0 top-full mt-1 w-52 rounded-lg overlay-surface border p-1 z-30"
             onClick={(e) => e.stopPropagation()}
           >
-            <button className={cn(item, 'text-surface-200 hover:bg-surface-700')} onClick={() => { setOpen(false); onEdit() }}>
+            <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); onEdit() }}>
               <Pencil className="w-3.5 h-3.5" /> Editar
             </button>
-            <button className={cn(item, 'text-surface-200 hover:bg-surface-700')} onClick={() => { setOpen(false); onDuplicate() }}>
+            <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); onDuplicate() }}>
               <CopyPlus className="w-3.5 h-3.5" /> Duplicar
             </button>
             {onDuplicateToLine && (
-              <button className={cn(item, 'text-surface-200 hover:bg-surface-700')} onClick={() => { setOpen(false); onDuplicateToLine() }}>
+              <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); onDuplicateToLine() }}>
                 <ArrowRightLeft className="w-3.5 h-3.5" /> Duplicar para outra linha
               </button>
             )}
-            <button className={cn(item, 'text-surface-200 hover:bg-surface-700')} onClick={() => { setOpen(false); navigator.clipboard?.writeText(automation.name).catch(() => {}) }}>
+            <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); navigator.clipboard?.writeText(automation.name).catch(() => {}) }}>
               <Copy className="w-3.5 h-3.5" /> Copiar nome
             </button>
             <div className="my-1 h-px bg-surface-700" />
@@ -146,7 +150,9 @@ function FlowSection({ eyebrow, icon, onClick, children }: {
       disabled={!onClick}
       className={cn(
         'w-full text-left group/sec rounded-lg -mx-1.5 px-1.5 py-1.5 transition-colors',
-        onClick && 'hover:bg-surface-800/60 cursor-pointer',
+        // Eixo 10 (tema claro): hover:bg-surface-800/60 sobre o painel, que
+        // é surface-800 — quase invisível. --rowhover sempre visível.
+        onClick && 'hover:bg-[var(--rowhover)] cursor-pointer',
       )}
     >
       <div className="flex items-center gap-1.5 mb-1">
@@ -168,13 +174,15 @@ function FlowCard({ automation, onEdit }: {
   const joiner = automation.conditionsLogic === 'or' ? 'ou' : 'e'
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-3.5 space-y-1">
+    <div className="bg-surface-900 border border-surface-700 rounded-lg p-3.5 space-y-1">
       <FlowSection eyebrow="Quando" icon={<Zap className="w-3 h-3" />} onClick={() => onEdit('gatilho')}>
         {triggerSentence(automation)}
       </FlowSection>
 
       {conds.length > 0 && (
-        <FlowSection eyebrow="Se" icon={<GitBranch className="w-3 h-3" />} onClick={() => onEdit('condicoes')}>
+        // GitBranch/ExternalLink/Clock nesta tela não têm versão desenhada
+        // da casa (lib/icons.tsx) — traço 1.75 explícito (DECISOES #18).
+        <FlowSection eyebrow="Se" icon={<GitBranch className="w-3 h-3" strokeWidth={1.75} />} onClick={() => onEdit('condicoes')}>
           {conds.map((c, i) => (
             <span key={i}>
               {i > 0 && <span className="text-surface-500 font-medium"> {joiner} </span>}
@@ -199,10 +207,10 @@ function FlowCard({ automation, onEdit }: {
         )}
       </FlowSection>
 
-      <div className="pt-1.5 mt-1 border-t border-surface-800">
+      <div className="pt-1.5 mt-1 border-t border-surface-700">
         <button
           onClick={() => onEdit('ia')}
-          className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-surface-800/60 transition-colors group/ia"
+          className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-[var(--rowhover)] transition-colors group/ia"
         >
           <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0 mt-0.5" />
           <span className="text-2xs text-surface-400 leading-relaxed">{agentBehaviorSentence(automation)}</span>
@@ -226,7 +234,7 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
   const canExpand = actions.length > 0 || !!run.errorMessage
 
   return (
-    <div className="border-b border-surface-800/60 last:border-0">
+    <div className="border-b border-surface-700 last:border-0">
       <button
         onClick={() => canExpand && setOpen((v) => !v)}
         className={cn('w-full flex items-center gap-2.5 py-2 text-left', canExpand && 'cursor-pointer')}
@@ -283,13 +291,13 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
               {(run.contactId || run.conversationId) && (
                 <div className="flex items-center gap-3 pt-0.5">
                   {run.conversationId && (
-                    <button onClick={() => onOpenConversation(run.conversationId!)} className="inline-flex items-center gap-1 text-2xs text-brand-400 hover:text-brand-300 transition-colors">
-                      <ExternalLink className="w-2.5 h-2.5" /> ver conversa
+                    <button onClick={() => onOpenConversation(run.conversationId!)} className="inline-flex items-center gap-1 text-2xs text-accent-dark hover:opacity-80 transition-colors">
+                      <ExternalLink className="w-2.5 h-2.5" strokeWidth={1.75} /> ver conversa
                     </button>
                   )}
                   {run.contactId && (
-                    <button onClick={() => onOpenContact(run.contactId!)} className="inline-flex items-center gap-1 text-2xs text-brand-400 hover:text-brand-300 transition-colors">
-                      <ExternalLink className="w-2.5 h-2.5" /> ver contato
+                    <button onClick={() => onOpenContact(run.contactId!)} className="inline-flex items-center gap-1 text-2xs text-accent-dark hover:opacity-80 transition-colors">
+                      <ExternalLink className="w-2.5 h-2.5" strokeWidth={1.75} /> ver contato
                     </button>
                   )}
                 </div>
@@ -341,18 +349,21 @@ export function AutomationDetail({
   }, [automation.id, failedOnly, nextCursor])
 
   const hasFailure = runs.some((r) => r.status === 'failed' || r.status === 'partial')
-  const openContact = (id: string) => navigate(`/contacts?contact=${id}`)
-  const openConversation = (id: string) => navigate(`/conversations?conversation=${id}`)
+  // Levam o caminho de volta para ESTA automação (a seleção está na URL).
+  const irCom = useComVolta()
+  const openContact = (id: string) => navigate(irCom(`/contacts?contact=${id}`, 'Voltar para a automação'))
+  // A inbox abre a conversa por `?id=` — `?conversation=` não abria nada.
+  const openConversation = (id: string) => navigate(irCom(`/conversations?id=${id}`, 'Voltar para a automação'))
 
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="flex items-start gap-2 px-4 py-3.5 border-b border-surface-800 flex-shrink-0">
+      <div className="flex items-start gap-2 px-4 py-3.5 border-b border-surface-700 flex-shrink-0">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-surface-100 truncate">{automation.name}</h2>
             {isDraft && (
-              <span className="color-chip inline-flex items-center px-1.5 py-0.5 rounded-full text-3xs font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+              <span className="color-chip-soft inline-flex items-center px-1.5 py-0.5 rounded-xs text-3xs font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
                 Rascunho
               </span>
             )}
@@ -369,7 +380,7 @@ export function AutomationDetail({
             onDelete={() => onDelete(automation)}
           />
           {variant === 'overlay' && onClose && (
-            <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors" aria-label="Fechar">
+            <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors" aria-label="Fechar">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -386,7 +397,11 @@ export function AutomationDetail({
             {onResolveWithAI && (
               <button
                 onClick={() => onResolveWithAI(automation, attention[0])}
-                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-2xs font-semibold text-white transition-colors"
+                // Eixo 10: border border-white/25 — mesma peça (botão sobre
+                // banner colorido) em AgentDetail/MessageInput/
+                // WhatsappLineRequiredBanner/WorkspaceReadinessBanner, todas
+                // com essa borda; só esta não tinha.
+                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg border border-white/25 bg-white/15 hover:bg-white/25 text-2xs font-semibold text-white transition-colors"
               >
                 <Sparkles className="w-3 h-3" /> Resolver com IA
               </button>
@@ -399,15 +414,15 @@ export function AutomationDetail({
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5">
+          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5">
             <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Play className="w-2.5 h-2.5" /> Execuções</p>
             <p className="text-sm font-display font-bold text-surface-100 tabular-nums">{automation.executionCount.toLocaleString('pt-BR')}</p>
           </div>
-          <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5">
-            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Última</p>
+          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5">
+            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" strokeWidth={1.75} /> Última</p>
             <p className="text-xs font-medium text-surface-200 tabular-nums">{automation.lastExecutedAt ? relativeDate(automation.lastExecutedAt) : '—'}</p>
           </div>
-          <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5 min-w-0">
+          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 min-w-0">
             <p className="text-3xs text-surface-500 mb-1">Linha</p>
             <WhatsappLineChip whatsappNumberId={automation.whatsappNumberId} />
             {!automation.whatsappNumberId && <p className="text-xs text-surface-400">—</p>}
@@ -444,7 +459,7 @@ export function AutomationDetail({
               {failedOnly ? 'Nenhuma falha na janela recente. 🎉' : 'Ainda sem execuções registradas.'}
             </p>
           ) : (
-            <div className="bg-surface-900 border border-surface-800 rounded-xl px-3">
+            <div className="bg-surface-900 border border-surface-700 rounded-lg px-3">
               {runs.map((run) => (
                 <RunRow key={run.id} run={run} onOpenContact={openContact} onOpenConversation={openConversation} />
               ))}
@@ -452,7 +467,7 @@ export function AutomationDetail({
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="w-full py-2 text-2xs text-brand-400 hover:text-brand-300 transition-colors flex items-center justify-center gap-1.5 border-t border-surface-800/60"
+                  className="w-full py-2 text-2xs text-accent-dark hover:opacity-80 transition-colors flex items-center justify-center gap-1.5 border-t border-surface-700"
                 >
                   {loadingMore ? <Loader2 className="w-3 h-3 animate-spin" /> : <ChevronDown className="w-3 h-3" />}
                   Carregar mais

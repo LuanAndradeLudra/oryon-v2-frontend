@@ -141,7 +141,7 @@ function CapiStatusBadge({
   }
 
   return (
-    <div className="flex items-start gap-2 px-3 py-2 bg-surface-800/50 border border-surface-700 rounded-lg">
+    <div className="flex items-start gap-2 px-3 py-2 bg-[var(--sf2)] border border-surface-700 rounded-lg">
       <Send className="w-3.5 h-3.5 text-[#1877f2] flex-shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-surface-200">Reportar ao Meta CAPI</p>
@@ -283,7 +283,7 @@ function AnalysisResult({
       <div className="flex gap-2">
         {(analysis.conversionValue || analysis.outcome === 'converted') && (
           <div className="flex-1 bg-surface-800 rounded-lg px-2.5 py-2">
-            <p className="text-[9px] text-surface-500 uppercase tracking-wide mb-0.5">Valor detectado</p>
+            <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-0.5">Valor detectado</p>
             {isPending ? (
               <div className="flex items-center gap-1">
                 <span className="text-3xs text-surface-500">R$</span>
@@ -307,7 +307,7 @@ function AnalysisResult({
       {/* Stage suggestion + action buttons (hidden after confirm/reject) */}
       {isPending && analysis.suggestedStage && (
         <div className="flex-1 bg-surface-800 rounded-lg px-2.5 py-2">
-          <p className="text-[9px] text-surface-500 uppercase tracking-wide mb-0.5">Estágio sugerido</p>
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-0.5">Estágio sugerido</p>
           <p className="text-sm font-bold text-surface-100 capitalize">{analysis.suggestedStage}</p>
         </div>
       )}
@@ -447,14 +447,14 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
   const campaignName = contact.metaAdsReferral?.campaignName ?? contact.googleAdsAttribution?.utmCampaign
 
   return (
-    <div className="px-4 py-3 border-t border-surface-800">
+    <div className="px-4 py-3 border-t border-surface-700">
       {/* Section header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="w-6 h-6 rounded-lg bg-brand-500/15 flex items-center justify-center flex-shrink-0">
           <Sparkles className="w-3.5 h-3.5 text-brand-400" />
         </div>
         <div>
-          <p className="text-3xs text-surface-500 uppercase tracking-wide font-semibold">Análise de Conversão IA</p>
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Análise de Conversão IA</p>
           {hasAttribution && platformName && (
             <p className="text-3xs mt-0.5" style={{ color: platformColor }}>
               {platformName}{campaignName ? ` · ${campaignName}` : ''}
@@ -474,7 +474,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
       {phase === 'idle' && (
         <div className="space-y-2.5">
           {hasAttribution && (
-            <div className="flex items-start gap-2 px-2.5 py-2 bg-surface-800/60 rounded-lg border border-surface-700/50">
+            <div className="flex items-start gap-2 px-2.5 py-2 bg-[var(--sf2)] rounded-lg border border-surface-700">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: platformColor }} />
               <p className="text-2xs text-surface-400">
                 Lead com atribuição de anúncio detectada. Analise a conversa para fechar o ciclo de atribuição e calcular o ROAS real.

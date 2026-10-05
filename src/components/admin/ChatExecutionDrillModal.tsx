@@ -59,10 +59,10 @@ export function ChatExecutionDrillModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-surface-900 overlay-frame border rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+        className="bg-surface-800 overlay-frame border rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        <header className="flex items-start justify-between px-5 py-4 border-b border-surface-800">
+        <header className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
           <div>
             <h2 className="text-base font-semibold text-surface-100">Execução do Agente</h2>
             <p className="text-xs text-surface-400 font-mono mt-1">request_id: {requestId}</p>
@@ -111,7 +111,7 @@ function ExecutionHeader({ detail }: { detail: ChatExecutionDetail }) {
     <section>
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <span
-          className={cn('px-2 py-0.5 rounded text-xs font-medium', !statusChip && 'bg-surface-700 text-surface-200', statusChip && 'color-chip')}
+          className={cn('px-2 py-0.5 rounded text-xs font-medium', !statusChip && 'bg-[var(--sf2)] text-surface-200', statusChip && 'color-chip')}
           style={statusChip ? ({ ['--chip']: statusChip } as React.CSSProperties) : undefined}
         >
           {e.final_status}
@@ -226,7 +226,7 @@ function ToolsSection({ tools }: { tools: ChatExecutionToolRow[] }) {
             <th className="text-right py-1">ms</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-surface-800">
+        <tbody className="divide-y divide-surface-700">
           {tools.map(t => (
             <tr key={t.id}>
               <td className="py-1.5 text-surface-400 font-mono">
@@ -274,7 +274,7 @@ function RagSection({ rags }: { rags: ChatExecutionRagRow[] }) {
         {rags.map(r => {
           const chunks = Array.isArray(r.chunks_returned) ? r.chunks_returned : []
           return (
-            <li key={r.id} className="rounded border border-surface-800 bg-surface-950/50 p-2.5">
+            <li key={r.id} className="rounded border border-surface-700 bg-surface-950/50 p-2.5">
               <div className="flex flex-wrap items-center gap-2 text-xs mb-1">
                 <span className="text-surface-400 font-mono">
                   {new Date(r.created_at).toLocaleTimeString('pt-BR', { hour12: false })}
@@ -342,12 +342,12 @@ function SectionCard({
   variant?: 'warning'
 }) {
   const [open, setOpen] = useState(true)
-  const borderClass = variant === 'warning' ? 'border-status-failed/40' : 'border-surface-800'
+  const borderClass = variant === 'warning' ? 'border-status-failed/40' : 'border-surface-700'
   return (
-    <section className={`rounded-lg border ${borderClass} bg-surface-900/40`}>
+    <section className={`rounded-lg border ${borderClass} bg-[var(--sf)]`}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-surface-800/40 rounded-t-lg"
+        className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-[var(--rowhover)] rounded-t-lg"
       >
         {open ? <ChevronDown className="w-4 h-4 text-surface-400" /> : <ChevronRight className="w-4 h-4 text-surface-400" />}
         <h3 className="text-sm font-semibold text-surface-100 flex-1">
@@ -363,7 +363,7 @@ function SectionCard({
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-lg border border-surface-800 bg-surface-900 p-3">
+    <div className="rounded-lg border border-surface-700 bg-[var(--sf)] p-3">
       <p className="text-[11px] uppercase tracking-wider text-surface-400">{label}</p>
       <p className="mt-1 text-base font-semibold text-surface-100">{value}</p>
       {hint && <p className="text-[11px] text-surface-500 mt-0.5">{hint}</p>}
@@ -374,7 +374,7 @@ function KpiCard({ label, value, hint }: { label: string; value: string; hint?: 
 function DefRow({ k, v, mono }: { k: string; v: string | null; mono?: boolean }) {
   if (!v) return null
   return (
-    <div className="flex justify-between gap-2 py-0.5 border-b border-surface-800/40 last:border-0">
+    <div className="flex justify-between gap-2 py-0.5 border-b border-surface-700 last:border-0">
       <dt className="text-surface-500">{k}</dt>
       <dd className={`text-surface-200 ${mono ? 'font-mono text-[11px]' : ''} truncate`} title={v}>
         {v}

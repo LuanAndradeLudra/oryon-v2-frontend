@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Star, ListPlus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { SectionHeader } from '@/components/settings/SectionHeader'
 import { CustomFieldModal } from '@/components/settings/modals/CustomFieldModal'
 import { useToast } from '@/hooks/useToast'
 import { customFieldsApi } from '@/services/api'
@@ -69,24 +70,22 @@ export function CustomFieldsManager() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-surface-100">Campos personalizados</h3>
-          <p className="text-xs text-surface-500 mt-0.5">
-            Adicione campos extras aos contatos para capturar dados do seu negócio.
-          </p>
-        </div>
-        <Button
-          size="sm"
-          onClick={() => { setEditField(null); setModalOpen(true) }}
-          leftIcon={<Plus className="w-3.5 h-3.5" />}
-          className="crm-manager-new-btn px-4 whitespace-nowrap flex-shrink-0 hover:brightness-95"
-        >
-          Novo campo
-        </Button>
-      </div>
+      <SectionHeader
+        title="Campos personalizados"
+        description="Adicione campos extras aos contatos para capturar dados do seu negócio."
+        action={
+          <Button
+            size="sm"
+            variant="primary"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            onClick={() => { setEditField(null); setModalOpen(true) }}
+          >
+            Novo campo
+          </Button>
+        }
+      />
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="border-y border-surface-700">
         {fieldDefs.length === 0 ? (
           <EmptyState
             icon={ListPlus}
@@ -96,15 +95,15 @@ export function CustomFieldsManager() {
             action={{ label: 'Novo campo', onClick: () => { setEditField(null); setModalOpen(true) } }}
           />
         ) : (
-          <ul className="divide-y divide-surface-800">
+          <ul className="divide-y divide-surface-700">
             {fieldDefs.map((field) => (
-              <li key={field.key} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-800/30 transition-colors group">
+              <li key={field.key} className="flex items-center gap-3 px-1 py-3 hover:bg-[var(--rowhover)] transition-colors group">
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-surface-100">{field.label}</span>
                     {field.required && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[10px] text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-xs">
                         <Star className="w-2.5 h-2.5" /> Obrigatório
                       </span>
                     )}
@@ -112,20 +111,20 @@ export function CustomFieldsManager() {
                   <p className="text-[11px] text-surface-600 font-mono">{field.key}</p>
                 </div>
 
-                <span className="text-xs text-surface-500 bg-surface-800 border border-surface-700 px-2 py-0.5 rounded-md tabular-nums">
+                <span className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 px-2 py-0.5 rounded-xs tabular-nums">
                   {TYPE_LABELS[field.type]}
                 </span>
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => { setEditField(field); setModalOpen(true) }}
-                    className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
+                    className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => setDeleteField(field)}
-                    className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
+                    className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -149,7 +148,8 @@ export function CustomFieldsManager() {
         onClose={() => setDeleteField(null)}
         onConfirm={handleDelete}
         title="Excluir campo"
-        description={`Tem certeza que deseja excluir o campo "${deleteField?.label}"? Os dados já salvos nos contatos serão perdidos.`}
+        impact={{ label: `Campo ${deleteField?.label ?? ''}`.trim(), tone: 'danger' }}
+        description="Os dados já salvos nos contatos serão perdidos. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

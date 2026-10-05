@@ -1,4 +1,5 @@
-import { useState, type RefObject } from 'react'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
+import { type RefObject } from 'react'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ContactProfileHeader } from './ContactProfileHeader'
 import { ContactPipelinesSection } from './ContactPipelinesSection'
@@ -22,6 +23,7 @@ import type { ContactStats } from '@/hooks/useContactProfile'
 import type { ContactNote, ContactTask } from '@/types/contactProfile'
 
 type MobileSegment = 'summary' | 'activity' | 'about'
+const lerSecao = lerUmDe(['summary', 'activity', 'about'] as const, 'summary')
 
 interface ProfileMobileViewProps {
   contact: Contact
@@ -54,13 +56,14 @@ export function ProfileMobileView({
   onBack, onOpenChat, onSendTemplate, onAddNote, onFocusComposer,
   onAddTask, onToggleTask, onDelete, onSave, onAddTag, onRemoveTag, onRefresh, onStageChanged,
 }: ProfileMobileViewProps) {
-  const [segment, setSegment] = useState<MobileSegment>('summary')
+  // Seção no celular na URL (`?secao=`): antes o F5 voltava sempre para Resumo.
+  const [segment, setSegment] = useEstadoNaUrl<MobileSegment>('secao', { padrao: 'summary', ler: lerSecao })
   const { user } = useAuth()
   const showAiContext = isFeatureVisible('aiContextCard', user?.email)
 
   return (
     <div className="flex flex-col gap-3 pb-8">
-      <div className="sticky top-0 z-10 bg-surface-950/95 backdrop-blur border-b border-surface-800">
+      <div className="sticky top-0 z-10 bg-surface-950/95 backdrop-blur border-b border-surface-700">
         <ContactProfileHeader
           contact={contact}
           compact
@@ -107,7 +110,7 @@ export function ProfileMobileView({
         )}
 
         {segment === 'activity' && (
-          <section className="rounded-2xl border border-surface-800 bg-surface-900 p-3 flex flex-col gap-3">
+          <section className="rounded-2xl border border-surface-700 bg-surface-900 p-3 flex flex-col gap-3">
             {PROFILE_MOCKS_ENABLED && <TimelineComposer onSubmit={onAddNote} textareaRef={composerRef} />}
             <ContactTimeline contactId={contact.id} notes={notes} />
           </section>

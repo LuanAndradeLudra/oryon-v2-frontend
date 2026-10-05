@@ -14,6 +14,7 @@ import type { Contact, ContactSource, Tag, Pipeline } from '@/types'
 import { Input } from '@/components/ui/Input'
 import { PhoneField } from '@/components/ui/PhoneField'
 import { FormFieldContext, useFieldAria } from '@/components/ui/formField.context'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { useLayer } from '@/contexts/LayerContext'
 
 const SOURCE_OPTIONS: { value: ContactSource; label: string }[] = [
@@ -148,7 +149,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute z-50 top-full mt-1 left-0 right-0 overlay-surface border rounded-xl overflow-hidden"
+            className="absolute z-50 top-full mt-1 left-0 right-0 overlay-surface overlay-vidro border rounded-xl overflow-hidden"
           >
             <div className="p-2 border-b border-surface-700">
               <input
@@ -317,7 +318,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40"
+            className="fixed inset-0 bg-[var(--color-scrim-soft)]"
             style={{ zIndex }}
             onClick={onClose}
           />
@@ -332,15 +333,15 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-base font-semibold text-surface-50">Novo contato</h2>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Novo contato</h2>
                 <p className="text-xs text-surface-500 mt-0.5">Preencha as informações do novo lead</p>
               </div>
               <button
                 onClick={onClose}
                 aria-label="Fechar"
-                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -445,20 +446,17 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                       legado: nome/telefone + estágio do contato. */}
                   {multiPipeline && (
                   <Field label="Funil (opcional)">
-                    <div className="relative">
-                      <select
-                        value={pipelineId}
-                        onChange={(e) => { setPipelineId(e.target.value); setErrors((v) => ({ ...v, pipelineId: undefined })) }}
-                        className={cn(inputCls(!!errors.pipelineId), 'appearance-none pr-8')}
-                        data-testid="new-contact-pipeline"
-                      >
-                        <option value="">— nenhum —</option>
-                        {getActivePipelines(pipelines).map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                    </div>
+                    <SelectMenu
+                      value={pipelineId}
+                      onChange={(e) => { setPipelineId(e.target.value); setErrors((v) => ({ ...v, pipelineId: undefined })) }}
+                      className={cn(inputCls(!!errors.pipelineId), 'h-auto pr-8')}
+                      data-testid="new-contact-pipeline"
+                    >
+                      <option value="">— nenhum —</option>
+                      {getActivePipelines(pipelines).map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
+                      ))}
+                    </SelectMenu>
                     {errors.pipelineId
                       ? <p className="text-[11px] text-red-400">{errors.pipelineId}</p>
                       : <p className="text-[11px] text-surface-600">Com funil, o contato já entra na etapa escolhida — na mesma operação.</p>
@@ -473,53 +471,44 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                         confundem. Reativo ao funil escolhido acima. */}
                     {multiPipeline && pipelineId && (
                     <Field label="Etapa do funil">
-                      <div className="relative">
-                        <select
-                          value={pipelineStageId}
-                          onChange={(e) => setPipelineStageId(e.target.value)}
-                          className={cn(inputCls(), 'appearance-none pr-8')}
-                        >
-                          {getPipelineStages(pipelines, pipelineId).length === 0 && (
-                            <option value="">Nenhuma situação disponível</option>
-                          )}
-                          {getPipelineStages(pipelines, pipelineId).map((s) => (
-                            <option key={s.id} value={s.id}>{s.label}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                      </div>
+                      <SelectMenu
+                        value={pipelineStageId}
+                        onChange={(e) => setPipelineStageId(e.target.value)}
+                        className={cn(inputCls(), 'h-auto pr-8')}
+                      >
+                        {getPipelineStages(pipelines, pipelineId).length === 0 && (
+                          <option value="">Nenhuma situação disponível</option>
+                        )}
+                        {getPipelineStages(pipelines, pipelineId).map((s) => (
+                          <option key={s.id} value={s.id}>{s.label}</option>
+                        ))}
+                      </SelectMenu>
                     </Field>
                     )}
 
                     <Field label="Situação do contato">
-                      <div className="relative">
-                        <select
-                          value={stage}
-                          onChange={(e) => setStage(e.target.value)}
-                          className={cn(inputCls(), 'appearance-none pr-8')}
-                        >
-                          {stages.map((s) => (
-                            <option key={s.key} value={s.key}>{s.label}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                      </div>
+                      <SelectMenu
+                        value={stage}
+                        onChange={(e) => setStage(e.target.value)}
+                        className={cn(inputCls(), 'h-auto pr-8')}
+                      >
+                        {stages.map((s) => (
+                          <option key={s.key} value={s.key}>{s.label}</option>
+                        ))}
+                      </SelectMenu>
                     </Field>
 
                     <Field label="Origem">
-                      <div className="relative">
-                        <select
-                          value={source}
-                          onChange={(e) => setSource(e.target.value as ContactSource | '')}
-                          className={cn(inputCls(), 'appearance-none pr-8')}
-                        >
-                          <option value="">— Selecionar —</option>
-                          {SOURCE_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                      </div>
+                      <SelectMenu
+                        value={source}
+                        onChange={(e) => setSource(e.target.value as ContactSource | '')}
+                        className={cn(inputCls(), 'h-auto pr-8')}
+                      >
+                        <option value="">— Selecionar —</option>
+                        {SOURCE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </SelectMenu>
                     </Field>
                   </div>
 
@@ -582,19 +571,16 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                               </span>
                             </button>
                           ) : def.type === 'select' ? (
-                            <div className="relative">
-                              <select
-                                value={customValues[def.key] ?? ''}
-                                onChange={(e) =>
-                                  setCustomValues((v) => ({ ...v, [def.key]: e.target.value }))
-                                }
-                                className={cn(inputCls(), 'appearance-none pr-8')}
-                              >
-                                <option value="">— Selecionar —</option>
-                                {def.options?.map((o) => <option key={o} value={o}>{o}</option>)}
-                              </select>
-                              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                            </div>
+                            <SelectMenu
+                              value={customValues[def.key] ?? ''}
+                              onChange={(e) =>
+                                setCustomValues((v) => ({ ...v, [def.key]: e.target.value }))
+                              }
+                              className={cn(inputCls(), 'h-auto pr-8')}
+                            >
+                              <option value="">— Selecionar —</option>
+                              {def.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </SelectMenu>
                           ) : def.type === 'textarea' ? (
                             <textarea
                               value={customValues[def.key] ?? ''}
@@ -630,11 +616,11 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-end gap-2 px-[18px] py-3.5 border-t border-surface-700 flex-shrink-0">
               <button
                 onClick={onClose}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all disabled:opacity-50"
               >
                 Cancelar
               </button>

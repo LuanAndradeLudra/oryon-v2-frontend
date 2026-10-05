@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Handshake, MessageSquare, Megaphone, Workflow, History } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -46,6 +46,7 @@ import { ConversationsTab } from '@/components/contacts/tabs/ConversationsTab'
 
 import type { Contact } from '@/types'
 import type { ContactNote, ContactTask } from '@/types/contactProfile'
+import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 
 const PROFILE_TAB_IDS = ['activity', 'conversations', 'deals', 'campaigns', 'automations'] as const
 type ProfileTabId = (typeof PROFILE_TAB_IDS)[number]
@@ -86,7 +87,7 @@ function ProfileTabs({ tabs, active, onChange }: ProfileTabsProps) {
       role="tablist"
       aria-label="Seções do contato"
       onKeyDown={handleKeyDown}
-      className="shrink-0 flex items-center gap-1 border-b border-surface-700/60 overflow-x-auto scroll-thin px-2"
+      className="shrink-0 flex items-center gap-1 border-b border-surface-700 overflow-x-auto scroll-thin px-2"
     >
       {tabs.map((tab) => {
         const isActive = tab.id === active
@@ -108,7 +109,7 @@ function ProfileTabs({ tabs, active, onChange }: ProfileTabsProps) {
             {typeof tab.count === 'number' && (
               <span className={cn(
                 'min-w-[18px] px-1 rounded-full text-[11px] font-semibold text-center tabular-nums',
-                isActive ? 'bg-surface-700 text-surface-100' : 'bg-surface-800 text-surface-500',
+                isActive ? 'bg-surface-900 text-surface-100' : 'bg-surface-800 text-surface-500',
               )}>
                 {tab.count > 99 ? '99+' : tab.count}
               </span>
@@ -194,9 +195,13 @@ export function ContactProfilePage() {
     setTasks(PROFILE_MOCKS_ENABLED ? mockTasksFor(contactId) : [])
   }, [contactId])
 
-  if (!id) return <Navigate to="/contacts" replace />
+  // Durante a saída animada (`PageTransition`) a página segue montada por
+  // ~120 ms sob a rota NOVA, sem o `id`: sem esta guarda, sair do perfil pelo
+  // menu redirecionava para /contacts em vez da tela clicada.
+  if (!location.pathname.startsWith('/contacts/')) return null
+  if (!id) return <NavegarSePresente to="/contacts" replace />
   if (!isFeatureVisible('contactProfilePage', user?.email)) {
-    return <Navigate to={`/contacts?contact=${id}`} replace />
+    return <NavegarSePresente to={`/contacts?contact=${id}`} replace />
   }
 
   const userName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Você'
@@ -413,10 +418,10 @@ export function ContactProfilePage() {
                     surface-900) via index.css — escopado à página, sem tocar
                     nos mesmos cards no drawer. Divisores em surface-700 ficam
                     visíveis nos dois temas (surface-800 = branco no claro). */}
-                <div className="profile-accordion rounded-2xl border border-surface-800 bg-surface-900 divide-y divide-surface-700 overflow-hidden grow shrink-0">
+                <div className="profile-accordion rounded-2xl border border-surface-700 bg-surface-900 divide-y divide-surface-700 overflow-hidden grow shrink-0">
                   <CollapsibleSection title="Perfil" storageKey="profile.about">
-                    <ContactInfoCard contact={contact} onSave={profile.save} />
-                    <QualificationCard contact={contact} onSave={profile.save} hideStage />
+                    <ContactInfoCard contact={contact} onSave={profile.save} hideTitle />
+                    <QualificationCard contact={contact} onSave={profile.save} hideStage hideTitle />
                   </CollapsibleSection>
                   {/* PROPOSTA do Auditor, decisão do Maestro registrada no PR:
                       a situação do contato (contacts.stage, ciclo de vida)
@@ -438,7 +443,7 @@ export function ContactProfilePage() {
                     <CustomFieldsCard contact={contact} onSave={profile.save} hideTitle />
                   </CollapsibleSection>
                   <CollapsibleSection title="Etiquetas e origem" storageKey="profile.marketing" count={(contact.tags ?? []).length}>
-                    <TagsCard contact={contact} onAddTag={profile.addTag} onRemoveTag={profile.removeTag} />
+                    <TagsCard contact={contact} onAddTag={profile.addTag} onRemoveTag={profile.removeTag} hideTitle />
                     <AttributionCard contact={contact} />
                   </CollapsibleSection>
                   <CollapsibleSection title="Engajamento" storageKey="profile.engagement">
@@ -451,7 +456,7 @@ export function ContactProfilePage() {
             center={
               /* Painel de trabalho único de altura total: tabs fixas no topo
                  da superfície, conteúdo rolando internamente abaixo. */
-              <section className="flex-1 min-h-0 flex flex-col rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
+              <section className="flex-1 min-h-0 flex flex-col rounded-2xl border border-surface-700 bg-surface-900 overflow-hidden">
                 <ProfileTabs tabs={centerTabs} active={tab} onChange={setTab} />
                 {tab === 'conversations' ? (
                   <div className="flex-1 min-h-0 overflow-y-auto scroll-thin">
@@ -522,7 +527,7 @@ export function ContactProfilePage() {
                   className={cn(
                     'px-2.5 py-1 rounded-md border text-xs font-medium transition-colors cursor-pointer',
                     taskDueDays === opt.days
-                      ? 'bg-brand-500/15 border-brand-500/40 text-brand-300'
+                      ? 'bg-accent-soft border-brand-500/40 text-accent-dark'
                       : 'bg-surface-800 border-surface-700 text-surface-400 hover:text-surface-200',
                   )}
                 >

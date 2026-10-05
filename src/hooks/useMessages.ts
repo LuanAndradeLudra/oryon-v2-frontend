@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { messagesApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import { inferMessageType } from '@/lib/inferMessageType'
+import { applyStatusUpdate } from '@/lib/messageStatus'
 import type { Message, SendMessageDto, SocketAnomalyReviewed, SocketMediaReady, SocketMessageStatus } from '@/types'
 
 export function useMessages(conversationId: string | null) {
@@ -9,13 +10,23 @@ export function useMessages(conversationId: string | null) {
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const pageRef = useRef(1)
+  // Revisão 02/10: troca rápida de conversa (J/K) — a resposta atrasada da
+  // conversa anterior sobrescrevia a lista da atual, e o retorno de um envio
+  // caía na conversa errada. Só aplica o que ainda é da conversa à vista e da
+  // busca mais recente.
+  const conversaAtual = useRef(conversationId)
+  conversaAtual.current = conversationId
+  const buscaAtual = useRef(0)
 
   const fetchMessages = useCallback(async (reset = true) => {
     if (!conversationId) return
+    const minha = ++buscaAtual.current
+    const valeAinda = () => minha === buscaAtual.current && conversaAtual.current === conversationId
     setLoading(true)
     try {
       const page = reset ? 1 : pageRef.current
       const { data } = await withRetry(() => messagesApi.list(conversationId, page, 50))
+      if (!valeAinda()) return
       if (reset) {
         setMessages(data.data.reverse())
         pageRef.current = 2
@@ -25,7 +36,7 @@ export function useMessages(conversationId: string | null) {
       }
       setHasMore(data.data.length === 50)
     } finally {
-      setLoading(false)
+      if (valeAinda()) setLoading(false)
     }
   }, [conversationId])
 
@@ -44,19 +55,11 @@ export function useMessages(conversationId: string | null) {
     })
   }, [])
 
+  // Casa por id OU wamid, respeita a conversa e nunca regride o status
+  // (lib/messageStatus). O payload do socket não traz `timestamp`: os
+  // instantes vêm em deliveredAt/readAt/failedAt.
   const updateMessageStatus = useCallback((payload: SocketMessageStatus) => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === payload.messageId
-          ? {
-              ...m,
-              status: payload.status,
-              deliveredAt: payload.status === 'delivered' ? payload.timestamp : m.deliveredAt,
-              readAt: payload.status === 'read' ? payload.timestamp : m.readAt,
-            }
-          : m
-      )
-    )
+    setMessages((prev) => prev.map((m) => applyStatusUpdate(m, payload)))
   }, [])
 
   /** Preview estilo WhatsApp — a miniatura de PDF é gerada numa fila
@@ -111,6 +114,9 @@ export function useMessages(conversationId: string | null) {
         body: dto.body,
         mediaUrl: objectUrl ?? undefined,
         mediaCaption: dto.mediaCaption,
+        // Miniatura renderizada no navegador (só PDF) — some assim que a
+        // real (gerada no servidor) chega, ver o `?? ` na troca abaixo.
+        mediaThumbnailUrl: dto.clientThumbnailUrl,
         contextWamid: dto.replyToWamid,
         senderKind: 'operator',
         sentAt: now,
@@ -119,6 +125,12 @@ export function useMessages(conversationId: string | null) {
 
       try {
         const { data } = await messagesApi.send(conversationId, dto)
+        // Trocou de conversa durante o envio: a mensagem já está salva no
+        // servidor e aparece quando voltar — não entra na lista da outra.
+        if (conversaAtual.current !== conversationId) {
+          if (objectUrl) URL.revokeObjectURL(objectUrl)
+          return
+        }
         // Substitui a bolha otimista pela real. Se o socket `message:new`
         // já tiver entregue a mesma mensagem enquanto o POST ainda estava em
         // voo (self-echo — ver handler em ChatWindow), ela já está na lista
@@ -126,7 +138,14 @@ export function useMessages(conversationId: string | null) {
         setMessages((prev) => {
           const withoutTemp = prev.filter((m) => m.id !== tempId)
           if (withoutTemp.some((m) => m.id === data.id)) return withoutTemp
-          return [...withoutTemp, data]
+          // A miniatura real (gerada no servidor, fila assíncrona) ainda não
+          // chegou neste ponto — sem isto, a miniatura do navegador
+          // desapareceria por alguns segundos bem na hora em que o status
+          // vira "enviado", até `message:media-ready` repor. `data` sempre
+          // vence quando já tiver a sua própria (nunca deveria acontecer tão
+          // rápido, mas não custa a guarda).
+          const merged = { ...data, mediaThumbnailUrl: data.mediaThumbnailUrl ?? dto.clientThumbnailUrl }
+          return [...withoutTemp, merged]
         })
         if (objectUrl) URL.revokeObjectURL(objectUrl)
       } catch (err) {
@@ -135,7 +154,20 @@ export function useMessages(conversationId: string | null) {
         // perder de vista (o backend nunca chega a salvar nada quando a
         // chamada à Meta falha, então não há mensagem real para reconciliar
         // aqui — e o objectUrl não é revogado, a bolha falha ainda usa ele).
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m)))
+        // Com o ciclo "gravar antes" o backend já persistiu a linha `failed`
+        // e a devolve em `failedMessage`: troca a bolha otimista por ela
+        // (sem duplicar). Backend antigo não manda o campo → só marca falha.
+        const failedMessage = (err as { response?: { data?: { failedMessage?: Message } } })?.response?.data
+          ?.failedMessage
+        if (failedMessage && objectUrl) URL.revokeObjectURL(objectUrl) // a bolha passa a usar a URL do servidor
+        if (conversaAtual.current !== conversationId) throw err
+        setMessages((prev) => {
+          if (failedMessage) {
+            const withoutTemp = prev.filter((m) => m.id !== tempId)
+            return withoutTemp.some((m) => m.id === failedMessage.id) ? withoutTemp : [...withoutTemp, failedMessage]
+          }
+          return prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
+        })
         // Re-throw so the caller (MessageInput / ChatWindow) can show a
         // toast and decide whether to keep the typed text.
         throw err

@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { ConversationFiltersBar } from '@/components/conversations/ConversationList/ConversationFilters'
+import { QuickFiltersMenu } from '@/components/conversations/ConversationList/QuickFiltersMenu'
 import { resolveRange } from '@/lib/dateRange'
 import type { ConversationFilters } from '@/types'
 
@@ -21,17 +21,21 @@ const ONTEM = resolveRange('yesterday')
 
 function renderBar(filters: ConversationFilters) {
   const onFiltersChange = vi.fn()
-  render(<ConversationFiltersBar filters={filters} onFiltersChange={onFiltersChange} />)
+  render(<QuickFiltersMenu filters={filters} onFiltersChange={onFiltersChange} />)
+  // R2-1D-FILT: o período agora vive dentro do menu do funil.
+  fireEvent.click(screen.getByRole('button', { name: 'Filtros rápidos' }))
   return { onFiltersChange }
 }
 
 const chip = (nome: string) => screen.getByRole('button', { name: new RegExp(`^${nome}`) })
 
-/** Chips de período são os únicos botões com aria-pressed nesta faixa. */
+const PERIODOS = ['Hoje', 'Ontem', 'Últimos 7 dias', 'Personalizado']
+/** Linhas de período acesas (o menu também tem linhas de Status com aria-pressed). */
 const chipsPressionados = () =>
   screen.getAllByRole('button')
     .filter((b) => b.getAttribute('aria-pressed') === 'true')
-    .map((b) => b.textContent?.trim())
+    .map((b) => b.textContent?.trim() ?? '')
+    .filter((t) => PERIODOS.some((p) => t.startsWith(p)))
 
 describe('faixa de período — qual chip acende', () => {
   it('acende o chip que corresponde ao startDate aplicado', () => {

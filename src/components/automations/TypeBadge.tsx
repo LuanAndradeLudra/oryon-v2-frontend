@@ -8,12 +8,14 @@ export const TYPE_CONFIG: Record<AutomationType, {
   triggerLabel: string
   icon: ReactNode
 }> = {
-  boas_vindas:      { label: 'Boas-vindas',     triggerLabel: 'Novo contato inicia conversa',       icon: <Hand className="w-3.5 h-3.5" /> },
+  // Hand/Moon/Clock não têm versão desenhada da casa (lib/icons.tsx) —
+  // strokeWidth explícito (DECISOES-PENDENTES #18).
+  boas_vindas:      { label: 'Boas-vindas',     triggerLabel: 'Novo contato inicia conversa',       icon: <Hand className="w-3.5 h-3.5" strokeWidth={1.75} /> },
   follow_up:        { label: 'Follow-up',       triggerLabel: 'Sem resposta após N horas',           icon: <Bell className="w-3.5 h-3.5" /> },
-  fora_horario:     { label: 'Fora do horário', triggerLabel: 'Mensagem fora do horário comercial', icon: <Moon className="w-3.5 h-3.5" /> },
+  fora_horario:     { label: 'Fora do horário', triggerLabel: 'Mensagem fora do horário comercial', icon: <Moon className="w-3.5 h-3.5" strokeWidth={1.75} /> },
   triagem_keyword:  { label: 'Triagem',         triggerLabel: 'Palavra-chave detectada',            icon: <Tag className="w-3.5 h-3.5" /> },
   estagio_crm:      { label: 'Estágio CRM',     triggerLabel: 'Contato muda de estágio',            icon: <BarChart3 className="w-3.5 h-3.5" /> },
-  inatividade:      { label: 'Inatividade',     triggerLabel: 'Sem atividade por N dias',           icon: <Clock className="w-3.5 h-3.5" /> },
+  inatividade:      { label: 'Inatividade',     triggerLabel: 'Sem atividade por N dias',           icon: <Clock className="w-3.5 h-3.5" strokeWidth={1.75} /> },
   custom:           { label: 'Personalizado',   triggerLabel: 'Evento customizado',                 icon: <Zap className="w-3.5 h-3.5" /> },
 }
 
@@ -28,7 +30,7 @@ export function TypeBadge({ type, size = 'sm', className }: TypeBadgeProps) {
   return (
     <span
       className={cn(
-        'color-chip inline-flex items-center gap-1.5 rounded-md font-medium border',
+        'color-chip-soft inline-flex items-center gap-1.5 rounded-md font-medium border',
         size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs',
         className,
       )}

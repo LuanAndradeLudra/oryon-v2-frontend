@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
+import { donoDoEvento, type EventoDeAtribuicao } from '@/lib/conversationSignals'
+import { ehFila } from '@/lib/filtrosDaInbox'
+import { connectSocket } from '@/services/socket'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User, DealOutcomeInput } from '@/types'
 
@@ -23,6 +26,17 @@ const PAGE_SIZE = 50
  *  same event name, so a socket in both rooms sees it twice) and a burst of
  *  handoffs, short enough that the badge feels immediate. */
 const COUNTS_DEBOUNCE_MS = 1500
+/** Aba escondida por mais que isto: ao voltar, a lista é lida de novo. */
+const VOLTA_DA_ABA_MS = 30_000
+/**
+ * Fila (28/09, decisão do PO): ordem pela MAIOR espera. O backend só ordena
+ * pela mensagem mais recente e pagina — ordenar só o que carregou sairia
+ * errado entre páginas. A Fila é pequena por natureza: carrega inteira, em
+ * páginas de 100 (teto do backend), até este limite. Passou disso, avisa.
+ * Ordenação no servidor é o P1 do SCRUM-1161.
+ */
+const FILA_POR_PAGINA = 100
+const FILA_MAX_PAGINAS = 5
 
 export function useConversations(filters: ConversationFilters = {}) {
   const { user } = useAuth()
@@ -73,12 +87,38 @@ export function useConversations(filters: ConversationFilters = {}) {
   // instead of AbortController because aborting would just make `withRetry`
   // retry the (still-aborted) call up to 3 times before giving up.
   const fetchTokenRef = useRef(0)
+  /** A Fila passou do limite de carga — a ordem vale para as mais recentes. */
+  const [filaIncompleta, setFilaIncompleta] = useState(false)
 
   const fetchConversations = useCallback(async () => {
     const token = ++fetchTokenRef.current
     try {
       if (!initialLoadDone.current) setLoading(true)
       pageRef.current = 1
+      if (ehFila(filtersRef.current)) {
+        // Fila: tudo de uma vez (ver FILA_MAX_PAGINAS) para ordenar pela espera.
+        let pagina = 1
+        let resp = (await withRetry(() => conversationsApi.list(filtersRef.current, 1, FILA_POR_PAGINA))).data
+        const todas = [...resp.data]
+        while (resp.hasMore && pagina < FILA_MAX_PAGINAS) {
+          pagina += 1
+          const p = pagina
+          resp = (await withRetry(() => conversationsApi.list(filtersRef.current, p, FILA_POR_PAGINA))).data
+          if (fetchTokenRef.current !== token) return
+          for (const c of resp.data) if (!todas.some((x) => x.id === c.id)) todas.push(c)
+        }
+        if (fetchTokenRef.current !== token) return
+        setConversations(todas)
+        loadedConvIds.current = new Set(todas.map((c) => c.id))
+        setHasMore(false)
+        setFilaIncompleta(resp.hasMore)
+        setStatusCounts(resp.statusCounts)
+        setNeedsReviewCount(resp.needsReviewCount ?? 0)
+        setError(null)
+        initialLoadDone.current = true
+        return
+      }
+      setFilaIncompleta(false)
       const { data } = await withRetry(() => conversationsApi.list(filtersRef.current, 1, PAGE_SIZE))
       if (fetchTokenRef.current !== token) return
       setConversations(data.data)
@@ -105,9 +145,13 @@ export function useConversations(filters: ConversationFilters = {}) {
     if (loadingMoreLockRef.current || !hasMore) return
     loadingMoreLockRef.current = true
     const next = pageRef.current + 1
+    // Revisão 03/10: a página seguinte do filtro ANTERIOR (chip trocado durante
+    // a carga) era anexada à lista do filtro novo.
+    const daCarga = fetchTokenRef.current
     setLoadingMore(true)
     try {
       const { data } = await withRetry(() => conversationsApi.list(filtersRef.current, next, PAGE_SIZE))
+      if (fetchTokenRef.current !== daCarga) return
       setConversations((prev) => {
         const seen = new Set(prev.map((c) => c.id))
         const incoming = data.data.filter((c) => !seen.has(c.id))
@@ -233,7 +277,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       // SCRUM-561 — the 13-filter chain that used to be inlined here now lives
       // in conversationFilterPredicate, shared with the eviction path so the
       // two can't drift.
-      if (!conversationMatchesFilters(conv, filtersRef.current, userRef.current)) return
+      if (!conversationMatchesFilters(conv, filtersRef.current, userRef.current, { entrada: true })) return
 
       setConversations((prev) => {
         if (prev.some((c) => c.id === conversationId)) return prev
@@ -265,9 +309,18 @@ export function useConversations(filters: ConversationFilters = {}) {
       const idx = prev.findIndex((c) => c.id === payload.conversationId)
       if (idx === -1) return prev
       const updated = [...prev]
+      // 28/09: sem remetente e sem `lastAgentReplyAt` no patch, a linha
+      // voltava a "sem resposta" logo depois de a PESSOA responder (a regra
+      // comparava com a resposta humana antiga), e o indicador de remetente e
+      // a janela de 24h ficavam errados até recarregar.
+      const m = payload.message
+      const remetente = m.senderKind
+        ?? (m.direction === 'inbound' ? 'client' : m.sentByUserId ? 'operator' : undefined)
       updated[idx] = {
         ...updated[idx],
         lastMessageAt: payload.message.sentAt,
+        ...(remetente ? { lastMessageSenderKind: remetente } : {}),
+        ...(remetente === 'operator' ? { lastAgentReplyAt: m.sentAt } : {}),
         lastMessagePreview: payload.message.body || payload.message.mediaCaption || `[${payload.message.type ?? 'text'}]`,
         unreadCount: payload.unreadCount,
         // Phase 27 — outbound human messages carry aiPausedUntil so the
@@ -283,6 +336,25 @@ export function useConversations(filters: ConversationFilters = {}) {
       return [item, ...updated]
     })
   }, [fetchAndPrependConversation])
+
+  /**
+   * 28/09 — `conversation:assigned` e `conversation:resolved` só atualizavam a
+   * conversa ABERTA; a lista ficava com o dono/status antigo. Uma atribuição
+   * feita por um colega não tirava a linha de "Fila" (sem dono), e uma
+   * resolução não tirava a linha de "Abertas". Agora a linha é corrigida e,
+   * se não couber mais no filtro, sai (mesmo caminho do status).
+   */
+  const handleAssigned = useCallback((payload: EventoDeAtribuicao) => {
+    const dono = donoDoEvento(payload)
+    if (!payload?.conversationId || dono === undefined) return
+    patchAndReconcile(payload.conversationId, { assignedUser: dono ?? undefined })
+  }, [patchAndReconcile])
+
+  const handleResolved = useCallback((payload: { conversationId: string }) => {
+    if (!payload?.conversationId) return
+    patchAndReconcile(payload.conversationId, { status: 'resolved' })
+    refetchCounts()
+  }, [patchAndReconcile, refetchCounts])
 
   /** Phase 27 — handler for the dedicated 'conversation:ai-pause-updated' socket
    *  event emitted by the backend's manual pause/resume endpoint.
@@ -453,8 +525,32 @@ export function useConversations(filters: ConversationFilters = {}) {
     return until
   }, [patchAndReconcile])
 
+  // 28/09 — eventos perdidos deixavam a lista errada até recarregar a página:
+  // ao reconectar o socket (queda de rede, sono do notebook) e ao voltar para
+  // a aba depois de um tempo, a lista é lida de novo. A primeira conexão não
+  // conta — a carga inicial já cuida dela.
+  useEffect(() => {
+    const socket = connectSocket()
+    const aoReconectar = () => { if (initialLoadDone.current) void fetchConversations() }
+    socket.on('connect', aoReconectar)
+    let escondidaDesde: number | null = null
+    const aoMudarVisibilidade = () => {
+      if (document.hidden) { escondidaDesde = Date.now(); return }
+      if (escondidaDesde !== null && Date.now() - escondidaDesde > VOLTA_DA_ABA_MS && initialLoadDone.current) {
+        void fetchConversations()
+      }
+      escondidaDesde = null
+    }
+    document.addEventListener('visibilitychange', aoMudarVisibilidade)
+    return () => {
+      socket.off('connect', aoReconectar)
+      document.removeEventListener('visibilitychange', aoMudarVisibilidade)
+    }
+  }, [fetchConversations])
+
   return {
     conversations,
+    filaIncompleta,
     loading,
     loadingMore,
     hasMore,
@@ -465,6 +561,8 @@ export function useConversations(filters: ConversationFilters = {}) {
     refetch: fetchConversations,
     refetchCounts,
     handleNewMessage,
+    handleAssigned,
+    handleResolved,
     handleAiPauseUpdated,
     handleStatusUpdated,
     markAsRead,

@@ -36,7 +36,7 @@ export function AutomationRunsMock({ runs }: AutomationRunsMockProps) {
         return (
           <div
             key={run.id}
-            className="flex items-center gap-3 rounded-xl border border-surface-700 bg-surface-800 px-4 py-3"
+            className="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 px-4 py-3"
           >
             <div className="w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
               <Workflow className="w-4 h-4 text-surface-400" />
@@ -49,7 +49,7 @@ export function AutomationRunsMock({ runs }: AutomationRunsMockProps) {
               </p>
             </div>
             <span
-              className="color-chip inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium flex-shrink-0"
+              className="color-chip-soft inline-flex items-center gap-1 h-5 rounded-[5px] border px-[7px] text-[11px] font-semibold flex-shrink-0"
               style={{ ['--chip']: meta.chip } as React.CSSProperties}
             >
               <meta.Icon className={cn('w-3 h-3', run.status === 'running' && 'animate-spin')} />

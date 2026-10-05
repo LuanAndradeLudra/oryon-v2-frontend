@@ -33,7 +33,7 @@ vi.mock('@/contexts/CRMConfigContext', () => ({
   }),
 }))
 
-import { DealsSummaryChips } from './ContactRow'
+import { DealsSummaryChips } from './DealsSummaryChips'
 import type { Contact, Deal } from '@/types'
 
 const contact = (byPipeline: NonNullable<Contact['dealsSummary']>['byPipeline']): Contact => ({

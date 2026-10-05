@@ -1,11 +1,11 @@
 import { isOwnerTier } from '@/lib/roleHelpers'
-import { useParams, useSearchParams, Navigate } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { SettingsLayout, firstVisibleSection, MULTI_PIPELINE_SECTIONS } from '@/components/settings/SettingsLayout'
+import { SettingsLayout, firstVisibleSection, MULTI_PIPELINE_SECTIONS, papelAlcancaSecao } from '@/components/settings/SettingsLayout'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
-import { destinoDeVolta } from '@/lib/voltarPara'
+import { destinoDeVolta, preservarVolta } from '@/lib/voltarPara'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
@@ -37,6 +37,8 @@ import { PipelineRoutingSettings } from '@/components/settings/sections/crm/Pipe
 import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSettings'
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
+import { ConnectorsSettings } from '@/components/settings/sections/ConnectorsSettings'
+import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health', 'whatsapp-profile',
@@ -47,9 +49,13 @@ const VALID_SECTIONS = [
   // não havia NENHUMA forma de configurar campos pela interface. Ganha rota
   // canônica aqui, junto do resto do CRM.
   'custom-fields',
+  // Redesign 2026-09-14 (SCRUM-1071): hub de conectores — instala a
+  // credencial 1x por tenant aqui; qual agente usa é um toggle na aba
+  // Skills de cada agente, não mais um formulário duplicado por agente.
+  'connectors',
 ]
 
-const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
+const OWNER_ONLY_SECTIONS = new Set<string>(['billing', 'connectors'])
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
 // bloquear (usuario pode acessar mas com aviso).
@@ -106,6 +112,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   'custom-fields':  CustomFieldsManager,
   'pipeline-stages': FunnelsSettings,
   'pipeline-routing': PipelineRoutingSettings,
+  connectors:       ConnectorsSettings,
 }
 
 export function SettingsPage() {
@@ -134,7 +141,9 @@ export function SettingsPage() {
   // ficaria em erro. As demais seções mantêm o padrão "acessível por URL".
   const gatedOut = !!section && MULTI_PIPELINE_SECTIONS.has(section) && !multiPipeline
   if (!section || !VALID_SECTIONS.includes(section) || gatedOut) {
-    return <Navigate to={`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`} replace />
+    // Redirecionamentos levam o caminho de volta junto (antes o `voltarPara`
+    // se perdia aqui e a faixa "Voltar para…" sumia).
+    return <NavegarSePresente to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
   }
 
   // Esconder o item do menu nao impede ninguem de digitar /settings/billing —
@@ -142,10 +151,18 @@ export function SettingsPage() {
   // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
   // o comentario do featureFlags.ts cita para campaigns.
   if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
-    return <Navigate to="/settings/account" replace />
+    return <NavegarSePresente to={preservarVolta('/settings/account', searchParams)} replace />
+  }
+  // D12 — Conectores escondidos: a URL direta também fecha.
+  if (section === 'connectors' && !isFeatureVisible('connectorsSelfService')) {
+    return <NavegarSePresente to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
   }
   if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
-    return <Navigate to="/settings/company" replace />
+    return <NavegarSePresente to={preservarVolta('/settings/company', searchParams)} replace />
+  }
+  // Revisão 02/10: seção de administrador aberta por URL/busca fecha para os demais papéis.
+  if (user?.role && !papelAlcancaSecao(section, user.role)) {
+    return <NavegarSePresente to={preservarVolta(`/settings/${firstVisibleSection(user.role, { multiPipeline })}`, searchParams)} replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]
@@ -154,7 +171,7 @@ export function SettingsPage() {
   const blockLabel = HARD_BLOCK_LABELS[section]
 
   return (
-    <SettingsLayout currentRole={user?.role ?? 'admin'} multiPipeline={multiPipeline}>
+    <SettingsLayout currentRole={user?.role ?? 'admin'} multiPipeline={multiPipeline} fullWidth={section === 'connectors'}>
       {/* Faixa de retorno — só aparece para quem chegou de um contexto de
           trabalho (`?voltarPara=`). Quem entrou por Configurações não vê nada:
           ali a tela É o destino, e um "voltar" apontando para lugar nenhum
@@ -182,7 +199,9 @@ export function SettingsPage() {
       {isHardBlocked && blockLabel ? (
         <MobileFeatureGate
           open
-          onClose={() => navigate('/settings/account')}
+          // Fechar o bloqueio devolve a quem trouxe a pessoa (ou à tela anterior),
+          // não a uma seção qualquer.
+          onClose={() => (volta ? navigate(volta.para) : navigate(-1))}
           featureName={blockLabel.name}
           description={blockLabel.description}
         />

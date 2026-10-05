@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import {
-  ChevronDown, Info,
+  ChevronDown, Info, MoreHorizontal, Bot,
   Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
@@ -13,9 +14,12 @@ import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { dealsApi } from '@/services/api'
-import { cn, hexToRgba, getApiErrorMessage } from '@/lib/utils'
+import { cn, hexToRgba, getApiErrorMessage, formatPhoneBR, formatRelativeTime } from '@/lib/utils'
+import { estadoDaIA } from '@/lib/conversationSignals'
+import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
+import { useAuth } from '@/contexts/AuthContext'
+import { PEDIR_RESOLVER_EVENT } from '@/lib/conversationActions'
 import { HandoffChip } from './AiHandoffBanner'
-import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
@@ -42,7 +46,7 @@ interface ChatHeaderProps {
   allTags: TagType[]
   allUsers: User[]
   /** F10 (SCRUM-882): ao resolver com desfecho, `dealOutcome` vai junto (fecha o registro-alvo antes de resolver). */
-  onStatusChange: (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | Promise<void>
+  onStatusChange: (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | boolean | Promise<void | boolean>
   onToggleInfo: () => void
   infoOpen: boolean
   onAddTag: (tag: TagType) => void
@@ -60,6 +64,12 @@ interface ChatHeaderProps {
   onInterveneAi?: () => Promise<void> | void
   /** When provided, shows a mobile-only back button on the left of the header. */
   onBack?: () => void
+  /**
+   * 28/09 — "Assumir" é UMA ação (a mesma da tecla R): atribui a conversa a
+   * quem clicou e pausa a IA (o backend atribui ao pausar); em linha sem IA,
+   * só atribui. Mora na página para botão e atalho não divergirem.
+   */
+  onAssumir?: () => void
 }
 
 export function ChatHeader({
@@ -67,10 +77,10 @@ export function ChatHeader({
   onStatusChange, onToggleInfo, infoOpen,
   onArchive,
   onSetAiPause, onInterveneAi,
-  onBack,
+  onBack, onAssumir,
 }: ChatHeaderProps) {
   const isMobile = useIsMobile()
-  const { contact, status, whatsappNumber, assignedUser, tags = [] } = conversation
+  const { contact, status, tags = [] } = conversation
   // `tags` continua sendo lida — não para desenhar pílulas no cabeçalho, e sim
   // para o marcador do botão de Informações saber que há o que ver lá dentro.
   // F9 (SCRUM-874): "Adicionar ao funil" a partir da conversa — o registro
@@ -87,6 +97,19 @@ export function ChatHeader({
   const salesPipeline = defaultSalesPipeline(pipelines)
   // F10 (SCRUM-880): "Resolvida" com registro-alvo aberto → popover de desfecho
   // (prancheta 5); sem alvo, resolve como sempre.
+  const { user: eu } = useAuth()
+  const linhasDaIA = useLinhasDaIA()
+  const estadoIA = estadoDaIA(conversation, linhasDaIA)
+  const ehMinha = !!eu && conversation.assignedUser?.id === eu.id
+  // Linha sem IA e já minha: não há o que assumir.
+  const podeAssumir = estadoIA !== 'pausada' && !(estadoIA === 'sem-ia' && ehMinha)
+  const assumir = () => {
+    if (onAssumir) { onAssumir(); return }
+    if (onInterveneAi) void onInterveneAi()
+    else void onSetAiPause(new Date(Date.now() + 240 * 60_000).toISOString())
+  }
+  const dicaAssumir = estadoIA === 'sem-ia' ? 'Atribuir a você (R)' : 'Atribui a você e pausa a IA (R)'
+
   const resolve = useResolveWithOutcome({
     conversationId: conversation.id,
     contactId: contact.id,
@@ -113,6 +136,19 @@ export function ChatHeader({
       setViewDealLoading(false)
     }
   }
+
+  // 28/09 — a tecla E pede o desfecho como o botão (antes resolvia direto e
+  // pulava o desfecho do negócio). A página só avisa; quem pergunta é aqui.
+  const requestResolveRef = useRef(resolve.requestResolve)
+  requestResolveRef.current = resolve.requestResolve
+  useEffect(() => {
+    const aoPedir = (e: Event) => {
+      const id = (e as CustomEvent<{ conversationId: string }>).detail?.conversationId
+      if (id === conversation.id) void requestResolveRef.current()
+    }
+    window.addEventListener(PEDIR_RESOLVER_EVENT, aoPedir)
+    return () => window.removeEventListener(PEDIR_RESOLVER_EVENT, aoPedir)
+  }, [conversation.id])
 
   const [archiveOpen,  setArchiveOpen]  = useState(false)
   const [statusOpen,   setStatusOpen]   = useState(false)
@@ -142,11 +178,28 @@ export function ChatHeader({
         onClose={() => setArchiveOpen(false)}
         onConfirm={() => { onArchive(); setArchiveOpen(false) }}
         title="Arquivar conversa"
-        description={`Tem certeza que deseja arquivar a conversa com ${contact.displayName}? Ela ficará como "Abandonada".`}
+        impact={{ label: `A conversa com ${contact.displayName} ficará como "Abandonada"`, tone: 'warning' }}
+        description="Tem certeza que deseja arquivar esta conversa?"
         confirmLabel="Arquivar"
         danger
       />
     </>
+  )
+
+  const resolvePopover = (
+    <ResolveOutcomePopover
+      open={!!resolve.target || !!resolve.candidates}
+      mobile={isMobile}
+      target={resolve.target}
+      candidates={resolve.candidates}
+      onPickCandidate={(id) => void resolve.pickCandidate(id)}
+      contactName={contact.displayName || contact.waId}
+      currentAmountCents={resolve.currentAmountCents}
+      hasLineItems={resolve.hasLineItems}
+      busy={resolve.busy}
+      onConfirm={resolve.confirm}
+      onCancel={resolve.close}
+    />
   )
 
   // Status dropdown — usado em ambos os layouts (mobile e desktop)
@@ -178,7 +231,7 @@ export function ChatHeader({
         <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setStatusOpen(false)} />
       )}
       {statusOpen && (
-        <div className="absolute right-0 top-full mt-1 min-w-[11rem] py-1 overlay-surface border rounded-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 min-w-[11rem] py-1 overlay-surface overlay-vidro border rounded-xl z-50 overflow-hidden">
           {STATUS_OPTIONS.map(({ value: v, label }) => {
             const active = status === v
             const statusBg = v === 'open'
@@ -226,19 +279,7 @@ export function ChatHeader({
           })}
         </div>
       )}
-      <ResolveOutcomePopover
-        open={!!resolve.target || !!resolve.candidates}
-        mobile={isMobile}
-        target={resolve.target}
-        candidates={resolve.candidates}
-        onPickCandidate={(id) => void resolve.pickCandidate(id)}
-        contactName={contact.displayName || contact.waId}
-        currentAmountCents={resolve.currentAmountCents}
-        hasLineItems={resolve.hasLineItems}
-        busy={resolve.busy}
-        onConfirm={resolve.confirm}
-        onCancel={resolve.close}
-      />
+      {resolvePopover}
     </div>
   )
 
@@ -248,24 +289,24 @@ export function ChatHeader({
     const extraTags = tags.length - visibleTags.length
 
     return (
-      <div className="conv-surface flex items-center px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-surface-800 bg-surface-950 flex-shrink-0 gap-2">
+      <div className="@container conv-surface flex items-center px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-surface-700 bg-surface-950 flex-shrink-0 gap-2">
         {/* Back */}
         {onBack && (
           <button
             type="button"
             onClick={onBack}
             aria-label="Voltar para conversas"
-            className="-ml-1 w-9 h-9 flex items-center justify-center rounded-lg text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors flex-shrink-0"
+            className="-ml-1 w-9 h-9 flex items-center justify-center rounded-lg text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors flex-shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         )}
 
-        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
+        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="30" />
 
         {/* Stack: nome / telefone / tags */}
         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-          <p className="text-sm font-semibold text-surface-50 truncate">
+          <p className="text-[13.5px] font-bold text-surface-50 truncate">
             {contact.displayName}
           </p>
           {/* Só identidade. Negócios e etiquetas saíram daqui (09/09): são
@@ -280,13 +321,26 @@ export function ChatHeader({
           {/* Handoff chip — wraps below the phone/tags row so the right-side
               buttons (status / more) stay reachable even on narrow phones. */}
           <div className="mt-1">
-            <HandoffChip
-              aiPausedUntil={conversation.aiPausedUntil}
-              assignedUser={conversation.assignedUser}
-              onPause={(until) => onSetAiPause(until)}
-              onResume={() => onSetAiPause(null)}
-              onIntervene={onInterveneAi}
-            />
+            {estadoIA === 'pausada' ? (
+              <HandoffChip
+                aiPausedUntil={conversation.aiPausedUntil}
+                assignedUser={conversation.assignedUser}
+                onPause={(until) => onSetAiPause(until)}
+                onResume={() => onSetAiPause(null)}
+                onIntervene={onInterveneAi}
+              />
+            ) : (
+              // Antes: um robô só de ícone que assumia no primeiro toque, sem
+              // dizer o que fazia (no celular não há tooltip).
+              <div className="flex items-center gap-1.5">
+                <EstadoDaIAChip estado={estadoIA} celular />
+                {podeAssumir && (
+                  <Button size="sm" variant={estadoIA === 'atendendo' ? 'neutral' : 'primary'} onClick={assumir}>
+                    Assumir
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -305,7 +359,7 @@ export function ChatHeader({
                 aria-label="Mais ações"
                 className={cn(
                   'w-9 h-9 flex items-center justify-center rounded-lg transition-all',
-                  moreOpen ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200',
+                  moreOpen ? 'bg-surface-900 text-surface-100' : 'text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-200',
                 )}
               >
                 <MoreVertical className="w-5 h-5" />
@@ -362,28 +416,60 @@ export function ChatHeader({
     )
   }
 
+  // Controle da conversa (desktop). IA no controle → chip âmbar + "Assumir"
+  // (mesma ação do antigo ícone: intervenção do servidor, com fallback de 4 h).
+  // IA pausada → o HandoffChip existente (quem assumiu, reativar, estender).
+  const aiControls = estadoIA === 'pausada' ? (
+    <HandoffChip
+      aiPausedUntil={conversation.aiPausedUntil}
+      assignedUser={conversation.assignedUser}
+      onPause={(until) => onSetAiPause(until)}
+      onResume={() => onSetAiPause(null)}
+      onIntervene={onInterveneAi}
+    />
+  ) : (
+    <>
+      <EstadoDaIAChip estado={estadoIA} />
+      {/* PL-3-1 (P5): o tooltip do próprio botão ensina o atalho. 28/09: o
+          atalho agora faz o MESMO que o botão. */}
+      {podeAssumir && (
+        <Tooltip content={dicaAssumir} side="bottom">
+          <Button size="sm" variant={estadoIA === 'atendendo' ? 'neutral' : 'primary'} onClick={assumir}>
+            Assumir
+          </Button>
+        </Tooltip>
+      )}
+    </>
+  )
+
   // ─── Desktop layout (original) ──────────────────────────────────────────
   return (
-    <div className="conv-surface flex items-center justify-between px-4 py-3 border-b border-surface-800 bg-surface-950 flex-shrink-0 gap-3">
+    <div className="@container conv-surface h-[52px] flex items-center justify-between px-3 @[420px]:px-4 border-b border-surface-700 bg-surface-800 flex-shrink-0 gap-2.5">
 
       {/* ── Left: contact info ────────────────────────────────── */}
-      <div className="flex items-center gap-3 min-w-0">
-        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
+      {/* 28/09: largura mínima — com o grupo de ações sem encolher, o nome
+          ia a zero em telas médias e o cabeçalho mostrava só o avatar. */}
+      <div className="flex items-center gap-2.5 min-w-[88px] flex-1">
+        {/* Cabeçalho estreito (painel do contato aberto): o avatar sai — a foto
+            já está no painel ao lado — e o espaço fica para nome e ações. */}
+        <span className="hidden @[420px]:block flex-shrink-0">
+          <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="30" />
+        </span>
         <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-sm font-semibold text-surface-50 truncate">{contact.displayName}</h2>
+          <div className="flex items-center gap-2 leading-tight">
+            <h2 className="text-[13.5px] font-bold text-surface-100 truncate">{contact.displayName}</h2>
+            {/* Chip de situação saiu do cabeçalho do chat (PO, 23/09): a
+                situação mora no ContactPanel ao lado; aqui é só identidade. */}
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <WhatsAppIcon size={12} />
-            <span className="text-xs text-surface-400 truncate">{contact.waId}</span>
-            <span className="text-surface-600 text-xs">·</span>
-            <span className="text-xs text-surface-500 truncate">{whatsappNumber.displayPhoneNumber}</span>
-            {assignedUser && (
+          {/* R2-1D-HDR: "telefone formatado · visto por último há N" (mock).
+              O número da LINHA saiu (já é o ConnectedLineChip da TopBar) e o
+              responsável mora em DADOS do painel. */}
+          <div className="flex items-center gap-1.5 mt-0.5 text-[11.5px] leading-tight text-surface-400">
+            <span className="truncate">{formatPhoneBR(contact.waId)}</span>
+            {contact.lastSeenAt && (
               <>
-                <span className="text-surface-600 text-xs">·</span>
-                <span className="text-xs text-surface-300 truncate">
-                  {assignedUser.firstName} {assignedUser.lastName}
-                </span>
+                <span aria-hidden>·</span>
+                <span className="truncate">visto por último {formatRelativeTime(contact.lastSeenAt)}</span>
               </>
             )}
           </div>
@@ -391,7 +477,7 @@ export function ChatHeader({
       </div>
 
       {/* ── Right: actions ────────────────────────────────────── */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1.5 @[420px]:gap-2 flex-shrink-0">
         {/* "Novo negócio" NÃO mora mais aqui. A A3 (SCRUM-925) o trouxe para o
             cabeçalho quando criar negócio só existia escondido dentro do menu
             de funis; desde então o painel da direita ganhou a mesma ação, com
@@ -399,15 +485,6 @@ export function ChatHeader({
             sentido. Dois botões idênticos na mesma tela é ruído, não atalho.
             Continua a um clique em: painel do contato (à direita) e
             "Adicionar ao funil ▾" (aqui ao lado). */}
-        {!isMobile && (
-          <AddToPipelineMenu
-            contactId={contact.id}
-            contactName={contact.displayName || contact.waId}
-            size="sm"
-            onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline, conversationId: conversation.id })}
-            onOpenDetailed={() => addToPipeline.requestAddDetailed({ contactId: contact.id, contactName: contact.displayName || contact.waId, conversationId: conversation.id })}
-          />
-        )}
         {addToPipeline.dialogs}
 
         {/* Ordem do grupo de ações: o status vem antes do HandoffChip
@@ -417,16 +494,84 @@ export function ChatHeader({
             o dropdown já faz. Resolver volta a ser a opção "Resolvidas"
             daqui, que continua chamando `resolve.requestResolve` e abrindo o
             popover de desfecho quando a conversa tem negócio vinculado. */}
-        {statusDropdown}
+        {/* R2-1D-HDR (RODADA-2.md): controle → Assumir → Resolver → ··· como
+            no mock. Nada saiu: status (Aberta/Pendente/Resolvida) e Arquivar
+            foram pro menu ···; com a IA pausada o HandoffChip segue sendo o
+            controle (reativar/estender). */}
+        {aiControls}
 
-        <span className="w-px h-5 bg-surface-800" />
-        <HandoffChip
-          aiPausedUntil={conversation.aiPausedUntil}
-          assignedUser={conversation.assignedUser}
-          onPause={(until) => onSetAiPause(until)}
-          onResume={() => onSetAiPause(null)}
-          onIntervene={onInterveneAi}
-        />
+        {status !== 'resolved' && (
+          <div className="relative">
+            <Tooltip content="Resolver (E resolve e vai para a próxima)" side="bottom">
+              <Button size="sm" variant="neutral" disabled={resolve.loading} onClick={() => void resolve.requestResolve()}>
+                Resolver
+              </Button>
+            </Tooltip>
+            {resolvePopover}
+          </div>
+        )}
+
+        <Dropdown
+          open={moreOpen}
+          onClose={() => setMoreOpen(false)}
+          align="right"
+          className="w-52"
+          anchor={
+            <button
+              type="button"
+              onClick={() => { setStatusOpen(false); setMoreOpen((v) => !v) }}
+              aria-label="Mais ações"
+              className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+            >
+              <MoreHorizontal className="w-[15px] h-[15px]" />
+            </button>
+          }
+        >
+          <div className="px-1 py-1 flex flex-col gap-0.5">
+            {/* PO, 23/09: cada status carrega a própria cor (azul aberta,
+                âmbar pendente, verde resolvida) — ponto de 6px sempre; a
+                TINTA translúcida (12–18 %) só no status ativo e no hover do
+                próprio item, para o menu não virar um semáforo. */}
+            {STATUS_OPTIONS.map(({ value: v, label }) => {
+              const tone = v === 'open'
+                ? { dot: 'bg-status-open', text: 'text-status-open', tint: 'bg-status-open/[.16] hover:bg-status-open/[.22]', hover: 'hover:bg-status-open/[.10]' }
+                : v === 'pending'
+                  ? { dot: 'bg-cstatus-pending', text: 'text-cstatus-pending', tint: 'bg-cstatus-pending/[.16] hover:bg-cstatus-pending/[.22]', hover: 'hover:bg-cstatus-pending/[.10]' }
+                  : { dot: 'bg-cstatus-resolved', text: 'text-cstatus-resolved', tint: 'bg-cstatus-resolved/[.16] hover:bg-cstatus-resolved/[.22]', hover: 'hover:bg-cstatus-resolved/[.10]' }
+              const isActive = status === v
+              return (
+                <DropdownItem
+                  key={v}
+                  active={isActive}
+                  className={isActive ? cn(tone.tint, tone.text, 'font-medium') : tone.hover}
+                  onClick={() => {
+                    setMoreOpen(false)
+                    if (isActive) return
+                    if (v === 'resolved') void resolve.requestResolve()
+                    else void onStatusChange(v)
+                  }}
+                >
+                  <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', tone.dot)} aria-hidden />
+                  {label}
+                </DropdownItem>
+              )
+            })}
+            {/* "Adicionar ao funil" saiu do cabeçalho (o mock não o tem; o painel
+                do contato já tem "Novo negócio"). Nada se perde: aqui abre o
+                mesmo fluxo com detalhes, que deixa escolher o funil. */}
+            <DropdownItem
+              onClick={() => {
+                setMoreOpen(false)
+                addToPipeline.requestAddDetailed({ contactId: contact.id, contactName: contact.displayName || contact.waId, conversationId: conversation.id })
+              }}
+            >
+              <Handshake className="w-3.5 h-3.5" /> Adicionar ao funil…
+            </DropdownItem>
+            <DropdownItem danger onClick={() => { setMoreOpen(false); setArchiveOpen(true) }}>
+              <Archive className="w-3.5 h-3.5" /> Arquivar conversa
+            </DropdownItem>
+          </div>
+        </Dropdown>
 
         <Tooltip content="Informações do contato" side="bottom">
           <button
@@ -434,33 +579,70 @@ export function ChatHeader({
             aria-label="Informações do contato"
             aria-expanded={infoOpen}
             className={cn(
-              'ml-1 w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-              infoOpen ? 'bg-surface-700 text-surface-200' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
+              'w-7 h-7 rounded-sm flex items-center justify-center transition-all',
+              infoOpen ? 'bg-surface-900 text-surface-200' : 'text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-200'
             )}
           >
             <div className="relative">
               <Info className="w-4 h-4" />
-              {/* Com as etiquetas fora do cabeçalho, o marcador é o que avisa
-                  que há algo do contato para ver — o painel nasce fechado. */}
               {(contact.metaAdsReferral || contact.googleAdsAttribution || tags.length > 0) && !infoOpen && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-surface-400 border border-surface-900" />
               )}
             </div>
           </button>
         </Tooltip>
-
-        <Tooltip content="Arquivar conversa" side="bottom">
-          <button
-            onClick={() => setArchiveOpen(true)}
-            aria-label="Arquivar conversa"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 hover:bg-danger/10 hover:text-danger transition-all"
-          >
-            <Archive className="w-4 h-4" />
-          </button>
-        </Tooltip>
       </div>
 
       {sharedOverlays}
     </div>
+  )
+}
+
+/**
+ * Quem está respondendo agora, em palavras (28/09). Antes era sempre "Agente
+ * IA no controle" — inclusive em linha sem agente e em conversa que a IA já
+ * tinha passado para a equipe.
+ */
+function EstadoDaIAChip({ estado, celular = false }: { estado: 'atendendo' | 'passou' | 'sem-ia' | 'pausada'; celular?: boolean }) {
+  // No celular o chip mora numa linha própria, embaixo do nome: texto curto
+  // sempre. No desktop ele divide o cabeçalho com as ações: encolhe pela
+  // largura do PRÓPRIO cabeçalho (@container), até só o ícone.
+  const curto = (texto: string) => celular ? <span>{texto}</span> : null
+  if (estado === 'passou') {
+    return (
+      <span
+        className="inline-flex items-center gap-1 h-7 px-2 rounded-sm text-xs font-semibold text-status-pending bg-status-pending-bg whitespace-nowrap"
+        title="A IA passou a conversa para a equipe e ninguém assumiu ainda"
+      >
+        <Bot className="w-3.5 h-3.5" />
+        {curto('IA passou') ?? (
+          <>
+            <span className="hidden @[680px]:inline">IA passou para a equipe</span>
+            <span className="hidden @[520px]:inline @[680px]:hidden">IA passou</span>
+          </>
+        )}
+      </span>
+    )
+  }
+  if (estado === 'sem-ia') {
+    return (
+      <span
+        className="inline-flex items-center h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 bg-[var(--sf2)] whitespace-nowrap"
+        title="Esta linha de WhatsApp não tem agente de IA ligado"
+      >
+        {curto('Sem IA') ?? (
+          <>
+            <span className="hidden @[520px]:inline">Linha sem IA</span>
+            <span className="@[520px]:hidden">Sem IA</span>
+          </>
+        )}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 h-7 px-2 rounded-sm text-xs font-semibold text-accent-amber bg-accent-amber/[.12] whitespace-nowrap" title="A IA está respondendo nesta conversa">
+      <Bot className="w-3.5 h-3.5" />
+      {curto('IA atendendo') ?? <span className="hidden @[520px]:inline">IA atendendo</span>}
+    </span>
   )
 }

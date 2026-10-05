@@ -2,7 +2,7 @@
 // `false` = oculto da sidebar/busca/atalhos. Rotas, código e backend permanecem
 // intactos — a página continua acessível digitando a URL diretamente, salvo
 // guardas explícitas na página (ex.: campaigns).
-export const FEATURE_FLAGS = {
+const FLAGS_BASE = {
   home: true,
   dashboard: true,
   conversations: true,
@@ -57,6 +57,12 @@ export const FEATURE_FLAGS = {
   // acontece e o layout colapsa naturalmente. Reativar = trocar para true.
   // Mesmo padrão reativável do crmAiInsights / aiContextCard.
   dashboardAiInsights: false,
+  // Card "Insights da Oryon AI" na Home — chamava generateInsights() (Haiku no
+  // agent-server) a cada abertura da Home e a cada "Atualizar". Desligado a
+  // pedido do PO (29/09): o texto saía em tom de ordem e o custo não se pagava.
+  // Quando false: o card não é montado, então NENHUMA chamada de API acontece.
+  // Reativar = trocar para true (rever antes a instrução em insights.ts, SCRUM-1161 H6).
+  homeAiInsights: false,
   // Painel "Análise de Conversão IA" no sidebar de contato dentro de uma
   // conversa (botão "Analisar conversa com IA" + telas de resultado).
   // Quando false, o painel inteiro fica oculto — análises já feitas também
@@ -91,38 +97,47 @@ export const FEATURE_FLAGS = {
   //
   // Reativar = trocar para `true`. Uma linha.
   processPipelines: false,
+  // Conectores self-service (SCRUM-1071). D12 (release 2026-09-29): o código
+  // entra na release escondido — some o item de Configurações, a URL direta
+  // volta, a seção "Conectores"/"Servidores MCP" some da aba Skills e o link
+  // de staff sai do menu. O agent-server responde 404 nas mesmas rotas com
+  // FF_CONNECTORS_SELF_SERVICE desligada. Ligar só depois dos itens de
+  // segurança da T6 (segredos cifrados, teto do motor de rascunho, SSRF,
+  // tenantPlan, piloto do Feegow).
+  connectorsSelfService: false,
+  // D8 (release 2026-09-29) — abas do relatório de campanha sem fonte de
+  // dados (Conversões, Churn, Atribuição, Conversas por campanha, linha do
+  // tempo de engajamento e a análise da IA sobre esses números). O backend
+  // não calcula nada disso: com a flag desligada as abas somem em vez de
+  // mostrar zero. Religar só quando existir fonte.
+  campaignReportLegacyTabs: false,
 } as const
 
-export type FeatureFlag = keyof typeof FEATURE_FLAGS
+/**
+ * Teste local de ponta a ponta (PO 01/10): `VITE_FLAGS_TODAS=true` no
+ * `.env.local` liga TODAS as flags de tela acima — mas só no servidor de
+ * desenvolvimento (`import.meta.env.DEV`). Em build (homologação/produção) a
+ * variável é ignorada e valem os valores de `FLAGS_BASE`.
+ */
+// Nos testes (Vitest roda em modo dev) a chave é ignorada: o resultado não pode
+// depender do .env.local de quem roda a suíte.
+const FLAGS_TODAS = import.meta.env.DEV && import.meta.env.MODE !== 'test' && import.meta.env.VITE_FLAGS_TODAS === 'true'
+
+export const FEATURE_FLAGS: Record<keyof typeof FLAGS_BASE, boolean> = FLAGS_TODAS
+  ? (Object.fromEntries(Object.keys(FLAGS_BASE).map((k) => [k, true])) as Record<keyof typeof FLAGS_BASE, boolean>)
+  : FLAGS_BASE
+
+export type FeatureFlag = keyof typeof FLAGS_BASE
 
 /**
- * E-mails com acesso antecipado a features com `FEATURE_FLAGS[flag] === false`.
- * Comparação case-insensitive após trim.
+ * Revisão 02/10: a lista de e-mails de beta testers saía no pacote que a
+ * landing baixa (dado pessoal exposto) e não liberava nada (nenhuma flag
+ * estava sob ela). Acesso antecipado, quando voltar, é flag do TENANT no
+ * backend — nunca lista no frontend. `userEmail` fica na assinatura para não
+ * mexer nos chamadores.
  */
-export const BETA_TESTER_EMAILS: readonly string[] = [
-  'luanandradeti100@gmail.com',
-  'luanandradeti10@gmail.com',
-  'joaolucasrdugin@gmail.com'
-]
-
-/** Flags desligadas globalmente que beta testers podem ver. */
-const BETA_GATED_FLAGS = new Set<FeatureFlag>()
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase()
-}
-
-export function isBetaTester(userEmail?: string | null): boolean {
-  if (!userEmail?.trim()) return false
-  const normalized = normalizeEmail(userEmail)
-  return BETA_TESTER_EMAILS.some((e) => normalizeEmail(e) === normalized)
-}
-
-export const isFeatureVisible = (flag: FeatureFlag, userEmail?: string | null): boolean => {
-  const base = FEATURE_FLAGS[flag]
-  if (!base && BETA_GATED_FLAGS.has(flag) && isBetaTester(userEmail)) return true
-  return base
-}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const isFeatureVisible = (flag: FeatureFlag, _userEmail?: string | null): boolean => FEATURE_FLAGS[flag]
 
 // Order matters: more specific prefixes (e.g. /settings/billing) must come
 // before broader ones (/settings) — first match wins.
@@ -140,6 +155,9 @@ const ROUTE_FLAGS: Array<[string, FeatureFlag]> = [
   ['/settings/ad-accounts', 'settingsAdAccounts'],
   ['/settings/vertical', 'settingsVertical'],
   ['/settings/billing', 'settingsBilling'],
+  ['/settings/connectors', 'connectorsSelfService'],
+  ['/admin/connectors', 'connectorsSelfService'],
+  ['/admin/connector-requests', 'connectorsSelfService'],
   ['/settings', 'settings'],
 ]
 

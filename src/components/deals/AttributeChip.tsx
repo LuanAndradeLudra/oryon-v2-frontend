@@ -118,7 +118,7 @@ export function AttributeChip({
  */
 function ChipHeader({ label, hint }: { label: string; hint?: string }) {
   return (
-    <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-800">
+    <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-700">
       <p className="text-xs font-semibold text-surface-200">{label}</p>
       {hint && <p className="mt-0.5 text-[11px] leading-snug text-surface-500">{hint}</p>}
     </div>
@@ -147,8 +147,14 @@ export function ChipOption({
       className={cn(
         'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm',
         'min-h-11 sm:min-h-9 transition-colors cursor-pointer',
-        'focus-visible:outline-none focus-visible:bg-surface-800',
-        selected ? 'bg-surface-800 text-surface-50' : 'text-surface-200 hover:bg-surface-800',
+        // Eixo 10: o painel do Dropdown usa overlay-surface, que em tema claro
+        // e' branco (#FFFFFF) — igual ao surface-800 usado no hover/focus,
+        // tornando o item invisivel ao passar o mouse. --rowhover funciona
+        // sobre qualquer fundo (mesma receita do DropdownItem em ui/Dropdown.tsx)
+        // — inclusive o vidro dos menus (01/10), por isso a escolhida também
+        // usa --rowhover, com o visto teal marcando a escolha.
+        'focus-visible:outline-none focus-visible:bg-[var(--rowhover)]',
+        selected ? 'bg-[var(--rowhover)] text-surface-50' : 'text-surface-200 hover:bg-[var(--rowhover)]',
       )}
     >
       <span className="truncate">{children}</span>

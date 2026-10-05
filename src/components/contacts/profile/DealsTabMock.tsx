@@ -3,6 +3,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { MockBadge } from './MockBadge'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import type { Deal, DealStatus } from '@/types/contactProfile'
+import { previsaoCurta } from '@/lib/previsaoDeFechamento'
 
 interface DealsTabMockProps {
   deals: Deal[]
@@ -39,7 +40,7 @@ export function DealsTabMock({ deals }: DealsTabMockProps) {
       {deals.map((deal) => (
         <div
           key={deal.id}
-          className="flex items-center gap-3 rounded-xl border border-surface-700 bg-surface-800 px-4 py-3"
+          className="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 px-4 py-3"
         >
           <div className="w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
             <TrendingUp className="w-4 h-4 text-surface-400" />
@@ -49,7 +50,7 @@ export function DealsTabMock({ deals }: DealsTabMockProps) {
             <p className="text-xs text-surface-500 mt-0.5">
               {deal.stageLabel}
               {deal.expectedCloseAt && deal.status === 'open'
-                ? ` · previsão ${new Date(deal.expectedCloseAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+                ? ` · previsão ${previsaoCurta(deal.expectedCloseAt)}`
                 : ''}
             </p>
           </div>
@@ -57,7 +58,7 @@ export function DealsTabMock({ deals }: DealsTabMockProps) {
             {money(deal.value, deal.currency)}
           </span>
           <span
-            className="color-chip inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium flex-shrink-0"
+            className="color-chip-soft inline-flex items-center h-5 rounded-[5px] border px-[7px] text-[11px] font-semibold flex-shrink-0"
             style={{ ['--chip']: STATUS_CHIP[deal.status].chip } as React.CSSProperties}
           >
             {STATUS_CHIP[deal.status].label}

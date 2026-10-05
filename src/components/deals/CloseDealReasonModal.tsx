@@ -107,8 +107,8 @@ export function CloseDealReasonModal({ open, onClose, deal, stage, pipeline, onC
   }
 
   const terminalLabel = stage?.label ?? (outcome === 'won' ? labels.won : labels.lost)
-  const title = `${terminalLabel} — motivo`
-  const canConfirm = !!fields.picked || (!!pipeline?.allowFreeCloseReason && fields.free.trim().length > 0)
+  // README 3.4: título "Mover para Perdido" (era "<etapa> — motivo").
+  const title = `Mover para ${terminalLabel}`
 
   return (
     <Modal
@@ -118,16 +118,18 @@ export function CloseDealReasonModal({ open, onClose, deal, stage, pipeline, onC
       className="max-w-md"
       footer={
         <div className="flex justify-end gap-2 w-full">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button type="button" variant="neutral" onClick={onClose}>Cancelar</Button>
           <Button
             type="button"
             variant={outcome === 'lost' ? 'danger' : 'primary'}
             onClick={handleConfirm}
             loading={saving}
-            disabled={saving || !canConfirm}
+            // Decisão do PO (27/09, D6): o botão nunca nasce cinza sem
+            // explicação — tentar sem motivo mostra o erro no campo.
+            disabled={saving}
             data-testid="close-deal-confirm"
           >
-            {outcome === 'won' ? `Marcar como ${labels.won}` : `Marcar como ${labels.lost}`}
+            Mover para {terminalLabel}
           </Button>
         </div>
       }

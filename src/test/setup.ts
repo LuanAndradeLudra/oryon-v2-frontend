@@ -2,6 +2,7 @@
 /// <reference types="vitest/globals" />
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+import { fireEvent } from '@testing-library/react'
 
 // ── Mock import.meta.env ─────────────────────────────────────────────────────
 // Vitest handles import.meta.env natively; seed defaults here if needed.
@@ -72,3 +73,17 @@ vi.mock('socket.io-client', () => {
     default: vi.fn(() => socket),
   }
 })
+
+// ── fireEvent.change num select de vidro falha alto ─────────────────────────
+// O SelectMenu do DS (01/10) é um <button role="combobox">: fireEvent.change
+// nele não chama onChange, e o teste seguiria verde SEM trocar o valor (achado
+// na migração: um teste de Agentes passava sem a troca acontecer). Escolha com
+// escolherOpcao (src/test/escolherOpcao.ts), que serve ao <select> nativo e ao
+// SelectMenu.
+const changeOriginal = fireEvent.change
+fireEvent.change = ((elemento: Document | Node | Element | Window, init?: object) => {
+  if (elemento instanceof HTMLButtonElement && elemento.getAttribute('role') === 'combobox') {
+    throw new Error('fireEvent.change num SelectMenu não troca o valor: use escolherOpcao(campo, valor) de src/test/escolherOpcao.ts')
+  }
+  return changeOriginal(elemento, init)
+}) as typeof fireEvent.change

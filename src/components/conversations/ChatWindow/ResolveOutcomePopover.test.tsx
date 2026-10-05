@@ -6,6 +6,7 @@
 // manual, sem itens) ou somente leitura com "ajustar itens" (modo items).
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { escolherOpcao } from '@/test/escolherOpcao'
 
 const { openDeal } = vi.hoisted(() => ({ openDeal: vi.fn() }))
 vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
@@ -79,7 +80,7 @@ describe('ResolveOutcomePanel (F10)', () => {
     fireEvent.click(screen.getByTestId('resolve-confirm'))
     expect(screen.getByText('Escolha um motivo.')).toBeInTheDocument()
     expect(onConfirm).not.toHaveBeenCalled()
-    fireEvent.change(screen.getByTestId('resolve-reason-select'), { target: { value: 'preco' } })
+    escolherOpcao(screen.getByTestId('resolve-reason-select'), 'preco')
     fireEvent.click(screen.getByTestId('resolve-confirm'))
     await waitFor(() => expect(onConfirm).toHaveBeenCalledWith({ dealOutcome: { outcome: 'lost', reason: 'preco', note: undefined } }))
   })

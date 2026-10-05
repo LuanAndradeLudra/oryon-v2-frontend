@@ -94,7 +94,7 @@ export function MoveStageModal({
                     'flex flex-col overflow-hidden',
                     isCurrent
                       ? 'border-surface-600 cursor-default'
-                      : 'border-surface-700 hover:border-surface-500 hover:bg-surface-800 cursor-pointer',
+                      : 'border-surface-700 hover:border-surface-500 hover:bg-[var(--rowhover)] cursor-pointer',
                     pendingKey && !isPending && 'opacity-50',
                   )}
                   style={

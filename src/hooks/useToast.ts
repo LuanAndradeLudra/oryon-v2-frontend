@@ -47,11 +47,16 @@ export function showToast(message: string, type: ToastType = 'success', action?:
   const id = genToastId()
   _toasts = [..._toasts, { id, type, message, ...(action ? { action } : {}) }]
   emit()
-  // Toast com ação fica um pouco mais para dar tempo de clicar.
-  setTimeout(() => {
-    _toasts = _toasts.filter((t) => t.id !== id)
-    emit()
-  }, durationMs ?? (action ? 6000 : 3500))
+  // Toast com ação fica um pouco mais para dar tempo de clicar. Erro dura
+  // mais (leitura) e erro COM ação não fecha sozinho — o usuário decide
+  // (auditoria a11y, 23/09: 125 chamadas de erro sumiam em 3,5 s).
+  const ttl = durationMs ?? (type === 'error' ? (action ? null : 6000) : (action ? 6000 : 3500))
+  if (ttl !== null) {
+    setTimeout(() => {
+      _toasts = _toasts.filter((t) => t.id !== id)
+      emit()
+    }, ttl)
+  }
   return id
 }
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { UserPlus, MoreHorizontal, CheckCircle2, XCircle, Clock, Pencil, Users } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { appLogger } from '@/services/appLogger'
-import { isAdminTier } from '@/lib/roleHelpers'
+import { isAdminTier, isOwnerTier } from '@/lib/roleHelpers'
 import { SectionHeader } from '../SectionHeader'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -15,7 +15,7 @@ import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { CreateUserDrawer } from '../drawers/CreateUserDrawer'
 import { useToast } from '@/hooks/useToast'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
 import { api } from '@/services/api'
 
@@ -99,7 +99,7 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
       loading={saving}
       error={error}
     >
-      <div className="flex items-center gap-3 py-3 border-b border-surface-800">
+      <div className="flex items-center gap-3 py-3 border-b border-surface-700">
         <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" />
         <div>
           <p className="text-sm font-medium text-surface-100">{user.firstName} {user.lastName}</p>
@@ -131,6 +131,8 @@ export function AgentManagement() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null)
   const [editTarget, setEditTarget] = useState<User | null>(null)
+  const [roleTarget, setRoleTarget] = useState<{ user: User; role: UserRole } | null>(null)
+  const [confirming, setConfirming] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
   useEffect(() => {
@@ -151,6 +153,11 @@ export function AgentManagement() {
   // backend allowlist exactly — keeping both in sync via the helper means
   // any future role addition only needs to be wired in one place.
   const canCreateUsers = isAdminTier(actor?.role)
+  // PATCH/DELETE /users/:id também são só admin+: o supervisor vê a lista,
+  // mas sem o menu de ações (antes todas as opções voltavam 403 em silêncio).
+  const canManageUsers = isAdminTier(actor?.role)
+  // Trocar papel: só o dono (assertCanAssignRole), e nunca o próprio.
+  const canChangeRoles = isOwnerTier(actor?.role)
 
   const handleCreated = (newUser: User) => {
     setUsers((u) => [...u, newUser])
@@ -177,10 +184,21 @@ export function AgentManagement() {
     })
   }
 
-  const handleRoleChange = async (userId: string, role: UserRole) => {
-    const targetUser = users.find((u) => u.id === userId)
-    const oldRole = targetUser?.role
-    await api.patch(`/users/${userId}`, { role })
+  const handleRoleChange = async () => {
+    if (!roleTarget) return
+    const { user: targetUser, role } = roleTarget
+    const userId = targetUser.id
+    const oldRole = targetUser.role
+    setConfirming(true)
+    try {
+      await api.patch(`/users/${userId}`, { role })
+    } catch (e) {
+      toast(getApiErrorMessage(e, 'Não foi possível alterar o papel.'), 'error')
+      return
+    } finally {
+      setConfirming(false)
+    }
+    setRoleTarget(null)
     setUsers((u) => u.map((x) => (x.id === userId ? { ...x, role } : x)))
     toast('Papel atualizado.', 'success')
     appLogger.logUserManagement({
@@ -221,7 +239,19 @@ export function AgentManagement() {
   const handleToggleActive = async () => {
     if (!deactivateTarget) return
     const nextActive = !deactivateTarget.isActive
-    await api.patch(`/users/${deactivateTarget.id}`, { isActive: nextActive })
+    setConfirming(true)
+    try {
+      // Desativar vai pelo DELETE: é ele que revoga as sessões abertas (o
+      // PATCH isActive só trocava a flag e a pessoa seguia logada até o token
+      // vencer). Reativar segue no PATCH.
+      if (nextActive) await api.patch(`/users/${deactivateTarget.id}`, { isActive: true })
+      else await api.delete(`/users/${deactivateTarget.id}`)
+    } catch (e) {
+      toast(getApiErrorMessage(e, `Não foi possível ${nextActive ? 'reativar' : 'desativar'} o usuário.`), 'error')
+      return
+    } finally {
+      setConfirming(false)
+    }
     setUsers((u) => u.map((x) => (x.id === deactivateTarget.id ? { ...x, isActive: nextActive, status: nextActive ? 'active' : 'inactive' } : x)))
     toast(`Usuário ${nextActive ? 'ativado' : 'desativado'} com sucesso.`, 'success')
     appLogger.logUserManagement({
@@ -281,18 +311,18 @@ export function AgentManagement() {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-800/60">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Setor</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Papel</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3" />
+              <tr className="border-b border-surface-700">
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Usuário</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em] hidden lg:table-cell">Setor</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Papel</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Status</th>
+                <th className="px-3 py-2.5 first:pl-0 last:pr-0" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800/60">
+            <tbody className="divide-y divide-surface-700">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-surface-900/60 transition-colors">
-                  <td className="px-5 py-4">
+                <tr key={user.id} className="hover:bg-[var(--rowhover)] transition-colors">
+                  <td className="px-3 py-3 first:pl-0 last:pr-0">
                     <div className="flex items-center gap-3">
                       <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" online={user.isActive && user.status !== 'pending'} />
                       <div>
@@ -301,7 +331,7 @@ export function AgentManagement() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4 hidden lg:table-cell">
+                  <td className="px-3 py-3 first:pl-0 last:pr-0 hidden lg:table-cell">
                     {(() => {
                       const names = user.departmentNames?.length
                         ? user.departmentNames.join(', ')
@@ -309,15 +339,16 @@ export function AgentManagement() {
                       return names ? <p className="text-sm text-surface-300">{names}</p> : <p className="text-sm text-surface-500">—</p>
                     })()}
                   </td>
-                  <td className="px-5 py-4">
-                    <span className={cn('color-chip inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border')} style={{ ['--chip']: ROLE_COLORS[user.role] } as React.CSSProperties}>
+                  <td className="px-3 py-3 first:pl-0 last:pr-0">
+                    <span className={cn('color-chip-soft inline-flex items-center h-5 px-[7px] rounded-[5px] text-[11px] font-bold border')} style={{ ['--chip']: ROLE_COLORS[user.role] } as React.CSSProperties}>
                       {ROLE_LABELS[user.role]}
                     </span>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-3 py-3 first:pl-0 last:pr-0">
                     <StatusBadge user={user} />
                   </td>
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-3 py-3 first:pl-0 last:pr-0 text-right">
+                    {canManageUsers && (
                     <Dropdown
                       open={openDropdown === user.id}
                       onClose={() => setOpenDropdown(null)}
@@ -325,9 +356,10 @@ export function AgentManagement() {
                       anchor={
                         <button
                           onClick={() => setOpenDropdown(openDropdown === user.id ? null : user.id)}
-                          className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
+                          aria-label={`Ações de ${user.firstName} ${user.lastName}`.trim()}
+                          className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
                         >
-                          <MoreHorizontal className="w-4 h-4" />
+                          <MoreHorizontal className="w-3.5 h-3.5" />
                         </button>
                       }
                     >
@@ -339,11 +371,12 @@ export function AgentManagement() {
                           Editar setor
                         </span>
                       </DropdownItem>
-                      {(['agent', 'supervisor', 'admin', 'business_admin'] as UserRole[]).map((role) => (
+                      {canChangeRoles && user.id !== actor?.id && (['agent', 'supervisor', 'admin', 'business_admin'] as UserRole[])
+                        .filter((role) => role !== user.role)
+                        .map((role) => (
                         <DropdownItem
                           key={role}
-                          onClick={() => { handleRoleChange(user.id, role); setOpenDropdown(null) }}
-                          active={user.role === role}
+                          onClick={() => { setRoleTarget({ user, role }); setOpenDropdown(null) }}
                         >
                           Tornar {ROLE_LABELS[role]}
                         </DropdownItem>
@@ -362,13 +395,17 @@ export function AgentManagement() {
                           Reenviar convite
                         </DropdownItem>
                       )}
+                      {/* A própria conta não se desativa (o backend recusa). */}
+                      {user.id !== actor?.id && (
                       <DropdownItem
                         onClick={() => { setDeactivateTarget(user); setOpenDropdown(null) }}
                         danger={user.isActive}
                       >
                         {user.isActive ? 'Desativar usuário' : 'Reativar usuário'}
                       </DropdownItem>
+                      )}
                     </Dropdown>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -401,10 +438,33 @@ export function AgentManagement() {
         open={!!deactivateTarget}
         onClose={() => setDeactivateTarget(null)}
         onConfirm={handleToggleActive}
+        loading={confirming}
         title={deactivateTarget?.isActive ? 'Desativar usuário' : 'Reativar usuário'}
-        description={`Tem certeza que deseja ${deactivateTarget?.isActive ? 'desativar' : 'reativar'} ${deactivateTarget?.firstName}? ${deactivateTarget?.isActive ? 'Ele perderá acesso à plataforma.' : 'Ele voltará a ter acesso normalmente.'}`}
+        impact={deactivateTarget ? {
+          label: `${deactivateTarget.firstName} ${deactivateTarget.lastName}`,
+          tone: deactivateTarget.isActive ? 'warning' : 'neutral',
+        } : undefined}
+        description={deactivateTarget?.isActive ? 'O usuário é desconectado agora e perde o acesso à plataforma. Você pode reativá-lo depois.' : 'O usuário voltará a ter acesso normalmente.'}
         confirmLabel={deactivateTarget?.isActive ? 'Desativar' : 'Reativar'}
         danger={deactivateTarget?.isActive}
+      />
+
+      <ConfirmModal
+        open={!!roleTarget}
+        onClose={() => setRoleTarget(null)}
+        onConfirm={handleRoleChange}
+        loading={confirming}
+        title={roleTarget ? `Tornar ${ROLE_LABELS[roleTarget.role]}` : ''}
+        impact={roleTarget ? {
+          label: `${roleTarget.user.firstName} ${roleTarget.user.lastName}`,
+          tone: roleTarget.role === 'business_admin' ? 'warning' : 'neutral',
+        } : undefined}
+        description={roleTarget
+          ? roleTarget.role === 'business_admin'
+            ? 'O Dono define o papel de qualquer pessoa, inclusive o seu, e acessa a cobrança.'
+            : `O papel passa de ${ROLE_LABELS[roleTarget.user.role]} para ${ROLE_LABELS[roleTarget.role]}.`
+          : ''}
+        confirmLabel="Alterar papel"
       />
     </div>
   )

@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  X, UserCheck, Search, Check, UserX,
-  Tag as TagIcon, ExternalLink, ArrowRightLeft,
-  Milestone, MapPin, Phone,
+  X, Search, Check, UserX,
+  ArrowRightLeft,
+  MapPin, Phone,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
 import { TagPickerContent } from '@/components/ui/TagPicker'
-import { ConfirmModal, Modal } from '@/components/ui/Modal'
-import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
+import { Modal } from '@/components/ui/Modal'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { cn, formatRelativeTime } from '@/lib/utils'
-import { isAiActive } from '@/lib/conversationSignals'
+import { estadoDaIA } from '@/lib/conversationSignals'
+import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
 import { ConversationActivitySection } from './ConversationActivitySection'
 import { ContactPanelDeals } from './ContactPanelDeals'
@@ -20,6 +22,8 @@ import { isFeatureVisible } from '@/config/featureFlags'
 import { MoveStageModal } from '@/components/contacts/MoveStageModal'
 import { StageBadge } from '@/components/contacts/StageBadge'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import type { Conversation, Tag, User } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -49,7 +53,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
       <div className="max-h-64 overflow-y-auto -mx-1">
         {selectedUserId && (
           <button onClick={() => onSelect(null)} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-700 rounded-lg transition-all">
-            <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0"><UserX className="w-4 h-4 text-surface-400" /></div>
+            <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0"><UserX className="w-4 h-4 text-surface-400" /></div>
             <p className="text-sm text-surface-300">Remover atribuição</p>
           </button>
         )}
@@ -73,30 +77,16 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
   )
 }
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="panel-divider px-4 pt-4 pb-3 border-t border-surface-800">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-widest">{title}</p>
-        {action}
-      </div>
-      {children}
-    </div>
-  )
-}
-
 // ─── Informações section ──────────────────────────────────────────────────────
 
 function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[] }) {
   return (
-    <div className="divide-y divide-surface-800/60">
+    <div className="grid grid-cols-[82px_1fr] gap-x-2 gap-y-[5px] text-[12.5px]">
       {rows.map(({ label, value }) => (
-        <div key={label} className="flex items-baseline justify-between gap-2 py-2 first:pt-0 last:pb-0">
-          <span className="text-[11px] text-surface-500 flex-shrink-0">{label}</span>
-          <span className="text-[12px] text-surface-200 text-right">{value}</span>
-        </div>
+        <Fragment key={label}>
+          <span className="text-surface-400">{label}</span>
+          <span className="font-medium text-surface-100 min-w-0">{value}</span>
+        </Fragment>
       ))}
     </div>
   )
@@ -123,47 +113,69 @@ interface ContactPanelProps {
 export function ContactPanel({
   conversation, allTags, allUsers, onClose,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
-  onAssign, onTransfer, onArchive,
+  onAssign, onTransfer,
 }: ContactPanelProps) {
   const { contact, tags = [], assignedUser, createdAt, lastMessageAt } = conversation
 
   const navigate = useNavigate()
-  const { stages } = useCRMConfig()
+  const { stages, pipelines } = useCRMConfig()
+  const addToPipeline = useAddToPipeline()
+  const salesPipeline = defaultSalesPipeline(pipelines)
 
   const [tagOpen,     setTagOpen]     = useState(false)
   const [assignOpen,  setAssignOpen]  = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
-  const [archiveOpen, setArchiveOpen] = useState(false)
   const [stageOpen,   setStageOpen]   = useState(false)
   const [localStage, setLocalStage] = useState<string | undefined | null>(contact.stage)
   useEffect(() => { setLocalStage(contact.stage) }, [contact.id, contact.stage])
 
-  // Build Informações rows
+  // R2-1D-PANEL (RODADA-2.md): ordem e campos do mock — identidade, DADOS
+  // (Situação · Responsável · Origem · E-mail), ETIQUETAS · N, NEGÓCIOS · N,
+  // RESUMO DA IA. O que o mock não lista (datas, IA, localização, empresa,
+  // WhatsApp, timeline) continua acessível em "Mais dados" e na timeline.
   const location = [contact.city, contact.state].filter(Boolean).join(', ')
-  const infoRows: { label: string; value: React.ReactNode }[] = [
+  const subtitle = [contact.company, contact.city].filter(Boolean).join(' · ')
+  const SOURCE_LABEL: Record<string, string> = { meta_ads: 'Meta Ads', whatsapp: 'WhatsApp' }
+  const originLabel = contact.source ? (SOURCE_LABEL[contact.source] ?? contact.source) : 'WhatsApp'
+  const assignedName = assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName ?? ''}`.trim() : null
+
+  const dadosRows: { label: string; value: React.ReactNode }[] = [
     {
-      label: 'Origem',
+      label: 'Situação',
       value: (
-        <span className="flex items-center gap-1 justify-end">
-          <WhatsAppIcon className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-          WhatsApp
+        <span className="flex items-center gap-1.5">
+          {localStage ? <StageBadge stage={localStage} stages={stages} size="xs" /> : <span className="text-surface-500 font-normal">Sem situação</span>}
+          {/* SCRUM-929 (F-FICHA-08): "Mudar situação" é do CONTATO (ciclo de
+              vida), não da etapa do negócio. */}
+          <button onClick={() => setStageOpen(true)} title="Mudar situação" aria-label="Mudar situação"
+            className="text-[11px] font-semibold text-accent-dark hover:underline">
+            Mudar
+          </button>
         </span>
       ),
     },
-    {
-      label: 'Primeiro contato',
-      value: formatAbsDate(contact.firstContactedAt ?? contact.createdAt ?? createdAt),
-    },
-    {
-      label: 'Último contato',
-      value: formatAbsDate(contact.lastContactedAt ?? lastMessageAt),
-    },
+    { label: 'Responsável', value: assignedName ?? <span className="text-surface-500 font-normal">Sem responsável</span> },
+    { label: 'Origem', value: originLabel },
+    ...(contact.email ? [{ label: 'E-mail', value: <span className="truncate block">{contact.email}</span> }] : []),
+  ]
+
+  // 28/09: o mesmo estado da IA do cabeçalho e da lista (não só a pausa).
+  const linhasDaIA = useLinhasDaIA()
+  const estadoIA = estadoDaIA(conversation, linhasDaIA)
+
+  const extraRows: { label: string; value: React.ReactNode }[] = [
+    { label: 'Primeiro contato', value: formatAbsDate(contact.firstContactedAt ?? contact.createdAt ?? createdAt) },
+    { label: 'Último contato', value: formatAbsDate(contact.lastContactedAt ?? lastMessageAt) },
     {
       label: 'IA',
       value: (
-        <span className="flex items-center gap-1 justify-end">
-          {isAiActive(conversation) ? (
-            <><Bot className="w-3 h-3 text-brand-400 flex-shrink-0" /> Ativa</>
+        <span className="flex items-center gap-1">
+          {estadoIA === 'atendendo' ? (
+            <><Bot className="w-3 h-3 text-brand-400 flex-shrink-0" /> Atendendo</>
+          ) : estadoIA === 'passou' ? (
+            <><Bot className="w-3 h-3 text-status-pending flex-shrink-0" /> Passou para a equipe</>
+          ) : estadoIA === 'sem-ia' ? (
+            <>Linha sem IA</>
           ) : (
             <><UserCog className="w-3 h-3 text-amber-400 flex-shrink-0" /> Pausada</>
           )}
@@ -171,15 +183,14 @@ export function ContactPanel({
       ),
     },
     ...(location ? [{ label: 'Localização', value: (
-      <span className="flex items-center gap-1 justify-end">
+      <span className="flex items-center gap-1">
         <MapPin className="w-3 h-3 flex-shrink-0 text-surface-500" />
         {location}
       </span>
     ) }] : []),
-    ...(contact.email ? [{ label: 'E-mail', value: contact.email }] : []),
     ...(contact.company ? [{ label: 'Empresa', value: contact.company }] : []),
     ...(contact.waId ? [{ label: 'WhatsApp', value: (
-      <span className="flex items-center gap-1 justify-end">
+      <span className="flex items-center gap-1">
         <Phone className="w-3 h-3 flex-shrink-0 text-surface-500" />
         +{contact.waId}
       </span>
@@ -188,35 +199,12 @@ export function ContactPanel({
 
   // Largura do painel (desktop): 308px = 280px +10%. Reverter = voltar para md:w-[280px].
   return (
-    <aside className="conv-surface w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-950 md:border-l md:border-surface-800">
-      {/* Action bar */}
-      <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
-        <div className="min-w-0 flex items-center gap-1.5">
-          <Milestone className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Situação do contato" />
-          {localStage ? (
-            <StageBadge stage={localStage} stages={stages} />
-          ) : (
-            <span className="text-[11px] text-surface-600">Sem situação</span>
-          )}
-        </div>
-        <div className="flex items-center gap-0.5 flex-shrink-0">
-          {/* SCRUM-929 (F-FICHA-08): "Mudar situação" — ícone e verbo distintos
-              de "Mover etapa" (DealSummary, ícone KanbanSquare) — etapa é do
-              FUNIL do negócio, situação é o ciclo de vida do CONTATO. */}
-          <button onClick={() => setStageOpen(true)} title="Mudar situação" aria-label="Mudar situação"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
-            <Milestone className="w-4 h-4" />
-          </button>
-          <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM" aria-label="Ver no CRM"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
-            <ExternalLink className="w-4 h-4" />
-          </button>
-          <button onClick={onClose} title="Fechar" aria-label="Fechar"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+    <aside className="conv-surface relative w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-800 md:border-l md:border-surface-700">
+      {/* CONV-PANEL-05: o mock não tem ícone de fechar — só no drawer MOBILE. */}
+      <button onClick={onClose} title="Fechar" aria-label="Fechar"
+        className="md:hidden absolute top-2 right-2 z-10 w-7 h-7 rounded-sm flex items-center justify-center text-surface-400 hover:bg-surface-700 hover:text-surface-100 transition-all">
+        <X className="w-4 h-4" />
+      </button>
 
       <MoveStageModal
         open={stageOpen}
@@ -228,51 +216,90 @@ export function ContactPanel({
       />
 
       <div className="flex-1 overflow-y-auto">
-        {/* Contact header */}
-        <div className="flex items-center gap-3 py-4 px-4">
-          <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" className="flex-shrink-0" />
-          <div className="min-w-0 flex-1">
-            <h4 className="text-base font-semibold text-surface-50 truncate">{contact.displayName}</h4>
-            {contact.waId && (
-              <p className="flex items-center gap-1.5 text-xs text-surface-400 mt-0.5 truncate">
-                <WhatsAppIcon className="w-3 h-3 flex-shrink-0 text-emerald-500" />
-                +{contact.waId}
-              </p>
-            )}
+        {/* Identidade */}
+        {/* canvas 1d: avatar 44 no topo, nome 14/700, sub 11.5 — coluna com gap 8, padding 16/14. */}
+        <div className="px-4 pt-4 pb-3.5 flex flex-col items-start gap-2">
+          <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="44" className="flex-shrink-0" />
+          <div className="min-w-0 max-w-full">
+            <h4 className="text-[14px] font-bold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h4>
+            {subtitle && <p className="text-[11.5px] text-surface-400 truncate">{subtitle}</p>}
             {contact.lastSeenAt && (
               <p className="text-[10px] text-surface-500 mt-0.5">Visto {formatRelativeTime(contact.lastSeenAt)}</p>
             )}
           </div>
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" variant="neutral" onClick={() => navigate(`/contacts?contact=${contact.id}`)}>
+              Ver contato
+            </Button>
+            {salesPipeline && (
+              <Button
+                size="sm"
+                variant="neutral"
+               
+                onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline, conversationId: conversation.id })}
+              >
+                Novo negócio
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Negócios primeiro: numa conversa de venda, o que o atendente
-            precisa ver ao abrir o painel é se este contato já tem negócio
-            aberto e em que etapa — antes de etiquetas ou de quem atende.
-            Ficava depois de "Agente responsável", exigindo rolagem. */}
-        {isFeatureVisible('contactPanelDeals') && (
-          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
-        )}
-
-        {/* Etiquetas — logo abaixo dos negócios */}
-        <Section
-          title="Etiquetas"
-          action={
-            <button onClick={() => setTagOpen(true)} className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors">
-              <TagIcon className="w-3 h-3" />
-              Gerenciar
-            </button>
-          }
-        >
+        {/* Revisão 02/10: os modais ficam FORA das seções recolhíveis — a seção
+            recolhida não monta os filhos, e "Atribuir", "Transferir" e "Editar"
+            etiquetas (que ficam no cabeçalho, sempre visível) não abriam nada. */}
+          <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Atribuir usuário" className="max-w-sm">
+            <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
+              onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
+          </Modal>
+          {/* Transferir — endpoint/handler distinto de "Atribuir" (R13): já
+              existia no hook (useConversations.transferUser → PATCH .../transfer). */}
+          <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transferir conversa" className="max-w-sm">
+            <UserPickerList users={allUsers.filter((u) => u.id !== assignedUser?.id)}
+              onSelect={(user) => { if (user) onTransfer(user); setTransferOpen(false) }} />
+          </Modal>
           <Modal open={tagOpen} onClose={() => setTagOpen(false)} title="Gerenciar etiquetas" className="max-w-md">
             <TagPickerContent allTags={allTags} selectedTags={tags} onAdd={onAddTag} onRemove={onRemoveTag} onCreate={onCreateTag} onDelete={onDeleteTag} />
           </Modal>
+        {/* DADOS */}
+        <CollapsibleSection
+          title="Dados"
+          storageKey="conv-panel.info"
+          className="border-t border-surface-700"
+          actions={
+            <div className="flex items-center gap-2">
+              {assignedUser && (
+                <button onClick={() => setTransferOpen(true)} title="Transferir conversa"
+                  className="flex items-center gap-1 text-[11.5px] font-semibold text-accent-dark hover:underline">
+                  <ArrowRightLeft className="w-3 h-3" />
+                  Transferir
+                </button>
+              )}
+              <button onClick={() => setAssignOpen(true)} className="text-[11.5px] font-semibold text-accent-dark hover:underline">
+                {assignedUser ? 'Trocar' : 'Atribuir'}
+              </button>
+            </div>
+          }
+        >
+          <InfoTable rows={dadosRows} />
+        </CollapsibleSection>
+
+        {/* ETIQUETAS · N */}
+        <CollapsibleSection
+          title={`Etiquetas · ${tags.length}`}
+          storageKey="conv-panel.tags"
+          className="border-t border-surface-700"
+          actions={
+            <button onClick={() => setTagOpen(true)} className="text-[11.5px] font-semibold text-accent-dark hover:underline">
+              Editar
+            </button>
+          }
+        >
           {tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-xs px-2 py-1 rounded-full font-medium"
+                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-[11px] h-5 px-2 rounded-xs font-semibold"
                   style={{ ['--chip']: tag.color } as React.CSSProperties}
                   title={tag.name}>
-                  <span className="w-1.5 h-1.5 rounded-full chip-dot flex-shrink-0" />
                   <span>{tag.name}</span>
                   <button onClick={() => onRemoveTag(tag.id)} title={`Remover etiqueta ${tag.name}`} aria-label={`Remover etiqueta ${tag.name}`} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
                     <X className="w-2.5 h-2.5" />
@@ -281,96 +308,29 @@ export function ContactPanel({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-surface-600">Nenhuma etiqueta. Clique em "Gerenciar" para adicionar.</p>
+            <p className="text-xs text-surface-500">Nenhuma etiqueta. Clique em "Editar" para adicionar.</p>
           )}
-        </Section>
+        </CollapsibleSection>
 
-        {/* Agente responsável — ação mais frequente do atendente; vive logo
-            após etiquetas, acima da dobra (antes ficava depois da timeline). */}
-        <Section
-          title="Agente responsável"
-          action={
-            <div className="flex items-center gap-2">
-              {assignedUser && (
-                <button
-                  onClick={() => setTransferOpen(true)}
-                  title="Transferir conversa"
-                  className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
-                >
-                  <ArrowRightLeft className="w-3 h-3" />
-                  Transferir
-                </button>
-              )}
-              <button
-                onClick={() => setAssignOpen(true)}
-                className="text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
-              >
-                {assignedUser ? 'Trocar' : 'Atribuir'}
-              </button>
-            </div>
-          }
-        >
-          {assignedUser ? (
-            <button
-              onClick={() => setAssignOpen(true)}
-              className={cn(
-                'assigned-agent-tag w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-all',
-                'bg-brand-600/10 text-brand-300 hover:bg-brand-600/20',
-              )}
-            >
-              <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" kind="operator" />
-              <span className="truncate">{assignedUser.firstName} {assignedUser.lastName}</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setAssignOpen(true)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-all bg-surface-800 text-surface-400 hover:bg-surface-700"
-            >
-              <UserCheck className="w-4 h-4" />
-              <span>Ninguém atribuído</span>
-            </button>
-          )}
-          <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Atribuir usuário" className="max-w-sm">
-            <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
-              onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
-          </Modal>
-          {/* Transferir — endpoint/handler distinto de "Atribuir" (R13): já
-              existia no hook (useConversations.transferUser → PATCH .../transfer)
-              mas não tinha nenhum gatilho na UI. */}
-          <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transferir conversa" className="max-w-sm">
-            <UserPickerList users={allUsers.filter((u) => u.id !== assignedUser?.id)}
-              onSelect={(user) => { if (user) onTransfer(user); setTransferOpen(false) }} />
-          </Modal>
-        </Section>
+        {/* NEGÓCIOS · N (só aparece quando há registro — ver ContactPanelDeals) */}
+        {isFeatureVisible('contactPanelDeals') && (
+          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
+        )}
 
-        {/* Hidden when conversionAnalysisPanel is off — covers both the
-            "Analisar conversa com IA" CTA and any previously-rendered
-            results, so the contact panel doesn't show a half-disabled
-            feature. */}
+        {/* RESUMO DA IA — feature real (ConversionAnalysisPanel) ocupa este lugar. */}
         {isFeatureVisible('conversionAnalysisPanel') && (
           <ConversionAnalysisPanel conversationId={conversation.id} contact={contact} />
         )}
 
-        {/* Informações — referência estática, acima da timeline dinâmica */}
-        <Section title="Informações">
-          <InfoTable rows={infoRows} />
-        </Section>
+        <CollapsibleSection title="Mais dados" storageKey="conv-panel.more" defaultOpen={false} className="border-t border-surface-700">
+          <InfoTable rows={extraRows} />
+        </CollapsibleSection>
 
         {/* Timeline */}
         <ConversationActivitySection conversationId={conversation.id} />
 
       </div>
-
-      {/* Archive confirm modal */}
-      <ConfirmModal
-        open={archiveOpen}
-        onClose={() => setArchiveOpen(false)}
-        onConfirm={() => { onArchive(); setArchiveOpen(false) }}
-        title="Arquivar conversa"
-        description={`Tem certeza que deseja arquivar a conversa com ${contact.displayName}? Ela ficará como "Abandonada".`}
-        confirmLabel="Arquivar"
-        danger
-      />
+      {addToPipeline.dialogs}
     </aside>
   )
 }

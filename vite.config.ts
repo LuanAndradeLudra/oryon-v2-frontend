@@ -55,6 +55,38 @@ function appleEmojiPlugin(): Plugin {
   }
 }
 
+// ─── Prévia de link (Open Graph) ─────────────────────────────────────────────
+// og:image precisa de URL ABSOLUTA. Com VITE_SITE_URL definido (no deploy),
+// injeta a imagem do kit da marca (public/brand/oryon-og-1200x630.png) com
+// dimensões, alt e o cartão grande do X. Sem a variável, não injeta nada (o
+// Vite deixaria %VITE_SITE_URL% literal no HTML). O documento da demonstração
+// (demo.html, aberto num iframe) não recebe.
+function previaDeLinkPlugin(): Plugin {
+  let site = ''
+  return {
+    name: 'previa-de-link',
+    configResolved(config) {
+      site = String(config.env.VITE_SITE_URL ?? '').replace(/\/+$/, '')
+    },
+    transformIndexHtml(html, ctx) {
+      if (!site || ctx.filename.endsWith('demo.html') || ctx.path.endsWith('demo.html')) return html
+      const imagem = `${site}/brand/oryon-og-1200x630.png`
+      const meta = (attrs: Record<string, string>) => ({ tag: 'meta', attrs, injectTo: 'head' as const })
+      return {
+        html,
+        tags: [
+          meta({ property: 'og:image', content: imagem }),
+          meta({ property: 'og:image:width', content: '1200' }),
+          meta({ property: 'og:image:height', content: '630' }),
+          meta({ property: 'og:image:alt', content: 'Oryon' }),
+          meta({ name: 'twitter:card', content: 'summary_large_image' }),
+          meta({ name: 'twitter:image', content: imagem }),
+        ],
+      }
+    },
+  }
+}
+
 // ─── Canva Token Proxy Plugin ─────────────────────────────────────────────────
 // Proxies POST /api/canva-token → https://api.canva.com/rest/v1/oauth/token
 // Avoids CORS restriction on the Canva token endpoint when called from browser.
@@ -168,7 +200,11 @@ const sentryPlugins = sentryAuthToken
       project: sentryProject,
       authToken: sentryAuthToken,
       release: sentryRelease ? { name: sentryRelease } : undefined,
-      sourcemaps: { assets: './dist/**' },
+      // Revisão 02/10: 'hidden' só tira o comentário do bundle — os .map
+      // continuavam em dist/ e eram publicados (código-fonte inteiro, com os
+      // comentários internos, a um palpite de URL). Depois de enviados ao
+      // Sentry, saem do que vai para o ar.
+      sourcemaps: { assets: './dist/**', filesToDeleteAfterUpload: ['./dist/**/*.map'] },
       // Don't fail the build if Sentry is unreachable — sourcemap upload is
       // observability infra, not a release blocker.
       errorHandler: (err) => { console.warn('[sentry-vite-plugin]', err.message) },
@@ -176,13 +212,48 @@ const sentryPlugins = sentryAuthToken
   : []
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), appleEmojiPlugin(), canvaTokenPlugin(), designSearchPlugin(), ...sentryPlugins],
+  plugins: [react(), tailwindcss(), appleEmojiPlugin(), canvaTokenPlugin(), designSearchPlugin(), previaDeLinkPlugin(), ...sentryPlugins],
   build: {
     // Sourcemaps are required for Sentry to symbolicate stack traces.
     // 'hidden' means the bundle doesn't ship a //# sourceMappingURL comment
     // to browsers — devs without Sentry don't accidentally serve sourcemaps
     // from the public dist.
     sourcemap: sentryAuthToken ? 'hidden' : false,
+    rollupOptions: {
+      // Duas entradas: o app (index.html) e o documento de demonstração que o
+      // Hero da landing abre num iframe (demo.html — o Oryon real com backend
+      // em memória). Os pedaços comuns saem compartilhados, então a demo
+      // reaproveita o que a landing já baixou.
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        demo: path.resolve(__dirname, 'demo.html'),
+      },
+      output: {
+        // O pedaço de ENTRADA do app (main-*.js) roda o bootstrap ao ser
+        // importado: monta o App inteiro no #root. O Rollup içava para ele
+        // módulos que o main.tsx/App.tsx importam direto (lib/emojiText, o
+        // modal do AdminMobileBlock…) — e as páginas preguiçosas (Disparos,
+        // Agentes IA…) passavam a importar main-*.js. No app é inofensivo (já
+        // carregou); na DEMONSTRAÇÃO, abrir Disparos subia o app real por cima
+        // e o Hero mostrava a Home. Medido no build de produção em 26/09.
+        // Regra: o que main.tsx/App.tsx importam direto vai para um pedaço
+        // próprio — a entrada fica só com o bootstrap.
+        manualChunks(id, { getModuleInfo }) {
+          const norm = id.replace(/\\/g, '/')
+          // Gráficos (recharts + d3) num pedaço só deles: o Rollup os juntava a
+          // utilitários comuns e a landing/demo avaliavam ~300 kB de gráfico
+          // em telas sem gráfico nenhum (medido no perfil da demo, 26/09).
+          if (/\/node_modules\/(recharts|victory-vendor|d3-[a-z-]+|internmap|decimal\.js-light|react-smooth|recharts-scale)\//.test(norm)) return 'graficos'
+          if (norm.endsWith('/src/main.tsx') || norm.endsWith('/src/App.tsx')) return undefined
+          const info = getModuleInfo(id)
+          const doBoot = info?.importers.some((i) => {
+            const n = i.replace(/\\/g, '/')
+            return n.endsWith('/src/main.tsx') || n.endsWith('/src/App.tsx')
+          })
+          return doBoot ? 'app-base' : undefined
+        },
+      },
+    },
   },
   server: {
     port: 3005,

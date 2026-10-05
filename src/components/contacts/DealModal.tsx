@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
@@ -294,7 +294,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           >
             <div className="flex gap-2">
               <div className="flex-1">
-                <Select
+                <SelectMenu
                   value={movePipelineId}
                   onChange={(e) => { setMovePipelineId(e.target.value); setMoveError('') }}
                   disabled={moving}
@@ -303,13 +303,13 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   {getActivePipelines(pipelines).filter((p) => p.id !== editDeal.pipelineId).map((p) => (
                     <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                   ))}
-                </Select>
+                </SelectMenu>
               </div>
               <button
                 type="button"
                 onClick={handleMovePipeline}
                 disabled={!movePipelineId || moving}
-                className="px-3 py-2 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 disabled:opacity-50 transition-all whitespace-nowrap"
+                className="px-3 py-2 rounded-lg text-xs font-semibold bg-[var(--sf2)] hover:bg-surface-800 text-surface-100 disabled:opacity-50 transition-all whitespace-nowrap"
               >
                 {moving ? 'Transferindo...' : 'Transferir'}
               </button>
@@ -327,24 +327,24 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
         {!editDeal && multiPipeline && (
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
-              <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
+              <SelectMenu value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
                 {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
                 {getActivePipelines(pipelines).map((p) => (
                   <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                 ))}
-              </Select>
+              </SelectMenu>
             </FormField>
             {/* Etapa do FUNIL — eixo distinto da "Situação do contato" (ciclo
                 de vida). Reativo ao funil escolhido ao lado. */}
             <FormField label="Etapa" hint="Coluna do funil em que o negócio nasce.">
-              <Select value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
+              <SelectMenu value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
                 {getPipelineStages(pipelines, pipelineId).length === 0 && (
                   <option value="">Nenhuma etapa disponível</option>
                 )}
                 {getPipelineStages(pipelines, pipelineId).map((s) => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
-              </Select>
+              </SelectMenu>
             </FormField>
           </div>
         )}
@@ -373,7 +373,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
 
         {!isProcess && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-surface-300 uppercase tracking-wider">
+          <span className="text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">
             Itens
           </span>
           <DealItemsEditor
@@ -398,7 +398,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           </p>
         )}
 
-        <div className="flex items-center justify-between border-t border-surface-800 pt-3">
+        <div className="flex items-center justify-between border-t border-surface-700 pt-3">
           {isProcess ? (
             <span className="text-xs text-surface-500" data-testid="deal-modal-process-note">
               {`Registro de processo — sem valor nem produtos.`}
@@ -411,7 +411,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all"
+              className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] transition-all"
             >
               Cancelar
             </button>
@@ -422,7 +422,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                 <button
                   onClick={() => handleSave(false)}
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-700 hover:bg-surface-600 text-surface-100 disabled:opacity-60 transition-all"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-[var(--sf2)] hover:bg-surface-800 text-surface-100 disabled:opacity-60 transition-all"
                 >
                   {saving ? 'Salvando...' : 'Vincular'}
                 </button>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KanbanSquare } from 'lucide-react'
+import {  } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { ConversationDealSelector } from '@/components/conversations/ChatWindow/ConversationDealSelector'
 import { needsDealSelector, selectableDeals, linkedDeal } from '@/lib/dealIndicator'
@@ -159,12 +159,12 @@ export function ContactPanelDeals({
   const wonCents = salesDeals.filter((d) => d.status === 'won').reduce((s, d) => s + (d.amountCents ?? 0), 0)
 
   return (
-    <div className="panel-divider px-4 py-3 border-t border-surface-800" data-testid="panel-pipelines">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
-          <KanbanSquare className="w-3 h-3" /> Funis
-          <span className="text-surface-600 normal-case tracking-normal" data-testid="panel-pipelines-count">
-            · {open.length} em aberto
+    <div className="panel-divider px-4 py-2.5 border-t border-surface-700" data-testid="panel-pipelines">
+      <div className="flex items-center justify-between h-6 mb-1">
+        <p className="text-[10px] text-surface-500 uppercase tracking-[.14em] font-bold flex items-center gap-1.5">
+          Negócios
+          <span data-testid="panel-pipelines-count">
+            · {open.length}
           </span>
         </p>
       </div>
@@ -186,18 +186,19 @@ export function ContactPanelDeals({
 
       {salesDeals.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mb-2" data-testid="panel-pipelines-money">
-          <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
+          {/* README 3.3: "Negócios como mini-cards de 6px de raio" — --radius-xs. */}
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xs px-2.5 py-1.5">
             <p className="text-[9px] text-surface-500 uppercase tracking-wide">Em aberto</p>
             <p className="text-sm font-semibold text-surface-100 tabular-nums">{formatBRL(openCents)}</p>
           </div>
-          <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xs px-2.5 py-1.5">
             <p className="text-[9px] text-surface-500 uppercase tracking-wide">Ganho</p>
             <p className="text-sm font-semibold text-success tabular-nums">{formatBRL(wonCents)}</p>
           </div>
         </div>
       )}
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-1.5">
         {open.map((deal) => {
           const pipeline = pipelineOf(deal)
           if (!pipeline) return null
@@ -221,7 +222,7 @@ export function ContactPanelDeals({
         })}
 
         {closed.length > 0 && (
-          <div className="flex flex-col gap-1 pt-1 border-t border-surface-800/60" data-testid="panel-pipelines-closed">
+          <div className="flex flex-col gap-1 pt-1 border-t border-surface-700" data-testid="panel-pipelines-closed">
             {closed.map((deal) => (
               <DealSummary
                 key={deal.id}

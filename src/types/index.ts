@@ -12,6 +12,24 @@ export interface TenantVocabulary {
   pipeline:  string   // "Funil" | "Agenda" | "Pipeline"
   company:   string   // "Empresa" | "Clínica" | "Escritório"
   jobTitle:  string   // "Cargo" | "Especialidade" | "Área"
+  // Campos opcionais (SCRUM-1108, Leva 10) — ausentes em vocabulários salvos
+  // antes desta leva; toda leitura usa fallback (ex.: `vocab.dealGender ??
+  // 'masculino'`), nunca assume presença.
+  /** Gênero gramatical do termo de registro do funil — concorda "novo/nova", "ganho/ganha". */
+  dealGender?: 'masculino' | 'feminino'
+  /** Como chamar quem escreve (contato/cliente/paciente…). */
+  personWrites?: string
+  /** Como chamar quem atende (atendente/agente/recepcionista…). */
+  personAttends?: string
+  /** Rótulos de fechamento POSITIVO/NEGATIVO por tipo de funil — sobrescreve
+   *  `PIPELINE_KIND_OPTIONS` (src/lib/pipelineKinds.ts) só na TELA de
+   *  vocabulário; ainda não alimenta `pipelineKindOf`/`terminalLabelsOf`
+   *  (função protegida, ver DESIGN-SYSTEM.md §17) — editável aqui como
+   *  preparação para quando o backend expuser isso por tenant. */
+  salesWonLabel?: string
+  salesLostLabel?: string
+  processWonLabel?: string
+  processLostLabel?: string
 }
 
 export interface VerticalTemplateSuggestedStage {
@@ -67,7 +85,7 @@ export type MessageType =
 /** `sending` nunca vem do backend — é o eco otimista local enquanto a
  *  requisição está em voo (ver `useMessages.sendMessage`), substituído pela
  *  mensagem real do servidor (ou por `failed`) assim que ela resolve. */
-export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
+export type MessageStatus = 'queued' | 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
 
 export type UserRole = 'super_admin' | 'business_admin' | 'admin' | 'agent' | 'supervisor'
 
@@ -279,6 +297,10 @@ export interface Deal {
    *  Resolvida na leitura por `src/lib/dealProbability.ts`, nunca persistida
    *  calculada — só este campo cru é gravado. */
   probability?: number | null
+  /** O mesmo override, com o nome que a LISTAGEM DO QUADRO usa (`GET /deals?pipelineId=`):
+   *  lá o backend remove `probability` e manda `probabilityOverride` (A6 · SCRUM-927).
+   *  Ler só `probability` fazia o ponderado da coluna ignorar o ajuste (R2 · SCRUM-1161). */
+  probabilityOverride?: number | null
   closedAt?: string | null
   lineItems?: DealLineItem[]
   createdAt?: string
@@ -943,6 +965,8 @@ export interface Tag {
   id: string
   name: string
   color: string
+  /** Quantas conversas usam a tag — só o `GET /tags` traz (create/update não). */
+  usageCount?: number
 }
 
 export interface WhatsAppNumber {
@@ -1054,6 +1078,10 @@ export interface Message {
   readAt?: string
   failedAt?: string
   errorCode?: string
+  /** Motivo curto da falha (vem do socket `message:status`). */
+  errorTitle?: string
+  /** Payload bruto de falha gravado pelo backend (`errors[]` da Meta). */
+  deliveryError?: { errors?: Array<{ title?: string; message?: string }> } | null
   /** Populated by the backend for outbound messages typed by a human operator
    *  (`sentByUserId` not null). Stays null/undefined for AI-generated outbound
    *  and any inbound. The bubble uses presence to render either the
@@ -1188,6 +1216,15 @@ export interface SendMessageDto {
   mediaCaption?: string
   /** wamid of the message being replied to — sent so the client sees a quoted reply. */
   replyToWamid?: string
+  /**
+   * Miniatura da 1ª página de um PDF, renderizada NO NAVEGADOR (pedido do
+   * usuário 2026-09-23) — só pra bolha otimista não ficar sem preview
+   * enquanto a mensagem está "pendente". NUNCA vai pro backend
+   * (messagesApi.send monta o FormData campo a campo, sem incluir isto) —
+   * é puramente local, descartada assim que a miniatura real (gerada no
+   * servidor) chega.
+   */
+  clientThumbnailUrl?: string
 }
 
 // ─── Billing / Plan Types ─────────────────────────────────────────────────────
@@ -1231,6 +1268,10 @@ export interface PlanModuleAccess {
   nexus: boolean              // internal chat
   apiAccess: boolean
   webhooks: boolean
+  /** SCRUM-1071/1084 — conectores self-service (Skills do catálogo) e
+   *  servidores MCP anexados a um agente. Mesma régua de business+ que
+   *  apiAccess/webhooks já seguem. */
+  integrations: boolean
   advancedAnalytics: boolean
   customReports: boolean
   prioritySupport: boolean
@@ -1277,13 +1318,22 @@ export interface Tenant {
   createdAt: string
 }
 
+/** `GET /whatsapp/numbers` hoje NÃO devolve wabaId, wabaName, messagingLimit
+ *  nem connectedAt (lista fechada em settings-compat.controller): opcionais
+ *  para a tela não contar com eles. Pedido no SCRUM-1161. */
 export interface WhatsAppNumberDetailed extends WhatsAppNumber {
-  wabaId: string
-  wabaName: string
+  wabaId?: string
+  wabaName?: string
+  verifiedName?: string
   phoneNumberId: string
-  qualityRating: 'green' | 'yellow' | 'red' | 'unknown'
-  messagingLimit: string
-  connectedAt: string
+  /** O backend manda MAIÚSCULAS (GREEN…); telas antigas usavam minúsculas. */
+  qualityRating: 'green' | 'yellow' | 'red' | 'unknown' | 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN'
+  /** @deprecated o backend nunca mandou — ver `messagingLimitTier`. */
+  messagingLimit?: string
+  /** Plano MA (MA-4.5): limite de envio da Meta (TIER_*) e máximo diário. */
+  messagingLimitTier?: string | null
+  maxDailyConversations?: number | null
+  connectedAt?: string
   agentId?: string | null
   agentName?: string | null
 }
@@ -1347,32 +1397,59 @@ export interface AuditLog {
 }
 
 export interface HomeStats {
+  /** K12: 'minhas' = números só das conversas do usuário (atendente). */
+  escopo?: 'empresa' | 'minhas'
   conversationsOpen: number
   conversationsResolvedToday: number
   messagesSentToday: number
   messagesReceivedToday?: number
   newContactsThisWeek: number
-  agentsOnline: number
+  /** K6: presença por socket; null para o atendente (número da empresa). */
+  agentsOnline: number | null
   agentsActive: number
   agentsPending: number
-  avgResponseMinutes: number
+  /** K2: TMR por ciclo; null sem ciclo respondido no período. */
+  avgResponseMinutes: number | null
+  medianResponseMinutes?: number | null
   queueCount: number
+  /** D5: pendentes sem dono + pendentes com dono sem resposta humana. */
+  waitingCount?: number
   planUsed: number
   planLimit: number
   totalContacts?: number
   totalConversations?: number
-  unassignedCount?: number
+  unassignedCount?: number | null
   myConversationsOpen: number
   myConversationsResolvedToday: number
-  myAvgResponseMinutes: number
+  myAvgResponseMinutes: number | null
   myMessagesSentToday: number
-  appointmentsScheduled?: number
-  appointmentsCancelled?: number
+  appointmentsScheduled?: number | null
+  appointmentsCancelled?: number | null
+  // Revisão das métricas (30/09)
+  newConversations?: number
+  reopenedConversations?: number
+  cohortConversations?: number
+  unansweredCycles?: number
+  /** Segundos inteiros (revisão de código 01/10): resposta em segundos não vira 0,0 min. */
+  avgResponseSeconds?: number | null
+  medianResponseSeconds?: number | null
+  humanFirstResponseAvgSeconds?: number | null
+  humanFirstResponseMedianSeconds?: number | null
+  humanFirstResponseAvgMinutes?: number | null
+  humanFirstResponseMedianMinutes?: number | null
+  humanFirstResponseCount?: number
+  humanFirstResponseSlaRate?: number | null
+  slaTargetMinutes?: number
+  newContactsInPeriod?: number
+  messagesSentBy?: { operator: number; ai: number; rule: number; campaign: number }
+  botResolved?: number
+  botDeflectionRate?: number | null
 }
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────
 
-export type TemplateStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAUSED' | 'DISABLED'
+// Plano MA: a Meta também arquiva, exclui e está excluindo (o backend grava).
+export type TemplateStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAUSED' | 'DISABLED' | 'ARCHIVED' | 'DELETED' | 'PENDING_DELETION'
 
 export type TemplateHeaderType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT'
 
@@ -1412,11 +1489,24 @@ export interface WhatsAppTemplate {
   // Set by Migration #045 on legacy rows in multi-WABA tenants. UI
   // should surface a badge and block submit-to-Meta until assigned.
   needsWabaAssignment?: boolean
+  // ── Avisos da Meta (plano MA, migration 128) ─────────────────────────────
+  metaTemplateId?: string | null
+  /** GREEN | YELLOW | RED | UNKNOWN */
+  qualityScore?: string | null
+  /** Sinal que não tira do ar: FLAGGED | LIMIT_EXCEEDED | LOCKED | IN_APPEAL */
+  metaFlag?: string | null
+  /** Motivo da pausa/desativação (já em português quando conhecido). */
+  metaStatusReason?: string | null
+  /** DISABLED: quando a Meta desliga de vez. */
+  disableDate?: string | null
+  /** Mudança de categoria avisada pela Meta, e quando vale. */
+  pendingCategory?: string | null
+  pendingCategoryAt?: string | null
   createdAt: string
   updatedAt: string
 }
 
-export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled'
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled' | 'stopped' | 'paused'
 
 export interface CampaignSegment {
   type: 'all' | 'tag' | 'stage' | 'manual' | 'filter'
@@ -1456,6 +1546,8 @@ export interface CampaignStats {
   conversions?: number
   engagementScore?: number   // 0–100 composite
   churnCount?: number
+  /** Contatos do segmento fora do envio (número inválido / opt-out de marketing). */
+  excluded?: number
 }
 
 export interface CampaignChurnBreakdown {
@@ -1506,6 +1598,73 @@ export interface CampaignConversationSummary {
   adCampaignName?:  string
 }
 
+/** Falhas de entrega agrupadas por código da Meta (BE.1 — `failures[]`). */
+export interface CampaignFailureReason {
+  code:   string
+  reason: string
+  count:  number
+}
+
+/** Resposta de um destinatário à campanha (BE.1 — `replies[]`). */
+/** T2 — funil completo de `GET /campaigns/:id/analytics`. */
+export interface CampaignFunnel {
+  pending:   number
+  sent:      number
+  delivered: number
+  read:      number
+  replied:   number
+  failed:    number
+  cancelled: number
+  /** Suprimidos antes do envio (número inválido / opt-out) — fora de toda base. */
+  excluded:  number
+  /** Saíram de marketing (131050) — à parte. */
+  optedOut:  number
+}
+
+export type CampaignRecipientStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'cancelled'
+
+/** Linha de `GET /campaigns/:id/recipients`. */
+export interface CampaignRecipientRow {
+  id: string
+  contactId: string
+  contactName: string | null
+  status: CampaignRecipientStatus
+  errorCode: string | null
+  replyText: string | null
+  /** Resposta sem texto (mídia) também prova entrega (R3). */
+  repliedAt?: string | null
+  sentAt: string | null
+  deliveredAt: string | null
+  readAt: string | null
+  failedAt: string | null
+}
+
+/** Linha de `GET /campaigns/:id/recipients?status=excluded` (D9, situação atual). */
+export interface CampaignExcludedRow {
+  contactId: string
+  contactName: string | null
+  reason: 'invalid_number' | 'opt_out'
+  since: string | null
+}
+
+export interface CampaignReply {
+  contactId: string
+  name:      string | null
+  text:      string | null
+  at:        string | null
+}
+
+export interface CampaignReadHeatmapCell {
+  dayOffset: number
+  hour:      number
+  count:     number
+}
+
+/**
+ * Payload de `GET /campaigns/:id/analytics` DEPOIS de `normalizeCampaignAnalytics`
+ * (lib/campaignAnalytics.ts): os campos legados que o backend não devolve chegam
+ * como vazio/zero, então o relatório os lê sem guarda.
+ */
 export interface CampaignAnalytics {
   campaignId:         string
   churnBreakdown:     CampaignChurnBreakdown
@@ -1513,6 +1672,18 @@ export interface CampaignAnalytics {
   engagementTimeline: CampaignEngagementPoint[]
   attributionBreakdown: CampaignAttributionBreakdown[]
   aiInsights:         string[]
+  /** Novos (BE.1/SCRUM-1142) */
+  failures:           CampaignFailureReason[]
+  replies:            CampaignReply[]
+  readHeatmap:        CampaignReadHeatmapCell[]
+  /** `null` quando ninguém leu ainda (não é "0 minutos"). */
+  avgTimeToReadMinutes: number | null
+  /** Contadores atuais da campanha — mais novos que o `stats` da lista. */
+  stats?: CampaignStats
+  /** Funil por destinatário (T2). Base dos percentuais pela D7. */
+  funnel?: CampaignFunnel
+  /** Motivo da pausa automática, sempre atual. */
+  stopReason?: string | null
 }
 
 export interface Campaign {
@@ -1527,6 +1698,8 @@ export interface Campaign {
   scheduledAt?: string
   sentAt?: string
   stats: CampaignStats
+  /** Por que a campanha foi parada sozinha (circuit breaker). */
+  stopReason?: string | null
   createdByUserId: string
   createdAt: string
   whatsappNumberId?: string | null
@@ -1591,9 +1764,15 @@ export interface SocketConversationStatusUpdated {
 }
 
 export interface SocketMessageStatus {
-  messageId: string
+  messageId?: string
+  wamid?: string | null
   status: MessageStatus
-  timestamp: string
+  conversationId?: string
+  deliveredAt?: string | null
+  readAt?: string | null
+  failedAt?: string | null
+  errorCode?: string | null
+  errorTitle?: string | null
 }
 
 /** Miniatura de PDF gerada de forma assíncrona (fila `media-thumbnail`) —

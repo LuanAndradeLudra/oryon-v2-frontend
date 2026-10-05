@@ -10,6 +10,7 @@ import {
   type NotificationCategory,
 } from '@/hooks/useNotificationPreferences'
 import { useNotificationSound } from '@/hooks/useNotificationSound'
+import { CATEGORY_CHIPS, TYPE_ICON } from '@/components/notifications/notificationsMeta'
 
 /**
  * Phase 19: dedicated Settings page for notification preferences. Groups
@@ -17,21 +18,13 @@ import { useNotificationSound } from '@/hooks/useNotificationSound'
  * Mandatory types render locked (security_alert, whatsapp_integration_error).
  */
 
-const CATEGORY_LABELS: Record<NotificationCategory, string> = {
-  conversations: 'Conversas',
-  team: 'Equipe',
-  campaigns: 'Campanhas',
-  automations: 'Automações',
-  security: 'Segurança & integrações',
-}
-
-const CATEGORY_ORDER: NotificationCategory[] = [
-  'conversations',
-  'team',
-  'campaigns',
-  'automations',
-  'security',
-]
+// Rótulos e ordem vêm de CATEGORY_CHIPS — a mesma fonte das seções do sino
+// (Conversas/Equipe/Campanhas/Automações/Segurança). Antes esta página tinha
+// lista própria e chamava a última de "Segurança & integrações".
+const CATEGORY_ORDER = CATEGORY_CHIPS.filter((c) => c.key !== 'all').map((c) => c.key as NotificationCategory)
+const CATEGORY_LABELS = Object.fromEntries(
+  CATEGORY_CHIPS.map((c) => [c.key, c.label]),
+) as Record<NotificationCategory, string>
 
 const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
   conversations: 'Novas mensagens e conversas atribuídas a você.',
@@ -42,7 +35,7 @@ const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
 }
 
 export function Notifications() {
-  const { preferences, loading, saving, error, update, reset } = useNotificationPreferences()
+  const { preferences, loading, saving, error, update, reset, reload } = useNotificationPreferences()
   const { enabled: soundEnabled, toggle: toggleSound } = useNotificationSound()
 
   if (loading) {
@@ -75,7 +68,14 @@ export function Notifications() {
 
       {error && (
         <div className="mb-6">
-          <Banner variant="danger">{error}</Banner>
+          <Banner variant="danger">
+            <p>{error}</p>
+            {preferences.length === 0 && (
+              <button type="button" onClick={() => { void reload() }} className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80">
+                Tentar de novo
+              </button>
+            )}
+          </Banner>
         </div>
       )}
 
@@ -87,16 +87,16 @@ export function Notifications() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 text-surface-400">
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className="w-4 h-4" strokeWidth={1.75} />
             </span>
             <div>
-              <p className="text-sm font-medium text-surface-100">Tocar som</p>
+              <p className="text-[13px] font-medium text-surface-100">Tocar som</p>
               <p className="text-xs text-surface-400">
                 Som curto toca a cada notificação nova.
               </p>
             </div>
           </div>
-          <Switch checked={soundEnabled} onChange={toggleSound} />
+          <Switch checked={soundEnabled} onChange={toggleSound} aria-label="Tocar som" />
         </div>
       </SettingsSection>
 
@@ -106,7 +106,7 @@ export function Notifications() {
         if (!items || items.length === 0) return null
         return (
           <SettingsSection key={cat} title={CATEGORY_LABELS[cat]} description={CATEGORY_DESCRIPTIONS[cat]}>
-            <div className="divide-y divide-surface-800/60">
+            <div className="divide-y divide-surface-700">
               {items.map((pref) => (
                 <PreferenceRow
                   key={pref.type}
@@ -140,23 +140,39 @@ function PreferenceRow({
   onToggle: (enabled: boolean) => void
   onReset: () => void
 }) {
+  const TypeIcon = TYPE_ICON[pref.type] ?? Bell // mesmo mapa do iconFor() do sino
   return (
     <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
       <div className="flex items-start gap-3 min-w-0">
         {pref.mandatory ? (
-          <span className="mt-0.5 text-warning" title="Obrigatória">
+          <span className="mt-0.5 text-warning">
             <Lock className="w-4 h-4" />
           </span>
         ) : (
+          // Ícone do TIPO (o mesmo do sino) — um Bell igual em toda linha não
+          // carregava informação.
           <span className="mt-0.5 text-surface-400">
-            <Bell className="w-4 h-4" />
+            <TypeIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
           </span>
         )}
         <div className="min-w-0">
-          <p className="text-sm font-medium text-surface-100 flex items-center gap-2">
+          <p className="text-[13px] font-medium text-surface-100 flex items-center gap-2">
             {pref.label}
+            {/* Chips na geometria da casa (18px/r5/10.5px, .color-chip-soft) —
+                "obrigatória" ficava só num title (invisível no toque). */}
+            {pref.mandatory && (
+              <span
+                className="color-chip-soft border inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold"
+                style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
+              >
+                obrigatória
+              </span>
+            )}
             {pref.isOverride && !pref.mandatory && (
-              <span className="text-[10px] font-normal text-brand-300 bg-brand-600/15 border border-brand-600/30 rounded px-1.5 py-0.5">
+              <span
+                className="color-chip-soft border inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold"
+                style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
+              >
                 customizado
               </span>
             )}
@@ -180,6 +196,7 @@ function PreferenceRow({
           checked={pref.enabled}
           onChange={onToggle}
           disabled={pref.mandatory || saving}
+          aria-label={pref.label}
         />
       </div>
     </div>

@@ -35,7 +35,75 @@ interface FormatterCtx {
 
 type Formatter = (ctx: FormatterCtx) => string
 
+/** Nome livre entre aspas ("Pacote X"); sem nome, a palavra de apoio (ou nada). */
+const q = (nome: string, semNome = ''): string => (nome ? `"${nome}"` : semNome)
+
 const FORMATTERS: Record<string, Formatter> = {
+  // ── 29/09: eventos que caíam no fallback em inglês (backend developer) ──
+  // Negócios (os do DealNotifier também trazem `description` em português —
+  // ver formatActivity — e ela tem preferência por ser mais específica).
+  deal_created:                    ({ s }) => `Negócio ${q(s, 'novo')} criado`,
+  deal_updated:                    ({ s }) => `Negócio ${q(s)} atualizado`,
+  deal_deleted:                    ({ s }) => `Negócio ${q(s)} excluído`,
+  deal_stage_changed:              ({ s, d }) => `Negócio ${q(s)} mudou de etapa${d.to ? ` para "${d.to}"` : ''}`,
+  deal_status_changed:             ({ s, d }) => d.status === 'won' ? `Negócio ${q(s)} ganho` : d.status === 'lost' ? `Negócio ${q(s)} perdido` : `Negócio ${q(s)} reaberto`,
+  deal_won:                        ({ s }) => `Negócio ${q(s)} ganho`,
+  deal_pipeline_changed:           ({ s }) => `Negócio ${q(s)} levado para outro funil`,
+  deal_conversation_linked:        ({ s }) => `Conversa ligada ao negócio ${q(s)}`,
+  deal_line_item_promoted:         ({ s }) => `Item do negócio ${q(s)} virou negócio próprio`,
+  // Funis
+  pipeline_created:                ({ s }) => `Funil ${q(s)} criado`,
+  pipeline_updated:                ({ s }) => `Funil ${q(s)} atualizado`,
+  pipeline_deleted:                ({ s }) => `Funil ${q(s)} arquivado`,
+  pipeline_reordered:              () => `Ordem dos funis alterada`,
+  pipeline_default_changed:        ({ s }) => `Funil ${q(s)} virou o padrão`,
+  pipeline_access_changed:         () => `Acesso de setores a um funil alterado`,
+  pipeline_stage_created:          ({ s }) => `Etapa ${q(s)} criada no funil`,
+  pipeline_stage_updated:          ({ s }) => `Etapa ${q(s)} do funil atualizada`,
+  pipeline_stage_deleted:          ({ s }) => `Etapa ${q(s)} removida do funil`,
+  pipeline_stage_reordered:        () => `Ordem das etapas do funil alterada`,
+  pipeline_close_reason_created:   ({ s }) => `Motivo de fechamento ${q(s)} criado`,
+  pipeline_close_reason_updated:   ({ s }) => `Motivo de fechamento ${q(s)} atualizado`,
+  pipeline_close_reason_reordered: () => `Ordem dos motivos de fechamento alterada`,
+  pipeline_routing_upserted:       () => `Roteamento de conversas para funil configurado`,
+  pipeline_routing_deleted:        () => `Roteamento de conversas para funil removido`,
+  // Catálogo e profissionais
+  product_created:                 ({ s }) => `Produto ${q(s)} cadastrado`,
+  product_updated:                 ({ s }) => `Produto ${q(s)} atualizado`,
+  product_deleted:                 ({ s }) => `Produto ${q(s)} removido`,
+  practitioner_created:            ({ s }) => `Profissional ${s || 'novo'} cadastrado`,
+  practitioner_updated:            ({ s }) => `Profissional ${s ? s + ' ' : ''}atualizado`,
+  practitioner_deleted:            ({ s }) => `Profissional ${s ? s + ' ' : ''}removido`,
+  agent_catalog_updated:           ({ s }) => `Catálogo do agente ${s || 'de IA'} atualizado`,
+  agent_practitioner_catalog_updated: ({ s }) => `Profissionais que o agente ${s || 'de IA'} oferece atualizados`,
+  // Conversas e mensagens
+  conversation_reopened:           ({ s }) => `Conversa de ${s || 'um cliente'} reaberta`,
+  conversation_ai_auto_paused:     ({ s, d }) => `IA pausada na conversa de ${s || 'um cliente'}${d.minutes ? ` por ${d.minutes} min` : ''}, após resposta da equipe`,
+  agent_phantom_confirmation_handoff:   ({ s }) => `IA passou a conversa de ${s || 'um cliente'} para a equipe: ia confirmar algo sem registro`,
+  agent_phantom_confirmation_corrected: ({ s }) => `IA corrigiu uma confirmação sem registro na conversa de ${s || 'um cliente'}`,
+  template_sent:                   ({ s, d }) => `Modelo ${d.templateName ? `"${d.templateName}" ` : ''}enviado para ${s || 'um contato'}`,
+  auto_reply:                      ({ s }) => `Resposta automática enviada para ${s || 'um contato'}`,
+  automated_message_sent:          ({ s, d }) => `Mensagem automática${d.name ? ` "${d.name}"` : ''} enviada para ${s || 'um contato'}`,
+  interactive_reply_received:      ({ s, d }) => `${s || 'Um contato'} escolheu ${d.title ? `"${d.title}"` : 'uma opção'} no menu`,
+  // WhatsApp
+  templates_pulled_from_meta:      () => `Modelos do WhatsApp sincronizados com a Meta`,
+  whatsapp_business_profile_updated:       () => `Perfil do WhatsApp Business atualizado`,
+  whatsapp_business_profile_photo_updated: () => `Foto do perfil do WhatsApp atualizada`,
+  // Conta e cobrança
+  feature_flag_toggled:            ({ s, d }) => `Recurso ${q(s)} ${d.enabled === false ? 'desligado' : 'ligado'} na conta`,
+  billing_subscribed:              () => `Assinatura contratada`,
+  billing_plan_changed:            () => `Plano da conta alterado`,
+  billing_canceled:                () => `Assinatura cancelada`,
+  billing_credits_purchased:       () => `Créditos de IA comprados`,
+  billing_manual_credit:           () => `Créditos de IA adicionados pela equipe Oryon`,
+  billing_auto_recharge_updated:   () => `Recarga automática de créditos alterada`,
+  billing_refund:                  () => `Reembolso registrado`,
+  billing_provisioned:             () => `Conta liberada para uso`,
+  billing_contract_activated:      () => `Contrato ativado`,
+  billing_contract_status:         () => `Situação do contrato atualizada`,
+  billing_catalog_upsert:          () => `Catálogo de planos atualizado`,
+  billing_pack_upsert:             () => `Pacote de créditos atualizado`,
+  billing_reconcile_run:           () => `Conferência de cobrança executada`,
   // ── Contatos ────────────────────────────────────────────────────────────
   contact_created:                 ({ s }) => `Contato ${s || 'sem identificação'} criado`,
   contact_updated:                 ({ s }) => `Contato ${s || 'sem identificação'} atualizado`,
@@ -274,22 +342,24 @@ export function formatActivity(input: {
   action: string
   subject: string
   details?: Record<string, unknown>
+  /** `description` do backend. Usada só nos eventos de negócio, quando é uma
+   *  frase de verdade (o DealNotifier escreve em português e com a etapa) e
+   *  não o código cru `"<action> <entidade>"` do @AuditLog. */
+  description?: string
 }): string {
+  const desc = input.description?.trim() ?? ''
+  if (input.action.startsWith('deal_') && desc && !desc.startsWith(input.action)) {
+    return desc
+  }
   const ctx: FormatterCtx = {
     s: input.subject || '',
     d: input.details ?? {},
   }
   const formatter = FORMATTERS[input.action]
   if (formatter) return formatter(ctx)
-  // Fallback: action desconhecida vira "Xyz done" capitalizado, ainda
-  // legível. Evita mostrar `contact_updated contact` crú na UI.
-  const base = humanize(input.action)
-  return ctx.s ? `${base} — ${ctx.s}` : base
+  // Evento ainda sem frase: texto neutro em português (o humanize do código
+  // em inglês — "Templates pulled from meta" — aparecia para o cliente). Ao
+  // ver isto na tela, falta uma entrada em FORMATTERS.
+  return ctx.s ? `Atividade registrada — ${ctx.s}` : 'Atividade registrada na conta'
 }
 
-function humanize(action: string): string {
-  if (!action) return 'Ação desconhecida'
-  return action
-    .replace(/_/g, ' ')
-    .replace(/^./, (c) => c.toUpperCase())
-}

@@ -1,4 +1,4 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import axios, { type AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios'
 import { appLogger } from '@/services/appLogger'
 import type {
   AdAccount,
@@ -47,6 +47,7 @@ import type {
   TenantStage,
   User,
   WhatsAppNumber,
+  WhatsAppNumberDetailed,
   WhatsAppTemplate,
   TemplateHeaderTypeInput,
   AiDealTargetView,
@@ -627,8 +628,30 @@ axios.interceptors.request.use((config) => {
 })
 
 // ─── Retry interceptor — exponential backoff for transient failures ───────────
-// Retries 5xx and network errors up to 2 times with 500ms, 1000ms delays.
-
+// Retries 5xx (real) status codes up to 2 times with 500ms, 1000ms delays.
+//
+// PL-C3-FAR-1 (db31620): ECONNABORTED (timeout) saiu do retry — reintentar
+// uma requisição que já esperou os 30s inteiros do axios só multiplica a
+// espera, não ajuda.
+//
+// PL-C4-FAR-1 (achado ao vivo do usuário, medido com
+// `performance.getEntriesByType('resource')` durante uma queda real do
+// backend, sem instrumentar código): erro de CONEXÃO (sem `error.response`
+// — `ECONNREFUSED` etc.) TAMBÉM não é transitório quando o backend inteiro
+// está fora do ar, e continuava no retry. Cada conexão recusada NESTA
+// máquina custa ~2,4s (Windows tenta `::1` e depois `127.0.0.1`) — nada
+// instantâneo. No mount de uma página só, ~14 endpoints disparam (auth/me,
+// tags, settings, home/stats, home/snapshot, notifications, …) × até 3
+// tentativas = ~40 requisições de 2,4s cada competindo pelas 6 conexões
+// concorrentes que o Chrome permite por origem — a assinatura em degraus
+// (2360 / 4707 / 8243 / 10591 …ms) medida bate exatamente com essa fila.
+// Isso sozinho explicava telas presas por 15-35s bem depois do PL-C3-FAR-1.
+// Um backend fora do ar não é "transitório" no sentido que compensa
+// reintentar: se a 1ª tentativa falhou por ECONNREFUSED, as outras 2 vão
+// falhar do mesmo jeito ~2,4s depois cada — só custo, nenhum ganho. Só
+// reintenta infra real que respondeu com status (502/503/504/408/429) e
+// `ECONNRESET` (conexão que caiu NO MEIO da resposta — diferente de nunca
+// ter conectado; esse caso pode genuinamente ser passageiro).
 const RETRY_MAX = 2
 const RETRY_STATUS_CODES = new Set([502, 503, 504, 408, 429])
 
@@ -639,8 +662,7 @@ api.interceptors.response.use(undefined, async (error) => {
   const retryCount = parseInt(config.headers?.['x-retry-count'] ?? '0', 10)
   const status = error.response?.status
 
-  // Only retry on transient errors (network failures or specific status codes)
-  const isTransient = !status || RETRY_STATUS_CODES.has(status)
+  const isTransient = RETRY_STATUS_CODES.has(status) || error.code === 'ECONNRESET'
   if (!isTransient || retryCount >= RETRY_MAX) return Promise.reject(error)
 
   config.headers['x-retry-count'] = String(retryCount + 1)
@@ -781,10 +803,35 @@ const SESSION_KEY = 'oryon:session'
 let isRefreshing = false
 let refreshPromise: Promise<boolean> | null = null
 
+/**
+ * Renovação da sessão pela fila ÚNICA: quem pedir enquanto uma renovação está
+ * em curso espera a mesma. O servidor troca a chave de renovação a cada uso —
+ * duas renovações em paralelo fazem a segunda chegar com a chave já trocada,
+ * ser recusada e deslogar a pessoa. Todo código que renova (interceptor,
+ * checagem da sessão ao abrir o app) passa por aqui, nunca por attemptRefresh
+ * direto.
+ */
+export function renovarSessao(): Promise<boolean> {
+  if (!isRefreshing || !refreshPromise) {
+    isRefreshing = true
+    refreshPromise = attemptRefresh().finally(() => {
+      isRefreshing = false
+      refreshPromise = null
+    })
+  }
+  return refreshPromise
+}
+
 /** Requests that carry this flag bypass the 401→refresh interceptor.
  *  Required on /auth/refresh itself — otherwise a dead refresh cookie
  *  re-enters the interceptor and deadlocks waiting on its own promise. */
 export const SKIP_AUTH_REFRESH = { _skipAuthRefresh: true } as const
+
+/** Para rotas em que o 401 é resposta de negócio, não sessão vencida (ex.:
+ *  PATCH /settings/password com a senha atual errada). O interceptor ainda
+ *  tenta renovar a sessão uma vez; se a repetição volta 401, a sessão está
+ *  viva e o 401 é do pedido: rejeita sem mandar para o login. */
+export const UNAUTHORIZED_IS_BUSINESS = { _unauthorizedIsBusiness: true } as AxiosRequestConfig
 
 /** Exported so useSocket can renew the HTTP session before reconnecting
  *  the websocket after an `auth:expired` event (R39). */
@@ -843,6 +890,7 @@ export function clearSessionAndRedirect() {
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
   _skipAuthRefresh?: boolean
+  _unauthorizedIsBusiness?: boolean
 }
 
 const AUTH_NO_REFRESH_RE = /\/auth\/(refresh|mobile-refresh|logout|login|mobile-login)(?:\/|$|\?)/
@@ -864,6 +912,11 @@ function makeRefreshInterceptor(client: typeof axios | typeof api) {
 
     // Second 401 after a refresh retry, or an auth endpoint itself failed
     // (e.g. expired refresh cookie) — session is dead, send user to login.
+    // Exceção: a repetição de um pedido cujo 401 é de negócio (a renovação
+    // já deu certo, então a sessão está viva).
+    if (original._retry && original._unauthorizedIsBusiness) {
+      return Promise.reject(error)
+    }
     if (original._retry || isAuthNoRefreshRequest(original)) {
       if (hasSession) clearSessionAndRedirect()
       return Promise.reject(error)
@@ -876,14 +929,7 @@ function makeRefreshInterceptor(client: typeof axios | typeof api) {
 
     original._retry = true
 
-    if (!isRefreshing) {
-      isRefreshing = true
-      refreshPromise = attemptRefresh().finally(() => {
-        isRefreshing = false
-        refreshPromise = null
-      })
-    }
-    const ok = await refreshPromise
+    const ok = await renovarSessao()
     if (!ok) {
       clearSessionAndRedirect()
       return Promise.reject(error)
@@ -1021,9 +1067,21 @@ export const messagesApi = {
 
 export const tagsApi = {
   async list() {
-    const res = await api.get<{ data: Tag[] } | Tag[]>('/tags')
-    // Support both paginated { data } and legacy array responses
-    return { ...res, data: Array.isArray(res.data) ? res.data : res.data.data }
+    // O backend pagina (padrão 50, teto 100): lia-se só a 1ª página e quem
+    // tinha mais de 50 tags perdia o resto em todo o sistema. Lê todas as
+    // páginas (teto de 20 = 2.000 tags, folga para qualquer tenant real).
+    type Pagina = { data: Tag[]; hasMore?: boolean } | Tag[]
+    const primeira = await api.get<Pagina>('/tags', { params: { page: 1, limit: 100 } })
+    if (Array.isArray(primeira.data)) return { ...primeira, data: primeira.data }
+    const todas = [...primeira.data.data]
+    let temMais = !!primeira.data.hasMore
+    for (let page = 2; temMais && page <= 20; page++) {
+      const r = await api.get<Pagina>('/tags', { params: { page, limit: 100 } })
+      if (Array.isArray(r.data)) break
+      todas.push(...r.data.data)
+      temMais = !!r.data.hasMore
+    }
+    return { ...primeira, data: todas }
   },
   create(name: string, color: string) {
     return api.post<Tag>('/tags', { name, color })
@@ -1036,16 +1094,41 @@ export const tagsApi = {
   },
 }
 
+/** Usuário com presença e carga — `GET /users/available` (online primeiro, menor carga depois). */
+export interface AvailableUser {
+  id: string
+  firstName: string
+  lastName: string | null
+  email: string
+  role: string
+  departmentId: string | null
+  isOnline: boolean
+  /** Conversas abertas + pendentes atribuídas à pessoa. */
+  activeConversations: number
+}
+
 export const usersApi = {
   list() {
     return api.get<User[]>('/users')
+  },
+  /** Presença e carga de cada pessoa da equipe (Dashboard · Equipe agora). */
+  available() {
+    return api.get<AvailableUser[]>('/users/available')
   },
 }
 
 export const contactsApi = {
   list(filters: ContactFilters = {}, page = 1, limit = 50) {
+    // O backend lê `stage` e `tagId` como lista separada por vírgula (split(',')) —
+    // sem isto o axios manda `stage[]=a&stage[]=b` e o controller recebe um array.
     return api.get<PaginatedResponse<Contact>>('/contacts', {
-      params: { ...filters, page, limit },
+      params: {
+        ...filters,
+        stage: filters.stage?.length ? filters.stage.join(',') : undefined,
+        tagId: filters.tagId?.length ? filters.tagId.join(',') : undefined,
+        page,
+        limit,
+      },
     })
   },
 
@@ -1636,6 +1719,15 @@ export const campaignsApi = {
   getConversations(id: string) {
     return api.get<import('@/types').CampaignConversationSummary[]>(`/campaigns/${id}/conversations`)
   },
+  /** T2 — destinatários por status; `excluded` (D9) lista os suprimidos do segmento. */
+  getRecipients(id: string, status?: import('@/types').CampaignRecipientStatus | 'excluded', page = 1, limit = 50) {
+    return api.get<{
+      data: Array<import('@/types').CampaignRecipientRow | import('@/types').CampaignExcludedRow>
+      total: number
+      page: number
+      limit: number
+    }>(`/campaigns/${id}/recipients`, { params: { status, page, limit } })
+  },
 }
 
 export const activityApi = {
@@ -1773,6 +1865,8 @@ export const departmentsApi = {
 
 export const whatsappNumbersApi = {
   list() { return api.get<WhatsAppNumber[]>('/meta/numbers') },
+  /** Inclui campos do WABA (qualityRating, messagingLimit) que `list()` não traz. */
+  listDetailed() { return api.get<WhatsAppNumberDetailed[]>('/whatsapp/numbers') },
   update(id: string, data: { label?: string }) { return api.patch<WhatsAppNumber>(`/meta/numbers/${id}`, data) },
   // Desconectar (soft) — pausa o atendimento, mantém a row e permite
   // reconectar pelo OAuth ressuscitando o mesmo registro.
@@ -1801,6 +1895,9 @@ export interface WhatsappLineHealth {
   verifiedName: string | null
   status: string
   qualityRating: string
+  /** Plano MA (MA-4.5): limite de envio da Meta e máximo diário. */
+  messagingLimitTier?: string | null
+  maxDailyConversations?: number | null
   isActive: boolean
   isPrimary: boolean
   hasSystemUserToken: boolean

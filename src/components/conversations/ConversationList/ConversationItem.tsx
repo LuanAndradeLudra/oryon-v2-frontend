@@ -2,12 +2,16 @@ import { memo, useCallback } from 'react'
 import {
   Camera, Mic, FileText, Video, MapPin, Sticker,
   ExternalLink, Phone, Copy,
-  Bot, UserCheck, UserX, Clock, Megaphone, Users, AlertTriangle, Workflow, Flame,
+  Bot, Megaphone, Users, AlertTriangle, Workflow,
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
+import { useAuth } from '@/contexts/AuthContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
-import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
+import { estadoDaIA, getAssignment, getAwaitingReply } from '@/lib/conversationSignals'
+import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
+import { useRelogioDoMinuto } from '@/hooks/useRelogioDoMinuto'
 import { renderHighlightedSnippet } from '@/lib/searchHighlight'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -77,13 +81,17 @@ interface ConversationItemProps {
 }
 
 export const ConversationItem = memo(function ConversationItem({ conversation, isActive, offFilter = false, onSelect }: ConversationItemProps) {
-  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly, searchSnippet } =
+  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly, status, searchSnippet } =
     conversation
+  const currentUserId = useAuth().user?.id
 
   const hasUnread = unreadCount > 0 && !isActive
-  const aiActive = isAiActive(conversation)
   const assignment = getAssignment(conversation)
-  const awaiting = getAwaitingReply(conversation)
+  const linhasDaIA = useLinhasDaIA()
+  // O relógio compartilhado faz a espera andar sozinha (a linha é memo).
+  const agora = useRelogioDoMinuto()
+  const awaiting = getAwaitingReply(conversation, linhasDaIA.linhasComIA, agora)
+  const estadoIA = estadoDaIA(conversation, linhasDaIA)
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
@@ -120,10 +128,14 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
       data-conv-id={conversation.id}
       title={hoverTitle}
       className={cn(
-        'conv-item relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-all duration-100 rounded-xl',
+        // README 3.3: linha cheia, sem caixa/raio por item — só um estado de
+        // fundo sutil. Ativa = --rowhover + acento inset 2px à esquerda
+        // (substitui o hack de gradiente de borda do tema claro, removido de
+        // index.css — CollapsibleSection/DataTable já usam este mesmo par).
+        'relative w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-colors duration-100',
         isActive
-          ? 'conv-item-active bg-surface-800 border-[2.0px] border-surface-700'
-          : 'border border-surface-700/60 hover:border-surface-600',
+          ? 'bg-[var(--rowhover)] shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
+          : 'hover:bg-[var(--rowhover)]',
         offFilter && 'opacity-70',
       )}
     >
@@ -131,26 +143,48 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           lista É WhatsApp (whatsappNumber é campo obrigatório em Conversation,
           e `channel` nunca é lido em nenhum lugar da UI hoje) — o selo
           repetia a mesma informação em 100% das linhas, sem distinguir nada. */}
-      <div className="relative mt-0.5 flex-shrink-0">
-        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
+      <div className="relative flex-shrink-0">
+        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="36" />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         {/* Row 1: name + time */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className={cn(
-            'text-sm truncate',
-            (hasUnread || isActive) ? 'font-semibold text-surface-50' : 'font-medium text-surface-200'
-          )}>
+          {/* CONV-LIST-16/17 (spec/1d-conversas.GAPS.md): peso 600 sempre —
+              não-lida se sinaliza só pelo badge, o mock é explícito que o
+              nome NÃO muda de peso/cor entre lida/não-lida. */}
+          <span className="text-[13px] font-semibold text-surface-100 truncate">
             {contact.displayName}
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {offFilter && (
+              // PL-C2-CAR-15 (Eixo10/P4): pílula solta (rounded-full, 9px,
+              // uppercase) sem par em nenhum outro lugar do app — os chips de
+              // status logo abaixo, NA MESMA linha do item, já são o
+              // vocabulário certo (h-[17px]/rounded-[5px]/10.5px). Alinhado.
               <span
-                className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25"
+                className={cn(
+                  'inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold flex-shrink-0',
+                  // Contraste 01/10 (PO, 4D): no claro, chip neutro + ponto colorido.
+                  '!bg-surface-800 !text-surface-200 shadow-[inset_0_0_0_1px_#3A4D4D] gap-1',
+                  '[[data-theme=light]_&]:!bg-white [[data-theme=light]_&]:!text-[#1F2937] [[data-theme=light]_&]:shadow-[inset_0_0_0_1px_#C9CFDA]',
+                  // Cor do status de destino (azul/âmbar/verde), não "aviso" genérico.
+                  conversation.status === 'open'
+                    ? 'bg-status-open/[.14] text-status-open'
+                    : conversation.status === 'pending'
+                      ? 'bg-cstatus-pending/[.14] text-cstatus-pending'
+                      : 'bg-cstatus-resolved/[.14] text-cstatus-resolved',
+                )}
                 title={`Movida para "${statusLabel(conversation.status)}" — não corresponde mais ao filtro atual`}
               >
+                <span
+                  aria-hidden
+                  className={cn(
+                    'inline-block w-1.5 h-1.5 rounded-full',
+                    conversation.status === 'open' ? 'bg-status-open' : conversation.status === 'pending' ? 'bg-[#F59E0B]' : 'bg-[#16A34A]',
+                  )}
+                />
                 {statusLabel(conversation.status)}
               </span>
             )}
@@ -168,7 +202,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         <div className="flex items-center justify-between gap-2">
           <div className={cn(
             'flex items-center gap-1 min-w-0 text-xs',
-            hasUnread ? 'text-surface-300' : 'text-surface-500'
+            'text-surface-400'
           )}>
             {/* SCRUM-1096 — quando o match veio do CONTEÚDO da mensagem (não do
                 nome/telefone do contato), o trecho destacado substitui o
@@ -179,117 +213,91 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               <span className="truncate">{renderHighlightedSnippet(searchSnippet)}</span>
             ) : (
               <>
-                <SenderIndicator kind={lastMessageSenderKind} />
+                {lastMessageSenderKind === 'operator' ? null : <SenderIndicator kind={lastMessageSenderKind} />}
                 <span className="truncate">
+                  {lastMessageSenderKind === 'operator' && <span className="text-surface-500">Você: </span>}
                   <MessagePreview text={lastMessagePreview || '…'} />
                 </span>
               </>
             )}
           </div>
           {hasUnread && (
-            <span className="flex-shrink-0 min-w-[18px] h-[18px] bg-brand-500 text-surface-950 text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+            <Badge variant="unread" className="flex-shrink-0">
               {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
+            </Badge>
           )}
         </div>
 
-        {/* Row 3 (era Row 4): categorization (left, pills) + state signals (right, ghost).
-            Two semantic groups on one line — pills for attributes that
-            classify the conversation, ghost icons+text for live state. */}
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-            {/* Etiquetas como PONTO, não como pílula preenchida.
-                A cor da etiqueta é escolhida pelo tenant e costuma vir
-                saturada; a pílula preenchida amplificava isso duas vezes por
-                linha, vinte linhas na tela. O ponto de 6 px preserva o código
-                de cor — quem navega por ele continua navegando — e devolve a
-                saturação aos sinais de ESTADO, que são os únicos que exigem
-                ação. O nome completo vive no painel do contato, que desde
-                09/09 é o dono das etiquetas. */}
-            {tags && tags.length > 0 && (
-              <span
-                className="inline-flex items-center gap-1.5 min-w-0"
-                title={tags.map((t) => t.name).join(' · ')}
-              >
-                {tags.slice(0, 2).map((tag) => (
-                  <i
-                    key={tag.id}
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: tag.color }}
-                    aria-hidden
-                  />
-                ))}
-                <span className="text-[10.5px] text-surface-500 truncate">
-                  {tags.slice(0, 2).map((t) => t.name).join(', ')}
-                  {tags.length > 2 && ` +${tags.length - 2}`}
-                </span>
+        {/* Row 3 — R2-1D-LIST (RODADA-2.md): à esquerda os chips de ator
+            + pontos das etiquetas; à direita só texto colorido de estado.
+            28/09: IA e responsável são DOIS eixos — o chip "IA" escondia o
+            responsável, aparecia em linha sem agente e em conversa que a IA
+            já tinha passado para a equipe (ver estadoDaIA). */}
+        <div className="flex items-center gap-1.5 mt-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {status === "resolved" ? (
+              /* PO, 23/09: mesma tinta leve do status no menu do cabeçalho
+                 (verde translúcido), não mais o chip neutro. */
+              <span className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-cstatus-resolved/[.14] text-cstatus-resolved flex-shrink-0">
+                Resolvida
               </span>
-            )}
-
-            {/* Phase 33c — selo de verificação. Desde o Verification Gateway o
-                handoff também acontece por preço, horário e nome, não só por
-                ação alegada — e a lista não carrega o `outcome`, então o texto
-                é genérico de propósito (ver GUARD_LIST_BADGE_TITLE). */}
-            {hasRecentAnomaly && (
+            ) : estadoIA === 'passou' ? (
               <span
-                className="color-chip inline-flex items-center gap-1 whitespace-nowrap text-[10px] px-1.5 py-0.5 rounded-full font-medium border"
-                style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
-                title={GUARD_LIST_BADGE_TITLE}
+                className="inline-flex items-center gap-1 h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-status-pending bg-status-pending-bg flex-shrink-0"
+                title="A IA passou a conversa para a equipe"
               >
-                <AlertTriangle className="w-2.5 h-2.5" />
-                Verificar
+                <Bot className="w-3 h-3" />
+                IA passou
+              </span>
+            ) : estadoIA === 'atendendo' ? (
+              <span
+                // PO, 23/09: IA é neutro (cinza claro no escuro, cinza mais
+                // escuro no claro — os tokens surface-* invertem por tema), não
+                // âmbar: âmbar agora é a cor do status "Pendente".
+                className="inline-flex items-center gap-1 h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-surface-200 bg-surface-700 flex-shrink-0"
+                title="IA respondendo nesta conversa"
+              >
+                <Bot className="w-3 h-3" />
+                IA
+              </span>
+            ) : null}
+            {status !== "resolved" && assignment === "human" && assignedUser ? (
+              <span
+                className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-accent-green bg-accent-green/[.12] truncate"
+                title={`Atribuída a ${assignedUser.firstName}${assignedUser.lastName ? " " + assignedUser.lastName : ""}`}
+              >
+                {assignedUser.id === currentUserId ? "Você" : truncate(assignedUser.firstName, 12)}
+              </span>
+            ) : null}
+
+            {/* Etiquetas como PONTO, não como pílula: preservam o código de cor
+                sem competir com os sinais de ESTADO. Nome completo no title. */}
+            {tags && tags.length > 0 && (
+              <span className="inline-flex items-center gap-1 flex-shrink-0" title={tags.map((t) => t.name).join(" · ")}>
+                {tags.slice(0, 2).map((tag) => (
+                  <i key={tag.id} className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }} aria-hidden />
+                ))}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-3 ml-auto flex-shrink-0 pl-2">
-            {/* AI indicator — only when the bot is currently replying. The
-                assignment chip below is shown independently of this one. */}
-            {aiActive && (
-              <span
-                className="inline-flex items-center gap-1 text-[10.5px] text-surface-300"
-                title="IA respondendo nesta conversa"
-              >
-                <Bot className="w-3.5 h-3.5" />
-                IA
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0 pl-2 text-[10.5px]">
+            {hasRecentAnomaly && (
+              <span className="inline-flex items-center gap-1 font-semibold text-status-pending whitespace-nowrap" title={GUARD_LIST_BADGE_TITLE}>
+                <AlertTriangle className="w-3 h-3" />
+                Verificação pendente
               </span>
             )}
-
-            {/* Assignment — always shown so the operator can tell at a glance
-                whether the conversation has an owner, regardless of whether
-                the AI is the one typing right now. */}
-            {assignment === 'human' && assignedUser ? (
-              <span
-                className="inline-flex items-center gap-1 text-[10.5px] text-surface-200"
-                title={`Atribuída a ${assignedUser.firstName}${assignedUser.lastName ? ' ' + assignedUser.lastName : ''}`}
-              >
-                <UserCheck className="w-3.5 h-3.5 text-surface-300" />
-                {truncate(assignedUser.firstName, 10)}
-              </span>
-            ) : (
-              <span
-                className="inline-flex items-center text-surface-500"
-                title="Conversa sem responsável atribuído"
-              >
-                <UserX className="w-3.5 h-3.5" />
-              </span>
-            )}
-
             {awaiting && (() => {
-              // Urgência progressiva: o operador prioriza pela COR, sem ler
-              // timestamps — âmbar vira vermelho quando a espera passa de 15min.
-              const waitMin = (Date.now() - new Date(lastMessageAt).getTime()) / 60000
+              // Urgência progressiva: âmbar vira vermelho quando a espera passa de 15min.
+              const waitMin = (agora - new Date(lastMessageAt).getTime()) / 60000
               const critical = waitMin >= 15
               return (
                 <span
-                  className={cn(
-                    'inline-flex items-center gap-1 text-[10.5px] font-medium',
-                    critical ? 'text-danger' : 'text-status-pending',
-                  )}
+                  className={cn("font-semibold whitespace-nowrap", critical ? "text-danger" : "text-status-pending")}
                   title={`Cliente aguardando resposta há ${chatRelTime(lastMessageAt)}`}
                 >
-                  {critical ? <Flame className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                  {chatRelTime(lastMessageAt)}
+                  {chatRelTime(lastMessageAt)} sem resposta
                 </span>
               )
             })()}

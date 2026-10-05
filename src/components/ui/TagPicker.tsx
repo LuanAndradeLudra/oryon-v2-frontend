@@ -3,7 +3,9 @@ import { Search, Check, X, Plus, Trash2, Loader2 } from 'lucide-react'
 import { Dropdown } from './Dropdown'
 import { ColorPicker } from './ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import type { Tag } from '@/types'
 
 interface TagPickerContentProps {
@@ -28,8 +30,17 @@ interface TagPickerProps extends TagPickerContentProps {
  * can render free of any narrow-panel clipping context.
  */
 export function TagPickerContent({
-  allTags, selectedTags, onAdd, onRemove, onCreate, onDelete,
+  allTags, selectedTags, onAdd, onRemove, onCreate: onCreateProp, onDelete: onDeleteProp,
 }: TagPickerContentProps) {
+  // Revisão final 04/10: criar e excluir etiqueta é de administrador no
+  // backend. Para os demais papéis o "+" falhava calado (403) e a lixeira
+  // aparecia; e o admin excluía uma etiqueta GLOBAL num clique, sem confirmar.
+  const { user } = useAuth()
+  const podeGerir = isAdminTier(user?.role)
+  const onCreate = podeGerir ? onCreateProp : undefined
+  const onDelete = podeGerir ? onDeleteProp : undefined
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null)
+  const [erro, setErro] = useState<string | null>(null)
   const [search, setSearch]           = useState('')
   const [creating, setCreating]       = useState(false)
   const [newName, setNewName]         = useState('')
@@ -44,14 +55,17 @@ export function TagPickerContent({
   const isSelected = (id: string) => selectedTags.some((t) => t.id === id)
 
   const handleCreate = async () => {
-    if (!newName.trim() || !onCreate) return
+    if (!newName.trim() || !onCreate || saving) return
     setSaving(true)
+    setErro(null)
     try {
       const tag = await onCreate(newName.trim(), newColor)
       onAdd(tag)
       setNewName('')
       setNewColor(DEFAULT_ENTITY_COLOR)
       setCreating(false)
+    } catch (err) {
+      setErro(getApiErrorMessage(err, 'Não foi possível criar a etiqueta.'))
     } finally {
       setSaving(false)
     }
@@ -60,9 +74,15 @@ export function TagPickerContent({
   const handleDelete = async (e: React.MouseEvent, tagId: string) => {
     e.stopPropagation()
     if (!onDelete) return
+    // 1º clique pede confirmação: a etiqueta sai de TODAS as conversas e contatos.
+    if (confirmandoId !== tagId) { setConfirmandoId(tagId); return }
     setDeletingId(tagId)
+    setErro(null)
     try {
       await onDelete(tagId)
+      setConfirmandoId(null)
+    } catch (err) {
+      setErro(getApiErrorMessage(err, 'Não foi possível excluir a etiqueta.'))
     } finally {
       setDeletingId(null)
     }
@@ -73,7 +93,7 @@ export function TagPickerContent({
       {/* Search / header */}
       {!creating && (
         <div className="p-2 border-b border-surface-700 flex items-center gap-1.5">
-          <div className="flex items-center gap-2 bg-surface-900 rounded-lg px-2.5 py-1.5 flex-1">
+          <div className="flex items-center gap-2 bg-surface-900 rounded-sm px-2.5 py-1.5 flex-1">
             <Search className="w-3.5 h-3.5 text-surface-500" />
             <input
               value={search}
@@ -90,7 +110,7 @@ export function TagPickerContent({
           {onCreate && (
             <button
               onClick={() => setCreating(true)}
-              className="w-7 h-7 rounded-lg bg-brand-600 hover:bg-brand-500 flex items-center justify-center flex-shrink-0 transition-colors"
+              className="w-7 h-7 rounded-sm bg-brand-600 hover:bg-brand-500 flex items-center justify-center flex-shrink-0 transition-colors"
               title="Nova etiqueta"
             >
               <Plus className="w-3.5 h-3.5 text-surface-950" />
@@ -99,10 +119,14 @@ export function TagPickerContent({
         </div>
       )}
 
+      {erro && (
+        <p role="alert" className="px-3 py-2 text-xs text-danger border-b border-surface-700">{erro}</p>
+      )}
+
       {/* Create new tag form */}
       {creating && (
         <div className="p-3 border-b border-surface-700">
-          <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wide mb-2">
+          <p className="text-3xs font-semibold text-surface-500 uppercase tracking-wide mb-2">
             Nova etiqueta
           </p>
           <input
@@ -112,7 +136,7 @@ export function TagPickerContent({
             onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setCreating(false) }}
             placeholder="Nome da etiqueta..."
             maxLength={30}
-            className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 outline-none focus:border-brand-500 transition-colors"
+            className="w-full bg-surface-900 border border-surface-700 rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 outline-none focus:border-brand-500 transition-colors"
           />
 
           {/* Color picker — curated swatches + custom hex */}
@@ -123,7 +147,7 @@ export function TagPickerContent({
           {/* Preview */}
           {newName && (
             <div className="flex items-center gap-2 mt-2.5">
-              <span className="text-[10px] text-surface-500">Prévia:</span>
+              <span className="text-3xs text-surface-500">Prévia:</span>
               <span
                 className="color-chip inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border"
                 style={{ ['--chip']: newColor } as React.CSSProperties}
@@ -137,7 +161,7 @@ export function TagPickerContent({
           <div className="flex gap-2 mt-3">
             <button
               onClick={() => setCreating(false)}
-              className="flex-1 py-1.5 rounded-lg text-xs text-surface-400 hover:bg-surface-700 transition-all"
+              className="flex-1 py-1.5 rounded-sm text-xs text-surface-400 hover:bg-surface-700 transition-all"
             >
               Cancelar
             </button>
@@ -145,7 +169,7 @@ export function TagPickerContent({
               onClick={handleCreate}
               disabled={!newName.trim() || saving}
               className={cn(
-                'flex-1 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5',
+                'flex-1 py-1.5 rounded-sm text-xs font-medium transition-all flex items-center justify-center gap-1.5',
                 newName.trim()
                   ? 'bg-brand-600 text-surface-950 hover:bg-brand-500'
                   : 'bg-surface-700 text-surface-500 cursor-not-allowed'
@@ -164,7 +188,7 @@ export function TagPickerContent({
           {selectedTags.map((tag) => (
             <span
               key={tag.id}
-              className="color-chip inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium border"
+              className="color-chip inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded-full font-medium border"
               style={{ ['--chip']: tag.color } as React.CSSProperties}
             >
               {tag.name}
@@ -214,16 +238,18 @@ export function TagPickerContent({
                   </button>
 
                   {/* Delete tag (global) */}
-                  {onDelete && (hoverId === tag.id || isDeleting) && (
+                  {onDelete && (hoverId === tag.id || isDeleting || confirmandoId === tag.id) && (
                     <button
                       onClick={(e) => handleDelete(e, tag.id)}
+                      onMouseLeave={() => { if (!isDeleting) setConfirmandoId((id) => (id === tag.id ? null : id)) }}
                       disabled={isDeleting}
-                      className="px-2 py-2 text-surface-500 hover:text-danger transition-colors flex-shrink-0"
-                      title="Excluir etiqueta"
+                      className={cn('px-2 py-2 transition-colors flex-shrink-0', confirmandoId === tag.id ? 'text-danger text-3xs font-semibold' : 'text-surface-500 hover:text-danger')}
+                      title={confirmandoId === tag.id ? 'Clique de novo para excluir de todas as conversas' : 'Excluir etiqueta'}
+                      aria-label={confirmandoId === tag.id ? `Confirmar exclusão da etiqueta ${tag.name}` : `Excluir etiqueta ${tag.name}`}
                     >
                       {isDeleting
                         ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        : <Trash2 className="w-3.5 h-3.5" />
+                        : confirmandoId === tag.id ? 'Excluir?' : <Trash2 className="w-3.5 h-3.5" />
                       }
                     </button>
                   )}

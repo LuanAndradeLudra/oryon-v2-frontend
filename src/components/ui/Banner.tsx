@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils'
 
 export type BannerVariant = 'warning' | 'danger' | 'info' | 'success' | 'neutral'
 
-// Banner segue o mesmo mecanismo dos chips (.color-chip + --chip): fundo sólido
-// (cor semântica escurecida) + texto branco, nos dois temas. Para "warning" usamos
-// --color-warning (laranja) em vez do amber, que teria contraste ruim com branco.
+// MODAL-03 (spec 1a): banner é SUAVE — fundo com 12% da cor semântica + texto
+// na própria cor (antes era .color-chip cheio: fundo sólido + texto branco).
+// `--chip` continua sendo a cor; o color-mix resolve por tema sozinho.
 const VARIANT: Record<BannerVariant, { chip: string; Icon: LucideIcon }> = {
   warning: { chip: 'var(--color-warning)',     Icon: AlertTriangle },
   danger:  { chip: 'var(--color-danger)',      Icon: AlertCircle },
@@ -29,15 +29,20 @@ interface BannerProps {
 export function Banner({ variant = 'warning', icon = true, action, className, children }: BannerProps) {
   const { chip, Icon } = VARIANT[variant]
   const iconNode = icon === true
-    ? <Icon className="w-4 h-4 mt-px flex-shrink-0" />
+    ? <Icon className="w-3.5 h-3.5 mt-px flex-shrink-0" strokeWidth={2} />
     : icon === false
       ? null
       : <span className="mt-px flex-shrink-0">{icon}</span>
   return (
     <div
       role={variant === 'danger' || variant === 'warning' ? 'alert' : 'status'}
-      className={cn('color-chip flex items-start gap-2.5 rounded-xl border px-4 py-3 text-[13px] leading-snug', className)}
-      style={{ ['--chip']: chip } as React.CSSProperties}
+      className={cn('banner-tinta flex items-start gap-2 rounded-xs border px-2.5 py-[9px] text-xs leading-snug', className)}
+      style={{
+        ['--chip' as string]: chip,
+        backgroundColor: 'color-mix(in srgb, var(--chip) 12%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--chip) 25%, transparent)',
+        color: 'var(--chip)',
+      } as React.CSSProperties}
     >
       {iconNode}
       <div className="min-w-0 flex-1">{children}</div>

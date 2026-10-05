@@ -36,6 +36,9 @@ export function CompanyProfile() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { checklist, markDone } = useSetupChecklist(user?.id)
+  // S1 (release 2026-09-29): só administrador altera a organização — o
+  // backend agora recusa os outros papéis. Supervisor vê, sem editar.
+  const podeEditar = ['admin', 'business_admin', 'super_admin'].includes(user?.role ?? '')
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [form, setForm] = useState({
     name: '',
@@ -64,14 +67,22 @@ export function CompanyProfile() {
     })
   }, [reloadKey])
 
+  // Nome e e-mail são obrigatórios (marcados com *), mas o backend não
+  // valida: sem esta checagem, salvar em branco apagava o nome da empresa.
+  const nomeInvalido = form.name.trim().length === 0
+  const emailInvalido = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
+
   const save = async () => {
+    if (nomeInvalido || emailInvalido) return
     setLoading(true)
     try {
       // Map frontend field names to NestJS DTO field names
       await api.patch('/settings/company', {
-        businessName: form.name,
-        businessEmail: form.email,
+        businessName: form.name.trim(),
+        businessEmail: form.email.trim(),
       })
+      // O cabeçalho da seção (iniciais + nome) lê de `tenant`: atualiza já.
+      setTenant((t) => (t ? { ...t, name: form.name.trim(), email: form.email.trim() } : t))
       toast('Perfil da empresa salvo com sucesso.', 'success')
       markDone('company')
     } catch {
@@ -82,10 +93,10 @@ export function CompanyProfile() {
   }
 
   const planBadge: Record<string, string> = {
-    free: 'bg-surface-700 text-surface-300',
-    starter: 'bg-brand-900/40 text-brand-300',
-    pro: 'bg-status-active-bg text-status-active',
-    enterprise: 'bg-status-pending-bg text-status-pending',
+    free: 'bg-[var(--sf2)] text-surface-400 border border-surface-700',
+    starter: 'bg-accent-soft text-accent-dark border border-brand-500/25',
+    pro: 'bg-status-active-bg text-status-active border border-status-active-border',
+    enterprise: 'bg-status-pending-bg text-status-pending border border-status-pending-border',
   }
 
   if (error) {
@@ -146,29 +157,35 @@ export function CompanyProfile() {
       >
         {/* Logo + plan */}
         <div className="flex items-center gap-5 mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
+          <div className="w-16 h-16 rounded-lg bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
             {tenant.name.slice(0, 2).toUpperCase()}
           </div>
           <div>
             <p className="text-base font-semibold text-surface-50">{tenant.name}</p>
-            <span className={`mt-1 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${planBadge[tenant.plan]}`}>
-              {tenant.plan}
-            </span>
+            {/* Só com plano: sem ele sobrava uma pílula vazia. */}
+            {tenant.plan && (
+              <span className={`mt-1 inline-flex px-1.5 py-px rounded-xs text-[11px] font-semibold uppercase tracking-wide ${planBadge[tenant.plan] ?? planBadge.free}`}>
+                {tenant.plan}
+              </span>
+            )}
             <p className="mt-1.5 flex items-center gap-1.5 text-xs text-surface-500">
               Upload de logo <ComingSoonBadge />
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          <FormField label="Nome da Empresa" required>
+        <div className="grid grid-cols-1 gap-3">
+          <FormField label="Nome da Empresa" required error={nomeInvalido ? 'Informe o nome da empresa.' : undefined}>
             <Input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="Nome da empresa"
+              readOnly={!podeEditar}
             />
           </FormField>
 
+          {/* Só quando o backend manda o slug: antes aparecia um campo vazio. */}
+          {tenant.slug && (
           <FormField label="Slug" hint="Identificador único da sua conta — não pode ser alterado.">
             <div className="relative">
               <Input
@@ -178,10 +195,11 @@ export function CompanyProfile() {
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-surface-500">
                 <Lock className="w-3 h-3" />
-                Read-only
+                Fixo
               </span>
             </div>
           </FormField>
+          )}
         </div>
       </SettingsSection>
 
@@ -189,13 +207,14 @@ export function CompanyProfile() {
         title="Preferências regionais"
         description="E-mail de contato, fuso horário e idioma usados em agendamentos e mensagens automáticas."
       >
-        <div className="grid grid-cols-1 gap-4">
-          <FormField label="E-mail de contato" required>
+        <div className="grid grid-cols-1 gap-3">
+          <FormField label="E-mail de contato" required error={form.email.trim() && emailInvalido ? 'E-mail inválido.' : !form.email.trim() ? 'Informe o e-mail de contato.' : undefined}>
             <Input
               type="email"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               placeholder="contato@empresa.com"
+              readOnly={!podeEditar}
             />
           </FormField>
 
@@ -216,9 +235,13 @@ export function CompanyProfile() {
           </FormField>
         </div>
 
-        <div className="flex justify-end mt-4">
-          <Button onClick={save} loading={loading}>Salvar alterações</Button>
-        </div>
+        {podeEditar ? (
+          <div className="flex justify-end mt-4">
+            <Button onClick={save} loading={loading} disabled={nomeInvalido || emailInvalido}>Salvar alterações</Button>
+          </div>
+        ) : (
+          <p className="mt-4 text-xs text-surface-500">Só um administrador da empresa altera estes dados.</p>
+        )}
       </SettingsSection>
     </div>
   )

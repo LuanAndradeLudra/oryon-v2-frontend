@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 import React, { useState, createContext, useContext, memo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, useReducedMotion } from 'framer-motion'
 
 interface SidebarContextProps {
   open: boolean
@@ -77,7 +78,11 @@ export const DesktopSidebar = ({
         // Sem bg/borda própria: a sidebar vive sobre o SHELL (fundo profundo) e
         // faz parte da moldura do workspace — o canvas de conteúdo é quem se
         // destaca. (bg via token local .nav-sidebar continua p/ hovers/chips.)
-        'nav-sidebar h-full py-4 flex flex-col bg-transparent flex-shrink-0 overflow-hidden',
+        // SHELL-SIDEBAR-01/05 (spec shell.md): container 10 10 12.
+        // Linha de 1px na borda direita (pedido do usuário 22/09): a sidebar vira
+        // moldura contínua e a hairline do TopBar nasce nela — sem degrau de cor.
+        // Hex fixo porque o rail é escuro nos dois temas.
+        'nav-sidebar h-full pt-2.5 pb-3 px-2.5 flex flex-col bg-transparent flex-shrink-0 overflow-hidden border-r border-[#243333]',
         'transition-[width] duration-200 ease-out will-change-[width]',
         className
       )}
@@ -102,11 +107,12 @@ export const SidebarSectionLabel = memo(function SidebarSectionLabel({ label }: 
   const collapsed = animate && !open
 
   return (
-    <div className="relative px-3 pt-5 pb-1 select-none" aria-label={label}>
+    // SHELL-SIDEBAR-08: eyebrow 14 6 10, .14em, #6B8080 (surface-500 no escuro).
+    <div className="relative px-2.5 pt-3.5 pb-1.5 select-none" aria-label={label}>
       <div className="relative h-[15px]">
         <p
           className={cn(
-            'absolute inset-0 flex items-center text-[10px] font-bold uppercase tracking-widest text-surface-600 whitespace-nowrap',
+            'absolute inset-0 flex items-center text-3xs font-bold uppercase tracking-[0.14em] text-surface-500 whitespace-nowrap',
             'transition-opacity duration-200',
             collapsed ? 'opacity-0' : 'opacity-100',
           )}
@@ -146,29 +152,53 @@ export const SidebarLink = memo(function SidebarLink({
   onClick?: () => void
 }) {
   const { open, animate } = useSidebar()
+  const reduceMotion = useReducedMotion()
+  const collapsed = animate && !open
 
   const inner = (
     <span
       className={cn(
-        'flex items-center w-full transition-colors duration-100',
+        // SHELL-SIDEBAR-03 (spec shell.md): item 32px, raio 6, 13px; inativo
+        // #8FA5A5 (surface-400 no escuro); ativo pílula clara + 600.
+        'relative flex items-center w-full h-8 gap-2 px-2 rounded-[6px] transition-colors duration-100',
+        // PL-5-3 (eixo 10): recolhida, a barra continuava com o `px-2` + o
+        // `gap-2` do rótulo (que fica em `w-0`, mas o gap ainda ocupa) — os 13
+        // ícones ficavam com centro em x=28 contra o centro real da barra em
+        // x=30,5, enquanto o avatar do rodapé já era centrado. 3px de desvio
+        // ótico numa coluna de ícones lê como barra torta. Medido ao vivo.
+        animate && !open && 'justify-center px-0 gap-0',
         active
-          ? 'gap-2 px-2 py-1 rounded-lg bg-white/85 backdrop-blur-sm text-black'
-          : 'gap-3 px-3 py-2 rounded-xl text-white hover:bg-white/10',
+          // PO 01/10: ativo em destaque só no ícone — traço mais grosso (1,75 → 2,25).
+          ? 'text-black font-semibold [&_svg]:[stroke-width:2.25]'
+          // PO 01/10: rótulo e ícone quase brancos nos dois temas (eram #8FA5A5).
+          : 'text-[#E3EBEB] hover:bg-white/10 hover:text-white',
       )}
     >
+      {/* Pílula ativa compartilhada (layoutId): ao trocar de página ela
+          DESLIZA do item antigo para o novo em vez de piscar (proposta do
+          Farol no fix das rotas, 23/09). Fica atrás do conteúdo; com
+          prefers-reduced-motion só troca de lugar. */}
+      {active && (
+        <motion.span
+          layoutId="nav-active-pill"
+          aria-hidden
+          className="absolute inset-0 rounded-[6px] bg-white/85 backdrop-blur-sm"
+          transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 40 }}
+        />
+      )}
       {/* Icon wrapper — fixed size so it doesn't shift */}
-      <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
+      <span className="relative z-10 flex-shrink-0 w-5 h-5 flex items-center justify-center">
         {icon}
-        {badge !== undefined && badge > 0 && (
-          // Dot-only indicator: shows there's unread activity without putting
-          // a number that could be confused with the status-tab counters
-          // inside the Conversas page. The `badge: number` prop still flows
-          // from NavSidebar (so the trigger is unchanged) — only the render
-          // is now a fixed-size circle. Keep aria-label for screen readers.
+        {/* SIDEBAR-03: contador "Conversas N" — número na pílula quando
+            expandida (à direita, abaixo), disco com número sobre o ícone
+            quando colapsada. */}
+        {badge !== undefined && badge > 0 && animate && !open && (
           <span
-            aria-label="Atividade não lida"
-            className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-danger rounded-full"
-          />
+            aria-label={`${badge} não lidas`}
+            className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-3xs font-bold [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center tabular-nums"
+          >
+            {badge > 99 ? '99+' : badge}
+          </span>
         )}
         {/* Nudge dot — visible only when sidebar is collapsed */}
         {nudge && animate && !open && (
@@ -179,24 +209,52 @@ export const SidebarLink = memo(function SidebarLink({
       {/* Label — CSS transition instead of AnimatePresence */}
       <span
         className={cn(
-          'flex items-center gap-2 text-sm font-medium whitespace-pre overflow-hidden flex-1',
+          'relative z-10 flex items-center gap-2 text-[13px] whitespace-pre overflow-hidden',
+          // Compensação ótica (PO 01/10): no mesmo peso, o texto escuro na pílula
+          // clara parece mais fino que o claro na barra escura — o ativo sobe um
+          // degrau (500 → 600) para manter a MESMA espessura visual, sem negrito.
+          active ? 'font-semibold' : 'font-medium',
           'transition-opacity duration-150',
-          animate && !open ? 'opacity-0 w-0' : 'opacity-100',
+          // PL-5-3: `flex-1` só quando expandida. Recolhido, o rótulo tem
+          // largura 0 mas `flex: 1 1 0%` ainda o faz CRESCER e ocupar a sobra,
+          // empurrando o ícone para a esquerda (medido: centro em 20 contra 30,5
+          // da barra). Com o flex-grow fora, o `justify-center` acima centra.
+          animate && !open ? 'opacity-0 w-0' : 'opacity-100 flex-1',
         )}
       >
         {label}
+        {badge !== undefined && badge > 0 && (
+          <span
+            aria-label={`${badge} não lidas`}
+            className="ml-auto min-w-[18px] h-[18px] px-[5px] rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-[10.5px] font-bold [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center tabular-nums"
+          >
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
         {nudge && (
-          <span className="text-[10px] font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap">
+          <span className="text-3xs font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap hidden">
             {nudge}
           </span>
+        )}
+        {/* Contraste 01/10 (PO, 3F): a novidade é só um ponto âmbar (o chip acima fica oculto). */}
+        {nudge && (
+          <span
+            role="img"
+            aria-label={nudge}
+            title={nudge}
+            className="inline-block w-[7px] h-[7px] rounded-full bg-[#FBBF24] flex-shrink-0"
+          />
         )}
       </span>
     </span>
   )
 
+  // Recolhida, o rótulo não existe visualmente: `title` faz de tooltip.
+  const title = collapsed ? label : undefined
+
   if (onClick) {
     return (
-      <button onClick={onClick} className={cn('w-full text-left', className)}>
+      <button onClick={onClick} title={title} className={cn('w-full text-left', className)}>
         {inner}
       </button>
     )
@@ -204,7 +262,7 @@ export const SidebarLink = memo(function SidebarLink({
 
   if (href) {
     return (
-      <Link to={href} className={cn('block', className)}>
+      <Link to={href} title={title} className={cn('block', className)}>
         {inner}
       </Link>
     )

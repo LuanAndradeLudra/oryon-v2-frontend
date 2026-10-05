@@ -22,7 +22,7 @@ export const StageFunnelChart = memo(function StageFunnelChart({ stages }: { sta
 
   if (total === 0) {
     return (
-      <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+      <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
         <p className="text-sm font-semibold text-surface-100 mb-2">Funil por etapa</p>
         <EmptyState icon={Milestone} title="Nenhum negócio em aberto" className="py-8" />
       </div>
@@ -37,7 +37,7 @@ export const StageFunnelChart = memo(function StageFunnelChart({ stages }: { sta
   }))
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
       <p className="text-sm font-semibold text-surface-100 mb-4">Funil por etapa</p>
       <ResponsiveContainer width="100%" height={Math.max(180, data.length * 44)}>
         <BarChart data={data} layout="vertical" margin={{ left: 4, right: 24, top: 4, bottom: 4 }}>

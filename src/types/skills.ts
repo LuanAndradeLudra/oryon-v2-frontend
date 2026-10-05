@@ -42,6 +42,9 @@ export interface SkillTemplate {
   /** Operational instructions appended to the agent's system_prompt when this
    *  skill is attached. Visible only to the model + Oryon staff. */
   prompt_fragment: string | null
+  /** SCRUM-1082 — groups this template under a `connectors` row. Null for
+   *  every standalone template (everything before this epic). */
+  connector_id: string | null
   created_at: string
   updated_at: string
   /** Map of tenant_id → count of agents currently using this template.
@@ -134,6 +137,8 @@ export interface AgentSkillWithTemplate {
 // ─── Tester payloads ────────────────────────────────────────────────────────
 
 export interface TesterRequest {
+  /** Skill anexada sendo testada: o servidor troca a marca de segredo pelo valor guardado. */
+  agent_skill_id?: string
   config?: Record<string, unknown>
   inputs?: Record<string, unknown>
   contact?: { phone?: string; name?: string; id?: string }
@@ -179,6 +184,8 @@ export interface CreateSkillTemplatePayload {
   /** Optional natural-language operational instructions for the model.
    *  Append-only to the agent's system_prompt; max 2000 chars (server-enforced). */
   prompt_fragment?: string | null
+  /** SCRUM-1082 — groups this template under a `connectors` row. */
+  connector_id?: string | null
 }
 
 export type UpdateSkillTemplatePayload = Partial<Omit<CreateSkillTemplatePayload, 'slug' | 'tenant_id'>> & {

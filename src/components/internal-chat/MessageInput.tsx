@@ -55,7 +55,7 @@ export function MessageInput({ channelId, replyTo, onClearReply, placeholder }: 
     <div className="flex-shrink-0 px-4 py-3">
       {/* Reply banner */}
       {replyTo && (
-        <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-t-xl bg-surface-700 border-b border-surface-600">
+        <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-t-xl bg-[var(--sf2)] border-b border-surface-600">
           <CornerUpLeft className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <span className="text-[11px] font-semibold text-blue-400">{replyTo.senderName}</span>
@@ -72,7 +72,7 @@ export function MessageInput({ channelId, replyTo, onClearReply, placeholder }: 
 
       {/* Input card — Google Chat style */}
       <div className={cn(
-        'rounded-2xl border bg-surface-700 transition-colors',
+        'rounded-lg border bg-[var(--sf2)] transition-colors',
         replyTo ? 'rounded-t-none border-t-0' : '',
         text ? 'border-blue-500/40' : 'border-surface-500',
       )}>
@@ -94,7 +94,7 @@ export function MessageInput({ channelId, replyTo, onClearReply, placeholder }: 
             <EmojiPickerButton
               textareaRef={textareaRef}
               onEmojiInsert={(newValue) => setText(newValue)}
-              className="p-1.5 rounded-full hover:bg-surface-600"
+              className="p-1.5"
             />
             <button
               className="p-1.5 rounded-full text-surface-500 hover:text-surface-200 hover:bg-surface-600 transition-all"

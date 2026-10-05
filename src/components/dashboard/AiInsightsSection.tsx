@@ -40,8 +40,8 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-surface-900 border rounded-xl p-4 flex flex-col gap-3',
-        'border-surface-800 hover:border-surface-700 transition-colors',
+        'bg-surface-800 border rounded-lg p-5 flex flex-col gap-3',
+        'border-surface-700 hover:border-surface-700 transition-colors',
       )}
     >
       {/* Header */}
@@ -66,7 +66,7 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
       {isFeatureVisible('aiInsightsAskButton') && (
         <button
           onClick={() => open(insight.question)}
-          className="flex items-center gap-1.5 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors self-start"
+          className="flex items-center gap-1.5 text-xs font-medium text-accent-dark hover:opacity-80 transition-colors self-start"
         >
           Perguntar à IA
           <ArrowRight className="w-3 h-3" />
@@ -78,14 +78,14 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-3 animate-pulse">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 flex flex-col gap-3 animate-pulse">
       <div className="h-5 w-24 bg-surface-800 rounded-full" />
       <div className="flex flex-col gap-1.5">
-        <div className="h-4 w-3/4 bg-surface-800 rounded" />
-        <div className="h-3 w-full bg-surface-800 rounded" />
-        <div className="h-3 w-2/3 bg-surface-800 rounded" />
+        <div className="h-4 w-3/4 bg-surface-800 rounded-2xs" />
+        <div className="h-3 w-full bg-surface-800 rounded-2xs" />
+        <div className="h-3 w-2/3 bg-surface-800 rounded-2xs" />
       </div>
-      <div className="h-3 w-24 bg-surface-800 rounded" />
+      <div className="h-3 w-24 bg-surface-800 rounded-2xs" />
     </div>
   )
 }
@@ -133,8 +133,10 @@ export function AiInsightsSection({ kpis }: AiInsightsSectionProps) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center">
-            <Sparkles className="w-3 h-3 text-black" />
+          {/* Eixo 10: bg-white/text-black era fixo, fora do tema — troquei
+              pro tom de marca suave usado em outros indicadores de IA. */}
+          <div className="w-5 h-5 rounded-md bg-brand-500/15 flex items-center justify-center">
+            <Sparkles className="w-3 h-3 text-brand-400" />
           </div>
           <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest">Insights da IA</p>
         </div>

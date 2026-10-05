@@ -37,7 +37,7 @@ function EmojiQuickPick({ value, onChange }: { value: string; onChange: (e: stri
           onClick={() => onChange(e)}
           aria-label={`Usar emoji ${e}`}
           className={cn(
-            'w-9 h-9 rounded-xl flex items-center justify-center text-xl transition-all hover:scale-110',
+            'w-9 h-9 rounded-lg flex items-center justify-center text-xl transition-all hover:scale-110',
             value === e
               ? 'bg-blue-500/20 ring-1 ring-blue-500'
               : 'bg-surface-800 hover:bg-surface-700',
@@ -91,7 +91,7 @@ function SectorCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left',
+        'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
         selected
           ? 'border-blue-500 bg-blue-500/10'
           : 'border-surface-700 bg-surface-800/50 hover:border-surface-600 hover:bg-surface-800',
@@ -191,7 +191,7 @@ function Steps({ current, total }: { current: number; total: number }) {
             'h-1 rounded-full transition-all duration-300',
             i < current ? 'bg-blue-500 flex-1' :
             i === current ? 'bg-blue-500 flex-[2]' :
-            'bg-surface-700 flex-1',
+            'bg-[var(--sf2)] flex-1',
           )}
         />
       ))}
@@ -367,7 +367,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
           <div>
             <h2 className="text-sm font-bold text-surface-50">Criar canal</h2>
             <p className="text-[11px] text-surface-500 mt-0.5">
@@ -411,15 +411,15 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   type="button"
                   onClick={() => setChannelType('group')}
                   className={cn(
-                    'w-full flex items-start gap-4 p-4 rounded-2xl border transition-all text-left',
+                    'w-full flex items-start gap-4 p-4 rounded-lg border transition-all text-left',
                     channelType === 'group'
                       ? 'border-blue-500 bg-blue-500/10'
                       : 'border-surface-700 bg-surface-800/50 hover:border-surface-600',
                   )}
                 >
                   <div className={cn(
-                    'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
-                    channelType === 'group' ? 'bg-blue-500/20' : 'bg-surface-700',
+                    'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
+                    channelType === 'group' ? 'bg-blue-500/20' : 'bg-[var(--sf2)]',
                   )}>
                     <Hash className={cn('w-5 h-5', channelType === 'group' ? 'text-blue-400' : 'text-surface-400')} />
                   </div>
@@ -442,15 +442,15 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   type="button"
                   onClick={() => setChannelType('department_room')}
                   className={cn(
-                    'w-full flex items-start gap-4 p-4 rounded-2xl border transition-all text-left',
+                    'w-full flex items-start gap-4 p-4 rounded-lg border transition-all text-left',
                     channelType === 'department_room'
                       ? 'border-blue-500 bg-blue-500/10'
                       : 'border-surface-700 bg-surface-800/50 hover:border-surface-600',
                   )}
                 >
                   <div className={cn(
-                    'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
-                    channelType === 'department_room' ? 'bg-blue-500/20' : 'bg-surface-700',
+                    'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
+                    channelType === 'department_room' ? 'bg-blue-500/20' : 'bg-[var(--sf2)]',
                   )}>
                     <Building2 className={cn('w-5 h-5', channelType === 'department_room' ? 'text-blue-400' : 'text-surface-400')} />
                   </div>
@@ -491,7 +491,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                         <Loader2 className="w-5 h-5 text-surface-500 animate-spin" />
                       </div>
                     ) : departments.length === 0 ? (
-                      <div className="py-6 text-center rounded-xl border border-dashed border-surface-700">
+                      <div className="py-6 text-center rounded-lg border border-dashed border-surface-700">
                         <Building2 className="w-7 h-7 text-surface-600 mx-auto mb-1.5" />
                         <p className="text-xs text-surface-500">Nenhum setor cadastrado.</p>
                         <p className="text-[11px] text-surface-600 mt-0.5">Configure setores em Configurações → Setores.</p>
@@ -521,7 +521,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   </label>
                   <div className="flex items-center gap-3 mb-3">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                      className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={channelType === 'department_room' && selectedDept
                         ? { background: `color-mix(in srgb, ${selectedDept.color} 15%, transparent)`, border: `1.5px solid color-mix(in srgb, ${selectedDept.color} 25%, transparent)` }
                         : { background: 'var(--color-surface-800)' }
@@ -553,7 +553,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                     placeholder={channelType === 'department_room'
                       ? 'Ex: atendimento-geral, vendas-equipe…'
                       : 'Ex: projeto-alpha, avisos-gerais…'}
-                    className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-blue-500/60 transition-colors"
+                    className="w-full bg-surface-800 border border-surface-700 rounded-sm px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-blue-500/60 transition-colors"
                   />
                 </div>
 
@@ -567,7 +567,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Sobre o que é este canal?"
                     rows={2}
-                    className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-blue-500/60 transition-colors resize-none"
+                    className="w-full bg-surface-800 border border-surface-700 rounded-sm px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-blue-500/60 transition-colors resize-none"
                   />
                 </div>
 
@@ -600,7 +600,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   {/* Info banner for department rooms */}
                   {channelType === 'department_room' && selectedDept && (
                     <div
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl mb-1 text-[11px]"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg mb-1 text-[11px]"
                       style={{ background: `color-mix(in srgb, ${selectedDept.color} 9%, transparent)`, border: `1px solid color-mix(in srgb, ${selectedDept.color} 19%, transparent)` }}
                     >
                       <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: selectedDept.color }} />
@@ -620,7 +620,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-sm bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
                     <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
                     <input
                       autoFocus
@@ -693,7 +693,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-surface-800 flex-shrink-0 space-y-2">
+        <div className="px-5 py-4 border-t border-surface-700 flex-shrink-0 space-y-2">
           {error && (
             <p className="text-xs text-red-400 text-center">{error}</p>
           )}
@@ -702,7 +702,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-surface-700 text-sm font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-sm border border-surface-700 text-sm font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Voltar
@@ -715,7 +715,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                 onClick={() => setStep((s) => s + 1)}
                 disabled={!canNext}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all',
                   canNext
                     ? 'bg-blue-600 hover:bg-blue-500 text-white'
                     : 'bg-surface-800 text-surface-600 cursor-not-allowed',
@@ -730,7 +730,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                 onClick={handleCreate}
                 disabled={saving}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all',
                   saving
                     ? 'bg-brand-600/60 text-white/70 cursor-not-allowed'
                     : 'bg-brand-600 hover:bg-brand-500 text-surface-950',

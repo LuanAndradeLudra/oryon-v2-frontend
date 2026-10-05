@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { contactsApi } from '@/services/api'
 import type { Contact } from '@/types'
 
@@ -174,7 +174,7 @@ export function AddSharedContactModal({
           <Banner variant="warning">
             <p className="text-sm">Este contato já está no CRM.</p>
           </Banner>
-          <div className="flex items-center gap-2.5 rounded-lg bg-surface-800/60 px-3 py-2.5">
+          <div className="flex items-center gap-2.5 rounded-lg bg-[var(--sf2)] px-3 py-2.5">
             <div className="w-9 h-9 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0">
               <User className="w-4.5 h-4.5 text-surface-300" />
             </div>
@@ -193,11 +193,11 @@ export function AddSharedContactModal({
         <div className="space-y-3">
           {phoneOptions.length > 1 && (
             <FormField label="Número compartilhado">
-              <Select value={waId} onChange={(e) => setWaId(e.target.value)}>
+              <SelectMenu value={waId} onChange={(e) => setWaId(e.target.value)}>
                 {phoneOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </Select>
+              </SelectMenu>
             </FormField>
           )}
           <FormField label="Nome" required>

@@ -95,13 +95,14 @@ export function Drawer({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
         >
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+          {/* MODAL-07/08 (spec 1a): scrim = token --scrim sem blur; painel em --sf. */}
+          <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" />
           <motion.aside
             role="dialog"
             aria-modal="true"
             aria-label={ariaLabel}
             className={cn(
-              'absolute z-10 bg-surface-900 overlay-frame flex flex-col overflow-hidden',
+              'absolute z-10 bg-surface-800 overlay-frame flex flex-col overflow-hidden',
               panelPos,
               className,
             )}

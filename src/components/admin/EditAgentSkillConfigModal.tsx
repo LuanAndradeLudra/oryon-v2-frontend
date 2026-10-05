@@ -11,12 +11,13 @@
 import { useState, useMemo } from 'react'
 import { Save, AlertCircle, Copy, CheckCircle2, History, ExternalLink } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { DynamicSchemaFormFields } from './DynamicSchemaFormFields'
+import { DynamicSchemaFormFields } from '@/components/shared/DynamicSchemaFormFields'
 import { updateAgentSkill, listSkillExecutions } from '@/services/agentSkillsApi'
 import { listSkillTemplateInstances } from '@/services/skillTemplatesApi'
 import type {
@@ -25,7 +26,6 @@ import type {
   SkillTemplateInstance,
   SkillExecutionRow,
 } from '@/types/skills'
-import { cn } from '@/lib/utils'
 
 interface Props {
   open: boolean
@@ -77,7 +77,10 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
       const all = await listSkillTemplateInstances(skill.template_id)
       // Drop the current instance so the operator can't accidentally
       // "copy from itself" (a no-op that would still toast success).
-      setOtherInstances(all.filter((i) => i.id !== skill.skill_id))
+      // Revisão 03/10: só agentes da MESMA empresa — a lista vem de todas
+      // (tela da equipe Oryon) e copiar de outra levava a configuração (e,
+      // antes da máscara no servidor, o token) de uma clínica para outra.
+      setOtherInstances(all.filter((i) => i.id !== skill.skill_id && i.tenant_id === (tenantId ?? skill.tenant_id)))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -153,28 +156,18 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
             Alterações se aplicam às próximas execuções da skill.
           </p>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-colors"
-            >
+            <Button variant="ghost" onClick={onClose}>
               Cancelar
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
               onClick={handleSave}
               disabled={!canSubmit}
-              className={cn(
-                'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-                canSubmit
-                  ? 'bg-brand-600 text-surface-950 hover:bg-brand-500 active:scale-[0.98]'
-                  : 'bg-surface-800 text-surface-500 cursor-not-allowed',
-              )}
+              loading={saving}
+              leftIcon={saving ? undefined : <Save className="w-4 h-4" />}
             >
-              {saving
-                ? <><Spinner className="w-4 h-4" /> Salvando…</>
-                : <><Save className="w-4 h-4" /> Salvar</>}
-            </button>
+              {saving ? 'Salvando…' : 'Salvar'}
+            </Button>
           </div>
         </div>
       }
@@ -193,14 +186,9 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
           ID differs. */}
       <div className="mb-4 flex items-center justify-end gap-2 text-xs">
         {!showCopyPicker ? (
-          <button
-            type="button"
-            onClick={openCopyPicker}
-            className="inline-flex items-center gap-1.5 text-brand-400 hover:text-brand-300 transition-colors"
-          >
-            <Copy className="w-3.5 h-3.5" />
+          <Button variant="ghost" size="sm" onClick={openCopyPicker} leftIcon={<Copy className="w-3.5 h-3.5" />}>
             Copiar configuração de outro agente
-          </button>
+          </Button>
         ) : loadingInstances ? (
           <span className="inline-flex items-center gap-1.5 text-surface-400">
             <Spinner className="w-3.5 h-3.5" /> Carregando agentes…
@@ -208,13 +196,9 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
         ) : !otherInstances || otherInstances.length === 0 ? (
           <span className="text-surface-500">
             Nenhum outro agente tem este template atribuído.
-            <button
-              type="button"
-              onClick={() => setShowCopyPicker(false)}
-              className="ml-2 text-surface-400 hover:text-surface-200"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowCopyPicker(false)} className="ml-2">
               Fechar
-            </button>
+            </Button>
           </span>
         ) : (
           <div className="flex items-center gap-2 w-full">
@@ -236,13 +220,9 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
                 )
               })}
             </Select>
-            <button
-              type="button"
-              onClick={() => setShowCopyPicker(false)}
-              className="text-surface-400 hover:text-surface-200 flex-shrink-0"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowCopyPicker(false)} className="flex-shrink-0">
               Cancelar
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -314,7 +294,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
           re-opening the details is instant. The Recarregar button is the
           escape hatch when the operator just kicked a test fire and wants
           to see it. */}
-      <section className="mt-6 pt-5 border-t border-surface-800">
+      <section className="mt-6 pt-5 border-t border-surface-700">
         <details className="group" onToggle={(e) => {
           if ((e.currentTarget as HTMLDetailsElement).open) void loadExecutions()
         }}>
@@ -338,17 +318,17 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
               <p className="text-2xs text-surface-500">
                 Últimas 20 chamadas registradas. Cada linha tem o request_id pra correlacionar com logs do n8n.
               </p>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setExecutions(null)
                   void loadExecutions()
                 }}
                 disabled={loadingExecutions}
-                className="text-2xs text-brand-400 hover:text-brand-300 disabled:opacity-50"
               >
                 Recarregar
-              </button>
+              </Button>
             </div>
 
             {loadingExecutions && (
@@ -374,7 +354,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-3xs uppercase tracking-wide text-surface-500 border-b border-surface-800">
+                    <tr className="text-3xs uppercase tracking-wide text-surface-500 border-b border-surface-700">
                       <th className="text-left font-medium py-2 pr-3">Quando</th>
                       <th className="text-left font-medium py-2 pr-3">Status</th>
                       <th className="text-right font-medium py-2 pr-3">Latência</th>
@@ -405,7 +385,7 @@ function ExecutionRow({ row }: { row: SkillExecutionRow }) {
     navigator.clipboard?.writeText(row.request_id).catch(() => {})
   }
   return (
-    <tr className="border-b border-surface-800/60">
+    <tr className="border-b border-surface-700">
       <td className="py-2 pr-3 text-surface-300 whitespace-nowrap">
         <Tooltip content={new Date(row.created_at).toLocaleString('pt-BR')} side="top">
           <span className="cursor-help">{formatRelativeTime(row.created_at)}</span>
@@ -439,14 +419,15 @@ function ExecutionRow({ row }: { row: SkillExecutionRow }) {
       <td className="py-2 text-right">
         {row.request_id && (
           <Tooltip content="Copiar request_id (use no n8n para encontrar o run correspondente)" side="top">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={copyRequestId}
-              className="inline-flex items-center gap-1 px-1.5 py-1 rounded text-3xs font-mono text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+              leftIcon={<ExternalLink className="w-3 h-3" />}
+              className="font-mono"
             >
-              <ExternalLink className="w-3 h-3" />
               {row.request_id.slice(0, 8)}…
-            </button>
+            </Button>
           </Tooltip>
         )}
       </td>

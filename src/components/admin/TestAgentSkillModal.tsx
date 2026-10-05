@@ -42,6 +42,7 @@ export function TestAgentSkillModal({ open, onClose, skill }: Props) {
     version: 1,
     enabled: skill.template_enabled,
     prompt_fragment: null,
+    connector_id: null,
     created_at: skill.created_at,
     updated_at: skill.updated_at,
   }), [skill])
@@ -60,6 +61,7 @@ export function TestAgentSkillModal({ open, onClose, skill }: Props) {
       <SkillTemplateTester
         template={template}
         initialConfig={skill.config}
+        agentSkillId={skill.skill_id}
       />
     </Modal>
   )

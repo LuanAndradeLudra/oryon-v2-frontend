@@ -1,5 +1,9 @@
 // ─── Plan Definitions ─────────────────────────────────────────────────────────
-// Single source of truth for all plan tiers, limits, prices, and feature gates.
+// Feature gates / module access for the product shell.
+//
+// F8: preços e franquia NÃO vivem aqui. Fonte de cobrança =
+// GET /settings/billing (plan + contract.planSnapshot). Os monthlyPrice abaixo
+// ficam em 0 de propósito — a UI de billing usa priceMonthlyCents da API.
 
 import type { PlanTier, PlanDefinition, PlanModuleAccess } from '@/types'
 
@@ -22,6 +26,7 @@ const BASE_MODULES: PlanModuleAccess = {
   nexus:               false,
   apiAccess:           false,
   webhooks:            false,
+  integrations:        false,
   advancedAnalytics:   false,
   customReports:       false,
   prioritySupport:     false,
@@ -58,8 +63,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     tier: 'essential',
     name: 'Essential',
     // v1 token-based (SCRUM-172) — equivale ao "Start" do backend.
-    monthlyPrice: 1497,
-    annualMonthlyPrice: 1497,
+    monthlyPrice: 0,
+    annualMonthlyPrice: 0,
     limits: {
       creditsPerMonth:       1500,
       users:                 3,
@@ -81,8 +86,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     tier: 'pro',
     name: 'Pro',
     // v1 token-based (SCRUM-172) — equivale ao "Professional" do backend.
-    monthlyPrice: 2797,
-    annualMonthlyPrice: 2797,
+    monthlyPrice: 0,
+    annualMonthlyPrice: 0,
     limits: {
       creditsPerMonth:       4000,
       users:                 10,
@@ -107,8 +112,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     tier: 'business',
     name: 'Business',
     // v1 token-based (SCRUM-172) — equivale ao "Scale" do backend.
-    monthlyPrice: 3997,
-    annualMonthlyPrice: 3997,
+    monthlyPrice: 0,
+    annualMonthlyPrice: 0,
     limits: {
       creditsPerMonth:       10000,
       users:                 30,
@@ -128,6 +133,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       marketing:           true,  // full attribution (ROAS/Revenue/ad sets/creatives)
       apiAccess:           true,
       webhooks:            true,
+      integrations:        true,
       advancedAnalytics:   true,
       customReports:       true,
       prioritySupport:     true,
@@ -138,8 +144,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
   scale: {
     tier: 'scale',
     name: 'Scale',
-    monthlyPrice: 6997,
-    annualMonthlyPrice: 5597,
+    monthlyPrice: 0,
+    annualMonthlyPrice: 0,
     limits: {
       creditsPerMonth:       20000,
       users:                 null,
@@ -159,6 +165,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       marketing:           true,
       apiAccess:           true,
       webhooks:            true,
+      integrations:        true,
       advancedAnalytics:   true,
       customReports:       true,
       prioritySupport:     true,
@@ -197,6 +204,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       nexus:               true,
       apiAccess:           true,
       webhooks:            true,
+      integrations:        true,
       advancedAnalytics:   true,
       customReports:       true,
       prioritySupport:     true,
