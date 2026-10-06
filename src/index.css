@@ -118,8 +118,8 @@
   --sel: rgba(45, 212, 191, .10);
   /* "Tinta" invertida para controle SELECIONADO (filtros da inbox, PO 23/09):
      o maior contraste da linha sem gastar cor. Escuro = claro sobre escuro. */
-  --ink-bg: #B9CACA;        /* não é branco puro (PO, 24/09): dois degraus abaixo */
-  --ink-bg-hover: #CBDADA;  /* hover no selecionado: tint neutro, um degrau acima */
+  --ink-bg: #ECF1F1;        /* quase branco = surface-100 (PO, 06/10, SCRUM-1253; era #B9CACA) */
+  --ink-bg-hover: #F6FAFA;  /* hover no selecionado: um degrau acima (surface-50) */
 
   /* Moldura de janela das telas em miniatura (landing) — a tela "emerge" do
      fundo: cantos só no topo, sem borda inferior, sombra profunda. Medido na
@@ -328,7 +328,7 @@
 
   --color-board-bar: #060909;
 
-  --color-avatar-surface:  #B5C8C8;
+  --color-avatar-surface:  #ECF1F1; /* quase branco (PO, 06/10, SCRUM-1253; era #B5C8C8) */
   --color-avatar-initials: #060909;
 
 
