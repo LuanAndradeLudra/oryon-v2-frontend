@@ -40,6 +40,13 @@ describe('quem administra recebe um caminho', () => {
     expect(a).not.toBe(b)
   })
 
+  it('B28 — franquia esgotada sem excedente no contrato leva à conversa de créditos, não de assinatura', () => {
+    const limited = new CopilotBlockedError('A franquia de créditos do mês acabou.', 'entitlement', 'franchise_exhausted')
+    const n = describeCopilotBlock(limited, 'business_admin')
+    expect(n.action?.href).toBe(describeCopilotBlock(balance(), 'business_admin').action?.href)
+    expect(n.guidance).toContain('créditos')
+  })
+
   it('nenhum caminho leva a checkout — o modelo é de venda assistida', () => {
     for (const role of ['business_admin', 'super_admin']) {
       for (const err of [balance(), entitlement()]) {

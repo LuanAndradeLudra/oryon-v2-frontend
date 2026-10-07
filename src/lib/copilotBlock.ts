@@ -85,7 +85,10 @@ export function describeCopilotBlock(
     }
   }
 
-  if (err.kind === 'balance') {
+  // B28 — franquia esgotada num contrato que não prevê excedente (política
+  // "limitar" ou "oferecer pacote"): vem como entitlement, mas o caminho é
+  // contratar pacote ou ampliar o plano, não regularizar a assinatura.
+  if (err.kind === 'balance' || err.reason === 'franchise_exhausted') {
     return {
       cause,
       guidance: 'Fale com a gente para ampliar o plano ou liberar créditos adicionais.',
