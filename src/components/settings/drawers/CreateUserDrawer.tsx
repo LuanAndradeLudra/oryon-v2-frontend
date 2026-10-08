@@ -42,7 +42,7 @@ interface Step2Data {
 interface CreateUserDrawerProps {
   open: boolean
   onClose: () => void
-  onCreated: (user: User) => void
+  onCreated: (user: User & { invitationEmailSent?: boolean }) => void
 }
 
 // ── Stepper ───────────────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     setSubmitError(null)
     try {
       // Send only fields the NestJS InviteUserDto accepts
-      const r = await api.post<User>('/users', {
+      const r = await api.post<User & { invitationEmailSent?: boolean }>('/users', {
         firstName:    s1.firstName.trim(),
         lastName:     s1.lastName.trim(),
         email:        s1.email.trim(),

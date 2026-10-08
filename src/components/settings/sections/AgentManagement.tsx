@@ -15,7 +15,7 @@ import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { CreateUserDrawer } from '../drawers/CreateUserDrawer'
 import { useToast } from '@/hooks/useToast'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
 import { api } from '@/services/api'
 
@@ -152,10 +152,16 @@ export function AgentManagement() {
   // any future role addition only needs to be wired in one place.
   const canCreateUsers = isAdminTier(actor?.role)
 
-  const handleCreated = (newUser: User) => {
+  const handleCreated = (newUser: User & { invitationEmailSent?: boolean }) => {
     setUsers((u) => [...u, newUser])
     setDrawerOpen(false)
-    toast(`Usuário criado. Um e-mail foi enviado para ${newUser.email}.`, 'success')
+    // O backend cria o convite mesmo se o e-mail falhar (SMTP fora) e avisa
+    // em `invitationEmailSent` — antes isso virava "Internal Server Error".
+    if (newUser.invitationEmailSent === false) {
+      toast(`Usuário criado, mas o e-mail de convite não foi enviado para ${newUser.email}. Use "Reenviar convite" mais tarde.`, 'warning')
+    } else {
+      toast(`Usuário criado. Um e-mail foi enviado para ${newUser.email}.`, 'success')
+    }
     appLogger.logUserManagement({
       tenant_id: actor?.tenantId ?? null,
       actor_id: actor?.id ?? null,
@@ -353,8 +359,8 @@ export function AgentManagement() {
                           onClick={() => {
                             api.post(`/users/${user.id}/resend-invitation`).then(() => {
                               toast('Convite reenviado com sucesso!', 'success')
-                            }).catch(() => {
-                              toast('Erro ao reenviar convite.', 'error')
+                            }).catch((e: unknown) => {
+                              toast(getApiErrorMessage(e, 'Erro ao reenviar convite.'), 'error')
                             })
                             setOpenDropdown(null)
                           }}
