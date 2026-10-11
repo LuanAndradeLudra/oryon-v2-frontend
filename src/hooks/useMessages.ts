@@ -10,6 +10,9 @@ export function useMessages(conversationId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(false)
+  // SCRUM-1253 (PO, 11/10): a transição da troca de conversa espera a 1ª
+  // página DESTA conversa — sem isso a lista anterior aparecia por um quadro.
+  const [carregadaPara, setCarregadaPara] = useState<string | null>(null)
   const pageRef = useRef(1)
   // Revisão 02/10: troca rápida de conversa (J/K) — a resposta atrasada da
   // conversa anterior sobrescrevia a lista da atual, e o retorno de um envio
@@ -41,7 +44,11 @@ export function useMessages(conversationId: string | null) {
       }
       setHasMore(data.data.length === 50)
     } finally {
-      if (valeAinda()) setLoading(false)
+      if (valeAinda()) {
+        setLoading(false)
+        // Também no erro: a conversa aparece (vazia) em vez de ficar invisível.
+        if (reset) setCarregadaPara(conversationId)
+      }
     }
   }, [conversationId])
 
@@ -190,6 +197,7 @@ export function useMessages(conversationId: string | null) {
   return {
     messages,
     loading,
+    carregadaPara,
     hasMore,
     fetchMore: () => fetchMessages(false),
     addIncomingMessage,

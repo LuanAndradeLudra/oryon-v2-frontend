@@ -24,6 +24,11 @@ vi.mock('@/services/api', () => ({
 const mockIsNativePlatform = vi.hoisted(() => vi.fn(() => false))
 vi.mock('@/config/env', () => ({ isNativePlatform: mockIsNativePlatform }))
 
+beforeEach(() => {
+  // HEAD do PDF: por padrão o arquivo existe (revisão 11/10).
+  vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ status: 200 })))
+})
+
 const base: Message = {
   id: 'm1',
   conversationId: 'c1',
@@ -80,10 +85,20 @@ describe('MediaViewer', () => {
     expect(q('video')).not.toBeNull()
   })
 
-  it('PDF fora do app nativo: renderiza <iframe> (visualizador do navegador)', () => {
+  it('PDF fora do app nativo: renderiza <iframe> (visualizador do navegador)', async () => {
     mockIsNativePlatform.mockReturnValue(false)
     openViewer({ ...base, type: 'document', mediaMimeType: 'application/pdf', mediaCaption: 'contrato.pdf' })
-    expect(q('iframe')).not.toBeNull()
+    await waitFor(() => expect(q('iframe')).not.toBeNull())
+  })
+
+  it('revisão 11/10: PDF que não existe mais mostra aviso, sem iframe, URL nem token', async () => {
+    mockIsNativePlatform.mockReturnValue(false)
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ status: 404 })))
+    openViewer({ ...base, type: 'document', mediaMimeType: 'application/pdf', mediaCaption: 'contrato.pdf' })
+    await waitFor(() => expect(screen.getByText('Este arquivo não está mais disponível.')).toBeInTheDocument())
+    expect(q('iframe')).toBeNull()
+    expect(document.body.textContent).not.toMatch(/token|\/uploads\//)
+    expect(screen.queryByLabelText('Baixar')).toBeNull()
   })
 
   it('PDF dentro do app nativo (Capacitor): sem iframe — cai no botão de baixar', () => {
@@ -250,8 +265,9 @@ describe('MediaViewer — barra de controles separada do conteúdo', () => {
     expect(content()).toContainElement(q('img') as HTMLElement)
   })
 
-  it('PDF: baixar e fechar na barra; o iframe fica só na área de conteúdo (nunca por baixo da barra)', () => {
+  it('PDF: baixar e fechar na barra; o iframe fica só na área de conteúdo (nunca por baixo da barra)', async () => {
     openViewer({ ...base, ...PDF })
+    await waitFor(() => expect(q('iframe')).not.toBeNull())
     const bar = screen.getByRole('banner')
     expect(bar).toContainElement(screen.getByLabelText('Baixar'))
     expect(bar).toContainElement(screen.getByLabelText('Fechar'))
