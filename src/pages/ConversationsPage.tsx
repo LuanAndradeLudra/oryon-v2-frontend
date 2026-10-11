@@ -31,6 +31,7 @@ import { getApiErrorMessage } from '@/lib/utils'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { haSobreposicaoAberta } from '@/lib/sobreposicaoAberta'
+import { aplicarNaConversa, useMudancaDeEtiqueta } from '@/lib/etiquetasAoVivo'
 import type {
   Conversation, ConversationFilters,
   SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew,
@@ -47,6 +48,8 @@ export function ConversationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
+  // SCRUM-1253: o chat aberto também perde/atualiza a etiqueta na hora.
+  useMudancaDeEtiqueta((m) => setActiveConversation((c) => (c ? aplicarNaConversa(c, m) : c)))
   const [infoOpen, setInfoOpen]     = useState(false)
   const [newConversationOpen, setNewConversationOpen] = useState(false)
   const openNewConversation = useCallback(() => setNewConversationOpen(true), [])

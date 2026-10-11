@@ -74,6 +74,7 @@ export function ChatWindow({
   const eventos = useEventosDaConversa(conversation?.id ?? null, { ultima: ultimaMensagem, carregando: loading }, meuNome)
   const [eventosOcultos, setEventosOcultos] = useEstadoNaUrl<boolean>('eventos-ocultos', { padrao: false, ler: lerBool, escrever: escreverBool })
   const mostrarEventos = !eventosOcultos
+  const alternarEventos = () => setEventosOcultos((v) => !v)
 
   // Outbound quoted reply: which message the operator is replying to. Cleared
   // when the conversation changes or after a successful send.
@@ -242,7 +243,7 @@ export function ChatWindow({
         contact={conversation.contact}
         eventos={eventos}
         mostrarEventos={mostrarEventos}
-        onAlternarEventos={() => setEventosOcultos((v) => !v)}
+        onAlternarEventos={alternarEventos}
       />
       {/* key por conversa (28/09): sem ela o rascunho, os anexos e o
           "modelo enviado" sobreviviam à troca de conversa — digitar em A,
@@ -260,3 +261,4 @@ export function ChatWindow({
     </div>
   )
 }
+

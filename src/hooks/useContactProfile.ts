@@ -3,6 +3,7 @@ import { contactsApi, attributionApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
 import type { Contact, Conversation, Tag } from '@/types'
+import { aplicarNaConversa, aplicarNaLista, aplicarNoContato, useMudancaDeEtiqueta } from '@/lib/etiquetasAoVivo'
 
 // Tipos derivados direto dos generics do client — quando o backend mudar o
 // payload, o erro aparece aqui, não espalhado pelos cards.
@@ -49,6 +50,11 @@ export function useContactProfile(contactId: string, initialContact?: Contact): 
   const [contact, setContact] = useState<Contact | null>(seededIdRef.current ? initialContact! : null)
   const [stats, setStats] = useState<ContactStats | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
+  // SCRUM-1253: etiqueta excluída/alterada some/muda no perfil sem F5.
+  useMudancaDeEtiqueta((m) => {
+    setContact((c) => aplicarNoContato(c, m))
+    setConversations((l) => aplicarNaLista(l, m, aplicarNaConversa))
+  })
   const [attribution, setAttribution] = useState<ContactAttribution | null>(null)
   const [loading, setLoading] = useState(!seededIdRef.current)
   const [error, setError] = useState(false)

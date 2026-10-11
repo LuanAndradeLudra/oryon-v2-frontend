@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import type { Conversation, ConversationFilters, ConversationStatusCounts, PendingCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User, DealOutcomeInput } from '@/types'
 import { usarPreBusca } from '@/lib/preBusca'
 import { chaveDaLista } from '@/lib/preBuscaConversas'
+import { aplicarNaConversa, aplicarNaLista, useMudancaDeEtiqueta } from '@/lib/etiquetasAoVivo'
 
 /**
  * Phase 27 — sentinel timestamp used by the UI to mean "pause indefinitely
@@ -43,6 +44,8 @@ const FILA_MAX_PAGINAS = 5
 export function useConversations(filters: ConversationFilters = {}) {
   const { user } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
+  // SCRUM-1253: etiqueta excluída/alterada some/muda na lista sem F5.
+  useMudancaDeEtiqueta((m) => setConversations((l) => aplicarNaLista(l, m, aplicarNaConversa)))
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)

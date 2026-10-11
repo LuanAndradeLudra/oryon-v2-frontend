@@ -13,6 +13,7 @@ import { CampaignsTab } from './tabs/CampaignsTab'
 import { DealsTab } from './tabs/DealsTab'
 import type { Contact, Tag } from '@/types'
 import { RODAPE_DA_LISTA } from './rodapeDaLista'
+import { aplicarNoContato, useMudancaDeEtiqueta } from '@/lib/etiquetasAoVivo'
 
 interface ContactDetailPanelProps {
   contactId: string
@@ -49,6 +50,8 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
   const seedRef = useRef<Contact | null>(seed)
   seedRef.current = seed
   const [contact, setContact] = useState<Contact | null>(seed)
+  // SCRUM-1253: a ficha aberta também perde/atualiza a etiqueta na hora.
+  useMudancaDeEtiqueta((m) => setContact((c) => aplicarNoContato(c, m)))
   const [loading, setLoading] = useState(!seed)
   const [abaInterna, setAbaInterna] = useState<TabId>(initialTab ?? 'overview')
   const controlado = tabControlada !== undefined

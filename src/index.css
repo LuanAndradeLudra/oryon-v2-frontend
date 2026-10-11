@@ -2287,10 +2287,6 @@ svg.w-5:not([data-landing-root] *) { width: 20px; height: 20px; }
 }
 [data-theme="light"] .botao-itens:hover { background-color: var(--color-surface-900); }
 [data-theme="light"] .botao-itens svg { color: #0F766E; }
-/* "Ocultar/Mostrar eventos": objeto branco sobre o palco, como a pílula de data. */
-[data-theme="light"] .botao-eventos {
-  background-color: #FFFFFF;
-}
 /* Citação (reply) na bolha recebida: a cor vem de QUEM escreveu a original
    (padrão WhatsApp) — nossa (IA/equipe) em teal, do cliente em ardósia. Na
    bolha enviada (teal) segue o currentColor. */

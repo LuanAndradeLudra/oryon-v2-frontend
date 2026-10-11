@@ -4,6 +4,7 @@ import { connectSocket } from '@/services/socket'
 import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
 import { withRetry } from '@/lib/utils'
 import type { Contact, ContactFilters, Tag } from '@/types'
+import { aplicarNaLista, aplicarNoContato, useMudancaDeEtiqueta } from '@/lib/etiquetasAoVivo'
 
 export interface UseContactsOpts {
   /** When false, no fetches happen and the hook returns its initial state.
@@ -36,6 +37,8 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
   const withDealsSummary = opts.withDealsSummary !== false
   const commercial = opts.commercial
   const [contacts, setContacts] = useState<Contact[]>([])
+  // SCRUM-1253: etiqueta excluída/alterada some/muda em Leads sem F5.
+  useMudancaDeEtiqueta((m) => setContacts((l) => aplicarNaLista(l, m, aplicarNoContato)))
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)

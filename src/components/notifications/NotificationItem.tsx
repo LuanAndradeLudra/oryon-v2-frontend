@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { Archive } from 'lucide-react'
+import { Archive, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import type { AppNotification } from '@/hooks/useNotifications'
 import {
@@ -14,7 +15,8 @@ import { sentenceFor, toneFor } from './notificationSentence'
  * (mobile): antes eram duas UIs sem nada em comum (inventário do Farol).
  * Direção C: sem faixa colorida de 3px, sem chip de categoria por linha (o
  * ladrilho colorido já diz a categoria e é clicável = filtra), urgente =
- * borda esquerda em perigo + chip 18px, ações no hover em 28px.
+ * borda esquerda em perigo + chip 18px. Ação principal em linha própria;
+ * arquivar/não lida no lugar do horário (SCRUM-1253, 11/10).
  */
 export function NotificationItem({
   n,
@@ -101,14 +103,11 @@ export function NotificationItem({
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <p className={cn('text-[13px] leading-[18px] flex-1 min-w-0 truncate', n.isRead ? 'text-surface-300' : 'text-surface-200')}>
+          <p className={cn('text-[13px] leading-[18px] flex-1 min-w-0 line-clamp-2', n.isRead ? 'text-surface-300' : 'text-surface-200')}>
             {sentence.actor && <span className={cn(n.isRead ? 'font-medium text-surface-200' : 'font-semibold text-surface-50')}>{sentence.actor}</span>}
             {sentence.object && <span className={cn(n.isRead ? 'font-medium text-surface-200' : 'font-semibold text-surface-50')}>{sentence.object}</span>}
             {sentence.action && <span> {sentence.action}</span>}
           </p>
-          <span className="text-[11px] text-surface-500 tabular-nums flex-none group-hover:opacity-0 [@media(pointer:coarse)]:group-hover:opacity-100 [@media(hover:none)]:group-hover:opacity-100 transition-opacity">
-            {formatListTime(n.createdAt)}
-          </span>
         </div>
         {(sentence.state || sentence.excerpt || sentence.context) && (
           <p className={cn('text-xs leading-[17px] mt-px truncate', n.isRead ? 'text-surface-500' : 'text-surface-400')}>
@@ -117,46 +116,57 @@ export function NotificationItem({
             {sentence.context && <span className="text-surface-500">{(sentence.state || sentence.excerpt) ? ' · ' : ''}{sentence.context}</span>}
           </p>
         )}
-      </div>
-      {/* Toque (pointer: coarse / hover: none) não tem hover: as ações passam a
-          coluna estática à direita, sempre visíveis, com alvos de 36px. */}
-      <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity [@media(pointer:coarse)]:static [@media(pointer:coarse)]:opacity-100 [@media(pointer:coarse)]:self-start [@media(pointer:coarse)]:ml-1 [@media(hover:none)]:static [@media(hover:none)]:opacity-100 [@media(hover:none)]:self-start [@media(hover:none)]:ml-1">
         {action && (
-          <button
-            type="button"
+          // SCRUM-1253 (PO, 11/10): a ação principal tem linha própria, sempre
+          // visível — antes flutuava no hover e cobria o título.
+          // Botão da plataforma (28px): a ação principal em acento suave (teal),
+          // as demais em neutro — o mesmo vocabulário do resto do app.
+          <Button
+            size="sm"
+            variant={action.variant === 'primary' ? 'secondary' : 'neutral'}
+            className="mt-2"
+            rightIcon={<ArrowRight className="w-3.5 h-3.5" aria-hidden />}
             onClick={(e) => { e.stopPropagation(); navigate(action.href) }}
-            className={cn(
-              'h-7 px-2 rounded-[6px] text-[11px] font-semibold mr-0.5',
-              action.variant === 'primary'
-                ? 'bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) text-white hover:bg-[#115E59] hover:bg-(image:--primario-img-hover)'
-                : 'text-surface-200 hover:bg-[var(--rowhover)]',
-            )}
           >
             {action.label}
-          </button>
+          </Button>
         )}
-        {onMarkUnread && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onMarkUnread() }}
-            className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
-            title="Marcar como não lida (U)"
-            aria-label="Marcar como não lida"
-          >
-            <span className="w-2.5 h-2.5 rounded-full border-2 border-current" />
-          </button>
-        )}
-        {onArchive && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onArchive() }}
-            className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
-            title="Arquivar (E)"
-            aria-label="Arquivar"
-          >
-            <Archive className="w-3.5 h-3.5" strokeWidth={1.75} />
-          </button>
-        )}
+      </div>
+      {/* SCRUM-1253 (PO, 11/10): coluna de largura fixa. O horário dá lugar às
+          ações secundárias no hover/foco — sem invadir o texto nem mudar a
+          altura. No toque (sem hover), horário em cima e ações embaixo, 36px. */}
+      <div className="flex-none w-[60px] flex flex-col items-end gap-1">
+        <span className="text-xs text-surface-500 tabular-nums leading-[18px] group-hover:hidden group-focus-within:hidden [@media(hover:none)]:!block">
+          {formatListTime(n.createdAt)}
+        </span>
+        <div className="hidden group-hover:flex group-focus-within:flex [@media(hover:none)]:!flex items-center gap-0.5 -mt-0.5">
+          {onMarkUnread && (
+            <Button
+              size="sm"
+              variant="ghost"
+              iconOnly
+              className="[@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
+              title="Marcar como não lida (U)"
+              aria-label="Marcar como não lida"
+              onClick={(e) => { e.stopPropagation(); onMarkUnread() }}
+            >
+              <span className="w-2.5 h-2.5 rounded-full border-2 border-current" />
+            </Button>
+          )}
+          {onArchive && (
+            <Button
+              size="sm"
+              variant="ghost"
+              iconOnly
+              className="[@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
+              title="Arquivar (E)"
+              aria-label="Arquivar"
+              onClick={(e) => { e.stopPropagation(); onArchive() }}
+            >
+              <Archive className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )

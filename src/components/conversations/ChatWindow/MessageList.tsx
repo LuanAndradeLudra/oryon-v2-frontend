@@ -200,12 +200,28 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
     return () => { el.removeEventListener('scroll', medir); ro.disconnect() }
   }, [])
 
+  // SCRUM-1253 (PO, 11/10): o dia da primeira mensagem visível vai para a
+  // faixa presa no topo.
+  const [diaVisivel, setDiaVisivel] = useState<string | null>(null)
+  const avisarDia = useCallback(() => {
+    const el = containerRef.current
+    if (!el) return
+    const topo = el.getBoundingClientRect().top + 44
+    const alvo = [...el.querySelectorAll<HTMLElement>('[data-message-id]')].find((n) => n.getBoundingClientRect().bottom > topo)
+    setDiaVisivel(alvo?.dataset.sentAt ?? null)
+  }, [])
+  useEffect(() => {
+    const id = requestAnimationFrame(avisarDia)
+    return () => cancelAnimationFrame(id)
+  }, [avisarDia, messages])
+
   // Lazy load older messages when scrolling to top
   const handleScroll = useCallback(() => {
+    avisarDia()
     const el = containerRef.current
     if (!el || loading || !hasMore) return
     if (el.scrollTop < 80) onLoadMore()
-  }, [loading, hasMore, onLoadMore])
+  }, [loading, hasMore, onLoadMore, avisarDia])
 
   return (
     <div
@@ -232,18 +248,28 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
 
       {/* D10 — rotina (pausa, atribuição, ações no CRM…) atrás deste botão;
           transferências, falhas e bloqueios aparecem sempre. */}
-      {/* PO 01/10: os eventos chegam ~400 ms DEPOIS das mensagens; quando o
-          botão entrava no fluxo, empurrava a conversa para baixo (e flutuando
-          ele cobria o separador de data). O espaço fica SEMPRE reservado: o
-          botão aparece num lugar que já existia. */}
+      {/* PO 01/10: os eventos chegam ~400 ms DEPOIS das mensagens; o espaço
+          da faixa fica SEMPRE reservado para o botão não empurrar a conversa.
+          SCRUM-1253 (PO, 11/10): a faixa fica PRESA ao rolar — o dia que você
+          está lendo e o "Ocultar eventos" (antes só no topo do histórico).
+          Tem o fundo do próprio chat e esmaece na borda de baixo: as mensagens
+          passam POR BAIXO dela, nunca ficam cobertas por um selo solto. Os
+          separadores de data continuam na conversa. */}
       {onAlternarEventos && (
-        <div className="flex justify-center items-center h-6 mb-2">
-          {rotina > 0 && (
+        <div className="sticky -top-4 z-10 -mx-5 -mt-4 px-5 pt-2 pb-3 mb-1 min-h-10 flex justify-center items-center gap-2 chat-shell-bg [mask-image:linear-gradient(to_bottom,#000_70%,transparent)]">
+          {diaVisivel && (
+            <span className="text-xs font-semibold text-surface-400 px-2 h-6 inline-flex items-center bg-surface-800 rounded-[6px] border border-surface-700">
+              {rotuloDoDiaFixo(diaVisivel)}
+            </span>
+          )}
+          {onAlternarEventos && rotina > 0 && (
             <button
               type="button"
               onClick={onAlternarEventos}
               aria-pressed={mostrarEventos}
-              className="botao-eventos text-[11px] font-medium text-surface-400 hover:text-surface-200 px-2 py-0.5 rounded-[6px] border border-surface-700"
+              className={mostrarEventos
+                ? 'h-6 px-2 rounded-[6px] border border-surface-700 bg-surface-800 text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)]'
+                : 'h-6 px-2 rounded-[6px] border border-[color:var(--ink-bd)] bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)] text-xs font-medium'}
             >
               {mostrarEventos ? 'Ocultar eventos' : `Mostrar eventos (${rotina})`}
             </button>
@@ -273,6 +299,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
           <div
             key={msg.id}
             data-message-id={msg.id}
+            data-sent-at={msg.sentAt}
             className={isNew ? (msg.direction === 'outbound' ? 'animate-msg-in-right' : 'animate-msg-in-left') : undefined}
           >
             {showDate && <DateSeparator date={msg.sentAt} />}
@@ -294,4 +321,11 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
       <div ref={bottomRef} className="h-2" />
     </div>
   )
+}
+
+function rotuloDoDiaFixo(iso: string): string {
+  const d = new Date(iso)
+  if (isToday(d)) return 'Hoje'
+  if (isYesterday(d)) return 'Ontem'
+  return format(d, "d 'de' MMMM", { locale: ptBR })
 }
