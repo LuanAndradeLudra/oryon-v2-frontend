@@ -93,7 +93,7 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
               trava por funil no backend) e a C2 (SCRUM-933, seletor de negócio
               da conversa e "Criar outro" no conflito): ligar isto passou a
               mudar o comportamento de verdade. */}
-          <p className="text-[11px] text-surface-500 mt-1">
+          <p className="text-2xs text-surface-500 mt-1">
             Ligado: o mesmo contato pode ter várias propostas abertas aqui, e a conversa passa a pedir
             a qual delas ela se refere.
           </p>

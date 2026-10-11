@@ -187,8 +187,8 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
               linha; histórico por etapa (era o `history`/`toggleHistory` do
               hook) e a timeline de atividade (DRAWER-29/30) ficaram de fora
               desta passada — GAPS-PENDENTES. */}
-          <div className="border border-surface-700 rounded-lg overflow-hidden">
-            <div className="grid grid-cols-[1fr_130px_110px_90px] h-[30px] items-center px-3 bg-surface-900 border-b border-surface-700 text-[11px] font-semibold text-surface-400">
+          <div className="border border-surface-700 rounded-[10px] overflow-hidden">
+            <div className="grid grid-cols-[1fr_130px_110px_90px] h-8 items-center px-3 bg-surface-900 border-b border-surface-700 text-[11px] font-semibold text-surface-400">
               <span>Negócio</span>
               <span>Etapa</span>
               <span className="text-right">Valor</span>
@@ -246,10 +246,10 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
                           aria-label="Mais ações"
                           // PL-C2-CAR-18 (Eixo10/P4): mesmo gatilho "Mais ações"
                           // de linha de tabela que ContactsTable.tsx já usa,
-                          // nesta MESMA aba de Contatos — lá é p-1.5/rounded-lg/
+                          // nesta MESMA aba de Contatos — lá é p-1.5/rounded-[10px]/
                           // rowhover/ícone 16px; aqui era p-1/rounded cru (4px)/
                           // bg-surface-800/ícone 14px.
-                          className="p-1.5 rounded-lg text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 transition-colors"
+                          className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 transition-colors"
                           data-testid={`deal-move-${deal.id}`}
                         >
                           <MoreHorizontal className="w-4 h-4" />
@@ -345,13 +345,13 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
 
           {recentActivity.length > 0 && (
             <div className="mt-1.5">
-              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-1.5">
+              <p className="text-xs font-semibold text-surface-500 mb-1.5">
                 Atividade recente
               </p>
               <ol>
                 {recentActivity.map((e) => (
-                  <li key={e.id} className="grid grid-cols-[64px_1fr] gap-2.5 py-[7px] border-b border-surface-700 last:border-0 text-[12.5px]">
-                    <span className="text-[11.5px] text-surface-500">{formatRelativeTime(e.createdAt)}</span>
+                  <li key={e.id} className="grid grid-cols-[64px_1fr] gap-2.5 py-[7px] border-b border-surface-700 last:border-0 text-xs">
+                    <span className="text-xs text-surface-500">{formatRelativeTime(e.createdAt)}</span>
                     <span className="text-surface-300 truncate">
                       <span className="font-semibold text-surface-100">{e.actorName}</span>
                       {' '}

@@ -41,7 +41,7 @@ function Coluna({ quem, i }: { quem: 'ia' | 'pessoa'; i: number }) {
       viewport={{ once: true, margin: '-10% 0px' }}
       transition={{ duration: 0.7, delay: 0.1 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
     >
-      <h3 className={cn('flex items-center gap-2.5 font-mono text-[11.5px] uppercase tracking-[.14em]', ia ? 'text-[var(--landing-destaque)]' : 'text-[#F5B544]')}>
+      <h3 className={cn('flex items-center gap-2.5 font-mono font-bold text-[11.5px] uppercase tracking-[.14em]', ia ? 'text-[var(--landing-destaque)]' : 'text-[#F5B544]')}>
         <span aria-hidden className={cn('h-[7px] w-[7px] rounded-full', ia ? 'bg-[var(--landing-destaque)]' : 'bg-[#F5B544]')} />
         {col.titulo}
       </h3>

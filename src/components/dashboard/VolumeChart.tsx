@@ -7,11 +7,12 @@ import { useChartColors } from '@/hooks/useChartColors'
 import type { DateRange, VolumeDataPoint } from '@/types/dashboard'
 import { ESCOPO, periodoPorExtenso, volumeSeguePeriodo } from '@/lib/periodoDoPainel'
 import { EscopoDoCartao } from './EscopoDoCartao'
+import { emFrase } from '@/lib/emFrase'
 
 function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs shadow-lg">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2 text-xs shadow-lg">
       <p className="text-surface-400 mb-1">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2">
@@ -55,10 +56,10 @@ export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
   // com células h24 px9 11.5/600 (ativa --sf2/--tx, demais --tx2 + border-left);
   // corpo h170 padding 14/14/8.
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden h-full flex flex-col">
       <div className="flex items-center h-10 px-3.5 gap-4 border-b border-surface-700 flex-shrink-0">
-        <p className="text-[13px] font-semibold text-surface-100">Volume de Mensagens</p>
-        <div className="flex items-center gap-3.5 text-[11.5px] text-surface-400">
+        <p className="text-sm font-semibold text-surface-100">{emFrase('Volume de Mensagens')}</p>
+        <div className="flex items-center gap-3.5 text-xs text-surface-400">
           <span className="inline-flex items-center gap-[5px]">
             <span className="w-2 h-2 rounded-[2px] inline-block" style={{ backgroundColor: C.brand }} />
             Recebidas
@@ -79,7 +80,7 @@ export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
         {semMensagem ? (
           // P6: gráfico vazio não desenha eixos em branco — "Hoje" pode não
           // ter mensagem nenhuma ainda (dia começando, fora do horário).
-          <div className="h-full flex items-center justify-center text-[11.5px] text-surface-500">
+          <div className="h-full flex items-center justify-center text-xs text-surface-500">
             Sem mensagens {periodoPorExtenso(range)}
           </div>
         ) : (

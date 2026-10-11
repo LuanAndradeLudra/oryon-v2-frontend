@@ -27,10 +27,10 @@ function AttributedLeadsChart() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="h-52 bg-surface-900 border border-surface-700 rounded-lg animate-pulse" />
+  if (loading) return <div className="h-52 bg-surface-900 border border-surface-700 rounded-[10px] animate-pulse" />
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-lg p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-[10px] p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-surface-100">Leads Gerados por Anúncios</p>
@@ -51,7 +51,7 @@ function AttributedLeadsChart() {
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null
               return (
-                <div className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs shadow-lg">
+                <div className="bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2 text-xs shadow-lg">
                   <p className="text-surface-400 mb-1">{label}</p>
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: C.meta }} />
@@ -87,7 +87,7 @@ function PerCampaignBreakdown({
       <p className="text-sm font-semibold text-surface-100 mb-2">Funil por Campanha</p>
       {/* Direção C: uma faixa com linha de 1px entre campanhas, não um
           cartão bem separado por campanha. */}
-      <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
+      <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
       {campaigns.map((camp) => {
         const isOpen = expanded === camp.platformCampaignId
         return (
@@ -96,7 +96,7 @@ function PerCampaignBreakdown({
               className="w-full px-4 py-3 flex items-center gap-3 hover:bg-[var(--rowhover)] transition-colors"
               onClick={() => setExpanded(isOpen ? null : camp.platformCampaignId)}
             >
-              <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: C.meta }} />
+              <span className="w-2 h-2 rounded-[6px] flex-shrink-0" style={{ backgroundColor: C.meta }} />
               <div className="flex-1 text-left min-w-0">
                 <p className="text-sm font-medium text-surface-200 truncate">{camp.platformCampaignName}</p>
                 <p className="text-xs text-surface-500">
@@ -112,7 +112,7 @@ function PerCampaignBreakdown({
                 <div className="flex items-center gap-2 flex-wrap">
                   {camp.funnelBreakdown.map((stage, i) => (
                     <div key={stage.stageKey} className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: stage.stageColor }} />
+                      <div className="w-2 h-2 rounded-[6px]" style={{ backgroundColor: stage.stageColor }} />
                       <span className="text-xs text-surface-400">{stage.stageLabel}:</span>
                       <span className="text-xs text-surface-200 font-semibold tabular-nums">{stage.count}</span>
                       {i < camp.funnelBreakdown.length - 1 && (
@@ -124,7 +124,7 @@ function PerCampaignBreakdown({
 
                 {/* Stats grid — direção C: números com rótulo miúdo, linha de
                     1px entre eles, sem caixa própria por item. */}
-                <div className="grid grid-cols-3 border-t border-l border-surface-700 rounded-md overflow-hidden">
+                <div className="grid grid-cols-3 border-t border-l border-surface-700 rounded-[6px] overflow-hidden">
                   {[
                     { label: 'Investimento', value: `R$ ${camp.spend.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}` },
                     { label: 'Impressões', value: camp.impressions.toLocaleString('pt-BR') },
@@ -134,7 +134,7 @@ function PerCampaignBreakdown({
                     { label: 'ROAS',       value: camp.roas ? `${camp.roas.toFixed(1)}x` : '—', highlight: (camp.roas ?? 0) > 5 },
                   ].map((s) => (
                     <div key={s.label} className="px-3 py-2 border-r border-b border-surface-700">
-                      <p className="text-[10px] text-surface-500">{s.label}</p>
+                      <p className="text-2xs text-surface-500">{s.label}</p>
                       <p className={cn('text-sm font-semibold tabular-nums', s.highlight ? 'text-online' : 'text-surface-200')}>
                         {s.value}
                       </p>
@@ -148,7 +148,7 @@ function PerCampaignBreakdown({
                     e.stopPropagation()
                     onLeadsClick(camp.platformCampaignId, camp.platformCampaignName)
                   }}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-[#1877f2]/30 text-[#1877f2] text-xs font-medium hover:bg-[#1877f2]/10 transition-all"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-[6px] border border-[#1877f2]/30 text-[#1877f2] text-xs font-medium hover:bg-[#1877f2]/10 transition-all"
                 >
                   <Users className="w-3 h-3" />
                   Ver {camp.leadsGenerated} leads no CRM
@@ -182,7 +182,7 @@ function TotalsStrip({
   // colorido por item (era só decorativo aqui; cor de marca fica só onde
   // identifica a plataforma de fato, na tabela por origem).
   return (
-    <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
+    <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
       {items.map((item) => {
         const Tag = item.onClick ? 'button' : 'div'
         return (
@@ -198,7 +198,7 @@ function TotalsStrip({
           >
             <span className="text-xs text-surface-400">{item.label}</span>
             <span className="flex items-center gap-1 flex-shrink-0">
-              <span className="text-base font-bold tabular-nums" style={{ color: item.color ?? 'var(--color-surface-100)' }}>
+              <span className="text-base font-semibold tabular-nums" style={{ color: item.color ?? 'var(--color-surface-100)' }}>
                 {item.value}
               </span>
               {item.onClick && <ChevronDown className="w-3 h-3 text-surface-500 group-hover:text-accent-amber transition-colors" />}
@@ -255,7 +255,7 @@ export function AttributionTab() {
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {/* Header */}
         <div className="mb-5">
-          <p className="text-sm font-display font-bold text-surface-100">Atribuição de Anúncios</p>
+          <p className="text-sm font-display font-semibold text-surface-100">Atribuição de Anúncios</p>
           <p className="text-xs text-surface-400 mt-0.5">Rastreamento de leads gerados por Meta Ads nos últimos 30 dias</p>
         </div>
 

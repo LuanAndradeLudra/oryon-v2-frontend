@@ -210,7 +210,7 @@ export function HistoryTab({ contactId }: HistoryTabProps) {
                 <div className="flex items-start gap-2">
                   <p className="text-sm text-surface-200 flex-1">{item.label}</p>
                   {filter === 'all' && (
-                    <span className="text-[9px] uppercase tracking-wide text-surface-600 bg-surface-800/60 px-1.5 py-0.5 rounded-full flex-shrink-0 mt-0.5">
+                    <span className="text-xs text-surface-600 bg-surface-800/60 px-1.5 py-0.5 rounded-full flex-shrink-0 mt-0.5">
                       {item.section === 'pipeline' ? 'Pipeline' : 'Conversa'}
                     </span>
                   )}

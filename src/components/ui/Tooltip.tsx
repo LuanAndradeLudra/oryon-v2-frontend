@@ -70,8 +70,8 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
           // TIP-01 (spec 1a): superfície invertida (--toast/--toasttx), 24px,
           // raio 5, 11.5/500, sem borda nem sombra.
           className={cn(
-            'z-[9999] flex items-center rounded-[5px] px-2 bg-[var(--toast)] text-[var(--toasttx)]',
-            'text-[11.5px] font-medium',
+            'z-[9999] flex items-center rounded-[6px] px-2 bg-[var(--toast)] text-[var(--toasttx)]',
+            'text-xs font-medium',
             'pointer-events-none',
             wide ? 'min-h-6 py-1 whitespace-normal max-w-xs leading-snug' : 'h-6 whitespace-nowrap w-max',
             transforms[side],

@@ -29,7 +29,7 @@ export function SetupPage() {
       // MobileFeatureGate.tsx, que resolve certo nos dois temas.
       <div className="h-screen w-screen bg-surface-950 flex flex-col items-center justify-center px-6 text-center gap-4">
         <div
-          className="w-16 h-16 rounded-lg color-chip-soft border flex items-center justify-center"
+          className="w-16 h-16 rounded-[10px] color-chip-soft border flex items-center justify-center"
           style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
         >
           <Monitor className="w-8 h-8" />

@@ -103,28 +103,28 @@ export function CustomFieldsManager() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-surface-100">{field.label}</span>
                     {field.required && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-xs">
+                      <span className="inline-flex items-center gap-1 text-2xs text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-[6px]">
                         <Star className="w-2.5 h-2.5" /> Obrigatório
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-surface-600 font-mono">{field.key}</p>
+                  <p className="text-2xs text-surface-600 font-mono">{field.key}</p>
                 </div>
 
-                <span className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 px-2 py-0.5 rounded-xs tabular-nums">
+                <span className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 px-2 py-0.5 rounded-[6px] tabular-nums">
                   {TYPE_LABELS[field.type]}
                 </span>
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => { setEditField(field); setModalOpen(true) }}
-                    className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+                    className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => setDeleteField(field)}
-                    className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
+                    className="p-1.5 rounded-[6px] text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

@@ -12,7 +12,7 @@ function CopyableId({ value }: { value: string }) {
     setTimeout(() => setCopied(false), 1500)
   }
   return (
-    <button onClick={copy} className="inline-flex items-center gap-1 font-mono text-[10px] text-surface-400 hover:text-surface-200 transition-colors group">
+    <button onClick={copy} className="inline-flex items-center gap-1 font-mono text-[11px] text-surface-400 hover:text-surface-200 transition-colors group">
       <span className="truncate max-w-[160px]">{value}</span>
       {copied
         ? <Check className="w-3 h-3 text-online flex-shrink-0" />
@@ -40,20 +40,20 @@ export function AttributionCard({ contact }: Props) {
   if (!meta && !google) return null
 
   return (
-    <div className="rounded-lg border overflow-hidden"
+    <div className="rounded-[10px] border overflow-hidden"
       style={{ borderColor: meta ? '#1877f230' : '#EA433530' }}>
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-2.5"
         style={{ backgroundColor: meta ? '#1877f20d' : '#EA43350d' }}>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+        <div className="w-7 h-7 rounded-[6px] flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: meta ? '#1877f21a' : '#EA43351a', color: meta ? '#1877f2' : '#EA4335' }}>
           <Megaphone className="w-3.5 h-3.5" />
         </div>
         <div>
           <p className="text-xs font-semibold text-surface-100">Origem: Anúncio Pago</p>
-          <p className="text-[10px] text-surface-400">{meta ? 'Meta Ads (Click-to-WhatsApp)' : 'Google Ads (UTM)'}</p>
+          <p className="text-[11px] text-surface-400">{meta ? 'Meta Ads (Click-to-WhatsApp)' : 'Google Ads (UTM)'}</p>
         </div>
-        <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+        <span className="ml-auto text-[11px] font-semibold px-1.5 py-0.5 rounded-[6px]"
           style={{ backgroundColor: meta ? '#1877f21a' : '#EA43351a', color: meta ? '#1877f2' : '#EA4335' }}>
           {meta ? 'Meta' : 'Google'}
         </span>

@@ -76,11 +76,11 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        // Eixo 10: mesma medida do LineFilterChip.tsx (h-7/rounded-sm/--bd2)
+        // Eixo 10: mesma medida do LineFilterChip.tsx (h-7/rounded-[6px]/--bd2)
         // — as duas são o mesmo componente (gatilho de filtro), medidas
         // diferentes antes desta correção.
         className={cn(
-          'flex items-center gap-1.5 h-7 px-2.5 rounded-sm text-xs font-medium transition-colors',
+          'flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] text-xs font-medium transition-colors',
           'bg-surface-800 border border-[var(--bd2)] text-surface-200 hover:bg-[var(--rowhover)]',
           open && 'border-brand-500',
         )}
@@ -90,7 +90,7 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
         <ChevronDown className={cn('w-3 h-3 text-surface-500 transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 w-56 rounded-lg overlay-surface border z-30 overflow-hidden">
+        <div className="absolute left-0 top-full mt-1.5 w-56 rounded-[10px] overlay-surface border z-30 overflow-hidden">
           <ul className="max-h-72 overflow-y-auto py-1">
             {TYPE_OPTIONS.map((opt, i) => {
               const isActive = value === opt.value
@@ -151,11 +151,11 @@ function DuplicateToLineModal({ open, automation, lines, onPick, onCancel }: {
                 <button
                   key={l.id}
                   onClick={() => onPick(l.id)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-[var(--rowhover)] transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[6px] border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-[var(--rowhover)] transition-colors text-left"
                 >
                   <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
                   <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
-                  {isCurrent && <span className="text-[10px] text-surface-500 flex-shrink-0">atual</span>}
+                  {isCurrent && <span className="text-[11px] text-surface-500 flex-shrink-0">atual</span>}
                 </button>
               )
             })}
@@ -177,12 +177,12 @@ function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
   onDelete: () => void
   onClear: () => void
 }) {
-  const btn = 'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors'
+  const btn = 'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-[10px] transition-colors'
   return (
     <motion.div
       initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-xl flex items-center gap-1 pl-4 pr-2 py-2"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-[10px] flex items-center gap-1 pl-4 pr-2 py-2"
     >
       <div className="text-sm text-surface-200 pr-1">
         <span className="font-semibold text-brand-300">{count}</span> {count === 1 ? 'selecionada' : 'selecionadas'}
@@ -198,7 +198,7 @@ function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
       <button onClick={onDelete} className={cn(btn, 'text-danger hover:bg-danger/10')}>
         <Trash2 className="w-3.5 h-3.5" /> Excluir
       </button>
-      <button onClick={onClear} aria-label="Limpar seleção" className="p-1.5 ml-1 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-lg transition-colors">
+      <button onClick={onClear} aria-label="Limpar seleção" className="p-1.5 ml-1 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-[10px] transition-colors">
         <X className="w-4 h-4" />
       </button>
     </motion.div>
@@ -379,10 +379,10 @@ export function AutomationsPage() {
 
   useRegisterTopBarActions(
     // Eixo 10 (achado ao vivo do usuário): a barra tinha 4 alturas (28/29,7/33)
-    // e 2 raios diferentes — todo controle feito à mão com py-1.5+rounded-lg
-    // em vez da altura fixa h-7+rounded-sm que o resto da casa usa (a pílula
+    // e 2 raios diferentes — todo controle feito à mão com py-1.5+rounded-[10px]
+    // em vez da altura fixa h-7+rounded-[6px] que o resto da casa usa (a pílula
     // Buscar do TopBar, na mesma tela, é a régua: h28/raio7). Trocado pelos
-    // dois pelo primitivo Button (size="sm" já é exatamente h-7/rounded-sm).
+    // dois pelo primitivo Button (size="sm" já é exatamente h-7/rounded-[6px]).
     <div className="flex items-center gap-2">
       <Button
         variant="neutral"
@@ -494,7 +494,7 @@ export function AutomationsPage() {
           return (
             <div className="flex items-center gap-3 min-w-0 max-w-[280px]">
               <span
-                className="color-chip-soft w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                className="color-chip-soft w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 border"
                 style={{ ['--chip']: accent } as React.CSSProperties}
                 title={TYPE_CONFIG[a.type]?.label}
               >
@@ -504,7 +504,7 @@ export function AutomationsPage() {
                 <div className="flex items-center gap-1.5 min-w-0">
                   <p className="text-sm font-medium text-surface-100 truncate min-w-0">{a.name}</p>
                   {a.status === 'draft' && (
-                    <span className="color-chip-soft px-1.5 py-0.5 rounded-xs text-[9px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+                    <span className="color-chip-soft px-1.5 py-0.5 rounded-[6px] text-[11px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
                       Rascunho
                     </span>
                   )}
@@ -521,13 +521,13 @@ export function AutomationsPage() {
           const acts = a.actions ?? []
           return (
             <div className="flex items-center gap-1.5 min-w-0 max-w-[420px]">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap flex-shrink-0">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap flex-shrink-0">
                 <Zap className="w-3 h-3 text-surface-400" />{triggerChipLabel(a)}
               </span>
               {acts.length > 0 ? (
                 <>
                   <ChevronRight className="w-3 h-3 text-surface-600 flex-shrink-0" />
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap truncate">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-[6px] bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap truncate">
                     {actionLabel(acts[0])}
                   </span>
                   {acts.length > 1 && <span className="text-[11px] text-surface-500 flex-shrink-0">+{acts.length - 1}</span>}
@@ -602,7 +602,7 @@ export function AutomationsPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar automação..."
-                className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-3 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
+                className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-[6px] pl-8 pr-3 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
               />
             </div>
             <SegmentedControl label="Filtrar por status" options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
@@ -612,10 +612,10 @@ export function AutomationsPage() {
             {attentionK > 0 && (
               <button
                 onClick={() => setAttentionOnly(v => !v)}
-                // Eixo 10: h-7/rounded-sm, mesma medida dos outros gatilhos
+                // Eixo 10: h-7/rounded-[6px], mesma medida dos outros gatilhos
                 // da barra (só a cor de estado muda entre ativo/inativo).
                 className={cn(
-                  'flex items-center gap-1.5 h-7 px-2.5 rounded-sm text-xs font-semibold border transition-colors',
+                  'flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] text-xs font-semibold border transition-colors',
                   attentionOnly
                     ? 'bg-warning/15 border-warning/40 text-warning'
                     : 'bg-surface-800 border-[var(--bd2)] text-surface-300 hover:border-warning/40 hover:text-warning',
@@ -623,7 +623,7 @@ export function AutomationsPage() {
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
                 Atenção
-                <span className="min-w-[18px] px-1 rounded-full bg-warning/20 text-[10px] text-center tabular-nums">{attentionK}</span>
+                <span className="min-w-[18px] px-1 rounded-full bg-warning/20 text-[11px] text-center tabular-nums">{attentionK}</span>
               </button>
             )}
           </div>
@@ -650,7 +650,7 @@ export function AutomationsPage() {
           />
         ) : (
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col px-4 py-3">
-            <div className="flex-1 min-h-0 flex flex-col rounded-lg border border-surface-700 overflow-hidden bg-[var(--sf2)]">
+            <div className="flex-1 min-h-0 flex flex-col rounded-[10px] border border-surface-700 overflow-hidden bg-[var(--sf2)]">
               <DataTable
                 columns={columns}
                 rows={sortedRows}

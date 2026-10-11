@@ -21,7 +21,7 @@ interface MessageListProps {
   contact: { displayName: string; profilePicUrl?: string | null }
   /** T4 fase 1 — eventos entre as mensagens (D10). */
   eventos?: EventoDaConversa[]
-  /** Rotina visível (`eventos=1` na URL). */
+  /** Rotina visível (padrão; `eventos-ocultos=1` na URL esconde — SCRUM-1253). */
   mostrarEventos?: boolean
   onAlternarEventos?: () => void
 }
@@ -52,7 +52,7 @@ function DateSeparator({ date }: { date: string }) {
   return (
     // canvas 1d: só o chip centrado (10.5/600 tx3, padding 2/8, borda, raio 6, mb 8) — sem as linhas laterais.
     <div className="flex justify-center mt-2 mb-2">
-      <span className="text-[10.5px] text-surface-500 font-semibold px-2 py-0.5 bg-surface-800 rounded-xs border border-surface-700">
+      <span className="text-[11px] text-surface-500 font-semibold px-2 py-0.5 bg-surface-800 rounded-[6px] border border-surface-700">
         {label}
       </span>
     </div>
@@ -243,7 +243,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
               type="button"
               onClick={onAlternarEventos}
               aria-pressed={mostrarEventos}
-              className="text-[11px] font-medium text-surface-400 hover:text-surface-200 px-2 py-0.5 rounded-xs border border-surface-700"
+              className="botao-eventos text-[11px] font-medium text-surface-400 hover:text-surface-200 px-2 py-0.5 rounded-[6px] border border-surface-700"
             >
               {mostrarEventos ? 'Ocultar eventos' : `Mostrar eventos (${rotina})`}
             </button>

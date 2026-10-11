@@ -78,12 +78,12 @@ export function FormField({ label, error, hint, required, requirement, filled, c
               obrigatoriedade por `aria-required`, não por ouvir "asterisco". */}
           {required && <span className="text-danger ml-0.5" aria-hidden="true">*</span>}
           {requirement === 'required' && !filled && (
-            <span className="ml-2 text-3xs font-semibold text-danger normal-case tracking-normal">
+            <span className="ml-2 text-2xs font-semibold text-danger normal-case tracking-normal">
               Obrigatório
             </span>
           )}
           {requirement === 'optional' && !filled && (
-            <span className="ml-2 text-3xs font-medium text-surface-500 normal-case tracking-normal">
+            <span className="ml-2 text-2xs font-medium text-surface-500 normal-case tracking-normal">
               Opcional
             </span>
           )}
@@ -94,10 +94,10 @@ export function FormField({ label, error, hint, required, requirement, filled, c
           )}
         </label>
         {content}
-        {hint && !error && <p id={hintId} className="text-[11.5px] text-surface-500">{hint}</p>}
+        {hint && !error && <p id={hintId} className="text-xs text-surface-500">{hint}</p>}
         {/* `role="alert"` para o erro chegar a quem já saiu do campo. */}
         {error && (
-          <p id={errorId} role="alert" className="flex items-center gap-[5px] text-[11.5px] text-danger">
+          <p id={errorId} role="alert" className="flex items-center gap-[5px] text-xs text-danger">
             <AlertCircle className="w-3 h-3 flex-shrink-0" strokeWidth={2.2} aria-hidden="true" />
             {error}
           </p>

@@ -107,7 +107,7 @@ function ToggleChip({ active, onClick, children, title }: {
       aria-pressed={active}
       title={title}
       className={cn(
-        'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-xs font-medium transition-colors max-w-full',
+        'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] border text-xs font-medium transition-colors max-w-full',
         active
           ? 'border-brand-500 bg-accent-soft text-accent-dark font-semibold'
           : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
@@ -123,7 +123,7 @@ function ToggleChip({ active, onClick, children, title }: {
 function FilterGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-[10px] uppercase tracking-wider text-surface-500 font-semibold">{label}</p>
+      <p className="text-[11px] uppercase tracking-wider text-surface-500 font-semibold">{label}</p>
       {children}
     </div>
   )
@@ -282,7 +282,7 @@ export function ContactsFiltersBar({ filters, onFiltersChange, tags, commercial,
             <div
               role="dialog"
               aria-label="Filtros de contatos"
-              className="absolute left-0 top-full mt-1 z-50 w-80 max-h-[70vh] overflow-y-auto overlay-surface overlay-vidro border rounded-lg p-3 flex flex-col gap-3"
+              className="absolute left-0 top-full mt-1 z-50 w-80 max-h-[70vh] overflow-y-auto overlay-surface overlay-vidro border rounded-[10px] p-3 flex flex-col gap-3"
             >
               <StageGroup
                 selected={stageSel}
@@ -357,9 +357,9 @@ export function ContactsFiltersBar({ filters, onFiltersChange, tags, commercial,
             {chips.map((c) => (
               <span
                 key={c.key}
-                className="inline-flex items-center gap-[5px] h-7 pl-2.5 pr-1.5 rounded-sm text-xs font-semibold border border-brand-500 bg-accent-soft text-accent-dark whitespace-nowrap"
+                className="inline-flex items-center gap-[5px] h-7 pl-2.5 pr-1.5 rounded-[6px] text-xs font-semibold border border-brand-500 bg-accent-soft text-accent-dark whitespace-nowrap"
               >
-                <span className="font-bold">{c.label}</span>
+                <span className="font-semibold">{c.label}</span>
                 <button onClick={c.onRemove} aria-label={`Remover ${c.label}`} className="hover:opacity-70">
                   <X className="w-3 h-3" />
                 </button>

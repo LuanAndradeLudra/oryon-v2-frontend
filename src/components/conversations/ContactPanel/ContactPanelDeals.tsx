@@ -161,7 +161,7 @@ export function ContactPanelDeals({
   return (
     <div className="panel-divider px-4 py-2.5 border-t border-surface-700" data-testid="panel-pipelines">
       <div className="flex items-center justify-between h-6 mb-1">
-        <p className="text-[10px] text-surface-500 uppercase tracking-[.14em] font-bold flex items-center gap-1.5">
+        <p className="text-2xs text-surface-500 font-semibold flex items-center gap-1.5">
           Negócios
           <span data-testid="panel-pipelines-count">
             · {open.length}
@@ -187,12 +187,12 @@ export function ContactPanelDeals({
       {salesDeals.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mb-2" data-testid="panel-pipelines-money">
           {/* README 3.3: "Negócios como mini-cards de 6px de raio" — --radius-xs. */}
-          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xs px-2.5 py-1.5">
-            <p className="text-[9px] text-surface-500 uppercase tracking-wide">Em aberto</p>
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-[6px] px-2.5 py-1.5">
+            <p className="text-2xs text-surface-500">Em aberto</p>
             <p className="text-sm font-semibold text-surface-100 tabular-nums">{formatBRL(openCents)}</p>
           </div>
-          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xs px-2.5 py-1.5">
-            <p className="text-[9px] text-surface-500 uppercase tracking-wide">Ganho</p>
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-[6px] px-2.5 py-1.5">
+            <p className="text-2xs text-surface-500">Ganho</p>
             <p className="text-sm font-semibold text-success tabular-nums">{formatBRL(wonCents)}</p>
           </div>
         </div>

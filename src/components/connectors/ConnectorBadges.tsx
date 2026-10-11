@@ -17,8 +17,8 @@ export function ConnectorStatusChip({ label, tone, icon, size = 'sm', className 
   return (
     <span
       className={cn(
-        'color-chip-soft inline-flex items-center gap-1 rounded-[5px] border font-bold flex-shrink-0',
-        size === 'lg' ? 'h-5 px-[7px] text-[11px]' : 'h-[18px] px-1.5 text-[10.5px]',
+        'color-chip-soft inline-flex items-center gap-1 rounded-[6px] border font-semibold flex-shrink-0',
+        size === 'lg' ? 'h-5 px-[7px] text-[11px]' : 'h-5 px-1.5 text-[11px]',
         className,
       )}
       style={{ ['--chip']: tone === 'success' ? 'var(--color-success)' : 'var(--color-warning)' } as React.CSSProperties}
@@ -33,8 +33,8 @@ export function ConnectorComingSoonChip({ size = 'sm', className }: { size?: 'sm
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-[5px] border border-surface-700 bg-[var(--sf2)] font-bold text-surface-400 flex-shrink-0',
-          size === 'lg' ? 'h-5 px-[7px] text-[11px]' : 'h-[18px] px-1.5 text-[10.5px]',
+        'inline-flex items-center gap-1 rounded-[6px] border border-surface-700 bg-[var(--sf2)] font-semibold text-surface-400 flex-shrink-0',
+          size === 'lg' ? 'h-5 px-[7px] text-[11px]' : 'h-5 px-1.5 text-[11px]',
         className,
       )}
     >

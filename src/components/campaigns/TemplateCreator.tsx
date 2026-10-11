@@ -337,10 +337,10 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
             fluxo, como no painel da Meta. */}
         <TemplateCategoryTile category={category} size={28} />
         <div className="min-w-0">
-          <h1 className="text-[13px] font-semibold text-surface-50 leading-tight truncate">
+          <h1 className="text-sm font-semibold text-surface-50 leading-tight truncate">
             {name.trim() || (editing ? 'Editar modelo' : 'Novo modelo')}
           </h1>
-          <p className="text-[11px] text-surface-500 leading-tight">
+          <p className="text-2xs text-surface-500 leading-tight">
             {TEMPLATE_CATEGORIES[category].label}{language ? ` · ${language}` : ''}
           </p>
         </div>
@@ -562,7 +562,7 @@ function StepCategoria({
           onChange={(v) => { if (!readOnly) onCategory(v) }}
           options={disponiveis.map((c) => ({ value: c.value, label: c.label, icon: c.icon }))}
         />
-        <p className="text-[11px] text-surface-500 mt-2 leading-relaxed">
+        <p className="text-2xs text-surface-500 mt-2 leading-relaxed">
           <span className="text-surface-300 font-semibold">Marketing</span> cobra por conversa aberta ·
           <span className="text-surface-300 font-semibold"> Utilidade</span> tem tarifa reduzida
           {emBreve.length > 0 && <> · {emBreve.map((c) => c.label).join(', ')} em breve</>}
@@ -570,7 +570,7 @@ function StepCategoria({
       </Section>
 
       <Section title="Tipo" badge="Escolhe o modelo inicial do editor. Não é enviado à Meta.">
-        <div role="radiogroup" aria-label="Tipo do modelo" className="rounded-sm border border-surface-700 overflow-hidden">
+        <div role="radiogroup" aria-label="Tipo do modelo" className="rounded-[6px] border border-surface-700 overflow-hidden">
           {SUBCATEGORIES[category].map((sub) => {
             const ativo = subCategory === sub.value
             return (
@@ -594,8 +594,8 @@ function StepCategoria({
                   {ativo && <span className="w-[7px] h-[7px] rounded-full bg-brand-500" />}
                 </span>
                 <span className="min-w-0">
-                  <span className={cn('block text-[12.5px] leading-tight', ativo ? 'font-semibold text-surface-50' : 'font-medium text-surface-200')}>{sub.label}</span>
-                  <span className="block text-[11px] text-surface-500 mt-0.5 leading-snug">{sub.description}</span>
+                  <span className={cn('block text-xs leading-tight', ativo ? 'font-semibold text-surface-50' : 'font-medium text-surface-200')}>{sub.label}</span>
+                  <span className="block text-2xs text-surface-500 mt-0.5 leading-snug">{sub.description}</span>
                 </span>
               </button>
             )
@@ -613,13 +613,13 @@ function StepCategoria({
 function Contador({ n, max }: { n: number; max: number }) {
   return (
     <span className={cn(
-      'absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none',
+      'absolute right-2.5 top-1/2 -translate-y-1/2 text-2xs tabular-nums pointer-events-none',
       n > max ? 'text-danger' : 'text-surface-500',
     )}>{n}/{max}</span>
   )
 }
 function Ajuda({ children, erro }: { children?: React.ReactNode; erro?: string }) {
-  return <p className={cn('text-[11px] mt-1.5 leading-snug', erro ? 'text-danger' : 'text-surface-500')}>{erro ?? children}</p>
+  return <p className={cn('text-2xs mt-1.5 leading-snug', erro ? 'text-danger' : 'text-surface-500')}>{erro ?? children}</p>
 }
 
 function StepMensagem({
@@ -705,7 +705,7 @@ function StepMensagem({
                 onClick={() => { if (!fieldDisabled) onHeaderType(ht.value) }}
                 disabled={fieldDisabled}
                 className={cn(
-                  'h-7 px-2.5 rounded-sm border text-[11.5px] transition-colors',
+                  'h-7 px-2.5 rounded-[6px] border text-xs transition-colors',
                   ativo
                     ? 'border-[var(--bd2)] bg-surface-800 text-surface-50 font-semibold'
                     : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
@@ -761,7 +761,7 @@ function StepMensagem({
             placeholder="Olá, {{1}}! Sua mensagem aqui…"
             className="pb-6 leading-[1.55] resize-y min-h-[120px]"
           />
-          <span className={cn('absolute right-2.5 bottom-2 text-[11px] tabular-nums pointer-events-none', body.length > 1024 ? 'text-danger' : 'text-surface-500')}>
+          <span className={cn('absolute right-2.5 bottom-2 text-2xs tabular-nums pointer-events-none', body.length > 1024 ? 'text-danger' : 'text-surface-500')}>
             {body.length}/1024
           </span>
         </div>
@@ -779,13 +779,13 @@ function StepMensagem({
 
         {varPositions.length > 0 && (
           <div className="mt-3 border-t border-surface-700 pt-3">
-            <p className="text-[11px] text-surface-500 mb-2 leading-snug">
+            <p className="text-2xs text-surface-500 mb-2 leading-snug">
               Valor de exemplo para cada variável — a Meta exige amostras reais (não aceita "nome", "valor").
             </p>
             <div className="flex flex-col gap-1.5">
               {varPositions.map((pos, i) => (
                 <div key={pos} className="flex items-center gap-2">
-                  <span className="h-9 w-14 flex-none inline-flex items-center justify-center rounded-sm border border-surface-700 bg-surface-900 font-mono text-[11.5px] text-surface-300">
+                  <span className="h-9 w-14 flex-none inline-flex items-center justify-center rounded-[6px] border border-surface-700 bg-surface-900 font-mono text-xs text-surface-300">
                     {`{{${pos}}}`}
                   </span>
                   <Input
@@ -846,7 +846,7 @@ function StepBotoes({
       <Section title="Botões" badge="Opcional · até 3 — a Meta rejeita mais que isso">
         {errors.buttonsGeneral && <Banner variant="danger" className="mb-3">{errors.buttonsGeneral}</Banner>}
         {buttons.length === 0 && (
-          <p className="text-[11px] text-surface-500 mb-2 leading-snug">
+          <p className="text-2xs text-surface-500 mb-2 leading-snug">
             Nenhum botão. Resposta rápida, link, telefone ou copiar código — o contato vê cada um como uma linha azul (ou verde) abaixo da mensagem.
           </p>
         )}
@@ -869,13 +869,13 @@ function StepBotoes({
                   >
                     {availableButtonTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </SelectMenu>
-                  <span className="text-[11px] text-surface-500">Botão {i + 1} de 3</span>
+                  <span className="text-2xs text-surface-500">Botão {i + 1} de 3</span>
                   <button
                     type="button"
                     onClick={() => removeButton(i)}
                     disabled={fieldDisabled}
                     aria-label={`Remover botão ${i + 1}`}
-                    className="ml-auto w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-danger hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
+                    className="ml-auto w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-danger hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -909,10 +909,10 @@ function StepBotoes({
                   <InputRow value={btn.flowId} onChange={(v) => updateButton(i, 'flowId', v)} placeholder="ID do Flow no Meta Business Manager" label="Flow ID" disabled={fieldDisabled} />
                 )}
                 {btn.type === 'COPY_CODE' && (
-                  <p className="text-[11px] text-surface-500 pl-[104px]">O código é copiado ao toque — nada mais a configurar.</p>
+                  <p className="text-2xs text-surface-500 pl-[104px]">O código é copiado ao toque — nada mais a configurar.</p>
                 )}
                 {errors.buttonByIndex?.[i] && (
-                  <p className="text-[11px] text-danger pl-[104px]">{errors.buttonByIndex[i]}</p>
+                  <p className="text-2xs text-danger pl-[104px]">{errors.buttonByIndex[i]}</p>
                 )}
               </div>
             )
@@ -941,7 +941,7 @@ function StepBotoes({
                   transition={{ duration: 0.15 }}
                   className="overflow-hidden"
                 >
-                  <div className="mt-2 rounded-sm border border-surface-700 overflow-hidden">
+                  <div className="mt-2 rounded-[6px] border border-surface-700 overflow-hidden">
                     {availableButtonTypes.map((bt) => {
                       const Icon = bt.icon
                       const alreadyHasType = buttons.some((b) => b.type === bt.value)
@@ -959,13 +959,13 @@ function StepBotoes({
                         >
                           <Icon className="w-3.5 h-3.5 text-surface-400 flex-none" />
                           <span className="min-w-0">
-                            <span className="block text-[12.5px] font-medium text-surface-200 leading-tight">{bt.label}</span>
-                            <span className="block text-[11px] text-surface-500 leading-snug">{bt.description}</span>
+                            <span className="block text-xs font-medium text-surface-200 leading-tight">{bt.label}</span>
+                            <span className="block text-2xs text-surface-500 leading-snug">{bt.description}</span>
                           </span>
                           {bt.comingSoon
-                            ? <span className="ml-auto text-[11px] text-surface-500">em breve</span>
+                            ? <span className="ml-auto text-2xs text-surface-500">em breve</span>
                             : alreadyHasType
-                              ? <span className="ml-auto text-[11px] text-surface-500">já adicionado</span>
+                              ? <span className="ml-auto text-2xs text-surface-500">já adicionado</span>
                               : null}
                         </button>
                       )
@@ -991,8 +991,8 @@ function EtapaAprovacao({ n, titulo, sub, Icone, ativa }: { n: number; titulo: s
     <div className="flex items-start gap-2 min-w-0 flex-1">
       <Icone className={cn('w-3.5 h-3.5 mt-px flex-none', ativa ? 'text-brand-400' : 'text-surface-500')} />
       <div className="min-w-0">
-        <p className={cn('text-[12px] leading-tight', ativa ? 'font-semibold text-surface-50' : 'font-medium text-surface-300')}>{n} · {titulo}</p>
-        <p className="text-[11px] text-surface-500 leading-snug">{sub}</p>
+        <p className={cn('text-xs leading-tight', ativa ? 'font-semibold text-surface-50' : 'font-medium text-surface-300')}>{n} · {titulo}</p>
+        <p className="text-2xs text-surface-500 leading-snug">{sub}</p>
       </div>
     </div>
   )
@@ -1056,10 +1056,10 @@ function Section({ title, required, badge, children }: {
   return (
     <div className="grid grid-cols-[104px_1fr] gap-x-4 py-4 border-t border-surface-700 first:border-t-0 first:pt-0">
       <div className="pt-1.5">
-        <h3 className="text-[12.5px] font-bold text-surface-100 tracking-[-0.01em] leading-tight">
+        <h3 className="text-xs font-semibold text-surface-100 tracking-[-0.01em] leading-tight">
           {title}{required && <span className="text-surface-500 font-normal"> *</span>}
         </h3>
-        {badge && <p className="text-[11px] text-surface-500 mt-0.5 leading-snug">{badge}</p>}
+        {badge && <p className="text-2xs text-surface-500 mt-0.5 leading-snug">{badge}</p>}
       </div>
       <div className="min-w-0">{children}</div>
     </div>
@@ -1076,7 +1076,7 @@ function ToolbarBtn({ onClick, title, children, destaque }: {
       onClick={onClick}
       title={title}
       className={cn(
-        'h-7 px-2.5 rounded-sm border inline-flex items-center gap-1.5 text-[11.5px] transition-colors',
+        'h-7 px-2.5 rounded-[6px] border inline-flex items-center gap-1.5 text-xs transition-colors',
         destaque
           ? 'border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)]'
           : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
@@ -1097,7 +1097,7 @@ function InputRow({ value, onChange, placeholder, label, maxLength, disabled }: 
   // conteúdo da Section), campo = primitivo Input md, contador dentro.
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[11px] text-surface-500 w-[88px] flex-none">{label}</span>
+      <span className="text-2xs text-surface-500 w-[88px] flex-none">{label}</span>
       <div className="flex-1 relative min-w-0">
         <Input
           size="md"
@@ -1108,7 +1108,7 @@ function InputRow({ value, onChange, placeholder, label, maxLength, disabled }: 
           className={maxLength ? 'pr-14' : undefined}
         />
         {maxLength && (
-          <span className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none', value.length >= maxLength ? 'text-danger' : 'text-surface-500')}>
+          <span className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 text-2xs tabular-nums pointer-events-none', value.length >= maxLength ? 'text-danger' : 'text-surface-500')}>
             {value.length}/{maxLength}
           </span>
         )}

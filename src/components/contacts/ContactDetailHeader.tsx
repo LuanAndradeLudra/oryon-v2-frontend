@@ -70,7 +70,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
           <button
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Mais ações"
-            className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+            className="w-7 h-7 rounded-[6px] border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
           >
             <MoreHorizontal className="w-[15px] h-[15px]" />
           </button>
@@ -114,7 +114,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
         <div className="flex items-start gap-3 px-4 pt-3.5 pb-3">
           <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
           <div className="flex-1 min-w-0">
-            <h2 className="text-[15px] font-bold tracking-[-0.01em] leading-5 text-surface-50 truncate">{contact.displayName}</h2>
+            <h2 className="text-base font-semibold tracking-[-0.01em] leading-5 text-surface-50 truncate">{contact.displayName}</h2>
             {sub && <p className="text-xs text-surface-400 mt-0.5 truncate">{sub}</p>}
             {/* Só a situação aqui. As etiquetas moram numa única seção do painel
                 (TagsCard, editável) — o PO viu o mesmo chip repetido em três
@@ -132,7 +132,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
                 onClick={onExpand}
                 title="Abrir ficha"
                 aria-label="Abrir ficha"
-                className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+                className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <ExternalLink className="w-4 h-4" />
               </button>
@@ -141,7 +141,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
             <button
               onClick={onClose}
               aria-label="Fechar"
-              className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+              className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -180,7 +180,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
           type="button"
           onClick={onClose}
           aria-label="Voltar"
-          className="-ml-1.5 p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0"
+          className="-ml-1.5 p-1.5 rounded-[6px] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -189,7 +189,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <h2 className="text-base font-bold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h2>
+          <h2 className="text-base font-semibold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h2>
           {contact.stage && <StageBadge stage={contact.stage} stages={stages} />}
         </div>
 
@@ -223,7 +223,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+            className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <X className="w-4 h-4" />
           </button>

@@ -7,6 +7,7 @@ import { StageBadge } from './StageBadge'
 import { TagChips } from './TagChips'
 import { cn, relativeDate, formatPhoneBR } from '@/lib/utils'
 import type { Contact, TenantStage } from '@/types'
+import { SeloForaDoFiltro } from '@/components/ui/SeloForaDoFiltro'
 
 // Direção A da tela de Leads (DECISOES-PENDENTES #33, mockup-contatos.html):
 // UMA pessoa por linha, 52px. O nome manda; o resto é mudo. Checkbox e ações só
@@ -42,6 +43,8 @@ export interface ContactListRowProps {
   stages: TenantStage[]
   /** Painel aberto neste contato — fundo + filete de 2px à esquerda. */
   active: boolean
+  /** Aberto e fixado no topo, mas fora dos filtros — selo "Fora deste filtro". */
+  foraDoFiltro?: boolean
   /** Marcado para ação em massa. */
   checked?: boolean
   /** Existe alguma linha marcada — checkboxes ficam visíveis em todas. */
@@ -59,10 +62,10 @@ export interface ContactListRowProps {
 }
 
 const ICON_BTN =
-  'w-7 h-7 rounded-xs inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-colors'
+  'w-7 h-7 rounded-[6px] inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-colors'
 
 function ContactListRowImpl({
-  contact, stages, active, checked = false, selectionMode = false, variant = 'default',
+  contact, stages, active, foraDoFiltro = false, checked = false, selectionMode = false, variant = 'default',
   onOpen, onToggleSelect, onOpenConversation, onSendTemplate, onOpenProfile,
 }: ContactListRowProps) {
   const touch = variant === 'touch'
@@ -76,8 +79,8 @@ function ContactListRowImpl({
   return (
     <div
       className={cn(
-        'group relative h-[52px] flex items-center gap-3 pl-3 pr-2.5 rounded-sm transition-colors',
-        active ? 'bg-[var(--sel)]' : 'hover:bg-[var(--rowhover)]',
+        'group relative h-[52px] flex items-center gap-3 pl-3 pr-2.5 rounded-[6px] transition-colors',
+        active ? 'linha-ativa bg-[var(--sel)]' : 'hover:bg-[var(--rowhover)]',
         // Filete de seleção: 2px, marca, recuado 14px do topo/base (mockup A); fundo --sel.
         active && 'before:content-[""] before:absolute before:left-0 before:top-3.5 before:bottom-3.5 before:w-0.5 before:rounded-full before:bg-brand-500',
       )}
@@ -93,7 +96,7 @@ function ContactListRowImpl({
         aria-label={`Abrir ${name}`}
         aria-current={active ? 'true' : undefined}
         onClick={(e) => onOpen(contact, e)}
-        className="absolute inset-0 rounded-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        className="absolute inset-0 rounded-[6px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       />
 
       {!touch && onToggleSelect && (
@@ -124,6 +127,7 @@ function ContactListRowImpl({
         <div className="relative pointer-events-none flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="flex-1 min-w-0 text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>
+            {foraDoFiltro && <SeloForaDoFiltro />}
             <span
               className="flex-none text-[11px] leading-[18px] text-surface-400 tabular-nums whitespace-nowrap"
               title={contact.lastContactedAt ? new Date(contact.lastContactedAt).toLocaleString('pt-BR') : undefined}
@@ -144,7 +148,10 @@ function ContactListRowImpl({
       ) : (
         <>
           <div className="relative pointer-events-none flex-1 min-w-0">
-            <p className="text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="min-w-0 text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>
+              {foraDoFiltro && <SeloForaDoFiltro title="Este contato não atende aos filtros atuais. Fica na lista porque está aberto." />}
+            </div>
             {(line2 || hasTags) && (
               <div className="flex items-center gap-2">
                 <p className="flex-1 min-w-0 text-xs leading-[18px] text-surface-400 truncate">{line2}</p>
@@ -167,13 +174,18 @@ function ContactListRowImpl({
       <div className="relative flex-shrink-0 w-[130px] flex justify-end">
         <span
           className={cn(
-            'pointer-events-none text-[11.5px] text-surface-400 tabular-nums whitespace-nowrap truncate',
+            'pointer-events-none text-xs text-surface-400 tabular-nums whitespace-nowrap truncate',
             menuOpen ? 'hidden' : 'group-hover:hidden group-focus-within:hidden [@media(pointer:coarse)]:hidden',
           )}
           title={contact.lastContactedAt ? new Date(contact.lastContactedAt).toLocaleString('pt-BR') : undefined}
         >
-          {when}
-          {canal && <span className="text-surface-500"> · {canal}</span>}
+          {/* SCRUM-1253 (PO, 07/10): sem interação não há "quando" — só a origem. */}
+          {!contact.lastContactedAt
+            ? canal && <span className="text-surface-500">{canal}</span>
+            : <>
+                {when}
+                {canal && <span className="text-surface-500"> · {canal}</span>}
+              </>}
         </span>
         <div
           className={cn(

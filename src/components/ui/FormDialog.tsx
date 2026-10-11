@@ -47,7 +47,7 @@ export function FormDialog({
       footer={
         <div className="flex flex-col gap-3">
           {error && (
-            <div role="alert" className="flex items-start gap-2 text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
+            <div role="alert" className="flex items-start gap-2 text-xs text-danger bg-danger/10 border border-danger/20 rounded-[10px] px-3 py-2">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
               <span>{error}</span>
             </div>

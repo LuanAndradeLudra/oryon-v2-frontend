@@ -59,7 +59,7 @@ type Categoria = (typeof CATEGORIAS)[number]
  */
 export function CriteriosDeDecisao({ agent, onAtualizar }: { agent: AgentConfig; onAtualizar: (a: AgentConfig) => void }) {
   return (
-    <ul className="divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700">
+    <ul className="divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700">
       {CATEGORIAS.map((c) => <Criterio key={c.key} c={c} agent={agent} onAtualizar={onAtualizar} />)}
     </ul>
   )
@@ -111,7 +111,7 @@ function Criterio({ c, agent, onAtualizar }: { c: Categoria; agent: AgentConfig;
           <span className="block text-xs text-surface-400">{c.resumo}</span>
         </span>
         <span className={cn(
-          'inline-flex h-5 flex-shrink-0 items-center rounded-xs border px-[7px] text-2xs font-semibold whitespace-nowrap',
+          'inline-flex h-5 flex-shrink-0 items-center rounded-[6px] border px-[7px] text-2xs font-semibold whitespace-nowrap',
           personalizado ? 'border-transparent bg-accent-soft text-accent-dark' : 'border-surface-700 text-surface-400',
         )}>
           {personalizado ? 'Personalizado' : 'Padrão da Oryon'}

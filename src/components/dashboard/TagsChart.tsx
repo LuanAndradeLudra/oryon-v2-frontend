@@ -12,17 +12,17 @@ export const TagsChart = memo(function TagsChart({ data, escopo }: { data: TagVo
   const C = useChartColors()
   const sorted = [...data].sort((a, b) => b.count - a.count).slice(0, 8)
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5 h-full">
       <div className="flex items-center gap-2 mb-4">
-        <p className="text-sm font-semibold text-surface-100">Tags Mais Usadas</p>
+        <p className="text-sm font-semibold text-surface-100">{'Etiquetas mais usadas'}</p>
         {escopo && <EscopoDoCartao className="ml-auto">{escopo}</EscopoDoCartao>}
       </div>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={sorted} layout="vertical" margin={{ left: 4, right: 20, top: 4, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={C.grid} horizontal={false} />
-          <XAxis type="number" tick={{ fill: C.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <XAxis type="number" tick={{ fill: C.axis, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
           <YAxis type="category" dataKey="tagName"
-            tick={{ fill: C.axis, fontSize: 11 }} width={76} axisLine={false} tickLine={false} />
+            tick={{ fill: C.axis, fontSize: 11 }} width={112} axisLine={false} tickLine={false} />
           <Tooltip {...chartTooltipProps(C)} />
           <Bar dataKey="count" name="Conversas" radius={[0, 3, 3, 0]} maxBarSize={20} isAnimationActive={false}>
             {sorted.map((entry) => (

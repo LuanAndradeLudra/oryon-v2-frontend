@@ -32,9 +32,9 @@ function relativo(iso: string | null): string {
 
 function Numero({ rotulo, valor, detalhe }: { rotulo: string; valor: string; detalhe?: string }) {
   return (
-    <div className="rounded-lg border border-surface-700 bg-[var(--sf2)] px-4 py-3">
-      <p className="text-3xs font-bold uppercase tracking-[.14em] text-surface-500">{rotulo}</p>
-      <p className="mt-1 font-display text-[22px] font-extrabold leading-tight tracking-[-0.02em] text-surface-50 tabular-nums">{valor}</p>
+    <div className="rounded-[10px] border border-surface-700 bg-[var(--sf2)] px-4 py-3 [[data-theme=light]_&]:bg-surface-800">
+      <p className="text-2xs font-semibold uppercase tracking-[.14em] text-surface-500">{rotulo}</p>
+      <p className="mt-1 text-[20px] font-semibold leading-tight tracking-[-0.01em] text-surface-50 tabular-nums">{valor}</p>
       {detalhe && <p className="mt-0.5 text-xs text-surface-400">{detalhe}</p>}
     </div>
   )
@@ -76,7 +76,7 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
   const regrasLigadas = (agent.handoff_rules?.rules ?? []).filter((r) => r.enabled).length
 
   return (
-    <div>
+    <div className="secao-desempenho">
       <CabecalhoDaSecao id="desempenho" />
       <div className="space-y-8">
         <Bloco titulo="Este agente">
@@ -96,8 +96,8 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
         {podeVerMetricas && <TurnosGravados agentId={agent.id} />}
 
         <Bloco
-          titulo="Uso das ferramentas"
-          descricao={<span className="inline-flex items-center gap-1.5"><Info className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />Somando todos os agentes da conta.</span>}
+          titulo="Uso das ferramentas · todos os agentes"
+          descricao={<span className="inline-flex items-center gap-1.5"><Info className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />A conta inteira, não só este agente — o registro ainda não separa por agente.</span>}
           acoes={<SegmentedControl label="Período" options={PERIODOS} value={periodo} onChange={mudarPeriodo} />}
         >
           {linhas === null ? (
@@ -115,7 +115,7 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
           ) : (
             <>
             {/* Celular: uma linha por ferramenta, sem tabela de quatro colunas. */}
-            <ul className="divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700 sm:hidden">
+            <ul className="divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700 sm:hidden">
               {linhas.map((r) => {
                 const taxa = r.total > 0 ? (r.successes / r.total) * 100 : 0
                 return (
@@ -132,10 +132,10 @@ export function SecaoDesempenho({ agent }: { agent: AgentConfigWithTools }) {
                 )
               })}
             </ul>
-            <div className="hidden overflow-hidden rounded-lg border border-surface-700 sm:block">
+            <div className="hidden overflow-hidden rounded-[10px] border border-surface-700 sm:block">
               <table className="w-full text-sm">
                 <caption className="sr-only">Chamadas por ferramenta</caption>
-                <thead className="bg-[var(--sf2)] text-left text-3xs font-bold uppercase tracking-[.1em] text-surface-500">
+                <thead className="bg-[var(--sf2)] text-left text-2xs font-semibold uppercase tracking-[.1em] text-surface-500">
                   <tr>
                     <th scope="col" className="px-4 py-2">Ferramenta</th>
                     <th scope="col" className="px-4 py-2 text-right">Chamadas</th>

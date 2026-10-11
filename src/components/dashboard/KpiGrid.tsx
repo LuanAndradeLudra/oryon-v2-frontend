@@ -11,6 +11,7 @@ import { ValorComUnidade } from './ValorComUnidade'
 import {
   identidadeDo, agruparPorGrupo, NOME_DO_GRUPO, estadoDaMeta, COR_DO_ESTADO, ROTULO_DO_ESTADO, DESTAQUE_MAX, type Densidade,
 } from './kpiIdentidade'
+import { classeDaGrade } from '@/components/dashboard/gradeDeIndicadores'
 
 const LS_KEY = 'oryon:dashboard:kpi-slots'
 const LS_DENSIDADE = 'oryon:dashboard:kpi-densidade'
@@ -78,7 +79,7 @@ export function Variacao({ metric }: { metric: KpiMetric }) {
       data-testid="kpi-variacao"
       title="Comparado ao período anterior de mesma duração"
       className={cn(
-        'inline-flex items-center gap-0.5 text-[11.5px] font-semibold tabular-nums whitespace-nowrap',
+        'inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums whitespace-nowrap',
         bom ? 'text-online' : ruim ? 'text-danger' : 'text-surface-500',
       )}
     >
@@ -128,7 +129,7 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
     <>
       <span className="flex items-start gap-1.5 min-w-0">
         {/* Rótulo em até 2 linhas — "Tempo de Resp…" cortava em telas médias. */}
-        <span className="flex-1 min-w-0 text-[11.5px] leading-[1.3] font-medium text-surface-400 line-clamp-2">
+        <span className="flex-1 min-w-0 text-xs leading-[1.3] font-medium text-surface-400 line-clamp-2">
           {metric.label}
         </span>
         {aoVivo && (
@@ -149,8 +150,8 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
 
       <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 min-w-0">
         <span className={cn(
-          'font-extrabold tabular-nums tracking-[-0.02em] leading-[1.15] font-display text-surface-100',
-          grande ? 'text-[34px]' : 'text-[26px]',
+          'font-semibold tabular-nums tracking-[-0.01em] leading-[1.15] text-surface-100',
+          grande ? 'text-3xl' : 'text-xl',
         )}>
           <ValorComUnidade texto={valor} />
           {metric.unit === 'csat_score' && (
@@ -168,7 +169,7 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
 
       <div className="mt-1 min-h-[17px]">
         {estado ? (
-          <span className="flex items-center gap-1.5 text-[11.5px] min-w-0" title={support?.text}>
+          <span className="flex items-center gap-1.5 text-xs min-w-0" title={support?.text}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: COR_DO_ESTADO[estado] }} aria-hidden />
             <span className="font-semibold flex-shrink-0" style={{ color: COR_DO_ESTADO[estado] }}>{ROTULO_DO_ESTADO[estado]}</span>
             <span className="text-surface-500 truncate">· meta {formatKpiValue(metric.meta!.alvo, metric.unit)}</span>
@@ -177,7 +178,7 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
           // R2-DASH-02: linha de apoio com dado real; o texto inteiro vai no title.
           <span
             title={support.text}
-            className={cn('block text-[11.5px] truncate', support.tone === 'warn' ? 'font-semibold text-status-pending' : 'text-surface-500')}
+            className={cn('block text-xs line-clamp-2', support.tone === 'warn' ? 'font-semibold text-status-pending' : 'text-surface-500')}
           >
             {support.text}
           </span>
@@ -234,19 +235,20 @@ function apoioDo(metric: KpiMetric, queued: number): Apoio | undefined {
 /** Largura mínima de um indicador; o grupo cresce na proporção de quantos tem. */
 const CELULA_MIN = 168
 
-function CartaoDoGrupo({ titulo, largura, children }: { titulo: string; largura: number; children: ReactNode }) {
+function CartaoDoGrupo({ titulo, largura, colunas = largura, children }: { titulo: string; largura: number; colunas?: number; children: ReactNode }) {
   return (
     <section
       aria-label={titulo}
-      className="min-w-0 flex flex-col bg-surface-800 border border-surface-700 rounded-lg overflow-hidden"
+      className={cn('min-w-0 flex flex-col bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden', '@container')}
       style={{ flexGrow: largura, flexBasis: `${largura * CELULA_MIN}px` }}
     >
-      <h3 className="flex items-center h-8 px-3.5 bg-[var(--sf2)] border-b border-surface-700 text-[11px] font-bold uppercase tracking-[0.08em] text-surface-300">
+      <h3 className="flex items-center h-8 px-3.5 bg-[var(--sf2)] border-b border-surface-700 text-2xs font-semibold uppercase tracking-[0.08em] text-surface-300">
         {titulo}
       </h3>
-      <div className="grid flex-1 -mr-px -mb-px" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${CELULA_MIN}px, 1fr))` }}>
-        {children}
-      </div>
+      {/* Colunas que dividem a quantidade (SCRUM-1253): nada de 4º item sozinho. */}
+      {/* `colunas` ≠ `largura`: o destaque ocupa o espaço de 2 células, mas
+          tem 1 indicador só — com 2 colunas ele ficava na metade do cartão. */}
+      <div className={cn('grid flex-1 -mr-px -mb-px', classeDaGrade(colunas))}>{children}</div>
     </section>
   )
 }
@@ -277,7 +279,7 @@ function KpiStrip({ metrics, queued, densidade = 'compacta', destaque = [] }: {
       {emDestaque.length > 0 && (
         <div className="flex flex-wrap gap-3.5" data-testid="kpi-destaques">
           {emDestaque.map((metric) => (
-            <CartaoDoGrupo key={metric.id} titulo={NOME_DO_GRUPO[metric.category]} largura={2}>
+            <CartaoDoGrupo key={metric.id} titulo={NOME_DO_GRUPO[metric.category]} largura={2} colunas={1}>
               <KpiStripCell metric={metric} support={apoioDo(metric, queued)} grande />
             </CartaoDoGrupo>
           ))}

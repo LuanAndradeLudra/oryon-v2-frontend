@@ -50,7 +50,7 @@ export function NextActionPanel({ tasks, aiSuggestion, onAddTask, onToggleTask }
             <button
               onClick={onAddTask}
               aria-label="Nova tarefa"
-              className="p-1.5 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all cursor-pointer"
+              className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -63,7 +63,7 @@ export function NextActionPanel({ tasks, aiSuggestion, onAddTask, onToggleTask }
           <button
             onClick={onAddTask}
             style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
-            className="color-chip flex items-center gap-2 rounded-lg border px-3 py-3 text-left hover:brightness-110 transition-all cursor-pointer"
+            className="color-chip flex items-center gap-2 rounded-[10px] border px-3 py-3 text-left hover:brightness-110 transition-all cursor-pointer"
           >
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <span className="text-xs font-medium">
@@ -78,7 +78,7 @@ export function NextActionPanel({ tasks, aiSuggestion, onAddTask, onToggleTask }
               onClick={() => onToggleTask(task.id)}
               aria-label={`Concluir tarefa "${task.title}"`}
               className={cn(
-                'group/task flex items-start gap-2.5 rounded-lg px-3 py-3 border text-left w-full transition-colors cursor-pointer',
+                'group/task flex items-start gap-2.5 rounded-[10px] px-3 py-3 border text-left w-full transition-colors cursor-pointer',
                 idx === 0
                   ? 'bg-surface-800/80 border-surface-700'
                   : 'bg-transparent border-transparent hover:bg-[var(--rowhover)]',
@@ -110,7 +110,7 @@ export function NextActionPanel({ tasks, aiSuggestion, onAddTask, onToggleTask }
         )}
 
         {aiSuggestion && (
-          <div className="mt-auto rounded-lg bg-brand-500/[0.06] border border-brand-500/20 px-3 py-2.5">
+          <div className="mt-auto rounded-[10px] bg-brand-500/[0.06] border border-brand-500/20 px-3 py-2.5">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-400 mb-1 inline-flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> Sugestão da IA
             </p>

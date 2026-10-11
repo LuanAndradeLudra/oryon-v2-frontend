@@ -53,7 +53,7 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
 
   return (
     <section
-      className={cn('rounded-2xl border border-surface-700 bg-surface-900 overflow-hidden', className)}
+      className={cn('rounded-[10px] border border-surface-700 bg-surface-900 overflow-hidden', className)}
       aria-label="Funis do contato"
       data-testid="contact-pipelines-section"
     >

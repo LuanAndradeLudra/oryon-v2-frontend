@@ -146,7 +146,7 @@ export function BulkActionBar({
         'flex items-center gap-2',
         inline
           ? 'text-xs text-surface-400'
-          : 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-xl pl-4 pr-2 py-2',
+          : 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-[10px] pl-4 pr-2 py-2',
       )}
     >
       <div className={inline ? 'text-xs text-surface-100 font-semibold' : 'text-sm text-surface-200'}>
@@ -168,7 +168,7 @@ export function BulkActionBar({
         <button
           type="button"
           onClick={() => { setStageMenuOpen((v) => !v); setActionsMenuOpen(false) }}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-surface-100 rounded-lg hover:bg-surface-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-surface-100 rounded-[6px] hover:bg-surface-700 transition-colors"
         >
           Mover para
           <ChevronUp className={cn('w-3.5 h-3.5 transition-transform', stageMenuOpen ? '' : 'rotate-180')} />
@@ -178,7 +178,7 @@ export function BulkActionBar({
             className={cn(
               'absolute bottom-full mb-2 left-0',
               'min-w-[220px] max-h-64 overflow-y-auto',
-              'overlay-surface border rounded-xl py-1',
+              'overlay-surface border rounded-[10px] py-1',
             )}
           >
             {stages.length === 0 && (
@@ -206,7 +206,7 @@ export function BulkActionBar({
             type="button"
             onClick={() => { setActionsMenuOpen((v) => !v); setStageMenuOpen(false) }}
             title="Mais ações"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-surface-100 rounded-lg hover:bg-surface-700 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-surface-100 rounded-[6px] hover:bg-surface-700 transition-colors"
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
@@ -216,7 +216,7 @@ export function BulkActionBar({
                 'absolute bottom-full mb-2 left-1/2 -translate-x-1/2',
                 // No overflow here so tag submenus can fly out to the side.
                 'min-w-[240px]',
-                'overlay-surface border rounded-xl py-1',
+                'overlay-surface border rounded-[10px] py-1',
               )}
             >
               {onAddTag && (
@@ -320,7 +320,7 @@ export function BulkActionBar({
           <button
             type="button"
             onClick={onDelete}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-danger rounded-lg hover:bg-danger/10 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-danger rounded-[6px] hover:bg-danger/10 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Excluir
@@ -332,7 +332,7 @@ export function BulkActionBar({
         type="button"
         onClick={onClear}
         aria-label="Limpar seleção"
-        className="p-1.5 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-lg transition-colors"
+        className="p-1.5 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-[6px] transition-colors"
       >
         <X className="w-4 h-4" />
       </button>
@@ -387,7 +387,7 @@ function SubmenuRow({
           className={cn(
             'absolute left-full top-0 ml-1 z-10',
             'min-w-[200px] max-h-64 overflow-y-auto',
-            'overlay-surface border rounded-xl py-1',
+            'overlay-surface border rounded-[10px] py-1',
           )}
         >
           {children}

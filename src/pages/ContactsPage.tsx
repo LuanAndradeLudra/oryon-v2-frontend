@@ -45,6 +45,7 @@ import { isAdminTier } from '@/lib/roleHelpers'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline } from '@/types'
 import { RODAPE_DA_LISTA } from '@/components/contacts/rodapeDaLista'
+import { contatoAtendeFiltros } from '@/lib/contatoNoFiltro'
 
 /**
  * Faceta "Situação comercial" (D-10) — filtro opt-in derivado do
@@ -267,7 +268,24 @@ export function ContactsPage() {
   const handleFiltersChange = (f: ContactFilters) => setFilters(f)
 
   // ── Painel do contato: fechar devolve o foco à linha; ↑/↓ troca de contato ──
-  const activeIndex = selectedContactId ? contacts.findIndex((c) => c.id === selectedContactId) : -1
+  // SCRUM-1253 (PO, 07/10): o contato ABERTO que não está na lista carregada
+  // (fora do filtro, ou vindo de outra tela e além da 1ª página) fica fixado no
+  // topo até abrir outro — a lista e o painel não discordam, e ↑/↓ funcionam.
+  // Mesma regra da conversa aberta em Conversas.
+  const naLista = !!selectedContactId && contacts.some((c) => c.id === selectedContactId)
+  const [buscado, setBuscado] = useState<Contact | null>(null)
+  useEffect(() => {
+    if (!selectedContactId || naLista || loading || buscado?.id === selectedContactId) return
+    let vivo = true
+    contactsApi.get(selectedContactId).then((r) => { if (vivo) setBuscado(r.data) }).catch(() => {})
+    return () => { vivo = false }
+  }, [selectedContactId, naLista, loading, buscado?.id])
+  const fixado = selectedContactId && !naLista && !loading && buscado?.id === selectedContactId ? buscado : null
+  // "Fora deste filtro" só quando há certeza (null = não dá para conferir aqui).
+  const foraDoFiltroId = fixado && contatoAtendeFiltros(fixado, filters, { commercial: commercial !== 'all' ? commercial : undefined }) === false
+    ? fixado.id : null
+  const contatosVisiveis = useMemo(() => (fixado ? [fixado, ...contacts] : contacts), [fixado, contacts])
+  const activeIndex = selectedContactId ? contatosVisiveis.findIndex((c) => c.id === selectedContactId) : -1
   const closePanel = useCallback(() => {
     const id = selectedContactId
     setSelectedContactId(null)
@@ -289,7 +307,7 @@ export function ContactsPage() {
       if (e.key === 'Escape') { e.preventDefault(); closePanel(); return }
       if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && activeIndex >= 0) {
         const down = e.key === 'ArrowDown'
-        const next = contacts[activeIndex + (down ? 1 : -1)]
+        const next = contatosVisiveis[activeIndex + (down ? 1 : -1)]
         if (!next) {
           if (down && hasMore && !loadingMore) loadMore()
           return
@@ -303,7 +321,7 @@ export function ContactsPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedContactId, activeIndex, contacts, hasMore, loadingMore, loadMore, closePanel, setSelectedContactId])
+  }, [selectedContactId, activeIndex, contatosVisiveis, hasMore, loadingMore, loadMore, closePanel, setSelectedContactId])
 
   // Lg+: painel ACOPLADO ao lado da lista, sem scrim. Abaixo de lg (e no mobile)
   // segue a sobreposição de tela inteira.
@@ -313,8 +331,8 @@ export function ContactsPage() {
   // Semente do painel: o contato como a lista o conhece (nome, telefone,
   // etapa, etiquetas) — suficiente para o cabeçalho nascer pronto.
   const seedContact = useMemo(
-    () => (selectedContactId ? contacts.find((c) => c.id === selectedContactId) ?? null : null),
-    [contacts, selectedContactId],
+    () => (selectedContactId ? contatosVisiveis.find((c) => c.id === selectedContactId) ?? null : null),
+    [contatosVisiveis, selectedContactId],
   )
 
   // CONT-HDR-03/09 (spec/1c-contatos.GAPS.md): subtítulo dinâmico da TopBar
@@ -562,6 +580,7 @@ export function ContactsPage() {
 
   const handleContactUpdate = (updated: Contact) => {
     updateContact(updated.id, updated)
+    setBuscado((b) => (b?.id === updated.id ? { ...b, ...updated } : b))
   }
 
   // Ainda redirecionando `?pipeline=` — não pisca a tabela de contatos por
@@ -627,7 +646,9 @@ export function ContactsPage() {
 
         <div className={cn(
           'flex-1 min-h-0 grid grid-rows-[minmax(0,1fr)]',
-          dockedOpen ? 'grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-[minmax(0,1fr)]',
+          // SCRUM-1253 (PO, 09/10): ~36% da área, entre 440 e 560px (era 400 fixo — a
+          // aba Disparos saía cortada).
+          dockedOpen ? 'grid-cols-[minmax(0,1fr)_clamp(440px,36%,560px)]' : 'grid-cols-[minmax(0,1fr)]',
         )}>
         <div className="min-w-0 min-h-0 flex flex-col bg-surface-800">
           {error ? (
@@ -647,9 +668,10 @@ export function ContactsPage() {
             // inutilizável em viewport estreita.
             <ContactsList
               variant="touch"
-              contacts={contacts}
+              contacts={contatosVisiveis}
               loading={loading}
               activeId={selectedContactId}
+              foraDoFiltroId={foraDoFiltroId}
               onOpen={handleRowOpen}
               hasMore={hasMore}
               loadingMore={loadingMore}
@@ -660,9 +682,10 @@ export function ContactsPage() {
             <>
             {view === 'list' ? (
             <ContactsList
-              contacts={contacts}
+              contacts={contatosVisiveis}
               loading={loading}
               activeId={selectedContactId}
+              foraDoFiltroId={foraDoFiltroId}
               selectedIds={selectedIds}
               onOpen={handleRowOpen}
               onToggleSelect={toggleSelect}
@@ -676,7 +699,8 @@ export function ContactsPage() {
             />
             ) : (
             <ContactsTable
-              contacts={contacts}
+              contacts={contatosVisiveis}
+              foraDoFiltroId={foraDoFiltroId}
               loading={loading}
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
@@ -725,7 +749,10 @@ export function ContactsPage() {
             </>
           )}
         </div>
-        {/* Abertura: a coluna de 400px entra de uma vez (um relayout só) e o
+        {/* SCRUM-1253 (PO, 09/10): o painel tem o MESMO fundo da lista (objeto) —
+            é o detalhe do contato ao lado, não uma camada atrás; a linha de 1px
+            e o realce da linha ativa fazem a ligação.
+            Abertura: a coluna do painel entra de uma vez (um relayout só) e o
             conteúdo desliza/esmaece em CSS (`.panel-in`). Troca de contato
             (↑↓/clique): o miolo remonta por `key` com `.panel-swap`, já com o
             contato da lista como semente — sem spinner. O corpo pesado usa o
@@ -733,7 +760,7 @@ export function ContactsPage() {
         {dockedOpen && selectedContactId && (
           <aside
             aria-label="Detalhe do contato"
-            className="panel-in min-w-0 min-h-0 flex flex-col overflow-hidden border-l border-surface-700 bg-[var(--panel-bg)]"
+            className="panel-in min-w-0 min-h-0 flex flex-col overflow-hidden border-l border-surface-700 bg-surface-800"
           >
             <div key={selectedContactId} className="panel-swap flex-1 min-h-0 flex flex-col">
               <ContactDetailPanel
@@ -747,7 +774,9 @@ export function ContactsPage() {
                 onContactUpdate={handleContactUpdate}
                 onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
                 onExpand={openProfile}
-                footer={activeIndex >= 0 ? `${activeIndex + 1} de ${total.toLocaleString('pt-BR')} · ↑↓ para navegar` : '↑↓ para navegar'}
+                footer={fixado
+                  ? '↓ para ir à lista'
+                  : activeIndex >= 0 ? `${activeIndex + 1} de ${total.toLocaleString('pt-BR')} · ↑↓ para navegar` : '↑↓ para navegar'}
               />
             </div>
           </aside>
@@ -775,7 +804,7 @@ export function ContactsPage() {
       >
         <Banner variant="danger" className="mb-4">
           <p className="leading-snug">
-            <span className="font-display text-base font-bold mr-1.5 tabular-nums">{selectedIds.size}</span>
+            <span className="font-display text-base font-semibold mr-1.5 tabular-nums">{selectedIds.size}</span>
             {selectedIds.size === 1 ? 'contato será excluído permanentemente' : 'contatos serão excluídos permanentemente'}
           </p>
           <p className="mt-0.5 opacity-80">
@@ -790,21 +819,21 @@ export function ContactsPage() {
             <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider mb-2">
               Contatos ({selectedContacts.length})
             </p>
-            <div className="max-h-64 overflow-y-auto pr-1 space-y-1 rounded-lg border border-surface-700 bg-surface-950/50 p-1.5">
+            <div className="max-h-64 overflow-y-auto pr-1 space-y-1 rounded-[10px] border border-surface-700 bg-surface-950/50 p-1.5">
               {selectedContacts.slice(0, 50).map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-[var(--rowhover)] transition-colors"
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-[6px] hover:bg-[var(--rowhover)] transition-colors"
                 >
                   <Avatar name={c.displayName} imageUrl={c.profilePicUrl} size="xs" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-surface-100 truncate">{c.displayName}</p>
                     {c.waId && (
-                      <p className="text-[10px] text-surface-500 font-mono truncate">{c.waId}</p>
+                      <p className="text-[11px] text-surface-500 font-mono truncate">{c.waId}</p>
                     )}
                   </div>
                   {c.stage && (
-                    <span className="text-[10px] text-surface-500 bg-surface-800 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    <span className="text-[11px] text-surface-500 bg-surface-800 px-1.5 py-0.5 rounded-full flex-shrink-0">
                       {c.stage}
                     </span>
                   )}
@@ -926,7 +955,7 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full z-40 bg-[var(--panel-bg)] border-l overlay-frame flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full z-40 bg-surface-800 border-l overlay-frame flex flex-col"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}

@@ -45,8 +45,8 @@ export function TagsCard({ contact, onAddTag, onRemoveTag, hideTitle = false, fl
       className={cn(
         'flex items-center gap-1 font-medium transition-colors',
         flat
-          ? 'text-[11.5px] font-semibold text-accent-dark'
-          : 'text-[10px] text-accent-dark hover:opacity-80',
+          ? 'text-xs font-semibold text-accent-dark'
+          : 'text-[11px] text-accent-dark hover:opacity-80',
       )}
     >
       {!flat && <Plus className="w-3 h-3" />}
@@ -65,7 +65,7 @@ export function TagsCard({ contact, onAddTag, onRemoveTag, hideTitle = false, fl
             {selectedTags.map((tag) => (
               <span
                 key={tag.id}
-                className="color-chip inline-flex items-center h-5 whitespace-nowrap text-[11px] font-semibold px-2 rounded-xs border"
+                className="color-chip inline-flex items-center h-5 whitespace-nowrap text-[11px] font-semibold px-2 rounded-[6px] border"
                 style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 {tag.name}
@@ -75,7 +75,7 @@ export function TagsCard({ contact, onAddTag, onRemoveTag, hideTitle = false, fl
               type="button"
               onClick={() => setPickerOpen(true)}
               aria-label="Adicionar etiqueta"
-              className="w-5 h-5 rounded-xs border border-dashed border-[var(--bd2)] text-surface-500 hover:text-surface-200 flex items-center justify-center transition-colors"
+              className="w-5 h-5 rounded-[6px] border border-dashed border-[var(--bd2)] text-surface-500 hover:text-surface-200 flex items-center justify-center transition-colors"
             >
               <Plus className="w-3 h-3" />
             </button>
@@ -120,7 +120,7 @@ export function TagsCard({ contact, onAddTag, onRemoveTag, hideTitle = false, fl
       {flat ? (
         <section>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Etiquetas</p>
+            <p className="text-xs font-semibold text-surface-500">Etiquetas</p>
             {actions}
           </div>
           {body}

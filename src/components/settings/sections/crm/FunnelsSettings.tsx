@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Archive, ArchiveRestore, Star, ArrowRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, Archive, ArchiveRestore, Star, MoreHorizontal, ArrowRight } from 'lucide-react'
+import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { SelectMenu } from '@/components/ui/SelectMenu'
@@ -30,6 +31,7 @@ import { pipelineKindOption, pipelineKindOf } from '@/lib/pipelineKinds'
  * uma etapa renomeada sumir do chip do chat.
  */
 export function FunnelsSettings() {
+  const [menuFunil, setMenuFunil] = useState(false)
   const { pipelines, loadingPipelines, refetchPipelines } = useCRMConfig()
   const { toast } = useToast()
   const { user: actor } = useAuth()
@@ -61,8 +63,10 @@ export function FunnelsSettings() {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [archiving, setArchiving] = useState(false)
-  const [settingDefault, setSettingDefault] = useState(false)
+  // Duplo clique em "Excluir" (antes do re-render com `loading`) mandava dois DELETEs.
+  const deletingRef = useRef(false)
+  const [, setArchiving] = useState(false)
+  const [, setSettingDefault] = useState(false)
 
   // Achado do Auditor (auditoria noturna): logo após criar um funil, este
   // efeito rodava com `selectedId` já apontando pro funil novo mas
@@ -114,7 +118,8 @@ export function FunnelsSettings() {
   }
 
   const handleDelete = async () => {
-    if (!selected) return
+    if (!selected || deletingRef.current) return
+    deletingRef.current = true
     setDeleting(true)
     try {
       await pipelinesApi.remove(selected.id)
@@ -125,6 +130,7 @@ export function FunnelsSettings() {
     } catch (e: unknown) {
       toast(getApiErrorMessage(e, 'Erro ao excluir funil.'), 'error')
     } finally {
+      deletingRef.current = false
       setDeleting(false)
     }
   }
@@ -184,7 +190,7 @@ export function FunnelsSettings() {
 
           {selected && (
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-xs mb-0.5 bg-[var(--sf2)] border border-surface-700 text-surface-300"
+              className="inline-flex items-center gap-1 text-2xs font-semibold px-2 py-1 rounded-[6px] mb-0.5 bg-[var(--sf2)] border border-surface-700 text-surface-300"
               title={kindOption.description}
             >
               <kindOption.icon className="w-3 h-3" /> {kindOption.label}
@@ -192,54 +198,52 @@ export function FunnelsSettings() {
           )}
           {selected?.isArchived && (
             <span
-              className="text-[10px] font-semibold px-2 py-1 rounded-xs mb-0.5 color-chip border"
+              className="text-2xs font-semibold px-2 py-1 rounded-[6px] mb-0.5 color-chip border"
               style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
             >
               Arquivado
             </span>
           )}
 
+          {/* Seletor + "Novo funil"; o resto num menu ⋯ (SCRUM-1253 — eram 6 botões empilhados). */}
           {canManage && (
-            <div className="flex items-center gap-2 flex-wrap">
-              {selected && (
-                <Button size="sm" variant="neutral" leftIcon={<Pencil className="w-3.5 h-3.5" />} onClick={() => setEditOpen(true)}>
-                  Renomear / cor
-                </Button>
-              )}
-              {/* Achado do Auditor: o pencil "Renomear / cor" fica visualmente
-                  perto de "Novo funil" e tem cara de "editar tudo" — quem
-                  clica achando que vai editar etapas só acha nome/cor e pode
-                  não perceber a seção "Etapas" mais abaixo (mesma tela, sem
-                  scroll excessivo, mas sem vínculo visual). Link direto pro
-                  id que o SettingsSection já registra (`slugify("Etapas")`). */}
+            <div className="flex items-center gap-2">
+              {/* Atalho "Editar etapas" (voltou, PO 10/10): "Renomear e cor" tem
+                  cara de "editar tudo" e a seção Etapas fica abaixo, sem vínculo
+                  visual. Âncora para o id que o SettingsSection registra. */}
               {selected && (
                 <a
                   href="#etapas"
-                  className="flex items-center gap-1 px-2 py-2 text-xs font-medium text-accent-dark hover:opacity-80 transition-colors"
+                  onClick={(e) => {
+                    const alvo = document.getElementById('etapas')
+                    if (!alvo) return
+                    e.preventDefault()
+                    alvo.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
+                  className="inline-flex items-center gap-1 h-8 px-2 rounded-[6px] text-xs font-medium text-accent-dark hover:bg-[var(--rowhover)] transition-colors"
                 >
-                  Editar etapas <ArrowRight className="w-3.5 h-3.5" />
+                  Editar etapas <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                 </a>
               )}
-              {selected && !selected.isDefault && (
-                <Button size="sm" variant="neutral" leftIcon={<Star className="w-3.5 h-3.5" />} onClick={handleSetDefault} disabled={settingDefault}>
-                  {settingDefault ? 'Salvando...' : 'Tornar padrão'}
-                </Button>
-              )}
               {selected && (
-                <Button
-                  size="sm"
-                  variant="neutral"
-                  leftIcon={selected.isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
-                  onClick={handleToggleArchive}
-                  disabled={archiving}
+                <Dropdown
+                  open={menuFunil}
+                  onClose={() => setMenuFunil(false)}
+                  align="right"
+                  className="w-52"
+                  anchor={
+                    <Button size="sm" variant="neutral" iconOnly aria-label="Mais ações do funil" title="Mais ações" onClick={() => setMenuFunil((v) => !v)}>
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  }
                 >
-                  {archiving ? 'Salvando...' : selected.isArchived ? 'Desarquivar' : 'Arquivar'}
-                </Button>
-              )}
-              {selected && !selected.isDefault && (
-                <Button size="sm" variant="neutral" className="text-danger" leftIcon={<Trash2 className="w-3.5 h-3.5" />} onClick={() => setDeleteConfirmOpen(true)}>
-                  Excluir
-                </Button>
+                  <DropdownItem onClick={() => { setMenuFunil(false); setEditOpen(true) }}><Pencil className="w-3.5 h-3.5" /> Renomear e cor</DropdownItem>
+                  {!selected.isDefault && <DropdownItem onClick={() => { setMenuFunil(false); void handleSetDefault() }}><Star className="w-3.5 h-3.5" /> Tornar padrão</DropdownItem>}
+                  <DropdownItem onClick={() => { setMenuFunil(false); void handleToggleArchive() }}>
+                    {selected.isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />} {selected.isArchived ? 'Desarquivar' : 'Arquivar'}
+                  </DropdownItem>
+                  {!selected.isDefault && <DropdownItem onClick={() => { setMenuFunil(false); setDeleteConfirmOpen(true) }} className="text-danger"><Trash2 className="w-3.5 h-3.5" /> Excluir</DropdownItem>}
+                </Dropdown>
               )}
               <Button size="sm" variant="primary" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setCreateOpen(true)}>
                 Novo funil

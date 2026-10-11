@@ -128,7 +128,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
       <div className={cn('relative max-w-[72%] flex flex-col', displayAsOwn ? 'items-end' : 'items-start')}>
         <div
           className={cn(
-            'relative px-3 py-2 rounded-xl',
+            'relative px-3 py-2 rounded-[10px]',
             displayAsOwn
               ? 'bg-bubble-out text-bubble-out-fg rounded-br-sm'
               : 'bg-bubble-in text-surface-100 rounded-bl-sm',
@@ -148,7 +148,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
               </span>
               {isCopilot && (
                 <span
-                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide color-chip"
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide color-chip"
                   style={{ ['--chip']: 'var(--color-accent-violet)' } as React.CSSProperties}
                 >
                   <Sparkles className="w-2.5 h-2.5" />
@@ -161,12 +161,12 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
           {/* Reply preview */}
           {message.replyToId && message.replyToPreview && (
             <div className={cn(
-              'flex flex-col gap-0.5 mb-1.5 px-2 py-1 rounded-md border-l-2',
+              'flex flex-col gap-0.5 mb-1.5 px-2 py-1 rounded-[6px] border-l-2',
               displayAsOwn
                 ? 'bg-black/10 border-bubble-out-time'
                 : 'bg-black/20 border-blue-400/60',
             )}>
-              <span className="text-[10px] font-semibold text-blue-300">{message.replyToSenderName}</span>
+              <span className="text-[11px] font-semibold text-blue-300">{message.replyToSenderName}</span>
               <p className="text-[11px] text-surface-400 truncate">{message.replyToPreview}</p>
             </div>
           )}
@@ -180,7 +180,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
           <div className="flex items-center gap-1.5 mt-1 justify-end">
             {isCopilot && message.senderName && (
               <span
-                className="inline-flex items-center gap-0.5 mr-auto text-[10px] font-medium text-blue-300/80"
+                className="inline-flex items-center gap-0.5 mr-auto text-[11px] font-medium text-blue-300/80"
                 title={`Mensagem gerada pelo Copilot a pedido de ${message.senderName}`}
               >
                 <Sparkles className="w-2.5 h-2.5" />
@@ -189,14 +189,14 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
             )}
             {message.editedAt && (
               <span className={cn(
-                'text-[10px] italic',
+                'text-[11px] italic',
                 displayAsOwn ? 'text-bubble-out-time' : 'text-surface-500',
               )}>
                 editado
               </span>
             )}
             <span className={cn(
-              'text-[10px]',
+              'text-[11px]',
               displayAsOwn ? 'text-bubble-out-time' : 'text-surface-400',
             )}>
               {formatTime(message.createdAt)}
@@ -223,24 +223,24 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
         {/* Floating action bar */}
         {hovered && (
           <div className={cn(
-            'absolute -top-4 flex items-center gap-0.5 overlay-surface border rounded-xl px-1 py-0.5 z-10',
+            'absolute -top-4 flex items-center gap-0.5 overlay-surface border rounded-[10px] px-1 py-0.5 z-10',
             displayAsOwn ? 'right-0' : 'left-0',
           )}>
             <div className="relative">
               <button
                 onClick={() => setShowEmoji((v) => !v)}
-                className="p-1.5 rounded-lg text-surface-400 hover:text-surface-50 hover:bg-surface-700 transition-all"
+                className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-50 hover:bg-surface-700 transition-all"
                 title="Reagir"
               >
                 <SmilePlus className="w-4 h-4" />
               </button>
               {showEmoji && (
-                <div className="absolute right-0 bottom-full mb-1 flex gap-0.5 p-2 rounded-xl overlay-surface border z-20">
+                <div className="absolute right-0 bottom-full mb-1 flex gap-0.5 p-2 rounded-[10px] overlay-surface border z-20">
                   {QUICK_REACTIONS.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => { toggleReaction(message.id, emoji); setShowEmoji(false) }}
-                      className="w-8 h-8 rounded-lg hover:bg-surface-700 flex items-center justify-center text-lg transition-all hover:scale-110"
+                      className="w-8 h-8 rounded-[6px] hover:bg-surface-700 flex items-center justify-center text-lg transition-all hover:scale-110"
                     >
                       <Emoji native={emoji} size="1.25em" />
                     </button>
@@ -251,7 +251,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
 
             <button
               onClick={() => onReply(message)}
-              className="p-1.5 rounded-lg text-surface-400 hover:text-surface-50 hover:bg-surface-700 transition-all"
+              className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-50 hover:bg-surface-700 transition-all"
               title="Responder"
             >
               <CornerUpLeft className="w-4 h-4" />
@@ -260,13 +260,13 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowMenu((v) => !v)}
-                className="p-1.5 rounded-lg text-surface-400 hover:text-surface-50 hover:bg-surface-700 transition-all"
+                className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-50 hover:bg-surface-700 transition-all"
                 title="Mais ações"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>
               {showMenu && (
-                <div className="absolute right-0 bottom-full mb-1 w-44 rounded-xl overlay-surface border z-20 overflow-hidden py-1">
+                <div className="absolute right-0 bottom-full mb-1 w-44 rounded-[10px] overlay-surface border z-20 overflow-hidden py-1">
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(message.body)
@@ -295,13 +295,13 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
                           <div className="flex gap-1.5">
                             <button
                               onClick={() => { deleteMessage(message.id); setShowMenu(false); setConfirmDelete(false) }}
-                              className="flex-1 px-2 py-1 text-xs font-medium bg-danger text-white rounded-md hover:bg-red-600 transition-colors"
+                              className="flex-1 px-2 py-1 text-xs font-medium bg-danger text-white rounded-[6px] hover:bg-red-600 transition-colors"
                             >
                               Confirmar
                             </button>
                             <button
                               onClick={() => setConfirmDelete(false)}
-                              className="flex-1 px-2 py-1 text-xs text-surface-400 rounded-md hover:bg-surface-700 transition-colors"
+                              className="flex-1 px-2 py-1 text-xs text-surface-400 rounded-[6px] hover:bg-surface-700 transition-colors"
                             >
                               Cancelar
                             </button>

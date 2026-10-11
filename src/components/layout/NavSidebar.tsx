@@ -63,12 +63,12 @@ function LogoSection({ onToggle }: { onToggle?: () => void }) {
           aria-label="Abrir navegação"
           aria-expanded={false}
           title={toggleTitle}
-          className="relative w-[26px] h-[26px] flex-shrink-0 rounded-sm flex items-center justify-center cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+          className="relative w-7 h-7 flex-shrink-0 rounded-[6px] flex items-center justify-center cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
         >
           <OryonLogo
             variant="symbol"
             decorativa
-            className="h-[26px] select-none transition-opacity duration-100 group-hover/logo:opacity-0 group-focus-within/logo:opacity-0"
+            className="h-7 select-none transition-opacity duration-100 group-hover/logo:opacity-0 group-focus-within/logo:opacity-0"
           />
           <PanelLeft
             className="absolute inset-0 m-auto w-3.5 h-3.5 text-surface-300 opacity-0 transition-opacity duration-100 group-hover/logo:opacity-100 group-focus-within/logo:opacity-100"
@@ -77,7 +77,7 @@ function LogoSection({ onToggle }: { onToggle?: () => void }) {
           />
         </button>
       ) : (
-        <OryonLogo variant="symbol" decorativa className="h-[26px] flex-shrink-0 select-none" />
+        <OryonLogo variant="symbol" decorativa className="h-7 flex-shrink-0 select-none" />
       )}
       <AnimatePresence>
         {(!animate || open) && (
@@ -103,7 +103,7 @@ function LogoSection({ onToggle }: { onToggle?: () => void }) {
           aria-label="Recolher navegação"
           aria-expanded
           title={toggleTitle}
-          className="ml-auto w-6 h-6 rounded-sm flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-white/10 transition-colors cursor-pointer flex-shrink-0"
+          className="ml-auto w-6 h-6 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-white/10 transition-colors cursor-pointer flex-shrink-0"
         >
           <PanelLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
         </button>

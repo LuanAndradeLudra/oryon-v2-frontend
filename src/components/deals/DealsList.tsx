@@ -102,7 +102,7 @@ export function DealsList({
   const ponderado = linhas.reduce((s, d) => s + dealProbability(d, stageById.get(d.stageId)).weightedAmountCents, 0)
 
   const cabeca = (id: ListSort, children: string, alinhar: 'left' | 'right' = 'left') => (
-    <th key={id} scope="col" aria-sort={sort === id ? (sortDesc ? 'descending' : 'ascending') : 'none'} className={cn('px-3 font-bold', alinhar === 'right' && 'text-right')}>
+    <th key={id} scope="col" aria-sort={sort === id ? (sortDesc ? 'descending' : 'ascending') : 'none'} className={cn('px-3 font-semibold', alinhar === 'right' && 'text-right')}>
       <button
         type="button"
         onClick={() => onSort(id)}
@@ -147,7 +147,7 @@ export function DealsList({
                   </span>
                 </span>
                 <span className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                  <span className="text-sm font-bold tabular-nums text-surface-100">{brl(d.amountCents ?? 0)}</span>
+                  <span className="text-sm font-semibold tabular-nums text-surface-100">{brl(d.amountCents ?? 0)}</span>
                   <span className={cn('text-2xs', parado !== null ? 'text-status-pending font-semibold' : 'text-surface-500')}>
                     {parado !== null ? `${parado} d parado` : (timeInStage(d) ?? '')}
                   </span>
@@ -172,10 +172,10 @@ export function DealsList({
         <div
           role="toolbar"
           aria-label="Ações nos negócios selecionados"
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[2] flex flex-wrap items-center gap-2 px-3 py-2 rounded-lg border overlay-frame bg-surface-900 shadow-[var(--shadow-overlay)]"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[2] flex flex-wrap items-center gap-2 px-3 py-2 rounded-[10px] border overlay-frame bg-surface-900 shadow-[var(--shadow-overlay)]"
           data-testid="deals-list-bulk"
         >
-          <span className="text-xs font-bold text-surface-100 tabular-nums">{marcados.length} selecionado{marcados.length === 1 ? '' : 's'}</span>
+          <span className="text-xs font-semibold text-surface-100 tabular-nums">{marcados.length} selecionado{marcados.length === 1 ? '' : 's'}</span>
           <Dropdown
             open={menu === 'owner'}
             onClose={() => setMenu(null)}
@@ -231,20 +231,20 @@ export function DealsList({
       <div className={cn('flex-1 min-h-0 overflow-auto', marcados.length > 0 && 'pb-20')}>
         <table className="w-full min-w-[980px] text-[13px]">
           <caption className="sr-only">Negócios do funil {pipeline.name}</caption>
-          <thead className="sticky top-0 z-[1] bg-board-bar text-left text-3xs text-surface-500">
+          <thead className="sticky top-0 z-[1] bg-board-bar text-left text-2xs text-surface-500">
             <tr className="h-9 border-b border-surface-700">
               <th scope="col" className="w-10 px-3">
                 <input type="checkbox" aria-label="Selecionar todos" checked={todosMarcados} onChange={alternarTodos} className="accent-[var(--color-brand-500)]" />
               </th>
-              <th scope="col" className="px-3 font-bold uppercase tracking-[.1em]">Negócio</th>
-              <th scope="col" className="px-3 font-bold uppercase tracking-[.1em]">Contato</th>
+              <th scope="col" className="px-3 font-semibold uppercase tracking-[.1em]">Negócio</th>
+              <th scope="col" className="px-3 font-semibold uppercase tracking-[.1em]">Contato</th>
               {cabeca('etapa', 'Etapa')}
               {cabeca('valor', 'Valor', 'right')}
-              <th scope="col" className="px-3 font-bold uppercase tracking-[.1em] text-right">Ponderado</th>
+              <th scope="col" className="px-3 font-semibold uppercase tracking-[.1em] text-right">Ponderado</th>
               {cabeca('previsao', 'Previsão')}
               {cabeca('parado', 'Na etapa')}
-              <th scope="col" className="px-3 font-bold uppercase tracking-[.1em]">Responsável</th>
-              <th scope="col" className="px-3 font-bold uppercase tracking-[.1em]">Origem</th>
+              <th scope="col" className="px-3 font-semibold uppercase tracking-[.1em]">Responsável</th>
+              <th scope="col" className="px-3 font-semibold uppercase tracking-[.1em]">Origem</th>
             </tr>
           </thead>
           <tbody>
@@ -290,7 +290,7 @@ export function DealsList({
                   <td className="px-3 whitespace-nowrap text-surface-300">
                     {dono ? (
                       <span className="inline-flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-[30%] avatar-operador flex items-center justify-center text-[9px] font-bold">{getInitials(fullName(dono))}</span>
+                        <span className="w-5 h-5 rounded-full avatar-operador flex items-center justify-center text-[11px] font-semibold">{getInitials(fullName(dono))}</span>
                         {dono.firstName}
                       </span>
                     ) : <span className="text-surface-500">Sem dono</span>}
@@ -304,8 +304,8 @@ export function DealsList({
             <tr className="h-10 border-t border-surface-700 text-xs">
               <td />
               <td className="px-3 text-surface-400" colSpan={3}>{linhas.length} negócio{linhas.length === 1 ? '' : 's'}</td>
-              <td className="px-3 text-right tabular-nums font-bold text-surface-100">{brl(total)}</td>
-              <td className="px-3 text-right tabular-nums font-bold text-surface-300">{brl(ponderado)}</td>
+              <td className="px-3 text-right tabular-nums font-semibold text-surface-100">{brl(total)}</td>
+              <td className="px-3 text-right tabular-nums font-semibold text-surface-300">{brl(ponderado)}</td>
               <td colSpan={4} />
             </tr>
           </tfoot>

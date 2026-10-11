@@ -49,7 +49,7 @@ function Pergunta({
   const lista = Array.isArray(valor) ? valor : []
   const d = DESTINO[q.destination]
   return (
-    <li className="rounded-lg border border-surface-700 p-4">
+    <li className="rounded-[10px] border border-surface-700 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="text-sm font-semibold text-surface-100">{n}. {q.question}</p>
         {resposta?.skipped
@@ -152,7 +152,7 @@ export function EtapaEntrevista({ spec, mudar, setores }: { spec: AgentSpec; mud
       <section aria-labelledby="entrevista-atendimento" className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h3 id="entrevista-atendimento" className="text-base font-bold text-surface-100">Sobre o atendimento</h3>
+            <h3 id="entrevista-atendimento" className="text-base font-semibold text-surface-100">Sobre o atendimento</h3>
             <p className="mt-1 text-sm text-surface-400">
               Perguntas de quem está no primeiro dia de trabalho{segmento ? ` em ${segmento}` : ''}. Nenhuma é sobre IA.
             </p>
@@ -178,12 +178,12 @@ export function EtapaEntrevista({ spec, mudar, setores }: { spec: AgentSpec; mud
       </section>
 
       <section aria-labelledby="entrevista-acoes" className="space-y-3">
-        <h3 id="entrevista-acoes" className="text-base font-bold text-surface-100">O que ele faz sozinho</h3>
+        <h3 id="entrevista-acoes" className="text-base font-semibold text-surface-100">O que ele faz sozinho</h3>
         <EtapaPodeFazer spec={spec} mudar={mudar} />
       </section>
 
       <section aria-labelledby="entrevista-transferencia" className="space-y-3">
-        <h3 id="entrevista-transferencia" className="text-base font-bold text-surface-100">Quando chamar uma pessoa</h3>
+        <h3 id="entrevista-transferencia" className="text-base font-semibold text-surface-100">Quando chamar uma pessoa</h3>
         <EtapaTransferencia spec={spec} mudar={mudar} setores={setores} />
       </section>
     </div>
@@ -248,7 +248,7 @@ export function EtapaJeitoDeResponder({ spec, mudar }: { spec: AgentSpec; mudar:
       {soEscolhidos && (
         <ul className="space-y-3">
           {spec.context.examples.map((e) => (
-            <li key={e.question} className="rounded-lg border border-surface-700 p-4">
+            <li key={e.question} className="rounded-[10px] border border-surface-700 p-4">
               <p className="text-xs text-surface-400">Pergunta de cliente</p>
               <p className="text-sm font-semibold text-surface-100">“{e.question}”</p>
               <Textarea className="mt-3" rows={3} aria-label={`Resposta escolhida: ${e.question}`} value={e.answer} onChange={(ev) => escolher(e.question, ev.target.value)} />
@@ -278,7 +278,7 @@ export function EtapaJeitoDeResponder({ spec, mudar }: { spec: AgentSpec; mudar:
                         aria-checked={ativa}
                         onClick={() => escolher(c.question, ativa ? null : a.text)}
                         className={cn(
-                          'flex flex-col gap-2 rounded-lg border p-3 text-left transition-colors',
+                          'flex flex-col gap-2 rounded-[10px] border p-3 text-left transition-colors',
                           ativa ? 'border-brand-500 bg-accent-soft' : 'border-surface-700 hover:border-surface-600',
                         )}
                       >
@@ -316,7 +316,7 @@ export function ParaOndeFoi({ spec }: { spec: AgentSpec }) {
   const pendentes = ctx.interview.filter((i) => i.skipped)
   const confirmados = ctx.findings.filter((f) => f.confirmed).length
   const bloco = (titulo: string, itens: string[]) => (
-    <div className="rounded-lg border border-surface-700 p-4">
+    <div className="rounded-[10px] border border-surface-700 p-4">
       <p className="text-sm font-semibold text-surface-100">{titulo}</p>
       <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-surface-300">
         {itens.length ? itens.map((t) => <li key={t}>{t}</li>) : <li className="list-none pl-0 text-surface-500">Nada</li>}

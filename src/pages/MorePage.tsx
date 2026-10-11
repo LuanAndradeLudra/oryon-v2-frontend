@@ -78,7 +78,7 @@ function ItemRow({ item }: { item: Item }) {
       to={item.href}
       className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors"
     >
-      <div className="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
+      <div className="w-10 h-10 rounded-[10px] bg-surface-800 flex items-center justify-center flex-shrink-0">
         <item.Icon className="w-5 h-5 text-surface-300" />
       </div>
       <div className="flex-1 min-w-0">
@@ -159,7 +159,7 @@ export function MorePage() {
             to="/settings/notifications"
             className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors"
           >
-            <div className="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-[10px] bg-surface-800 flex items-center justify-center flex-shrink-0">
               <Bell className="w-5 h-5 text-surface-300" />
             </div>
             <div className="flex-1 min-w-0">
@@ -175,7 +175,7 @@ export function MorePage() {
               'hover:bg-danger/10 transition-colors',
             )}
           >
-            <div className="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-[10px] bg-surface-800 flex items-center justify-center flex-shrink-0">
               <LogOut className="w-5 h-5 text-danger" />
             </div>
             <div className="flex-1 min-w-0">

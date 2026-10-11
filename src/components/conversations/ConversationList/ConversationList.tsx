@@ -219,13 +219,13 @@ export function ConversationList({
         style={{ contain: 'layout style', willChange: 'transform' }}
       >
         {aviso && (
-          <p role="status" className="mx-3 mt-2 mb-1 px-2.5 py-1.5 rounded-sm border border-status-pending-border bg-status-pending-bg text-[11.5px] text-status-pending">
+          <p role="status" className="mx-3 mt-2 mb-1 px-2.5 py-1.5 rounded-[6px] border border-status-pending-border bg-status-pending-bg text-xs text-status-pending">
             {aviso}
           </p>
         )}
         {/* Falha ao atualizar com a lista já na tela: avisa sem apagar o que existe. */}
         {erro && conversations.length > 0 && (
-          <p role="alert" className="mx-3 mt-2 mb-1 px-2.5 py-1.5 rounded-sm border border-danger/40 bg-danger/10 text-[11.5px] text-danger flex items-center justify-between gap-2">
+          <p role="alert" className="mx-3 mt-2 mb-1 px-2.5 py-1.5 rounded-[6px] border border-danger/40 bg-danger/10 text-xs text-danger flex items-center justify-between gap-2">
             <span>Não foi possível atualizar a lista.</span>
             {onTentarDeNovo && (
               <button type="button" onClick={onTentarDeNovo} className="font-semibold underline underline-offset-2 hover:opacity-80">Tentar de novo</button>

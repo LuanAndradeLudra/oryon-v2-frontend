@@ -95,7 +95,7 @@ export function AssignWabaModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-800 rounded-xl border border-[var(--bd2)] w-full max-w-md overflow-hidden"
+        className="bg-surface-800 rounded-[10px] border border-[var(--bd2)] w-full max-w-md overflow-hidden"
       >
         <div className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
           <div className="min-w-0">
@@ -110,7 +110,7 @@ export function AssignWabaModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
+            className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

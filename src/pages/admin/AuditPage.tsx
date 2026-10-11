@@ -212,14 +212,14 @@ function ActivityFeedTab() {
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
                       <span
-                        className="color-chip-soft border inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
+                        className="color-chip-soft border inline-block px-1.5 py-px rounded-[6px] text-[11px] font-medium"
                         style={{ ['--chip']: ACTOR_TYPE_STYLE[r.actorType] } as React.CSSProperties}
                       >
                         {r.actorType}
                       </span>
                       {r.severity !== 'info' && (
                         <span
-                          className="color-chip-soft border ml-1 inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
+                          className="color-chip-soft border ml-1 inline-block px-1.5 py-px rounded-[6px] text-[11px] font-medium"
                           style={{ ['--chip']: SEVERITY_STYLE[r.severity] } as React.CSSProperties}
                         >
                           {r.severity}
@@ -345,7 +345,7 @@ function AuthEventsTab() {
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
                       <span
-                        className="color-chip-soft border inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
+                        className="color-chip-soft border inline-block px-1.5 py-px rounded-[6px] text-[11px] font-medium"
                         style={{ ['--chip']: AUTH_EVENT_STYLE[r.event] ?? 'var(--color-status-muted)' } as React.CSSProperties}
                       >
                         {r.event}
@@ -457,7 +457,7 @@ function IntegrationEventsTab() {
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
                       <span
-                        className="color-chip-soft border inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
+                        className="color-chip-soft border inline-block px-1.5 py-px rounded-[6px] text-[11px] font-medium"
                         style={{ ['--chip']: INTEGRATION_SEVERITY_STYLE[r.severity] } as React.CSSProperties}
                       >
                         {r.severity}
@@ -566,7 +566,7 @@ function AutomationRunsTab() {
                     <Td>{new Date(r.startedAt).toLocaleString('pt-BR')}</Td>
                     <Td>
                       <span
-                        className="color-chip-soft border inline-block px-1.5 py-px rounded-xs text-[11px] font-medium"
+                        className="color-chip-soft border inline-block px-1.5 py-px rounded-[6px] text-[11px] font-medium"
                         style={{ ['--chip']: AUTOMATION_STATUS_STYLE[r.status] } as React.CSSProperties}
                       >
                         {r.status}
@@ -701,7 +701,7 @@ function LoadMoreButton({ show, loading, onClick }: { show: boolean; loading: bo
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">{children}</th>
+  return <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider">{children}</th>
 }
 
 function Td({ children, className, title }: { children: React.ReactNode; className?: string; title?: string }) {

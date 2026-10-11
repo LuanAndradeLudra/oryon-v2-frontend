@@ -43,16 +43,16 @@ export function VerificacaoAgora({ conversas, total, meuId, agora, pagina, onPag
   return (
     <section
       aria-labelledby="verificacao-agora-titulo"
-      className="flex flex-col bg-surface-800 border border-surface-700 rounded-lg overflow-hidden"
+      className="flex flex-col bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden"
       data-testid="verificacao-agora"
     >
       <header className="flex-shrink-0 flex items-start gap-2.5 px-3.5 py-2.5 border-b border-surface-700">
         <ShieldAlert className="w-4 h-4 mt-0.5 text-status-pending flex-shrink-0" aria-hidden />
         <div className="min-w-0">
-          <h2 id="verificacao-agora-titulo" className="text-[13px] font-semibold text-surface-100">
+          <h2 id="verificacao-agora-titulo" className="text-sm font-semibold text-surface-100">
             Precisam de verificação <span className="ml-1 text-xs font-normal text-surface-400 tabular-nums">{total}</span>
           </h2>
-          <p className="text-[11.5px] text-surface-400">
+          <p className="text-xs text-surface-400">
             A IA disse ao cliente que fez algo que o sistema não confirmou. Confira na conversa e marque como verificada.
           </p>
         </div>
@@ -67,8 +67,8 @@ export function VerificacaoAgora({ conversas, total, meuId, agora, pagina, onPag
               <li key={c.id} className="flex items-center gap-3 px-3.5 py-2" data-testid="verificacao-item">
                 <Avatar name={c.contact.displayName} imageUrl={c.contact.profilePicUrl} size="30" />
                 <span className="flex-1 min-w-0 leading-[1.3]">
-                  <span className="block text-[13px] font-semibold text-surface-100 truncate">{c.contact.displayName}</span>
-                  <span className="block text-[11.5px] text-surface-500 truncate">
+                  <span className="block text-sm font-semibold text-surface-100 truncate">{c.contact.displayName}</span>
+                  <span className="block text-xs text-surface-500 truncate">
                     {dono ? `com ${dono.id === meuId ? 'você' : nomeDe(dono)}` : <span className="text-status-pending font-semibold">sem dono</span>}
                     {' · '}{min < 1 ? 'última mensagem agora' : `última mensagem há ${formatarEspera(min)}`}
                   </span>
@@ -93,7 +93,7 @@ export function VerificacaoAgora({ conversas, total, meuId, agora, pagina, onPag
         className="flex-shrink-0"
       />
       {total > conversas.length && (
-        <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-[11.5px] text-surface-500">
+        <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-xs text-surface-500">
           Mostrando {conversas.length} de {total}. As demais estão em Conversas, filtro "Precisam de verificação".
         </p>
       )}

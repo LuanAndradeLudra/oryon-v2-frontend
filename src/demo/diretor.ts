@@ -224,7 +224,7 @@ const PRONTA_CENA: Partial<Record<HeroCena, string | string[]>> = {
   'agente-capacidades': 'Encerrar e reabrir conversas',
   'agente-capacidades-funil': 'Encerrar e reabrir conversas',
   // A aba Agora (onde o Dashboard abre) não tem o gráfico de volume.
-  painel: ['Esperando alguém', 'Volume de Mensagens'],
+  painel: ['Esperando alguém', 'Volume de mensagens'],
 }
 
 let pinturaPendente = 0
@@ -461,8 +461,8 @@ const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
   'agente-capacidades-funil': { texto: 'Mover negócio ou registro no funil', bolha: true, rolar: true },
   // O Dashboard: a fila (a Marina esperando), os indicadores, o volume.
   'painel-fila': { texto: 'Fila agora', bolha: true },
-  'painel-indicadores': { texto: 'Conversas Ativas', seletorAncestral: '[data-spotlight-target="kpi-cell"]' },
-  'painel-volume': { texto: 'Volume de Mensagens', bolha: true },
+  'painel-indicadores': { texto: 'Conversas ativas', seletorAncestral: '[data-spotlight-target="kpi-cell"]' },
+  'painel-volume': { texto: 'Volume de mensagens', bolha: true },
 }
 
 type Retangulo = { x: number; y: number; w: number; h: number }
@@ -1447,9 +1447,9 @@ const PASSOS_DO_CURSOR: Partial<Record<HeroCena, (vivo: () => boolean) => Promis
   // 3 · Relatórios: os indicadores; o cursor para na taxa de resolução.
   'painel-indicadores': async (vivo) => {
     const aba = await achar(() => [...document.querySelectorAll<HTMLElement>('[role="tab"]')].find((b) => (b.textContent ?? '').trim() === 'Relatórios'))
-    const indicadores = () => caixaCom(acharTexto(appDaDemo(), 'Conversas Ativas'), 'Volume de Mensagens')
+    const indicadores = () => caixaCom(acharTexto(appDaDemo(), 'Conversas ativas'), 'Volume de mensagens')
     if (!vivo() || !aba || !(await trocarDeTela(aba, vivo, indicadores))) return
-    const taxa = await achar(() => acharTexto(appDaDemo(), 'Taxa de Resolução'))
+    const taxa = await achar(() => acharTexto(appDaDemo(), 'Taxa de resolução'))
     if (!vivo() || !taxa) return
     await esperarMs(500)
     await moverCursor(taxa)
@@ -1459,7 +1459,7 @@ const PASSOS_DO_CURSOR: Partial<Record<HeroCena, (vivo: () => boolean) => Promis
   // números de cada dia.
   'painel-volume': async (vivo) => {
     const grafico = await achar(() => {
-      const titulo = acharTexto(appDaDemo(), 'Volume de Mensagens')
+      const titulo = acharTexto(appDaDemo(), 'Volume de mensagens')
       let caixa: HTMLElement | null = titulo
       for (let i = 0; i < 6 && caixa; i++) {
         const w = caixa.querySelector<HTMLElement>('.recharts-wrapper')

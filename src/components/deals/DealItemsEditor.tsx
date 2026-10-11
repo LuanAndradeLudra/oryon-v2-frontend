@@ -228,7 +228,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                mais forte), o que funciona nos dois temas — diferente de
                "mais claro", que se inverte de um tema para o outro. */
             className={cn(
-              'border rounded-lg overflow-hidden transition-all',
+              'border rounded-[10px] overflow-hidden transition-all',
               aberto
                 ? 'border-surface-600 bg-surface-800/25 bloco-drawer-ativo'
                 : 'border-surface-700 bg-surface-800 hover:border-surface-600 bloco-drawer',
@@ -246,7 +246,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                 aria-expanded={aberto}
                 aria-label={aberto ? `Recolher ${nome || 'item'}` : `Editar ${nome || 'item'}`}
                 className={cn(
-                  'flex-1 flex items-center gap-2 min-w-0 rounded-md px-1.5 py-1.5 text-left transition-colors',
+                  'flex-1 flex items-center gap-2 min-w-0 rounded-[6px] px-1.5 py-1.5 text-left transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
                   travadoAberto ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--rowhover)]',
                 )}
@@ -266,7 +266,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                   <span className="text-xs text-surface-500 truncate shrink-0">· {it.variationLabel}</span>
                 )}
                 {!aberto && isCustom && (
-                  <span className="text-3xs font-semibold uppercase tracking-wider text-amber-400/90 shrink-0">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-amber-400/90 shrink-0">
                     Negociado
                   </span>
                 )}
@@ -283,7 +283,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                 type="button"
                 onClick={() => remove(i)}
                 disabled={disabled}
-                className="p-1.5 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-900/20 transition-all shrink-0 disabled:opacity-50 cursor-pointer"
+                className="p-1.5 rounded-[6px] text-surface-500 hover:text-red-400 hover:bg-red-900/20 transition-all shrink-0 disabled:opacity-50 cursor-pointer"
                 aria-label="Remover item"
               >
                 <X className="w-3.5 h-3.5" />
@@ -423,7 +423,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
             <p className="text-[11px] text-surface-400 text-right">
               {isCustom && (
                 <span
-                  className="float-left text-[10px] font-semibold uppercase tracking-wider text-amber-400/90"
+                  className="float-left text-[11px] font-semibold uppercase tracking-wider text-amber-400/90"
                   title="Preço negociado, fora do catálogo — não alimenta a IA."
                 >
                   Negociado
@@ -454,7 +454,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
           type="button"
           onClick={() => adicionar(emptyCatalogItem())}
           disabled={disabled}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all disabled:bg-surface-700 disabled:text-surface-500"
+          className="botao-itens flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all disabled:bg-surface-700 disabled:text-surface-500"
         >
           <Package className="w-3.5 h-3.5" /> Adicionar do catálogo
         </button>
@@ -462,7 +462,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
           type="button"
           onClick={() => adicionar(emptyCustomItem())}
           disabled={disabled}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all disabled:bg-surface-700 disabled:text-surface-500"
+          className="botao-itens flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all disabled:bg-surface-700 disabled:text-surface-500"
         >
           <PenLine className="w-3.5 h-3.5" /> Adicionar personalizado
         </button>

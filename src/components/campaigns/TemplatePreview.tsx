@@ -142,7 +142,7 @@ export function TemplatePreview({
       )}
       {template.headerType === 'DOCUMENT' && (
         <div style={{ borderRadius: 6, background: '#F3F4F6', padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#B91C1C', background: '#FEE2E2', borderRadius: 3, padding: '2px 4px' }}>PDF</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: '#B91C1C', background: '#FEE2E2', borderRadius: 3, padding: '2px 4px' }}>PDF</span>
           <span style={{ fontSize: 13, color: WA.texto, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>documento.pdf</span>
         </div>
       )}

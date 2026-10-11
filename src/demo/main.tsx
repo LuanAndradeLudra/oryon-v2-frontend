@@ -25,6 +25,10 @@ import { instalarDiretor, avisarQuandoPronta } from './diretor'
 
 prepararAntesDoApp()
 
+// Marca o documento como demonstração: o index.css ajusta ali o que a miniatura
+// da landing pede diferente do produto (ex.: disco do avatar no escuro).
+document.documentElement.setAttribute('data-demo', '')
+
 // Estado inicial da história (`?estado=avanco`): os recortes da seção
 // Plataforma abrem já no momento que mostram, sem esperar o roteiro inteiro.
 const estadoInicial = new URLSearchParams(location.search).get('estado') as HeroState | null
@@ -45,6 +49,9 @@ async function subir() {
     import('react-dom/client'),
   ])
   await import('../index.css')
+  // Mesmo par do app (src/main.tsx): sem ele a demonstração da landing ficava
+  // sem os ajustes de contraste do produto (chips neutros, tokens do claro).
+  await import('../styles/contraste.css')
   await conectarAoApp()
 
   const { DemoApp } = await import('./DemoApp')

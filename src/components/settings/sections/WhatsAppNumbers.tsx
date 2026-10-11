@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X, Star, RefreshCw, Smartphone } from 'lucide-react'
+import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X, Star, RefreshCw, Smartphone, FileText, Send, Users, ArrowRight, CheckCircle2, Copy, AlertTriangle } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { diagnosticar, veredito, VEREDITO, ICONE_ACHADO, COR_ACHADO } from './diagnosticoDaLinha'
+import { SetoresDoNumero } from './SetoresDoNumero'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SectionHeader } from '../SectionHeader'
@@ -14,9 +17,9 @@ import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
-import { api, whatsappNumbersApi, type WhatsappLineDependencies } from '@/services/api'
+import { api, departmentsApi, whatsappNumbersApi, type WhatsappLineDependencies, type WhatsappLinesHealth } from '@/services/api'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
-import type { WhatsAppNumberDetailed } from '@/types'
+import type { Department, WhatsAppNumberDetailed } from '@/types'
 import { qualidadeDoNumero, limiteDoNumero } from '@/lib/metaRotulos'
 
 // Wifi/WifiOff/Clock não existem no set da casa (traço 2 do lucide real) —
@@ -46,6 +49,18 @@ const QUALITY_CONFIG: Record<string, { label: string; cls: string }> = {
 }
 
 
+/**
+ * "· 3 aprovados · 1 pendente" — só as partes com contagem; a última posição
+ * da tupla é a cor de destaque (rejeitados, sem linha).
+ */
+function partesDoTotal(partes: Array<[number, string, string, string?]>) {
+  return partes.filter(([n]) => n > 0).map(([n, um, varios, cor]) => (
+    <span key={um} className={cor}>
+      <span aria-hidden className="text-surface-500">· </span>{n} {n === 1 ? um : varios}
+    </span>
+  ))
+}
+
 export function WhatsAppNumbers() {
   const { toast } = useToast()
   const { refresh: refreshWorkspace } = useWorkspaceNumber()
@@ -59,6 +74,23 @@ export function WhatsAppNumbers() {
   const [disconnecting, setDisconnecting] = useState(false)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [resubscribing, setResubscribing] = useState<string | null>(null)
+  // A saúde de cada linha mora no próprio cartão do número (SCRUM-1253).
+  const [saude, setSaude] = useState<WhatsappLinesHealth | null>(null)
+  // Setores: uma busca para todos os cartões (antes cada SetoresDoNumero
+  // buscava a sua e ficava velho quando outro cartão mudava um setor).
+  const [setores, setSetores] = useState<Department[] | null>(null)
+  const carregarSetores = () => { departmentsApi.list().then((r) => setSetores(r.data)).catch(() => setSetores((atual) => atual ?? [])) }
+  useEffect(carregarSetores, [])
+  const aoMudarSetor = (setorId: string, numeroId: string) => {
+    // Otimista em todos os cartões; depois confirma com o servidor.
+    setSetores((lista) => (lista ?? []).map((x) => (x.id === setorId ? { ...x, whatsappNumberId: numeroId } : x)))
+    carregarSetores()
+  }
+  useEffect(() => {
+    let vivo = true
+    whatsappNumbersApi.health().then((r) => { if (vivo) setSaude(r.data) }).catch(() => {})
+    return () => { vivo = false }
+  }, [numbers])
 
   const fetchNumbers = () => {
     setLoading(true)
@@ -246,186 +278,217 @@ export function WhatsAppNumbers() {
   const conectadas = numbers.filter((n) => n.status === 'connected' || n.status === 'CONNECTED').length
   const variasLinhas = conectadas > 1
 
-  return (
-    <div>
-      <SectionHeader
-        title="Números WhatsApp"
-        description="Gerencie os números WhatsApp Business conectados à plataforma."
-        action={conectadas === 0 && numbers.length > 0 ? (
-          <Button onClick={() => { void startConnect() }} leftIcon={<Plus className="w-4 h-4" />}>
-            Conectar número
-          </Button>
-        ) : undefined}
-      />
-
-      {numbers.length === 0 && (
-        <EmptyState
-          icon={Smartphone}
-          title="Nenhum número conectado"
-          hint="Conecte um número WhatsApp Business para começar a atender pela plataforma."
-          action={{ label: 'Conectar número', onClick: () => { void startConnect() } }}
+  // ── SCRUM-1253 (PO, 07/10): Números + Saúde numa tela só. Cada linha
+  // é um cartão: quem ela é e se está conectada; o veredito e o diagnóstico
+  // (o que resolver, com a ação ali mesmo); quem atende (IA e setores); e o
+  // que roda nela (templates, disparos). Antes isso morava em duas páginas.
+  {
+    const saudeDe = (id: string) => saude?.lines.find((l) => l.id === id)
+    return (
+      <div>
+        <SectionHeader
+          title="Números WhatsApp"
+          description="Cada número conectado: se está saudável, o que resolver e quem atende por ele."
+          action={conectadas === 0 && numbers.length > 0 ? (
+            <Button onClick={() => { void startConnect() }} leftIcon={<Plus className="w-4 h-4" />}>Conectar número</Button>
+          ) : undefined}
         />
-      )}
-
-      {/* Lista densa: linhas separadas por hairline — sem chrome de card. */}
-      <div className="divide-y divide-surface-700">
-        {numbers.map((num) => {
-          const status = STATUS_CONFIG[num.status] ?? DEFAULT_STATUS
-          // Plano MA (MA-6.4): rótulos comuns; o limite vem de messagingLimitTier/maxDailyConversations.
-          const nota = qualidadeDoNumero(num.qualityRating)
-          const quality = QUALITY_CONFIG[num.qualityRating] ?? { label: nota.label, cls: nota.cor }
-          const limite = limiteDoNumero(num.messagingLimitTier, num.maxDailyConversations) ?? num.messagingLimit ?? null
-          const connected = num.status === 'connected' || num.status === 'CONNECTED'
-
+        {numbers.length === 0 && (
+          <EmptyState icon={Smartphone} title="Nenhum número conectado" hint="Conecte um número WhatsApp Business para começar a atender pela plataforma." action={{ label: 'Conectar número', onClick: () => { void startConnect() } }} />
+        )}
+        {/* Recursos órfãos (voltou da antiga Saúde das linhas, PO 10/10): templates,
+            disparos e automações que apontam para uma linha desativada ou removida
+            — não pertencem a nenhum cartão abaixo, então o total fica aqui em cima. */}
+        {saude && numbers.length > 0 && (() => {
+          const o = saude.orphans
+          const total = o.templates + o.campaigns + o.automations
           return (
-            <div key={num.id} className="py-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-md bg-status-active-bg border border-status-active-border flex items-center justify-center flex-shrink-0">
-                    <WhatsAppIcon size={20} />
+            <p
+              className={cn(
+                'mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[6px] border px-3 py-2 text-xs',
+                total > 0 ? 'border-status-pending-border bg-status-pending-bg text-status-pending' : 'border-surface-700 bg-surface-800 text-surface-400',
+              )}
+              data-testid="recursos-orfaos"
+              title="Recursos apontando para uma linha desativada ou removida"
+            >
+              {total > 0 ? <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" aria-hidden /> : <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-status-active" aria-hidden />}
+              <span>
+                <strong className="font-semibold tabular-nums">{total}</strong> {total === 1 ? 'recurso órfão' : 'recursos órfãos'}
+                {total > 0
+                  ? ` — apontam para uma linha desativada ou removida: ${[
+                      o.templates ? `${o.templates} ${o.templates === 1 ? 'template' : 'templates'}` : '',
+                      o.campaigns ? `${o.campaigns} ${o.campaigns === 1 ? 'disparo' : 'disparos'}` : '',
+                      o.automations ? `${o.automations} ${o.automations === 1 ? 'automação' : 'automações'}` : '',
+                    ].filter(Boolean).join(' · ')}.`
+                  : ' — nada aponta para uma linha desativada ou removida.'}
+              </span>
+              {total > 0 && (o.templates > 0 || o.campaigns > 0) && (
+                <Link to={o.campaigns > 0 ? '/campaigns' : '/campaigns?tab=templates'} className="ml-auto font-semibold hover:underline">
+                  {o.campaigns > 0 ? 'Ver disparos' : 'Ver templates'}
+                </Link>
+              )}
+            </p>
+          )
+        })()}
+        <div className="flex flex-col gap-4">
+          {numbers.map((num) => {
+            const status = STATUS_CONFIG[num.status] ?? DEFAULT_STATUS
+            const nota = qualidadeDoNumero(num.qualityRating)
+            const quality = QUALITY_CONFIG[num.qualityRating] ?? { label: nota.label, cls: nota.cor }
+            const limite = limiteDoNumero(num.messagingLimitTier, num.maxDailyConversations) ?? num.messagingLimit ?? null
+            const connected = num.status === 'connected' || num.status === 'CONNECTED'
+            const h = saudeDe(num.id)
+            const achados = h ? diagnosticar(h) : []
+            const tipo = veredito(achados)
+            const semToken = h ? !h.hasSystemUserToken : false
+            return (
+              <article key={num.id} className="overflow-hidden rounded-[10px] border border-surface-700 bg-surface-800">
+                {/* Quem é */}
+                <header className="flex flex-wrap items-start gap-3 border-b border-surface-700 px-4 py-3">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-[var(--sf2)]"><WhatsAppIcon size={18} /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-surface-100">
+                      {num.displayPhoneNumber}
+                      <span className="color-chip-soft inline-flex h-5 items-center gap-1 rounded-[6px] border px-[7px] text-2xs font-semibold" style={{ ['--chip']: status.chip } as React.CSSProperties}>{status.icon}{status.label}</span>
+                      {variasLinhas && num.isPrimary && <span className="inline-flex items-center gap-1 text-2xs font-semibold text-surface-400"><Star className="h-3 w-3 fill-current" />Principal</span>}
+                    </p>
+                    <p className="text-xs text-surface-500">{num.wabaName || num.verifiedName || 'Conta WhatsApp'}{num.connectedAt ? ` · conectado em ${(() => { try { return format(new Date(num.connectedAt), "dd/MM/yyyy", { locale: ptBR }) } catch { return '—' } })()}` : ''}</p>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <p className="font-semibold text-surface-50">{num.displayPhoneNumber}</p>
-                      <span className={cn('color-chip-soft inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
-                        {status.icon}
-                        {status.label}
+                  {h && (() => {
+                    const v = VEREDITO[tipo]
+                    return (
+                      <span className="color-chip-soft inline-flex h-6 items-center gap-1 rounded-[6px] border px-2 text-xs font-semibold" style={{ ['--chip']: v.cor } as React.CSSProperties}>
+                        <v.Icone className="h-3.5 w-3.5" aria-hidden />{v.rotulo}
                       </span>
-                      {variasLinhas && num.isPrimary && (
-                        <span className="inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border border-brand-500/40 text-brand-300 bg-brand-500/10">
-                          <Star className="w-3 h-3 fill-current" />
-                          Principal
-                        </span>
+                    )
+                  })()}
+                  {connected && (
+                    <div className="flex items-center gap-0.5">
+                      {variasLinhas && !num.isPrimary && (
+                        <Tooltip content="Definir como linha principal">
+                          <button onClick={() => { void handlePromote(num.id) }} disabled={promoting === num.id} aria-label="Definir como linha principal" className="rounded-[6px] p-1.5 text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 disabled:opacity-50"><Star className="h-3.5 w-3.5" /></button>
+                        </Tooltip>
                       )}
-                    </div>
-                    {(num.wabaName || num.verifiedName) && <p className="text-xs text-surface-400 mb-3">{num.wabaName || num.verifiedName}</p>}
-
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5">Qualidade</p>
-                        <div className="flex items-center gap-2">
-                          <div className={cn('w-2 h-2 rounded-full', quality.cls)} />
-                          <span className="text-xs text-surface-300">{quality.label}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5" title="Quantos contatos diferentes a linha pode chamar primeiro (com template) em 24 horas">Limite de envio</p>
-                        <span className="text-xs text-surface-300">{limite ?? 'A Meta ainda não informou'}</span>
-                      </div>
-                      {num.connectedAt && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5">Conectado em</p>
-                        <span className="text-xs text-surface-300">
-                          {(() => { try { return format(new Date(num.connectedAt), "dd 'de' MMM 'de' yyyy", { locale: ptBR }) } catch { return 'Data indisponível' } })()}
-                        </span>
-                      </div>
+                      {num.wabaId && (
+                        <Tooltip content="Reinscrever nos webhooks da Meta">
+                          <button onClick={() => { void handleResubscribe(num) }} disabled={resubscribing === num.id} aria-label="Reinscrever nos webhooks da Meta" className="rounded-[6px] p-1.5 text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 disabled:opacity-50"><RefreshCw className={cn('h-3.5 w-3.5', resubscribing === num.id && 'animate-spin')} /></button>
+                        </Tooltip>
                       )}
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-0.5">ID do número na Meta</p>
-                        <span className="text-xs text-surface-500 font-mono">{num.phoneNumberId}</span>
-                      </div>
+                      <Tooltip content="Desconectar número">
+                        <button onClick={() => { void openDisconnectConfirm(num) }} aria-label={`Desconectar ${num.displayPhoneNumber}`} className="rounded-[6px] p-1.5 text-surface-400 hover:bg-danger/10 hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </Tooltip>
                     </div>
+                  )}
+                </header>
 
-                    {/* Agent AI Assignment */}
-                    <div className="mt-4 pt-4 border-t border-surface-700">
-                      <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-2">Agente de IA</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 flex-1">
-                          <Bot className="w-4 h-4 text-surface-500 flex-shrink-0" />
-                          <SelectMenu
-                            size="sm"
-                            aria-label="Agente de IA"
-                            className="flex-1"
-                            value={num.agentId ?? ''}
-                            onChange={(e) => assignAgent(num.id, e.target.value || null)}
-                            disabled={savingAgent === num.id}
-                            >
-                            <option value="">Nenhum agente (atendimento humano)</option>
-                            {agents.filter((a) => a.status === 'active' || a.id === num.agentId).map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.name} {a.status !== 'active' ? `(${a.status})` : ''}
-                              </option>
-                            ))}
-                          </SelectMenu>
-                          {num.agentId && (
-                            <button
-                              onClick={() => assignAgent(num.id, null)}
-                              disabled={savingAgent === num.id}
-                              className="p-1.5 rounded-xs text-surface-500 hover:text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
-                              title="Remover agente"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                        {savingAgent === num.id && (
-                          <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-                        )}
-                      </div>
+                <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
+                  {/* O que resolver */}
+                  <section aria-label="Saúde" className="border-b border-surface-700 px-4 py-3 md:border-b-0 md:border-r">
+                    <p className="mb-2 text-xs font-semibold text-surface-300">Saúde</p>
+                    {!h ? (
+                      <p className="text-xs text-surface-500">Carregando o diagnóstico…</p>
+                    ) : achados.length === 0 ? (
+                      <p className="flex items-center gap-2 text-sm text-surface-300"><CheckCircle2 className="h-4 w-4 text-status-active" aria-hidden />Nada pendente neste número.</p>
+                    ) : (
+                      <ul className="flex flex-col gap-2">
+                        {achados.map((x) => {
+                          const Icone = ICONE_ACHADO[x.gravidade]
+                          return (
+                            <li key={x.texto} className="flex items-start gap-2.5 text-sm">
+                              <Icone className={cn('mt-0.5 h-4 w-4 flex-shrink-0', COR_ACHADO[x.gravidade])} aria-hidden />
+                              <span className="min-w-0 flex-1 text-surface-200">{x.texto}</span>
+                              {x.acao && <Link to={x.acao.para} className="inline-flex flex-shrink-0 items-center gap-1 text-xs font-semibold text-accent-dark hover:underline">{x.acao.rotulo}<ArrowRight className="h-3 w-3" aria-hidden /></Link>}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                    {semToken && (
+                      <Button size="sm" className="mt-3" onClick={() => { void startConnect() }} leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>Reconectar número</Button>
+                    )}
+                    <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                      <div><dt className="text-surface-500">Qualidade</dt><dd className="mt-0.5 flex items-center gap-1.5 text-surface-200"><span className={cn('h-2 w-2 rounded-full', quality.cls)} aria-hidden />{quality.label}</dd></div>
+                      <div><dt className="text-surface-500" title="Quantos contatos diferentes a linha pode chamar primeiro (com template) em 24 horas">Limite de envio</dt><dd className="mt-0.5 text-surface-200">{limite ?? 'A Meta ainda não informou'}</dd></div>
+                    </dl>
+                  </section>
+
+                  {/* Quem atende */}
+                  <section aria-label="Atendimento" className="px-4 py-3">
+                    <p className="mb-2 text-xs font-semibold text-surface-300">Quem atende</p>
+                    <label className="mb-1 flex items-center gap-1.5 text-xs text-surface-500"><Bot className="h-3.5 w-3.5" aria-hidden />Agente de IA</label>
+                    <div className="flex items-center gap-1.5">
+                      <SelectMenu size="sm" aria-label="Agente de IA" className="flex-1" value={num.agentId ?? ''} onChange={(e) => assignAgent(num.id, e.target.value || null)} disabled={savingAgent === num.id}>
+                        <option value="">Nenhum (só a equipe)</option>
+                        {agents.filter((a) => a.status === 'active' || a.id === num.agentId).map((a) => (
+                          <option key={a.id} value={a.id}>{a.name} {a.status !== 'active' ? `(${a.status})` : ''}</option>
+                        ))}
+                      </SelectMenu>
                       {num.agentId && (
-                        <p className="text-[10px] text-status-active mt-1.5">
-                          Agente ativo — mensagens recebidas serão respondidas automaticamente
-                        </p>
+                        <button onClick={() => assignAgent(num.id, null)} disabled={savingAgent === num.id} className="rounded-[6px] p-1.5 text-surface-500 hover:bg-danger/10 hover:text-danger disabled:opacity-50" title="Remover agente"><X className="h-3.5 w-3.5" /></button>
                       )}
                     </div>
-                  </div>
+                    <p className="mt-1 text-2xs text-surface-500">{num.agentId ? 'A IA responde as mensagens que chegam.' : 'Ninguém responde automaticamente.'}</p>
+                    <p className="mb-1 mt-3 flex items-center gap-1.5 text-xs text-surface-500"><Users className="h-3.5 w-3.5" aria-hidden />Setores</p>
+                    <SetoresDoNumero
+                      numeroId={num.id}
+                      setores={setores}
+                      onSetorMudou={aoMudarSetor}
+                      rotuloDoNumero={(id) => numbers.find((n) => n.id === id)?.displayPhoneNumber ?? 'outro número'}
+                      onMudou={() => { whatsappNumbersApi.health().then((r) => setSaude(r.data)).catch(() => {}) }}
+                    />
+                  </section>
                 </div>
 
-                {connected && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {variasLinhas && !num.isPrimary && (
-                      <Tooltip content="Definir como linha principal">
-                        <button
-                          onClick={() => { void handlePromote(num.id) }}
-                          disabled={promoting === num.id}
-                          aria-label="Definir como linha principal"
-                          className="p-1.5 rounded-xs text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
-                        >
-                          <Star className="w-3.5 h-3.5" />
-                        </button>
-                      </Tooltip>
-                    )}
-                    {/* Só com o wabaId em mãos: sem ele a chamada virava
-                        /meta/waba/undefined/resubscribe e sempre falhava. */}
-                    {num.wabaId && (
-                    <Tooltip content="Reinscrever nos webhooks da Meta">
-                      <button
-                        onClick={() => { void handleResubscribe(num) }}
-                        disabled={resubscribing === num.id}
-                        aria-label="Reinscrever nos webhooks da Meta"
-                        className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
-                      >
-                        <RefreshCw className={cn('w-3.5 h-3.5', resubscribing === num.id && 'animate-spin')} />
-                      </button>
-                    </Tooltip>
-                    )}
-                    <button
-                      onClick={() => { void openDisconnectConfirm(num) }}
-                      aria-label={`Desconectar ${num.displayPhoneNumber}`}
-                      title="Desconectar número"
-                      className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
+                {/* O que roda nele */}
+                <footer className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-surface-700 bg-[var(--sf2)] px-4 py-2.5 text-xs text-surface-400">
+                  {h && (
+                    <>
+                      {/* Totais por linha (voltaram da antiga Saúde das linhas, PO 10/10):
+                          cada estado da Meta e o que ficou sem linha definida. */}
+                      <Link to="/campaigns?tab=templates" className="inline-flex flex-wrap items-center gap-x-1.5 hover:text-surface-100" data-testid={`totais-templates-${num.id}`}>
+                        <FileText className="h-3.5 w-3.5" aria-hidden />
+                        <strong className="font-semibold text-surface-200">{h.templates.total}</strong> templates
+                        {partesDoTotal([
+                          [h.templates.approved, 'aprovado', 'aprovados'],
+                          [h.templates.pending, 'pendente', 'pendentes'],
+                          [h.templates.rejected, 'rejeitado', 'rejeitados', 'text-danger'],
+                          [h.templates.needsAssignment, 'sem linha', 'sem linha', 'text-status-pending'],
+                        ])}
+                      </Link>
+                      <Link to="/campaigns" className="inline-flex flex-wrap items-center gap-x-1.5 hover:text-surface-100" data-testid={`totais-disparos-${num.id}`}>
+                        <Send className="h-3.5 w-3.5" aria-hidden />
+                        <strong className="font-semibold text-surface-200">{h.campaigns.total}</strong> disparos
+                        {partesDoTotal([
+                          [h.campaigns.draft, 'rascunho', 'rascunhos'],
+                          [h.campaigns.scheduled, 'agendado', 'agendados'],
+                          [h.campaigns.sending, 'enviando', 'enviando'],
+                          [h.campaigns.sent, 'enviado', 'enviados'],
+                          [h.campaigns.needsAssignment, 'sem linha', 'sem linha', 'text-status-pending'],
+                        ])}
+                      </Link>
+                      {h.automations.total > 0 && (
+                        <span className="inline-flex flex-wrap items-center gap-x-1.5" data-testid={`totais-automacoes-${num.id}`}>
+                          <strong className="font-semibold text-surface-200">{h.automations.total}</strong> automações
+                          {partesDoTotal([
+                            [h.automations.active, 'ativa', 'ativas'],
+                            [h.automations.inactive, 'inativa', 'inativas'],
+                            [h.automations.draft, 'rascunho', 'rascunhos'],
+                            [h.automations.needsAssignment, 'sem linha', 'sem linha', 'text-status-pending'],
+                          ])}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <button type="button" onClick={() => void navigator.clipboard.writeText(num.phoneNumberId).then(() => toast('ID da Meta copiado.', 'success')).catch(() => {})} className="ml-auto inline-flex items-center gap-1 hover:text-surface-100" title={num.phoneNumberId}>
+                    <Copy className="h-3 w-3" aria-hidden />Copiar ID da Meta
+                  </button>
+                </footer>
+              </article>
+            )
+          })}
+        </div>
+        <ConfirmModal open={!!disconnectTarget} onClose={() => { setDisconnectTarget(null); setDependencies(null) }} onConfirm={handleDisconnect} loading={disconnecting} title="Desconectar número" impact={disconnectImpact} description={disconnectDescription} confirmLabel="Desconectar" danger />
       </div>
-
-      <ConfirmModal
-        open={!!disconnectTarget}
-        onClose={() => { setDisconnectTarget(null); setDependencies(null) }}
-        onConfirm={handleDisconnect}
-        loading={disconnecting}
-        title="Desconectar número"
-        impact={disconnectImpact}
-        description={disconnectDescription}
-        confirmLabel="Desconectar"
-        danger
-      />
-    </div>
-  )
+    )
+  }
 }

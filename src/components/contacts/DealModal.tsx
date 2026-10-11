@@ -309,7 +309,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                 type="button"
                 onClick={handleMovePipeline}
                 disabled={!movePipelineId || moving}
-                className="px-3 py-2 rounded-lg text-xs font-semibold bg-[var(--sf2)] hover:bg-surface-800 text-surface-100 disabled:opacity-50 transition-all whitespace-nowrap"
+                className="px-3 py-2 rounded-[6px] text-xs font-semibold bg-[var(--sf2)] hover:bg-surface-800 text-surface-100 disabled:opacity-50 transition-all whitespace-nowrap"
               >
                 {moving ? 'Transferindo...' : 'Transferir'}
               </button>
@@ -373,7 +373,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
 
         {!isProcess && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">
+          <span className="text-[11px] font-semibold text-surface-500 uppercase tracking-[.14em]">
             Itens
           </span>
           <DealItemsEditor
@@ -411,7 +411,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] transition-all"
+              className="px-4 py-2 rounded-[6px] text-sm text-surface-300 hover:bg-[var(--rowhover)] transition-all"
             >
               Cancelar
             </button>
@@ -422,14 +422,14 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                 <button
                   onClick={() => handleSave(false)}
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-[var(--sf2)] hover:bg-surface-800 text-surface-100 disabled:opacity-60 transition-all"
+                  className="px-4 py-2 rounded-[6px] text-sm font-medium bg-[var(--sf2)] hover:bg-surface-800 text-surface-100 disabled:opacity-60 transition-all"
                 >
                   {saving ? 'Salvando...' : 'Vincular'}
                 </button>
                 <button
                   onClick={() => handleSave(true)}
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
+                  className="px-4 py-2 rounded-[6px] text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
                 >
                   {saving ? 'Salvando...' : 'Vincular e atualizar valor'}
                 </button>
@@ -438,7 +438,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
               <button
                 onClick={() => handleSave()}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
+                className="px-4 py-2 rounded-[6px] text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
               >
                 {saving ? 'Salvando...' : editDeal ? 'Salvar' : 'Criar'}
               </button>

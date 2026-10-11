@@ -89,7 +89,7 @@ export function ConnectorAdminPage() {
                 key={c.id}
                 type="button"
                 onClick={() => setSelectedId(c.id)}
-                className="w-full flex items-center justify-between gap-3 p-3 rounded-lg border border-surface-800 bg-surface-900/60 hover:bg-surface-900 text-left transition-colors"
+                className="w-full flex items-center justify-between gap-3 p-3 rounded-[10px] border border-surface-800 bg-surface-900/60 hover:bg-surface-900 text-left transition-colors"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <Plug className="w-4 h-4 text-surface-500 flex-shrink-0" />
@@ -234,7 +234,7 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
                 (transcrição, chat de correção) é a SCRUM-1094, ainda não
                 construída. */}
             {detail.status === 'requested' && (
-              <div className="mb-6 p-4 rounded-xl border border-brand-500/30 bg-brand-500/5">
+              <div className="mb-6 p-4 rounded-[10px] border border-brand-500/30 bg-brand-500/5">
                 <div className="flex items-start gap-3">
                   <Sparkles className="w-4 h-4 text-brand-300 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
@@ -258,14 +258,14 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
             )}
 
             {draftError && (
-              <div className="mb-6 p-3 rounded-lg bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
+              <div className="mb-6 p-3 rounded-[10px] bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                 {draftError}
               </div>
             )}
 
             {draftResult && (
-              <div className="mb-6 p-4 rounded-xl border border-status-active/30 bg-status-active/5">
+              <div className="mb-6 p-4 rounded-[10px] border border-status-active/30 bg-status-active/5">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="w-4 h-4 text-status-active" />
                   <p className="text-sm font-medium text-surface-100">Rascunho atualizado</p>
@@ -313,7 +313,7 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
               />
             )}
 
-            <div className="space-y-4 p-4 rounded-xl border border-surface-800 bg-surface-900/60 mb-6">
+            <div className="space-y-4 p-4 rounded-[10px] border border-surface-800 bg-surface-900/60 mb-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-medium text-surface-500 mb-1">Status</label>
@@ -340,7 +340,7 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
               </div>
 
               {statusChangedToGated && (
-                <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-xs text-surface-300">
+                <div className="p-3 rounded-[10px] bg-warning/10 border border-warning/30 text-xs text-surface-300">
                   <p className="mb-2">
                     Mover para <strong>{status}</strong> exige confirmar o checklist do gate
                     correspondente — ver{' '}
@@ -380,7 +380,7 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
               ) : (
                 <div className="space-y-1.5">
                   {detail.members.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-900/60 border border-surface-800 text-sm">
+                    <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-[10px] bg-surface-900/60 border border-surface-800 text-sm">
                       <span className="text-surface-200">{m.name}</span>
                       <span className="text-xs text-surface-500">{m.enabled ? 'habilitado' : 'desabilitado'}</span>
                     </div>
@@ -427,7 +427,7 @@ function DraftReviewPanel({
   sending: boolean
 }) {
   return (
-    <div className="mb-6 rounded-xl border border-surface-800 bg-surface-900/60 overflow-hidden">
+    <div className="mb-6 rounded-[10px] border border-surface-800 bg-surface-900/60 overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-surface-800">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-surface-400" />
@@ -453,14 +453,14 @@ function DraftReviewPanel({
             <div
               key={entry.turn}
               className={cn(
-                'p-2.5 rounded-lg text-xs leading-relaxed',
+                'p-2.5 rounded-[10px] text-xs leading-relaxed',
                 entry.role === 'reviewer'
                   ? 'bg-brand-500/10 border border-brand-500/30 text-surface-100'
                   : 'bg-surface-800/60 text-surface-300',
               )}
             >
               <p className={cn(
-                'text-[10px] uppercase tracking-wide font-semibold mb-1',
+                'text-[11px] uppercase tracking-wide font-semibold mb-1',
                 entry.role === 'reviewer' ? 'text-brand-300' : 'text-surface-500',
               )}>
                 {entry.role === 'reviewer' ? 'Você' : 'Agente'} · {KIND_LABEL[entry.kind]}

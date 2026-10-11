@@ -108,7 +108,7 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, h
             <label
               key={o.value}
               className={cn(
-                'flex items-start gap-2.5 px-2.5 py-2 rounded-lg border cursor-pointer transition-colors',
+                'flex items-start gap-2.5 px-2.5 py-2 rounded-[6px] border cursor-pointer transition-colors',
                 active ? 'border-brand-500/60 bg-brand-600/10' : 'border-surface-700 hover:bg-[var(--rowhover)]',
               )}
             >
@@ -245,7 +245,7 @@ function ResolveDealPicker({ candidates, contactName, busy, onPick, onCancel }: 
               disabled={busy}
               onClick={() => onPick(deal.id)}
               data-testid={`resolve-pick-${deal.id}`}
-              className="flex flex-col items-start gap-0.5 px-2.5 py-2 rounded-lg border border-surface-700 hover:bg-[var(--rowhover)] text-left transition-colors disabled:opacity-50"
+              className="flex flex-col items-start gap-0.5 px-2.5 py-2 rounded-[6px] border border-surface-700 hover:bg-[var(--rowhover)] text-left transition-colors disabled:opacity-50"
             >
               <span className="text-sm font-medium text-surface-200 truncate max-w-full">{deal.title}</span>
               <span className="text-[11px] text-surface-500 truncate max-w-full">
@@ -299,7 +299,7 @@ export function ResolveOutcomePopover({ open, mobile, target, candidates, onPick
         role="dialog"
         aria-modal="true"
         aria-label="Resolver com desfecho"
-        className="absolute right-0 top-full mt-1 w-[22rem] max-w-[calc(100vw-1rem)] p-4 overlay-surface overlay-vidro border rounded-xl z-50"
+        className="absolute right-0 top-full mt-1 w-[22rem] max-w-[calc(100vw-1rem)] p-4 overlay-surface overlay-vidro border rounded-[10px] z-50"
       >
         {body}
       </div>

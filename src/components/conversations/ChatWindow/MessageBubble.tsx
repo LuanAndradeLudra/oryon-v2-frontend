@@ -55,10 +55,10 @@ interface MessageBubbleProps {
 }
 
 /** Avatar/tile de 24px na 1ª bolha de cada grupo (CONV-CHAT-16/21). Inbound =
- *  avatar do contato; outbound = tile "IA" (accent-soft) ou avatar do
- *  operador — mesma classificação de `senderKey` (MessageList) e
+ *  avatar do contato; outbound = SEMPRE o círculo teal da casa (operador,
+ *  IA, campanha, regra — a cor diz "nosso lado", o ícone diz quem; PO 07/10) — mesma classificação de `senderKey` (MessageList) e
  *  `SenderInlineIcon`/`senderLabelOf` abaixo, pra nunca discordarem sobre
- *  QUEM é o remetente. Campanha/regra automática caem no tile neutro. */
+ *  QUEM é o remetente. */
 function SenderAvatar({ message, contact }: { message: Message; contact: { displayName: string; profilePicUrl?: string | null } }) {
   if (message.direction === 'inbound') {
     return <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl ?? undefined} size="xs" />
@@ -66,8 +66,8 @@ function SenderAvatar({ message, contact }: { message: Message; contact: { displ
   if (message.senderKind === 'campaign' || message.senderKind === 'rule') {
     const Icon = message.senderKind === 'campaign' ? Megaphone : Workflow
     return (
-      <div className="w-6 h-6 rounded-xs bg-surface-800 border border-surface-700 text-surface-400 flex items-center justify-center flex-shrink-0">
-        <Icon className="w-3.5 h-3.5" />
+      <div className="w-6 h-6 rounded-full avatar-operador flex items-center justify-center flex-shrink-0">
+        <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
       </div>
     )
   }
@@ -78,7 +78,7 @@ function SenderAvatar({ message, contact }: { message: Message; contact: { displ
   return (
     // Mesmo gradiente teal do operador (`.avatar-operador`): IA e gente da
     // casa compartilham a identidade; o contato fica monocromático.
-    <div className="w-6 h-6 rounded-[30%] avatar-operador flex items-center justify-center flex-shrink-0">
+    <div className="w-6 h-6 rounded-full avatar-operador flex items-center justify-center flex-shrink-0">
       <Bot className="w-3.5 h-3.5" strokeWidth={1.75} />
     </div>
   )
@@ -416,7 +416,7 @@ function MediaContent({
           alt={message.mediaCaption || 'Imagem'}
           loading="lazy"
           decoding="async"
-          className="rounded-lg max-w-[280px] max-h-[320px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+          className="rounded-[10px] max-w-[280px] max-h-[320px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
           onError={() => setImageError(true)}
           onClick={() => openViewer(message)}
         />
@@ -447,7 +447,7 @@ function MediaContent({
             <div className="flex items-center gap-2 mb-1">
               <Mic className="w-4 h-4 opacity-70" />
               <span className="text-xs font-medium">Áudio</span>
-              <span className="text-[10px] opacity-60 tabular-nums ml-auto">
+              <span className="text-[11px] opacity-60 tabular-nums ml-auto">
                 {formatAudioTime(isPlaying || audioCurrentTime > 0 ? audioCurrentTime : audioDuration)}
                 {audioDuration !== null && (
                   <>
@@ -501,7 +501,7 @@ function MediaContent({
             the browser paints the whole thing in a single reflow. */}
         {hasTranscription && showTranscription && (
           <div className="mt-2 pt-2 border-t border-current/15">
-            <p className="text-[10px] uppercase tracking-wide opacity-50 mb-1 font-medium">
+            <p className="text-2xs opacity-50 mb-1 font-medium">
               Transcrição automática
             </p>
             <p className="text-sm opacity-90 leading-relaxed italic">
@@ -538,7 +538,7 @@ function MediaContent({
         <video
           src={authMediaSrc}
           controls
-          className="rounded-lg max-w-[280px] max-h-[320px]"
+          className="rounded-[10px] max-w-[280px] max-h-[320px]"
           preload="metadata"
         >
           Seu navegador não suporta o elemento de vídeo.
@@ -558,7 +558,7 @@ function MediaContent({
           alt="Figurinha"
           loading="lazy"
           decoding="async"
-          className="rounded-lg max-w-[150px] max-h-[150px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+          className="rounded-[10px] max-w-[150px] max-h-[150px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
           onError={() => setImageError(true)}
           onClick={() => openViewer(message)}
         />
@@ -839,7 +839,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                 setShowTranscription(true)
               }}
               className={cn(
-                'inline-flex items-center gap-1 text-[10px] font-medium transition-opacity',
+                'inline-flex items-center gap-1 text-[11px] font-medium transition-opacity',
                 isOutbound ? 'text-bubble-out-time hover:opacity-100 opacity-80' : 'text-surface-400 hover:text-surface-200',
               )}
             >
@@ -855,7 +855,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               rodapé da bolha (PO, 23/09): o avatar em gradiente na 1ª bolha
               da sequência já diz quem enviou; dentro da bolha era ruído. */}
           <div className="flex items-center gap-1 ml-auto">
-            <span className={cn('text-[10.5px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-500')}>
+            <span className={cn('text-[11px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-500')}>
               {timeStr}
             </span>
             {isOutbound && <StatusIcon status={message.status} />}
@@ -864,7 +864,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
 
         {/* Failed indicator */}
         {message.status === 'failed' && (
-          <p className="text-[10px] text-danger mt-1" title={failureReason(message) ?? undefined}>
+          <p className="text-[11px] text-danger mt-1" title={failureReason(message) ?? undefined}>
             Falha no envio{failureReason(message) ? `: ${failureReason(message)}` : ''}
           </p>
         )}
@@ -903,7 +903,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                   which would collapse around this absolutely-positioned button). */}
               <span
                 role="tooltip"
-                className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-max max-w-[220px] px-2.5 py-1.5 rounded-lg bg-surface-800 text-surface-100 text-[11px] leading-snug text-center shadow-lg ring-1 ring-surface-700 opacity-0 translate-y-1 transition-all duration-150 group-hover/anom:opacity-100 group-hover/anom:translate-y-0"
+                className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-max max-w-[220px] px-2.5 py-1.5 rounded-[10px] bg-surface-800 text-surface-100 text-[11px] leading-snug text-center shadow-lg ring-1 ring-surface-700 opacity-0 translate-y-1 transition-all duration-150 group-hover/anom:opacity-100 group-hover/anom:translate-y-0"
               >
                 {anomalyReviewed ? reviewedLabel(anomalyReviewedAt, message.anomaly.reviewedBy) : guardReasonLabel(message.anomaly)}
               </span>

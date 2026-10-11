@@ -49,9 +49,6 @@ export interface TotaisDaFila {
   esperando: number
   /** Pendentes sem dono = a aba Fila da inbox. */
   semDono: number
-  /** O mesmo "esperando", só nas linhas com IA (a IA passou para a equipe). */
-  iaPassou: number
-  iaPassouSemDono: number
 }
 
 /**
@@ -180,19 +177,12 @@ export function useDashboardAgora(): DashboardAgora {
       // que ninguém respondeu ainda.
       const lista = [...semDono.lista]
       for (const c of aguardando.lista) if (c.assignedUser && !lista.some((x) => x.id === c.id)) lista.push(c)
-      // "IA passou": o mesmo recorte, só nas linhas com IA ligada.
-      const linhasLidas = Array.isArray(numeros.data) ? numeros.data : []
-      const idsComIA = [...calcularLinhasComIA(linhasLidas, Array.isArray(ias) ? ias : null)]
-      const porLinha = await Promise.all(idsComIA.map((id) => contarEsperando({ whatsappNumberId: id })))
-      if (!aindaAtual()) return
       // Publica o retrato inteiro de uma vez, somente depois de todas as leituras.
       setConversas(lista)
       setFilaTruncada(semDono.truncada || aguardando.truncada)
       setTotais({
         esperando: totalGeral.esperando,
         semDono: totalGeral.semDono,
-        iaPassou: porLinha.reduce((n, x) => n + x.esperando, 0),
-        iaPassouSemDono: porLinha.reduce((n, x) => n + x.semDono, 0),
       })
       // Falhou só esta leitura: mantém a anterior em vez de dizer "nenhuma".
       if (revisar) {

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useContext } from 'react'
 import { cn } from '@/lib/utils'
 import { SettingsBreadcrumbCtx } from './settingsBreadcrumb'
+import { emFrase } from '@/lib/emFrase'
 
 interface SectionHeaderProps {
   title: string
@@ -37,9 +38,9 @@ export function SectionHeader({ title, description, action, className, breadcrum
       )}
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 className={cn('text-xl font-display font-bold text-surface-50', breadcrumb?.length && 'mt-2')} style={{ letterSpacing: '-.015em' }}>{title}</h2>
+          <h2 className={cn('text-xl font-display font-semibold text-surface-50', breadcrumb?.length && 'mt-2')} style={{ letterSpacing: '-.015em' }}>{emFrase(title)}</h2>
           {description && (
-            <p className="mt-1 text-[13px] leading-[1.55] text-surface-400 max-w-[620px]">{description}</p>
+            <p className="mt-1 text-sm leading-[1.55] text-surface-400 max-w-[620px]">{description}</p>
           )}
         </div>
         {action && <div className="flex-shrink-0 pb-0.5">{action}</div>}

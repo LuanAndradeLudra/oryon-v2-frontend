@@ -52,7 +52,7 @@ export function ConversationSearch({ value, onChange, className }: ConversationS
         onChange={(e) => setDraft(e.target.value)}
         placeholder="Buscar conversas ou mensagens"
         className={cn(
-          'w-full h-7 pl-8 pr-8 rounded-sm text-xs',
+          'w-full h-7 pl-8 pr-8 rounded-[6px] text-xs',
           'bg-surface-800 border border-[var(--bd2)] text-surface-100',
           'placeholder:text-surface-500',
           'focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30',

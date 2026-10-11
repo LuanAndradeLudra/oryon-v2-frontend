@@ -117,7 +117,7 @@ export function TemplateSendModal({ template, contactId, recipientName, onClose,
       {template && (() => {
         const cat = TEMPLATE_CATEGORY_META[template.category]
         const btnCount = template.buttons?.length ?? 0
-        const chip = 'inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700'
+        const chip = 'inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700'
         return (
           <div className="space-y-4">
             {recipientName && (
@@ -148,7 +148,7 @@ export function TemplateSendModal({ template, contactId, recipientName, onClose,
                     preenchido. Antes era só um aviso e o template ia sem
                     parâmetros ({{1}} cru / rejeição da Meta). */}
                 {slots.length > 0 ? (
-                  <div className="rounded-lg border border-surface-700 bg-[var(--sf2)] p-3 space-y-2.5">
+                  <div className="rounded-[10px] border border-surface-700 bg-[var(--sf2)] p-3 space-y-2.5">
                     <p className="text-[11px] font-semibold text-surface-200">
                       Preencha {slots.length === 1 ? 'a variável' : `as ${slots.length} variáveis`} do template
                     </p>
@@ -187,8 +187,8 @@ export function TemplateSendModal({ template, contactId, recipientName, onClose,
                   coluna `auto` de um grid de 2, com folga pro bubble de 296px
                   do TemplatePreview em tamanho cheio. */}
               <div className="order-1 md:order-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Pré-visualização</p>
-                <div className="rounded-lg bg-surface-950 border border-surface-700 p-4 flex items-center justify-center">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Pré-visualização</p>
+                <div className="rounded-[10px] bg-surface-950 border border-surface-700 p-4 flex items-center justify-center">
                   <TemplatePreview template={template} variables={vars} />
                 </div>
               </div>

@@ -67,7 +67,7 @@ function Chip({
 }) {
   if (tone === 'muted') {
     return (
-      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-medium ring-1 bg-surface-800 text-surface-400 ring-surface-700">
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] uppercase tracking-wide font-medium ring-1 bg-surface-800 text-surface-400 ring-surface-700">
         {icon}
         {children}
       </span>
@@ -75,7 +75,7 @@ function Chip({
   }
   return (
     <span
-      className="color-chip inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-medium border"
+      className="color-chip inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] uppercase tracking-wide font-medium border"
       style={{ ['--chip']: TONE_CHIP[tone] } as React.CSSProperties}
     >
       {icon}

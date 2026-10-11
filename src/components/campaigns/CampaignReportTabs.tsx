@@ -70,7 +70,7 @@ export function RecipientsTab({ campaignId, failures }: { campaignId: string; fa
             onClick={() => setFiltro(f.value)}
             aria-pressed={filtro === f.value}
             className={cn(
-              'px-2.5 py-1 rounded-sm text-2xs font-medium border transition-colors',
+              'px-2.5 py-1 rounded-[6px] text-2xs font-medium border transition-colors',
               filtro === f.value ? 'bg-surface-800 border-surface-600 text-surface-100' : 'border-surface-700 text-surface-400 hover:text-surface-200',
             )}
           >
@@ -93,7 +93,7 @@ export function RecipientsTab({ campaignId, failures }: { campaignId: string; fa
       ) : rows.length === 0 ? (
         <EmptyState icon={Users} title="Nenhum destinatário neste filtro" />
       ) : (
-        <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
+        <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
           {rows.map((r) => 'reason' in r ? (
             <div key={r.contactId} className="flex items-center gap-3 px-3 py-2">
               <p className="flex-1 min-w-0 text-xs text-surface-200 truncate">{r.contactName ?? '—'}</p>
@@ -106,14 +106,14 @@ export function RecipientsTab({ campaignId, failures }: { campaignId: string; fa
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-surface-200 truncate">{r.contactName ?? '—'}</p>
                 {r.status === 'failed' && r.errorCode && (
-                  <p className="text-3xs text-surface-500 truncate" title={`Código ${r.errorCode}`}>{motivo.get(r.errorCode) ?? `Código ${r.errorCode}`}</p>
+                  <p className="text-2xs text-surface-500 truncate" title={`Código ${r.errorCode}`}>{motivo.get(r.errorCode) ?? `Código ${r.errorCode}`}</p>
                 )}
               </div>
               {/* R3: resposta prova entrega — em `sent` com resposta, "Respondeu". */}
               {r.status === 'sent' && (r.repliedAt || r.replyText)
                 ? <span className={cn('text-2xs font-semibold flex-shrink-0', STATUS_COLOR.delivered)}>Respondeu</span>
                 : <span className={cn('text-2xs font-semibold flex-shrink-0', STATUS_COLOR[r.status])}>{STATUS_LABEL[r.status]}</span>}
-              <span className="text-3xs text-surface-500 w-24 text-right flex-shrink-0">
+              <span className="text-2xs text-surface-500 w-24 text-right flex-shrink-0">
                 {fmt(r.readAt ?? r.deliveredAt ?? r.failedAt ?? r.sentAt)}
               </span>
             </div>
@@ -125,9 +125,9 @@ export function RecipientsTab({ campaignId, failures }: { campaignId: string; fa
         <div className="flex items-center justify-between text-2xs text-surface-400">
           <span>{total} destinatários</span>
           <div className="flex items-center gap-2">
-            <button type="button" disabled={pagina <= 1} onClick={() => setPagina(pagina - 1)} className="px-2 py-1 rounded-sm border border-surface-700 disabled:opacity-40">Anterior</button>
+            <button type="button" disabled={pagina <= 1} onClick={() => setPagina(pagina - 1)} className="px-2 py-1 rounded-[6px] border border-surface-700 disabled:opacity-40">Anterior</button>
             <span>{pagina} de {paginas}</span>
-            <button type="button" disabled={pagina >= paginas} onClick={() => setPagina(pagina + 1)} className="px-2 py-1 rounded-sm border border-surface-700 disabled:opacity-40">Próxima</button>
+            <button type="button" disabled={pagina >= paginas} onClick={() => setPagina(pagina + 1)} className="px-2 py-1 rounded-[6px] border border-surface-700 disabled:opacity-40">Próxima</button>
           </div>
         </div>
       )}
@@ -142,12 +142,12 @@ export function RepliesTab({ replies }: { replies: CampaignReply[] }) {
   return (
     <div className="space-y-2">
       {replies.length >= 100 && <p className="text-2xs text-surface-500">Mostrando as 100 respostas mais recentes.</p>}
-      <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
+      <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
         {replies.map((r, i) => (
           <div key={`${r.contactId}-${i}`} className="px-3 py-2">
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-medium text-surface-200 truncate">{r.name ?? '—'}</p>
-              <span className="text-3xs text-surface-500 flex-shrink-0">{fmt(r.at)}</span>
+              <span className="text-2xs text-surface-500 flex-shrink-0">{fmt(r.at)}</span>
             </div>
             {r.text && <p className="text-2xs text-surface-400 mt-0.5 line-clamp-2">{r.text}</p>}
           </div>

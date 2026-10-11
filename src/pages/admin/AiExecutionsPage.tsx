@@ -144,7 +144,7 @@ export function AiExecutionsPage() {
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="px-6 py-4 border-b border-r border-surface-700"><div className="grid grid-cols-2 md:grid-cols-5 gap-px rounded-lg border border-surface-700 bg-surface-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-r border-surface-700"><div className="grid grid-cols-2 md:grid-cols-5 gap-px rounded-[10px] border border-surface-700 bg-surface-700 overflow-hidden">
           <KpiCard label="Execuções" value={totals.exec.toLocaleString('pt-BR')} />
           <KpiCard label="Custo total" value={`$${totals.cost.toFixed(4)}`} />
           <KpiCard label="Input tokens" value={fmtCompact(totals.input)} />
@@ -183,15 +183,15 @@ export function AiExecutionsPage() {
               <table className="w-full text-xs">
                 <thead className="text-surface-500 text-left border-b border-surface-700">
                   <tr>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Quando</th>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Status</th>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Agente</th>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Tenant</th>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Turns</th>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Tools</th>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Tokens (in/out)</th>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Custo</th>
-                    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-right">Latência</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider">Quando</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider">Agente</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider">Tenant</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-right">Turns</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-right">Tools</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-right">Tokens (in/out)</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-right">Custo</th>
+                    <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-right">Latência</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-700">
@@ -208,7 +208,7 @@ export function AiExecutionsPage() {
                         </td>
                         <td className="px-3 py-2">
                           <span
-                            className="color-chip-soft border px-1.5 py-px rounded-xs text-[11px] font-medium"
+                            className="color-chip-soft border px-1.5 py-px rounded-[6px] text-[11px] font-medium"
                             style={{ ['--chip']: statusChip } as React.CSSProperties}
                           >
                             {r.final_status}

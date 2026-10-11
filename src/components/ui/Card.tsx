@@ -23,7 +23,7 @@ export function Card({ children, className, elevated, glow, noPadding, onClick }
     <div
       onClick={onClick}
       className={cn(
-        'bg-surface-800 border rounded-lg',
+        'bg-surface-800 border rounded-[10px]',
         elevated ? 'border-[var(--bd2)]' : 'border-surface-700',
         !noPadding && 'p-3.5',
         glow && 'shadow-[0_6px_20px_rgba(20,184,166,.35)] border-brand-700/50',

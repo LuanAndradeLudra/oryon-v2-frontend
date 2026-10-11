@@ -30,11 +30,11 @@ export function SeletorDeSecaoMovel({ agentId, ativa, resumo, testeAberto }: {
           onClick={() => setAberto(true)}
           aria-haspopup="dialog"
           aria-expanded={aberto}
-          className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-sm px-2 text-left hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-[6px] px-2 text-left hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           <Icone className="h-4 w-4 flex-shrink-0 text-accent-dark" strokeWidth={1.8} aria-hidden />
           <span className="min-w-0">
-            <span className="block text-3xs font-bold uppercase tracking-[.14em] text-surface-500">{grupo.rotulo}</span>
+            <span className="block text-2xs font-semibold uppercase tracking-[.14em] text-surface-500">{grupo.rotulo}</span>
             <span className="block truncate text-sm font-semibold text-surface-100">{s.rotulo}</span>
           </span>
           <ChevronDown className="h-4 w-4 flex-shrink-0 text-surface-400" aria-hidden />

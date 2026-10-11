@@ -138,7 +138,7 @@ export function NotificationsPage() {
               aria-label={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
               aria-pressed={showArchived}
               className={cn(
-                'w-11 h-11 rounded-lg flex items-center justify-center transition-colors flex-shrink-0',
+                'w-11 h-11 rounded-[6px] flex items-center justify-center transition-colors flex-shrink-0',
                 showArchived ? 'text-surface-100 bg-[var(--sf2)]' : 'text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)]',
               )}
             >
@@ -149,7 +149,7 @@ export function NotificationsPage() {
               onClick={() => navigate(comVolta('/settings/notifications', '/notifications', 'Voltar para as notificações'))}
               title="Preferências de notificação"
               aria-label="Preferências de notificação"
-              className="w-11 h-11 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
+              className="w-11 h-11 rounded-[6px] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
             >
               <Settings2 className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </button>

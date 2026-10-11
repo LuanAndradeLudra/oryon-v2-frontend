@@ -23,6 +23,8 @@ const STAGES = [
 describe('DealsBoard — empty state do funil (F7)', () => {
   it('renderiza as 5 colunas E o empty state com o CTA quando não há cards', () => {
     const onAddContact = vi.fn()
+    // Ganho/Perdido nascem recolhidos (SCRUM-1253) — abertos aqui para ler os rótulos.
+    localStorage.setItem('funil-fechadas-abertas:p', JSON.stringify(['s4', 's5']))
     render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} onAddContact={onAddContact} itemNoun="registro" />)
     for (const st of STAGES) expect(screen.getByText(st.label)).toBeInTheDocument()
     const empty = screen.getByTestId('deals-board-empty')

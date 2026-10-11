@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useSyncExternalStore } from 'react'
 import { api } from '@/services/api'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -39,37 +39,152 @@ export const DEFAULT_KB: KnowledgeBase = {
 
 // ─── API helpers ───────────────────────────────────────────────────────────────
 
-function getToken(): string {
-  try {
-    const raw = localStorage.getItem('oryon:session')
-    if (!raw) return ''
-    return (JSON.parse(raw) as { token?: string }).token ?? ''
-  } catch { return '' }
-}
-
 // Onda 3: passou a usar o cliente compartilhado. Com `fetch` cru, estas duas
 // chamadas ficavam de fora do retry, da auditoria de escrita e — em dev no
 // app nativo — da base URL correta (`VITE_API_URL_NATIVE_DEV`).
+// Revisão SCRUM-1253 (11/10): a leitura NÃO transforma erro em base vazia —
+// quem grava a base inteira (PATCH) a partir do que leu apagaria campos e
+// documentos no servidor.
 async function fetchKB(): Promise<KnowledgeBase> {
-  try {
-    const { data } = await api.get<Partial<KnowledgeBase>>('/context/knowledge-base')
-    return { ...DEFAULT_KB, ...data }
-  } catch {
-    // Base de conhecimento é opcional: falha vira o default, nunca erro na tela.
-    return { ...DEFAULT_KB }
+  const { data } = await api.get<Partial<KnowledgeBase>>('/context/knowledge-base')
+  return { ...DEFAULT_KB, ...(data ?? {}) }
+}
+
+/** Texto curto para o erro de leitura/gravação da base. */
+export function mensagemDeErroDaBase(err: unknown, acao: 'carregar' | 'salvar'): string {
+  const status = (err as { response?: { status?: number } })?.response?.status
+  if (status === 401 || status === 403) {
+    return acao === 'salvar'
+      ? 'Seu papel não pode alterar a base do Copilot. Peça a um administrador.'
+      : 'Seu papel não pode ver a base do Copilot.'
   }
+  return acao === 'salvar'
+    ? 'Não foi possível salvar a base do Copilot. Tente de novo.'
+    : 'Não foi possível carregar a base do Copilot.'
 }
 
-async function persistKB(kb: KnowledgeBase): Promise<void> {
-  await api.patch('/context/knowledge-base', kb).catch(() => {})
+// ─── Fonte única da base (por empresa) ─────────────────────────────────────────
+// Revisão SCRUM-1253 (11/10): antes cada componente tinha a SUA cópia
+// (Contexto da IA, itens antigos, Copilot) e cada PATCH mandava a cópia
+// inteira — excluir um documento numa e salvar as instruções na outra fazia o
+// documento voltar. Agora todas as telas leem e gravam este mesmo estado, e
+// nada é gravado sem a base ter sido carregada com sucesso.
+// Quem usa a base na conversa é o servidor (o turno do Copilot lê instruções,
+// campos e documentos) — o navegador não manda a base junto.
+
+export type EstadoDaCarga = 'carregando' | 'pronta' | 'erro'
+
+interface Loja {
+  tenantId: string | null
+  carga: EstadoDaCarga
+  kb: KnowledgeBase
+  erroCarga: string | null
+  carregadaEm: number
 }
 
-// ─── Exported load function (sync with cache) ─────────────────────────────────
+const LOJA_VAZIA: Loja = { tenantId: null, carga: 'carregando', kb: DEFAULT_KB, erroCarga: null, carregadaEm: 0 }
 
-let cachedKB: KnowledgeBase | null = null
+let loja: Loja = LOJA_VAZIA
+let leituraEmCurso: Promise<void> | null = null
+// Gravações em fila: cada PATCH sai depois do anterior, sempre com o estado
+// mais recente — nunca dois PATCH concorrentes com cópias diferentes.
+let filaDeGravacao: Promise<unknown> = Promise.resolve()
+const ouvintes = new Set<() => void>()
 
-export function loadKB(_tenantId: string): KnowledgeBase {
-  return cachedKB ?? { ...DEFAULT_KB }
+function definir(parcial: Partial<Loja>) {
+  loja = { ...loja, ...parcial }
+  ouvintes.forEach((f) => f())
+}
+
+function assinar(f: () => void) {
+  ouvintes.add(f)
+  return () => { ouvintes.delete(f) }
+}
+
+function lerLoja() { return loja }
+
+/** Carrega (ou recarrega, com `forcar`) a base da empresa. Nunca lança. */
+export function carregarBase(tenantId: string, forcar = false): Promise<void> {
+  if (loja.tenantId !== tenantId) {
+    definir({ tenantId, carga: 'carregando', kb: DEFAULT_KB, erroCarga: null, carregadaEm: 0 })
+    leituraEmCurso = null
+  } else if (!forcar && loja.carga === 'pronta') {
+    return Promise.resolve()
+  }
+  if (leituraEmCurso) return leituraEmCurso
+  // Recarga de uma base já pronta não esconde o que está na tela.
+  if (loja.carga === 'erro') definir({ carga: 'carregando', erroCarga: null })
+  const p: Promise<void> = fetchKB()
+    .then((kb) => {
+      if (loja.tenantId !== tenantId) return
+      definir({ kb, carga: 'pronta', erroCarga: null, carregadaEm: Date.now() })
+    })
+    .catch((err) => {
+      if (loja.tenantId !== tenantId) return
+      // Falha numa recarga mantém a base que já estava pronta.
+      if (loja.carga === 'pronta') return
+      definir({ carga: 'erro', erroCarga: mensagemDeErroDaBase(err, 'carregar') })
+    })
+    .finally(() => { if (leituraEmCurso === p) leituraEmCurso = null })
+  leituraEmCurso = p
+  return p
+}
+
+export type ResultadoDaGravacao = { ok: true } | { ok: false; erro: string }
+
+/**
+ * Aplica `updater` sobre a base carregada e grava (PATCH) esperando a
+ * resposta. Recusa sem base carregada com sucesso. Em falha, desfaz.
+ *
+ * PATCH parcial (PO 11/10): manda só o campo alterado (`{ instructions }`,
+ * `{ companyFields }` ou `{ documents }`) — o backend mantém o que não veio.
+ * O valor enviado sai sempre da fonte única já carregada, então mesmo um
+ * backend antigo que trate o corpo como substituição não perde os itens
+ * daquele campo.
+ */
+function gravar(
+  tenantId: string | undefined,
+  campo: keyof KnowledgeBase,
+  updater: (prev: KnowledgeBase) => KnowledgeBase,
+): Promise<ResultadoDaGravacao> {
+  if (!tenantId || loja.tenantId !== tenantId) {
+    return Promise.resolve({ ok: false, erro: 'A base do Copilot não carregou.' })
+  }
+  if (loja.carga !== 'pronta') {
+    return Promise.resolve({
+      ok: false,
+      erro: loja.carga === 'erro'
+        ? 'A base do Copilot não carregou — tente carregar de novo antes de salvar.'
+        : 'Aguarde a base do Copilot carregar.',
+    })
+  }
+  const anterior = loja.kb
+  const proxima = updater(anterior)
+  if (proxima === anterior) return Promise.resolve({ ok: true })
+  definir({ kb: proxima })
+  const execucao = filaDeGravacao.then(async (): Promise<ResultadoDaGravacao> => {
+    try {
+      // Sempre o estado mais recente — inclui o que outras gravações já aplicaram.
+      await api.patch('/context/knowledge-base', { [campo]: loja.kb[campo] })
+      return { ok: true }
+    } catch (err) {
+      // Desfaz esta alteração se nada mudou depois; senão a fonte da verdade
+      // (o servidor) decide.
+      if (loja.kb === proxima) definir({ kb: anterior })
+      else void carregarBase(tenantId, true)
+      return { ok: false, erro: mensagemDeErroDaBase(err, 'salvar') }
+    }
+  })
+  filaDeGravacao = execucao.catch(() => undefined)
+  return execucao
+}
+
+/** Só para testes: zera a fonte única. */
+export function __zerarBaseParaTestes() {
+  loja = LOJA_VAZIA
+  leituraEmCurso = null
+  filaDeGravacao = Promise.resolve()
+  ouvintes.forEach((f) => f())
 }
 
 // ─── Size helpers ──────────────────────────────────────────────────────────────
@@ -152,42 +267,38 @@ export async function fileToKBDocument(
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
+/**
+ * Lê e grava a base do Copilot. Todas as instâncias compartilham o MESMO
+ * estado (fonte única acima) — pode ser usado em quantas telas for preciso.
+ */
 export function useKnowledgeBase(tenantId: string | undefined) {
-  const [kb, setKB] = useState<KnowledgeBase>({ ...DEFAULT_KB })
-  const [loading, setLoading] = useState(true)
+  const estado = useSyncExternalStore(assinar, lerLoja, lerLoja)
+  const daEmpresa = !!tenantId && estado.tenantId === tenantId
+  const kb = daEmpresa ? estado.kb : DEFAULT_KB
+  const carga: EstadoDaCarga = !tenantId ? 'erro' : daEmpresa ? estado.carga : 'carregando'
+  const [erroAoSalvar, setErroAoSalvar] = useState<string | null>(null)
 
-  // Load from backend on mount
   useEffect(() => {
-    if (!tenantId) { setKB({ ...DEFAULT_KB }); setLoading(false); return }
-    setLoading(true)
-    fetchKB().then((data) => {
-      setKB(data)
-      cachedKB = data
-      setLoading(false)
-    })
+    if (tenantId) void carregarBase(tenantId)
   }, [tenantId])
 
   const mutate = useCallback(
-    (updater: (prev: KnowledgeBase) => KnowledgeBase) => {
-      if (!tenantId) return
-      setKB((prev) => {
-        const next = updater(prev)
-        cachedKB = next
-        persistKB(next)
-        return next
-      })
+    async (campo: keyof KnowledgeBase, updater: (prev: KnowledgeBase) => KnowledgeBase): Promise<ResultadoDaGravacao> => {
+      const r = await gravar(tenantId, campo, updater)
+      setErroAoSalvar(r.ok ? null : r.erro)
+      return r
     },
     [tenantId],
   )
 
   const setInstructions = useCallback(
-    (text: string) => mutate((prev) => ({ ...prev, instructions: text })),
+    (text: string) => mutate('instructions', (prev) => (prev.instructions === text ? prev : { ...prev, instructions: text })),
     [mutate],
   )
 
   const upsertCompanyField = useCallback(
     (field: KBCompanyField) =>
-      mutate((prev) => {
+      mutate('companyFields', (prev) => {
         const existing = prev.companyFields.findIndex((f) => f.id === field.id)
         const fields =
           existing >= 0
@@ -200,52 +311,71 @@ export function useKnowledgeBase(tenantId: string | undefined) {
 
   const deleteCompanyField = useCallback(
     (id: string) =>
-      mutate((prev) => ({
+      mutate('companyFields', (prev) => ({
         ...prev,
         companyFields: prev.companyFields.filter((f) => f.id !== id),
       })),
     [mutate],
   )
 
+  /** `false` quando passa do limite (documentos/tamanho) ou a base não carregou. */
   const addDocument = useCallback(
     (doc: Omit<KBDocument, 'id' | 'createdAt'>): boolean => {
-      if (!tenantId) return false
-      let added = false
-      mutate((prev) => {
-        if (prev.documents.length >= MAX_DOCS) return prev
-        if (kbTotalSize(prev) + doc.size > MAX_TOTAL_SIZE) return prev
-        added = true
-        const newDoc: KBDocument = {
-          ...doc,
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-        }
-        return { ...prev, documents: [...prev.documents, newDoc] }
-      })
-      return added
+      if (!tenantId || loja.tenantId !== tenantId || loja.carga !== 'pronta') return false
+      const prev = loja.kb
+      if (prev.documents.length >= MAX_DOCS) return false
+      if (kbTotalSize(prev) + doc.size > MAX_TOTAL_SIZE) return false
+      const newDoc: KBDocument = { ...doc, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
+      void mutate('documents', (p) => ({ ...p, documents: [...p.documents, newDoc] }))
+      return true
     },
     [tenantId, mutate],
   )
 
+  /** Edita um documento numa gravação só (antes: excluir + adicionar = 2 PATCH). */
+  const replaceDocument = useCallback(
+    (id: string, doc: Omit<KBDocument, 'id' | 'createdAt'>) =>
+      mutate('documents', (prev) => ({
+        ...prev,
+        documents: prev.documents.map((d) => (d.id === id ? { ...d, ...doc } : d)),
+      })),
+    [mutate],
+  )
+
   const deleteDocument = useCallback(
     (id: string) =>
-      mutate((prev) => ({
+      mutate('documents', (prev) => ({
         ...prev,
         documents: prev.documents.filter((d) => d.id !== id),
       })),
     [mutate],
   )
 
+  const recarregar = useCallback(() => {
+    if (tenantId) void carregarBase(tenantId, true)
+  }, [tenantId])
+
+  const limparErroAoSalvar = useCallback(() => setErroAoSalvar(null), [])
+
   return {
     kb,
-    loading,
+    /** `true` enquanto a base não carregou. */
+    loading: carga === 'carregando',
+    carga,
+    erroCarga: daEmpresa ? estado.erroCarga : null,
+    erroAoSalvar,
+    limparErroAoSalvar,
+    recarregar,
     setInstructions,
     upsertCompanyField,
     deleteCompanyField,
     addDocument,
+    replaceDocument,
     deleteDocument,
     totalSize: kbTotalSize(kb),
     usagePercent: kbUsagePercent(kb),
     hasContent: kbHasContent(kb),
   }
 }
+
+export type BaseDoCopilot = ReturnType<typeof useKnowledgeBase>

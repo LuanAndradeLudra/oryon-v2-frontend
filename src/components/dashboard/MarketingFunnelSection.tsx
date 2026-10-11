@@ -45,7 +45,7 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const convRate = impressions > 0 ? ((customers / impressions) * 100).toFixed(3) : '0'
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-surface-100">Funil de Conversão</p>
@@ -53,7 +53,7 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
         </div>
         <div className="text-right">
           <p className="text-xs text-surface-500">Impressão → Cliente</p>
-          <p className="text-sm font-bold text-surface-200">{convRate}%</p>
+          <p className="text-sm font-semibold text-surface-200">{convRate}%</p>
         </div>
       </div>
 
@@ -66,7 +66,7 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
             : null
           return (
             <div key={stage.label} className="flex-1 flex flex-col items-center gap-1.5">
-              <p className="text-xs font-bold text-surface-100 tabular-nums">
+              <p className="text-xs font-semibold text-surface-100 tabular-nums">
                 {stage.value.toLocaleString('pt-BR')}
               </p>
               <div className="w-full flex justify-center">
@@ -80,9 +80,9 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
                   }}
                 />
               </div>
-              <p className="text-[10px] text-surface-400 text-center leading-tight">{stage.label}</p>
+              <p className="text-2xs text-surface-400 text-center leading-tight">{stage.label}</p>
               {nextConv && (
-                <div className="flex items-center gap-0.5 text-[10px] text-surface-500">
+                <div className="flex items-center gap-0.5 text-2xs text-surface-500">
                   <ArrowRight className="w-2.5 h-2.5" />
                   <span>{nextConv}%</span>
                 </div>
@@ -104,9 +104,9 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
               if (!active || !payload?.length) return null
               const p = payload[0]
               return (
-                <div className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs shadow-lg">
+                <div className="bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2 text-xs shadow-lg">
                   <p className="text-surface-300 font-medium">{p.payload.label}</p>
-                  <p className="text-surface-100 font-bold tabular-nums">{Number(p.value).toLocaleString('pt-BR')}</p>
+                  <p className="text-surface-100 font-semibold tabular-nums">{Number(p.value).toLocaleString('pt-BR')}</p>
                 </div>
               )
             }}
@@ -162,7 +162,7 @@ function AdCampaignsTable({
   ]
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden">
       <div className="px-5 py-4 border-b border-surface-700">
         <p className="text-sm font-semibold text-surface-100">Campanhas Pagas</p>
         <p className="text-xs text-surface-400 mt-0.5">Performance com conversão no CRM</p>
@@ -197,7 +197,7 @@ function AdCampaignsTable({
                 >
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                      <span className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded-[6px]"
                         style={{ backgroundColor: C.meta + '1a', color: C.meta }}>
                         Meta Ads
                       </span>
@@ -239,7 +239,7 @@ function AdCampaignsTable({
                       <div className="flex items-center gap-3 flex-wrap">
                         {camp.funnelBreakdown.map((stage, i) => (
                           <div key={stage.stageKey} className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: stage.stageColor }} />
+                            <div className="w-2 h-2 rounded-[6px]" style={{ backgroundColor: stage.stageColor }} />
                             <span className="text-surface-400">{stage.stageLabel}:</span>
                             <span className="text-surface-200 font-semibold tabular-nums">{stage.count}</span>
                             {i < camp.funnelBreakdown.length - 1 && (
@@ -305,14 +305,14 @@ function TotalsStrip({ totals }: { totals: MarketingFunnelTotals }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {items.map((item) => (
-        <div key={item.label} className="bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+        <div key={item.label} className="bg-surface-800 border border-surface-700 rounded-[10px] px-4 py-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-[6px] flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: item.color + '1a', color: item.color }}>
             {item.icon}
           </div>
           <div>
-            <p className="text-[10px] text-surface-400 leading-tight">{item.label}</p>
-            <p className="text-base font-bold text-surface-100 tabular-nums">{item.value}</p>
+            <p className="text-2xs text-surface-400 leading-tight">{item.label}</p>
+            <p className="text-base font-semibold text-surface-100 tabular-nums">{item.value}</p>
           </div>
         </div>
       ))}
@@ -345,16 +345,16 @@ export function MarketingFunnelSection({ dateRange }: { dateRange: DateRange }) 
       <div className="space-y-4">
         {/* Section header */}
         <div>
-          <p className="text-sm font-bold text-surface-100">Funil de Marketing</p>
+          <p className="text-sm font-semibold text-surface-100">Funil de Marketing</p>
           <p className="text-xs text-surface-400 mt-0.5">Rastreamento de anúncios Meta Ads até a conversão no CRM</p>
         </div>
 
         {loading ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[1,2,3,4].map((i) => <div key={i} className="h-16 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />)}
+              {[1,2,3,4].map((i) => <div key={i} className="h-16 bg-surface-800 border border-surface-700 rounded-[10px] animate-pulse" />)}
             </div>
-            <div className="h-64 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
+            <div className="h-64 bg-surface-800 border border-surface-700 rounded-[10px] animate-pulse" />
           </div>
         ) : (
           <>

@@ -23,7 +23,7 @@ function Stat({ icon, label, value, sub }: { icon: React.ReactNode; label: strin
       <div className="min-w-0">
         <p className="text-[11px] text-surface-500 font-medium">{label}</p>
         <p className="text-sm text-surface-200 truncate">{value}</p>
-        {sub && <p className="text-[10px] text-surface-500 truncate">{sub}</p>}
+        {sub && <p className="text-[11px] text-surface-500 truncate">{sub}</p>}
       </div>
     </div>
   )
@@ -50,8 +50,6 @@ export function ContactInsightsCard({ contact }: Props) {
   }, [contact.id])
 
   const isNew = (contact.conversationCount ?? 0) <= 1
-  const daysSinceCreation = Math.floor((Date.now() - new Date(contact.createdAt).getTime()) / 86400000)
-
   const STATUS_LABELS: Record<string, string> = {
     open: 'Aberta',
     pending: 'Pendente',
@@ -60,7 +58,8 @@ export function ContactInsightsCard({ contact }: Props) {
   }
 
   const actions = (
-    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-surface-700 text-surface-400 bg-surface-800">
+    // SCRUM-1253 (PO, 07/10): é um estado, não um botão — texto neutro, sem pílula.
+    <span className="text-[11px] text-surface-400">
       {isNew ? (
         <span className="flex items-center gap-1"><UserPlus className="w-3 h-3" /> Novo contato</span>
       ) : (
@@ -97,7 +96,8 @@ export function ContactInsightsCard({ contact }: Props) {
           icon={<CalendarDays className="w-3.5 h-3.5" />}
           label="Primeiro contato"
           value={contact.firstContactedAt ? formatRelative(contact.firstContactedAt)! : formatRelative(contact.createdAt)!}
-          sub={daysSinceCreation === 0 ? 'Hoje' : `Há ${daysSinceCreation} dia${daysSinceCreation > 1 ? 's' : ''}`}
+          // SCRUM-1253 (PO, 07/10): a 2ª linha é a data exata (antes repetia "há N dias").
+          sub={formatAbsolute(contact.firstContactedAt ?? contact.createdAt)}
         />
 
         {/* Last seen */}

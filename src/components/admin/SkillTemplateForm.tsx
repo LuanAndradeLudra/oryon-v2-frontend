@@ -685,7 +685,7 @@ function Section({
     <section
       id={id}
       data-section={id}
-      className="bg-surface-800 border border-surface-700 rounded-lg p-5 scroll-mt-24"
+      className="bg-surface-800 border border-surface-700 rounded-[10px] p-5 scroll-mt-24"
     >
       <header className="mb-4">
         <h2 className="text-base font-semibold text-surface-100 mb-0.5">{title}</h2>
@@ -738,7 +738,7 @@ function SlugField({
 
   if (disabled) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-900 border border-surface-700">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-[10px] bg-surface-900 border border-surface-700">
         <code className="flex-1 font-mono text-sm text-surface-200 truncate">{value}</code>
         <Button
           variant="ghost"
@@ -780,7 +780,7 @@ function DestructiveCallout({
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-3 rounded-lg border transition-colors',
+        'flex items-start gap-3 p-3 rounded-[10px] border transition-colors',
         checked
           ? 'bg-status-pending-bg/40 border-status-pending-border'
           : 'bg-[var(--sf2)] border-surface-700',

@@ -55,10 +55,10 @@ export function FilaAgoraCard() {
   }, [])
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden">
       <div className="flex items-center gap-2 h-10 px-3.5 border-b border-surface-700">
-        <p className="text-[13px] font-semibold text-surface-100">Fila agora</p>
-        <span className="inline-flex items-center gap-[5px] text-[11px] text-surface-400">
+        <p className="text-sm font-semibold text-surface-100">Fila agora</p>
+        <span className="inline-flex items-center gap-[5px] text-2xs text-surface-400">
           <span className="w-1.5 h-1.5 rounded-full bg-online" aria-hidden />
           ao vivo
         </span>
@@ -80,17 +80,17 @@ export function FilaAgoraCard() {
                 to={`/conversations?id=${c.id}`}
                 className="flex items-center gap-2.5 h-11 px-3.5 border-b border-surface-700 hover:bg-[var(--rowhover)] transition-colors"
               >
-                <span className="w-[26px] h-[26px] rounded-full bg-avatar-surface text-avatar-initials text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                <span className="w-7 h-7 rounded-full bg-avatar-surface bg-(image:--avatar-grad) text-avatar-initials text-2xs font-semibold flex items-center justify-center flex-shrink-0">
                   {getInitials(c.contact.displayName)}
                 </span>
                 <span className="flex-1 min-w-0 leading-[1.25]">
-                  <span className="block text-[12.5px] font-semibold text-surface-100 truncate">{c.contact.displayName}</span>
-                  <span className="block text-[11px] text-surface-400 truncate">{c.lastMessagePreview}</span>
+                  <span className="block text-xs font-semibold text-surface-100 truncate">{c.contact.displayName}</span>
+                  <span className="block text-2xs text-surface-400 truncate">{c.lastMessagePreview}</span>
                 </span>
                 <span className="flex flex-col items-end gap-[3px] flex-shrink-0">
                   <span
                     className={cn(
-                      'text-[11px] font-semibold tabular-nums',
+                      'text-2xs font-semibold tabular-nums',
                       min >= DANGER_MIN ? 'text-danger' : min >= WARN_MIN ? 'text-status-pending' : 'text-surface-400',
                     )}
                   >
@@ -98,7 +98,7 @@ export function FilaAgoraCard() {
                   </span>
                   {chip && (
                     <span className={cn(
-                      'inline-flex items-center h-4 px-[5px] rounded-[5px] text-[10px] font-bold',
+                      'inline-flex items-center h-4 px-[5px] rounded-[6px] text-2xs font-semibold',
                       chip.tone === 'amber' ? 'bg-status-pending-bg text-status-pending' : 'bg-status-active-bg text-status-active',
                     )}>{chip.text}</span>
                   )}

@@ -14,7 +14,7 @@ export function MockBadge({ className }: { className?: string }) {
       title="Dados simulados para validação do layout — serão conectados ao backend."
       style={{ ['--chip']: 'var(--color-warning)', borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.5)' } as React.CSSProperties}
       className={cn(
-        'color-chip inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium',
+        'color-chip inline-flex items-center gap-1 rounded-[6px] border px-1.5 py-0.5 text-[11px] font-medium',
         className,
       )}
     >

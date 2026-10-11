@@ -308,7 +308,7 @@ export function AssignSkillPage() {
         </header>
 
         {error && (
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-danger/10 border border-danger/30 text-sm mb-5">
+          <div className="flex items-start gap-3 p-3 rounded-[10px] bg-danger/10 border border-danger/30 text-sm mb-5">
             <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-danger">{error}</p>
           </div>
@@ -372,7 +372,7 @@ export function AssignSkillPage() {
                         <label
                           key={a.id}
                           className={cn(
-                            'flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors',
+                            'flex items-center gap-3 p-2.5 rounded-[10px] border cursor-pointer transition-colors',
                             checked
                               ? 'bg-accent-soft border-brand-500/40'
                               : 'bg-surface-800 border-surface-700 hover:border-surface-600',
@@ -415,7 +415,7 @@ export function AssignSkillPage() {
                     ))}
                   </Select>
                   {template && (
-                    <div className="mt-3 flex items-start gap-3 p-3 rounded-lg bg-surface-900 border border-surface-700">
+                    <div className="mt-3 flex items-start gap-3 p-3 rounded-[10px] bg-surface-900 border border-surface-700">
                       <CategoryIcon category={template.category} tone="active" size={36} />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-surface-100">{template.name}</p>
@@ -436,7 +436,7 @@ export function AssignSkillPage() {
               complete={allValid}
             >
               {template.mutates && (
-                <div className="flex items-start gap-2 p-3 mb-3 rounded-lg bg-status-pending-bg/40 border border-status-pending-border text-sm">
+                <div className="flex items-start gap-2 p-3 mb-3 rounded-[10px] bg-status-pending-bg/40 border border-status-pending-border text-sm">
                   <ShieldAlert className="w-4 h-4 text-status-pending flex-shrink-0 mt-0.5" />
                   <p className="text-status-pending">
                     Operação destrutiva — esta skill altera dados externos quando chamada.
@@ -475,7 +475,7 @@ export function AssignSkillPage() {
 
           {/* ── Batch results banner ───────────────────────────────────── */}
           {batchResults && batchResults.some((r) => !r.success) && (
-            <div className="p-3 rounded-lg bg-status-pending-bg/40 border border-status-pending-border text-sm">
+            <div className="p-3 rounded-[10px] bg-status-pending-bg/40 border border-status-pending-border text-sm">
               <p className="text-status-pending font-medium mb-1">
                 {batchResults.filter((r) => r.success).length}/{batchResults.length} atribuídas com sucesso
               </p>
@@ -546,7 +546,7 @@ function AgentConfigCard({
   return (
     <div
       className={cn(
-        'rounded-lg border p-4',
+        'rounded-[10px] border p-4',
         success
           ? 'border-status-active-border bg-status-active-bg/30'
           : failed
@@ -646,7 +646,7 @@ function Step({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+    <section className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
       <header className="flex items-center gap-3 mb-3">
         <span
           className={cn(

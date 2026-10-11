@@ -95,7 +95,7 @@ export function WhatsappLineRow({
         ) : (
           <>
             <span className="font-semibold">Linha não definida.</span>{' '}
-            Este tenant tem {numbers.length} linhas ativas. Escolha uma antes de salvar.
+            Sua empresa tem {numbers.length} linhas de WhatsApp ativas. Escolha uma antes de salvar.
           </>
         )}
       </Banner>
@@ -107,7 +107,7 @@ export function WhatsappLineRow({
       <div className="flex items-center gap-1.5 text-[11px] text-status-pending">
         <Phone className="w-3 h-3" />
         <span>
-          Linha não definida — backend vai recusar (tenant tem {numbers.length} linhas).
+          Escolha a linha de WhatsApp: com {numbers.length} linhas ativas, não dá para salvar sem ela.
         </span>
       </div>
     )

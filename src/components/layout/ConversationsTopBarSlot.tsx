@@ -16,25 +16,37 @@
 import { useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { usePrimaryConnectedLine } from '@/hooks/usePrimaryConnectedLine'
 import { ConnectedLineChip } from '@/components/layout/ConnectedLineChip'
-import type { ConversationStatusCounts } from '@/types'
+import { useContagensDaFila } from '@/hooks/useContagensDaFila'
+import type { ConversationStatusCounts, PendingCounts } from '@/types'
 
 interface Props {
   statusCounts: ConversationStatusCounts
+  /** SCRUM-1161 C5 — vem na leitura da lista; null/ausente = backend antigo. */
+  pendingCounts?: PendingCounts | null
+  /** Linha do seletor do topo (as contagens seguem a mesma linha). */
+  whatsappNumberId?: string
 }
 
-export function ConversationsTopBarSlot({ statusCounts }: Props) {
+export function ConversationsTopBarSlot({ statusCounts, pendingCounts, whatsappNumberId }: Props) {
   const { connected: lineConnected, label: lineLabel } = usePrimaryConnectedLine()
+
+  // SCRUM-1253 (PO, 06/10 — D11): contagens que NÃO dependem da aba ativa — "na fila" (pendentes
+  // sem dono) e "aguardando você" (pendentes suas). Revisão 11/10: a fonte e a
+  // releitura (socket + ações do próprio operador) moram em useContagensDaFila.
+  const fila = useContagensDaFila(pendingCounts, whatsappNumberId)
 
   useRegisterTopBarSubtitle(
     <>
-      {`${statusCounts.open} abertas · ${statusCounts.pending} pendentes`}
+      {fila
+        ? `${fila.naFila} na fila · ${fila.suas} aguardando você`
+        : `${statusCounts.open} abertas · ${statusCounts.pending} pendentes`}
       {lineConnected && (
         <span className="ml-3">
           <ConnectedLineChip>Linha {lineLabel} · conectada</ConnectedLineChip>
         </span>
       )}
     </>,
-    [statusCounts.open, statusCounts.pending, lineConnected, lineLabel],
+    [statusCounts.open, statusCounts.pending, lineConnected, lineLabel, fila?.naFila, fila?.suas],
   )
 
 

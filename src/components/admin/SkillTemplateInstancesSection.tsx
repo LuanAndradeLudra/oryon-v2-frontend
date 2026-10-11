@@ -87,7 +87,7 @@ export function SkillTemplateInstancesSection({ template }: Props) {
   }, [editing, template])
 
   return (
-    <section className="mt-8 bg-surface-800 border border-surface-700 rounded-lg p-5">
+    <section className="mt-8 bg-surface-800 border border-surface-700 rounded-[10px] p-5">
       <header className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
@@ -99,7 +99,7 @@ export function SkillTemplateInstancesSection({ template }: Props) {
               </span>
             )}
             {driftCount > 0 && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1 bg-status-pending-bg text-status-pending ring-status-pending-border">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium ring-1 bg-status-pending-bg text-status-pending ring-status-pending-border">
                 <AlertTriangle className="w-3 h-3" />
                 {driftCount} {driftCount === 1 ? 'desatualizada' : 'desatualizadas'}
               </span>
@@ -128,7 +128,7 @@ export function SkillTemplateInstancesSection({ template }: Props) {
       )}
 
       {error && !loading && (
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+        <div className="flex items-start gap-3 p-3 rounded-[10px] bg-danger/10 border border-danger/30 text-sm">
           <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
           <p className="text-danger break-words">{error}</p>
         </div>
@@ -236,7 +236,7 @@ function InstanceRow({
           </span>
         )}
         {!row.enabled && (
-          <span className="ml-2 text-[10px] text-surface-500">(pausada)</span>
+          <span className="ml-2 text-[11px] text-surface-500">(pausada)</span>
         )}
       </td>
       <td className="py-2.5 text-right">

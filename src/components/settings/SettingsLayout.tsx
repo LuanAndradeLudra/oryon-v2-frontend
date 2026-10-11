@@ -5,7 +5,7 @@ import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { SettingsSectionsProvider, SettingsOutline } from './SettingsSection'
 import { SettingsBreadcrumbCtx } from './settingsBreadcrumb'
 import { useParams } from 'react-router-dom'
-import { isRouteVisible } from '@/config/featureFlags'
+import { isRouteVisible, isFeatureVisible } from '@/config/featureFlags'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { isOwnerTier } from '@/lib/roleHelpers'
@@ -37,6 +37,7 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
   notifications:       ['alertas', 'push', 'avisos'],
   company:             ['empresa', 'organização', 'logo'],
   'company-brain':     ['ia', 'contexto', 'cérebro', 'conhecimento', 'prompt', 'agentes'],
+  copilot:             ['copilot', 'instruções', 'assistente', 'ia'],
   agents:              ['usuários', 'atendentes', 'equipe', 'membros', 'convites'],
   departments:         ['setores', 'times', 'filas'],
   'quick-replies':     ['respostas rápidas', 'atalhos', 'mensagens prontas'],
@@ -100,7 +101,6 @@ export const SETTINGS_NAV: NavDomain[] = [
         items: [
           { section: 'company',          label: 'Perfil da empresa',    supervisorOnly: true },
           { section: 'numbers',          label: 'Números WhatsApp',     adminOnly: true },
-          { section: 'whatsapp-health',  label: 'Saúde das linhas',     adminOnly: true },
           { section: 'whatsapp-profile', label: 'Perfil do WhatsApp',   adminOnly: true },
           { section: 'ad-accounts',      label: 'Contas de anúncios',   adminOnly: true },
           { section: 'agents',           label: 'Usuários',             supervisorOnly: true },
@@ -139,6 +139,8 @@ export const SETTINGS_NAV: NavDomain[] = [
           // PO 04/10: só administradores — o backend só deixa admin sincronizar (o supervisor via a tela e a sincronização falhava).
           { section: 'company-brain', label: 'Contexto da IA',    adminOnly: true },
           { section: 'quick-replies', label: 'Respostas rápidas', supervisorOnly: true },
+          // SCRUM-1253 (11/10): instruções do Copilot para todos os papéis (fora do menu se o Copilot estiver desligado).
+          { section: 'copilot',       label: 'Copilot',           hidden: !isFeatureVisible('copilot') },
         ],
       },
       {
@@ -243,7 +245,7 @@ function NavClusterGroup({ cluster, activeSection, searching, currentRole }: {
           aria-expanded={open}
           onClick={() => setOverride(!open)}
           className={cn(
-            'w-full h-7 px-[10px] flex items-center text-left text-[12.5px] transition-colors',
+            'w-full h-7 px-[10px] flex items-center text-left text-xs transition-colors',
             containsActive ? 'font-semibold text-surface-100' : 'text-surface-400 hover:text-surface-100',
           )}
         >
@@ -309,7 +311,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar configuração..."
             aria-label="Buscar configuração"
-            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-7 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
+            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-[6px] pl-8 pr-7 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
           />
           {/* PL-C2-BUS-1: sem isso, quem digita e erra a palavra fica preso
               numa busca sem resultado — só dava pra limpar apagando letra a
@@ -343,7 +345,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
 
         {nav.map((d, di) => (
           <div key={d.domain} className="flex flex-col gap-[2px]">
-            <p className={di === 0 ? 'px-[10px] pt-[6px] pb-1 text-[10px] font-bold uppercase text-surface-500' : 'px-[10px] pt-[14px] pb-1 text-[10px] font-bold uppercase text-surface-500'} style={{ letterSpacing: '.14em' }}>
+            <p className={di === 0 ? 'px-[10px] pt-[6px] pb-1 text-2xs font-semibold uppercase text-surface-500' : 'px-[10px] pt-[14px] pb-1 text-2xs font-semibold uppercase text-surface-500'} style={{ letterSpacing: '.14em' }}>
               {d.domain}
             </p>
             {d.clusters.map((cluster, i) => (

@@ -51,7 +51,7 @@ function ChipDoDocumento({ status }: { status: string }) {
   const s = STATUS_DOC[status] ?? { rotulo: 'Pendente', cor: 'var(--color-status-muted)' }
   return (
     <span
-      className="inline-flex h-5 items-center rounded-xs border px-[7px] text-2xs font-semibold whitespace-nowrap"
+      className="inline-flex h-5 items-center rounded-[6px] border px-[7px] text-2xs font-semibold whitespace-nowrap"
       style={{
         color: s.cor,
         backgroundColor: `color-mix(in srgb, ${s.cor} 12%, transparent)`,
@@ -81,7 +81,7 @@ function ProgressoDoEnvio({ nome }: { nome: string }) {
     return () => clearInterval(t)
   }, [])
   return (
-    <div className="flex items-center gap-3 rounded-md border border-surface-700 bg-[var(--sf2)] px-3 py-2.5" role="status">
+    <div className="flex items-center gap-3 rounded-[6px] border border-surface-700 bg-[var(--sf2)] px-3 py-2.5" role="status">
       <RefreshCw className="h-4 w-4 flex-shrink-0 animate-spin text-accent-dark" aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-surface-100">{nome}</p>
@@ -281,7 +281,7 @@ export function SecaoConhecimento({ agent, onMudou }: { agent: AgentConfigWithTo
           action={{ label: 'Enviar o primeiro arquivo', onClick: () => arquivoNovo.current?.click() }}
         />
       ) : (
-        <ul className="divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700">
+        <ul className="divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700">
           {docs.map((doc) => {
             const previa = (doc.content_preview ?? '').replace(/\s+/g, ' ').trim()
             return (

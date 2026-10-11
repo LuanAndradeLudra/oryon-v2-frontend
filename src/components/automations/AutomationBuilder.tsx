@@ -206,12 +206,12 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                 chip de estado e X; sem tile de ícone. */}
             <div className="flex items-start gap-3 px-5 min-h-14 py-2.5 border-b border-surface-700 flex-shrink-0">
               <div className="min-w-0 flex-1">
-                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-100">{editTarget ? (editTarget.name || 'Editar automação') : 'Nova automação'}</h2>
-                <p className="text-[11.5px] text-surface-400 leading-[1.25] mt-0.5">{flowSummary(summ)}</p>
+                <h2 className="text-base font-semibold tracking-[-0.01em] text-surface-100">{editTarget ? (editTarget.name || 'Editar automação') : 'Nova automação'}</h2>
+                <p className="text-xs text-surface-400 leading-[1.25] mt-0.5">{flowSummary(summ)}</p>
               </div>
               {editTarget && (
                 <span className={cn(
-                  'inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold flex-shrink-0 mt-0.5',
+                  'inline-flex items-center gap-1 h-5 px-[7px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 mt-0.5',
                   editTarget.status === 'active' ? 'color-chip-soft border [--chip:var(--color-status-active)]'
                     : editTarget.status === 'inactive' ? 'color-chip-soft border [--chip:var(--color-status-pending)]'
                     : 'bg-[var(--sf2)] border border-surface-700 text-surface-400',
@@ -219,7 +219,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                   {editTarget.status === 'active' ? 'Ativa' : editTarget.status === 'inactive' ? 'Pausada' : 'Rascunho'}
                 </span>
               )}
-              <button onClick={requestClose} className="w-7 h-7 flex items-center justify-center rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0" aria-label="Fechar">
+              <button onClick={requestClose} className="w-7 h-7 flex items-center justify-center rounded-[6px] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0" aria-label="Fechar">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -243,7 +243,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                         key={s.key}
                         onClick={() => scrollTo(s.key)}
                         className={cn(
-                          'w-full flex items-center gap-2 h-[30px] px-2.5 rounded-xs border text-left transition-colors',
+                          'w-full flex items-center gap-2 h-8 px-2.5 rounded-[6px] border text-left transition-colors',
                           isActive
                             ? 'bg-surface-800 border-surface-700'
                             // Eixo 10 (tema claro): hover:bg-surface-800/50 —
@@ -262,7 +262,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                             status === 'unvisited' && 'border border-[var(--bd2)]',
                           )}
                         />
-                        <span className={cn('flex-1 min-w-0 truncate text-[12.5px] transition-colors', isActive ? 'text-surface-100 font-semibold' : 'text-surface-400 font-medium')}>
+                        <span className={cn('flex-1 min-w-0 truncate text-xs transition-colors', isActive ? 'text-surface-100 font-semibold' : 'text-surface-400 font-medium')}>
                           {s.label}
                         </span>
                         {count > 0 && (
@@ -285,7 +285,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                     </div>
                     <div className="grid grid-cols-3 auto-rows-fr gap-2">
                       {onDescribeWithAI && (
-                        <button onClick={onDescribeWithAI} className="h-full text-left p-3 rounded-lg border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors">
+                        <button onClick={onDescribeWithAI} className="h-full text-left p-3 rounded-[10px] border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors">
                           {/* Wand2 não tem versão desenhada da casa em
                               lib/icons.tsx — cai no lucide cru, traço 2 em
                               vez de 1.75. strokeWidth explícito por enquanto
@@ -293,13 +293,13 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                               caso"). */}
                           <Wand2 className="w-4 h-4 text-brand-400 mb-1.5" strokeWidth={1.75} />
                           <p className="text-xs font-semibold text-surface-100">Descrever com IA</p>
-                          <p className="text-[10px] text-surface-400 mt-0.5 leading-relaxed">Explique o objetivo e o Copilot monta.</p>
+                          <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">Explique o objetivo e o Copilot monta.</p>
                         </button>
                       )}
                       {RECIPES.map((r) => (
-                        <button key={r.title} onClick={() => applyRecipe(r)} className="h-full text-left p-3 rounded-lg border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors">
+                        <button key={r.title} onClick={() => applyRecipe(r)} className="h-full text-left p-3 rounded-[10px] border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors">
                           <p className="text-xs font-semibold text-surface-200">{r.title}</p>
-                          <p className="text-[10px] text-surface-500 mt-1 leading-relaxed">{r.desc}</p>
+                          <p className="text-[11px] text-surface-500 mt-1 leading-relaxed">{r.desc}</p>
                         </button>
                       ))}
                     </div>
@@ -342,10 +342,10 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                         value={draft.name}
                         onChange={(e) => update({ name: e.target.value })}
                         placeholder={suggestedName}
-                        className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-[13px] text-surface-100 placeholder-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+                        className="w-full bg-surface-800 border border-[var(--bd2)] rounded-[6px] px-2.5 py-2 text-[13px] text-surface-100 placeholder-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
                       />
                       {!draft.name.trim() && (
-                        <p className="text-[10px] text-surface-500 mt-1">Em branco, usamos: <span className="text-surface-300">{suggestedName}</span></p>
+                        <p className="text-[11px] text-surface-500 mt-1">Em branco, usamos: <span className="text-surface-300">{suggestedName}</span></p>
                       )}
                     </div>
                     <div>
@@ -354,7 +354,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                         value={draft.description}
                         onChange={(e) => update({ description: e.target.value })}
                         placeholder="Descreva o objetivo desta automação"
-                        className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-[13px] text-surface-100 placeholder-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+                        className="w-full bg-surface-800 border border-[var(--bd2)] rounded-[6px] px-2.5 py-2 text-[13px] text-surface-100 placeholder-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
                       />
                     </div>
                   </div>
@@ -425,8 +425,8 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
 function SectionTitle({ title, hint, active }: { title: string; hint: string; active?: boolean }) {
   return (
     <div className="mb-2.5 flex items-baseline gap-2">
-      <h3 className={cn('text-[10px] font-bold uppercase tracking-[.14em]', active ? 'text-accent-dark' : 'text-surface-500')}>{title}</h3>
-      <p className="text-[11.5px] text-surface-500 truncate">{hint}</p>
+      <h3 className={cn('text-[11px] font-semibold uppercase tracking-[.14em]', active ? 'text-accent-dark' : 'text-surface-500')}>{title}</h3>
+      <p className="text-xs text-surface-500 truncate">{hint}</p>
     </div>
   )
 }

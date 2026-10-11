@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 
 export function ConnectedLineChip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-success">
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-success">
       <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
       {children}
     </span>

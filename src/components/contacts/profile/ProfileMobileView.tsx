@@ -110,7 +110,7 @@ export function ProfileMobileView({
         )}
 
         {segment === 'activity' && (
-          <section className="rounded-2xl border border-surface-700 bg-surface-900 p-3 flex flex-col gap-3">
+          <section className="rounded-[10px] border border-surface-700 bg-surface-900 p-3 flex flex-col gap-3">
             {PROFILE_MOCKS_ENABLED && <TimelineComposer onSubmit={onAddNote} textareaRef={composerRef} />}
             <ContactTimeline contactId={contact.id} notes={notes} />
           </section>

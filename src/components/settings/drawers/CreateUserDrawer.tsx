@@ -63,7 +63,7 @@ function Stepper({ current }: { current: number }) {
             {i > 0 && <div className={cn('w-8 h-px', done ? 'bg-brand-500/60' : 'bg-surface-700')} />}
             <div className="flex items-center gap-1.5">
               <div className={cn(
-                'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-colors',
+                'w-5 h-5 rounded-full flex items-center justify-center text-2xs font-semibold flex-shrink-0 transition-colors',
                 active ? 'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)]' : done ? 'bg-accent-soft text-accent-dark' : 'bg-surface-800 text-surface-600',
               )}>
                 {done ? <Check className="w-2.5 h-2.5" /> : n}
@@ -258,7 +258,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     transition={{ duration: 0.15 }}
                     className="px-6 py-5 flex flex-col gap-4"
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Dados do usuário</p>
+                    <p className="text-2xs font-semibold uppercase tracking-widest text-surface-500">Dados do usuário</p>
 
                     <div className="grid grid-cols-2 gap-3">
                       <FormField label="Nome" required error={errors.firstName}>
@@ -337,7 +337,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                   >
                     {/* Role */}
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500 mb-3">Papel</p>
+                      <p className="text-2xs font-semibold uppercase tracking-widest text-surface-500 mb-3">Papel</p>
                       {!podeDefinirPapel && (
                         <p className="text-sm text-surface-300 leading-relaxed">
                           O convidado entra como <strong className="text-surface-100">{ROLE_LABELS.agent}</strong> ({ROLE_DESCRIPTIONS.agent.toLowerCase()}).
@@ -349,7 +349,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                           <label
                             key={role}
                             className={cn(
-                              'flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors',
+                              'flex items-center gap-3 p-3 rounded-[6px] border cursor-pointer transition-colors',
                               s2.role === role ? 'border-brand-500 bg-accent-soft' : 'border-surface-700 hover:bg-[var(--rowhover)]',
                             )}
                           >
@@ -381,22 +381,22 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     transition={{ duration: 0.15 }}
                     className="px-6 py-5 flex flex-col gap-4"
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Revisão</p>
+                    <p className="text-2xs font-semibold uppercase tracking-widest text-surface-500">Revisão</p>
 
                     {/* User data summary */}
                     <div className="border-y border-surface-700 py-4">
                       <p className="text-xs font-semibold text-surface-500 mb-3">Dados do usuário</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide text-surface-500">Nome</p>
+                          <p className="text-2xs uppercase tracking-wide text-surface-500">Nome</p>
                           <p className="text-sm text-surface-100 mt-0.5">{s1.firstName} {s1.lastName}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide text-surface-500">E-mail</p>
+                          <p className="text-2xs uppercase tracking-wide text-surface-500">E-mail</p>
                           <p className="text-sm text-surface-100 mt-0.5 break-all">{s1.email}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide text-surface-500">Setor</p>
+                          <p className="text-2xs uppercase tracking-wide text-surface-500">Setor</p>
                           <p className="text-sm text-surface-100 mt-0.5">{deptName}</p>
                         </div>
                       </div>
@@ -406,7 +406,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     <div className="border-y border-surface-700 py-4">
                       <p className="text-xs font-semibold text-surface-500 mb-3">Acesso</p>
                       <div>
-                        <p className="text-[10px] uppercase tracking-wide text-surface-500">Papel</p>
+                        <p className="text-2xs uppercase tracking-wide text-surface-500">Papel</p>
                         <p className="text-sm text-surface-100 mt-0.5">{ROLE_LABELS[podeDefinirPapel ? s2.role : 'agent']}</p>
                       </div>
                     </div>

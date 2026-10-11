@@ -40,6 +40,7 @@ import type {
   WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
   ContactCustomFieldDef,
 } from '@/types'
+import { TEMPLATE_CATEGORIES } from './templateCategory'
 
 interface CampaignWizardProps {
   open: boolean
@@ -465,14 +466,14 @@ export function CampaignWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-surface-800 overlay-frame border rounded-xl w-full max-w-[760px] pointer-events-auto flex flex-col max-h-[90vh]"
+              className="bg-surface-800 overlay-frame border rounded-[10px] w-full max-w-[760px] pointer-events-auto flex flex-col max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header — CAMP-WIZ-03/04/06: sem border-b (o breadcrumb logo
                   abaixo já separa visualmente), título 15px/700, X mais sutil. */}
               <div className="flex items-center justify-between px-5 pt-4 pb-0 flex-shrink-0">
-                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-100">Nova campanha</h2>
-                <button onClick={onClose} aria-label="Fechar" className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+                <h2 className="text-base font-semibold tracking-[-0.01em] text-surface-100">Nova campanha</h2>
+                <button onClick={onClose} aria-label="Fechar" className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -730,14 +731,15 @@ function Faixa({ label, required, hint, right, children }: {
   return (
     <div className="grid grid-cols-[104px_1fr] gap-x-4 py-4 border-t border-surface-700 first:border-t-0 first:pt-0">
       <div className="pt-1.5">
-        <h3 className="text-[12.5px] font-bold text-surface-100 tracking-[-0.01em] leading-tight">
+        <h3 className="text-xs font-semibold text-surface-100 tracking-[-0.01em] leading-tight">
           {label}{required && <span className="text-surface-500 font-normal"> *</span>}
         </h3>
-        {hint && <p className="text-[11px] text-surface-500 mt-0.5 leading-snug">{hint}</p>}
       </div>
       <div className="min-w-0">
-        {right && <div className="flex justify-end text-[11px] text-surface-500 mb-1.5">{right}</div>}
+        {right && <div className="flex justify-end text-2xs text-surface-500 mb-1.5">{right}</div>}
         {children}
+        {/* A dica fica embaixo do campo — na coluna do rótulo (104px) ela espremia em 4 linhas. */}
+        {hint && <p className="text-2xs text-surface-500 mt-1.5 leading-snug">{hint}</p>}
       </div>
     </div>
   )
@@ -764,9 +766,9 @@ function Step1({
   return (
     <div>
       {/* Info banner */}
-      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-500/5 border border-brand-500/20 rounded-lg mb-1">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-500/5 border border-brand-500/20 rounded-[10px] mb-1">
         <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
-        <p className="text-[11px] text-surface-400 leading-relaxed">
+        <p className="text-2xs text-surface-400 leading-relaxed">
           Apenas templates com status <strong className="text-brand-300">Aprovado</strong> pela Meta podem ser usados em campanhas.
           Crie e submeta novos modelos na aba <strong className="text-surface-300">Templates</strong>.
         </p>
@@ -818,16 +820,16 @@ function Step1({
                     <Check className={cn('w-3.5 h-3.5 mt-0.5 flex-shrink-0', isSelected ? 'text-brand-400' : 'text-transparent')} strokeWidth={2.5} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className={cn('text-[13px] font-mono text-surface-100', isSelected && 'font-semibold')}>{tpl.name}</span>
+                        <span className={cn('text-sm font-mono text-surface-100', isSelected && 'font-semibold')}>{tpl.name}</span>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className="text-[11px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded-2xs">{tpl.category}</span>
-                          <span className="text-[11px] text-surface-600">{tpl.language}</span>
+                          <span className="text-2xs text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded-2xs">{TEMPLATE_CATEGORIES[tpl.category]?.label ?? tpl.category}</span>
+                          <span className="text-2xs text-surface-600">{tpl.language}</span>
                           {/* Direção C: "mesma peça, mesma medida" — 3ª linha
                               listando variáveis cortada (repetia o que a
                               Etapa 3 já mostra uma a uma), virou marcador
                               inline sem alterar a altura da linha. */}
                           {tpl.bodyVariables && tpl.bodyVariables.length > 0 && (
-                            <span className="text-[11px] text-surface-600">· {tpl.bodyVariables.length} var.</span>
+                            <span className="text-2xs text-surface-600">· {tpl.bodyVariables.length} var.</span>
                           )}
                         </div>
                       </div>
@@ -926,8 +928,8 @@ function Step2({
   // PL-C2-CAR-eixo10: altura vinha de padding (py-1.5 + texto), não de h-*
   // explícito — mesmo defeito já achado em Automações (Farol) e Funis. Receita
   // igual à pílula de tipo de cabeçalho do TemplateCreator.tsx (irmão neste
-  // diretório, direção C aprovada): h-7/rounded-sm/px-2.5/11.5px.
-  const chipBase = 'flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-[11.5px] font-medium transition-colors duration-200'
+  // diretório, direção C aprovada): h-7/rounded-[6px]/px-2.5/11.5px.
+  const chipBase = 'flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] border text-xs font-medium transition-colors duration-200'
   const chipOn   = 'border-transparent text-white'
   const chipOff  = 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]'
   // Seleção genérica (sem cor de dado por trás, ex. sim/não, fonte, engajamento):
@@ -978,7 +980,7 @@ function Step2({
                 <Icon className="w-4 h-4 flex-shrink-0 text-surface-500" />
                 <div className="flex-1">
                   <p className={cn('text-sm text-surface-100', isSelected && 'font-semibold')}>{opt.label}</p>
-                  <p className="text-[11px] text-surface-500">{opt.description}</p>
+                  <p className="text-2xs text-surface-500">{opt.description}</p>
                 </div>
               </button>
             )
@@ -1078,7 +1080,7 @@ function Step2({
                   <button
                     key={contact.id}
                     onClick={() => toggleContact(contact.id)}
-                    className="w-full flex items-center gap-2.5 px-1 py-1.5 rounded-sm text-left hover:bg-[var(--rowhover)] transition-colors"
+                    className="w-full flex items-center gap-2.5 px-1 py-1.5 rounded-[6px] text-left hover:bg-[var(--rowhover)] transition-colors"
                   >
                     <div className={cn(
                       'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
@@ -1086,24 +1088,24 @@ function Step2({
                     )}>
                       {selected && <Check className="w-2.5 h-2.5 text-white" />}
                     </div>
-                    <div className="w-7 h-7 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-brand-500/15 text-brand-300 text-xs font-semibold flex items-center justify-center flex-shrink-0">
                       {contact.displayName.slice(0, 1).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-surface-200 truncate">{contact.displayName}</p>
-                      <p className="text-[11px] text-surface-500">{contact.waId}</p>
+                      <p className="text-2xs text-surface-500">{contact.waId}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {stageDef && (
                         <span
-                          className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                          className="text-2xs px-1.5 py-0.5 rounded font-medium"
                           style={{ backgroundColor: stageDef.color, color: getReadableTextColor(stageDef.color) }}
                         >
                           {stageDef.label}
                         </span>
                       )}
                       {contact.tags && contact.tags.length > 0 && (
-                        <span className="text-[10px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
+                        <span className="text-2xs text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                           {contact.tags[0].name}
                           {contact.tags.length > 1 && ` +${contact.tags.length - 1}`}
                         </span>
@@ -1115,7 +1117,7 @@ function Step2({
             </div>
           )}
           {!loadingContacts && contacts.length > 0 && (
-            <p className="text-[11px] text-surface-600 mt-2 text-center">
+            <p className="text-2xs text-surface-600 mt-2 text-center">
               {filteredContacts.length} de {contacts.length} contatos · {selectedContactIds.length} selecionados
             </p>
           )}
@@ -1125,9 +1127,9 @@ function Step2({
       {/* Advanced filter */}
       {segmentType === 'filter' && (
         <div className="border-t border-surface-700 py-4">
-          <div className="flex items-start gap-2 px-2.5 py-2.5 border border-[var(--bd2)] rounded-sm mb-1">
+          <div className="flex items-start gap-2 px-2.5 py-2.5 border border-[var(--bd2)] rounded-[6px] mb-1">
             <Info className="w-3.5 h-3.5 text-surface-400 mt-0.5 flex-shrink-0" />
-            <p className="text-[11px] text-surface-400 leading-relaxed">
+            <p className="text-2xs text-surface-400 leading-relaxed">
               Os critérios marcados são combinados com <strong className="text-surface-300">E</strong> —
               apenas contatos que atendem a <em>todos</em> os filtros ativos serão incluídos.
               Deixe um critério em branco para ignorá-lo.
@@ -1224,7 +1226,7 @@ function Step2({
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-surface-600 mt-1.5">
+            <p className="text-2xs text-surface-600 mt-1.5">
               Opt-in indica que o contato autorizou o envio de mensagens de marketing.
             </p>
           </FilterGroup>
@@ -1260,7 +1262,7 @@ function Step2({
                 className="pl-7"
               />
             </div>
-            <p className="text-[10px] text-surface-600 mt-1">Inclui contatos cujo nome ou número de WhatsApp correspondam à busca.</p>
+            <p className="text-2xs text-surface-600 mt-1">Inclui contatos cujo nome ou número de WhatsApp correspondam à busca.</p>
           </FilterGroup>
 
           {/* Filter: has conversations */}
@@ -1293,7 +1295,7 @@ function Step2({
 function FilterGroup({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="py-4 space-y-2">
-      <p className="text-[12.5px] font-bold text-surface-100">{label}</p>
+      <p className="text-xs font-semibold text-surface-100">{label}</p>
       {children}
     </div>
   )
@@ -1335,9 +1337,9 @@ function Step3({
     <div className="flex gap-5">
       <div className="flex-1">
         {/* Explanation */}
-        <div className="flex items-start gap-2.5 px-2.5 py-2.5 border border-[var(--bd2)] rounded-sm mb-1">
+        <div className="flex items-start gap-2.5 px-2.5 py-2.5 border border-[var(--bd2)] rounded-[6px] mb-1">
           <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
-          <div className="text-[11px] text-surface-400 space-y-1 leading-relaxed">
+          <div className="text-2xs text-surface-400 space-y-1 leading-relaxed">
             <p>Configure como cada <strong className="text-brand-300">variável numérica</strong> do template será preenchida para cada destinatário no momento do envio.</p>
             <p><strong className="text-surface-300">Campo do contato</strong> — usa dados do CRM (nome, empresa, cidade…).</p>
             <p><strong className="text-surface-300">Campo personalizado</strong> — usa um campo extra criado em Configurações → CRM.</p>
@@ -1356,8 +1358,8 @@ function Step3({
           {mappings.map((m) => (
             <div key={m.position} className="py-4 first:pt-0">
               <div className="flex items-baseline gap-1.5 mb-2">
-                <span className="text-[12.5px] font-bold text-surface-100">{`{{${m.position}}}`}</span>
-                <span className="text-[12.5px] text-surface-400">{m.variableName}</span>
+                <span className="text-xs font-semibold text-surface-100">{`{{${m.position}}}`}</span>
+                <span className="text-xs text-surface-400">{m.variableName}</span>
               </div>
 
               <SegmentedControl
@@ -1398,9 +1400,9 @@ function Step3({
                     ))}
                   </SelectMenu>
                 ) : (
-                  <div className="flex items-start gap-2 px-2.5 py-2.5 border border-accent-amber/25 rounded-sm">
+                  <div className="flex items-start gap-2 px-2.5 py-2.5 border border-accent-amber/25 rounded-[6px]">
                     <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />
-                    <p className="text-[11px] text-surface-300 leading-relaxed">
+                    <p className="text-2xs text-surface-300 leading-relaxed">
                       Nenhum campo personalizado cadastrado. Crie um em Configurações → CRM.
                     </p>
                   </div>
@@ -1484,7 +1486,7 @@ function Step4({
                 <Icon className="w-4 h-4 flex-shrink-0 text-surface-500" />
                 <div className="flex-1">
                   <p className={cn('text-sm text-surface-100', isSelected && 'font-semibold')}>{opt.label}</p>
-                  <p className="text-[11px] text-surface-500">{opt.desc}</p>
+                  <p className="text-2xs text-surface-500">{opt.desc}</p>
                 </div>
               </button>
             )
@@ -1510,7 +1512,7 @@ function Step4({
               className="pl-8"
             />
           </div>
-          <p className="text-[11px] text-surface-600 mt-1.5">
+          <p className="text-2xs text-surface-600 mt-1.5">
             Dica: envios nas terças e quartas, entre 9h–11h, tendem a ter maiores taxas de abertura.
           </p>
         </Faixa>
@@ -1539,7 +1541,7 @@ function Step4({
 
 function EditLink({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="text-[11.5px] font-semibold text-accent-dark hover:opacity-80 transition-opacity">
+    <button onClick={onClick} className="text-xs font-semibold text-accent-dark hover:opacity-80 transition-opacity">
       Editar
     </button>
   )
@@ -1670,8 +1672,8 @@ function Step5({
             label="Template"
             value={
               <span className="flex items-center gap-2 min-w-0">
-                <span className="font-mono text-[11.5px] truncate">{template.name}</span>
-                <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0', statusDoModelo(template.status).chip)}>
+                <span className="font-mono text-xs truncate">{template.name}</span>
+                <span className={cn('inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-shrink-0', statusDoModelo(template.status).chip)}>
                   {statusDoModelo(template.status).label} · Meta
                 </span>
               </span>
@@ -1687,18 +1689,18 @@ function Step5({
           {/* Manual contacts preview */}
           {segmentType === 'manual' && selectedContactIds.length > 0 && (
             <div className="mt-3">
-              <p className="text-[11px] text-surface-500 mb-1.5">Contatos selecionados:</p>
+              <p className="text-2xs text-surface-500 mb-1.5">Contatos selecionados:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedContactIds.slice(0, 5).map((id) => {
                   const c = contacts.find((ct) => ct.id === id)
                   return (
-                    <span key={id} className="text-[10px] text-surface-300 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
+                    <span key={id} className="text-2xs text-surface-300 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                       {c?.displayName ?? id}
                     </span>
                   )
                 })}
                 {selectedContactIds.length > 5 && (
-                  <span className="text-[10px] text-surface-500">+{selectedContactIds.length - 5} mais</span>
+                  <span className="text-2xs text-surface-500">+{selectedContactIds.length - 5} mais</span>
                 )}
               </div>
             </div>
@@ -1707,12 +1709,12 @@ function Step5({
           {/* Tag segment */}
           {segmentType === 'tag' && selectedTagIds.length > 0 && (
             <div className="mt-3">
-              <p className="text-[11px] text-surface-500 mb-1.5">Tags:</p>
+              <p className="text-2xs text-surface-500 mb-1.5">Tags:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedTagIds.map((id) => {
                   const tag = tags.find((t) => t.id === id)
                   return tag ? (
-                    <span key={id} className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ backgroundColor: tag.color, color: getReadableTextColor(tag.color) }}>
+                    <span key={id} className="text-2xs px-2 py-0.5 rounded font-medium" style={{ backgroundColor: tag.color, color: getReadableTextColor(tag.color) }}>
                       {tag.name}
                     </span>
                   ) : null
@@ -1724,12 +1726,12 @@ function Step5({
           {/* Stage segment */}
           {segmentType === 'stage' && selectedStages.length > 0 && (
             <div className="mt-3">
-              <p className="text-[11px] text-surface-500 mb-1.5">Estágios:</p>
+              <p className="text-2xs text-surface-500 mb-1.5">Estágios:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedStages.map((key) => {
                   const stage = stages.find((s) => s.key === key)
                   return stage ? (
-                    <span key={key} className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ backgroundColor: stage.color, color: getReadableTextColor(stage.color) }}>
+                    <span key={key} className="text-2xs px-2 py-0.5 rounded font-medium" style={{ backgroundColor: stage.color, color: getReadableTextColor(stage.color) }}>
                       {stage.label}
                     </span>
                   ) : null
@@ -1741,13 +1743,13 @@ function Step5({
           {/* Filter pills */}
           {segmentType === 'filter' && filterPills.length > 0 && (
             <div className="mt-3">
-              <p className="text-[11px] text-surface-500 mb-1.5">{filterPills.length} filtro{filterPills.length === 1 ? '' : 's'} ativo{filterPills.length === 1 ? '' : 's'}:</p>
+              <p className="text-2xs text-surface-500 mb-1.5">{filterPills.length} filtro{filterPills.length === 1 ? '' : 's'} ativo{filterPills.length === 1 ? '' : 's'}:</p>
               <div className="flex flex-wrap gap-1.5">
                 {filterPills.map((pill, i) => (
                   <span
                     key={i}
                     className={cn(
-                      'text-[10px] px-2 py-0.5 rounded font-medium',
+                      'text-2xs px-2 py-0.5 rounded font-medium',
                       pill.color ? 'color-chip' : undefined,
                     )}
                     style={pill.color
@@ -1769,7 +1771,7 @@ function Step5({
           {estimatedReach !== null && estimatedReach > 0 && (
             <button
               onClick={() => setShowContactsModal(true)}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-surface-600 text-[12px] text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
+              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-[6px] border border-dashed border-surface-600 text-xs text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
             >
               <Users className="w-3.5 h-3.5" />
               Verificar lista de contatos ({estimatedReach} contato{estimatedReach === 1 ? '' : 's'})
@@ -1783,7 +1785,7 @@ function Step5({
             — o mock quer âmbar suave, então monto inline em vez de editar o
             primitivo. */}
         {messagingLimit && (
-          <div className="flex items-start gap-2 mt-3 px-2.5 py-[9px] rounded-xs bg-status-pending-bg text-status-pending text-xs leading-[1.45]">
+          <div className="flex items-start gap-2 mt-3 px-2.5 py-[9px] rounded-[6px] bg-status-pending-bg text-status-pending text-xs leading-[1.45]">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-px" strokeWidth={2} />
             <span>
               Limite diário de mensagens desta linha: <strong>{messagingLimit}</strong>. Campanhas grandes podem
@@ -1795,7 +1797,7 @@ function Step5({
 
       {/* Right column: message preview — CAMP-WIZ-25. */}
       <div className="w-[250px] flex-shrink-0">
-        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-1.5">Prévia no WhatsApp</p>
+        <p className="text-2xs font-semibold uppercase tracking-[.14em] text-surface-500 mb-1.5">Prévia no WhatsApp</p>
         <TemplatePreview template={template} variables={previewVars} compact />
       </div>
 
@@ -1906,7 +1908,7 @@ function ContactListModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.15 }}
-        className="relative bg-surface-900 overlay-frame border rounded-xl w-full max-w-lg flex flex-col max-h-[80vh]"
+        className="relative bg-surface-900 overlay-frame border rounded-[10px] w-full max-w-lg flex flex-col max-h-[80vh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
@@ -1917,7 +1919,7 @@ function ContactListModal({
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+            className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <X className="w-4 h-4" />
           </button>
@@ -1946,8 +1948,8 @@ function ContactListModal({
               {displayed.map((c) => {
                 const stageDef = stages.find((s) => s.key === c.stage)
                 return (
-                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-[var(--rowhover)] transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] hover:bg-[var(--rowhover)] transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-brand-500/15 text-brand-300 text-xs font-semibold flex items-center justify-center flex-shrink-0">
                       {c.displayName.slice(0, 1).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1956,12 +1958,12 @@ function ContactListModal({
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {stageDef && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: stageDef.color, color: getReadableTextColor(stageDef.color) }}>
+                        <span className="text-2xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: stageDef.color, color: getReadableTextColor(stageDef.color) }}>
                           {stageDef.label}
                         </span>
                       )}
                       {c.tags && c.tags.length > 0 && (
-                        <span className="text-[10px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
+                        <span className="text-2xs text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                           {c.tags[0].name}{c.tags.length > 1 ? ` +${c.tags.length - 1}` : ''}
                         </span>
                       )}
@@ -1977,7 +1979,7 @@ function ContactListModal({
         <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
           <button
             onClick={onClose}
-            className="w-full py-2 rounded-sm bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] text-white text-sm font-medium transition-all"
+            className="w-full py-2 rounded-[6px] bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) hover:bg-[#115E59] hover:bg-(image:--primario-img-hover) text-white text-sm font-medium transition-all"
           >
             Fechar e continuar
           </button>

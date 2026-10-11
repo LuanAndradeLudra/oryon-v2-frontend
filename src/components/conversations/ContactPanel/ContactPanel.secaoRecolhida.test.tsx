@@ -22,10 +22,16 @@ const conversa = {
   assignedUser: { id: 'u1', firstName: 'Ana', lastName: 'Lima', role: 'agent' },
 } as unknown as Conversation
 
-const renderizar = () => render(
-  <ContactPanel conversation={conversa} allTags={[]} allUsers={[]} onClose={vi.fn()} onAddTag={vi.fn()} onRemoveTag={vi.fn()}
-    onAssign={vi.fn()} onTransfer={vi.fn()} onArchive={vi.fn()} />,
-)
+const BETO = { id: 'u2', firstName: 'Beto', lastName: 'Reis', role: 'agent', isActive: true, email: 'b@x' }
+const renderizar = (over: Partial<Conversation> = {}) => {
+  const onAssign = vi.fn()
+  const onTransfer = vi.fn()
+  render(
+    <ContactPanel conversation={{ ...conversa, ...over }} allTags={[]} allUsers={[BETO] as never} onClose={vi.fn()} onAddTag={vi.fn()} onRemoveTag={vi.fn()}
+      onAssign={onAssign} onTransfer={onTransfer} onArchive={vi.fn()} />,
+  )
+  return { onAssign, onTransfer }
+}
 
 beforeEach(() => {
   localStorage.setItem('collapsible:conv-panel.info', '0')
@@ -33,16 +39,25 @@ beforeEach(() => {
 })
 
 describe('ContactPanel · seções recolhidas', () => {
-  it('Trocar e Transferir abrem o modal mesmo com "Dados" recolhido', () => {
-    renderizar()
-    fireEvent.click(screen.getByRole('button', { name: 'Trocar' }))
-    expect(screen.getByText('Atribuir usuário')).toBeInTheDocument()
+  // SCRUM-1253 (PO, 06/10): "Transferir" e "Trocar" viraram uma ação só —
+  // "Alterar", na linha Responsável (dentro de Dados). O front escolhe a chamada.
+  it('com dono, trocar de responsável é TRANSFERÊNCIA', () => {
+    localStorage.setItem('collapsible:conv-panel.info', '1')
+    const { onAssign, onTransfer } = renderizar()
+    fireEvent.click(screen.getByRole('button', { name: 'Alterar' }))
+    expect(screen.getByText('Alterar responsável')).toBeInTheDocument()
+    fireEvent.click(screen.getByText(/Beto Reis/))
+    expect(onTransfer).toHaveBeenCalledWith(expect.objectContaining({ id: 'u2' }))
+    expect(onAssign).not.toHaveBeenCalled()
   })
 
-  it('Transferir abre com "Dados" recolhido', () => {
-    renderizar()
-    fireEvent.click(screen.getByTitle('Transferir conversa'))
-    expect(screen.getByText('Transferir conversa', { selector: 'h2, h3, [role="dialog"] *' })).toBeInTheDocument()
+  it('sem dono, escolher alguém é ATRIBUIÇÃO', () => {
+    localStorage.setItem('collapsible:conv-panel.info', '1')
+    const { onAssign, onTransfer } = renderizar({ assignedUser: undefined })
+    fireEvent.click(screen.getByRole('button', { name: 'Atribuir' }))
+    fireEvent.click(screen.getByText(/Beto Reis/))
+    expect(onAssign).toHaveBeenCalledWith(expect.objectContaining({ id: 'u2' }))
+    expect(onTransfer).not.toHaveBeenCalled()
   })
 
   it('Editar etiquetas abre com "Etiquetas" recolhido', () => {

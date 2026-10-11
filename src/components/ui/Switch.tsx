@@ -28,7 +28,7 @@ export function Switch({ checked, onChange, disabled = false, className, id, 'ar
       className={cn(
         // FIELD-08/09: sem borda (trilho cheio 32×18, thumb 14 com 2px de folga),
         // off em --bd2, thumb sem sombra (ELEV-02).
-        'relative inline-flex items-center h-[18px] w-8 flex-shrink-0 rounded-full',
+        'relative inline-flex items-center h-5 w-8 flex-shrink-0 rounded-full',
         'transition-colors duration-200 ease-in-out',
         'focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:ring-offset-2 focus:ring-offset-surface-900',
         checked ? 'bg-brand-500' : 'bg-[var(--bd2)]',

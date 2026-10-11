@@ -105,7 +105,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
   // SCRUM-1106 (tela 2c): contagem no rótulo da aba, no CampaignsPage.
   // Excluídos na Meta ficam fora de "Todos" — e da contagem da aba.
   const visiveis = templates.filter((t) => t.status !== 'DELETED').length
-  useEffect(() => { onCountChange?.(visiveis) }, [visiveis, onCountChange])
+  useEffect(() => { if (!loading) onCountChange?.(visiveis) }, [loading, visiveis, onCountChange])
 
   const handleSync = async () => {
     setSyncing(true)
@@ -208,7 +208,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar template..."
-            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-3 text-xs text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-[6px] pl-8 pr-3 text-xs text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
           />
         </div>
 
@@ -388,7 +388,7 @@ function TemplateRow({ template, selecionado, onSelect }: {
           resumo (invisível na prática). Abaixo de sm o nome cede espaço
           (55% da linha) pro resumo aparecer; a partir de sm volta aos
           210px de sempre. */}
-      <span className="text-[12.5px] font-semibold text-surface-100 truncate max-w-[55%] sm:max-w-[210px] flex-none">
+      <span className="text-xs font-semibold text-surface-100 truncate max-w-[55%] sm:max-w-[210px] flex-none">
         {template.name}
       </span>
       {/* Medido ao vivo: em 390px quem não cabe não é o nome (195px, já
@@ -410,11 +410,11 @@ function TemplateRow({ template, selecionado, onSelect }: {
           fixo pra encolher sobrava na linha em 390px (soma das larguras
           fixas passava de 300px antes mesmo do nome). Nome + resumo +
           chip de status continuam sempre visíveis (o essencial). */}
-      <span className="hidden sm:block text-[11px] text-surface-500 tabular-nums flex-none w-12 text-right">{template.language}</span>
-      <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none w-[74px] justify-center', cfg.chip)}>
+      <span className="hidden sm:block text-2xs text-surface-500 tabular-nums flex-none w-12 text-right">{template.language}</span>
+      <span className={cn('inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-none w-[74px] justify-center', cfg.chip)}>
         {cfg.label}
       </span>
-      <span className="hidden sm:block text-[11px] text-surface-600 tabular-nums flex-none w-[62px] text-right">
+      <span className="hidden sm:block text-2xs text-surface-600 tabular-nums flex-none w-[62px] text-right">
         {new Date(template.createdAt).toLocaleDateString('pt-BR')}
       </span>
     </button>
@@ -424,7 +424,7 @@ function TemplateRow({ template, selecionado, onSelect }: {
 function LinhaMeta({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-3 py-1.5 border-t border-surface-700 first:border-t-0">
-      <span className="text-[11px] text-surface-500 w-[72px] flex-none">{rotulo}</span>
+      <span className="text-2xs text-surface-500 w-[72px] flex-none">{rotulo}</span>
       <span className="text-xs text-surface-200 min-w-0 truncate">{children}</span>
     </div>
   )
@@ -461,10 +461,10 @@ function TemplateDetail({ template, canEdit, onEdit, onDelete, onAssignWaba, onD
       <div className="px-4 py-3.5 border-b border-surface-700 flex items-start gap-2.5">
         <TemplateCategoryTile category={template.category} size={34} />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-surface-50 truncate">{template.name}</p>
-          <p className="text-[11px] text-surface-500">{cat.label} · {template.language}</p>
+          <p className="text-sm font-semibold text-surface-50 truncate">{template.name}</p>
+          <p className="text-2xs text-surface-500">{cat.label} · {template.language}</p>
         </div>
-        <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none', cfg.chip)}>
+        <span className={cn('inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-none', cfg.chip)}>
           {cfg.label}
         </span>
       </div>

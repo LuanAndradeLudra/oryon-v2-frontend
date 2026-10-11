@@ -29,6 +29,13 @@ const SEGMENTS = [
   { label: 'Todas',  value: 'all' },
 ] as const
 
+/** SCRUM-1253 (PO, 06/10 — D11): a regra de cada aba, em uma frase (tooltip). */
+const DICA_ABA: Record<string, string> = {
+  me: 'Atribuídas a você, inclusive as que aguardam sua resposta.',
+  unassigned: 'Conversas que aguardam alguém e ainda não têm responsável.',
+  all: 'Todas as conversas que você pode ver.',
+}
+
 const STATUS_LABEL: Record<string, string> = { open: 'Abertas', pending: 'Pendentes', resolved: 'Resolvidas' }
 const PERIOD_LABEL: Record<string, string> = {
   today: 'Hoje', yesterday: 'Ontem', last7: 'Últimos 7 dias', custom: 'Período personalizado',
@@ -58,9 +65,9 @@ function Chip({
         // Opção A (PO, 23/09): um só vocabulário com o segmentado — selecionado em
         // "tinta" invertida (--ink-bg/--ink-fg), não selecionado com FUNDO neutro
         // (lê como botão, não como badge), hover escurece. 24px de alto.
-        'inline-flex items-center gap-1 h-6 px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer',
+        'inline-flex items-center gap-1 h-6 px-2 rounded-[6px] border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer',
         active
-          ? 'border-transparent bg-[var(--ink-bg)] text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)]'
+          ? 'border-[color:var(--ink-bd)] bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)] hover:bg-(image:--ink-grad-hover)'
           : 'border-surface-700 bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100',
       )}
     >
@@ -91,7 +98,7 @@ export function ConversationFiltersBar({
 
   // Pílulas dos filtros que moram no menu do funil — ficam visíveis (e
   // removíveis) aqui pra o operador sempre ver o que está estreitando a lista.
-  const pills: { key: string; label: string; onRemove: () => void; className?: string }[] = []
+  const pills: { key: string; label: string; onRemove: () => void; className?: string; dot?: string }[] = []
   // PO, 23/09: a pílula do status ecoa a cor do menu (azul/âmbar/verde, tinta leve).
   if (activeStatus) pills.push({
     key: 'status',
@@ -110,6 +117,13 @@ export function ConversationFiltersBar({
   if (!naFila && filters.assignedTo === 'unassigned') pills.push({ key: 'sem-dono', label: 'Sem atribuição', onRemove: () => set({ assignedTo: 'all' }) })
   if (filters.untagged) pills.push({ key: 'untagged', label: 'Sem etiqueta', onRemove: () => set({ untagged: undefined }) })
   if (filters.needsReview) pills.push({ key: 'review', label: 'Precisam de verificação', onRemove: () => set({ needsReview: undefined }) })
+  // SCRUM-1253: cada etiqueta filtrada vira uma pílula com o nome inteiro (e a
+  // cor) — o botão do menu fica compacto e não estoura mais a linha.
+  const tagIds = filters.tagId ? filters.tagId.split(',').filter(Boolean) : []
+  for (const tag of allTags.filter((t) => tagIds.includes(t.id))) {
+    const resto = tagIds.filter((id) => id !== tag.id)
+    pills.push({ key: `tag-${tag.id}`, label: tag.name, dot: tag.color, onRemove: () => set({ tagId: resto.length ? resto.join(',') : undefined }) })
+  }
 
   // 28/09: o mesmo "Limpar filtros" do estado vazio da lista (semFiltros).
   const clearAll = () => onFiltersChange(semFiltros(filters))
@@ -131,14 +145,16 @@ export function ConversationFiltersBar({
             caberem numa linha de 335px (PO, 23/09). */}
         <SegmentedControl
           label="Atendimento"
-          options={SEGMENTS.map(({ label, value }) => ({ value, label }))}
+          options={SEGMENTS.map(({ label, value }) => ({ value, label, title: DICA_ABA[value] }))}
           value={segmentValue as 'me' | 'unassigned' | 'all'}
           onChange={(v) => onFiltersChange(comAba(filters, v as AbaDaInbox))}
           variant="ink"
           className="flex-shrink-0 [&>button]:px-1.5"
         />
-        {/* Chips logo após o segmentado (sem ml-auto): a sobra fica à direita. */}
-        <div className="ml-1 flex items-center gap-1.5 flex-shrink-0">
+        {/* Chips logo após o segmentado (sem ml-auto): a sobra fica à direita.
+            SCRUM-1253: o grupo pode encolher (min-w-0) — é o botão de etiqueta,
+            o último, que cede espaço truncando o nome, em vez de vazar da coluna. */}
+        <div className="ml-1 flex items-center gap-1.5 min-w-0">
           <Chip active={!!filters.unreadOnly} onClick={() => set({ unreadOnly: filters.unreadOnly ? undefined : true })}>
             Não lidas
           </Chip>
@@ -158,16 +174,17 @@ export function ConversationFiltersBar({
           {pills.map((p) => (
             <span
               key={p.key}
-              className={cn('inline-flex items-center gap-1 h-5 pl-2 pr-1.5 rounded-sm border border-surface-700 bg-surface-900 text-[11px] font-semibold text-surface-200', p.className)}
+              className={cn('inline-flex items-center gap-1 h-5 pl-2 pr-1.5 rounded-[6px] border border-surface-700 bg-surface-900 text-[11px] font-semibold text-surface-200 max-w-full', p.className)}
             >
-              {p.label}
+              {p.dot && <span aria-hidden className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.dot }} />}
+              <span className="truncate">{p.label}</span>
               {/* PL-1-3 (P10): área de clique de 16px no "x" — o ícone segue 10px,
                   mas o alvo antes era 10×10, abaixo de qualquer mínimo. */}
               <button
                 type="button"
                 onClick={p.onRemove}
                 aria-label={`Remover ${p.label}`}
-                className="-mr-0.5 w-4 h-4 inline-flex items-center justify-center rounded-[4px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+                className="-mr-0.5 w-4 h-4 inline-flex items-center justify-center rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
                 <X className="w-2.5 h-2.5" />
               </button>

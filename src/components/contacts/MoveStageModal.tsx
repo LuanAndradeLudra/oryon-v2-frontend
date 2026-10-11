@@ -90,7 +90,7 @@ export function MoveStageModal({
                   onClick={() => handleMove(stage.key)}
                   disabled={isCurrent || !!pendingKey}
                   className={cn(
-                    'flex-shrink-0 w-[200px] min-h-[140px] rounded-xl border bg-surface-800/60 transition-all text-left',
+                    'flex-shrink-0 w-[200px] min-h-[140px] rounded-[10px] border bg-surface-800/60 transition-all text-left',
                     'flex flex-col overflow-hidden',
                     isCurrent
                       ? 'border-surface-600 cursor-default'
@@ -119,19 +119,19 @@ export function MoveStageModal({
                       {stage.label}
                     </p>
                     {isCurrent && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-surface-300 bg-surface-700/70 px-1.5 py-0.5 rounded self-start">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-surface-300 bg-surface-700/70 px-1.5 py-0.5 rounded self-start">
                         <Check className="w-2.5 h-2.5" />
                         Atual
                       </span>
                     )}
                     {isPending && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-brand-300">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-brand-300">
                         <Loader2 className="w-2.5 h-2.5 animate-spin" />
                         Movendo…
                       </span>
                     )}
                     {!isCurrent && !isPending && (
-                      <span className="text-[10px] text-surface-500">
+                      <span className="text-[11px] text-surface-500">
                         Clique para mover
                       </span>
                     )}

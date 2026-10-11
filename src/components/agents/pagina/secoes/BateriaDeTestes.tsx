@@ -109,7 +109,7 @@ export function BateriaDeTestes({ agent }: { agent: AgentConfigWithTools }) {
                 {' · '}{ultima.changed === 0 ? 'nada mudou' : `${ultima.changed} de ${ultima.total} mudaram`}
                 {ultima.failed > 0 && ` · ${ultima.failed} com erro`}
               </p>
-              <ul className="divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700">
+              <ul className="divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700">
                 {ultima.results.map((r) => <Linha key={r.question} r={r} />)}
               </ul>
             </>

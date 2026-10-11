@@ -171,7 +171,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                 />
 
                 <span
-                  className="w-3 h-3 rounded-xs flex-shrink-0 border-2"
+                  className="w-3 h-3 rounded-[6px] flex-shrink-0 border-2"
                   style={{ backgroundColor: stage.color, borderColor: stage.color }}
                 />
 
@@ -180,7 +180,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                     <span className="text-sm font-medium text-surface-100">{stage.label}</span>
                     {stage.isWon && (
                       <span
-                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-xs color-chip-soft border"
+                        className="inline-flex items-center gap-1 text-2xs px-1.5 py-0.5 rounded-[6px] color-chip-soft border"
                         style={TERMINAL_CHIP_STYLE.won}
                       >
                         <Trophy className="w-2.5 h-2.5" /> {terminalLabels.won}
@@ -188,14 +188,14 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                     )}
                     {stage.isLost && (
                       <span
-                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-xs color-chip-soft border"
+                        className="inline-flex items-center gap-1 text-2xs px-1.5 py-0.5 rounded-[6px] color-chip-soft border"
                         style={TERMINAL_CHIP_STYLE.lost}
                       >
                         <X className="w-2.5 h-2.5" /> {terminalLabels.lost}
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-surface-600 font-mono">{stage.key}</p>
+                  <p className="text-2xs text-surface-600 font-mono">{stage.key}</p>
                 </div>
 
                 {isSales && !stage.isWon && !stage.isLost && (
@@ -209,7 +209,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => { setEditStage(stage); setModalOpen(true) }}
-                      className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+                      className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -217,7 +217,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                       <Tooltip content={deleteBlockedReason} side="top">
                         <button
                           disabled
-                          className="p-1.5 rounded-xs text-surface-600 opacity-40 cursor-not-allowed transition-all"
+                          className="p-1.5 rounded-[6px] text-surface-600 opacity-40 cursor-not-allowed transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -225,7 +225,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                     ) : (
                       <button
                         onClick={() => setDeleteStage(stage)}
-                        className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
+                        className="p-1.5 rounded-[6px] text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

@@ -44,7 +44,7 @@ export function CategoryPills({ value, onChange, disabled }: Props) {
             disabled={disabled}
             onClick={() => onChange(cat.value)}
             className={cn(
-              'group inline-flex items-center gap-2 px-3 py-2 rounded-lg ring-1 transition-colors text-sm',
+              'group inline-flex items-center gap-2 px-3 py-2 rounded-[6px] ring-1 transition-colors text-sm',
               active
                 ? 'bg-status-active-bg text-status-active ring-status-active-border'
                 : 'bg-surface-900 text-surface-300 ring-surface-700 hover:bg-surface-800 hover:text-surface-100',

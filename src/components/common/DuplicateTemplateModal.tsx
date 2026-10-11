@@ -66,7 +66,7 @@ export function DuplicateTemplateModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-800 rounded-xl border border-[var(--bd2)] w-full max-w-md overflow-hidden"
+        className="bg-surface-800 rounded-[10px] border border-[var(--bd2)] w-full max-w-md overflow-hidden"
       >
         <div className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
           <div className="min-w-0">
@@ -81,7 +81,7 @@ export function DuplicateTemplateModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
+            className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -95,10 +95,10 @@ export function DuplicateTemplateModal({
           ) : (
             <>
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wide text-surface-400 mb-1.5">
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-surface-400 mb-1.5">
                   Linha de destino <span className="text-danger">*</span>
                 </label>
-                <ul className="rounded-lg border border-surface-700 overflow-hidden divide-y divide-surface-700">
+                <ul className="rounded-[10px] border border-surface-700 overflow-hidden divide-y divide-surface-700">
                   {otherLines.map((n) => {
                     const isPicked = pickedLineId === n.id
                     return (
@@ -141,7 +141,7 @@ export function DuplicateTemplateModal({
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wide text-surface-400 mb-1.5">
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-surface-400 mb-1.5">
                   Novo nome <span className="text-surface-600 font-normal">(opcional)</span>
                 </label>
                 <input
@@ -153,9 +153,9 @@ export function DuplicateTemplateModal({
                   // Eixo 10: --bd2 sólido (não border-surface-700/60 com
                   // opacidade arbitrária) — mesma borda de input do resto
                   // do app; bg-surface-800 sólido, sem /60.
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--bd2)] bg-surface-800 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500"
+                  className="w-full px-3 py-2 rounded-[6px] border border-[var(--bd2)] bg-surface-800 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500"
                 />
-                <p className="mt-1 text-[10px] text-surface-500">
+                <p className="mt-1 text-[11px] text-surface-500">
                   Snake_case, sem espaços. Use para evitar conflitos de nome.
                 </p>
               </div>
@@ -163,7 +163,7 @@ export function DuplicateTemplateModal({
           )}
 
           {error && (
-            <div className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-[11px] text-danger">
+            <div className="rounded-[10px] border border-danger/30 bg-danger/10 px-3 py-2 text-[11px] text-danger">
               {error}
             </div>
           )}

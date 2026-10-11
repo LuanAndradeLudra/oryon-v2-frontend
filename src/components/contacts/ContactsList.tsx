@@ -14,6 +14,8 @@ interface ContactsListProps {
   loading: boolean
   /** Contato com o painel aberto. */
   activeId: string | null
+  /** Contato aberto fixado no topo que não atende aos filtros (SCRUM-1253). */
+  foraDoFiltroId?: string | null
   /** `touch` (mobile): linhas sem checkbox nem ações inline — ver ContactListRow. */
   variant?: 'default' | 'touch'
   selectedIds?: Set<string>
@@ -40,7 +42,7 @@ function SkeletonRows({ touch }: { touch: boolean }) {
             <span className="h-3 w-40 rounded-2xs bg-[var(--sf2)]" />
             <span className="h-2.5 w-64 max-w-full rounded-2xs bg-[var(--sf2)]" />
           </div>
-          <span className="h-5 w-20 rounded-xs bg-[var(--sf2)] flex-shrink-0" />
+          <span className="h-5 w-20 rounded-[6px] bg-[var(--sf2)] flex-shrink-0" />
           <span className={touch ? 'h-3 w-10 rounded-2xs bg-[var(--sf2)] flex-shrink-0' : 'h-3 w-24 rounded-2xs bg-[var(--sf2)] flex-shrink-0'} />
         </div>
       ))}
@@ -49,7 +51,7 @@ function SkeletonRows({ touch }: { touch: boolean }) {
 }
 
 export function ContactsList({
-  contacts, loading, activeId, variant = 'default', selectedIds,
+  contacts, loading, activeId, foraDoFiltroId = null, variant = 'default', selectedIds,
   onOpen, onToggleSelect, onOpenConversation, onSendTemplate, onOpenProfile,
   hasMore, loadingMore, onLoadMore, scrollPositionRef,
 }: ContactsListProps) {
@@ -100,6 +102,7 @@ export function ContactsList({
               contact={c}
               stages={stages}
               active={activeId === c.id}
+              foraDoFiltro={foraDoFiltroId === c.id}
               variant={variant}
               checked={selectedIds?.has(c.id) ?? false}
               selectionMode={selectionMode}

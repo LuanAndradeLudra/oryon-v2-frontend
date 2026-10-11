@@ -93,12 +93,12 @@ export function BottomTabBar() {
             <span className="relative flex items-center justify-center w-6 h-6">
               <tab.Icon className="w-5 h-5" />
               {showBadge && (
-                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-[var(--color-btn-danger-bg)] text-[var(--color-btn-danger-fg)] text-[9px] font-bold leading-none">
+                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-[var(--color-btn-danger-bg)] text-[var(--color-btn-danger-fg)] text-[11px] font-semibold leading-none">
                   {unreadConversations > 99 ? '99+' : unreadConversations}
                 </span>
               )}
             </span>
-            <span className="text-[10px] font-medium leading-none">{tab.label}</span>
+            <span className="text-[11px] font-medium leading-none">{tab.label}</span>
           </Link>
         )
       })}

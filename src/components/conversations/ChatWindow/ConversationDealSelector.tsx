@@ -81,7 +81,7 @@ export function ConversationDealSelector({
         </button>
       }
     >
-      <div className="px-3 py-2 border-b border-surface-700 text-[10px] font-semibold text-surface-500 uppercase tracking-wide">
+      <div className="px-3 py-2 border-b border-surface-700 text-2xs font-semibold text-surface-500">
         Negócio desta conversa
       </div>
       <div className="py-1 max-h-72 overflow-y-auto" role="menu">
@@ -106,14 +106,14 @@ export function ConversationDealSelector({
                   <span className={cn('text-xs font-medium truncate', active ? 'text-surface-50' : 'text-surface-200')}>{deal.title}</span>
                   {active && <Check className="w-3 h-3 text-brand-400 flex-shrink-0" aria-label="Vinculado a esta conversa" />}
                 </span>
-                <span className="block text-[10px] text-surface-500 truncate">
+                <span className="block text-[11px] text-surface-500 truncate">
                   {[where, amount].filter(Boolean).join(' · ')}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => { setOpen(false); onOpenDeal(deal.id) }}
-                className="text-[10px] text-brand-300 hover:text-brand-200 whitespace-nowrap flex-shrink-0 mt-0.5"
+                className="text-[11px] text-brand-300 hover:text-brand-200 whitespace-nowrap flex-shrink-0 mt-0.5"
                 data-testid={`conversation-deal-open-${deal.id}`}
               >
                 abrir

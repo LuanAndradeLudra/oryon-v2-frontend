@@ -68,8 +68,8 @@ function VocabDiff({ current, next }: { current: TenantVocabulary; next: TenantV
   if (changed.length === 0) return null
 
   return (
-    <div className="mt-4 rounded-md border border-status-pending-border bg-status-pending-bg p-3">
-      <p className="text-[11px] font-semibold text-status-pending uppercase tracking-wide mb-2">
+    <div className="mt-4 rounded-[6px] border border-status-pending-border bg-status-pending-bg p-3">
+      <p className="text-2xs font-semibold text-status-pending uppercase tracking-wide mb-2">
         Termos que serão alterados
       </p>
       <div className="flex flex-col gap-1.5">
@@ -112,14 +112,14 @@ function StagePreview({ templateId }: { templateId: string }) {
 
   return (
     <div>
-      <p className="text-[11px] font-semibold text-surface-400 uppercase tracking-wide mb-2">
+      <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wide mb-2">
         Estágios sugeridos para este setor
       </p>
       <div className="flex flex-wrap gap-2">
         {template.suggestedStages.map((s) => (
           <span
             key={s.label}
-            className="color-chip flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border"
+            className="color-chip flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-medium border"
             style={{ ['--chip']: s.color } as React.CSSProperties}
           >
             {s.isTerminal && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />}
@@ -127,7 +127,7 @@ function StagePreview({ templateId }: { templateId: string }) {
           </span>
         ))}
       </div>
-      <p className="text-[10px] text-surface-600 mt-2">
+      <p className="text-2xs text-surface-600 mt-2">
         * Os estágios são apenas sugestões. Configure em Configurações → CRM → Estágios.
       </p>
     </div>
@@ -254,7 +254,7 @@ export function VerticalSettings() {
             ]}
           />
         </FormField>
-        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 rounded-xs px-2.5 py-2 leading-[1.5]">
+        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 rounded-[6px] px-2.5 py-2 leading-[1.5]">
           Prévia: <span className="text-surface-100">"Novo {dealLower}" · "3 {dealsLower} em Proposta" · "{vocab.deal} {wonAgreement}"</span>
         </p>
         </div>
@@ -312,14 +312,14 @@ export function VerticalSettings() {
             <PersonSelect value={vocab.agent} presets={AGENT_PRESETS} onChange={(v) => update('agent', v)} />
           </FormField>
         </div>
-        <p className="mt-2 text-[11.5px] text-surface-500">
+        <p className="mt-2 text-xs text-surface-500">
           Opções: {CONTACT_PRESETS.join(' · ')} · Personalizado
         </p>
       </SettingsSection>
 
       {/* Onde isso aparece — referência, não editável */}
       <SettingsSection title="Onde isso aparece" description="Referência, não editável.">
-        <div className="text-[12.5px]">
+        <div className="text-xs">
           {[
             ['Menu lateral', `Funis → coluna "${vocab.deals}"`],
             ['Ficha do contato', `Aba "${vocab.deals}" · botão "Novo ${dealLower}"`],

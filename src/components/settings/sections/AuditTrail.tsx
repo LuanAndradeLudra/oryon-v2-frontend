@@ -22,6 +22,8 @@ import {
   type TenantAuditQuery,
 } from '@/services/tenantAuditApi'
 import { cn } from '@/lib/utils'
+import { acoesDaAuditoria } from '@/components/dashboard/activityFormatter'
+import { usersApi } from '@/services/api'
 
 // Coarse domain buckets the user can filter by — friendlier than asking them
 // to type 'contact_created' / 'contact_updated' / 'contact_deleted'. Each
@@ -46,6 +48,8 @@ const ENTITY_BUCKETS: Array<{ value: string; label: string }> = [
 ]
 
 const SEVERITY_OPTIONS = ['', 'info', 'warn', 'error'] as const
+/** Gravidade em português (SCRUM-1253). */
+const GRAVIDADE: Record<string, string> = { '': 'Todas', info: 'Informação', warn: 'Atenção', error: 'Erro' }
 
 // Chips suaves (fundo claro + texto colorido), não sólidos — vocabulário 2e.
 const SEVERITY_CLASS: Record<string, string> = {
@@ -135,7 +139,7 @@ export function AuditTrail() {
       <FilterBar key={`${filterBarKey}|${chave}`} filters={filters} onApply={onApply} loading={loading} />
 
       {error && rows.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-sm border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-[6px] border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
@@ -172,7 +176,7 @@ export function AuditTrail() {
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-surface-500 text-[10px] font-bold uppercase" style={{ letterSpacing: '.14em' }}>
+            <thead className="text-surface-500 text-2xs font-semibold uppercase" style={{ letterSpacing: '.14em' }}>
               <tr className="border-b border-surface-700">
                 <th className="text-left pl-0 pr-4 py-2.5 font-medium">Quando</th>
                 <th className="text-left px-4 py-2.5 font-medium">Quem</th>
@@ -237,12 +241,11 @@ function Row({ row }: { row: TenantAuditRow }) {
         <div className="flex items-center gap-2">
           <span className="text-surface-100 text-sm">{verb}</span>
           {row.severity !== 'info' && (
-            <span className={cn('inline-block px-1.5 py-px rounded-xs text-[11px] font-semibold border', SEVERITY_CLASS[row.severity] ?? SEVERITY_CLASS.info)}>
-              {row.severity}
+            <span className={cn('inline-block px-1.5 py-px rounded-[6px] text-2xs font-semibold border', SEVERITY_CLASS[row.severity] ?? SEVERITY_CLASS.info)}>
+              {GRAVIDADE[row.severity] ?? row.severity}
             </span>
           )}
         </div>
-        <div className="text-[11px] text-surface-500 font-mono">{row.action}</div>
       </td>
       <td className="px-4 py-2.5 text-surface-300 text-sm">
         {row.entityName ? (
@@ -380,6 +383,13 @@ function FilterBar({
   loading: boolean
 }) {
   const [draft, setDraft] = useState<TenantAuditQuery>(filters)
+  // Pessoas da equipe para o filtro "Pessoa" (antes, um UUID digitado).
+  const [pessoas, setPessoas] = useState<{ id: string; firstName: string; lastName?: string | null }[]>([])
+  useEffect(() => {
+    let vivo = true
+    usersApi.list().then((r) => { if (vivo) setPessoas(r.data) }).catch(() => {})
+    return () => { vivo = false }
+  }, [])
   const set = <K extends keyof TenantAuditQuery>(k: K, v: TenantAuditQuery[K]) => {
     setDraft(prev => ({ ...prev, [k]: v }))
   }
@@ -400,18 +410,28 @@ function FilterBar({
       <div className="flex items-center gap-2 text-xs text-surface-400">
         <Filter className="w-4 h-4" /> Filtros
       </div>
-      <Field label="Quem (userId)" value={draft.actorId ?? ''} onChange={v => set('actorId', v || undefined)} placeholder="UUID" />
+      <FiltroSelect
+          label="Pessoa"
+          value={draft.actorId ?? ''}
+          options={[{ value: '', label: 'Todas' }, ...pessoas.map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName ?? ''}`.trim() }))]}
+          onChange={v => set('actorId', v || undefined)}
+        />
       <FiltroSelect
         label="Área"
         value={draft.entityType ?? ''}
         options={ENTITY_BUCKETS}
         onChange={v => set('entityType', v || undefined)}
       />
-      <Field label="Ação (verb)" value={draft.action ?? ''} onChange={v => set('action', v || undefined)} placeholder="ex: campaign_sent" />
+      <FiltroSelect
+          label="Ação"
+          value={draft.action ?? ''}
+          options={[{ value: '', label: 'Todas' }, ...acoesDaAuditoria()]}
+          onChange={v => set('action', v || undefined)}
+        />
       <FiltroSelect
         label="Severidade"
         value={draft.severity ?? ''}
-        options={SEVERITY_OPTIONS.map(s => ({ value: s, label: s || 'todas' }))}
+        options={SEVERITY_OPTIONS.map(s => ({ value: s, label: GRAVIDADE[s] ?? s }))}
         onChange={v => set('severity', (v || undefined) as TenantAuditQuery['severity'])}
       />
       <Field label="Desde" type="datetime-local" value={toLocalInput(draft.since)} onChange={v => set('since', fromLocalInput(v))} />

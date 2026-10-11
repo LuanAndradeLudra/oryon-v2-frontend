@@ -352,7 +352,7 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
               aria-pressed={multiOpenOnly}
               data-testid="board-filter-multi-open"
               className={cn(
-                'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-xs font-medium transition-colors flex-shrink-0',
+                'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] border text-xs font-medium transition-colors flex-shrink-0',
                 multiOpenOnly
                   ? 'border-brand-500 bg-accent-soft text-accent-dark'
                   : 'border-[var(--bd2)] bg-surface-900 text-surface-300 hover:text-surface-100',

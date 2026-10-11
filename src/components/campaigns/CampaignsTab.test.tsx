@@ -31,7 +31,7 @@ afterEach(() => cleanup())
 describe('CampaignsTab — interrompida (MA-6.3)', () => {
   it('mostra o motivo e o relatório, sem botão de enviar', async () => {
     render(<MemoryRouter><CampaignsTab /></MemoryRouter>)
-    const card = (await screen.findByText('Promo de outubro')).closest('div.rounded-lg') as HTMLElement
+    const card = (await screen.findByText('Promo de outubro')).closest('div.rounded-\\[10px\\]') as HTMLElement
     expect(card).toHaveTextContent('Interrompida')
     expect(card).toHaveTextContent('foi pausado pela Meta: primeira pausa por baixa qualidade')
     expect(card.querySelector('button')).not.toBeNull()
@@ -41,7 +41,7 @@ describe('CampaignsTab — interrompida (MA-6.3)', () => {
 
   it('o rascunho continua com "Enviar"', async () => {
     render(<MemoryRouter><CampaignsTab /></MemoryRouter>)
-    const card = (await screen.findByText('Rascunho de novembro')).closest('div.rounded-lg') as HTMLElement
+    const card = (await screen.findByText('Rascunho de novembro')).closest('div.rounded-\\[10px\\]') as HTMLElement
     expect([...card.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Enviar')).toBe(true)
   })
 

@@ -30,7 +30,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {...aria}
         required={required}
         className={cn(
-          'w-full bg-surface-800 border rounded-sm text-surface-100',
+          'w-full bg-surface-800 border rounded-[6px] text-surface-100',
           sizeStyles[size],
           'placeholder:text-surface-500 caret-brand-500 resize-none',
           'focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500',

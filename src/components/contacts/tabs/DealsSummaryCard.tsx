@@ -114,15 +114,15 @@ export function DealsSummaryCard({
           {count > 0 && (
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-surface-600">Total</p>
+                <p className="text-xs text-surface-600">Total</p>
                 <p className="text-sm font-semibold text-surface-100 tabular-nums">{formatBRL(total)}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-surface-600">Ganho</p>
+                <p className="text-xs text-surface-600">Ganho</p>
                 <p className="text-sm font-semibold text-success tabular-nums">{formatBRL(wonTotal)}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-surface-600">Em aberto</p>
+                <p className="text-xs text-surface-600">Em aberto</p>
                 <p className="text-sm font-semibold text-surface-100 tabular-nums">
                   {openCount} de {count}
                 </p>

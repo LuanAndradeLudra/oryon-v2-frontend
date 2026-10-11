@@ -29,7 +29,7 @@ function readStored(storageKey: string | undefined, fallback: boolean): boolean 
  * Seção de painel acordeão (padrão Pipedrive "sidebar sections"): desenhada
  * para viver DENTRO de uma superfície única (painel com divide-y), não solta
  * no canvas — o caller empilha várias num container
- * `rounded-2xl border bg-surface-900 divide-y divide-surface-700`.
+ * `rounded-[10px] border bg-surface-900 divide-y divide-surface-700`.
  *
  * Título em eyebrow (nível ESTRUTURAL, um degrau acima dos títulos text-sm
  * dos cards internos — evita dois headers idênticos empilhados). Ordem no
@@ -61,7 +61,7 @@ export function CollapsibleSection({
           aria-expanded={open}
           className="flex items-center gap-1.5 flex-1 min-w-0 text-left px-3 py-2.5 cursor-pointer group"
         >
-          <span className="eyebrow truncate text-surface-400 group-hover:text-surface-200 transition-colors">
+          <span className="truncate text-xs font-semibold text-surface-300 group-hover:text-surface-100 transition-colors">
             {title}
             {typeof count === 'number' && (
               <span className="ml-1.5 text-surface-500 tabular-nums normal-case tracking-normal">({count})</span>

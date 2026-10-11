@@ -55,7 +55,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 4 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="relative z-10 w-[760px] max-w-full h-[460px] max-h-[90vh] bg-surface-800 overlay-frame border rounded-2xl overflow-hidden flex"
+        className="relative z-10 w-[760px] max-w-full h-[460px] max-h-[90vh] bg-surface-800 overlay-frame border rounded-[10px] overflow-hidden flex"
       >
         {/* Coluna de identidade */}
         <div
@@ -68,21 +68,21 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
           <div
             style={{ boxShadow: comingSoon ? undefined : `inset 0 -3px 0 ${connector.brandColor}` }}
             className={cn(
-              'w-[52px] h-[52px] rounded-xl bg-white flex items-center justify-center flex-shrink-0',
+              'w-[52px] h-[52px] rounded-[10px] bg-white flex items-center justify-center flex-shrink-0',
               comingSoon && 'opacity-70',
             )}
           >
-            <span style={{ color: connector.brandColor, fontSize: 22 }} className="font-extrabold">
+            <span style={{ color: connector.brandColor, fontSize: 22 }} className="font-semibold">
               {connector.logoInitial}
             </span>
           </div>
-          <h2 className="text-[17px] font-bold text-surface-50 mt-3">{connector.name}</h2>
+          <h2 className="text-lg font-semibold text-surface-50 mt-3">{connector.name}</h2>
           <p className="text-xs text-surface-400 mt-0.5">
             por {connector.vendor}{connector.version ? ` · ${connector.version}` : ''}
           </p>
 
           <div className="flex flex-wrap gap-1 mt-2">
-            <span className="inline-flex items-center h-5 rounded-[5px] border border-surface-700 bg-surface-800 px-[7px] text-[11px] font-semibold text-surface-400">
+            <span className="inline-flex items-center h-5 rounded-[6px] border border-surface-700 bg-surface-800 px-[7px] text-[11px] font-semibold text-surface-400">
               {connector.category}
             </span>
             {comingSoon ? (
@@ -138,7 +138,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
               type="button"
               onClick={onClose}
               aria-label="Fechar"
-              className="w-7 h-7 rounded-sm flex items-center justify-center text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors flex-shrink-0"
+              className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors flex-shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
@@ -163,7 +163,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
                 {connector.capabilities.length > 0 && (
                   <div>
                     <p className={cn(
-                      'text-[10px] font-bold uppercase mb-2 tracking-[.14em]',
+                      'text-[11px] font-semibold uppercase mb-2 tracking-[.14em]',
                       comingSoon ? 'text-surface-500' : 'text-accent-dark',
                     )}>
                       {comingSoon ? 'Previsto' : 'O que o agente passa a fazer'}
@@ -173,11 +173,11 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
                         <div
                           key={c.title}
                           className={cn(
-                            'rounded-sm border px-3 py-2.5',
+                            'rounded-[6px] border px-3 py-2.5',
                             comingSoon ? 'border-dashed border-[var(--bd2)]' : 'border-surface-700',
                           )}
                         >
-                          <p className="text-[12.5px] font-semibold text-surface-100">{c.title}</p>
+                          <p className="text-xs font-semibold text-surface-100">{c.title}</p>
                           <p className="text-xs text-surface-400 mt-0.5 leading-[1.45]">{c.description}</p>
                         </div>
                       ))}

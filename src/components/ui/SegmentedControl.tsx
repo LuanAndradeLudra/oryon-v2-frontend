@@ -15,6 +15,8 @@ export interface SegmentOption<T extends string> {
   icon?: ComponentType<{ className?: string }>
   /** Contagem opcional exibida como badge à direita do label. */
   count?: number
+  /** Dica ao passar o mouse (title). */
+  title?: string
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -49,7 +51,11 @@ export function SegmentedControl<T extends string>({
       role="tablist"
       aria-label={label}
       className={cn(
-        'inline-flex items-stretch border border-surface-700 rounded-sm overflow-hidden',
+        'inline-flex items-stretch border border-surface-700 rounded-[6px] overflow-hidden',
+        // SCRUM-1253 (PO, 06–07/10): no claro o "ink" e o "subtle" viram TRILHO cinza (papel
+        // "controle" da escala de neutros) com o selecionado em branco e sombra
+        // leve — padrão iOS/Linear. O escuro segue com a tinta invertida.
+        (variant === 'ink' || variant === 'subtle') && '[[data-theme=light]_&]:bg-[#EAEEF3] [[data-theme=light]_&]:border-transparent [[data-theme=light]_&]:p-0.5 [[data-theme=light]_&]:gap-0.5 [[data-theme=light]_&]:rounded-[8px]',
         className,
       )}
     >
@@ -61,6 +67,7 @@ export function SegmentedControl<T extends string>({
             key={opt.value}
             role="tab"
             aria-selected={active}
+            title={opt.title}
             onClick={() => onChange(opt.value)}
             style={active && solid ? ({ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties) : undefined}
             className={cn(
@@ -68,9 +75,16 @@ export function SegmentedControl<T extends string>({
               size === 'sm' ? 'h-7 px-2.5 text-xs' : size === '32' ? 'h-8 px-2.5 text-xs' : 'h-9 px-3.5 text-[13px]',
               i > 0 && 'border-l border-surface-700',
               // ELEV-02 (spec 1a): sem sombra fora de overlay.
+              (variant === 'ink' || variant === 'subtle') && cn(
+                '[[data-theme=light]_&]:border-l-0 [[data-theme=light]_&]:rounded-[6px]',
+                size === 'sm' ? '[[data-theme=light]_&]:h-6' : size === '32' ? '[[data-theme=light]_&]:h-7' : '[[data-theme=light]_&]:h-8',
+                active
+                  ? '[[data-theme=light]_&]:bg-white [[data-theme=light]_&]:hover:bg-white [[data-theme=light]_&]:text-surface-100 [[data-theme=light]_&]:shadow-[0_1px_2px_rgba(15,23,42,.14),0_0_0_1px_rgba(15,23,42,.05)]'
+                  : '[[data-theme=light]_&]:bg-transparent [[data-theme=light]_&]:text-[#4B5563] [[data-theme=light]_&]:hover:bg-transparent [[data-theme=light]_&]:hover:text-surface-100',
+              ),
               variant === 'ink'
                 ? active
-                  ? 'bg-[var(--ink-bg)] text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)]'
+                  ? 'bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)] hover:bg-(image:--ink-grad-hover)'
                   : 'bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100'
                 : active
                   ? solid

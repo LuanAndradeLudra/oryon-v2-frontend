@@ -163,7 +163,7 @@ export function CustomFieldModal({ open, onClose, onSave, editField, existingKey
                 {options.map((opt) => (
                   <span
                     key={opt}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-xs bg-[var(--sf2)] border border-surface-700 text-surface-200"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-xs bg-[var(--sf2)] border border-surface-700 text-surface-200"
                   >
                     {opt}
                     <button

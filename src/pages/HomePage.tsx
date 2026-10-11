@@ -60,12 +60,12 @@ function PersonalHeader({ user }: { user: User }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold tracking-[-0.01em] text-surface-100">
+      <h1 className="text-2xl font-display font-semibold tracking-[-0.01em] text-surface-100">
         {greeting}, {user.firstName}
         <Hand className="w-6 h-6 inline-block ml-3 align-[-3px] text-brand-400" aria-hidden />
       </h1>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-        <span className={cn('color-chip-soft inline-flex items-center h-5 px-1.5 rounded-xs text-[11px] font-semibold border')} style={{ ['--chip']: role.chip } as React.CSSProperties}>
+        <span className={cn('color-chip-soft inline-flex items-center h-5 px-1.5 rounded-[6px] text-[11px] font-semibold border')} style={{ ['--chip']: role.chip } as React.CSSProperties}>
           {role.label}
         </span>
         {user.departmentName && (
@@ -101,8 +101,8 @@ function KPICard({ data }: { data: KPIData }) {
   const corpo = (
     <>
       <span className="text-[11px] font-medium text-surface-400 truncate">{data.label}</span>
-      <p className="text-[26px] font-extrabold tracking-[-0.02em] leading-[1.15] mt-0.5 text-surface-100 tabular-nums">{typeof data.value === 'number' ? data.value.toLocaleString('pt-BR') : data.value}</p>
-      <div className="flex items-center gap-1.5 min-w-0 text-[11.5px]">
+      <p className="text-2xl font-semibold tracking-[-0.02em] leading-[1.15] mt-0.5 text-surface-100 tabular-nums">{typeof data.value === 'number' ? data.value.toLocaleString('pt-BR') : data.value}</p>
+      <div className="flex items-center gap-1.5 min-w-0 text-xs">
         {data.trend && (
           <span className={cn(
             'font-medium',
@@ -156,13 +156,13 @@ function KPIGrid({ stats, role, linkAoVivo = false }: { stats: HomeStats; role: 
       <h3 className="text-[11px] font-semibold uppercase tracking-[.08em] text-surface-500">Toda a equipe</h3>
       {/* A operação ao vivo (quem espera, equipe online) mora no Dashboard. */}
       {linkAoVivo && (
-        <Link to="/dashboard" className="inline-flex items-center gap-1 text-[11.5px] font-medium text-surface-400 hover:text-surface-100 transition-colors">
+        <Link to="/dashboard" className="inline-flex items-center gap-1 text-xs font-medium text-surface-400 hover:text-surface-100 transition-colors">
           <span className="w-1.5 h-1.5 rounded-full bg-online" aria-hidden />
           Ao vivo no Dashboard <ChevronRight className="w-3.5 h-3.5" aria-hidden />
         </Link>
       )}
     </div>
-    <div className="grid grid-cols-2 lg:grid-cols-4 bg-surface-800 border border-surface-700 rounded-lg overflow-hidden divide-x divide-surface-700 [&>*:nth-child(n+3)]:border-t [&>*:nth-child(n+3)]:border-surface-700 lg:[&>*:nth-child(n+3)]:border-t-0">
+    <div className="grid grid-cols-2 lg:grid-cols-4 bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden divide-x divide-surface-700 [&>*:nth-child(n+3)]:border-t [&>*:nth-child(n+3)]:border-surface-700 lg:[&>*:nth-child(n+3)]:border-t-0">
       {getKPIs(stats, role).map((kpi) => (
         <KPICard key={kpi.label} data={kpi} />
       ))}
@@ -173,7 +173,7 @@ function KPIGrid({ stats, role, linkAoVivo = false }: { stats: HomeStats; role: 
 
 function KPIGridSkeleton() {
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg h-[84px] animate-pulse" />
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] h-[84px] animate-pulse" />
   )
 }
 
@@ -205,18 +205,18 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
   return (
     // h-full + flex-col garantem que o card iguale altura com o
     // MyPerformanceCard ao lado quando estão em col-span-6 cada.
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           {/* Eixo 10: mesmo badge do AiInsightsSection.tsx (Dashboard) — bg-white
               + text-black não é selo de marca, ficava sem contraste no claro. */}
-          <div className="w-7 h-7 rounded-lg bg-brand-500/15 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-[6px] bg-brand-500/15 flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-brand-400" />
           </div>
           <span className="text-sm font-semibold text-surface-100">Insights da Oryon AI</span>
         </div>
         <div className="flex items-center gap-3">
-          {timeAgo && <span className="text-[10px] text-surface-600">Gerado {timeAgo}</span>}
+          {timeAgo && <span className="text-[11px] text-surface-600">Gerado {timeAgo}</span>}
           <button
             onClick={load}
             disabled={loading}
@@ -402,7 +402,7 @@ function QuickActions({ role }: { role: string }) {
   const { isRouteVisible } = useFeatureVisibility()
   const actions = getQuickActions(role).filter((action) => isRouteVisible(action.href))
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-3.5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-3">Ações rápidas</h3>
       {/* Na grade de 3 (desktop) uma por linha: em duas, os textos saíam cortados. */}
       <div className="grid grid-cols-2 lg:grid-cols-1 gap-1.5">
@@ -413,9 +413,9 @@ function QuickActions({ role }: { role: string }) {
               key={a.label}
               // Configurações leva o caminho de volta para a Home.
               onClick={() => navigate(a.href.startsWith('/settings/') ? comVolta(a.href, '/home', 'Voltar para a Home') : a.href)}
-              className="flex items-center gap-3 px-3 py-1.5 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left group"
+              className="flex items-center gap-3 px-3 py-1.5 rounded-[6px] hover:bg-[var(--rowhover)] transition-colors text-left group"
             >
-              <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0', a.iconBg)}>
+              <div className={cn('w-7 h-7 rounded-[6px] flex items-center justify-center flex-shrink-0', a.iconBg)}>
                 <Icon className={cn('w-4 h-4', a.iconColor)} />
               </div>
               <div className="min-w-0">
@@ -479,7 +479,7 @@ function ActivityFeed() {
   }
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-3.5 h-full">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-surface-100">Atividade recente</h3>
         <Link to={comVolta('/settings/audit', '/home', 'Voltar para a Home')} className="text-[11px] text-surface-500 hover:text-surface-200 transition-colors">
@@ -501,7 +501,7 @@ function ActivityFeed() {
         <div className="flex flex-col">
           {rows.map((row) => (
             <div key={row.id} className="flex items-start gap-3 py-1.5 border-b border-surface-700 last:border-0">
-              <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-surface-300 mt-0.5">
+              <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0 text-[11px] font-semibold text-surface-300 mt-0.5">
                 {getInitials(quemFez(row, meuId))}
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
@@ -558,7 +558,7 @@ const DICAS: string[] = [
 
 function Tecla({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-[5px] border border-surface-600 bg-[var(--sf2)] text-[11px] font-semibold text-surface-200 font-mono">
+    <kbd className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-[6px] border border-surface-600 bg-[var(--sf2)] text-[11px] font-semibold text-surface-200 font-mono">
       {children}
     </kbd>
   )
@@ -570,7 +570,7 @@ function AtalhosEDica() {
   const dica = DICAS[dia % DICAS.length]
   return (
     <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-4 items-stretch">
-      <section aria-labelledby="home-atalhos" className="lg:col-span-2 bg-surface-800 border border-surface-700 rounded-lg p-3.5">
+      <section aria-labelledby="home-atalhos" className="lg:col-span-2 bg-surface-800 border border-surface-700 rounded-[10px] p-3.5">
         <h3 id="home-atalhos" className="flex items-center gap-2 text-sm font-semibold text-surface-100 mb-3">
           <Keyboard className="w-4 h-4 text-brand-400" aria-hidden /> Atalhos do teclado
         </h3>
@@ -585,7 +585,7 @@ function AtalhosEDica() {
           ))}
         </ul>
       </section>
-      <section aria-labelledby="home-dica" className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 flex flex-col">
+      <section aria-labelledby="home-dica" className="bg-surface-800 border border-surface-700 rounded-[10px] p-3.5 flex flex-col">
         <h3 id="home-dica" className="flex items-center gap-2 text-sm font-semibold text-surface-100 mb-3">
           <Lightbulb className="w-4 h-4 text-accent-amber" aria-hidden /> Você sabia?
         </h3>
@@ -618,7 +618,7 @@ function AgentBlock() {
   }, [])
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Minhas conversas</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : total === null ? '' : `${total.toLocaleString('pt-BR')} em andamento`}</span>
@@ -638,9 +638,9 @@ function AgentBlock() {
             <button
               key={conv.id}
               onClick={() => navigate(`/conversations?aba=minhas&id=${conv.id}`)}
-              className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left w-full"
+              className="flex items-center gap-3 p-3 rounded-[6px] hover:bg-[var(--rowhover)] transition-colors text-left w-full"
             >
-              <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-xs font-semibold text-surface-300 flex-shrink-0">
                 {getInitials(conv.contact.displayName)}
               </div>
               <div className="flex-1 min-w-0">
@@ -648,7 +648,7 @@ function AgentBlock() {
                 <p className="text-xs text-surface-500 truncate">{conv.lastMessagePreview}</p>
               </div>
               {conv.unreadCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-brand-600 text-surface-950 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                <span className="w-5 h-5 rounded-full bg-brand-600 text-surface-950 text-[11px] font-semibold flex items-center justify-center flex-shrink-0">
                   {conv.unreadCount}
                 </span>
               )}
@@ -658,7 +658,7 @@ function AgentBlock() {
       )}
       <button
         onClick={() => navigate('/conversations?aba=minhas')}
-        className="mt-auto pt-2 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
+        className="mt-auto pt-2 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-[6px] py-2 transition-colors"
       >
         Ver minhas conversas <ChevronRight className="w-3.5 h-3.5" />
       </button>
@@ -743,7 +743,7 @@ export function HomePage() {
             {/* ── Linha 3: números da equipe, na largura toda ─────────────── */}
             <div className="lg:col-span-12">
               {statsErro ? (
-                <div role="alert" className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 text-sm text-surface-400">
+                <div role="alert" className="bg-surface-800 border border-surface-700 rounded-[10px] p-3.5 text-sm text-surface-400">
                   Não foi possível carregar os números de hoje. Recarregue a página para tentar de novo.
                 </div>
               ) : stats ? (

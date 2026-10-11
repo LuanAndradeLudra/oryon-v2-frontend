@@ -52,7 +52,7 @@ export function OndeOAgenteFalha({ agentId }: { agentId: string }) {
         ) : dados.problems.length === 0 ? (
           <EmptyState icon={AlertTriangle} title="Nenhuma conversa com problema" hint="Quando o agente falhar, passar do tempo ou se enrolar numa resposta, a conversa aparece aqui." />
         ) : (
-          <ul className="divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700">
+          <ul className="divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700">
             {dados.problems.map((p) => (
               <li key={p.conversationId} className="flex items-center justify-between gap-3 bg-[var(--sf2)] px-4 py-3">
                 <div className="min-w-0">
@@ -88,7 +88,7 @@ export function OndeOAgenteFalha({ agentId }: { agentId: string }) {
         ) : dados.unanswered.length === 0 ? (
           <EmptyState icon={HelpCircle} title="Nenhuma pergunta ficou sem resposta" hint="Quando a base não tiver nada sobre o que o cliente perguntou, a pergunta aparece aqui." />
         ) : (
-          <ul className="divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700">
+          <ul className="divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700">
             {dados.unanswered.map((q) => (
               <li key={`${q.question}-${q.lastAt}`} className="flex items-baseline justify-between gap-3 bg-[var(--sf2)] px-4 py-3">
                 <p className="min-w-0 break-words text-sm text-surface-100">“{q.question}”</p>

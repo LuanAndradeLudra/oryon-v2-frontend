@@ -170,9 +170,9 @@ export function PaginaDoAgente({ agentId, secao }: { agentId: string; secao: Sec
             ativa={secao}
             resumo={resumo}
             testeAberto={testeAberto}
-            className="w-[220px] flex-shrink-0 border-r border-surface-700 pt-3 pb-3"
+            className="w-[232px] flex-shrink-0 border-r border-surface-700 bg-surface-800 pt-3 pb-3"
           />
-          <main className="flex-1 min-w-0 overflow-y-auto" aria-labelledby="titulo-secao">
+          <main className="flex-1 min-w-0 overflow-y-auto bg-surface-950" aria-labelledby="titulo-secao">
             <AvisoAgenteNoAr agent={agent} />
             <ConteudoDaSecao
               secao={secao}
@@ -230,7 +230,10 @@ function ConteudoDaSecao({
         animate={{ opacity: 1, y: 0 }}
         exit={semMovimento ? undefined : { opacity: 0 }}
         transition={{ duration: 0.14, ease: 'easeOut' }}
-        className={movel ? 'w-full px-4 pt-5 pb-8' : 'w-full max-w-[900px] px-8 py-6'}
+        // SCRUM-1253 (PO, 07/10): três planos — cabeçalho e navegação brancos, a
+        // seção como uma folha sobre o fundo (antes, um plano branco só).
+        className={movel ? 'w-full px-4 pt-5 pb-8'
+          : 'mx-auto my-6 w-[calc(100%-48px)] max-w-[880px] rounded-[12px] border border-surface-700 bg-surface-800 px-8 py-7 shadow-[0_1px_2px_rgba(15,23,42,.05)]'}
       >
         {corpo}
         {movel && <AnteriorProxima agentId={agent.id} secao={secao} />}
@@ -244,18 +247,18 @@ function AnteriorProxima({ agentId, secao }: { agentId: string; secao: SecaoId }
   const i = SECOES.findIndex((s) => s.id === secao)
   const antes = SECOES[i - 1]
   const depois = SECOES[i + 1]
-  const classe = 'flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-md border border-surface-700 bg-[var(--sf2)] px-3 text-sm hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500'
+  const classe = 'flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-[6px] border border-surface-700 bg-[var(--sf2)] px-3 text-sm hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500'
   return (
     <nav aria-label="Outras seções" className="mt-10 flex gap-2 border-t border-surface-700 pt-5">
       {antes ? (
         <Link to={rotaDoAgente(agentId, antes.id)} replace className={classe}>
           <ChevronLeft className="h-4 w-4 flex-shrink-0 text-surface-500" aria-hidden />
-          <span className="min-w-0"><span className="block text-3xs uppercase tracking-[.12em] text-surface-500">Anterior</span><span className="block truncate font-semibold text-surface-100">{antes.rotulo}</span></span>
+          <span className="min-w-0"><span className="block text-2xs uppercase tracking-[.12em] text-surface-500">Anterior</span><span className="block truncate font-semibold text-surface-100">{antes.rotulo}</span></span>
         </Link>
       ) : <span className="flex-1" />}
       {depois ? (
         <Link to={rotaDoAgente(agentId, depois.id)} replace className={`${classe} justify-end text-right`}>
-          <span className="min-w-0"><span className="block text-3xs uppercase tracking-[.12em] text-surface-500">Próxima</span><span className="block truncate font-semibold text-surface-100">{depois.rotulo}</span></span>
+          <span className="min-w-0"><span className="block text-2xs uppercase tracking-[.12em] text-surface-500">Próxima</span><span className="block truncate font-semibold text-surface-100">{depois.rotulo}</span></span>
           <ChevronRight className="h-4 w-4 flex-shrink-0 text-surface-500" aria-hidden />
         </Link>
       ) : <span className="flex-1" />}
@@ -276,7 +279,7 @@ function EsqueletoDaPagina({ movel = false }: { movel?: boolean }) {
   return (
     <div className="flex flex-1 flex-col min-h-0" aria-busy="true" aria-label="Carregando agente">
       <div className="flex items-center gap-3.5 px-6 py-4 border-b border-surface-700">
-        <Skeleton className="w-10 h-10 rounded-lg" />
+        <Skeleton className="w-10 h-10 rounded-[10px]" />
         <div className="space-y-2">
           <Skeleton className="h-4 w-52" />
           <Skeleton className="h-3 w-72 bg-[var(--sf2)]" />

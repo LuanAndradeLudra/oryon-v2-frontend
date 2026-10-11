@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import {
   ListFilter, CalendarDays, Calendar as CalendarIcon, CalendarRange, CalendarSearch,
   Users, BotOff, UserX, Tag as TagIcon, AlertTriangle,
-  ChevronRight, ChevronLeft, Check, X, Search,
+  ChevronRight, ChevronLeft, Check, X, Search, Lock,
 } from 'lucide-react'
 import { DayPicker, type DateRange, useDayPicker, type MonthCaptionProps } from 'react-day-picker'
 import { ptBR } from 'date-fns/locale'
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { resolveHandlingValue } from '@/lib/conversationFilterState'
 import { resolveActivePreset, resolveRange, type DateRangePreset } from '@/lib/dateRange'
 import type { ConversationFilters, User } from '@/types'
+import { ehFila } from '@/lib/filtrosDaInbox'
 import 'react-day-picker/style.css'
 
 const MENU_W = 280
@@ -71,7 +72,7 @@ function MonthCaptionWithInlineNav({ calendarMonth }: MonthCaptionProps) {
 
 function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-3 pt-2.5 pb-1 text-[10px] uppercase tracking-[.14em] text-surface-500 font-bold">
+    <p className="px-3 pt-2.5 pb-1 text-2xs text-surface-500 font-semibold">
       {children}
     </p>
   )
@@ -182,8 +183,11 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
     setOpen(false); setFlyout(null)
   }
 
+  // SCRUM-1253 (PO, 06/10 — D11): na Fila o "Pendentes" é da própria aba —
+  // aparece travado e não conta como filtro ligado.
+  const statusTravado = ehFila(filters)
   const anyActive =
-    (!!filters.status && filters.status !== 'all') ||
+    (!statusTravado && !!filters.status && filters.status !== 'all') ||
     activePeriod !== null ||
     handlingValue === 'paused' || (handlingValue === 'team' && filters.assignedTo !== 'unassigned') ||
     !!filters.untagged || !!filters.needsReview
@@ -282,7 +286,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
         aria-label="Filtros rápidos"
         title="Filtros rápidos"
         className={cn(
-          'relative flex items-center justify-center w-7 h-7 rounded-sm transition-all border flex-shrink-0',
+          'relative flex items-center justify-center w-7 h-7 rounded-[6px] transition-all border flex-shrink-0',
           anyActive || open
             ? 'bg-accent-soft text-accent-dark border-brand-500'
             : 'bg-surface-800 text-surface-400 border-[var(--bd2)] hover:text-surface-100',
@@ -298,10 +302,23 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
         <div
           ref={menuRef}
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: MENU_W, maxHeight: `calc(100vh - ${menuPos.top + 12}px)` }}
-          className="z-[9999] overlay-surface overlay-vidro border rounded-lg py-1.5 overflow-y-auto"
+          className="z-[9999] overlay-surface overlay-vidro border rounded-[10px] py-1.5 overflow-y-auto"
         >
           <GroupLabel>Status</GroupLabel>
-          {STATUS_ITEMS.map(({ label, value }) => {
+          {statusTravado && (
+            // Na Fila o status não é um filtro que você ligou —
+            // é a regra da aba. Aparece travado, com a regra escrita.
+            <div className="px-3 py-2 flex items-start gap-2.5 text-[13px] text-surface-300" title="A Fila é sempre de pendentes sem responsável">
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-cstatus-pending" aria-hidden />
+              <span className="flex-1">
+                <span className="flex items-center gap-1.5 font-medium text-cstatus-pending">
+                  Pendentes (fila) <Lock className="w-3 h-3" aria-hidden />
+                </span>
+                <span className="block text-[11px] leading-snug text-surface-500 mt-0.5">A Fila é sempre de pendentes sem responsável. Para ver outros status, vá para Todas.</span>
+              </span>
+            </div>
+          )}
+          {!statusTravado && STATUS_ITEMS.map(({ label, value }) => {
             const count = counts[value]
             const active = (filters.status ?? 'all') === value
             // PO, 23/09: mesmo padrão do menu do cabeçalho do chat — ponto na
@@ -356,7 +373,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
 
           {calendarOpen && (
             <div
-              className="mx-2 mb-1 mt-1 p-2 border border-surface-700 rounded-lg"
+              className="mx-2 mb-1 mt-1 p-2 border border-surface-700 rounded-[10px]"
               style={{
                 ['--rdp-cell-size' as string]: '26px',
                 ['--rdp-day-width' as string]: '26px',
@@ -375,11 +392,11 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
                 className="text-surface-200"
                 classNames={{
                   month_grid: 'w-full table-fixed',
-                  weekday: 'text-[10px] text-surface-500 font-normal pb-0.5',
+                  weekday: 'text-[11px] text-surface-500 font-normal pb-0.5',
                   day: 'text-center',
                   day_button: 'text-[13px] font-medium w-full h-7 mx-auto',
-                  today: 'text-surface-50 font-bold underline underline-offset-2',
-                  selected: 'bg-surface-600 text-surface-50 rounded-md',
+                  today: 'text-surface-50 font-semibold underline underline-offset-2',
+                  selected: 'bg-surface-600 text-surface-50 rounded-[6px]',
                   range_start: 'bg-surface-600 text-surface-50 rounded-l-md',
                   range_end: 'bg-surface-600 text-surface-50 rounded-r-md',
                   range_middle: 'bg-surface-700/50 text-surface-100',
@@ -397,7 +414,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
                   <button
                     type="button"
                     onClick={() => { setCustomRange(undefined); setCalendarOpen(false) }}
-                    className="text-xs text-surface-300 hover:text-surface-100 px-2 py-0.5 rounded-md hover:bg-surface-700 transition-colors"
+                    className="text-xs text-surface-300 hover:text-surface-100 px-2 py-0.5 rounded-[6px] hover:bg-surface-700 transition-colors"
                   >
                     Cancelar
                   </button>
@@ -406,7 +423,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
                     onClick={applyCustomRange}
                     disabled={!customRange?.from || !customRange?.to}
                     className={cn(
-                      'text-xs px-2.5 py-0.5 rounded-md font-semibold transition-all',
+                      'text-xs px-2.5 py-0.5 rounded-[6px] font-semibold transition-all',
                       customRange?.from && customRange?.to
                         ? 'bg-surface-700 text-surface-50 hover:bg-surface-600'
                         : 'bg-surface-700 text-surface-500 cursor-not-allowed',
@@ -439,7 +456,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
                 onClick={() => set({ [key]: !filters[key] })}
                 trailing={key === 'needsReview' && needsReviewCount > 0 ? (
                   <span
-                    className="color-chip min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center flex-shrink-0"
+                    className="color-chip min-w-[18px] h-[18px] px-1.5 rounded-full text-[11px] font-semibold flex items-center justify-center flex-shrink-0"
                     style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
                     aria-label={`${needsReviewCount} ${needsReviewCount === 1 ? 'conversa precisa' : 'conversas precisam'} de verificação`}
                   >
@@ -460,13 +477,13 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
         <div
           ref={flyoutRef}
           style={{ position: 'fixed', top: flyoutPos.top, left: flyoutPos.left, width: 232 }}
-          className="z-[9999] overlay-surface overlay-vidro border rounded-lg overflow-hidden"
+          className="z-[9999] overlay-surface overlay-vidro border rounded-[10px] overflow-hidden"
         >
           {allUsers.length > 5 && (
             <div className="p-2 border-b border-surface-700">
               {/* PL-C2-CAR-16 (Eixo10/P4): mesma peça (busca) do header da
                   lista, medida diferente — `ConversationSearch.tsx` é a
-                  referência da tela (h-7/rounded-sm/bg-surface-800/--bd2). */}
+                  referência da tela (h-7/rounded-[6px]/bg-surface-800/--bd2). */}
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
                 <input
@@ -474,7 +491,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
                   value={teamSearch}
                   onChange={(e) => setTeamSearch(e.target.value)}
                   placeholder="Buscar atendente..."
-                  className="w-full h-7 pl-8 pr-2.5 text-xs bg-surface-800 border border-[var(--bd2)] rounded-sm text-surface-100 placeholder-surface-500 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+                  className="w-full h-7 pl-8 pr-2.5 text-xs bg-surface-800 border border-[var(--bd2)] rounded-[6px] text-surface-100 placeholder-surface-500 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
                 />
               </div>
             </div>
@@ -513,7 +530,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
                   <Avatar name={full || u.email} size="xs" kind="operator" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium truncate">{full || u.email}</p>
-                    <p className="text-[10px] text-surface-500 truncate">{u.email}</p>
+                    <p className="text-[11px] text-surface-500 truncate">{u.email}</p>
                   </div>
                   {isPicked && <span className="w-1.5 h-1.5 rounded-full bg-surface-400 flex-shrink-0" />}
                 </button>
@@ -530,7 +547,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
               <button
                 type="button"
                 onClick={() => setTeam(null)}
-                className="w-full text-[11px] text-surface-400 hover:text-surface-200 px-2 py-1 rounded-md hover:bg-surface-700 transition-colors flex items-center justify-center gap-1"
+                className="w-full text-[11px] text-surface-400 hover:text-surface-200 px-2 py-1 rounded-[6px] hover:bg-surface-700 transition-colors flex items-center justify-center gap-1"
               >
                 <X className="w-3 h-3" /> Limpar filtro
               </button>

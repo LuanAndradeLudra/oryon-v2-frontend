@@ -51,16 +51,19 @@ function baseProps(overrides: Partial<Conversation> = {}) {
 beforeEach(() => vi.clearAllMocks())
 
 describe('ChatHeader — controle · Assumir · Resolver · ··· (mock 1d, R2-1D-HDR)', () => {
-  it('com a IA no controle mostra "Assumir" e "Resolver" como botões', () => {
+  // SCRUM-1253 (PO, 06/10): o controle é o RESPONSÁVEL nomeado ("IA ▾" com a
+  // IA no controle); "Assumir" mora dentro do menu dele.
+  it('com a IA no controle mostra o responsável ("IA") e "Resolver"', () => {
     render(<ChatHeader {...baseProps()} />)
-    expect(screen.getByRole('button', { name: 'Assumir' })).toBeInTheDocument()
+    expect(screen.getByTitle('Responsável e agente de IA')).toHaveTextContent('IA')
     expect(screen.getByRole('button', { name: 'Resolver' })).toBeInTheDocument()
   })
 
-  it('"Assumir" chama a intervenção do servidor', () => {
+  it('"Assumir", no menu do responsável, chama a intervenção do servidor', () => {
     const props = baseProps()
     render(<ChatHeader {...props} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Assumir' }))
+    fireEvent.click(screen.getByTitle('Responsável e agente de IA'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Assumir/ }))
     expect(props.onInterveneAi).toHaveBeenCalled()
   })
 
@@ -71,19 +74,20 @@ describe('ChatHeader — controle · Assumir · Resolver · ··· (mock 1d, R2-
     expect(onStatusChange).toHaveBeenCalledWith('resolved', undefined)
   })
 
-  it('status e arquivar continuam acessíveis no menu ···', () => {
+  // SCRUM-1253: o status saiu do ··· para o botão dividido "Resolver ▾".
+  it('status no botão dividido; arquivar continua no menu ···', () => {
     const onStatusChange = vi.fn()
     render(<ChatHeader {...baseProps()} onStatusChange={onStatusChange} />)
-    fireEvent.click(screen.getByLabelText('Mais ações'))
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Pendentes' }))
+    fireEvent.click(screen.getByLabelText('Status da conversa: Aberta'))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Pendente' }))
     expect(onStatusChange).toHaveBeenCalledWith('pending')
     fireEvent.click(screen.getByLabelText('Mais ações'))
     expect(screen.getByRole('menuitem', { name: /Arquivar conversa/ })).toBeInTheDocument()
   })
 
-  it('ordem no DOM: o controle (Assumir) vem ANTES de Resolver', () => {
+  it('ordem no DOM: o controle (responsável) vem ANTES de Resolver', () => {
     render(<ChatHeader {...baseProps()} />)
-    const assumir = screen.getByRole('button', { name: 'Assumir' })
+    const assumir = screen.getByTitle('Responsável e agente de IA')
     const resolver = screen.getByRole('button', { name: 'Resolver' })
     // eslint-disable-next-line no-bitwise
     expect(assumir.compareDocumentPosition(resolver) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

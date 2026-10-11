@@ -17,7 +17,7 @@ export function StatusDoAgente({ status, className }: { status: AgentConfig['sta
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 h-5 px-[7px] rounded-xs text-2xs font-semibold whitespace-nowrap border',
+        'inline-flex items-center gap-1.5 h-5 px-[7px] rounded-[6px] text-2xs font-semibold whitespace-nowrap border',
         !cor && 'bg-[var(--sf2)] border-surface-700 text-surface-400',
         className,
       )}

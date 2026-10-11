@@ -142,7 +142,7 @@ export function AiObservabilityPage() {
 
           {rollup.length > 0 && (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-lg border border-surface-700 bg-surface-700 overflow-hidden mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-[10px] border border-surface-700 bg-surface-700 overflow-hidden mb-4">
                 <KpiCard label="Custo total (USD)" value={`$${totals.cost.toFixed(4)}`} />
                 <KpiCard label="Execuções" value={totals.exec.toLocaleString('pt-BR')} />
                 <KpiCard label="Input tokens" value={totals.input.toLocaleString('pt-BR')} />
@@ -151,7 +151,7 @@ export function AiObservabilityPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="border-t border-surface-700 pt-3 overflow-x-auto">
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-500 mb-2">Por feature</h3>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Por feature</h3>
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-surface-700">
                       {byFeature.map(([feature, v]) => (
@@ -166,15 +166,15 @@ export function AiObservabilityPage() {
                 </div>
 
                 <div className="border-t border-surface-700 pt-3 max-h-[260px] overflow-auto">
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-500 mb-2">Linhas brutas ({rollup.length})</h3>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Linhas brutas ({rollup.length})</h3>
                   <table className="w-full text-xs">
                     <thead className="text-surface-500">
                       <tr>
-                        <th className="text-left py-1 text-[10px] font-bold uppercase tracking-wider">day</th>
-                        <th className="text-left py-1 text-[10px] font-bold uppercase tracking-wider">tenant</th>
-                        <th className="text-left py-1 text-[10px] font-bold uppercase tracking-wider">feature</th>
-                        <th className="text-right py-1 text-[10px] font-bold uppercase tracking-wider">exec</th>
-                        <th className="text-right py-1 text-[10px] font-bold uppercase tracking-wider">$ usd</th>
+                        <th className="text-left py-1 text-[11px] font-semibold uppercase tracking-wider">day</th>
+                        <th className="text-left py-1 text-[11px] font-semibold uppercase tracking-wider">tenant</th>
+                        <th className="text-left py-1 text-[11px] font-semibold uppercase tracking-wider">feature</th>
+                        <th className="text-right py-1 text-[11px] font-semibold uppercase tracking-wider">exec</th>
+                        <th className="text-right py-1 text-[11px] font-semibold uppercase tracking-wider">$ usd</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-700">
@@ -218,7 +218,7 @@ export function AiObservabilityPage() {
 
           {agentSummary && !agentLoading && (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-lg border border-surface-700 bg-surface-700 overflow-hidden mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-[10px] border border-surface-700 bg-surface-700 overflow-hidden mb-4">
                 <KpiCard label="Execuções" value={agentSummary.totals.executions.toLocaleString('pt-BR')} />
                 <KpiCard
                   label="Status"
@@ -234,7 +234,7 @@ export function AiObservabilityPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="border-t border-surface-700 pt-3 overflow-x-auto">
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-500 mb-2">Top tools</h3>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Top tools</h3>
                   {agentSummary.top_tools.length === 0 ? (
                     <p className="text-xs text-surface-500">Sem chamadas no período.</p>
                   ) : (
@@ -253,7 +253,7 @@ export function AiObservabilityPage() {
                 </div>
 
                 <div className="border-t border-surface-700 pt-3">
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-500 mb-2">RAG</h3>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 mb-2">RAG</h3>
                   <dl className="space-y-1 text-xs text-surface-300">
                     <Row k="queries" v={agentSummary.rag.queries.toLocaleString('pt-BR')} />
                     <Row k="hit rate (chunks≠[])" v={(agentSummary.rag.hit_rate * 100).toFixed(1) + '%'} />

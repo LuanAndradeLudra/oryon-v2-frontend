@@ -38,11 +38,11 @@ export function SettingsSidebarItem({ section, label, adminOnly, currentRole, ne
       aria-current={isActive ? 'page' : undefined}
       style={isActive ? { boxShadow: 'inset 2px 0 0 var(--color-brand-500)', borderRadius: '0 6px 6px 0' } : undefined}
       className={cn(
-        'flex items-center pr-[10px] text-[12.5px] transition-colors duration-100',
-        nested ? 'h-[26px] pl-[22px]' : 'h-7 pl-[10px]',
+        'flex items-center pr-[10px] text-xs transition-colors duration-100',
+        nested ? 'h-7 pl-[22px]' : 'h-7 pl-[10px]',
         isActive
-          ? 'text-surface-100 font-semibold bg-[var(--rowhover)] [[data-theme=light]_&]:bg-accent-soft'
-          : 'text-surface-400 hover:text-surface-100 rounded-md',
+          ? 'linha-ativa text-surface-100 font-semibold bg-[var(--rowhover)] [[data-theme=light]_&]:bg-accent-soft'
+          : 'text-surface-400 hover:text-surface-100 rounded-[6px]',
       )}
     >
       {label}

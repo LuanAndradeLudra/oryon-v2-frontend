@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Check, CheckCheck, Clock, Loader2, ShieldAlert } from 'lucide-react'
+import { Check, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ToolCallRecord } from '@/contexts/CopilotContext'
 import {
@@ -21,6 +21,7 @@ import {
   TOOL_LABEL,
   DESTRUCTIVE_TOOLS,
 } from './CopilotMessage'
+import { emFrase } from '@/lib/emFrase'
 
 interface ApprovalReviewPanelProps {
   tc: ToolCallRecord
@@ -66,8 +67,6 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
     onResolve(approvedIds, Object.keys(filteredEdits).length > 0 ? filteredEdits : undefined)
   }
 
-  const allDestructive = items.every((i) => DESTRUCTIVE_TOOLS.has(i.name))
-  const hasDestructive = items.some((i) => DESTRUCTIVE_TOOLS.has(i.name))
 
   // Countdown — same semantics as before.
   const expiresAt = tc.approvalExpiresAt
@@ -92,27 +91,20 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18 }}
-      className="flex h-full flex-col overflow-hidden rounded-lg border border-surface-700/50 bg-surface-900/70"
+      className="flex h-full min-h-0 flex-col overflow-hidden bg-surface-800"
     >
       {/* Header */}
-      <div className="flex flex-shrink-0 items-center gap-2.5 border-b border-surface-700 px-4 py-3">
-        <ShieldAlert className="h-3.5 w-3.5 flex-shrink-0 text-brand-400" />
-        <span className="text-xs font-medium text-surface-300">
-          {items.length === 1 ? 'Aprovação necessária' : `${items.length} ações requerem aprovação`}
-        </span>
-        <div className="ml-auto flex items-center gap-3">
-          {remainingLabel && (
-            <span className={cn(
-              'flex items-center gap-1 text-[10px]',
-              isExpired ? 'text-danger' : 'text-surface-500',
-            )}>
-              <Clock className="h-3 w-3" />
-              {remainingLabel}
-            </span>
-          )}
-          <span className="text-[10px] text-surface-500">Edite os campos antes de aprovar</span>
+      {(
+        <div className="flex-shrink-0 border-b border-surface-700 px-5 pt-4 pb-3 pr-12">
+          <h2 className="text-base font-semibold text-surface-50">
+            {items.length === 1 ? 'Revise a ação antes de aprovar' : `Revise as ${items.length} ações antes de aprovar`}
+          </h2>
+          <p className="mt-0.5 text-xs text-surface-400">
+            Desmarque o que não quer que o Copilot faça. Você pode editar os campos.
+            {remainingLabel && <span className={cn('ml-1', isExpired ? 'text-danger font-semibold' : '')}>· {remainingLabel.toLowerCase()}</span>}
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Scrollable item list */}
       <div className="flex-1 divide-y divide-surface-700 overflow-y-auto">
@@ -124,29 +116,36 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
 
           return (
             <div key={item.id} className={cn('transition-opacity', isChecked ? '' : 'opacity-40')}>
-              <button
-                onClick={() => toggle(item.id)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-800/20"
-              >
-                <div className={cn(
-                  'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
-                  isChecked
-                    ? isDestructive ? 'bg-surface-600 border-surface-500' : 'bg-brand-600 border-brand-500'
-                    : 'bg-transparent border-surface-600',
-                )}>
-                  {isChecked && <Check className="h-2.5 w-2.5 text-white" />}
-                </div>
-                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg border border-surface-700/60 bg-surface-800/60">
-                  <Icon className="h-3 w-3 text-surface-400" />
-                </div>
-                <span className={cn('text-xs font-medium', isDestructive ? 'text-surface-300' : 'text-surface-200')}>
-                  {label}
-                </span>
-              </button>
+              {(
+                <button
+                  onClick={() => toggle(item.id)}
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-[var(--rowhover)]"
+                >
+                  <span className={cn(
+                    'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[4px] border transition-colors',
+                    isChecked
+                      ? isDestructive ? 'bg-danger border-danger' : 'bg-brand-600 border-brand-600'
+                      : 'bg-surface-800 border-surface-500',
+                  )}>
+                    {isChecked && <Check className="h-3 w-3 text-white" />}
+                  </span>
+                  <span className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px]', isDestructive ? 'bg-danger/10 text-danger' : 'bg-[var(--sf2)] text-surface-300')}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="text-[13px] font-semibold text-surface-100">{emFrase(label)}</span>
+                  {isDestructive && (
+                    <span className="ml-auto inline-flex items-center h-5 px-1.5 rounded-[6px] text-xs font-semibold text-danger bg-danger/10 border border-danger/25">
+                      Não dá para desfazer
+                    </span>
+                  )}
+                </button>
+              )}
 
               {isChecked && (
                 <div className="px-4 pb-3 pt-0.5">
-                  <div className="ml-[52px] rounded-lg border border-surface-700/40 bg-surface-800/30 p-3">
+                  <div className="ml-[56px] rounded-[8px] border border-surface-700 bg-[var(--sf2)] p-3">
                     <ApprovalItemPreview
                       item={item}
                       editedInput={edits[item.id] ?? {}}
@@ -161,51 +160,36 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
       </div>
 
       {/* Actions */}
-      <div className="flex flex-shrink-0 gap-2 border-t border-surface-700 bg-surface-900/40 px-4 py-3">
-        <button
-          onClick={onReject}
-          disabled={isSubmitting}
-          className="flex-1 rounded-lg border border-surface-700/60 bg-surface-800/40 px-3 py-2 text-xs font-medium text-surface-400 transition-colors hover:bg-surface-800 hover:text-surface-200 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={handleConfirm}
-          disabled={selected.size === 0 || isSubmitting || isExpired}
-          className={cn(
-            'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-            allDestructive || (hasDestructive && selected.size > 0 && [...selected].every((id) => {
-              const item = items.find((i) => i.id === id)
-              return item && DESTRUCTIVE_TOOLS.has(item.name)
-            }))
-              ? 'border border-surface-600/60 bg-[var(--sf2)] text-surface-200 hover:bg-surface-600'
-              : 'bg-brand-600 text-surface-950 hover:bg-brand-500',
-          )}
-        >
-          {isExpired ? (
-            <>
-              <Clock className="h-3.5 w-3.5" />
-              Expirou
-            </>
-          ) : isSubmitting ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Enviando...
-            </>
-          ) : (
-            <>
-              <CheckCheck className="h-3.5 w-3.5" />
-              {selected.size === 0
-                ? 'Nenhuma selecionada'
-                : Object.keys(edits).length > 0
-                  ? 'Aprovar com edições'
-                  : selected.size < items.length
-                    ? `Aprovar ${selected.size} de ${items.length}`
-                    : 'Aprovar tudo'}
-            </>
-          )}
-        </button>
-      </div>
+      {(
+        <div className="flex flex-shrink-0 items-center gap-2 border-t border-surface-700 px-5 py-3">
+          <p className="mr-auto min-w-0 flex-1 text-xs text-surface-400">
+            {[...selected].some((id) => DESTRUCTIVE_TOOLS.has(items.find((i) => i.id === id)?.name ?? ''))
+              ? <span className="text-danger font-semibold">Inclui uma exclusão que não dá para desfazer.</span>
+              : `${selected.size} de ${items.length} selecionada${items.length > 1 ? 's' : ''}`}
+          </p>
+          <button
+            onClick={onReject}
+            disabled={isSubmitting}
+            className="h-8 flex-shrink-0 whitespace-nowrap rounded-[6px] border border-surface-700 bg-surface-800 px-3 text-[13px] font-medium text-surface-200 transition-colors hover:bg-[var(--rowhover)] disabled:cursor-not-allowed disabled:opacity-40"
+            title="O Copilot não executa nenhuma destas ações"
+          >
+            Recusar tudo
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={selected.size === 0 || isSubmitting || isExpired}
+            className={cn(
+              'h-8 flex-shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-[6px] px-3.5 text-[13px] font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+              selected.size > 0 && [...selected].every((id) => DESTRUCTIVE_TOOLS.has(items.find((i) => i.id === id)?.name ?? ''))
+                ? 'bg-danger hover:bg-danger/90'
+                : 'bg-brand-600 hover:bg-brand-500',
+            )}
+          >
+            {isExpired ? 'Expirou' : isSubmitting ? 'Enviando…' : selected.size === 0 ? 'Nada selecionado'
+              : selected.size === 1 ? 'Aprovar 1 ação' : `Aprovar ${selected.size} ações`}
+          </button>
+        </div>
+      )}
     </motion.div>
   )
 }

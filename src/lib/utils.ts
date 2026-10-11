@@ -150,7 +150,8 @@ export function tintaDaEtapa(hex: string | null | undefined, alpha?: number): st
   const base = /^#[0-9a-f]{6}$/i.test(hex ?? '') ? (hex as string) : '#6B8080'
   const tinta = `color-mix(in srgb, ${base}, var(--ink-target) var(--ink-amount))`
   if (alpha === undefined) return tinta
-  return `color-mix(in srgb, ${tinta} ${Math.round(alpha * 100)}%, transparent)`
+  // --tinta-k: multiplicador das tintas (1 no escuro; o claro sobe a régua).
+  return `color-mix(in srgb, ${tinta} calc(${Math.round(alpha * 100)}% * var(--tinta-k, 1)), transparent)`
 }
 
 export function hexToRgba(hex: string, alpha: number): string {

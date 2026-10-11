@@ -37,7 +37,7 @@ export function UserPicker({
       {/* Header */}
       <div className="px-3 pt-2.5 pb-2 border-b border-surface-700">
         <p className="text-2xs font-semibold text-surface-500 uppercase tracking-wide mb-2">{label}</p>
-        <div className="flex items-center gap-2 bg-surface-900 rounded-sm px-2.5 py-1.5">
+        <div className="flex items-center gap-2 bg-surface-900 rounded-[6px] px-2.5 py-1.5">
           <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
           <input
             autoFocus

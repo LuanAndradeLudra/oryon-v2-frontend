@@ -150,7 +150,7 @@ export function Modal({
             tabIndex={-1}
             onKeyDown={handleKeyDown}
             className={cn(
-              'relative z-10 bg-surface-800 overlay-frame border rounded-2xl w-full max-w-lg outline-none',
+              'relative z-10 bg-surface-800 overlay-frame border rounded-[10px] w-full max-w-lg outline-none',
               'flex flex-col max-h-[90vh] overflow-hidden',
               className,
             )}
@@ -163,12 +163,12 @@ export function Modal({
             {/* Header — MODAL-02: padding 16 18 0, SEM hairline; título 15/700 -.01em. */}
             <div className="flex items-start justify-between gap-3 px-[18px] pt-4 pb-0 flex-shrink-0">
               {typeof title === 'string'
-                ? <h2 id={titleId} className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">{title}</h2>
+                ? <h2 id={titleId} className="text-base font-display font-semibold tracking-[-0.01em] text-surface-50">{title}</h2>
                 : title}
               <button
                 onClick={onClose}
                 aria-label="Fechar"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-all cursor-pointer"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-all cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -254,7 +254,7 @@ export function ConfirmModal({
         <Banner variant={(impact.tone ?? 'neutral') as BannerVariant} className="mb-4">
           <p className="leading-snug">
             {typeof impact.count === 'number' && (
-              <span className="font-display text-base font-bold mr-1.5 tabular-nums">
+              <span className="font-display text-base font-semibold mr-1.5 tabular-nums">
                 {impact.count}
               </span>
             )}
@@ -263,7 +263,7 @@ export function ConfirmModal({
         </Banner>
       )}
       {/* MODAL-02/05: descrição 12.5px; "Cancelar" é neutral, não ghost. */}
-      <p className="text-[12.5px] text-surface-400 mt-1 mb-4">{description}</p>
+      <p className="text-xs text-surface-400 mt-1 mb-4">{description}</p>
       <div className="flex gap-2 justify-end">
         {/* Foco inicial: Cancelar quando destrutivo (Enter não apaga nada por
             acidente); Confirmar nos demais. */}

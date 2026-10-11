@@ -242,7 +242,7 @@ export function AdminAgentEditorPage() {
         </header>
 
         {error && (
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-danger/10 border border-danger/30 text-sm mb-5">
+          <div className="flex items-start gap-3 p-3 rounded-[10px] bg-danger/10 border border-danger/30 text-sm mb-5">
             <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-danger">{error}</p>
           </div>
@@ -285,7 +285,7 @@ export function AdminAgentEditorPage() {
 
         {/* ── Modelo de IA (Phase 28) ──────────────────────────────────── */}
         {agentId && agentRec && (
-          <section className="bg-surface-800 border border-surface-700 rounded-lg p-5 mb-6">
+          <section className="bg-surface-800 border border-surface-700 rounded-[10px] p-5 mb-6">
             <header className="flex items-start justify-between mb-3">
               <div>
                 <h2 className="text-sm font-semibold text-surface-100">Modelo de IA</h2>
@@ -295,7 +295,7 @@ export function AdminAgentEditorPage() {
                   (status, atribuição, funil) — hoje isso só acontece dentro da Anthropic.
                 </p>
               </div>
-              <span className="text-3xs font-mono uppercase tracking-wide text-surface-500">
+              <span className="text-2xs font-mono uppercase tracking-wide text-surface-500">
                 preferred_model
               </span>
             </header>
@@ -345,7 +345,7 @@ export function AdminAgentEditorPage() {
           ) : eff ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* ── LEFT: editor do system_prompt ───────────────────────── */}
-              <section className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+              <section className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
                 <header className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                     <Bot className="w-4 h-4 text-brand-400" />
@@ -399,7 +399,7 @@ export function AdminAgentEditorPage() {
               </section>
 
               {/* ── RIGHT: prompt efetivo (read-only preview) ───────────── */}
-              <section className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+              <section className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
                 <header className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                     <Eye className="w-4 h-4 text-brand-400" />
@@ -432,7 +432,7 @@ export function AdminAgentEditorPage() {
                   </PromptBlock>
 
                   {eff.fragments.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-surface-700 bg-[var(--sf2)] px-3 py-4 text-center text-2xs text-surface-500">
+                    <div className="rounded-[10px] border border-dashed border-surface-700 bg-[var(--sf2)] px-3 py-4 text-center text-2xs text-surface-500">
                       Nenhuma skill com instruções injetadas. Cadastre <code>prompt_fragment</code> em
                       um template e atribua ao agente para vê-las aqui.
                     </div>
@@ -454,7 +454,7 @@ export function AdminAgentEditorPage() {
                 </div>
 
                 {eff.composed_chars > 12_000 && (
-                  <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-status-pending-bg/40 border border-status-pending-border text-xs">
+                  <div className="mt-3 flex items-start gap-2 p-3 rounded-[10px] bg-status-pending-bg/40 border border-status-pending-border text-xs">
                     <AlertCircle className="w-4 h-4 text-status-pending flex-shrink-0 mt-0.5" />
                     <p className="text-status-pending">
                       Prompt grande ({eff.composed_chars} chars) — pode reduzir o cache hit
@@ -474,7 +474,7 @@ export function AdminAgentEditorPage() {
             customer uses, but with the chosen tenantId so all API calls
             scope to the target tenant. */}
         {agentId && tenantId && (
-          <section className="mt-6 bg-surface-800 border border-surface-700 rounded-lg p-5">
+          <section className="mt-6 bg-surface-800 border border-surface-700 rounded-[10px] p-5">
             <header className="mb-4">
               <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand-400" />
@@ -497,7 +497,7 @@ export function AdminAgentEditorPage() {
 
 function PickerBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-4">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-4">
       <label className="block text-xs uppercase tracking-wide text-surface-500 mb-2">{label}</label>
       {children}
     </div>
@@ -528,7 +528,7 @@ function PromptBlock({
 }) {
   return (
     <div className={cn(
-      'rounded-lg border px-3 py-3',
+      'rounded-[10px] border px-3 py-3',
       tone === 'brand'
         ? 'bg-accent-soft border-brand-500/30'
         : 'bg-[var(--sf2)] border-surface-700',
@@ -540,10 +540,10 @@ function PromptBlock({
             tone === 'brand' ? 'text-brand-300' : 'text-surface-400',
           )}>{label}</p>
           {sublabel && (
-            <p className="text-3xs text-surface-500 font-mono">{sublabel}</p>
+            <p className="text-2xs text-surface-500 font-mono">{sublabel}</p>
           )}
         </div>
-        <span className="text-3xs font-mono tabular-nums text-surface-500">{chars} chars</span>
+        <span className="text-2xs font-mono tabular-nums text-surface-500">{chars} chars</span>
       </header>
       {children}
     </div>

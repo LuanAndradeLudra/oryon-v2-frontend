@@ -34,7 +34,7 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        'mt-3 flex flex-col items-start gap-1.5 px-4 rounded-lg border border-dashed border-[var(--bd2)]',
+        'mt-3 flex flex-col items-start gap-1.5 px-4 rounded-[10px] border border-dashed border-[var(--bd2)]',
         compact ? 'py-3' : 'py-[18px]',
         className,
       )}

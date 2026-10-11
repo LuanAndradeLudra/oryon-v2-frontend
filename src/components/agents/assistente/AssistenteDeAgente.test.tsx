@@ -192,7 +192,9 @@ describe('AssistenteDeAgente', () => {
     const onClose = vi.fn()
     render(<AssistenteDeAgente onClose={onClose} onCreated={() => {}} />)
     await waitFor(() => expect(api.createSpecDraft).toHaveBeenCalled())
-    await screen.findByText('Rascunho salvo')
+    // "Rascunho salvo" só aparece depois de a pessoa mexer (SCRUM-1253) — o fim
+    // do carregamento é o "Salvando" sumir.
+    await waitFor(() => expect(screen.queryByText('Salvando')).toBeNull())
     fireEvent.change(screen.getByLabelText('Tipo de negócio'), { target: { value: 'Clínica' } })
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(onClose).toHaveBeenCalled()

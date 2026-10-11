@@ -69,7 +69,7 @@ export function DealSummaryTab({ deal, pipeline, onPatch }: DealSummaryTabProps)
           anotação livre do negócio que sobrevive a um reload em todo o CRM. */}
       <div>
         <div className="flex items-center gap-1.5 mb-1.5">
-          <label htmlFor="deal-observacoes" className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Observações</label>
+          <label htmlFor="deal-observacoes" className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">Observações</label>
           <Tooltip
             wide
             side="bottom"
@@ -101,14 +101,18 @@ export function DealSummaryTab({ deal, pipeline, onPatch }: DealSummaryTabProps)
       {isSales && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Itens</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">Itens</span>
             {savingItems && <span className="text-[11px] text-surface-500">salvando…</span>}
           </div>
           <DealItemsEditor value={items} onChange={(next) => void handleItemsChange(next)} error={itemsError} showTotal={false} />
+          {/* SCRUM-1253 (PO, 07/10): sem itens não há total; com itens, diz que é
+              DOS ITENS (o valor do negócio é outro número, lá em cima). */}
+          {items.length > 0 && (
           <div className="flex justify-end mt-2 text-sm">
-            <span className="text-surface-400">Total: </span>
+            <span className="text-surface-400">Total dos itens: </span>
             <span className="font-semibold text-surface-100 tabular-nums ml-1" data-testid="deal-items-total">{formatBRL(total)}</span>
           </div>
+          )}
         </div>
       )}
     </div>

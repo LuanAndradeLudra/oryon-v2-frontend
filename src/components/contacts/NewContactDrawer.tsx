@@ -68,13 +68,13 @@ function Field({ label, required, hint, error, children }: {
         {required
           ? (
             <span
-              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none color-chip border"
+              className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full leading-none color-chip border"
               style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
             >
               Obrigatório
             </span>
           )
-          : <span className="text-[10px] font-medium text-surface-600 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full leading-none">Opcional</span>
+          : <span className="text-[11px] font-medium text-surface-600 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full leading-none">Opcional</span>
         }
       </div>
       {children}
@@ -86,7 +86,7 @@ function Field({ label, required, hint, error, children }: {
 }
 
 const inputCls = (error?: boolean) => cn(
-  'w-full bg-surface-800 border rounded-lg px-3 py-2 text-sm text-surface-100 placeholder-surface-600',
+  'w-full bg-surface-800 border rounded-[10px] px-3 py-2 text-sm text-surface-100 placeholder-surface-600',
   'focus:outline-none focus:ring-1 transition-colors',
   error
     ? 'border-red-500/60 focus:ring-red-500/40'
@@ -119,7 +119,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'w-full flex items-center justify-between bg-surface-800 border border-surface-700 rounded-lg px-3 py-2',
+          'w-full flex items-center justify-between bg-surface-800 border border-surface-700 rounded-[6px] px-3 py-2',
           'text-sm text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors',
           open && 'border-brand-500/60 ring-1 ring-brand-500/40',
         )}
@@ -131,7 +131,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             selected.map((tag) => (
               <span
                 key={tag.id}
-                className="color-chip inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+                className="color-chip inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full border"
                 style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 {tag.name}
@@ -149,7 +149,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute z-50 top-full mt-1 left-0 right-0 overlay-surface overlay-vidro border rounded-xl overflow-hidden"
+            className="absolute z-50 top-full mt-1 left-0 right-0 overlay-surface overlay-vidro border rounded-[10px] overflow-hidden"
           >
             <div className="p-2 border-b border-surface-700">
               <input
@@ -157,7 +157,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar etiqueta…"
-                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none"
+                className="w-full bg-surface-900 border border-surface-700 rounded-[6px] px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none"
               />
             </div>
             <div className="max-h-44 overflow-y-auto">
@@ -335,13 +335,13 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             {/* Header */}
             <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Novo contato</h2>
+                <h2 className="text-base font-semibold tracking-[-0.01em] text-surface-50">Novo contato</h2>
                 <p className="text-xs text-surface-500 mt-0.5">Preencha as informações do novo lead</p>
               </div>
               <button
                 onClick={onClose}
                 aria-label="Fechar"
-                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+                className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -620,7 +620,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
               <button
                 onClick={onClose}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all disabled:opacity-50"
+                className="px-4 py-2 rounded-[6px] text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -628,7 +628,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                 onClick={handleSubmit}
                 disabled={saving || saved}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  'flex items-center gap-2 px-4 py-2 rounded-[6px] text-sm font-medium transition-all',
                   saved
                     ? 'bg-status-active-bg text-status-active border border-status-active-border'
                     : 'bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60',

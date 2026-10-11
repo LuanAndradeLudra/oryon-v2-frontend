@@ -90,7 +90,7 @@ export function Notifications() {
               <Volume2 className="w-4 h-4" strokeWidth={1.75} />
             </span>
             <div>
-              <p className="text-[13px] font-medium text-surface-100">Tocar som</p>
+              <p className="text-sm font-medium text-surface-100">Tocar som</p>
               <p className="text-xs text-surface-400">
                 Som curto toca a cada notificação nova.
               </p>
@@ -121,7 +121,7 @@ export function Notifications() {
         )
       })}
 
-      <p className="text-[11px] text-surface-500 mt-6">
+      <p className="text-2xs text-surface-500 mt-6">
         <Bell className="w-3 h-3 inline mr-1" />
         Notificações obrigatórias (como alertas de segurança) não podem ser desativadas por motivo de conformidade.
       </p>
@@ -156,13 +156,13 @@ function PreferenceRow({
           </span>
         )}
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-surface-100 flex items-center gap-2">
+          <p className="text-sm font-medium text-surface-100 flex items-center gap-2">
             {pref.label}
             {/* Chips na geometria da casa (18px/r5/10.5px, .color-chip-soft) —
                 "obrigatória" ficava só num title (invisível no toque). */}
             {pref.mandatory && (
               <span
-                className="color-chip-soft border inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold"
+                className="color-chip-soft border inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold"
                 style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
               >
                 obrigatória
@@ -170,7 +170,7 @@ function PreferenceRow({
             )}
             {pref.isOverride && !pref.mandatory && (
               <span
-                className="color-chip-soft border inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold"
+                className="color-chip-soft border inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold"
                 style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
               >
                 customizado
@@ -185,7 +185,7 @@ function PreferenceRow({
           <button
             onClick={onReset}
             disabled={saving}
-            className="text-[11px] text-surface-500 hover:text-surface-200 transition-colors flex items-center gap-1"
+            className="text-2xs text-surface-500 hover:text-surface-200 transition-colors flex items-center gap-1"
             title="Voltar ao padrão do seu cargo"
           >
             <RotateCcw className="w-3 h-3" />

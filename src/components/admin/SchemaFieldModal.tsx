@@ -211,7 +211,7 @@ export function SchemaFieldModal({
         )}
 
         {error && (
-          <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-md px-3 py-2">
+          <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-[6px] px-3 py-2">
             {error}
           </p>
         )}

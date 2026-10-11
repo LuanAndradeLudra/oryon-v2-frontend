@@ -21,7 +21,7 @@ export function SummaryRow({ label, value, action, strong, wrap }: {
 }) {
   return (
     <div className="flex items-baseline gap-3 py-1.5 border-t border-surface-700 first:border-t-0 first:pt-0">
-      <span className="text-[11px] text-surface-500 w-[88px] flex-none">{label}</span>
+      <span className="text-2xs text-surface-500 w-[88px] flex-none">{label}</span>
       <span className={cn(
         'text-xs min-w-0',
         wrap ? 'break-words' : 'truncate',

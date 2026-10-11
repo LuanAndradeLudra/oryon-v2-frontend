@@ -46,7 +46,7 @@ export function AuthBrandPanel() {
       <AuthBrandMark className="reveal relative z-10" />
       <div className="relative z-10 flex flex-col gap-5 min-w-0 pb-4">
         <p
-          className="reveal max-w-xl font-display font-extrabold tracking-[-0.02em] leading-[1.02] text-surface-50"
+          className="reveal max-w-xl font-display font-semibold tracking-[-0.02em] leading-[1.02] text-surface-50"
           style={{ fontSize: 'clamp(40px, 18px + 3.6svh, 56px)', ['--d' as string]: '80ms' }}
         >
           Conversas que<br />

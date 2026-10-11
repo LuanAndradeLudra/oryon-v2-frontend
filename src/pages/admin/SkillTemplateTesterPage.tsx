@@ -75,7 +75,7 @@ export function SkillTemplateTesterPage() {
       )}
 
       {error && !loading && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+        <div className="flex items-start gap-3 p-4 rounded-[10px] bg-danger/10 border border-danger/30 text-sm">
           <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-danger font-medium mb-1">Erro ao carregar template</p>

@@ -1,10 +1,9 @@
 import { memo, useCallback } from 'react'
 import {
-  Camera, Mic, FileText, Video, MapPin, Sticker,
   ExternalLink, Phone, Copy,
   Bot, Megaphone, Users, AlertTriangle, Workflow,
 } from 'lucide-react'
-import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
+import { cn, chatRelTime, getInitials, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/contexts/AuthContext'
@@ -16,39 +15,15 @@ import { renderHighlightedSnippet } from '@/lib/searchHighlight'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Conversation } from '@/types'
-
-const MEDIA_PREVIEW: Record<string, { icon: typeof Camera; label: string }> = {
-  '[image]':    { icon: Camera,   label: 'Imagem' },
-  '[imagen]':   { icon: Camera,   label: 'Imagem' },
-  '[imagem]':   { icon: Camera,   label: 'Imagem' },
-  '[photo]':    { icon: Camera,   label: 'Foto' },
-  '[audio]':    { icon: Mic,      label: 'Áudio' },
-  '[document]': { icon: FileText, label: 'Documento' },
-  '[video]':    { icon: Video,    label: 'Vídeo' },
-  '[location]': { icon: MapPin,   label: 'Localização' },
-  '[sticker]':  { icon: Sticker,  label: 'Figurinha' },
-}
-
-function MessagePreview({ text }: { text: string }) {
-  const key = text.trim().toLowerCase()
-  const media = MEDIA_PREVIEW[key]
-  if (media) {
-    const Icon = media.icon
-    return (
-      <span className="inline-flex items-center gap-1">
-        <Icon className="w-3.5 h-3.5 opacity-70" />
-        <span>{media.label}</span>
-      </span>
-    )
-  }
-  return <>{truncate(text || '…', 52)}</>
-}
+import { dataCurta, esperaCurta, tomDaEspera } from '@/lib/tempoCurto'
+import { PreviewDaMensagem } from './PreviewDaMensagem'
+import { SeloForaDoFiltro } from '@/components/ui/SeloForaDoFiltro'
 
 /** Icon shown before the preview indicating who sent the last message.
  *  Client (inbound) shows no icon — the contact avatar already implies it. */
 const SENDER_META: Record<'operator' | 'ai' | 'campaign' | 'rule', { icon: typeof Bot; title: string; className: string }> = {
   ai:       { icon: Bot,       title: 'Última mensagem enviada pela IA',                 className: 'text-surface-400' },
-  campaign: { icon: Megaphone, title: 'Template enviado via campanha',                   className: 'text-surface-400' },
+  campaign: { icon: Megaphone, title: 'Enviada por campanha ou automação',              className: 'text-surface-400' },
   operator: { icon: Users,     title: 'Enviada por um usuário da plataforma (Equipe)',   className: 'text-surface-400' },
   rule:     { icon: Workflow,  title: 'Resposta automática (encaminhamento/FAQ)',        className: 'text-surface-400' },
 }
@@ -81,7 +56,7 @@ interface ConversationItemProps {
 }
 
 export const ConversationItem = memo(function ConversationItem({ conversation, isActive, offFilter = false, onSelect }: ConversationItemProps) {
-  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly, status, searchSnippet } =
+  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageType, lastMessageMeta, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly, status, searchSnippet } =
     conversation
   const currentUserId = useAuth().user?.id
 
@@ -134,7 +109,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         // index.css — CollapsibleSection/DataTable já usam este mesmo par).
         'relative w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-colors duration-100',
         isActive
-          ? 'bg-[var(--rowhover)] shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
+          ? 'conv-item-ativa bg-[var(--rowhover)] shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
           : 'hover:bg-[var(--rowhover)]',
         offFilter && 'opacity-70',
       )}
@@ -159,37 +134,16 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {offFilter && (
-              // PL-C2-CAR-15 (Eixo10/P4): pílula solta (rounded-full, 9px,
-              // uppercase) sem par em nenhum outro lugar do app — os chips de
-              // status logo abaixo, NA MESMA linha do item, já são o
-              // vocabulário certo (h-[17px]/rounded-[5px]/10.5px). Alinhado.
-              <span
-                className={cn(
-                  'inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold flex-shrink-0',
-                  // Contraste 01/10 (PO, 4D): no claro, chip neutro + ponto colorido.
-                  '!bg-surface-800 !text-surface-200 shadow-[inset_0_0_0_1px_#3A4D4D] gap-1',
-                  '[[data-theme=light]_&]:!bg-white [[data-theme=light]_&]:!text-[#1F2937] [[data-theme=light]_&]:shadow-[inset_0_0_0_1px_#C9CFDA]',
-                  // Cor do status de destino (azul/âmbar/verde), não "aviso" genérico.
-                  conversation.status === 'open'
-                    ? 'bg-status-open/[.14] text-status-open'
-                    : conversation.status === 'pending'
-                      ? 'bg-cstatus-pending/[.14] text-cstatus-pending'
-                      : 'bg-cstatus-resolved/[.14] text-cstatus-resolved',
-                )}
-                title={`Movida para "${statusLabel(conversation.status)}" — não corresponde mais ao filtro atual`}
-              >
-                <span
-                  aria-hidden
-                  className={cn(
-                    'inline-block w-1.5 h-1.5 rounded-full',
-                    conversation.status === 'open' ? 'bg-status-open' : conversation.status === 'pending' ? 'bg-[#F59E0B]' : 'bg-[#16A34A]',
-                  )}
-                />
-                {statusLabel(conversation.status)}
-              </span>
+              // Homologação 06/10 (SCRUM-1253, PO escolheu a opção B): a conversa
+              // ABERTA fica na lista mesmo fora do filtro (assumir na Fila não a
+              // tira de baixo do operador; J/K não perde a posição) — mas o selo
+              // diz isso com todas as letras, em vez de só repetir o status.
+              <SeloForaDoFiltro
+                title={`Esta conversa não corresponde ao filtro atual (status: ${statusLabel(conversation.status)}). Fica visível porque está aberta.`}
+              />
             )}
             <span className="text-[11px] text-surface-500">
-              {formatMessageTime(lastMessageAt)}
+              {dataCurta(lastMessageAt, agora)}
             </span>
           </div>
         </div>
@@ -213,10 +167,11 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               <span className="truncate">{renderHighlightedSnippet(searchSnippet)}</span>
             ) : (
               <>
-                {lastMessageSenderKind === 'operator' ? null : <SenderIndicator kind={lastMessageSenderKind} />}
+                {/* Com a origem (C2: "Campanha · X"…) o próprio preview já traz o ícone. */}
+                {lastMessageSenderKind === 'operator' || lastMessageMeta ? null : <SenderIndicator kind={lastMessageSenderKind} />}
                 <span className="truncate">
                   {lastMessageSenderKind === 'operator' && <span className="text-surface-500">Você: </span>}
-                  <MessagePreview text={lastMessagePreview || '…'} />
+                  <PreviewDaMensagem text={lastMessagePreview || '…'} contexto={{ tipo: lastMessageType, meta: lastMessageMeta, remetente: lastMessageSenderKind }} />
                 </span>
               </>
             )}
@@ -238,35 +193,54 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             {status === "resolved" ? (
               /* PO, 23/09: mesma tinta leve do status no menu do cabeçalho
                  (verde translúcido), não mais o chip neutro. */
-              <span className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-cstatus-resolved/[.14] text-cstatus-resolved flex-shrink-0">
+              <span className="inline-flex items-center h-5 px-1.5 rounded-[6px] text-[11px] font-semibold bg-cstatus-resolved/[.14] text-cstatus-resolved flex-shrink-0">
                 Resolvida
               </span>
-            ) : estadoIA === 'passou' ? (
-              <span
-                className="inline-flex items-center gap-1 h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-status-pending bg-status-pending-bg flex-shrink-0"
-                title="A IA passou a conversa para a equipe"
-              >
-                <Bot className="w-3 h-3" />
-                IA passou
+            ) : status === "pending" ? (
+              /* SCRUM-1253 (PO, 06/10): "Pendente" é o STATUS — selo próprio,
+                 na mesma forma do "Resolvida" (âmbar = cor de Pendente). Ele
+                 substitui o antigo "IA passou", que era o mesmo pendente lido
+                 por outro ângulo (pendente + IA sem pausa) e confundia. */
+              <span className="inline-flex items-center h-5 px-1.5 rounded-[6px] text-[11px] font-semibold bg-cstatus-pending/[.14] text-cstatus-pending flex-shrink-0">
+                {/* SCRUM-1253 (PO, 06/10 — D11): o selo diz PARA QUEM a conversa
+                    espera. Fila = pendentes sem responsável. */}
+                {!assignedUser ? 'Na fila'
+                  : assignedUser.id === currentUserId ? 'Aguardando você'
+                  : `Aguardando ${truncate(assignedUser.firstName, 12)}`}
               </span>
-            ) : estadoIA === 'atendendo' ? (
+            ) : null}
+            {/* Revisão 11/10: "IA" só quando a IA está respondendo de fato. Em
+                'passou' (pendente: a IA passou para a equipe) o selo de status
+                já diz "Na fila"/"Aguardando <nome>" — o chip "IA respondendo"
+                ali mentia. */}
+            {status !== "resolved" && estadoIA === 'atendendo' ? (
               <span
                 // PO, 23/09: IA é neutro (cinza claro no escuro, cinza mais
                 // escuro no claro — os tokens surface-* invertem por tema), não
                 // âmbar: âmbar agora é a cor do status "Pendente".
-                className="inline-flex items-center gap-1 h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-surface-200 bg-surface-700 flex-shrink-0"
+                // SCRUM-1253 (PO, 06/10): sem pílula — só o ícone e "IA". A
+                // pílula cinza sumia na linha selecionada; sem fundo, não há
+                // contraste a perder.
+                className="inline-flex items-center gap-1 h-5 text-[11px] font-normal text-surface-400 flex-shrink-0"
                 title="IA respondendo nesta conversa"
               >
                 <Bot className="w-3 h-3" />
                 IA
               </span>
             ) : null}
-            {status !== "resolved" && assignment === "human" && assignedUser ? (
+            {status !== "resolved" && assignment === "human" && assignedUser && status !== "pending" ? (
               <span
-                className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-accent-green bg-accent-green/[.12] truncate"
+                // SCRUM-1253 (PO, 06/10): mini avatar do operador (forma e
+                // gradiente do <Avatar kind="operator">) + nome neutro. O selo
+                // verde saiu — brigava com o "Resolvida", que fica como o único
+                // selo verde da linha. Iniciais para qualquer operador.
+                className="inline-flex items-center gap-1 min-w-0 h-5 text-[11px] font-normal text-surface-400"
                 title={`Atribuída a ${assignedUser.firstName}${assignedUser.lastName ? " " + assignedUser.lastName : ""}`}
               >
-                {assignedUser.id === currentUserId ? "Você" : truncate(assignedUser.firstName, 12)}
+                <span className="avatar-operador w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[7.5px] font-semibold" aria-hidden>
+                  {getInitials(`${assignedUser.firstName} ${assignedUser.lastName ?? ""}`.trim())}
+                </span>
+                <span className="truncate">{assignedUser.id === currentUserId ? "Você" : truncate(assignedUser.firstName, 12)}</span>
               </span>
             ) : null}
 
@@ -281,7 +255,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             )}
           </div>
 
-          <div className="flex items-center gap-2 ml-auto flex-shrink-0 pl-2 text-[10.5px]">
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0 pl-2 text-[11px]">
             {hasRecentAnomaly && (
               <span className="inline-flex items-center gap-1 font-semibold text-status-pending whitespace-nowrap" title={GUARD_LIST_BADGE_TITLE}>
                 <AlertTriangle className="w-3 h-3" />
@@ -289,15 +263,15 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               </span>
             )}
             {awaiting && (() => {
-              // Urgência progressiva: âmbar vira vermelho quando a espera passa de 15min.
-              const waitMin = (agora - new Date(lastMessageAt).getTime()) / 60000
-              const critical = waitMin >= 15
+              // SCRUM-1253 (PO, 06/10): urgência em degraus — ver tomDaEspera.
+              const tom = tomDaEspera(awaiting.minutes)
               return (
                 <span
-                  className={cn("font-semibold whitespace-nowrap", critical ? "text-danger" : "text-status-pending")}
+                  className={cn('inline-flex items-center gap-1 whitespace-nowrap', tom === 'atencao' ? 'text-status-pending font-medium' : 'text-surface-400')}
                   title={`Cliente aguardando resposta há ${chatRelTime(lastMessageAt)}`}
                 >
-                  {chatRelTime(lastMessageAt)} sem resposta
+                  {tom === 'atrasada' && <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-danger" />}
+                  {esperaCurta(awaiting.minutes)} sem resposta
                 </span>
               )
             })()}

@@ -173,7 +173,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
       }
     >
       {error && (
-        <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+        <div className="flex items-start gap-2 p-3 mb-4 rounded-[10px] bg-danger/10 border border-danger/30 text-sm">
           <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
           <p className="text-danger break-words">{error}</p>
         </div>
@@ -338,7 +338,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
             )}
 
             {executionsError && !loadingExecutions && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+              <div className="flex items-start gap-2 p-3 rounded-[10px] bg-danger/10 border border-danger/30 text-sm">
                 <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
                 <p className="text-danger break-words">{executionsError}</p>
               </div>
@@ -354,7 +354,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-3xs uppercase tracking-wide text-surface-500 border-b border-surface-700">
+                    <tr className="text-2xs uppercase tracking-wide text-surface-500 border-b border-surface-700">
                       <th className="text-left font-medium py-2 pr-3">Quando</th>
                       <th className="text-left font-medium py-2 pr-3">Status</th>
                       <th className="text-right font-medium py-2 pr-3">Latência</th>

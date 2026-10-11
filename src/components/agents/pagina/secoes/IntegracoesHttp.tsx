@@ -48,7 +48,7 @@ function lerJson<T>(texto: string, campo: string): T {
 function ChipMetodo({ metodo }: { metodo: AgentTool['method'] }) {
   const cor = COR_METODO[metodo]
   return (
-    <span className="inline-flex h-5 items-center rounded-xs border px-1.5 font-mono text-2xs font-bold"
+    <span className="inline-flex h-5 items-center rounded-[6px] border px-1.5 font-mono text-2xs font-semibold"
       style={{ color: cor, backgroundColor: `color-mix(in srgb, ${cor} 12%, transparent)`, borderColor: `color-mix(in srgb, ${cor} 25%, transparent)` }}>
       {metodo}
     </span>
@@ -73,7 +73,7 @@ function FormularioIntegracao({ inicial, onSalvar, onCancelar }: {
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-surface-700 bg-[var(--sf2)] p-4">
+    <div className="space-y-4 rounded-[10px] border border-surface-700 bg-[var(--sf2)] p-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Nome interno" hint="Sem espaços. É como o agente chama a integração." required>
           <Input value={f.name} onChange={(e) => set('name', e.target.value.replace(/\s/g, '_'))} placeholder="verificar_disponibilidade" className="font-mono" />
@@ -181,7 +181,7 @@ export function IntegracoesHttp({ agent, onFerramentas }: {
         editando === t.id ? (
           <FormularioIntegracao key={t.id} inicial={paraFormulario(t)} onSalvar={(f) => editar(t.id, f)} onCancelar={() => setEditando(null)} />
         ) : (
-          <div key={t.id} className={cn('rounded-lg border border-surface-700 bg-[var(--sf2)]', !t.enabled && 'opacity-70')}>
+          <div key={t.id} className={cn('rounded-[10px] border border-surface-700 bg-[var(--sf2)]', !t.enabled && 'opacity-70')}>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-2.5">
               <ChipMetodo metodo={t.method} />
               <div className="min-w-0 flex-1 basis-[calc(100%-4rem)] sm:basis-auto">

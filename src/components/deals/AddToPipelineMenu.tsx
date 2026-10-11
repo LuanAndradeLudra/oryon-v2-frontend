@@ -83,7 +83,7 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, onOpenDetail
           aria-expanded={open}
           data-testid="add-to-pipeline-trigger"
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-xl border font-medium transition-all whitespace-nowrap',
+            'inline-flex items-center gap-1.5 rounded-[6px] border font-medium transition-all whitespace-nowrap',
             size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-xs',
             open ? 'border-brand-500 bg-brand-500/10 text-brand-400' : 'border-surface-700 bg-surface-800 text-surface-200 hover:text-surface-50 hover:bg-surface-700',
           )}
@@ -94,7 +94,7 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, onOpenDetail
         </button>
       }
     >
-      <div className="px-3 py-2 border-b border-surface-700 text-[10px] font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
+      <div className="px-3 py-2 border-b border-surface-700 text-[11px] font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
         <KanbanSquare className="w-3 h-3" /> Adicionar {firstName} ao funil
       </div>
       <div className="py-1" role="menu">
@@ -120,13 +120,13 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, onOpenDetail
               <span className="flex-1 truncate">{p.name}</span>
               {/* O ícone sozinho não ensina: quem nunca viu não sabe que
                   alvo = venda e ciclo = processo. A legenda diz. */}
-              <span className="text-[10px] text-surface-500 flex-shrink-0">
+              <span className="text-[11px] text-surface-500 flex-shrink-0">
                 {pipelineKindOption(pipelineKindOf(p)).label}
               </span>
               {disabled ? (
-                <span className="text-[10px] whitespace-nowrap">já está{stageLabel ? ` · ${stageLabel}` : ''}</span>
+                <span className="text-[11px] whitespace-nowrap">já está{stageLabel ? ` · ${stageLabel}` : ''}</span>
               ) : existing ? (
-                <span className="text-[10px] whitespace-nowrap text-surface-500">
+                <span className="text-[11px] whitespace-nowrap text-surface-500">
                   + outro ({openCount} aberto{openCount > 1 ? 's' : ''})
                 </span>
               ) : (

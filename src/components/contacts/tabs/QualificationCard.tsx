@@ -84,18 +84,18 @@ export function QualificationCard({ contact, onSave, hideStage = false, hideTitl
   }
 
   const actions = !editing ? (
-    <button onClick={() => setEditing(true)} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+    <button onClick={() => setEditing(true)} className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
       <Pencil className="w-3 h-3" />
     </button>
   ) : (
     <div className="flex items-center gap-1">
-      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
         <XIcon className="w-3 h-3" />
       </button>
       <button
         onClick={handleSave}
         disabled={saving}
-        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
+        className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
       >
         <Save className="w-2.5 h-2.5" />
         {saving ? 'Salvando...' : 'Salvar'}
@@ -184,7 +184,7 @@ export function QualificationCard({ contact, onSave, hideStage = false, hideTitl
 function ReadField({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <p className="text-[11px] text-surface-500 font-medium uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="text-xs text-surface-500 font-medium mb-0.5">{label}</p>
       <p className="text-sm text-surface-200">
         {value ? <EmojiText text={value} /> : '—'}
       </p>

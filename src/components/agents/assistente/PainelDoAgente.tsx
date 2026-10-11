@@ -70,10 +70,10 @@ export function PainelDoAgente({ spec, etapa, fontes, numeros }: {
 
   return (
     <aside aria-label="Seu agente até agora" className="space-y-4">
-      <section className="rounded-lg border border-surface-700 bg-surface-800 p-4">
-        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Seu agente até agora</p>
+      <section className="rounded-[10px] border border-surface-700 bg-surface-800 p-4">
+        <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">Seu agente até agora</p>
         <div className="mt-3 flex items-center gap-3">
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-bold text-accent-dark" aria-hidden="true">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent-dark" aria-hidden="true">
             {(nome || '?').slice(0, 1).toUpperCase()}
           </span>
           <div className="min-w-0">
@@ -95,7 +95,7 @@ export function PainelDoAgente({ spec, etapa, fontes, numeros }: {
         {exemplo && (
           <div className="mt-4">
             <p className="text-xs text-surface-400">Jeito de falar{tom ? ` · ${tom.rotulo}` : ''}{ctx.examples.length ? ' · exemplo escolhido' : ''}</p>
-            <p className="mt-1.5 line-clamp-3 max-w-[90%] whitespace-pre-wrap rounded-lg rounded-tl-sm bg-surface-700 px-3 py-2 text-xs leading-relaxed text-surface-100">
+            <p className="mt-1.5 line-clamp-3 max-w-[90%] whitespace-pre-wrap rounded-[10px] rounded-tl-sm bg-surface-700 px-3 py-2 text-xs leading-relaxed text-surface-100">
               {exemplo}
             </p>
                       </div>
@@ -103,20 +103,20 @@ export function PainelDoAgente({ spec, etapa, fontes, numeros }: {
       </section>
 
       {etapa < ETAPAS.length && (
-        <section className={cn('rounded-lg border px-4 py-3 text-xs', falta ? 'border-[var(--color-accent-amber)]/40' : 'border-surface-700')} aria-live="polite">
+        <section className={cn('rounded-[10px] border px-4 py-3 text-xs', falta ? 'border-[var(--color-accent-amber)]/40' : 'border-surface-700')} aria-live="polite">
           <p className="font-semibold text-surface-200">Para seguir: {ETAPAS[etapa - 1]}</p>
           <p className={cn('mt-1', falta ? 'text-surface-300' : 'text-surface-400')}>{falta ? falta.mensagem : 'Tudo certo para continuar.'}</p>
         </section>
       )}
 
-      <section className="rounded-lg border border-surface-700 p-4">
+      <section className="rounded-[10px] border border-surface-700 p-4">
         <p className="text-xs font-semibold text-surface-200">O que ele já tem</p>
         <ul className="mt-2 space-y-0.5">
           {itens.map((i) => (
             <li
               key={i.rotulo}
               aria-current={i.etapa === etapa ? 'step' : undefined}
-              className={cn('flex items-center gap-2 rounded-sm px-2 py-1 text-xs', i.etapa === etapa && 'bg-surface-800')}
+              className={cn('flex items-center gap-2 rounded-[6px] px-2 py-1 text-xs', i.etapa === etapa && 'bg-surface-800')}
             >
               {i.feito
                 ? <Check className="h-3.5 w-3.5 flex-shrink-0 text-accent-dark" strokeWidth={3} aria-label="feito" />

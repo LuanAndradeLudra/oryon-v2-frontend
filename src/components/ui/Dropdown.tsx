@@ -12,9 +12,12 @@ interface DropdownProps {
   children: ReactNode
   align?: 'left' | 'right'
   className?: string
+  /** Classe do invólucro do gatilho — ex.: `min-w-0` para o gatilho poder
+   *  encolher dentro de uma linha flex (SCRUM-1253, filtro de etiqueta). */
+  wrapperClassName?: string
 }
 
-export function Dropdown({ open, onClose, anchor, children, align = 'left', className }: DropdownProps) {
+export function Dropdown({ open, onClose, anchor, children, align = 'left', className, wrapperClassName }: DropdownProps) {
   const semMovimento = useReducedMotion()
   const wrapRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -107,7 +110,7 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
           }}
           className={cn(
             // DROP-01 (spec 1a): raio 8 + padding 4. Vidro por adesão (index.css).
-            'overlay-surface overlay-vidro border rounded-lg p-1',
+            'overlay-surface overlay-vidro border rounded-[10px] p-1',
             // `overflow-y-auto` (e não `hidden`): com a altura limitada pela
             // janela, o que exceder precisa rolar DENTRO do menu.
             'min-w-[200px] overflow-x-hidden overflow-y-auto',
@@ -120,7 +123,7 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
     )
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className={cn('relative', wrapperClassName)}>
       {anchor}
       {typeof document !== 'undefined' && menu ? createPortal(menu, document.body) : null}
     </div>
@@ -151,7 +154,7 @@ export function DropdownItem({ onClick, children, icon: Icon, danger, active, di
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'w-full flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] text-[13px] text-left transition-all',
+        'w-full flex items-center gap-2.5 h-8 px-2 rounded-[6px] text-[13px] text-left transition-all',
         'focus-visible:outline-none focus-visible:bg-[var(--rowhover)] hover:bg-[var(--rowhover)]',
         danger
           ? 'text-danger'

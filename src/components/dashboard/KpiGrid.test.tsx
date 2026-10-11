@@ -63,35 +63,35 @@ describe('KpiGrid — um cartão por categoria', () => {
     const cartoes = within(faixa).getAllByRole('region')
     expect(cartoes.map((c) => c.getAttribute('aria-label'))).toEqual(['Atendimento', 'Velocidade', 'IA'])
     expect(within(cartoes[1]).getByRole('heading', { name: 'Velocidade' })).toBeInTheDocument()
-    expect(within(cartoes[1]).getByText('Tempo de Resposta')).toBeInTheDocument()
+    expect(within(cartoes[1]).getByText('Tempo de resposta')).toBeInTheDocument()
   })
 
   it('indicador de agora tem o ponto "ao vivo"; o do período não', () => {
     montar()
-    const fila = screen.getByRole('link', { name: /Em Fila/ })
+    const fila = screen.getByRole('link', { name: /Em fila/ })
     expect(within(fila).getByText('agora', { selector: '.sr-only' })).toBeInTheDocument()
-    const taxa = screen.getByText('Taxa de Resolução').closest('[data-spotlight-target]') as HTMLElement
+    const taxa = screen.getByText('Taxa de resolução').closest('[data-spotlight-target]') as HTMLElement
     expect(within(taxa).queryByText('agora', { selector: '.sr-only' })).toBeNull()
   })
 
   it('o cartão leva à lista que compõe o número', () => {
     montar()
-    expect(screen.getByRole('link', { name: /Em Fila: 8\. Abrir a Fila/ })).toHaveAttribute('href', '/conversations?aba=fila')
-    expect(screen.getByRole('link', { name: /Conversas Ativas/ })).toHaveAttribute('href', '/conversations?status=open')
+    expect(screen.getByRole('link', { name: /Em fila: 8\. Abrir a Fila/ })).toHaveAttribute('href', '/conversations?aba=fila')
+    expect(screen.getByRole('link', { name: /Conversas ativas/ })).toHaveAttribute('href', '/conversations?status=open')
   })
 
   it('taxa ganha a barra; tempo com meta mostra o estado e a meta', () => {
     montar()
-    const taxa = screen.getByText('Taxa de Resolução').closest('[data-spotlight-target]') as HTMLElement
+    const taxa = screen.getByText('Taxa de resolução').closest('[data-spotlight-target]') as HTMLElement
     expect(taxa.querySelector('span[style*="width: 39%"]')).not.toBeNull()
-    const humana = screen.getByText('1ª Resposta Humana').closest('[data-spotlight-target]') as HTMLElement
+    const humana = screen.getByText('1ª resposta humana').closest('[data-spotlight-target]') as HTMLElement
     expect(within(humana).getByText('atenção')).toBeInTheDocument()
     expect(within(humana).getByText('· meta 15m')).toBeInTheDocument()
   })
 
   it('a unidade aparece separada do número (menor e mais leve)', () => {
     montar()
-    const tempo = screen.getByText('Tempo de Resposta').closest('[data-spotlight-target]') as HTMLElement
+    const tempo = screen.getByText('Tempo de resposta').closest('[data-spotlight-target]') as HTMLElement
     const unidades = [...tempo.querySelectorAll('span.text-\\[0\\.58em\\]')].map((s) => s.textContent)
     expect(unidades).toEqual(['h', 'm'])
   })
@@ -122,11 +122,11 @@ describe('DC-5 — variação, destaque e densidade', () => {
     expect(de('Resolvidas')).toHaveTextContent('↑20%')
     expect(de('Resolvidas')).toHaveClass('text-online')
     // Tempo subindo é ruim.
-    expect(de('Tempo de Resposta')).toHaveClass('text-danger')
-    expect(de('Taxa de Resolução')).toHaveTextContent('↓2,5 p.p.')
-    expect(de('Taxa de Resolução')).toHaveTextContent('caiu 2,5 pontos percentuais')
+    expect(de('Tempo de resposta')).toHaveClass('text-danger')
+    expect(de('Taxa de resolução')).toHaveTextContent('↓2,5 p.p.')
+    expect(de('Taxa de resolução')).toHaveTextContent('caiu 2,5 pontos percentuais')
     // Neutro (mensagens recebidas) fica cinza.
-    expect(de('Msgs Recebidas')).toHaveClass('text-surface-500')
+    expect(de('Msgs recebidas')).toHaveClass('text-surface-500')
   })
 
   it('compacta não desenha a linha; detalhada desenha onde há série', () => {
@@ -143,7 +143,7 @@ describe('DC-5 — variação, destaque e densidade', () => {
   it('destaque sobe para a linha própria e sai do grupo', () => {
     montarCom([kpi('resolved', 3, { sparkline: [1, 2] }), kpi('queued', 2), kpi('resolution_rate', 50)], { destaque: ['resolution_rate', 'nao_existe'] })
     const destaques = screen.getByTestId('kpi-destaques')
-    expect(within(destaques).getByText('Taxa de Resolução')).toBeInTheDocument()
-    expect(screen.getAllByText('Taxa de Resolução')).toHaveLength(1)
+    expect(within(destaques).getByText('Taxa de resolução')).toBeInTheDocument()
+    expect(screen.getAllByText('Taxa de resolução')).toHaveLength(1)
   })
 })

@@ -16,7 +16,7 @@ function quando(iso: string): string {
 function ResultadoDaRepeticao({ r }: { r: TurnReplayResult }) {
   const semGravacao = r.toolCalls.filter((c) => c.source === 'missing')
   return (
-    <div className="mt-3 space-y-2 rounded-md border border-surface-700 bg-[var(--sf1)] p-3 text-xs">
+    <div className="mt-3 space-y-2 rounded-[6px] border border-surface-700 bg-[var(--sf1)] p-3 text-xs">
       {r.instructions === 'current_not_applied' && (
         <p className="text-surface-400">Não deu para aplicar as instruções atuais neste turno; repetido com as de quando aconteceu.</p>
       )}
@@ -91,7 +91,7 @@ export function TurnosGravados({ agentId }: { agentId: string }) {
             : 'Sem a gravação, não dá para repetir um atendimento. Fale com a Oryon para ligar nesta conta.'}
         />
       ) : (
-        <ul className="divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700">
+        <ul className="divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700">
           {turnos.map((t) => {
             const res = resultados[t.id]
             return (

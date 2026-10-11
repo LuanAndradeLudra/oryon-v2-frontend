@@ -67,14 +67,14 @@ export function FunnelsConfigDrawer({ open, onClose }: Props) {
           >
             <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Configurar funis</h2>
+                <h2 className="text-base font-semibold tracking-[-0.01em] text-surface-50">Configurar funis</h2>
                 <p className="text-xs text-surface-500 mt-0.5">Etapas, motivos de desfecho e acesso por setor</p>
               </div>
               <button
                 onClick={onClose}
                 title="Fechar"
                 aria-label="Fechar"
-                className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+                className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>

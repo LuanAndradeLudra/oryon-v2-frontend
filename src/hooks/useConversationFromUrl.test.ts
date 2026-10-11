@@ -6,6 +6,8 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { useConversationFromUrl } from './useConversationFromUrl'
 import type { Conversation } from '@/types'
 
+vi.mock('@/services/api', () => ({ messagesApi: { list: vi.fn(async () => ({ data: { data: [] } })) } }))
+
 const conv = (id: string) => ({ id } as Conversation)
 
 function setup(initial: Partial<Parameters<typeof useConversationFromUrl>[0]> = {}) {
@@ -38,10 +40,13 @@ describe('useConversationFromUrl', () => {
     expect(onFoundInList).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'b' }))
   })
 
-  it('espera a carga inicial antes de buscar por id', async () => {
-    const { hook, props, fetchById, onFetched } = setup({ urlId: 'z', loading: true })
-    expect(fetchById).not.toHaveBeenCalled()
-    hook.rerender({ ...props, urlId: 'z', loading: false })
+  // Homologação 06/10 (SCRUM-1253): com a lista ainda carregando, a conversa
+  // sai JÁ, em paralelo, e abre assim que chega; a busca não se repete depois.
+  it('com a lista carregando, busca a conversa em paralelo e abre cedo (uma busca só)', async () => {
+    const { hook, props, fetchById, onFoundInList, onFetched } = setup({ urlId: 'z', loading: true })
+    await waitFor(() => expect(onFoundInList).toHaveBeenCalledWith(expect.objectContaining({ id: 'z' })))
+    // a lista chega SEM ela (fora do período): limpa o período, sem buscar de novo
+    hook.rerender({ ...props, urlId: 'z', loading: false, activeId: 'z', conversations: [conv('q')] })
     await waitFor(() => expect(onFetched).toHaveBeenCalled())
     expect(fetchById).toHaveBeenCalledTimes(1)
   })
@@ -60,5 +65,39 @@ describe('useConversationFromUrl', () => {
     hook.rerender({ ...props, urlId: null, activeId: null, conversations: [conv('a')] })
     hook.rerender({ ...props, urlId: 'a', activeId: null, conversations: [conv('a')] })
     expect(onFoundInList).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('useConversationFromUrl — pré-busca da sessão (revisão 11/10)', () => {
+  it('a entrada conversa:<id> é consumida ao usar: outra pré-busca da mesma chave busca de novo', async () => {
+    const { preBuscar } = await import('@/lib/preBusca')
+    const { hook, props, onFetched, fetchById } = setup({ urlId: 'k', loading: true })
+    await waitFor(() => expect(fetchById).toHaveBeenCalledTimes(1))
+    hook.rerender({ ...props, urlId: 'k', loading: false, activeId: 'k', conversations: [conv('q')] })
+    await waitFor(() => expect(onFetched).toHaveBeenCalled())
+    const outra = vi.fn(async () => conv('k'))
+    await preBuscar('conversa:k', outra)
+    expect(outra).toHaveBeenCalledTimes(1)
+  })
+
+  it('logout limpa o cache da pré-busca', async () => {
+    const { preBuscar } = await import('@/lib/preBusca')
+    const { limparSessao } = await import('@/lib/limpezaDaSessao')
+    const a = vi.fn(async () => 1)
+    await preBuscar('conversa:sessao', a)
+    limparSessao()
+    const b = vi.fn(async () => 2)
+    expect(await preBuscar('conversa:sessao', b)).toBe(2)
+  })
+
+  it('falha de uma pré-busca antiga não apaga a mais nova da mesma chave', async () => {
+    const { preBuscar, descartarPreBusca, usarPreBusca } = await import('@/lib/preBusca')
+    let falhar!: (e: Error) => void
+    const antiga = preBuscar('conversa:corrida', () => new Promise<number>((_, rej) => { falhar = rej }))
+    descartarPreBusca('conversa:corrida')
+    const nova = preBuscar('conversa:corrida', async () => 2)
+    falhar(new Error('x'))
+    await antiga.catch(() => {})
+    expect(usarPreBusca('conversa:corrida')).toBe(nova)
   })
 })

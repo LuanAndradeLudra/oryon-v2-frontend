@@ -18,7 +18,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
   return (
     <div className="flex items-center justify-between px-4 py-4 border-b border-surface-700 flex-shrink-0">
       <div className="flex items-center gap-3">
-        <h1 className="text-xl font-bold text-surface-50">{vocab.contacts}</h1>
+        <h1 className="text-xl font-semibold text-surface-50">{vocab.contacts}</h1>
         <span className="text-sm text-surface-500 bg-surface-800 px-2.5 py-0.5 rounded-full font-medium border border-surface-700">
           {total.toLocaleString('pt-BR')}
         </span>
@@ -26,11 +26,11 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
 
       <div className="flex items-center gap-2">
         {/* View toggle */}
-        <div className="flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
+        <div className="flex items-center bg-surface-800 border border-surface-700 rounded-[10px] p-0.5">
           <button
             onClick={() => onViewModeChange('table')}
             className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-xs font-medium transition-all',
               viewMode === 'table'
                 ? 'bg-surface-900 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200'
@@ -42,7 +42,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
           <button
             onClick={() => onViewModeChange('kanban')}
             className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-xs font-medium transition-all',
               viewMode === 'kanban'
                 ? 'bg-surface-900 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200'
@@ -55,7 +55,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
 
         <button
           onClick={onConfigure}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-all"
           title="Configurar situações e campos"
         >
           <Settings2 className="w-3.5 h-3.5" />
@@ -64,7 +64,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
 
         <button
           onClick={onImport}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-all"
         >
           <Upload className="w-3.5 h-3.5" />
           Importar
@@ -72,7 +72,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
 
         <button
           onClick={onNewContact}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
           Novo Contato

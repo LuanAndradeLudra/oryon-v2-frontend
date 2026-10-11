@@ -67,7 +67,7 @@ export function SetPasswordPage() {
         {/* Brand */}
         <div className="flex flex-col items-center mb-8">
           <OryonLogo variant="symbol" className="h-16 mb-4 select-none" />
-          <h1 className="text-xl font-bold text-surface-50">Bem-vindo, {user?.firstName}!</h1>
+          <h1 className="text-xl font-semibold text-surface-50">Bem-vindo, {user?.firstName}!</h1>
           <p className="text-sm text-surface-400 mt-1 text-center">
             Configure sua senha definitiva para continuar
           </p>
@@ -76,7 +76,7 @@ export function SetPasswordPage() {
         {/* Card */}
         <form
           onSubmit={handleSubmit}
-          className="bg-surface-800 border border-surface-700 rounded-lg p-6 flex flex-col gap-4"
+          className="bg-surface-800 border border-surface-700 rounded-[10px] p-6 flex flex-col gap-4"
         >
           {/* Current password */}
           <div className="flex flex-col gap-1.5">
@@ -156,7 +156,7 @@ export function SetPasswordPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="••••••••"
-                className={`w-full bg-surface-800 border rounded-lg px-3 py-2.5 pr-10 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 transition-colors ${
+                className={`w-full bg-surface-800 border rounded-[6px] px-3 py-2.5 pr-10 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 transition-colors ${
                   confirm.length > 0
                     ? matches
                       ? 'border-online focus:ring-online/30 focus:border-online'
@@ -179,7 +179,7 @@ export function SetPasswordPage() {
           </div>
 
           {/* Requirements checklist */}
-          <div className="bg-[var(--sf2)] border border-surface-700 rounded-lg px-4 py-3 flex flex-col gap-1.5">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-[10px] px-4 py-3 flex flex-col gap-1.5">
             {REQUIREMENTS.map((r) => {
               const ok = r.test(password)
               return (

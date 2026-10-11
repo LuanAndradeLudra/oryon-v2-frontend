@@ -200,7 +200,7 @@ export function AiCreditsIndicator() {
               {/* Canvas 6b (3 faixas): <70% "renova em N d" (tx3); >=70% âmbar "acaba
                   antes do ciclo"; >=90% vermelho "agentes pausam em N" + "Comprar". */}
               <span
-                className="text-[10.5px] text-surface-500 truncate whitespace-pre"
+                className="text-[11px] text-surface-500 truncate whitespace-pre"
                 style={!noData && pct >= 0.7 ? { color } : undefined}
               >
                 {noData
@@ -217,7 +217,7 @@ export function AiCreditsIndicator() {
           )}
         </AnimatePresence>
         {expanded && !noData && pct >= 0.9 && (
-          <span className="text-[10.5px] font-bold flex-shrink-0" style={{ color: ACCENT }}>Comprar</span>
+          <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: ACCENT }}>Comprar</span>
         )}
       </button>
 
@@ -230,13 +230,13 @@ export function AiCreditsIndicator() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.13, ease: 'easeOut' }}
             style={{ position: 'fixed', left: pos.left, bottom: pos.bottom, width: 300, pointerEvents: 'auto' }}
-            className="overlay-surface overlay-vidro border rounded-lg p-3.5 flex flex-col gap-2.5 text-[12.5px]"
+            className="overlay-surface overlay-vidro border rounded-[10px] p-3.5 flex flex-col gap-2.5 text-xs"
           >
             {/* Canvas 6b: coluna única, padding 14, gap 10, 12.5px. Anel 36 com trilha --bd. */}
             <div className="flex items-center gap-2.5">
               <CreditRing size={36} pct={pct} color={pct >= 0.9 ? 'var(--color-danger)' : pct >= 0.7 ? 'var(--color-warning)' : 'var(--color-brand-500)'} track="var(--bd)" />
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-bold text-surface-100 truncate">
+                <p className="text-[13px] font-semibold text-surface-100 truncate">
                   Créditos de IA{billing?.plan.displayName ? ` · ${billing.plan.displayName}` : ''}
                 </p>
                 <p className="text-surface-400">
@@ -249,7 +249,7 @@ export function AiCreditsIndicator() {
                 {/* Canvas 6b: o % não tem cor própria (usa --tx); cor só nas faixas de risco,
                     por token — o hex da sidebar (sempre escura) não serve no popover claro. */}
                 <div className={cn(
-                  'text-base font-extrabold tabular-nums tracking-[-0.02em] leading-[1.1]',
+                  'text-base font-semibold tabular-nums tracking-[-0.02em] leading-[1.1]',
                   pct >= 0.9 ? 'text-danger' : pct >= 0.7 ? 'text-warning' : 'text-surface-100',
                 )}>
                   {pctLabel}%
@@ -289,14 +289,14 @@ export function AiCreditsIndicator() {
               <button
                 type="button"
                 onClick={goBilling}
-                className="inline-flex items-center h-[26px] px-[9px] rounded-[6px] border border-[var(--bd2)] text-[11.5px] font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+                className="inline-flex items-center h-7 px-[9px] rounded-[6px] border border-[var(--bd2)] text-xs font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
                 Ver faturamento
               </button>
               <button
                 type="button"
                 onClick={goBilling}
-                className="inline-flex items-center h-[26px] px-[9px] rounded-[6px] text-[11.5px] font-semibold text-accent-dark hover:bg-[var(--rowhover)] transition-colors"
+                className="inline-flex items-center h-7 px-[9px] rounded-[6px] text-xs font-semibold text-accent-dark hover:bg-[var(--rowhover)] transition-colors"
               >
                 Comprar créditos
               </button>

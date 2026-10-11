@@ -106,14 +106,14 @@ export function ConnectorsSettings() {
         title="Conectores"
         description="Conecte sistemas externos aos agentes de IA. Instale uma vez aqui; depois ative por agente na aba Skills de cada um."
         action={planAllowed ? (
-          <Button size="sm" variant="neutral" className="h-8 px-3 text-[12.5px]" leftIcon={<MessageSquarePlus className="w-3.5 h-3.5" />} onClick={() => setRequesting({})}>
+          <Button size="sm" variant="neutral" className="h-8 px-3 text-xs" leftIcon={<MessageSquarePlus className="w-3.5 h-3.5" />} onClick={() => setRequesting({})}>
             Solicitar integração
           </Button>
         ) : undefined}
       />
 
       {!planAllowed ? (
-        <div className="flex items-start gap-3 p-4 rounded-lg border border-surface-700 bg-surface-800 text-sm">
+        <div className="flex items-start gap-3 p-4 rounded-[10px] border border-surface-700 bg-surface-800 text-sm">
           <Lock className="w-4 h-4 text-surface-500 flex-shrink-0 mt-0.5" />
           <p className="text-surface-400">
             Disponível a partir do plano <strong className="text-surface-200">{upgrade ? PLANS[upgrade].name : 'Business'}</strong>.
@@ -144,7 +144,7 @@ export function ConnectorsSettings() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Nome, fornecedor ou o que faz…"
                 aria-label="Buscar conector"
-                className="w-full h-8 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-2 text-[12.5px] text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
+                className="w-full h-8 bg-surface-800 border border-[var(--bd2)] rounded-[6px] pl-8 pr-2 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
               />
             </div>
 
@@ -155,7 +155,7 @@ export function ConnectorsSettings() {
                 <button
                   type="button"
                   onClick={() => setCategoryOpen((o) => !o)}
-                  className="h-8 inline-flex items-center gap-1.5 rounded-sm border border-[var(--bd2)] bg-surface-800 px-2.5 text-[12.5px] font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+                  className="h-8 inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--bd2)] bg-surface-800 px-2.5 text-xs font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
                 >
                   Categoria<span className="font-medium text-surface-500"> · {category || 'Todas'}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-surface-500" />
@@ -195,7 +195,7 @@ export function ConnectorsSettings() {
               {views.length} no catálogo · {installedCount} instalado{installedCount === 1 ? '' : 's'}
             </span>
 
-            <div className="inline-flex border border-surface-700 rounded-sm overflow-hidden">
+            <div className="inline-flex border border-surface-700 rounded-[6px] overflow-hidden">
               <button
                 type="button"
                 onClick={() => setView('grid')}
@@ -238,7 +238,7 @@ export function ConnectorsSettings() {
               ))}
             </div>
           ) : (
-            <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
+            <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
               {filtered.map((c) => (
                 <button
                   key={c.id}

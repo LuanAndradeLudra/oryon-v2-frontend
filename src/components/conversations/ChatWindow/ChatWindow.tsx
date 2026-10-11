@@ -65,12 +65,15 @@ export function ChatWindow({
   const { messages, loading, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, updateMediaThumbnail, markAnomaliesReviewed } =
     useMessages(conversation?.id ?? null)
 
-  // T4 fase 1 — eventos da IA e da equipe entre as mensagens. A rotina fica
-  // atrás de "Mostrar eventos", com o estado na URL (D10: `eventos=1`).
+  // T4 fase 1 — eventos da IA e da equipe entre as mensagens. SCRUM-1253 (PO,
+  // 06/10): a rotina aparece SEMPRE por padrão; a URL guarda só a escolha de
+  // ocultar (`eventos-ocultos=1`). O antigo `eventos=1` era o padrão invertido.
   const { user } = useAuth()
   const meuNome = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null
-  const eventos = useEventosDaConversa(conversation?.id ?? null, messages.length, meuNome)
-  const [mostrarEventos, setMostrarEventos] = useEstadoNaUrl<boolean>('eventos', { padrao: false, ler: lerBool, escrever: escreverBool })
+  const ultimaMensagem = messages.length ? messages[messages.length - 1] : null
+  const eventos = useEventosDaConversa(conversation?.id ?? null, { ultima: ultimaMensagem, carregando: loading }, meuNome)
+  const [eventosOcultos, setEventosOcultos] = useEstadoNaUrl<boolean>('eventos-ocultos', { padrao: false, ler: lerBool, escrever: escreverBool })
+  const mostrarEventos = !eventosOcultos
 
   // Outbound quoted reply: which message the operator is replying to. Cleared
   // when the conversation changes or after a successful send.
@@ -172,11 +175,11 @@ export function ChatWindow({
     ]
     return (
       <div className="chat-shell-bg flex-1 flex flex-col items-center justify-center gap-6 px-8">
-        <div className="w-12 h-12 rounded-xl bg-accent-soft flex items-center justify-center">
+        <div className="w-12 h-12 rounded-[10px] bg-accent-soft flex items-center justify-center">
           <MessageSquare className="w-6 h-6 text-accent-dark" />
         </div>
         <div className="text-center">
-          <p className="text-surface-100 font-display font-bold text-[15px] tracking-[-0.01em]">Pronto para atender</p>
+          <p className="text-surface-100 font-display font-semibold text-base tracking-[-0.01em]">Pronto para atender</p>
           <p className="text-surface-400 text-xs leading-[1.5] mt-1">
             Escolha uma conversa na lista — ou triage direto pelo teclado
           </p>
@@ -186,7 +189,7 @@ export function ChatWindow({
             <div key={s.label} className="flex items-center gap-2.5 text-xs text-surface-400">
               <span className="flex items-center gap-1">
                 {s.keys.map((k) => (
-                  <kbd key={k} className="min-w-[22px] px-1.5 py-1 rounded-xs bg-[var(--sf2)] border border-[var(--bd2)] text-surface-300 font-mono text-[11px] text-center leading-none">
+                  <kbd key={k} className="min-w-[22px] px-1.5 py-1 rounded-[6px] bg-[var(--sf2)] border border-[var(--bd2)] text-surface-300 font-mono text-[11px] text-center leading-none">
                     {k}
                   </kbd>
                 ))}
@@ -218,6 +221,7 @@ export function ChatWindow({
         onCreateTag={onCreateTag}
         onDeleteTag={onDeleteTag}
         onAssign={(user) => onAssign(conversation.id, user)}
+        onTransfer={(user) => onTransfer(conversation.id, user)}
         onArchive={() => onArchive(conversation.id)}
         onSetAiPause={(until) => onSetAiPause(conversation.id, until)}
         onInterveneAi={onInterveneAi ? () => onInterveneAi(conversation.id) : undefined}
@@ -238,7 +242,7 @@ export function ChatWindow({
         contact={conversation.contact}
         eventos={eventos}
         mostrarEventos={mostrarEventos}
-        onAlternarEventos={() => setMostrarEventos((v) => !v)}
+        onAlternarEventos={() => setEventosOcultos((v) => !v)}
       />
       {/* key por conversa (28/09): sem ela o rascunho, os anexos e o
           "modelo enviado" sobreviviam à troca de conversa — digitar em A,

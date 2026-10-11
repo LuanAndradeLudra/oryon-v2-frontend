@@ -13,7 +13,7 @@ export function CabecalhoDaSecao({ id, acoes, children }: { id: SecaoId; acoes?:
   return (
     <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <h2 id="titulo-secao" className="font-display text-base font-bold tracking-[-0.01em] text-surface-50">{s.rotulo}</h2>
+        <h2 id="titulo-secao" className="font-display text-base font-semibold tracking-[-0.01em] text-surface-50">{s.rotulo}</h2>
         <p className="mt-1 max-w-[64ch] text-sm text-surface-400">{s.descricao}</p>
         {children}
       </div>
@@ -50,7 +50,7 @@ export function Bloco({
               onClick={() => setAberto((v) => !v)}
               aria-expanded={aberto}
               aria-controls={idCorpo}
-              className="group inline-flex items-center gap-1.5 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              className="group inline-flex items-center gap-1.5 rounded-[6px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             >
               <h3 id={idTitulo} className="text-sm font-semibold text-surface-100">{titulo}</h3>
               <ChevronDown className={cn('h-4 w-4 text-surface-500 transition-transform', aberto && 'rotate-180')} aria-hidden />

@@ -57,10 +57,10 @@ export function LineFilterChip({
         type="button"
         onClick={() => setOpen((v) => !v)}
         // Eixo 10 (achado ao vivo): altura vinha de padding (py-1.5 ≈ 29,7px)
-        // em vez de altura fixa — h-7 + rounded-sm é a "receita da casa"
+        // em vez de altura fixa — h-7 + rounded-[6px] é a "receita da casa"
         // (mesma medida do Button size="sm" e da pílula Buscar do TopBar).
         className={cn(
-          'flex items-center gap-1.5 h-7 px-2.5 rounded-sm text-xs font-medium transition-colors',
+          'flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] text-xs font-medium transition-colors',
           'bg-surface-800 border border-[var(--bd2)] text-surface-200 hover:bg-[var(--rowhover)]',
           open && 'border-brand-500',
         )}
@@ -74,7 +74,7 @@ export function LineFilterChip({
         <div className="overlay-scrim z-20" aria-hidden onMouseDown={() => setOpen(false)} />
       )}
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 w-64 rounded-lg overlay-surface overlay-vidro border z-30 overflow-hidden">
+        <div className="absolute left-0 top-full mt-1.5 w-64 rounded-[10px] overlay-surface overlay-vidro border z-30 overflow-hidden">
           <ul className="max-h-72 overflow-y-auto py-1">
             <li>
               <button
@@ -125,7 +125,7 @@ export function LineFilterChip({
                         )}
                       </div>
                       {n.label && (
-                        <div className="text-[10px] text-surface-500 truncate">
+                        <div className="text-[11px] text-surface-500 truncate">
                           {formatPhone(n.displayPhoneNumber)}
                         </div>
                       )}

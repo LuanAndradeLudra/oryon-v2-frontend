@@ -305,7 +305,7 @@ export function ConversationActivitySection({ conversationId, entries: injected 
                  borda `--bd` — ao lado de "Ver contato"/"Novo negócio". Agora
                  usa o recipe `neutral sm` do `Button`: h-7, px-2.5, raio 7,
                  borda `--bd2`. */
-              className="flex items-center gap-1 h-7 text-xs text-surface-400 hover:text-surface-200 bg-surface-800 hover:bg-surface-700 border border-[var(--bd2)] rounded-sm px-2.5 transition-colors"
+              className="flex items-center gap-1 h-7 text-xs text-surface-400 hover:text-surface-200 bg-surface-800 hover:bg-surface-700 border border-[var(--bd2)] rounded-[6px] px-2.5 transition-colors"
             >
               {FILTER_LABELS[filter]}
               <ChevronDown className={cn('w-3 h-3 transition-transform', filterOpen && 'rotate-180')} />
@@ -314,7 +314,7 @@ export function ConversationActivitySection({ conversationId, entries: injected 
               <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setFilterOpen(false)} />
             )}
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-1 z-50 min-w-[100px] py-1 overlay-surface overlay-vidro border rounded-xl overflow-hidden">
+              <div className="absolute right-0 top-full mt-1 z-50 min-w-[100px] py-1 overlay-surface overlay-vidro border rounded-[10px] overflow-hidden">
                 {(Object.keys(FILTER_LABELS) as TimeFilter[]).map(f => (
                   <button
                     key={f}
@@ -395,7 +395,7 @@ function TimelineRow({ entry, isLast }: { entry: TimelineEntry; isLast: boolean 
     >
       {/* Time column */}
       <div className="w-10 flex-shrink-0 pt-0.5 pr-2 text-right">
-        <span className="text-[10px] text-surface-500 font-medium tabular-nums leading-none">
+        <span className="text-[11px] text-surface-500 font-medium tabular-nums leading-none">
           {formatTime(entry.createdAt)}
         </span>
       </div>
@@ -417,14 +417,14 @@ function TimelineRow({ entry, isLast }: { entry: TimelineEntry; isLast: boolean 
         )}>
           {visual.label}
         </p>
-        <p className="text-[10px] text-surface-500 mt-0.5 truncate">
+        <p className="text-[11px] text-surface-500 mt-0.5 truncate">
           {actor}
           {entry.kind === 'agent' && !entry.success && (
             <span className="text-status-error-400 ml-1">· falhou</span>
           )}
         </p>
         {entry.kind === 'agent' && !entry.success && entry.errorMessage && (
-          <p className="text-[10px] text-status-error-400 mt-0.5 line-clamp-2">{entry.errorMessage}</p>
+          <p className="text-[11px] text-status-error-400 mt-0.5 line-clamp-2">{entry.errorMessage}</p>
         )}
       </div>
     </motion.li>

@@ -186,6 +186,13 @@ export function instalarBackendDemo() {
     },
   }))
 
+  // ── Perfil da empresa ─────────────────────────────────────────────────────
+  // O menu de perfil da TopBar mostra o nome da empresa (linha "Perfil da
+  // empresa"); sem esta rota a landing chamava a API real.
+  rota('settings/company', eq('get', '/settings/company'), () => ({
+    data: { businessName: TENANT.nome, name: TENANT.nome, contactEmail: null },
+  }))
+
   // ── Conversas ─────────────────────────────────────────────────────────────
   rota('conversations', eq('get', '/conversations'), ({ params }) => {
     // `?status=` filtra como o backend real (a "Fila agora" do Dashboard pede

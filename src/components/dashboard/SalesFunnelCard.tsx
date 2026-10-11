@@ -52,17 +52,17 @@ export function SalesFunnelCard() {
   }, [])
 
   if (loading) {
-    return <div className="bg-surface-800 border border-surface-700 rounded-lg h-full min-h-56 animate-pulse" />
+    return <div className="bg-surface-800 border border-surface-700 rounded-[10px] h-full min-h-56 animate-pulse" />
   }
 
   if (!pipeline) {
     return (
-      <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden h-full flex flex-col">
+      <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden h-full flex flex-col">
         {/* PL-C3-FAR-eixo10: h-10 fixo, não min-h-10 — mesma medida exata dos
             irmãos VolumeChart/FilaAgoraCard na mesma linha do grid (40px). */}
         <div className="flex items-center h-10 px-3.5 border-b border-surface-700">
-          <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
-          <span className="text-[11.5px] text-surface-500 ml-2">em aberto por etapa</span>
+          <p className="text-sm font-semibold text-surface-100">Funil de vendas</p>
+          <span className="text-xs text-surface-500 ml-2">em aberto por etapa</span>
         <EscopoDoCartao className="ml-2">agora</EscopoDoCartao>
         </div>
         <EmptyState icon={Milestone} title="Nenhum funil configurado" className="py-8 flex-1 mx-3.5 mb-3.5 items-center justify-center text-center" />
@@ -96,11 +96,14 @@ export function SalesFunnelCard() {
   }
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden h-full flex flex-col">
+    // @container: no cartão estreito (celular) a coluna Distribuição sai e as
+    // demais encolhem — antes a grade passava da largura e cortava a etapa e o
+    // "Avançam" (SCRUM-1253).
+    <div className="@container bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden h-full flex flex-col">
       {/* PL-C3-FAR-eixo10: h-10 fixo, mesma medida dos irmãos do grid. */}
-      <div className="flex items-center h-10 px-3.5 border-b border-surface-700">
-        <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
-        <span className="text-[11.5px] text-surface-500 ml-2">em aberto por etapa</span>
+      <div className="flex items-center h-10 px-3.5 border-b border-surface-700 whitespace-nowrap">
+        <p className="text-sm font-semibold text-surface-100">Funil de vendas</p>
+        <span className="hidden @[520px]:inline text-xs text-surface-500 ml-2">em aberto por etapa</span>
         <EscopoDoCartao className="ml-2">agora</EscopoDoCartao>
         <Link
           to={`/pipelines/${pipeline.id}`}
@@ -116,11 +119,11 @@ export function SalesFunnelCard() {
         <div className="flex-1 flex flex-col">
           {/* R2-DASH-10 (canvas 1b): grid 1.4fr 80px 120px 1.6fr 90px; cabeçalho
               h30 --sf2 11/600 --tx2; linhas h36 13px; números à direita. */}
-          <div className="grid grid-cols-[1.4fr_80px_120px_1.6fr_90px] items-center h-[30px] px-3.5 border-b border-surface-700 bg-[var(--sf2)] text-[11px] font-semibold text-surface-400">
+          <div className="grid grid-cols-[minmax(0,1fr)_64px_96px_72px] @[520px]:grid-cols-[1.4fr_80px_120px_1.6fr_90px] items-center h-8 px-3.5 border-b border-surface-700 bg-[var(--sf2)] text-2xs font-semibold text-surface-400">
             <span>Etapa</span>
             <span className="text-right">Negócios</span>
             <span className="text-right">Valor</span>
-            <span className="pl-4">Distribuição</span>
+            <span className="hidden @[520px]:block pl-4">Distribuição</span>
             <span className="text-right" title="Em todo o histórico do funil (não segue o período): dos negócios que entraram na etapa, quantos passaram para a seguinte (na última, quantos foram ganhos).">Avançam*</span>
           </div>
           {rows.map((row, i) => {
@@ -129,7 +132,7 @@ export function SalesFunnelCard() {
             return (
               <div
                 key={row.stage.id}
-                className="grid grid-cols-[1.4fr_80px_120px_1.6fr_90px] items-center h-9 px-3.5 border-b border-surface-700 last:border-b-0 text-[13px]"
+                className="grid grid-cols-[minmax(0,1fr)_64px_96px_72px] @[520px]:grid-cols-[1.4fr_80px_120px_1.6fr_90px] items-center h-9 px-3.5 border-b border-surface-700 last:border-b-0 text-sm"
               >
                 <span className="flex items-center gap-2 font-medium min-w-0">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: tintaDaEtapa(row.stage.color) }} />
@@ -137,7 +140,7 @@ export function SalesFunnelCard() {
                 </span>
                 <span className="text-right tabular-nums">{row.count}</span>
                 <span className="text-right tabular-nums">{row.amountCents !== null ? brl(row.amountCents) : '—'}</span>
-                <span className="pl-4">
+                <span className="hidden @[520px]:block pl-4">
                   <span className="block h-1.5 rounded-[3px] bg-[var(--sf2)] overflow-hidden">
                     <span
                       className="block h-full opacity-[.85]"
@@ -152,7 +155,7 @@ export function SalesFunnelCard() {
             )
           })}
           {/* A nota desce para o pé do cartão quando a linha é mais alta que o funil. */}
-          <p className="mt-auto px-3.5 py-2 border-t border-surface-700 text-[11px] text-surface-500">
+          <p className="mt-auto px-3.5 py-2 border-t border-surface-700 text-2xs text-surface-500">
             * Avançam: em todo o histórico do funil (não segue o período). Negócios e valor são de agora.
           </p>
         </div>

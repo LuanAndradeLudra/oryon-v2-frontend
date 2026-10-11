@@ -104,7 +104,7 @@ function TrilhaDoFunil({ pipeline, deal, onMoveToStage, disabled, tempoNaEtapa }
           última etapa visível encosta no contador e os dois viram um bloco só
           de texto. A linha diz onde uma coisa acaba e a outra começa. */}
       <span className="w-px h-3.5 bg-surface-700 shrink-0" aria-hidden />
-      <span className="text-[10.5px] text-surface-500 whitespace-nowrap shrink-0 tabular-nums" data-testid="deal-stage-position">
+      <span className="text-[11px] text-surface-500 whitespace-nowrap shrink-0 tabular-nums" data-testid="deal-stage-position">
         {posicao > 0 ? `${posicao} de ${caminho.length}` : `${caminho.length} etapas`}
         {tempoNaEtapa && <span className="text-surface-600"> · {tempoNaEtapa}</span>}
       </span>
@@ -243,7 +243,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                     // A atual sobe de corpo e leva a cor da própria etapa; as
                     // outras ficam neutras. Sem isso, quatro linhas de peso
                     // parecido obrigam a procurar o ponto aceso.
-                    atual ? 'text-[15px] font-bold' : 'text-xs',
+                    atual ? 'text-base font-semibold' : 'text-xs',
                     // Terminal alcançado lê como 'feito': a COR do desfecho já está
                     // no ✓/× ao lado. Antes o rótulo usava a cor da etapa a 55%, e cor
                     // esmaecida é exatamente o que desaparece no tema claro (âmbar a
@@ -267,7 +267,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                 </button>
               </span>
               <span className={cn(
-                'text-[10.5px] whitespace-nowrap tabular-nums shrink-0',
+                'text-[11px] whitespace-nowrap tabular-nums shrink-0',
                 atual ? 'text-surface-300' : 'text-surface-500',
               )}>
                 {atual && tempoNaEtapa

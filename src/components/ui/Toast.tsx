@@ -59,7 +59,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
     >
       <div
         className={cn(
-          'flex items-center gap-2.5 h-10 px-3 rounded-lg min-w-[260px] max-w-[400px] pointer-events-auto',
+          'flex items-center gap-2.5 h-10 px-3 rounded-[10px] min-w-[260px] max-w-[400px] pointer-events-auto',
           'bg-[var(--toast)] text-[var(--toasttx)] shadow-[var(--shadow-overlay)]',
           'transition-all duration-200',
           visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95',
@@ -72,12 +72,12 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
         >
           <Icon className="w-2.5 h-2.5 text-white" strokeWidth={3} />
         </span>
-        <span className="text-[12.5px] font-medium flex-1">{latest.message}</span>
+        <span className="text-xs font-medium flex-1">{latest.message}</span>
         {latest.action && (
           <button
             type="button"
             onClick={() => { latest.action?.onClick(); onDismiss(latest.id) }}
-            className="ml-2 text-[12.5px] font-semibold text-brand-500 hover:brightness-110 whitespace-nowrap"
+            className="ml-2 text-xs font-semibold text-brand-500 hover:brightness-110 whitespace-nowrap"
             data-testid="toast-action"
           >
             {latest.action.label}
