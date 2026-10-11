@@ -55,7 +55,7 @@ function QuickReplyRow({
   return (
     <tr onContextMenu={onContextMenu} className="hover:bg-[var(--rowhover)] transition-colors">
       <td className="px-3 py-3 first:pl-0 last:pr-0">
-        <code className="shortcut-tag inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-accent-dark bg-accent-soft px-2 py-1 rounded-xs" title={response.shortcut}>
+        <code className="shortcut-tag inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-accent-dark bg-accent-soft px-2 py-1 rounded-[6px]" title={response.shortcut}>
           {response.shortcut}
         </code>
       </td>
@@ -76,13 +76,13 @@ function QuickReplyRow({
           <div className="flex items-center gap-1 justify-end">
             <button
               onClick={() => onEdit(response)}
-              className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onDelete(response)}
-              className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
+              className="p-1.5 rounded-[6px] text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -218,7 +218,6 @@ export function QuickReplies({ buscaNaUrl = true }: { buscaNaUrl?: boolean } = {
               icon={Zap}
               title="Nenhuma resposta rápida criada ainda"
               hint="Crie atalhos de texto para responder mais rápido no atendimento."
-              action={{ label: 'Nova resposta', onClick: () => { setEditTarget(null); setModalOpen(true) } }}
             />
           ) : (
             <div className="p-10 text-center text-sm text-surface-400">
@@ -229,10 +228,10 @@ export function QuickReplies({ buscaNaUrl = true }: { buscaNaUrl?: boolean } = {
           <table className="w-full">
             <thead>
               <tr className="border-b border-surface-700">
-                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Atalho</th>
-                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Título</th>
-                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Preview</th>
-                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Criado por</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-2xs font-semibold text-surface-500 uppercase tracking-[.14em]">Atalho</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-2xs font-semibold text-surface-500 uppercase tracking-[.14em]">Título</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-2xs font-semibold text-surface-500 uppercase tracking-[.14em]">Preview</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-2xs font-semibold text-surface-500 uppercase tracking-[.14em]">Criado por</th>
                 <th className="px-3 py-2.5 first:pl-0 last:pr-0" />
               </tr>
             </thead>

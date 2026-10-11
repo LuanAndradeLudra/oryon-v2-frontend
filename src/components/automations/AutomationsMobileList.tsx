@@ -44,10 +44,10 @@ function AutomationCard({
       tabIndex={0}
       onClick={() => onOpenDetail(automation)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenDetail(automation) } }}
-      className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-700 rounded-lg hover:bg-[var(--rowhover)] active:bg-[var(--rowhover)] transition-colors text-left cursor-pointer"
+      className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-700 rounded-[10px] hover:bg-[var(--rowhover)] active:bg-[var(--rowhover)] transition-colors text-left cursor-pointer"
     >
       <span
-        className="color-chip-soft w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border"
+        className="color-chip-soft w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 border"
         style={{ ['--chip']: accent } as React.CSSProperties}
         title={TYPE_CONFIG[automation.type]?.label}
       >
@@ -60,7 +60,7 @@ function AutomationCard({
           <p className="text-sm font-semibold text-surface-50 truncate flex-1">{automation.name}</p>
           {automation.status === 'draft' && (
             <span
-              className="color-chip-soft px-1.5 py-0.5 rounded-xs text-[9px] font-semibold border flex-shrink-0"
+              className="color-chip-soft px-1.5 py-0.5 rounded-[6px] text-[11px] font-semibold border flex-shrink-0"
               style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
             >
               Rascunho
@@ -73,13 +73,13 @@ function AutomationCard({
 
         {/* Linha 2: fluxo (gatilho → ação) */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap flex-shrink-0">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap flex-shrink-0">
             <Zap className="w-3 h-3 text-surface-400" />{triggerChipLabel(automation)}
           </span>
           {acts.length > 0 ? (
             <>
               <ChevronRight className="w-3 h-3 text-surface-600 flex-shrink-0" />
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap truncate">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-[6px] bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap truncate">
                 {actionLabel(acts[0])}
               </span>
               {acts.length > 1 && <span className="text-[11px] text-surface-500 flex-shrink-0">+{acts.length - 1}</span>}

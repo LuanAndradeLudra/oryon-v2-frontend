@@ -23,12 +23,12 @@ function brl(cents: number): string {
 
 function StatCard({ icon: Icon, label, value, hint }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; hint?: string }) {
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4 flex flex-col gap-2">
+    <div className="bg-surface-900 border border-surface-700 rounded-[10px] p-4 flex flex-col gap-2">
       <div className="flex items-center gap-2 text-surface-400">
         <Icon className="w-4 h-4" />
         <span className="text-xs font-medium">{label}</span>
       </div>
-      <div className="text-xl font-bold text-surface-50 tabular-nums font-display">{value}</div>
+      <div className="text-xl font-semibold text-surface-50 tabular-nums font-display">{value}</div>
       {/* PL-C2-CAR-3 (P8): piso de 12px pra texto informativo — este hint
           estava em 11px. */}
       {hint && <p className="text-xs text-surface-500">{hint}</p>}
@@ -127,7 +127,7 @@ export function PipelineReportsTab({ pipeline, period: periodProp, onPeriodChang
       {loading || !overview ? (
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
           {Array.from({ length: isProcess ? 3 : 5 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-xl bg-surface-800/40 animate-pulse" aria-hidden />
+            <div key={i} className="h-24 rounded-[10px] bg-surface-800/40 animate-pulse" aria-hidden />
           ))}
         </div>
       ) : (

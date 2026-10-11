@@ -268,7 +268,7 @@ function StepIndicator({ step }: { step: Step }) {
           <div key={s.id} className="flex items-center">
             <div className="flex items-center gap-1.5">
               <div className={cn(
-                'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors',
+                'w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold transition-colors',
                 done   ? 'bg-brand-500 text-surface-950' :
                 active ? 'bg-accent-soft border border-brand-500 text-accent-dark' :
                          'bg-surface-800 border border-surface-700 text-surface-600',
@@ -537,10 +537,10 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
             {/* Header */}
             <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Importar contatos</h2>
+                <h2 className="text-base font-semibold tracking-[-0.01em] text-surface-50">Importar contatos</h2>
                 <p className="text-xs text-surface-500 mt-0.5">CSV, JSON ou XML — até 1.000 contatos por vez</p>
               </div>
-              <button onClick={requestClose} aria-label="Fechar" className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+              <button onClick={requestClose} aria-label="Fechar" className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -555,11 +555,11 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                 <div className="p-5 flex flex-col gap-4">
 
                   {/* Mode tabs */}
-                  <div className="flex items-center bg-surface-800 border border-surface-700 rounded-lg p-1 w-fit">
+                  <div className="flex items-center bg-surface-800 border border-surface-700 rounded-[10px] p-1 w-fit">
                     <button
                       onClick={() => { setUploadMode('file'); setParseError(null) }}
                       className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-xs font-medium transition-all',
                         uploadMode === 'file'
                           ? 'bg-surface-900 text-surface-100'
                           : 'text-surface-400 hover:text-surface-200',
@@ -571,7 +571,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                     <button
                       onClick={() => { setUploadMode('paste'); setParseError(null) }}
                       className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-xs font-medium transition-all',
                         uploadMode === 'paste'
                           ? 'bg-surface-900 text-surface-100'
                           : 'text-surface-400 hover:text-surface-200',
@@ -591,13 +591,13 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                         onDrop={onDrop}
                         onClick={() => inputRef.current?.click()}
                         className={cn(
-                          'border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-3 py-14 cursor-pointer transition-all',
+                          'border-2 border-dashed rounded-[10px] flex flex-col items-center justify-center gap-3 py-14 cursor-pointer transition-all',
                           dragging
                             ? 'border-brand-500 bg-accent-soft'
                             : 'border-[var(--bd2)] hover:border-surface-600 hover:bg-surface-800/40',
                         )}
                       >
-                        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center transition-colors', dragging ? 'bg-accent-soft' : 'bg-surface-800')}>
+                        <div className={cn('w-12 h-12 rounded-[10px] flex items-center justify-center transition-colors', dragging ? 'bg-accent-soft' : 'bg-surface-800')}>
                           <Upload className={cn('w-5 h-5', dragging ? 'text-accent-dark' : 'text-surface-500')} />
                         </div>
                         <div className="text-center">
@@ -622,7 +622,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           { ext: 'JSON', icon: FileJson, desc: 'Array de objetos ou {"contacts": [...]}' },
                           { ext: 'XML', icon: FileCode2, desc: 'Tags <contact> com campos como sub-elementos.' },
                         ].map(({ ext: e, icon: Icon, desc }) => (
-                          <div key={e} className="bg-surface-800/60 border border-surface-700 rounded-lg p-3 flex flex-col gap-1.5">
+                          <div key={e} className="bg-surface-800/60 border border-surface-700 rounded-[10px] p-3 flex flex-col gap-1.5">
                             <div className="flex items-center gap-1.5">
                               <Icon className="w-3.5 h-3.5 text-accent-dark" />
                               <span className="text-xs font-semibold text-surface-300">.{e.toLowerCase()}</span>
@@ -644,7 +644,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           <span className="text-[11px] text-surface-600">Formato detectado:</span>
                           {pasteText.trim() ? (
                             <span className={cn(
-                              'text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border',
+                              'text-[11px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded border',
                               detectPasteFormat(pasteText) === 'json'
                                 ? 'text-status-pending bg-status-pending-bg border-status-pending-border'
                                 : 'text-accent-dark bg-accent-soft border-brand-500/40',
@@ -652,7 +652,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                               {detectPasteFormat(pasteText)}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-surface-700 italic">automático</span>
+                            <span className="text-[11px] text-surface-700 italic">automático</span>
                           )}
                         </div>
                         <div className="flex items-center gap-3">
@@ -684,7 +684,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           spellCheck={false}
                           rows={12}
                           className={cn(
-                            'w-full bg-surface-950 border rounded-sm px-4 py-3 text-xs font-mono text-surface-200',
+                            'w-full bg-surface-950 border rounded-[6px] px-4 py-3 text-xs font-mono text-surface-200',
                             'placeholder-surface-700 resize-none focus:outline-none focus:ring-1 transition-colors',
                             parseError
                               ? 'border-red-500/50 focus:ring-red-500/30'
@@ -722,7 +722,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       <button
                         onClick={processPaste}
                         disabled={!pasteText.trim()}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-40 transition-all"
+                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-[6px] text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-40 transition-all"
                       >
                         <ArrowRight className="w-3.5 h-3.5" />
                         Processar texto
@@ -741,7 +741,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                 <div className="p-5 flex flex-col gap-4">
 
                   {/* File / source badge */}
-                  <div className="flex items-center gap-2 p-3 bg-surface-800/60 border border-surface-700 rounded-lg">
+                  <div className="flex items-center gap-2 p-3 bg-surface-800/60 border border-surface-700 rounded-[10px]">
                     <FileIcon className="w-4 h-4 text-accent-dark flex-shrink-0" />
                     <span className="text-xs font-medium text-surface-300 truncate">
                       {file?.name ?? 'Texto colado'}
@@ -796,7 +796,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           <div
                             key={h}
                             className={cn(
-                              'flex items-center gap-3 p-2.5 border rounded-lg transition-colors',
+                              'flex items-center gap-3 p-2.5 border rounded-[10px] transition-colors',
                               isAiMapped
                                 ? 'bg-status-pending-bg border-status-pending-border'
                                 : 'bg-surface-800/40 border-surface-700',
@@ -806,12 +806,12 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <p className="text-xs font-mono text-surface-300 truncate">{h}</p>
                                 {isAiMapped && confLabel && (
-                                  <span className={cn('text-[9px] font-semibold px-1.5 py-0.5 rounded-full border leading-none', confColor)}>
+                                  <span className={cn('text-[11px] font-semibold px-1.5 py-0.5 rounded-full border leading-none', confColor)}>
                                     {confLabel}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-surface-600 truncate mt-0.5">
+                              <p className="text-[11px] text-surface-600 truncate mt-0.5">
                                 ex: {rows[0]?.[h] || '—'}
                               </p>
                             </div>
@@ -829,7 +829,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                                 aria-label={`Campo do contato para a coluna ${h}`}
                                 chevronClassName="right-2 h-3 w-3"
                                 className={cn(
-                                  'h-auto w-full border rounded-lg py-1.5 text-xs text-surface-100',
+                                  'h-auto w-full border rounded-[10px] py-1.5 text-xs text-surface-100',
                                   'focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 pr-7 transition-colors',
                                   isAiMapped
                                     ? 'bg-status-pending-bg border-status-pending-border pl-7'
@@ -898,7 +898,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                         onChange={(e) => setPipelineId(e.target.value)}
                         aria-label="Funil de destino"
                         chevronClassName="right-2 h-3 w-3"
-                        className="h-auto w-full bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
+                        className="h-auto w-full bg-surface-800 border border-surface-700 rounded-[10px] py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
                         data-testid="import-pipeline"
                       >
                         <option value="">— nenhum —</option>
@@ -917,7 +917,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                         onChange={(e) => setPipelineStageId(e.target.value)}
                         aria-label="Estágio do funil"
                         chevronClassName="right-2 h-3 w-3"
-                        className="h-auto w-full bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
+                        className="h-auto w-full bg-surface-800 border border-surface-700 rounded-[10px] py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
                       >
                         {getPipelineStages(pipelines, pipelineId).length === 0 && (
                           <option value="">Nenhuma situação disponível</option>
@@ -935,7 +935,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   )}
 
                   {/* Preview table */}
-                  <div className="border border-surface-700 rounded-lg overflow-hidden">
+                  <div className="border border-surface-700 rounded-[10px] overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
@@ -973,7 +973,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                                 <td className="px-3 py-2">
                                   {valid
                                     ? <span className="text-status-active">✓</span>
-                                    : <span className="text-red-400 text-[10px]" title={issues.join(', ')}>⚠ {issues[0]}</span>
+                                    : <span className="text-red-400 text-[11px]" title={issues.join(', ')}>⚠ {issues[0]}</span>
                                   }
                                 </td>
                               </tr>
@@ -996,7 +996,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                 <div className="p-5 flex flex-col items-center justify-center gap-5 min-h-64">
                   {step === 'importing' ? (
                     <>
-                      <div className="w-14 h-14 rounded-xl bg-accent-soft border border-brand-500/25 flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-[10px] bg-accent-soft border border-brand-500/25 flex items-center justify-center">
                         <Loader2 className="w-6 h-6 text-accent-dark animate-spin" />
                       </div>
                       <div className="w-full max-w-xs flex flex-col gap-2 text-center">
@@ -1015,7 +1015,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                     </>
                   ) : (
                     <>
-                      <div className="w-14 h-14 rounded-xl bg-status-active-bg border border-status-active-border flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-[10px] bg-status-active-bg border border-status-active-border flex items-center justify-center">
                         <CheckCircle2 className="w-6 h-6 text-status-active" />
                       </div>
                       <div className="text-center">
@@ -1037,13 +1037,13 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={() => { reset() }}
-                          className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+                          className="px-4 py-2 rounded-[6px] text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
                         >
                           Nova importação
                         </button>
                         <button
                           onClick={handleClose}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
+                          className="flex items-center gap-2 px-4 py-2 rounded-[6px] text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
                         >
                           <Users className="w-3.5 h-3.5" />
                           Ver contatos
@@ -1060,7 +1060,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
               <div className="flex items-center justify-between px-[18px] py-3.5 border-t border-surface-700 flex-shrink-0">
                 <button
                   onClick={() => setStep(step === 'map' ? 'upload' : 'map')}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-[6px] text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Voltar
                 </button>
@@ -1069,7 +1069,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   <button
                     onClick={() => setStep('preview')}
                     disabled={!hasRequiredMapped || aiLoading}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-50 transition-all"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-[6px] text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-50 transition-all"
                   >
                     {aiLoading
                       ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Aguardando IA…</>
@@ -1080,7 +1080,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   <button
                     onClick={handleImport}
                     disabled={validCount === 0}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-50 transition-all"
+                    className="flex items-center gap-2 px-4 py-2 rounded-[6px] text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-50 transition-all"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     Importar {validCount} contato{validCount !== 1 ? 's' : ''}

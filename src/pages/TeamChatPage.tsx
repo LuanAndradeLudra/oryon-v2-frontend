@@ -122,7 +122,7 @@ function ChannelRow({ channel, currentUserId, isActive, onClick }: {
           <div className="flex items-center justify-between gap-1">
             <ChannelPreview channel={channel} isDM={isDM} />
             {channel.unreadCount > 0 && (
-              <span className="flex-shrink-0 min-w-[18px] h-[18px] rounded-full bg-brand-500 text-surface-950 text-[10px] font-bold flex items-center justify-center px-1">
+              <span className="flex-shrink-0 min-w-[18px] h-[18px] rounded-full bg-brand-500 text-surface-950 text-[11px] font-semibold flex items-center justify-center px-1">
                 {channel.unreadCount > 9 ? '9+' : channel.unreadCount}
               </span>
             )}
@@ -177,11 +177,11 @@ function SectorCard({ channel, onClick }: {
   const onlineCount = channel.memberIds.filter((id) => presence[id] === 'online').length
 
   return (
-    <div className="mx-3 rounded-lg border border-surface-700 bg-surface-900 overflow-hidden hover:border-surface-600 transition-colors">
+    <div className="mx-3 rounded-[10px] border border-surface-700 bg-surface-900 overflow-hidden hover:border-surface-600 transition-colors">
       <div className="h-1" style={{ background: channel.departmentColor ?? '#6366f1' }} />
       <div className="p-3">
         <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-9 h-9 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded-[10px] bg-surface-800 flex items-center justify-center flex-shrink-0">
             {channel.emoji ? <Emoji native={channel.emoji} size="1.25rem" /> : <Building2 className="w-4 h-4 text-surface-400" />}
           </div>
           <div className="min-w-0">
@@ -272,7 +272,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
     <div className="flex flex-col h-full w-full sm:w-[380px] bg-surface-950 border-r border-surface-700 flex-shrink-0">
       {/* Search */}
       <div className="px-3 pt-3 pb-3 flex-shrink-0">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-sm bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-[6px] bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
           <Search className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
           <input
             type="text"
@@ -296,7 +296,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+              'flex-1 py-1.5 rounded-[6px] text-xs font-semibold transition-colors',
               tab === t.id
                 ? 'bg-[#ECF1F1] text-[#0A0F0F] [[data-theme=light]_&]:bg-[#1A1F2E] [[data-theme=light]_&]:text-white'
                 : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
@@ -338,7 +338,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
           <div className="py-3 space-y-4">
             {groupChannels.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-2 px-4 flex items-center gap-1.5">
+                <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider mb-2 px-4 flex items-center gap-1.5">
                   <Pin className="w-3 h-3" /> Grupos gerais
                 </p>
                 <div className="space-y-2">
@@ -350,7 +350,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
             )}
             {deptChannels.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-2 px-4 flex items-center gap-1.5">
+                <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider mb-2 px-4 flex items-center gap-1.5">
                   <Building2 className="w-3 h-3" /> Setores
                 </p>
                 <div className="space-y-2">
@@ -376,7 +376,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
           <div className="py-2">
             {dmsByPresence.active.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider px-4 py-2">
+                <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider px-4 py-2">
                   Disponíveis
                 </p>
                 {dmsByPresence.active.map((ch) => (
@@ -387,7 +387,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
             )}
             {dmsByPresence.offline.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider px-4 py-2 mt-1">
+                <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider px-4 py-2 mt-1">
                   Offline
                 </p>
                 {dmsByPresence.offline.map((ch) => (
@@ -467,7 +467,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
         <span className="text-sm font-semibold text-surface-100">
           {isDM ? 'Sobre esta pessoa' : 'Sobre o canal'}
         </span>
-        <button onClick={onClose} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
+        <button onClick={onClose} className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -478,7 +478,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
           {isDM ? (
             <>
               <div className="relative">
-                <div className={cn('w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white', avatarColor(otherName ?? ''))}>
+                <div className={cn('w-16 h-16 rounded-full flex items-center justify-center text-2xl font-semibold text-white', avatarColor(otherName ?? ''))}>
                   {(otherName ?? '?').charAt(0).toUpperCase()}
                 </div>
                 {otherStatus && <PresenceDot status={otherStatus} size="lg" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
@@ -492,13 +492,13 @@ function InfoPanel({ channel, currentUserId, onClose }: {
             </>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-lg bg-surface-800 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-[10px] bg-surface-800 flex items-center justify-center">
                 {channel.emoji ? <Emoji native={channel.emoji} size="2.25rem" /> : <Hash className="w-6 h-6 text-surface-400" />}
               </div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-surface-100">{channel.name}</p>
                 {channel.departmentName && (
-                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
                     style={{ background: (channel.departmentColor ?? '#6366f1') + '20', color: channel.departmentColor ?? '#6366f1' }}>
                     <Building2 className="w-2.5 h-2.5" /> Setor
                   </span>
@@ -511,7 +511,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
         {/* Topic */}
         {!isDM && channel.topic && (
           <div className="mb-4">
-            <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1">Tópico</p>
+            <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider mb-1">Tópico</p>
             <p className="text-xs text-surface-400 leading-relaxed">{channel.topic}</p>
           </div>
         )}
@@ -519,7 +519,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
         {/* Members */}
         {!isDM && (
           <div>
-            <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-2">
+            <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider mb-2">
               Membros ({channel.memberIds.length})
             </p>
             <div className="space-y-1">
@@ -531,7 +531,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
                 // Creator can remove anyone except themselves; everyone can leave themselves.
                 const canKick = isCreator && !isSelf
                 return (
-                  <div key={uid} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--rowhover)] transition-colors">
+                  <div key={uid} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-[10px] hover:bg-[var(--rowhover)] transition-colors">
                     <div className="relative flex-shrink-0">
                       <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white', avatarColor(name))}>
                         {name.charAt(0).toUpperCase()}
@@ -544,10 +544,10 @@ function InfoPanel({ channel, currentUserId, onClose }: {
                           {isSelf ? `${name} (você)` : name}
                         </p>
                         {isMemberCreator && (
-                          <span className="text-[9px] font-bold uppercase tracking-wide text-blue-300/80">admin</span>
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-blue-300/80">admin</span>
                         )}
                       </div>
-                      <p className={cn('text-[10px]', PRESENCE_COLOR[status])}>{PRESENCE_LABEL[status]}</p>
+                      <p className={cn('text-[11px]', PRESENCE_COLOR[status])}>{PRESENCE_LABEL[status]}</p>
                     </div>
                     {canKick && (
                       <button
@@ -571,7 +571,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
             {!isDM && !isCreator && channel.memberIds.includes(currentUserId) && (
               <button
                 onClick={handleLeave}
-                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+                className="w-full flex items-center gap-2 px-2 py-2 rounded-[6px] text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sair do canal
@@ -580,13 +580,13 @@ function InfoPanel({ channel, currentUserId, onClose }: {
             {canDeleteChannel && (
               <button
                 onClick={handleDelete}
-                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                className="w-full flex items-center gap-2 px-2 py-2 rounded-[6px] text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 {isDM ? 'Excluir conversa' : 'Excluir canal'}
               </button>
             )}
-            <p className="text-[10px] text-surface-600 px-2 pt-1 flex items-start gap-1">
+            <p className="text-[11px] text-surface-600 px-2 pt-1 flex items-start gap-1">
               <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
               <span>Esta ação não pode ser desfeita.</span>
             </p>
@@ -671,7 +671,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
             placeholder="Pesquisar mensagens…"
             className="flex-1 bg-transparent text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none"
           />
-          <button onClick={toggleSearch} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
+          <button onClick={toggleSearch} className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -686,7 +686,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
                 {presenceStatus && <PresenceDot status={presenceStatus} size="md" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-[10px] bg-surface-800 flex items-center justify-center flex-shrink-0">
                 {channel.emoji ? <Emoji native={channel.emoji} size="1.25rem" /> : <Hash className="w-4 h-4 text-surface-400" />}
               </div>
             )}
@@ -722,11 +722,11 @@ function EmptyState({ onNewChat }: { onNewChat: () => void }) {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-12">
-      <div className="w-20 h-20 rounded-lg bg-surface-800 flex items-center justify-center">
+      <div className="w-20 h-20 rounded-[10px] bg-surface-800 flex items-center justify-center">
         <MessageSquareDot className="w-10 h-10 text-surface-500" />
       </div>
       <div>
-        <h2 className="text-lg font-bold text-surface-100">Bate-papo da equipe</h2>
+        <h2 className="text-lg font-semibold text-surface-100">Bate-papo da equipe</h2>
         <p className="text-sm text-surface-500 mt-2 leading-relaxed max-w-xs">
           Selecione um canal ou conversa direta na barra lateral para começar a se comunicar com sua equipe.
         </p>

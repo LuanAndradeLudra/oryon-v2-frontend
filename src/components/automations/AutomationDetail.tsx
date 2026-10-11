@@ -86,16 +86,16 @@ function DetailMenu({ automation, onEdit, onDuplicate, onDuplicateToLine, onDele
     return () => window.removeEventListener('click', h)
   }, [open])
 
-  // Eixo 10: mesmas medidas do item do primitivo ui/Dropdown.tsx (h-[30px]
-  // px-2 rounded-[5px] text-[13px] + hover --rowhover) — este menu é feito à
+  // Eixo 10: mesmas medidas do item do primitivo ui/Dropdown.tsx (h-8
+  // px-2 rounded-[6px] text-[13px] + hover --rowhover) — este menu é feito à
   // mão (não usa <Dropdown>), mas a MEDIDA da peça deve ser a mesma.
-  const item = 'w-full flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] text-[13px] text-left transition-colors'
+  const item = 'w-full flex items-center gap-2.5 h-8 px-2 rounded-[6px] text-[13px] text-left transition-colors'
 
   return (
     <div className="relative">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
-        className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-colors"
+        className="p-1.5 rounded-[10px] text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-colors"
         title="Mais ações"
         aria-label="Mais ações"
       >
@@ -108,7 +108,7 @@ function DetailMenu({ automation, onEdit, onDuplicate, onDuplicateToLine, onDele
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute right-0 top-full mt-1 w-52 rounded-lg overlay-surface border p-1 z-30"
+            className="absolute right-0 top-full mt-1 w-52 rounded-[10px] overlay-surface border p-1 z-30"
             onClick={(e) => e.stopPropagation()}
           >
             <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); onEdit() }}>
@@ -149,7 +149,7 @@ function FlowSection({ eyebrow, icon, onClick, children }: {
       onClick={onClick}
       disabled={!onClick}
       className={cn(
-        'w-full text-left group/sec rounded-lg -mx-1.5 px-1.5 py-1.5 transition-colors',
+        'w-full text-left group/sec rounded-[10px] -mx-1.5 px-1.5 py-1.5 transition-colors',
         // Eixo 10 (tema claro): hover:bg-surface-800/60 sobre o painel, que
         // é surface-800 — quase invisível. --rowhover sempre visível.
         onClick && 'hover:bg-[var(--rowhover)] cursor-pointer',
@@ -157,7 +157,7 @@ function FlowSection({ eyebrow, icon, onClick, children }: {
     >
       <div className="flex items-center gap-1.5 mb-1">
         <span className="text-surface-500">{icon}</span>
-        <span className="text-3xs font-bold uppercase tracking-widest text-surface-500">{eyebrow}</span>
+        <span className="text-2xs font-semibold uppercase tracking-widest text-surface-500">{eyebrow}</span>
         {onClick && <Pencil className="w-2.5 h-2.5 text-surface-600 opacity-0 group-hover/sec:opacity-100 transition-opacity ml-auto" />}
       </div>
       <div className="text-xs text-surface-200 leading-relaxed pl-[18px]">{children}</div>
@@ -174,7 +174,7 @@ function FlowCard({ automation, onEdit }: {
   const joiner = automation.conditionsLogic === 'or' ? 'ou' : 'e'
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-lg p-3.5 space-y-1">
+    <div className="bg-surface-900 border border-surface-700 rounded-[10px] p-3.5 space-y-1">
       <FlowSection eyebrow="Quando" icon={<Zap className="w-3 h-3" />} onClick={() => onEdit('gatilho')}>
         {triggerSentence(automation)}
       </FlowSection>
@@ -210,7 +210,7 @@ function FlowCard({ automation, onEdit }: {
       <div className="pt-1.5 mt-1 border-t border-surface-700">
         <button
           onClick={() => onEdit('ia')}
-          className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-[var(--rowhover)] transition-colors group/ia"
+          className="w-full flex items-start gap-1.5 text-left rounded-[10px] -mx-1.5 px-1.5 py-1 hover:bg-[var(--rowhover)] transition-colors group/ia"
         >
           <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0 mt-0.5" />
           <span className="text-2xs text-surface-400 leading-relaxed">{agentBehaviorSentence(automation)}</span>
@@ -247,7 +247,7 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {run.durationMs != null && <span className="text-3xs text-surface-500 tabular-nums">{fmtDuration(run.durationMs)}</span>}
+          {run.durationMs != null && <span className="text-2xs text-surface-500 tabular-nums">{fmtDuration(run.durationMs)}</span>}
           <span className="text-2xs text-surface-500 tabular-nums" title={formatFullTime(run.startedAt)}>{relativeDate(run.startedAt)}</span>
           {canExpand && (
             <ChevronDown className={cn('w-3 h-3 text-surface-600 transition-transform', open && 'rotate-180')} />
@@ -266,7 +266,7 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
           >
             <div className="pb-2.5 pl-4 space-y-1.5">
               {run.errorMessage && (
-                <p className="text-2xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-2 py-1.5 leading-relaxed">
+                <p className="text-2xs text-danger bg-danger/10 border border-danger/20 rounded-[10px] px-2 py-1.5 leading-relaxed">
                   {run.errorMessage}
                 </p>
               )}
@@ -363,7 +363,7 @@ export function AutomationDetail({
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-surface-100 truncate">{automation.name}</h2>
             {isDraft && (
-              <span className="color-chip-soft inline-flex items-center px-1.5 py-0.5 rounded-xs text-3xs font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+              <span className="color-chip-soft inline-flex items-center px-1.5 py-0.5 rounded-[6px] text-2xs font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
                 Rascunho
               </span>
             )}
@@ -380,7 +380,7 @@ export function AutomationDetail({
             onDelete={() => onDelete(automation)}
           />
           {variant === 'overlay' && onClose && (
-            <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors" aria-label="Fechar">
+            <button onClick={onClose} className="p-1.5 rounded-[10px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors" aria-label="Fechar">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -401,7 +401,7 @@ export function AutomationDetail({
                 // banner colorido) em AgentDetail/MessageInput/
                 // WhatsappLineRequiredBanner/WorkspaceReadinessBanner, todas
                 // com essa borda; só esta não tinha.
-                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg border border-white/25 bg-white/15 hover:bg-white/25 text-2xs font-semibold text-white transition-colors"
+                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-[10px] border border-white/25 bg-white/15 hover:bg-white/25 text-2xs font-semibold text-white transition-colors"
               >
                 <Sparkles className="w-3 h-3" /> Resolver com IA
               </button>
@@ -414,16 +414,16 @@ export function AutomationDetail({
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5">
-            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Play className="w-2.5 h-2.5" /> Execuções</p>
-            <p className="text-sm font-display font-bold text-surface-100 tabular-nums">{automation.executionCount.toLocaleString('pt-BR')}</p>
+          <div className="bg-surface-900 border border-surface-700 rounded-[10px] px-3 py-2.5">
+            <p className="text-2xs text-surface-500 mb-1 flex items-center gap-1"><Play className="w-2.5 h-2.5" /> Execuções</p>
+            <p className="text-sm font-display font-semibold text-surface-100 tabular-nums">{automation.executionCount.toLocaleString('pt-BR')}</p>
           </div>
-          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5">
-            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" strokeWidth={1.75} /> Última</p>
+          <div className="bg-surface-900 border border-surface-700 rounded-[10px] px-3 py-2.5">
+            <p className="text-2xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" strokeWidth={1.75} /> Última</p>
             <p className="text-xs font-medium text-surface-200 tabular-nums">{automation.lastExecutedAt ? relativeDate(automation.lastExecutedAt) : '—'}</p>
           </div>
-          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 min-w-0">
-            <p className="text-3xs text-surface-500 mb-1">Linha</p>
+          <div className="bg-surface-900 border border-surface-700 rounded-[10px] px-3 py-2.5 min-w-0">
+            <p className="text-2xs text-surface-500 mb-1">Linha</p>
             <WhatsappLineChip whatsappNumberId={automation.whatsappNumberId} />
             {!automation.whatsappNumberId && <p className="text-xs text-surface-400">—</p>}
           </div>
@@ -432,11 +432,11 @@ export function AutomationDetail({
         {/* Runs */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-3xs font-bold uppercase tracking-widest text-surface-500">Execuções recentes</h3>
+            <h3 className="text-2xs font-semibold uppercase tracking-widest text-surface-500">Execuções recentes</h3>
             <button
               onClick={() => setFailedOnly((v) => !v)}
               className={cn(
-                'text-3xs font-medium px-2 py-0.5 rounded-md border transition-colors',
+                'text-2xs font-medium px-2 py-0.5 rounded-[6px] border transition-colors',
                 failedOnly
                   ? 'bg-danger/10 border-danger/30 text-danger'
                   : 'bg-surface-800 border-surface-700 text-surface-400 hover:text-surface-200',
@@ -459,7 +459,7 @@ export function AutomationDetail({
               {failedOnly ? 'Nenhuma falha na janela recente. 🎉' : 'Ainda sem execuções registradas.'}
             </p>
           ) : (
-            <div className="bg-surface-900 border border-surface-700 rounded-lg px-3">
+            <div className="bg-surface-900 border border-surface-700 rounded-[10px] px-3">
               {runs.map((run) => (
                 <RunRow key={run.id} run={run} onOpenContact={openContact} onOpenConversation={openConversation} />
               ))}

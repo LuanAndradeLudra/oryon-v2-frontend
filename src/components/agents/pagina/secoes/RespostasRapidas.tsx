@@ -60,7 +60,7 @@ function Formulario({ inicial, onSalvar, onCancelar }: {
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-surface-700 bg-[var(--sf2)] p-4">
+    <div className="space-y-4 rounded-[10px] border border-surface-700 bg-[var(--sf2)] p-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_200px]">
         <FormField label="Nome" required>
           <Input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} placeholder="Horário de funcionamento" />
@@ -168,7 +168,7 @@ export function RespostasRapidas({ agentId }: { agentId: string }) {
           priority: r.priority, enabled: r.enabled, cooldown_minutes: r.cooldown_minutes,
         }} onSalvar={(d) => editar(r.id, d)} onCancelar={() => setEditando(null)} />
       ) : (
-        <div key={r.id} className={cn('flex flex-wrap items-start gap-x-3 gap-y-2 rounded-lg border border-surface-700 bg-[var(--sf2)] px-3.5 py-3', !r.enabled && 'opacity-70')}>
+        <div key={r.id} className={cn('flex flex-wrap items-start gap-x-3 gap-y-2 rounded-[10px] border border-surface-700 bg-[var(--sf2)] px-3.5 py-3', !r.enabled && 'opacity-70')}>
           <div className="min-w-0 flex-1 basis-full sm:basis-auto">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-surface-100">{r.name}</p>

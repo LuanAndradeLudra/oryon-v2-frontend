@@ -36,7 +36,7 @@ export function PainelDeConfiguracao({ open, onClose, titulo, secao, rotuloDeVol
   return (
     <Drawer open={open} onClose={onClose} side="right" ariaLabel={titulo} className="w-full sm:w-[44rem] max-w-full bg-surface-950">
       <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
-        <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">{titulo}</h2>
+        <h2 className="text-base font-semibold tracking-[-0.01em] text-surface-50">{titulo}</h2>
         <Button variant="ghost" size="sm" iconOnly onClick={onClose} aria-label="Fechar">
           <X className="w-4 h-4" />
         </Button>

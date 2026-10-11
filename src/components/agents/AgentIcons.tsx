@@ -43,7 +43,7 @@ export function AgentIcon({ iconId, className, dashed }: { iconId?: string; clas
   // Rascunho = sem fundo, borda tracejada e ícone terciário.
   if (dashed) {
     return (
-      <div className={cn('rounded-lg flex items-center justify-center flex-shrink-0 border border-dashed border-[var(--bd2)]', className)}>
+      <div className={cn('rounded-[10px] flex items-center justify-center flex-shrink-0 border border-dashed border-[var(--bd2)]', className)}>
         <Icon className="w-[45%] h-[45%] text-surface-500" aria-hidden />
       </div>
     )
@@ -51,14 +51,18 @@ export function AgentIcon({ iconId, className, dashed }: { iconId?: string; clas
   const cor = COR_DO_ICONE[entry.id] ?? COR_DO_ICONE.bot
   return (
     <div
-      className={cn('rounded-lg flex items-center justify-center flex-shrink-0 border', className)}
+      className={cn('rounded-[10px] flex items-center justify-center flex-shrink-0 border', className)}
+      // SCRUM-1253 (PO, 07/10): ladrilho SÓLIDO com o desenho em branco — o
+      // idioma do círculo teal da IA em Conversas (antes, tinta pálida que
+      // lavava no claro).
       style={{
-        color: cor,
-        backgroundColor: `color-mix(in srgb, ${cor} 14%, transparent)`,
-        borderColor: `color-mix(in srgb, ${cor} 28%, transparent)`,
+        color: '#FFFFFF',
+        backgroundColor: `color-mix(in oklab, ${cor} 74%, black)`,
+        borderColor: 'transparent',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,.18)',
       }}
     >
-      <Icon className="w-[45%] h-[45%]" strokeWidth={2} aria-hidden />
+      <Icon className="w-[52%] h-[52%]" strokeWidth={2} aria-hidden />
     </div>
   )
 }

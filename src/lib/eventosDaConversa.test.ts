@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agruparSeguidos, eventoDaAcaoDaIa, eventoDaAtividade, intercalar, contarRotina } from './eventosDaConversa'
+import { agruparBloco, fundirEventos, juntarDuplicados, eventoDaAcaoDaIa, eventoDaAtividade, intercalar, contarRotina } from './eventosDaConversa'
 import type { Message } from '@/types'
 import type { UserActivity } from '@/services/userActivityApi'
 import type { AgentAction } from '@/services/agentActivityApi'
@@ -35,9 +35,95 @@ describe('eventos da conversa — T4 fase 1', () => {
     expect(eventoDaAtividade(ativ('2', 'algo_novo', 1))!.texto).toBe('registrou uma atividade')
   })
 
-  it('agrupa eventos de rotina seguidos do mesmo tipo e ator', () => {
-    const g = agruparSeguidos([eventoDaAcaoDaIa(acao('1', 1)), eventoDaAcaoDaIa(acao('2', 2)), eventoDaAcaoDaIa(acao('3', 3, false))])
-    expect(g.map((x) => x.eventos.length)).toEqual([2, 1])
+  it('homologação: ação da IA + registro do backend da mesma ação viram UMA linha, com a frase da IA', () => {
+    const atSeg = (seg: number) => new Date(Date.UTC(2026, 8, 29, 12, 0, seg)).toISOString()
+    const ia = (id: string, toolName: string, humanSummary: string, seg: number): AgentAction =>
+      ({ ...acao(id, 0), toolName, humanSummary, createdAt: atSeg(seg) })
+    const out = juntarDuplicados([
+      { ...eventoDaAtividade(ativ('s', 'conversation_status_updated', 0, { metadata: { status: 'pending', actorType: 'agent' } }))!, at: atSeg(1) },
+      eventoDaAcaoDaIa(ia('t1', 'set_conversation_status', 'Conversa movida para a fila pelo agente', 2)),
+      { ...eventoDaAtividade(ativ('a', 'conversation_assigned', 0, { metadata: { userName: 'Joao Lucas', actorType: 'agent' } }))!, at: atSeg(3) },
+      eventoDaAcaoDaIa(ia('t2', 'assign_conversation', 'Atribuiu a conversa para Joao Lucas', 4)),
+    ])
+    expect(out.map((e) => [e.tipo, e.ator, e.texto])).toEqual([
+      ['status', 'IA', 'Conversa movida para a fila pelo agente'],
+      ['atribuicao', 'IA', 'Atribuiu a conversa para Joao Lucas'],
+    ])
+  })
+
+  it('revisão 11/10: a IA atribui e o operador assume 3 s depois — a ação do operador não vira "IA atribuiu"', () => {
+    const atSeg = (seg: number) => new Date(Date.UTC(2026, 8, 29, 12, 0, seg)).toISOString()
+    const out = juntarDuplicados([
+      { ...eventoDaAtividade(ativ('ia-reg', 'conversation_assigned', 0, { metadata: { userName: 'Beto', actorType: 'agent' } }))!, at: atSeg(0) },
+      { ...eventoDaAcaoDaIa({ ...acao('t', 0), toolName: 'assign_conversation', humanSummary: 'Atribuiu a conversa para Beto', createdAt: atSeg(1) }) },
+      { ...eventoDaAtividade(ativ('op', 'conversation_assigned', 0, { metadata: { userName: 'Ana' } }), 'Ana')!, at: atSeg(3) },
+    ])
+    expect(out.map((e) => [e.id, e.ator, e.texto])).toEqual([
+      ['a:ia-reg', 'IA', 'Atribuiu a conversa para Beto'],
+      ['a:op', 'Você', 'atribuiu a conversa a Ana'],
+    ])
+  })
+
+  it('revisão 11/10: só registro do operador por perto — nada é juntado, as duas linhas ficam', () => {
+    const atSeg = (seg: number) => new Date(Date.UTC(2026, 8, 29, 12, 0, seg)).toISOString()
+    const out = juntarDuplicados([
+      eventoDaAcaoDaIa({ ...acao('t', 0), toolName: 'assign_conversation', humanSummary: 'Atribuiu a conversa para Beto', createdAt: atSeg(0) }),
+      { ...eventoDaAtividade(ativ('op', 'conversation_assigned', 0, { metadata: { userName: 'Ana' } }))!, at: atSeg(3) },
+    ])
+    expect(out.map((e) => e.ator)).toEqual(['IA', 'Ana'])
+  })
+
+  it('revisão 11/10: com dois registros da IA na janela, casa com o mais próximo no tempo', () => {
+    const atSeg = (seg: number) => new Date(Date.UTC(2026, 8, 29, 12, 0, seg)).toISOString()
+    const reg = (id: string, seg: number) => ({ ...eventoDaAtividade(ativ(id, 'conversation_status_updated', 0, { metadata: { actorType: 'agent' } }))!, at: atSeg(seg) })
+    const out = juntarDuplicados([
+      reg('longe', 0),
+      reg('perto', 4),
+      eventoDaAcaoDaIa({ ...acao('t', 0), toolName: 'set_conversation_status', humanSummary: 'Conversa movida para a fila pelo agente', createdAt: atSeg(4) }),
+    ])
+    expect(out.map((e) => [e.id, e.texto])).toEqual([
+      ['a:longe', 'mudou o status da conversa'],
+      ['a:perto', 'Conversa movida para a fila pelo agente'],
+    ])
+  })
+
+  it('fora da janela de 5 s, ou de tipos diferentes, nada é juntado', () => {
+    const out = juntarDuplicados([
+      eventoDaAtividade(ativ('s', 'conversation_status_updated', 0))!,
+      { ...eventoDaAcaoDaIa(acao('t1', 1)), ferramenta: 'set_conversation_status' },
+      eventoDaAtividade(ativ('a', 'conversation_assigned', 5))!,
+      { ...eventoDaAcaoDaIa(acao('t2', 5)), ferramenta: 'update_contact' },
+    ])
+    expect(out).toHaveLength(4)
+  })
+
+  it('SCRUM-1253: rotina seguida vira um bloco; marco (falha, pausa) fica em linha própria', () => {
+    const g = agruparBloco([
+      eventoDaAcaoDaIa(acao('1', 1)),
+      eventoDaAtividade(ativ('t', 'conversation_tag_added', 2, { metadata: { tagName: 'VIP' } }))!,
+      eventoDaAcaoDaIa(acao('3', 3, false)),
+      eventoDaAtividade(ativ('p', 'conversation_ai_pause_updated', 4))!,
+      eventoDaAcaoDaIa(acao('5', 5)),
+    ])
+    expect(g.map((x) => x.eventos.map((e) => e.id).join('+'))).toEqual(['ia:1+a:t', 'ia:3', 'a:p', 'ia:5'])
+  })
+
+  it('SCRUM-1253: pausar e retomar sem mensagem viram uma linha, com os passos guardados', () => {
+    const [f] = fundirEventos([
+      eventoDaAtividade(ativ('p', 'conversation_ai_pause_updated', 1), 'Ana')!,
+      eventoDaAtividade(ativ('r', 'conversation_ai_pause_updated', 5, { metadata: { pauseUntil: null } }), 'Ana')!,
+    ])
+    expect(f).toMatchObject({ texto: 'pausou e retomou a IA', ator: 'Você', inicio: at(1), at: at(5) })
+    expect(f.fundidos?.map((e) => e.id)).toEqual(['a:p', 'a:r'])
+  })
+
+  it('SCRUM-1253: atribuições viram só a última, no lugar dela; o resto não se mexe', () => {
+    const out = fundirEventos([
+      eventoDaAtividade(ativ('a1', 'conversation_assigned', 1, { metadata: { userName: 'Beto' } }))!,
+      eventoDaAcaoDaIa(acao('x', 2)),
+      eventoDaAtividade(ativ('a2', 'conversation_assigned', 3, { metadata: { userName: 'Carla' } }))!,
+    ])
+    expect(out.map((e) => e.texto)).toEqual(['moveu o negócio para Proposta', 'atribuiu a conversa a Carla (2 mudanças)'])
   })
 
   it('intercala na ordem certa; rotina só com eventos=1', () => {

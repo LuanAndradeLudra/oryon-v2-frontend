@@ -7,6 +7,7 @@ import type { WhatsAppNumberDetailed } from '@/types'
 import type { ResumoDaFila, TotaisDaFila } from '@/hooks/useDashboardAgora'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { classeDaGrade } from '@/components/dashboard/gradeDeIndicadores'
 
 // Faixa do "agora" (direção A): seis contagens do momento. As da fila vêm dos
 // totais EXATOS do servidor (as mesmas consultas da aba Fila da inbox); maior
@@ -62,8 +63,7 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais
   const maior = resumo
     ? (resumo.maiorEsperaMin === null ? null : resumo.maiorEsperaMin + Math.max(0, Math.floor((agora - resumo.lidoEm) / 60_000)))
     : fila[0]?.esperaMin ?? null
-  const passouTotal = totais?.iaPassou ?? fila.filter((i) => i.iaPassou).length
-  const passouSemDono = totais?.iaPassouSemDono ?? fila.filter((i) => i.iaPassou && i.semDono).length
+  const comDono = Math.max(0, esperando - semDono)
   const conectadas = linhas.filter(conectada)
   const comIA = conectadas.filter((l) => linhasComIA.has(l.id)).length
 
@@ -74,7 +74,18 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais
       acao: { tipo: 'filtro', filtro: 'todas', rotulo: 'Ver toda a fila' },
       rotulo: 'Esperando alguém',
       valor: String(esperando),
-      nota: esperando === 0 ? 'ninguém esperando' : semDono === 0 ? 'todas com dono' : `${semDono} sem dono`,
+      nota: esperando === 0 ? 'ninguém esperando' : comDono === 0 ? 'nenhuma com dono' : `${comDono} com dono, sem resposta`,
+    },
+    // SCRUM-1253 (PO, 08/10): "Pendentes" repetia "Esperando alguém" — com IA
+    // em todas as linhas, os dois davam o mesmo número. No lugar, quem ninguém
+    // pegou ainda: o total exato da aba Fila da inbox.
+    {
+      id: 'sem-dono',
+      grupo: 'Fila',
+      acao: { tipo: 'filtro', filtro: 'sem-dono', rotulo: 'Filtrar as conversas sem dono' },
+      rotulo: 'Sem dono',
+      valor: String(semDono),
+      nota: semDono === 0 ? 'todas com alguém' : 'ninguém assumiu ainda',
       tom: semDono > 0 ? 'atencao' : undefined,
     },
     {
@@ -85,15 +96,6 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais
       valor: maior === null ? '—' : formatarEspera(maior),
       nota: `prazo de ${PRAZO_RESPOSTA_MIN} min`,
       tom: maior !== null && maior >= PRAZO_RESPOSTA_MIN ? 'alerta' : undefined,
-    },
-    {
-      id: 'ia-passou',
-      grupo: 'Fila',
-      acao: { tipo: 'filtro', filtro: 'ia-passou', rotulo: 'Filtrar o que a IA passou para a equipe' },
-      rotulo: 'IA passou para a equipe',
-      valor: String(passouTotal),
-      nota: passouTotal === 0 ? 'nenhuma agora' : passouSemDono === 0 ? 'todas com dono' : `${passouSemDono} sem dono`,
-      tom: passouSemDono > 0 ? 'atencao' : undefined,
     },
     {
       id: 'janela',
@@ -136,16 +138,16 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais
 
   const conteudoDa = (c: Celula) => (
     <>
-      <p className="text-[11.5px] font-medium text-surface-400 truncate">{c.rotulo}</p>
+      <p className="text-xs font-medium text-surface-400 truncate">{c.rotulo}</p>
       <p
         className={cn(
-          'mt-0.5 text-[22px] leading-7 font-bold tracking-[-0.02em] tabular-nums truncate font-display',
+          'mt-0.5 text-xl leading-7 font-semibold tracking-[-0.01em] tabular-nums truncate',
           c.tom === 'alerta' ? 'text-danger' : 'text-surface-100',
         )}
       >
         <ValorComUnidade texto={c.valor} />
       </p>
-      <p className={cn('text-[11.5px] truncate', c.tom === 'atencao' ? 'text-status-pending' : 'text-surface-500')}>{c.nota}</p>
+      <p className={cn('text-xs line-clamp-2', c.tom === 'atencao' ? 'text-status-pending' : 'text-surface-500')}>{c.nota}</p>
     </>
   )
 
@@ -155,13 +157,13 @@ export function FaixaDoAgora({ fila, linhas, linhasComIA, verificarTotal, totais
         <section
           key={grupo}
           aria-label={grupo}
-          className="min-w-0 flex flex-col bg-surface-800 border border-surface-700 rounded-lg overflow-hidden"
+          className={cn('min-w-0 flex flex-col bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden', '@container')}
           style={{ flexGrow: itens.length, flexBasis: `${itens.length * 168}px` }}
         >
-          <h3 className="flex items-center h-8 px-3.5 bg-[var(--sf2)] border-b border-surface-700 text-[11px] font-bold uppercase tracking-[0.08em] text-surface-300">
+          <h3 className="flex items-center h-8 px-3.5 bg-[var(--sf2)] border-b border-surface-700 text-2xs font-semibold uppercase tracking-[0.08em] text-surface-300">
             {grupo}
           </h3>
-          <div className="grid flex-1 -mr-px -mb-px" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+          <div className={cn('grid flex-1 -mr-px -mb-px', classeDaGrade(itens.length))}>
             {itens.map((c) => {
               const base = 'block text-left px-4 py-3 min-w-0 border-r border-b border-surface-700'
               const estilo = c.tom ? { boxShadow: `inset 2px 0 0 ${FILETE[c.tom]}` } : undefined

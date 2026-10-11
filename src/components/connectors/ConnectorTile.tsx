@@ -32,7 +32,7 @@ export function ConnectorTile({ connector, size = 40, radius = 9 }: ConnectorTil
     >
       <span
         style={{ color: connector.brandColor, fontSize: size * 0.425 }}
-        className="font-extrabold"
+        className="font-semibold"
       >
         {connector.logoInitial}
       </span>

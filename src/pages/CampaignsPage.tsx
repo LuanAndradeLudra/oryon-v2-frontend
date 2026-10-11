@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Send } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
@@ -12,6 +12,7 @@ import { CampaignsTab } from '@/components/campaigns/CampaignsTab'
 import { TemplatesTab } from '@/components/campaigns/TemplatesTab'
 import { AttributionTab } from '@/components/campaigns/AttributionTab'
 import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
+import { templatesApi } from '@/services/api'
 
 type Tab = 'campaigns' | 'templates' | 'attribution'
 
@@ -24,6 +25,17 @@ export function CampaignsPage() {
   // não tem lista própria no mock — sem contador.
   const [campaignsCount, setCampaignsCount] = useState<number | null>(null)
   const [templatesCount, setTemplatesCount] = useState<number | null>(null)
+  // O card "Configure sua primeira campanha" depende das duas contagens, mas
+  // só a aba aberta é montada: a de Templates nunca reportava na aba Disparos
+  // e o card aparecia para quem já tinha template. Busca a contagem aqui
+  // (uma vez) — a aba Templates, quando aberta, continua atualizando.
+  useEffect(() => {
+    let vivo = true
+    templatesApi.list()
+      .then((r) => { if (vivo) setTemplatesCount((atual) => atual ?? r.data.filter((t) => t.status !== 'DELETED').length) })
+      .catch(() => {})
+    return () => { vivo = false }
+  }, [])
   // Tab na URL (?tab=) — deep-linkável e sobrevive a reload; os tabs vivem
   // IN-PAGE (padrão underline do app), não no TopBar global, onde eram
   // invisíveis para quem escaneia a página.
@@ -66,7 +78,10 @@ export function CampaignsPage() {
         />
         {/* Setup card */}
         <AnimatePresence>
-          {!checklist.campaigns && (
+          {/* SCRUM-1253 (PO, 07/10): o card de primeira campanha some quando já há campanha ou template.
+              Só decide com as DUAS contagens carregadas (null = carregando) — antes
+              piscava no primeiro render e aparecia para quem tinha templates. */}
+          {!checklist.campaigns && campaignsCount === 0 && templatesCount === 0 && (
             <TipCard
               icon={<Send className="w-4 h-4 text-brand-400" />}
               title="Configure sua primeira campanha"

@@ -40,7 +40,7 @@ export function WhatsappLineChip({
   if (!line) {
     return (
       <span
-        className={cn('inline-flex items-center rounded-md border', neutral, base, className)}
+        className={cn('inline-flex items-center rounded-[6px] border', neutral, base, className)}
         title="Recurso sem linha WhatsApp atribuída"
       >
         <Phone className={cn(size === 'sm' ? 'w-3 h-3' : 'w-3 h-3')} />
@@ -52,7 +52,7 @@ export function WhatsappLineChip({
   const label = line.label || formatPhone(line.displayPhoneNumber)
   return (
     <span
-      className={cn('inline-flex items-center rounded-md border', neutral, base, className)}
+      className={cn('inline-flex items-center rounded-[6px] border', neutral, base, className)}
       title={line.label ? formatPhone(line.displayPhoneNumber) : label}
     >
       <Phone className={cn(size === 'sm' ? 'w-3 h-3' : 'w-3 h-3')} />

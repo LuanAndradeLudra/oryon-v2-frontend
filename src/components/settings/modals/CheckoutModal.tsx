@@ -142,7 +142,7 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
                 <img
                   src={`data:image/png;base64,${pix.encodedImage}`}
                   alt="QR code Pix"
-                  className="w-48 h-48 mx-auto rounded-md bg-white p-2"
+                  className="w-48 h-48 mx-auto rounded-[6px] bg-white p-2"
                 />
               )}
               <Button
@@ -186,7 +186,7 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
             <span className="text-sm text-surface-400">
               {intent.kind === 'credits' ? 'Pacote' : 'Mensalidade'}
             </span>
-            <span className="text-lg font-bold text-surface-50">{BRL(amountCents)}</span>
+            <span className="text-lg font-semibold text-surface-50">{BRL(amountCents)}</span>
           </div>
 
           {intent.kind === 'change' ? (
@@ -208,7 +208,7 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
                       disabled={cardBlocked}
                       title={cardBlocked ? 'Pagamento com cartão em breve' : undefined}
                       className={cn(
-                        'flex items-center justify-center gap-2 h-9 rounded-sm border text-[13px] font-medium transition-colors',
+                        'flex items-center justify-center gap-2 h-9 rounded-[6px] border text-sm font-medium transition-colors',
                         method === m
                           ? 'border-brand-500 bg-accent-soft text-accent-dark'
                           : 'border-surface-700 text-surface-300 hover:bg-[var(--rowhover)]',

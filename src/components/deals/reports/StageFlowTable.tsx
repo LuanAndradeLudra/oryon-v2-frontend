@@ -19,7 +19,7 @@ const dias = (d: number | null) => (d == null ? '—' : `${d.toLocaleString('pt-
 export function StageFlowTable({ conversion, durations }: StageFlowTableProps) {
   if (conversion.length === 0) {
     return (
-      <section className="flex-shrink-0 bg-surface-900 border border-surface-700 rounded-xl p-4">
+      <section className="flex-shrink-0 bg-surface-900 border border-surface-700 rounded-[10px] p-4">
         <h3 className="text-sm font-semibold text-surface-100">Fluxo por etapa</h3>
         <p className="mt-2 text-sm text-surface-500">Nenhum negócio criado neste período ainda passou pelas etapas.</p>
       </section>
@@ -27,7 +27,7 @@ export function StageFlowTable({ conversion, durations }: StageFlowTableProps) {
   }
   const tempo = new Map(durations.map((d) => [d.stageId, d] as const))
   return (
-    <section className="flex-shrink-0 bg-surface-900 border border-surface-700 rounded-xl overflow-hidden" data-testid="stage-flow-table">
+    <section className="flex-shrink-0 bg-surface-900 border border-surface-700 rounded-[10px] overflow-hidden" data-testid="stage-flow-table">
       <header className="px-4 pt-4 pb-2">
         <h3 className="text-sm font-semibold text-surface-100">Fluxo por etapa</h3>
         <p className="text-xs text-surface-500">Negócios criados no período: quantos entraram em cada etapa, para onde seguiram e quanto tempo ficaram.</p>
@@ -35,7 +35,7 @@ export function StageFlowTable({ conversion, durations }: StageFlowTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-[13px]">
           <caption className="sr-only">Conversão e tempo por etapa</caption>
-          <thead className="text-left text-3xs font-bold uppercase tracking-[.1em] text-surface-500">
+          <thead className="text-left text-2xs font-semibold uppercase tracking-[.1em] text-surface-500">
             <tr className="h-8 border-b border-surface-700">
               <th scope="col" className="px-4">Etapa</th>
               <th scope="col" className="px-3 text-right">Entraram</th>

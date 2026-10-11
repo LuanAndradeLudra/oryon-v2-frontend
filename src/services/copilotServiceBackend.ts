@@ -92,7 +92,7 @@ export async function* runCopilotTurnBackend(
 
   if (!response.ok) {
     const body = await response.text().catch(() => '')
-    throw new Error(`Agent Server error ${response.status}: ${body}`)
+    throw erroDoAgente(response.status, body)
   }
 
   const reader = response.body?.getReader()
@@ -202,8 +202,8 @@ export async function sendApprovalDecision(
         'Esta aprovação expirou — o tempo de revisão ou a sessão terminaram. Peça ao copiloto para refazer a operação e um novo card será emitido.'
       )
     }
-    const suffix = detail ? `: ${detail}` : ''
-    throw new Error(`Falha ao enviar aprovação (HTTP ${res.status})${suffix}`)
+    // Revisão 11/10: nada de "HTTP 500" na tela — o detalhe vai para o erro.
+    throw Object.assign(new Error('Não foi possível enviar sua aprovação agora. Tente de novo em instantes.'), { status: res.status, detalhe: detail })
   }
 }
 
@@ -233,10 +233,77 @@ export async function createCopilotSession(title: string): Promise<{ id: string 
 export async function listCopilotSessions(): Promise<Array<{ id: string; title: string; messageCount: number; lastMessageAt: string; createdAt: string }>> {
   try {
     const baseUrl = getSessionBaseUrl()
-    const res = await fetch(`${baseUrl}/agents/sessions`, { headers: await agentHeaders() })
+    // SCRUM-1253 (PO, 08/10): sem o teto artificial de 30 — as 100 mais recentes
+    // (máximo do servidor; paginação/busca das antigas pedida no SCRUM-1161).
+    const res = await fetch(`${baseUrl}/agents/sessions?limit=100`, { headers: await agentHeaders() })
     if (!res.ok) { console.error('[copilot] listSessions failed:', res.status); return [] }
     return await res.json()
   } catch (err) { console.error('[copilot] listSessions error:', err); return [] }
+}
+
+export interface SessaoDoCopilotApi {
+  id: string
+  title: string
+  messageCount?: number
+  lastMessageAt?: string | null
+  createdAt: string
+  /** Agent-server novo: a lista é ordenada por updatedAt DESC, id DESC. */
+  updatedAt?: string
+}
+
+/**
+ * Página da lista de conversas (agent-server novo, SCRUM-1253 11/10):
+ * `before`/`beforeId` = cursor do último item; `q` = busca no título e no
+ * conteúdo. Servidor antigo ignora os parâmetros (quem chama detecta).
+ * Devolve `null` em erro — diferente de "nenhuma conversa".
+ */
+export async function buscarSessoesDoCopilot(opts: { before?: string; beforeId?: string; q?: string; limit?: number } = {}): Promise<SessaoDoCopilotApi[] | null> {
+  try {
+    const baseUrl = getSessionBaseUrl()
+    const qs = new URLSearchParams({ limit: String(opts.limit ?? 100) })
+    if (opts.before) qs.set('before', opts.before)
+    if (opts.beforeId) qs.set('beforeId', opts.beforeId)
+    if (opts.q) qs.set('q', opts.q)
+    const res = await fetch(`${baseUrl}/agents/sessions?${qs.toString()}`, { headers: await agentHeaders() })
+    if (!res.ok) { console.error('[copilot] buscarSessoes failed:', res.status); return null }
+    const data = await res.json()
+    return Array.isArray(data) ? data : null
+  } catch (err) { console.error('[copilot] buscarSessoes error:', err); return null }
+}
+
+export type ResultadoDaSessao =
+  | { status: 'ok'; sessao: SessaoDoCopilotApi }
+  | { status: 'nao-encontrada' }
+  | { status: 'erro' }
+
+/**
+ * Uma conversa pelo id (agent-server novo: GET /agents/sessions/:id, 404 se
+ * não for do usuário). Servidor antigo não tem a rota (também 404): cai para
+ * as mensagens — se houver mensagens, a conversa existe.
+ */
+export async function obterSessaoDoCopilot(sessionId: string): Promise<ResultadoDaSessao> {
+  try {
+    const baseUrl = getSessionBaseUrl()
+    const id = encodeURIComponent(sessionId)
+    const res = await fetch(`${baseUrl}/agents/sessions/${id}`, { headers: await agentHeaders() })
+    if (res.ok) {
+      const data = await res.json().catch(() => null) as SessaoDoCopilotApi | null
+      if (data && typeof data === 'object' && data.id) return { status: 'ok', sessao: data }
+    } else if (res.status !== 404 && res.status !== 400) {
+      return { status: 'erro' }
+    }
+    const msgsRes = await fetch(`${baseUrl}/agents/sessions/${id}/messages`, { headers: await agentHeaders() })
+    if (msgsRes.status === 404 || msgsRes.status === 400 || msgsRes.status === 403) return { status: 'nao-encontrada' }
+    if (!msgsRes.ok) return { status: 'erro' }
+    const msgs = await msgsRes.json().catch(() => []) as Array<{ role?: string; content?: string; createdAt?: string }>
+    if (!Array.isArray(msgs) || msgs.length === 0) return { status: 'nao-encontrada' }
+    const primeira = msgs.find((m) => m.role === 'user')
+    const titulo = (primeira?.content ?? 'Conversa').slice(0, 60)
+    return { status: 'ok', sessao: { id: sessionId, title: titulo, createdAt: msgs[0].createdAt ?? new Date().toISOString(), lastMessageAt: msgs[msgs.length - 1].createdAt ?? null } }
+  } catch (err) {
+    console.error('[copilot] obterSessao error:', err)
+    return { status: 'erro' }
+  }
 }
 
 export async function getCopilotMessages(sessionId: string): Promise<Array<{ id: string; role: string; content: string; toolCalls: unknown; plan: unknown; createdAt: string }>> {
@@ -264,4 +331,36 @@ export async function updateCopilotSessionTitle(sessionId: string, title: string
     })
     if (!res.ok) console.error('[copilot] updateTitle failed:', res.status)
   } catch (err) { console.error('[copilot] updateTitle error:', err) }
+}
+
+/**
+ * Erro do agent-server em texto para a pessoa (SCRUM-1253, revisão 11/10):
+ * antes ia para a tela "Agent Server error 402: {json…}". Nunca mostra
+ * status nem JSON — usa a mensagem amigável do corpo (`error`/`message`) e
+ * textos próprios para os casos conhecidos. `status` e `code` ficam no erro
+ * para quem precisa decidir (ex.: 429).
+ */
+export function erroDoAgente(status: number, corpo: string): Error & { status: number; code?: string } {
+  let code: string | undefined
+  let mensagem: string | undefined
+  try {
+    const j = JSON.parse(corpo) as { error?: unknown; message?: unknown; code?: unknown }
+    if (typeof j.code === 'string') code = j.code
+    if (typeof j.error === 'string') mensagem = j.error
+    else if (typeof j.message === 'string') mensagem = j.message
+  } catch { /* corpo não é JSON */ }
+
+  let texto: string
+  if (code === 'not_provisioned' || status === 402) {
+    texto = 'O Copilot não está liberado no plano desta empresa. Fale com o administrador.'
+  } else if (status === 429) {
+    texto = mensagem || 'Muitas mensagens em pouco tempo. Aguarde um pouco e tente de novo.'
+  } else if (status === 401 || status === 403) {
+    texto = mensagem || 'Sua sessão não tem acesso ao Copilot agora. Entre de novo ou fale com o administrador.'
+  } else if (status >= 500) {
+    texto = 'O Copilot está indisponível no momento. Tente de novo em instantes.'
+  } else {
+    texto = mensagem || 'Não foi possível falar com o Copilot agora. Tente de novo.'
+  }
+  return Object.assign(new Error(texto), { status, code })
 }

@@ -18,11 +18,11 @@ export function TeamMiniCard({ agents }: { agents: AgentMetrics[] }) {
     .slice(0, 5)
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden">
       {/* PL-C3-FAR-eixo10: h-10 fixo, mesma medida dos irmãos do grid. */}
       <div className="flex items-center justify-between px-3.5 h-10 border-b border-surface-700">
-        <p className="text-[13px] font-semibold text-surface-100">Equipe</p>
-        <span className="text-[11.5px] text-surface-400 tabular-nums">
+        <p className="text-sm font-semibold text-surface-100">Equipe</p>
+        <span className="text-xs text-surface-400 tabular-nums">
           {agents.filter((a) => a.isOnline).length} online
         </span>
       </div>
@@ -33,13 +33,13 @@ export function TeamMiniCard({ agents }: { agents: AgentMetrics[] }) {
         <div>
           {/* DASH-TEAM-02: grid fixo (não flex) pra alinhar com as linhas;
               1ª coluna sem rótulo — o mock não nomeia "Nome". */}
-          <div className="grid grid-cols-[1fr_60px_60px] px-3.5 pt-1.5 pb-0.5 text-[10.5px] font-semibold text-surface-500">
+          <div className="grid grid-cols-[1fr_60px_60px] px-3.5 pt-1.5 pb-0.5 text-2xs font-semibold text-surface-500">
             <span />
             <span className="text-right">Abertas</span>
             <span className="text-right">TMR</span>
           </div>
           {top.map((agent) => (
-            <div key={agent.userId} className="grid grid-cols-[1fr_60px_60px] items-center px-3.5 h-8 text-[12.5px]">
+            <div key={agent.userId} className="grid grid-cols-[1fr_60px_60px] items-center px-3.5 h-8 text-xs">
               <span className="flex items-center gap-2 min-w-0">
                 <Avatar name={agent.name} size="2xs" online={agent.isOnline ?? undefined} kind="operator" />
                 <span className="flex-1 min-w-0 truncate">{agent.name}</span>

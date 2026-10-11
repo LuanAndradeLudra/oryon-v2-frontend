@@ -40,14 +40,14 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-surface-800 border rounded-lg p-5 flex flex-col gap-3',
+        'bg-surface-800 border rounded-[10px] p-5 flex flex-col gap-3',
         'border-surface-700 hover:border-surface-700 transition-colors',
       )}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className={cn('color-chip flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border')} style={{ ['--chip']: cfg.chip } as React.CSSProperties}>
+          <span className={cn('color-chip flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded-full border')} style={{ ['--chip']: cfg.chip } as React.CSSProperties}>
             {cfg.icon}
             {cfg.label}
           </span>
@@ -78,7 +78,7 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 flex flex-col gap-3 animate-pulse">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5 flex flex-col gap-3 animate-pulse">
       <div className="h-5 w-24 bg-surface-800 rounded-full" />
       <div className="flex flex-col gap-1.5">
         <div className="h-4 w-3/4 bg-surface-800 rounded-2xs" />
@@ -135,7 +135,7 @@ export function AiInsightsSection({ kpis }: AiInsightsSectionProps) {
         <div className="flex items-center gap-2">
           {/* Eixo 10: bg-white/text-black era fixo, fora do tema — troquei
               pro tom de marca suave usado em outros indicadores de IA. */}
-          <div className="w-5 h-5 rounded-md bg-brand-500/15 flex items-center justify-center">
+          <div className="w-5 h-5 rounded-[6px] bg-brand-500/15 flex items-center justify-center">
             <Sparkles className="w-3 h-3 text-brand-400" />
           </div>
           <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest">Insights da IA</p>

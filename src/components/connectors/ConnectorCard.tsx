@@ -38,7 +38,7 @@ export function ConnectorCard({ connector, onOpen }: ConnectorCardProps) {
       type="button"
       onClick={onOpen}
       className={cn(
-        'group flex flex-col text-left rounded-lg border bg-surface-800 p-3.5 gap-2.5 transition-colors',
+        'group flex flex-col text-left rounded-[10px] border bg-surface-800 p-3.5 gap-2.5 transition-colors',
         comingSoon
           ? 'border-dashed border-[var(--bd2)]'
           : 'border-surface-700',

@@ -205,7 +205,7 @@ function exportToPDF(content: string, title: string) {
 <body>
   <div class="doc-header">
     <h1>${escHTML(title)}</h1>
-    <p class="doc-meta">Gerado por Oryon AI · ${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+    <p class="doc-meta">Gerado pelo Copilot · ${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
   </div>
   ${sanitizeArtifactHtml(bodyHTML)}
   <script>window.onload = () => { window.print() }<\/script>
@@ -250,12 +250,12 @@ const PanelCode = memo(function PanelCode({ lang, content }: { lang: string; con
   const [copied, setCopied] = useState(false)
   const copy = () => navigator.clipboard.writeText(content).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
   return (
-    <div className="rounded-lg overflow-hidden border border-surface-700/50 bg-surface-950 my-3">
+    <div className="rounded-[10px] overflow-hidden border border-surface-700/50 bg-surface-950 my-3">
       <div className="flex items-center justify-between px-4 py-2 bg-surface-900 border-b border-surface-700">
         <div className="flex items-center gap-2">
           <Code2 className="w-3.5 h-3.5 text-surface-500" />
-          <span className="text-2xs font-semibold text-surface-400 font-mono">{lang}</span>
-          <span className="text-3xs text-surface-600">{content.split('\n').length} linhas</span>
+          <span className="text-xs font-semibold text-surface-400 font-mono">{lang}</span>
+          <span className="text-xs text-surface-600">{content.split('\n').length} linhas</span>
         </div>
         <button onClick={copy} aria-label="Copiar código" className="p-1 rounded text-surface-500 hover:text-surface-300 transition-colors">
           {copied ? <Check className="w-3.5 h-3.5 text-status-active" /> : <Copy className="w-3.5 h-3.5" />}
@@ -270,16 +270,16 @@ const PanelCode = memo(function PanelCode({ lang, content }: { lang: string; con
 
 const PanelPlan = memo(function PanelPlan({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-lg overflow-hidden border border-brand-500/15 bg-surface-900/40 my-3">
+    <div className="rounded-[10px] overflow-hidden border border-brand-500/15 bg-surface-900/40 my-3">
       <div className="flex items-center gap-2 px-4 py-3 bg-surface-900/60 border-b border-surface-700">
         <ListOrdered className="w-4 h-4 text-brand-400" />
         <span className="text-sm font-semibold text-surface-200">{title}</span>
-        <span className="text-2xs text-surface-500 ml-1">· {items.length} etapas</span>
+        <span className="text-xs text-surface-500 ml-1">· {items.length} etapas</span>
       </div>
       <div className="px-4 py-4 flex flex-col gap-4">
         {items.map((item, i) => (
           <div key={i} className="flex items-start gap-3.5">
-            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-2xs font-bold text-brand-400 mt-0.5">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-xs font-semibold text-brand-400 mt-0.5">
               {i + 1}
             </span>
             <span className="text-sm text-surface-200 leading-relaxed flex-1">{stripInline(item)}</span>
@@ -292,11 +292,11 @@ const PanelPlan = memo(function PanelPlan({ title, items }: { title: string; ite
 
 const PanelTable = memo(function PanelTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
-    <div className="rounded-lg overflow-hidden border border-surface-700/50 bg-surface-900/40 my-3">
+    <div className="rounded-[10px] overflow-hidden border border-surface-700/50 bg-surface-900/40 my-3">
       <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-900/60 border-b border-surface-700">
         <Table2 className="w-3.5 h-3.5 text-surface-400" />
-        <span className="text-2xs font-semibold text-surface-300">Tabela</span>
-        <span className="text-3xs text-surface-500">· {rows.length} linhas</span>
+        <span className="text-xs font-semibold text-surface-300">Tabela</span>
+        <span className="text-xs text-surface-500">· {rows.length} linhas</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -702,7 +702,7 @@ function FullscreenOverlay({ content, title, type, onClose }: { content: string;
         <button
           onClick={onClose}
           aria-label="Fechar tela cheia (Esc)"
-          className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors ml-4 flex-shrink-0"
+          className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors ml-4 flex-shrink-0"
           title="Fechar tela cheia (Esc)"
         >
           <X className="w-4 h-4" />
@@ -773,7 +773,7 @@ function VersionNav({
       >
         <ChevronLeft className="h-3 w-3" />
       </button>
-      <span className="px-0.5 text-3xs font-medium text-surface-300 tabular-nums">
+      <span className="px-0.5 text-xs font-medium text-surface-300 tabular-nums">
         v{current}<span className="text-surface-500">/{total}</span>
       </span>
       <button
@@ -978,7 +978,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
             {/* Header */}
             <div className="flex items-center gap-2 px-5 py-4 border-b border-surface-700 flex-shrink-0">
               {artifact.type !== 'document' && (
-                <div className="w-7 h-7 rounded-lg bg-surface-800/80 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-[6px] bg-surface-800/80 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
                   <TypeIcon type={artifact.type} className="w-3.5 h-3.5 text-brand-400" />
                 </div>
               )}
@@ -1002,7 +1002,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                   <p className="text-sm font-semibold text-surface-100 truncate">{artifact.title}</p>
                 )}
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-3xs text-surface-500">{typeLabel(artifact.type)} · gerado pela IA</p>
+                  <p className="text-xs text-surface-500">{typeLabel(artifact.type)} · gerado pela IA</p>
                   {artifact.versions.length > 1 && (
                     <VersionNav artifact={artifact} onSwitch={setArtifactVersion} />
                   )}
@@ -1016,7 +1016,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -4, scale: 0.97 }}
                       transition={{ duration: 0.12 }}
-                      className="absolute top-full left-0 mt-2 w-72 overlay-surface overlay-vidro border rounded-xl z-50 overflow-hidden py-1"
+                      className="absolute top-full left-0 mt-2 w-72 overlay-surface overlay-vidro border rounded-[10px] z-50 overflow-hidden py-1"
                     >
                       {artifacts.map((art) => (
                         <button
@@ -1030,7 +1030,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                           )}
                         >
                           <div className={cn(
-                            'w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0',
+                            'w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0',
                             art.id === artifact.id ? 'bg-brand-600/20' : 'bg-surface-800',
                           )}>
                             {art.type === 'webpage'     ? <Globe        className="w-3 h-3 text-brand-400" /> :
@@ -1040,7 +1040,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate leading-snug">{art.title}</p>
-                            <p className="text-3xs text-surface-500 mt-0.5">{typeLabel(art.type)}</p>
+                            <p className="text-xs text-surface-500 mt-0.5">{typeLabel(art.type)}</p>
                           </div>
                           {art.id === artifact.id && (
                             <Check className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
@@ -1059,7 +1059,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                   <button
                     onClick={() => setEditMode((v) => !v)}
                     className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors border text-2xs font-medium',
+                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] transition-colors border text-xs font-medium',
                       editMode
                         ? 'bg-brand-600/15 border-brand-500/30 text-brand-300'
                         : 'border-surface-700/50 text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 hover:border-surface-600',
@@ -1077,7 +1077,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                   <button
                     onClick={openFullscreen}
                     aria-label="Tela cheia"
-                    className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
+                    className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
                     title="Tela cheia"
                   >
                     <Maximize2 className="w-3.5 h-3.5" />
@@ -1088,7 +1088,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                 <button
                   onClick={copy}
                   aria-label="Copiar conteúdo"
-                  className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
+                  className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
                   title="Copiar conteúdo"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-status-active" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1114,11 +1114,11 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                         logger.log('error', `HTML interativo download falhou: ${err instanceof Error ? err.message : String(err)}`)
                       }
                     }}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 transition-colors border border-surface-700/50 hover:border-surface-600"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 transition-colors border border-surface-700/50 hover:border-surface-600"
                     title="Baixar componente como HTML interativo"
                   >
                     <Download className="w-3 h-3" />
-                    <span className="text-2xs font-medium">HTML interativo</span>
+                    <span className="text-xs font-medium">HTML interativo</span>
                   </button>
                 ) : isSlidesJson ? (
                   // slides-json: download as PPTX. Disable while the JSON is
@@ -1145,7 +1145,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                           }
                         }}
                         className={cn(
-                          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors',
+                          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] border transition-colors',
                           slidesValid
                             ? 'text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 border-surface-700/50 hover:border-surface-600'
                             : 'text-surface-600 border-surface-700 cursor-not-allowed',
@@ -1153,7 +1153,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                         title={slidesValid ? 'Baixar como PPTX' : 'Aguardando geração completa…'}
                       >
                         <Download className="w-3 h-3" />
-                        <span className="text-2xs font-medium">PPTX</span>
+                        <span className="text-xs font-medium">PPTX</span>
                       </button>
                     )
                   })()
@@ -1161,29 +1161,29 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={downloadHTML}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 transition-colors border border-surface-700/50 hover:border-surface-600"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 transition-colors border border-surface-700/50 hover:border-surface-600"
                       title="Baixar arquivo HTML"
                     >
                       <Download className="w-3 h-3" />
-                      <span className="text-2xs font-medium">HTML</span>
+                      <span className="text-xs font-medium">HTML</span>
                     </button>
                     <button
                       onClick={() => exportHTMLAsPDF(artifact.content, artifact.title, artifact.type)}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 transition-colors border border-surface-700/50 hover:border-surface-600"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 transition-colors border border-surface-700/50 hover:border-surface-600"
                       title="Baixar como PDF"
                     >
                       <Download className="w-3 h-3" />
-                      <span className="text-2xs font-medium">PDF</span>
+                      <span className="text-xs font-medium">PDF</span>
                     </button>
                   </div>
                 ) : (
                   <button
                     onClick={() => exportToPDF(artifact.content, artifact.title)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 transition-colors border border-surface-700/50 hover:border-surface-600"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 transition-colors border border-surface-700/50 hover:border-surface-600"
                     title="Exportar como PDF"
                   >
                     <Download className="w-3 h-3" />
-                    <span className="text-2xs font-medium">PDF</span>
+                    <span className="text-xs font-medium">PDF</span>
                   </button>
                 )}
 
@@ -1200,7 +1200,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                         : CANVA_LABELS[canvaStatus]
                     }
                     className={cn(
-                      'flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-lg transition-all border text-2xs font-semibold',
+                      'flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-[6px] transition-all border text-xs font-semibold',
                       canvaStatus === 'done'
                         ? 'bg-status-active-bg border-status-active-border text-status-active'
                         : canvaStatus === 'error'
@@ -1225,7 +1225,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                 <button
                   onClick={closeArtifact}
                   aria-label="Fechar"
-                  className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors ml-1"
+                  className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors ml-1"
                   title="Fechar"
                 >
                   <X className="w-3.5 h-3.5" />

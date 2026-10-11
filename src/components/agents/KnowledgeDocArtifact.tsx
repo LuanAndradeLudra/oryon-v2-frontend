@@ -32,7 +32,7 @@ export function KnowledgeDocArtifact({
   const lines = content.split('\n')
 
   return (
-    <div className="rounded-lg border border-surface-700 bg-[var(--sf2)] overflow-hidden flex flex-col">
+    <div className="rounded-[10px] border border-surface-700 bg-[var(--sf2)] overflow-hidden flex flex-col">
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-surface-700 flex-shrink-0">
         {title && (

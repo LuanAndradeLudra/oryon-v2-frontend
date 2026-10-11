@@ -174,10 +174,10 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                       <option value="lost">Perdido</option>
                       <option value="any">Qualquer</option>
                     </SelectMenu>
-                    <button onClick={handleSaveEdit} className="p-1.5 rounded-xs text-accent-dark hover:bg-[var(--rowhover)]">
+                    <button onClick={handleSaveEdit} className="p-1.5 rounded-[6px] text-accent-dark hover:bg-[var(--rowhover)]">
                       <Check className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => setEditingId(null)} className="p-1.5 rounded-xs text-surface-400 hover:bg-[var(--rowhover)]">
+                    <button onClick={() => setEditingId(null)} className="p-1.5 rounded-[6px] text-surface-400 hover:bg-[var(--rowhover)]">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -185,13 +185,13 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                   <>
                     <div className="flex-1 min-w-0 flex items-center gap-2">
                       <span className="text-sm font-medium text-surface-100">{r.label}</span>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-xs bg-[var(--sf2)] border border-surface-700 text-surface-400">
+                      <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-[6px] bg-[var(--sf2)] border border-surface-700 text-surface-400">
                         {OUTCOME_LABEL[r.outcome]}
                       </span>
-                      <span className="text-[11px] text-surface-600 font-mono">{r.key}</span>
+                      <span className="text-2xs text-surface-600 font-mono">{r.key}</span>
                     </div>
                     {canManage && (
-                      <button onClick={() => startEdit(r)} className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all">
+                      <button onClick={() => startEdit(r)} className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                     )}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, Lock, Smile, Meh, Frown, HelpCircle, Sparkles, Loader2, RefreshCw, AlertTriangle, Target, ShieldAlert, Lightbulb, MessageSquareQuote, MessageCircle, ScanSearch, Crosshair, BarChart3, FileText, Settings2, Wand2, ChevronRight } from 'lucide-react'
+import { Lock, Smile, Meh, Frown, HelpCircle, Sparkles, RefreshCw, AlertTriangle, Target, ShieldAlert, Lightbulb, MessageSquareQuote, MessageCircle, ScanSearch, Crosshair, BarChart3, FileText, Settings2, Wand2, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { contactsApi } from '@/services/api'
 import { AiSuggestionsModal } from '../AiSuggestionsModal'
@@ -160,7 +160,7 @@ function Section({ label, icon, iconColor, children, delay = 0 }: { label: strin
     >
       <div className="flex items-center gap-1.5 mb-2">
         <span className={iconColor ?? 'text-neutral-500'}>{icon}</span>
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">{label}</p>
+        <p className="text-xs font-semibold text-neutral-500">{label}</p>
       </div>
       {children}
     </motion.div>
@@ -230,7 +230,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
           diferença). Só a caixa externa (borda/raio antigos) saiu daqui. */}
       <div
         className={cn(
-          'flex items-center justify-between py-2 transition-colors rounded-lg',
+          'flex items-center justify-between py-2 transition-colors rounded-[10px]',
           hasData && !generating ? 'cursor-pointer hover:bg-[var(--rowhover)] px-2 -mx-2' : '',
         )}
         onClick={hasData && !generating ? () => setCollapsed((v) => !v) : undefined}
@@ -245,9 +245,11 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               <ChevronRight className="w-3.5 h-3.5" />
             </motion.span>
           )}
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-status-pending bg-status-pending-bg border border-status-pending-border rounded-full px-2.5 py-1">
-            <Bot className="w-3 h-3" />
-            IA Contextual
+          {/* SCRUM-1253 (PO, 07/10): IA = ícone de brilho + texto neutro, como
+              no resto do app — âmbar é o papel de "atenção". */}
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-surface-100">
+            <Sparkles className="w-3.5 h-3.5 text-surface-400" />
+            IA contextual
           </span>
           {contact.aiUpdatedAt && !generating && (
             <span className="text-[11px] text-surface-500">
@@ -260,7 +262,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="inline-flex items-center gap-1 text-[10px] font-semibold text-surface-400 hover:text-surface-200 transition-colors disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-surface-400 hover:text-surface-200 transition-colors disabled:opacity-60 cursor-pointer"
             >
               <RefreshCw className="w-3 h-3" />
               Atualizar
@@ -282,23 +284,13 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
             <GeneratingState />
           </motion.div>
         ) : !hasData ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="px-4 py-8 text-center"
-          >
-            <Bot className="w-8 h-8 text-surface-700 mx-auto mb-2" />
-            <p className="text-sm font-medium text-surface-400">Nenhuma análise disponível</p>
-            <p className="text-xs text-surface-600 mt-1 mb-3">Configure o perfil completo deste contato com base nas conversas.</p>
-            <button
-              onClick={handleGenerate}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-surface-950 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90 cursor-pointer"
-              style={{ background: 'linear-gradient(40deg, #ffffff, #a8a8b4)' }}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Configurar contato com IA
+          // SCRUM-1253 (PO, 09/10): vazio em uma linha — o bloco de 180px dizia pouco.
+          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 py-3 flex items-center gap-3">
+            <p className="flex-1 min-w-0 text-xs text-surface-400">A IA ainda não analisou este contato.</p>
+            <button onClick={handleGenerate}
+              className="botao-ia-contato flex-shrink-0 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] text-xs font-semibold cursor-pointer">
+              <Sparkles className="w-3.5 h-3.5" aria-hidden />
+              Analisar com IA
             </button>
           </motion.div>
         ) : !collapsed ? (
@@ -322,7 +314,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {contact.aiSentiment && contact.aiSentiment !== 'unknown' && (
                 <Section label="Sentimento geral das conversas" icon={SENTIMENT_CONFIG[contact.aiSentiment!].icon} iconColor={SENTIMENT_CONFIG[contact.aiSentiment!].iconColor} delay={justFinished ? 0.15 : 0}>
                   <span
-                    className="color-chip-soft inline-flex items-center gap-1.5 h-5 text-[11px] font-semibold px-[7px] rounded-[5px] border"
+                    className="color-chip-soft inline-flex items-center gap-1.5 h-5 text-[11px] font-semibold px-[7px] rounded-[6px] border"
                     style={{ ['--chip']: SENTIMENT_CONFIG[contact.aiSentiment!].chip } as React.CSSProperties}
                   >
                     {SENTIMENT_CONFIG[contact.aiSentiment!].icon}{SENTIMENT_CONFIG[contact.aiSentiment!].label}
@@ -384,7 +376,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {/* Next Best Action */}
               {contact.aiNextBestAction && (
                 <Section label="Estratégia de abordagem recomendada" icon={<Sparkles className="w-3.5 h-3.5" />} iconColor="text-accent-dark" delay={justFinished ? 0.7 : 0}>
-                  <div className="bg-accent-soft border border-brand-500/25 rounded-lg px-3.5 py-3">
+                  <div className="bg-accent-soft border border-brand-500/25 rounded-[10px] px-3.5 py-3">
                     <p className="text-[13px] text-accent-dark leading-relaxed">{contact.aiNextBestAction}</p>
                   </div>
                 </Section>
@@ -393,7 +385,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {/* Last Interaction Summary */}
               {contact.aiLastInteractionSummary && (
                 <Section label="Última interação" icon={<MessageSquareQuote className="w-3.5 h-3.5" />} iconColor="text-surface-500" delay={justFinished ? 0.85 : 0}>
-                  <div className="bg-surface-800/50 border border-surface-700 rounded-lg px-3.5 py-3">
+                  <div className="bg-surface-800/50 border border-surface-700 rounded-[10px] px-3.5 py-3">
                     <p className="text-[13px] text-surface-400 leading-relaxed italic">{contact.aiLastInteractionSummary}</p>
                   </div>
                 </Section>

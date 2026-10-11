@@ -19,7 +19,7 @@ export function TagChips({ tags, max = 2, emptyDash = false, inline = false }: {
         <span
           key={tag.id}
           className={cn(
-            'color-chip inline-flex items-center h-[18px] whitespace-nowrap align-middle text-[10.5px] font-semibold px-[7px] rounded-xs border',
+            'color-chip inline-flex items-center h-5 whitespace-nowrap align-middle text-[11px] font-semibold px-[7px] rounded-[6px] border',
             inline && 'max-w-[96px] min-w-0',
           )}
           style={{ ['--chip']: tag.color } as CSSProperties}

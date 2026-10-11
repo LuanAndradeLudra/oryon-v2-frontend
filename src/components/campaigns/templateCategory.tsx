@@ -28,21 +28,21 @@ export const TEMPLATE_CATEGORIES: Record<TemplateCategoryType, {
     label: 'Marketing',
     Icon: Megaphone,
     cor: 'var(--color-accent-dark)',
-    fundo: 'color-mix(in srgb, var(--color-accent-dark) 12%, transparent)',
+    fundo: 'color-mix(in srgb, var(--color-accent-dark) calc(12% * var(--tinta-k, 1)), transparent)',
     hint: 'Promoções, ofertas, novidades e boletins.',
   },
   UTILITY: {
     label: 'Utilidade',
     Icon: Bell,
     cor: 'var(--color-accent-blue)',
-    fundo: 'color-mix(in srgb, var(--color-accent-blue) 12%, transparent)',
+    fundo: 'color-mix(in srgb, var(--color-accent-blue) calc(12% * var(--tinta-k, 1)), transparent)',
     hint: 'Confirmações, atualizações de pedido e lembretes.',
   },
   AUTHENTICATION: {
     label: 'Autenticação',
     Icon: KeyRound,
     cor: 'var(--color-accent-amber)',
-    fundo: 'color-mix(in srgb, var(--color-accent-amber) 12%, transparent)',
+    fundo: 'color-mix(in srgb, var(--color-accent-amber) calc(12% * var(--tinta-k, 1)), transparent)',
     hint: 'Códigos de verificação de uso único.',
   },
 }
@@ -65,7 +65,11 @@ export function TemplateCategoryTile({ category, size = 34, className }: {
       aria-hidden
       title={label}
     >
-      <Icon style={{ width: Math.round(size * 0.47), height: Math.round(size * 0.47) }} strokeWidth={1.75} />
+      {size < 30
+        // No ladrilho pequeno (22px) o ícone a 47% dava 10px com traço < 1px:
+        // aqui ocupa ~64% e o traço engrossa (SCRUM-1253, PO 07/10).
+        ? <Icon style={{ width: Math.round(size * 0.64), height: Math.round(size * 0.64) }} strokeWidth={2} />
+        : <Icon style={{ width: Math.round(size * 0.47), height: Math.round(size * 0.47) }} strokeWidth={1.75} />}
     </span>
   )
 }

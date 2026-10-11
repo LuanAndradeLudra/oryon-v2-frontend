@@ -35,9 +35,9 @@ export function FunnelLensBar({ value, onChange, counts, hasUser }: FunnelLensBa
             onClick={() => onChange(l.id)}
             data-testid={`funnel-lens-${l.id}`}
             className={cn(
-              'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0',
+              'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] border text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0',
               active
-                ? 'border-transparent bg-[var(--ink-bg)] text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)]'
+                ? 'border-[color:var(--ink-bd)] bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)] hover:bg-(image:--ink-grad-hover)'
                 : 'border-surface-700 bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100',
             )}
           >

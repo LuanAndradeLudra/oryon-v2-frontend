@@ -235,7 +235,7 @@ function ResultRow({ contact, entry, onOpen, onChooseTemplate, onRecheck }: {
 }) {
   const name = contact.displayName || formatPhoneBR(contact.waId) || 'Sem nome'
   return (
-    <li className="h-[52px] flex items-center gap-3 px-2 rounded-sm hover:bg-[var(--rowhover)] transition-colors">
+    <li className="h-[52px] flex items-center gap-3 px-2 rounded-[6px] hover:bg-[var(--rowhover)] transition-colors">
       <Avatar name={name} imageUrl={contact.profilePicUrl} size="sm" />
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>

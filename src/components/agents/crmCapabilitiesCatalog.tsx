@@ -7,7 +7,7 @@
 //
 // IMPORTANT: when the server-side catalog changes, mirror the change here.
 
-import { CheckCircle, Tag as TagIcon, MoveRight, UserCog, MessageSquare, Briefcase } from 'lucide-react'
+import { Tag as TagIcon, MoveRight, UserCog, MessageSquare, Briefcase, RotateCcw } from 'lucide-react'
 import type {
   ConversationStatus,
   CrmCapabilityCategory,
@@ -43,7 +43,7 @@ export const CRM_CAPABILITIES_CATALOG: CrmCapabilityCatalogEntry[] = [
     category: 'conversation',
     label: 'Encerrar e reabrir conversas',
     description: 'O agente pode mover a conversa entre os status (aberta, pendente, resolvida, abandonada).',
-    icon: <CheckCircle className="w-4 h-4" />,
+    icon: <RotateCcw className="w-4 h-4" />,
     supports: ['statuses'],
     defaultConstraints: {
       // Default conservador: bloquear "resolved" — exige opt-in explícito

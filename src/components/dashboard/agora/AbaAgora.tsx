@@ -22,7 +22,7 @@ import { CabecalhoDoPainel } from '../CabecalhoDoPainel'
 // da fila vive na URL (`?fila=`), como todo estado de tela (regra do PO).
 
 function lerFiltro(v: string | null): FiltroDaFila {
-  return v === 'sem-dono' || v === 'ia-passou' || v === 'janela' ? v : 'todas'
+  return v === 'sem-dono' || v === 'janela' ? v : 'todas'
 }
 
 function nomeDe(u: { firstName: string; lastName?: string | null }): string {
@@ -71,15 +71,11 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
       onAba={onAba}
       direita={
         <>
-          <span className="inline-flex items-center gap-1.5 text-[11.5px] text-surface-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-online" aria-hidden />
-            ao vivo
-            {d.atualizadoEm && <span className="hidden sm:inline text-surface-500">· {haQuanto(d.atualizadoEm, relogio)}</span>}
-          </span>
+          {/* O "ao vivo" já está no topo da tela (SCRUM-1253): aqui só o atualizar. */}
           <button
             type="button"
             onClick={d.recarregar}
-            className="w-7 h-7 inline-flex items-center justify-center rounded-sm border border-[var(--bd2)] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
+            className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] border border-[var(--bd2)] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
             title="Atualizar agora"
             aria-label="Atualizar agora"
           >
@@ -143,10 +139,10 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
     return (
       <div className="space-y-3.5" aria-busy="true" aria-label="Carregando o painel">
         {cabecalho}
-        <div className="h-[84px] bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
+        <div className="h-[84px] bg-surface-800 border border-surface-700 rounded-[10px] animate-pulse" />
         <div className="grid grid-cols-12 gap-3.5">
-          <div className="col-span-12 xl:col-span-8 h-80 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
-          <div className="col-span-12 xl:col-span-4 h-80 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
+          <div className="col-span-12 xl:col-span-8 h-80 bg-surface-800 border border-surface-700 rounded-[10px] animate-pulse" />
+          <div className="col-span-12 xl:col-span-4 h-80 bg-surface-800 border border-surface-700 rounded-[10px] animate-pulse" />
         </div>
       </div>
     )
@@ -161,11 +157,9 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
     // faixa e da aba Fila da inbox (28/09: contar a lista carregada divergia).
     todas: d.totais?.esperando ?? d.fila.length,
     'sem-dono': d.totais?.semDono ?? d.fila.filter((i) => i.semDono).length,
-    'ia-passou': d.totais?.iaPassou ?? d.fila.filter((i) => i.iaPassou).length,
     janela: d.fila.filter(janelaFechando).length,
   }
   const itens = filtro === 'sem-dono' ? d.fila.filter((i) => i.semDono)
-    : filtro === 'ia-passou' ? d.fila.filter((i) => i.iaPassou)
     : filtro === 'janela' ? d.fila.filter(janelaFechando)
     : d.fila
 
@@ -173,7 +167,7 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
     <div className="space-y-3.5">
       {cabecalho}
       {d.erro && (
-        <p role="status" className="px-3.5 py-2 rounded-lg border border-status-pending-border bg-status-pending-bg text-[12.5px] text-status-pending">
+        <p role="status" className="px-3.5 py-2 rounded-[10px] border border-status-pending-border bg-status-pending-bg text-xs text-status-pending">
           A última atualização falhou. Os dados abaixo são de {d.atualizadoEm?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.
         </p>
       )}

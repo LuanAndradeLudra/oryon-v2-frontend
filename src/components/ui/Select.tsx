@@ -35,7 +35,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           {...aria}
           required={required}
           className={cn(
-            'w-full appearance-none bg-surface-800 border rounded-sm text-surface-100',
+            'w-full appearance-none bg-surface-800 border rounded-[6px] text-surface-100',
             sizeStyles[size],
             'focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500',
             'disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer',

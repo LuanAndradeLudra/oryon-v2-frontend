@@ -156,7 +156,7 @@ export function MyAccount() {
           <div>
             <p className="font-semibold text-surface-100">{user.firstName} {user.lastName}</p>
             <p className="text-sm text-surface-400">{user.email}</p>
-            <span className="mt-1 inline-flex px-1.5 py-px bg-accent-soft text-accent-dark border border-brand-500/25 rounded-xs text-[11px] font-semibold">
+            <span className="mt-1 inline-flex px-1.5 py-px bg-accent-soft text-accent-dark border border-brand-500/25 rounded-[6px] text-2xs font-semibold">
               {ROLE_LABELS[user.role] ?? user.role}
             </span>
           </div>

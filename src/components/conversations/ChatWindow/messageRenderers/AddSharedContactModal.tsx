@@ -174,7 +174,7 @@ export function AddSharedContactModal({
           <Banner variant="warning">
             <p className="text-sm">Este contato já está no CRM.</p>
           </Banner>
-          <div className="flex items-center gap-2.5 rounded-lg bg-[var(--sf2)] px-3 py-2.5">
+          <div className="flex items-center gap-2.5 rounded-[10px] bg-[var(--sf2)] px-3 py-2.5">
             <div className="w-9 h-9 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0">
               <User className="w-4.5 h-4.5 text-surface-300" />
             </div>
@@ -185,7 +185,7 @@ export function AddSharedContactModal({
           </div>
         </div>
       ) : status === 'created' && created ? (
-        <div className="flex items-start gap-2.5 rounded-lg bg-status-active-bg border border-status-active-border px-3 py-2.5">
+        <div className="flex items-start gap-2.5 rounded-[10px] bg-status-active-bg border border-status-active-border px-3 py-2.5">
           <CheckCircle2 className="w-4 h-4 text-status-active flex-shrink-0 mt-0.5" />
           <p className="text-sm text-status-active">Contato adicionado ao CRM com sucesso.</p>
         </div>

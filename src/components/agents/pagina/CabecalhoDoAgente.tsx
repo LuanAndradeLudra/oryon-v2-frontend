@@ -184,12 +184,13 @@ export function CabecalhoDoAgente({
           <AgentIcon iconId={agent.icon} dashed={agent.status === 'draft'} className="w-10 h-10" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <StatusDoAgente status={agent.status} />
+              {/* Selo só no rascunho: "Ativo" repetia o interruptor Ligado (mesmo campo). */}
+              {agent.status === 'draft' && <StatusDoAgente status={agent.status} />}
               {!testado && (
                 <button
                   type="button"
                   onClick={onAlternarTeste}
-                  className="inline-flex items-center gap-1 min-h-7 px-2 rounded-xs text-2xs font-semibold whitespace-nowrap bg-status-pending-bg text-status-pending border border-status-pending-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                  className="inline-flex items-center gap-1 min-h-7 px-2 rounded-[6px] text-2xs font-semibold whitespace-nowrap bg-status-pending-bg text-status-pending border border-status-pending-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                 >
                   <Sparkles className="w-3 h-3" aria-hidden />
                   Ainda não testado · Testar agora
@@ -222,7 +223,7 @@ export function CabecalhoDoAgente({
   }
 
   return (
-    <header className="flex items-center gap-3.5 px-6 py-4 border-b border-surface-700 flex-shrink-0">
+    <header className="flex items-center gap-3.5 px-6 py-4 border-b border-surface-700 flex-shrink-0 bg-surface-800">
       <AgentIcon iconId={agent.icon} dashed={agent.status === 'draft'} className="w-10 h-10" />
 
       <div className="min-w-0 flex-1">
@@ -231,14 +232,14 @@ export function CabecalhoDoAgente({
             valor={agent.name}
             onSalvar={async (name) => onAtualizar(await salvar(() => updateAgent(agent.id, { name })))}
           />
-          <StatusDoAgente status={agent.status} />
+          {agent.status === 'draft' && <StatusDoAgente status={agent.status} />}
           {numero && (
-            <span className="hidden xl:inline-flex items-center h-5 px-[7px] rounded-xs border border-surface-700 bg-[var(--sf2)] text-2xs font-medium text-surface-400 tabular-nums whitespace-nowrap">
+            <span className="hidden xl:inline-flex items-center h-5 px-[7px] rounded-[6px] border border-surface-700 bg-[var(--sf2)] text-2xs font-medium text-surface-400 tabular-nums whitespace-nowrap">
               WhatsApp · {numero}
             </span>
           )}
           {!testado && (
-            <span className="inline-flex items-center h-5 px-[7px] rounded-xs text-2xs font-semibold whitespace-nowrap bg-status-pending-bg text-status-pending border border-status-pending-border">
+            <span className="inline-flex items-center h-5 px-[7px] rounded-[6px] text-2xs font-semibold whitespace-nowrap bg-status-pending-bg text-status-pending border border-status-pending-border">
               Ainda não testado
             </span>
           )}
@@ -264,7 +265,7 @@ export function CabecalhoDoAgente({
         )}
         <label
           className={cn(
-            'inline-flex items-center gap-2 h-7 pl-2.5 pr-2 rounded-sm border border-[var(--bd2)] text-xs font-semibold text-surface-100',
+            'inline-flex items-center gap-2 h-7 pl-2.5 pr-2 rounded-[6px] border border-[var(--bd2)] text-xs font-semibold text-surface-100',
             naoPodeLigar ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
           )}
           title={naoPodeLigar ? MSG_ADMIN_PRECISA_PUBLICAR : undefined}
@@ -319,7 +320,7 @@ function NomeEditavel({ valor, onSalvar }: { valor: string; onSalvar: (v: string
           value={rascunho}
           onChange={(e) => setRascunho(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void confirmar(); if (e.key === 'Escape') setEditando(false) }}
-          className="w-64 font-display font-bold text-sm"
+          className="w-64 font-display font-semibold text-sm"
         />
         <Button size="sm" iconOnly variant="primary" aria-label="Salvar nome" loading={salvando} onClick={() => void confirmar()}>
           <Check className="w-3.5 h-3.5" />
@@ -336,8 +337,8 @@ function NomeEditavel({ valor, onSalvar }: { valor: string; onSalvar: (v: string
       type="button"
       onClick={() => { setRascunho(valor); setEditando(true) }}
       className={cn(
-        'group inline-flex items-center gap-1.5 min-w-0 rounded-sm text-left',
-        'font-display text-lg font-bold tracking-[-0.015em] text-surface-50 leading-tight',
+        'group inline-flex items-center gap-1.5 min-w-0 rounded-[6px] text-left',
+        'font-display text-lg font-semibold tracking-[-0.015em] text-surface-50 leading-tight',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
       )}
       title="Renomear"

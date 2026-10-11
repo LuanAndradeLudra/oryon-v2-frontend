@@ -72,7 +72,7 @@ export function MessageInput({ channelId, replyTo, onClearReply, placeholder }: 
 
       {/* Input card — Google Chat style */}
       <div className={cn(
-        'rounded-lg border bg-[var(--sf2)] transition-colors',
+        'rounded-[10px] border bg-[var(--sf2)] transition-colors',
         replyTo ? 'rounded-t-none border-t-0' : '',
         text ? 'border-blue-500/40' : 'border-surface-500',
       )}>
@@ -120,7 +120,7 @@ export function MessageInput({ channelId, replyTo, onClearReply, placeholder }: 
         </div>
       </div>
 
-      <p className="text-[10px] text-surface-700 mt-1 px-1">Enter para enviar · Shift+Enter para nova linha</p>
+      <p className="text-[11px] text-surface-700 mt-1 px-1">Enter para enviar · Shift+Enter para nova linha</p>
     </div>
   )
 }

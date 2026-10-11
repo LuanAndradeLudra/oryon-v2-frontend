@@ -96,7 +96,7 @@ export const DocumentCard: FC<{ message: Message; onOpen?: () => void }> = ({ me
     <button
       type="button"
       onClick={onOpen}
-      className="block w-full text-left max-w-[280px] rounded-lg overflow-hidden bg-current/5 hover:bg-current/10 transition-colors"
+      className="block w-full text-left max-w-[280px] rounded-[10px] overflow-hidden bg-current/5 hover:bg-current/10 transition-colors"
     >
       {message.mediaThumbnailUrl && (
         <img
@@ -107,7 +107,7 @@ export const DocumentCard: FC<{ message: Message; onOpen?: () => void }> = ({ me
         />
       )}
       <div className="flex items-center gap-3 py-2 px-2">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold tracking-wide flex-shrink-0 ${badge.className}`}>
+        <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center text-[11px] font-semibold tracking-wide flex-shrink-0 ${badge.className}`}>
           {badge.label}
         </div>
         <div className="flex-1 min-w-0">

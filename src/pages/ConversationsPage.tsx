@@ -9,6 +9,7 @@ import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { ConversationsTopBarSlot } from '@/components/layout/ConversationsTopBarSlot'
+import { ordenarMinhas } from '@/components/conversations/ConversationList/ordenarMinhas'
 import { NewConversationModal } from '@/components/conversations/NewConversationModal'
 import { Fab } from '@/components/common/Fab'
 import { donoDoEvento, estadoDaIA, type EventoDeAtribuicao } from '@/lib/conversationSignals'
@@ -34,6 +35,12 @@ import type {
   Conversation, ConversationFilters,
   SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew,
   Tag, User, DealOutcomeInput } from '@/types'
+
+// SCRUM-1253 (PO, 06/10): abaixo de 1280 px o painel do contato nasce
+// recolhido (abre pelo botão de informações) — com lista e painel fixos o chat
+// ficava com ~370 px em 1100. Intercom e Front fazem igual.
+const LARGURA_PAINEL_ABERTO = 1280
+const painelCabe = () => window.innerWidth >= LARGURA_PAINEL_ABERTO
 
 
 export function ConversationsPage() {
@@ -83,7 +90,7 @@ export function ConversationsPage() {
   const openedViaPushRef = useRef(false)
 
   const {
-    conversations, filaIncompleta, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
+    conversations, filaIncompleta, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount, pendingCounts,
     error: erroDaLista, refetch: recarregarLista,
     handleNewMessage, handleAssigned, handleResolved, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
@@ -109,6 +116,16 @@ export function ConversationsPage() {
   // The server list is already status-filtered, so the only rows that fall out
   // of the active tab are ones changed locally — we drop those and re-add just
   // the active one, flagged off-filter (dimmed + status pill).
+  // Revisão 11/10 — "pendentes primeiro" em Minhas só reordena a 1ª carga (ver
+  // ordenarMinhas). Guardamos os ids dela no fim de cada carregamento (padrão
+  // "ajustar estado no render", sem efeito e sem quadro com a ordem errada).
+  const [idsDaPrimeiraCarga, setIdsDaPrimeiraCarga] = useState<ReadonlySet<string>>(() => new Set())
+  const [carregavaAntes, setCarregavaAntes] = useState(loading)
+  if (carregavaAntes !== loading) {
+    setCarregavaAntes(loading)
+    if (!loading) setIdsDaPrimeiraCarga(new Set(conversations.map((c) => c.id)))
+  }
+
   const { visibleConversations, offFilterId } = useMemo(() => {
     const statusFilter = filters.status
     const matches = (c: Conversation) =>
@@ -142,8 +159,11 @@ export function ConversationsPage() {
     if (ehFila(filters)) {
       list.sort((a, b) => new Date(a.lastMessageAt).getTime() - new Date(b.lastMessageAt).getTime())
     }
+    // SCRUM-1253 (PO, 06/10 — D11): em "Minhas", as pendentes (aguardando você) primeiro, a
+    // que espera há mais tempo no topo; o resto segue a ordem do servidor.
+    if (filters.assignedTo === 'me') list.splice(0, list.length, ...ordenarMinhas(list, idsDaPrimeiraCarga))
     return { visibleConversations: list, offFilterId }
-  }, [conversations, filters, activeConversation, user])
+  }, [conversations, filters, activeConversation, user, idsDaPrimeiraCarga])
 
   // ── Socket.IO real-time ────────────────────────────────────────────────────
   useSocket({
@@ -290,7 +310,7 @@ export function ConversationsPage() {
     // Em desktop o ContactPanel e' uma coluna lateral persistente — abrir
     // junto com a conversa e' o comportamento esperado. Em mobile o painel
     // sobrepoe o chat; deve aparecer so quando o usuario aciona via menu.
-    if (!isMobile) setInfoOpen(true)
+    if (!isMobile && painelCabe()) setInfoOpen(true)
     markAsRead(conv.id)
     // No mobile, lista e chat são telas alternadas — abrir uma conversa
     // precisa empilhar uma entrada de histórico própria (replace: false),
@@ -338,11 +358,11 @@ export function ConversationsPage() {
     activeId: activeConversation?.id ?? null,
     onFoundInList: (match) => {
       setActiveConversation(match)
-      if (!isMobile) setInfoOpen(true)
+      if (!isMobile && painelCabe()) setInfoOpen(true)
     },
     onFetched: (conv) => {
       setActiveConversation(conv)
-      if (!isMobile) setInfoOpen(true)
+      if (!isMobile && painelCabe()) setInfoOpen(true)
       setFilters((f) => ({ ...f, startDate: undefined, endDate: undefined }))
     },
     fetchById: (id) => conversationsApi.get(id).then((r) => r.data),
@@ -670,7 +690,7 @@ export function ConversationsPage() {
   return (
     <>
       {/* CONV-HDR (spec 1d): contagens + chip da linha + "Nova conversa" na TopBar do Shell. */}
-      {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} />}
+      {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} pendingCounts={pendingCounts} whatsappNumberId={filters.whatsappNumberId} />}
 
       {/* 1 — Conversation list. Mobile and desktop render the SAME list with
           the same props — only the outer wrapper differs (mobile adds the
@@ -713,7 +733,7 @@ export function ConversationsPage() {
               <ConversationList {...listProps} roundedBottomRight />
             </div>
             {/* Descoberta dos atalhos de triagem — discreto, só desktop */}
-            <div className="chat-shell-bg flex items-center justify-center gap-3 px-3 py-1.5 text-[10px] text-surface-600 select-none flex-shrink-0">
+            <div className="chat-shell-bg flex items-center justify-center gap-3 px-3 py-1.5 text-[11px] text-surface-600 select-none flex-shrink-0">
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">J</kbd>/<kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">K</kbd> navegar</span>
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">E</kbd> resolver</span>
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> assumir</span>

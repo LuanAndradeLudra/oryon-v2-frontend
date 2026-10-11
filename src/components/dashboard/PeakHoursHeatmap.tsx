@@ -6,6 +6,7 @@ import {
 import { useChartColors } from '@/hooks/useChartColors'
 import { EscopoDoCartao } from './EscopoDoCartao'
 import type { HeatmapCell } from '@/types/dashboard'
+import { emFrase } from '@/lib/emFrase'
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
@@ -30,12 +31,12 @@ function CustomTooltip({ active, payload, label }: {
   if (!active || !payload?.length) return null
   const total = payload.reduce((s, p) => s + p.value, 0)
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5 text-xs shadow-lg">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2.5 text-xs shadow-lg">
       <p className="text-surface-300 font-semibold mb-1.5">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: p.color }} />
+            <span className="w-2 h-2 rounded-[6px] flex-shrink-0" style={{ backgroundColor: p.color }} />
             <span className="text-surface-400">{p.name}</span>
           </div>
           <span className="text-surface-100 font-medium tabular-nums">{p.value.toLocaleString('pt-BR')}</span>
@@ -62,10 +63,10 @@ export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data, escopo }:
   ]
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
       <div className="mb-4 flex items-start gap-2">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-surface-100">Horários de Pico</p>
+          <p className="text-sm font-semibold text-surface-100">{emFrase('Horários de Pico')}</p>
           {/* Revisão 30/09 (D-e): só as mensagens RECEBIDAS — quando os clientes
               escrevem. Disparo em massa não vira "pico". */}
           <p className="text-xs text-surface-400 mt-0.5">Mensagens recebidas dos clientes por turno e dia da semana, somadas no período</p>

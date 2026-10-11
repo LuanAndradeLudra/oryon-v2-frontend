@@ -221,7 +221,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
                 <button
                   type="button"
                   onClick={() => removeVariation(i)}
-                  className="p-2 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-all flex-shrink-0"
+                  className="p-2 rounded-[6px] text-surface-400 hover:text-danger hover:bg-danger/10 transition-all flex-shrink-0"
                   aria-label="Remover variação"
                 >
                   <X className="w-4 h-4" />

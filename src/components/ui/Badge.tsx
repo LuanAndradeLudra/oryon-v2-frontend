@@ -18,14 +18,16 @@ const CHIP_VAR: Partial<Record<NonNullable<BadgeProps['variant']>, string>> = {
   danger:    'var(--color-danger)',
 }
 
-const BASE = 'inline-flex items-center justify-center h-5 px-[7px] rounded-xs text-2xs font-semibold whitespace-nowrap'
+const BASE = 'inline-flex items-center justify-center h-5 px-[7px] rounded-[6px] text-2xs font-semibold whitespace-nowrap'
 
 export function Badge({ children, variant = 'default', className }: BadgeProps) {
   // BADGE-09: contador não-lido é outro componente — disco 18px, 10.5/700.
+  // SCRUM-1253 (PO, 06/10): mesma cor dos contadores do sino e do sidebar
+  // (--color-btn-primary-bg); era brand-500, mais claro no tema claro.
   if (variant === 'unread') {
     return (
       <span className={cn(
-        'inline-flex items-center justify-center min-w-[18px] h-[18px] px-[5px] rounded-full bg-brand-500 text-[var(--color-btn-primary-fg)] text-[10.5px] font-bold tabular-nums',
+        'inline-flex items-center justify-center min-w-[18px] h-[18px] px-[5px] rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-[11px] font-semibold tabular-nums',
         className,
       )}>
         {children}

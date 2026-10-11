@@ -33,7 +33,7 @@ export function StatStrip({ items, className }: StatStripProps) {
   // de fora — funciona sobre qualquer fundo.
   const quebra = items.length >= 4
   return (
-    <div className={cn('border border-surface-700 rounded-lg overflow-hidden', className)}>
+    <div className={cn('border border-surface-700 rounded-[10px] overflow-hidden', className)}>
       <div
         className={cn('grid -ml-px -mt-px', quebra ? 'grid-cols-3 sm:[grid-template-columns:var(--colunas)]' : '[grid-template-columns:var(--colunas)]')}
         style={{ ['--colunas' as string]: `repeat(${items.length}, 1fr)` }}
@@ -51,7 +51,7 @@ export function StatStrip({ items, className }: StatStripProps) {
                 item.active && 'bg-[var(--sf2)]',
               )}
             >
-              <p className="text-lg font-bold tabular-nums truncate" style={item.color ? { color: item.color } : undefined}>
+              <p className="text-lg font-semibold tabular-nums truncate" style={item.color ? { color: item.color } : undefined}>
                 {item.value}
               </p>
               {/* Piso tipográfico do produto pra texto informativo é 11px

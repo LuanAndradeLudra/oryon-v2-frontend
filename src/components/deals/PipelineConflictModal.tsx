@@ -110,7 +110,7 @@ export function PipelineConflictModal({ open, onClose, contactName, pipeline, ex
                 onClick={() => setChoice(opt.id)}
                 data-testid={`conflict-${opt.id}`}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-[10px] border text-left transition-all',
                   active ? 'border-brand-500 bg-brand-500/10' : 'border-surface-700 bg-surface-800 hover:border-surface-600',
                   disabled && 'opacity-40 cursor-not-allowed',
                 )}

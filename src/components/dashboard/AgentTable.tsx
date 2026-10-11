@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
 import { useEstadoNaUrl, lerPaginaUrl, escreverPaginaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import type { AgentMetrics } from '@/types/dashboard'
+import { emFrase } from '@/lib/emFrase'
 
 // Helper text for each column header. Kept in one place so updating the
 // definition propagates to every place the table is rendered, and so the
@@ -112,7 +113,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   const Th = ({ label, sortKey, tooltip, className }: { label: string; sortKey?: SortKey; tooltip?: string; className?: string }) => (
     <th
       className={cn(
-        'text-left px-4 py-3 text-[11px] font-semibold text-surface-500 uppercase tracking-wider select-none',
+        'text-left px-4 py-3 text-2xs font-semibold text-surface-500 uppercase tracking-wider whitespace-nowrap select-none',
         sortKey && 'cursor-pointer hover:text-surface-300 transition-colors',
         className,
       )}
@@ -135,10 +136,10 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   )
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden">
       <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-surface-100">Performance da Equipe</p>
+          <p className="text-sm font-semibold text-surface-100">{emFrase('Performance da Equipe')}</p>
           <p className="text-xs text-surface-400 mt-0.5">Métricas individuais do período</p>
         </div>
         <div className="flex items-center gap-3">
@@ -150,7 +151,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               placeholder="Buscar agente..."
               aria-label="Buscar agente"
-              className="w-44 bg-surface-950 border border-surface-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+              className="w-44 bg-surface-950 border border-surface-700 rounded-[6px] pl-8 pr-3 py-1.5 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
             />
           </div>
           {agents.some((a) => a.isOnline !== null) && (
@@ -194,7 +195,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                       <Avatar name={agent.name} size="sm" online={agent.isOnline ?? undefined} kind="operator" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-surface-100">{agent.name}</p>
+                      <p className={cn('text-sm font-medium text-surface-100', 'whitespace-nowrap')}>{agent.name}</p>
                       <p className="text-xs text-surface-500">{agent.departmentName}</p>
                     </div>
                   </div>
@@ -257,7 +258,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage <= 1}
               aria-label="Página anterior"
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="flex items-center justify-center w-7 h-7 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -269,7 +270,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
               aria-label="Próxima página"
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="flex items-center justify-center w-7 h-7 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>

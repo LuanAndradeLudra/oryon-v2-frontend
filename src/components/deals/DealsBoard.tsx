@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock, ChevronsLeft, ChevronsRight, Sparkles } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -64,10 +64,11 @@ interface DealsBoardProps {
 
 /**
  * Colunas recolhidas do funil — preferência de quem olha, não estado de tela
- * (não vai para a URL): fica neste aparelho, por funil.
+ * (não vai para a URL): fica neste aparelho, por funil. Com `prefixo`
+ * diferente guarda outra lista (as terminais abertas — elas nascem recolhidas).
  */
-function useColunasRecolhidas(pipelineId: string | undefined) {
-  const chave = pipelineId ? `funil-recolhidas:${pipelineId}` : null
+function useColunasRecolhidas(pipelineId: string | undefined, prefixo = 'funil-recolhidas') {
+  const chave = pipelineId ? `${prefixo}:${pipelineId}` : null
   const ler = (): string[] => {
     if (!chave) return []
     try { return JSON.parse(localStorage.getItem(chave) ?? '[]') as string[] } catch { return [] }
@@ -140,6 +141,9 @@ export function DealsBoard({
   // basta ler de qualquer um pra saber qual funil excluir das opções do menu.
   const currentPipelineId = stages[0]?.pipelineId
   const { recolhidas, alternar: alternarColuna } = useColunasRecolhidas(currentPipelineId)
+  // SCRUM-1253 (PO, 07/10 — variante B): Ganho e Perdido são colunas próprias
+  // no fim do funil, RECOLHIDAS por padrão; aqui ficam as que a pessoa abriu.
+  const { recolhidas: fechadasAbertas, alternar: alternarFechada } = useColunasRecolhidas(currentPipelineId, 'funil-fechadas-abertas')
   const otherPipelines = getActivePipelines(pipelines).filter((p) => p.id !== currentPipelineId)
 
   // PL-C2-CAR-2: fechar ao clicar fora agora é do `Dropdown` (ele já cobre
@@ -225,12 +229,16 @@ export function DealsBoard({
   const entries = pipeline ? entrySources(allDeals) : []
   const kindOption = pipeline ? pipelineKindOption(pipelineKindOf(pipeline)) : null
 
-  // R2-1E-COL: colunas abertas seguem a ordem do funil; as terminais (`isWon`/
-  // `isLost` — o tipo já vem na etapa) vão empilhadas numa coluna única à
-  // direita, separada por borda tracejada (README 3.4). Cada etapa mantém o
-  // próprio alvo de drop, então o fluxo de fechar com motivo não muda.
+  // Colunas abertas seguem a ordem do funil; as terminais (`isWon`/`isLost`)
+  // vêm depois, cada uma na SUA coluna, recolhida por padrão numa faixa de
+  // 44px com contagem e valor (SCRUM-1253, PO 07/10 — antes ficavam
+  // empilhadas numa coluna única). A faixa recolhida continua sendo alvo de
+  // soltar, então o fluxo de fechar com motivo não muda.
   const openStages = stages.filter((s) => !s.isWon && !s.isLost)
   const terminalStages = stages.filter((s) => s.isWon || s.isLost)
+  // A janela dos fechados (30 dias / ver todos) aparece uma vez, na 1ª terminal aberta.
+  const primeiraFechadaAberta = terminalStages.find((s) => fechadasAbertas.includes(s.id))?.id
+  const corDoFechamento = (st: PipelineStage) => (st.isWon ? 'var(--color-success)' : 'var(--color-danger)')
   const renderColumn = (stage: PipelineStage, terminal = false) => {
     const cards = dealsByStage[stage.id] ?? []
     const isOver = overStageId === stage.id && !!draggingDeal && draggingDeal.stageId !== stage.id
@@ -239,7 +247,8 @@ export function DealsBoard({
     // efetiva usada no card e na ficha (dealProbability) — nunca uma
     // conta paralela.
     const weightedCents = cards.reduce((sum, d) => sum + dealProbability(d, stage).weightedAmountCents, 0)
-    const recolhida = !terminal && recolhidas.includes(stage.id)
+    const recolhida = terminal ? !fechadasAbertas.includes(stage.id) : recolhidas.includes(stage.id)
+    const alternar = terminal ? alternarFechada : alternarColuna
 
     // Coluna recolhida (direção C): faixa estreita com cor, nome, contagem e
     // soma na vertical. Continua sendo alvo de soltar — recolher é só para
@@ -249,27 +258,43 @@ export function DealsBoard({
         <div
           key={stage.id}
           className={cn(
-            'flex flex-col items-center gap-2 w-11 flex-shrink-0 rounded-lg border border-surface-700 bg-surface-900 py-2',
+            'flex flex-col items-center gap-2 w-11 flex-shrink-0 rounded-[10px] border border-surface-700 bg-surface-900 py-2',
             isOver && 'ring-2 ring-brand-500/30 ring-inset bg-brand-500/5',
           )}
           onDragOver={(e) => { e.preventDefault(); setOverStageId(stage.id) }}
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
           onDrop={() => handleDrop(stage.id)}
           data-testid={`coluna-recolhida-${stage.id}`}
+          title={terminal ? (closedWindow?.allClosed ? 'Todos os fechados' : closedWindow ? 'Fechados nos últimos 30 dias' : undefined) : undefined}
         >
           <button
             type="button"
-            onClick={() => alternarColuna(stage.id)}
+            onClick={() => alternar(stage.id)}
             aria-label={`Expandir a coluna ${stage.label}`}
             title={`Expandir ${stage.label}`}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100"
+            className="w-8 h-8 flex items-center justify-center rounded-[6px] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100"
           >
             <ChevronsRight className="w-4 h-4" />
           </button>
-          <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: stage.color }} aria-hidden />
-          <span className="[writing-mode:vertical-rl] text-[12.5px] font-bold text-surface-200 whitespace-nowrap">
+          <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: terminal ? corDoFechamento(stage) : stage.color }} aria-hidden />
+          <span className="[writing-mode:vertical-rl] text-xs font-semibold text-surface-200 whitespace-nowrap">
             {stage.label} · {cards.length}{!isProcess && totalCents > 0 ? ` · ${brl(totalCents)}` : ''}
           </span>
+          {/* Com Ganho e Perdido recolhidos, a janela dos fechados (30 dias /
+              ver todos) não tinha onde aparecer — a contagem da faixa mentia
+              "só os últimos 30 dias" sem saída. Vai na 1ª faixa terminal. */}
+          {terminal && closedWindow && !primeiraFechadaAberta && stage.id === terminalStages[0]?.id
+            && (closedWindow.allClosed || closedWindow.hidden > 0) && (
+            <button
+              type="button"
+              onClick={closedWindow.onToggle}
+              className="mt-auto [writing-mode:vertical-rl] rotate-180 py-1.5 rounded-[6px] text-2xs font-semibold text-brand-400 hover:text-brand-300 hover:bg-[var(--rowhover)] whitespace-nowrap"
+              data-testid="board-closed-toggle"
+              title={closedWindow.allClosed ? 'Mostrar só os fechados nos últimos 30 dias' : 'Mostrar todos os fechados'}
+            >
+              {closedWindow.allClosed ? 'Últimos 30 dias' : `Ver todos (+${closedWindow.hidden})`}
+            </button>
+          )}
         </div>
       )
     }
@@ -277,7 +302,7 @@ export function DealsBoard({
     return (
       <div
         key={stage.id}
-        className={terminal ? 'flex flex-col flex-shrink-0 mt-2 first-of-type:mt-0' : 'flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start'}
+        className="flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start"
         onDragOver={(e) => { e.preventDefault(); setOverStageId(stage.id) }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
         onDrop={() => handleDrop(stage.id)}
@@ -285,21 +310,22 @@ export function DealsBoard({
         {/* Header da coluna — README 3.4: 28px, border-bottom 2px na cor
             crua da etapa. */}
         <div
-          className={cn('flex flex-col px-1 mb-2 border-b-2', !terminal && !isProcess ? 'pb-1' : '', terminal && stage.isLost && 'rounded-t-[4px]')}
-          style={{ borderColor: stage.color, ...(terminal && stage.isLost ? { backgroundColor: 'color-mix(in srgb, var(--color-danger) 10%, transparent)' } : null) }}
+          className={cn('flex flex-col px-1 mb-2 border-b-2', !terminal && !isProcess ? 'pb-1' : '')}
+          // Terminais: sublinhado na cor do rótulo (ok/perigo), sem fundo em repouso.
+          style={{ borderColor: terminal ? corDoFechamento(stage) : stage.color }}
         >
           <div className="flex items-center justify-between gap-[7px] h-7">
           <div className="flex items-center gap-[7px] min-w-0">
             {/* canvas 1e: sem ponto colorido — a cor vive na linha de 2px e no texto. Terminais usam ok/perigo. */}
             <span
-              className={cn('text-[12.5px] font-bold truncate', terminal && (stage.isWon ? 'text-success' : 'text-danger'))}
+              className={cn('text-xs font-semibold truncate', terminal && (stage.isWon ? 'text-success' : 'text-danger'))}
               style={terminal ? undefined : { color: tintaDaEtapa(stage.color) }}
             >
               {stage.label}
             </span>
             {stage.isWon && stage.label.toLowerCase() !== terminalLabels.won.toLowerCase() && (
               <span
-                className="text-3xs px-1.5 py-0.5 rounded-xs border color-chip-soft"
+                className="text-2xs px-1.5 py-0.5 rounded-[6px] border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.won}
               >
                 {terminalLabels.won.toLowerCase()}
@@ -307,26 +333,29 @@ export function DealsBoard({
             )}
             {stage.isLost && stage.label.toLowerCase() !== terminalLabels.lost.toLowerCase() && (
               <span
-                className="text-3xs px-1.5 py-0.5 rounded-xs border color-chip-soft"
+                className="text-2xs px-1.5 py-0.5 rounded-[6px] border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.lost}
               >
                 {terminalLabels.lost.toLowerCase()}
               </span>
             )}
             {/* DEAL-COL-16: contagem como texto solto ao lado do título. */}
-            <span className="text-[11.5px] font-semibold text-surface-500 tabular-nums">
+            <span className="text-xs font-semibold text-surface-500 tabular-nums">
               {cards.length}
             </span>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Recolher (direção C): só nas colunas abertas e onde o quadro é largo. */}
-            {!terminal && isDesktop && (
+            {/* Recolher (direção C): onde o quadro é largo. As terminais
+                nascem recolhidas e se expandem também no celular — então lá
+                também precisam do recolher, senão a coluna ficava aberta para
+                sempre (a escolha é gravada no aparelho). */}
+            {(isDesktop || terminal) && (
               <button
                 type="button"
-                onClick={() => alternarColuna(stage.id)}
+                onClick={() => alternar(stage.id)}
                 aria-label={`Recolher a coluna ${stage.label}`}
                 title={`Recolher ${stage.label}`}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-surface-500 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
+                className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-[6px] text-surface-500 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
               >
                 <ChevronsLeft className="w-3.5 h-3.5" />
               </button>
@@ -339,7 +368,7 @@ export function DealsBoard({
                 onClick={() => onNewDeal(stage.id)}
                 aria-label={`Novo ${noun} em ${stage.label}`}
                 title={`Novo ${noun} em ${stage.label}`}
-                className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-lg text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
+                className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-[6px] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -351,18 +380,34 @@ export function DealsBoard({
               a linha — com ou sem valor —, para os cards das colunas começarem
               na mesma altura. */}
           {!terminal && !isProcess && (
-            <div className="flex items-center gap-2.5 text-[11.5px] text-surface-400 tabular-nums whitespace-nowrap" data-testid={`coluna-soma-${stage.id}`}>
+            <div className="flex items-center gap-2.5 text-xs text-surface-400 tabular-nums whitespace-nowrap" data-testid={`coluna-soma-${stage.id}`}>
               <span>{brl(totalCents)}</span>
               {weightedCents !== totalCents && <span title="Soma ponderada pela probabilidade de cada negócio">pond. {brl(weightedCents)}</span>}
             </div>
           )}
         </div>
 
+        {terminal && closedWindow && stage.id === primeiraFechadaAberta && (
+          <div className="flex items-center justify-between gap-2 px-1 mb-2 text-xs text-surface-400" data-testid="board-closed-window">
+            <span>{closedWindow.allClosed ? 'Todos os fechados' : 'Fechados · 30 dias'}</span>
+            {(closedWindow.allClosed || closedWindow.hidden > 0) && (
+              <button
+                type="button"
+                onClick={closedWindow.onToggle}
+                className="font-semibold text-brand-400 hover:text-brand-300"
+                data-testid="board-closed-toggle"
+              >
+                {closedWindow.allClosed ? 'Últimos 30 dias' : `Ver todos (+${closedWindow.hidden})`}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Lista de cards */}
         <div
           className={cn(
-            'flex flex-col gap-2 rounded-lg transition-[background-color,border-color,box-shadow] duration-200',
-            terminal ? 'pb-1' : 'flex-1 overflow-y-auto pb-4 min-h-[80px]',
+            'flex flex-col gap-2 rounded-[10px] transition-[background-color,border-color,box-shadow] duration-200',
+            'flex-1 overflow-y-auto pb-4 min-h-[80px]',
             isOver ? 'bg-brand-500/5 ring-2 ring-brand-500/30 ring-inset' : 'bg-transparent',
             loading && cards.length > 0 && 'opacity-50',
           )}
@@ -389,18 +434,20 @@ export function DealsBoard({
                tema, e a 800 no claro é #FFFFFF — o esqueleto seria um
                retângulo branco pulsando sobre o chão cinza. A 700 é cinza
                claro no claro (#D9DCE5) e escuro no escuro (#243333). */
-            <div key="carregando" className="h-16 rounded-lg bg-surface-700/50 animate-pulse" aria-hidden />
+            <div key="carregando" className="h-16 rounded-[10px] bg-surface-700/50 animate-pulse" aria-hidden />
           ) : cards.length === 0 ? (
             (
               <div key="vazia" className={cn(
-                // canvas 1e: slot de drop = retângulo tracejado 1px, raio 8, 88px (Perdido: borda e fundo de perigo).
-                'border border-dashed rounded-lg flex items-center justify-center px-3 text-center transition-colors',
-                terminal ? 'h-10' : 'h-[88px]',
-                isOver
+                // canvas 1e: slot de drop = retângulo tracejado 1px, raio 8, 88px. Ganho/Perdido
+                // neutros em repouso; a cor (ok/perigo) só aparece com um card por cima.
+                'border border-dashed rounded-[10px] flex items-center justify-center px-3 text-center transition-colors h-[88px]',
+                isOver && terminal
+                  ? (stage.isWon
+                    ? 'border-success bg-[color-mix(in_srgb,var(--color-success)_10%,transparent)]'
+                    : 'border-danger bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)]')
+                  : isOver
                   ? 'border-brand-500/60 bg-brand-500/5'
-                  : terminal && stage.isLost
-                    ? 'border-danger bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)]'
-                    : 'border-[var(--bd2)] bg-surface-900',
+                  : 'border-[var(--bd2)] bg-surface-900',
               )}>
                 <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-500')}>
                   {isOver ? 'Soltar aqui' : terminal ? `Solte para ${stage.isWon ? terminalLabels.won : terminalLabels.lost}` : `Nenhum ${noun}`}
@@ -444,7 +491,8 @@ export function DealsBoard({
                 data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
                 className={cn(
                   // README 3.4: borda 1px, raio 8px, padding 10px 12px.
-                  'relative group/card rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-[var(--bd2)] hover:bg-[var(--rowhover)]',
+                  'card-negocio',
+                  'relative group/card rounded-[10px] border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-[var(--bd2)] hover:bg-[var(--rowhover)]',
                   onOpenDeal && 'cursor-pointer',
                   // Em arraste: única sombra fora de overlay (o card É um overlay enquanto flutua).
                   draggingId === deal.id && 'opacity-95 shadow-[var(--shadow-overlay)] rotate-[-1.5deg] border-[var(--bd2)]',
@@ -489,8 +537,8 @@ export function DealsBoard({
                             // toque, que é o caso comum aqui). `isDesktop`
                             // segue a mesma variável que já decide a opacidade
                             // logo abaixo, não um breakpoint novo.
-                            'flex items-center gap-1 rounded-md border border-[var(--bd2)] font-medium text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
-                            isDesktop ? 'h-8 px-[7px] text-3xs' : 'min-h-11 px-3 text-xs',
+                            'flex items-center gap-1 rounded-[6px] border border-[var(--bd2)] font-medium text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
+                            isDesktop ? 'h-8 px-[7px] text-2xs' : 'min-h-11 px-3 text-xs',
                             stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
                           aria-label={`Mover ${noun} para outra etapa`}
@@ -524,7 +572,7 @@ export function DealsBoard({
                           }}
                           className={cn(
                             // PL-C2-CAR-4: mesmo ajuste do "Mover ▾" ao lado — 22px → 32/44.
-                            'flex items-center justify-center rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
+                            'flex items-center justify-center rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
                             isDesktop ? 'w-8 h-8' : 'w-11 h-11',
                             pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
@@ -535,7 +583,7 @@ export function DealsBoard({
                       }
                     >
                       <div className="px-3 py-2 border-b border-surface-700">
-                        <span className="text-3xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
+                        <span className="text-2xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
                           <ArrowRightLeft className="w-3 h-3" /> Transferir de funil
                         </span>
                       </div>
@@ -574,7 +622,7 @@ export function DealsBoard({
     >
       {showContextStrip && pipeline && stats && kindOption && (
         <div className="border-b border-surface-700 bg-board-bar flex-shrink-0 px-4 py-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-surface-500" data-testid="board-context-strip">
-          <span className="inline-flex items-center gap-1 text-3xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-900 border border-surface-700 text-surface-300">
+          <span className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-900 border border-surface-700 text-surface-300">
             <kindOption.icon className="w-3 h-3" /> {kindOption.label}
           </span>
           <span>
@@ -621,32 +669,10 @@ export function DealsBoard({
       )}
       <div
         className="flex gap-[10px] px-4 py-3 h-full min-h-0"
-        style={{ minWidth: isDesktop ? openStages.reduce((w, st) => w + (recolhidas.includes(st.id) ? 54 : 260), 0) + (terminalStages.length > 0 ? 250 : 0) : undefined }}
+        style={{ minWidth: isDesktop ? openStages.reduce((w, st) => w + (recolhidas.includes(st.id) ? 54 : 260), 0) + terminalStages.reduce((w, st) => w + (fechadasAbertas.includes(st.id) ? 260 : 54), 0) : undefined }}
       >
         {openStages.map((stage) => renderColumn(stage))}
-        {terminalStages.length > 0 && (
-          <div
-            className="flex flex-col gap-2 w-[85vw] md:w-[240px] flex-shrink-0 snap-start min-h-0 overflow-y-auto pb-4 border-l border-dashed border-[var(--bd2)] pl-[10px]"
-            data-testid="board-terminal-column"
-          >
-            {closedWindow && (
-              <div className="flex items-center justify-between gap-2 px-1 text-[11.5px] text-surface-400" data-testid="board-closed-window">
-                <span className="font-semibold text-surface-300">{closedWindow.allClosed ? 'Todos os fechados' : 'Fechados · 30 dias'}</span>
-                {(closedWindow.allClosed || closedWindow.hidden > 0) && (
-                  <button
-                    type="button"
-                    onClick={closedWindow.onToggle}
-                    className="font-semibold text-brand-400 hover:text-brand-300"
-                    data-testid="board-closed-toggle"
-                  >
-                    {closedWindow.allClosed ? 'Últimos 30 dias' : `Ver todos (+${closedWindow.hidden})`}
-                  </button>
-                )}
-              </div>
-            )}
-            {terminalStages.map((stage) => renderColumn(stage, true))}
-          </div>
-        )}
+        {terminalStages.map((stage) => renderColumn(stage, true))}
       </div>
     </div>
     </LayoutGroup>
@@ -682,7 +708,7 @@ function CardScope({ description }: { description?: string | null }) {
     // para saber o que era — título? observação? Um ícone não resolveria:
     // símbolo sem legenda não ensina.
     <div className="mt-3 mb-2.5" data-testid="card-scope" title={text}>
-      <span className="block text-3xs uppercase tracking-wide text-surface-500 leading-none">Observações</span>
+      <span className="block text-2xs uppercase tracking-wide text-surface-500 leading-none">Observações</span>
       <p className="mt-0.5 text-2xs text-surface-300 line-clamp-2 leading-snug">{text}</p>
     </div>
   )
@@ -701,7 +727,7 @@ function ClosedRow({ deal, stage, pipeline, onOpenDeal, isProcess = false }: { d
     <button
       type="button"
       onClick={() => onOpenDeal?.(deal.id)}
-      className="flex items-center gap-2 h-9 px-2.5 rounded-md border border-surface-700 bg-surface-900 text-left text-xs hover:bg-[var(--rowhover)] transition-colors"
+      className="flex items-center gap-2 h-9 px-2.5 rounded-[6px] border border-surface-700 bg-surface-900 text-left text-xs hover:bg-[var(--rowhover)] transition-colors"
       data-testid="closed-row"
     >
       <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', lost ? 'bg-danger' : 'bg-success')} aria-hidden />
@@ -719,7 +745,7 @@ function SiblingBadge({ siblings }: { siblings: number }) {
   if (siblings < 2) return null
   return (
     <span
-      className="text-3xs text-surface-400 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap"
+      className="text-2xs text-surface-400 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap"
       title={`Este contato tem ${siblings} negócios abertos neste funil`}
       data-testid="card-sibling-badge"
     >
@@ -745,10 +771,10 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
         data-testid="process-card-title"
       >
         {deal.contact && <Avatar name={name} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />}
-        <span className="text-[13px] font-semibold leading-[1.3] text-surface-100 truncate flex-1">{name}</span>
+        <span className="text-sm font-semibold leading-[1.3] text-surface-100 truncate flex-1">{name}</span>
         <SiblingBadge siblings={siblings} />
         {deal.contact && (
-          <span className="flex items-center gap-0.5 text-3xs text-surface-500 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
+          <span className="flex items-center gap-0.5 text-2xs text-surface-500 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
             ver <ArrowRight className="w-3 h-3" />
           </span>
         )}
@@ -759,10 +785,11 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
           <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
         </span>
         {by === 'ia' && (
-          <span className="text-3xs text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
+          // IA = brilho neutro, como no resto do app (âmbar é "atenção").
+          <span className="inline-flex items-center gap-[3px] text-2xs text-surface-400 flex-shrink-0" title={deal.lastMovedByActorName ?? 'IA'}><Sparkles className="w-3 h-3" />IA</span>
         )}
         {by === 'auto' && (
-          <span className="text-3xs text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
+          <span className="text-2xs text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
         )}
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-2xs text-surface-500">
@@ -787,16 +814,16 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
 
 /**
  * DEAL-CARD-12/13 (spec/1e-funis.GAPS.md): avatar do RESPONSÁVEL pelo negócio,
- * 18px `rounded-[30%]`, tracejado/vazio quando não há dono resolvido — nunca
+ * 18px `rounded-full`, tracejado/vazio quando não há dono resolvido — nunca
  * inventa iniciais quando só existe `ownerUserId` sem `User` correspondente
  * em `users` (caso "Atribuído").
  */
 function OwnerAvatar({ owner }: { owner: User | null }) {
   if (!owner) {
-    return <span className="w-[18px] h-[18px] rounded-[30%] border border-dashed border-[var(--bd2)] flex-shrink-0" aria-hidden />
+    return <span className="w-[18px] h-[18px] rounded-full border border-dashed border-[var(--bd2)] flex-shrink-0" role="img" aria-label="Sem responsável" title="Sem responsável" />
   }
   return (
-    <span className="w-[18px] h-[18px] rounded-[30%] avatar-operador flex items-center justify-center text-[8px] font-bold flex-shrink-0">
+    <span className="w-[18px] h-[18px] rounded-full avatar-operador flex items-center justify-center text-3xs font-semibold flex-shrink-0">
       {getInitials(`${owner.firstName} ${owner.lastName ?? ''}`.trim())}
     </span>
   )
@@ -829,7 +856,7 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
   return (
     <>
       <div className="flex items-start gap-1.5 pr-20">
-        <span className="text-[13px] font-semibold leading-[1.3] text-surface-100 truncate flex-1">{deal.title}</span>
+        <span className="text-sm font-semibold leading-[1.3] text-surface-100 truncate flex-1">{deal.title}</span>
         <SiblingBadge siblings={siblings} />
       </div>
       {/* DEAL-CARD-06: linha de contato 12px secundária — reaproveita o
@@ -840,7 +867,7 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onOpenContact?.(deal.contact!.id) }}
-          className="flex items-center gap-1 text-[12px] text-surface-400 hover:text-brand-400 transition-colors group/contact w-full text-left"
+          className="flex items-center gap-1 text-xs text-surface-400 hover:text-brand-400 transition-colors group/contact w-full text-left"
         >
           <span className="truncate flex-1">{deal.contact.displayName}</span>
           <span className="flex items-center gap-0.5 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
@@ -854,22 +881,26 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
           dono + previsão; origem + tempo). Nome do dono e origem descem para o
           tooltip (o canvas não os mostra no card; a ficha tem os dois). */}
       <div className="mt-0.5 flex items-center gap-1.5" title={`Origem: ${origin.label}`} data-testid="sales-card-origin">
-        <span className="text-[13px] font-bold text-surface-100">{brl(deal.amountCents ?? 0)}</span>
+        {/* Valor zero não grita no mesmo peso de um valor de verdade. */}
+        {!deal.amountCents
+          ? <span className="text-xs text-surface-400">Sem valor</span>
+          : <span className="text-sm font-semibold text-surface-100">{brl(deal.amountCents ?? 0)}</span>}
         {by === 'ia' && (
-          <span className="inline-flex items-center h-4 px-[5px] rounded-[5px] text-[10px] font-bold text-accent-amber bg-accent-amber/[.12]" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
+          // IA = brilho neutro, como no resto do app (âmbar é "atenção").
+          <span className="inline-flex items-center gap-[3px] text-2xs text-surface-400" title={deal.lastMovedByActorName ?? 'IA'}><Sparkles className="w-3 h-3" />IA</span>
         )}
         {by === 'auto' && (
-          <span className="inline-flex items-center h-4 px-[5px] rounded-[5px] text-[10px] font-bold text-surface-400 bg-surface-800" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
+          <span className="inline-flex items-center h-4 px-[5px] rounded-[6px] text-2xs font-semibold text-surface-400 bg-surface-800" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
         )}
         {forecast && (
-          <span className="inline-flex items-center gap-[3px] text-[11px] text-surface-400" title={`Previsão de fechamento: ${forecast}`} data-testid="sales-card-forecast">
+          <span className="inline-flex items-center gap-[3px] text-2xs text-surface-400" title={`Previsão de fechamento: ${forecast}`} data-testid="sales-card-forecast">
             <CalendarClock className="w-3 h-3" /> {forecast}
           </span>
         )}
         {time && (
           // DEAL-CARD-11: "parado Nd" em cor de perigo quando passa do limiar.
           <span
-            className={cn('ml-auto text-[11px] whitespace-nowrap', stuckDays !== null ? 'text-status-pending font-semibold' : 'text-surface-500')}
+            className={cn('ml-auto text-2xs whitespace-nowrap', stuckDays !== null ? 'text-status-pending font-semibold' : 'text-surface-500')}
             title={`Nesta etapa há ${time}`}
             data-testid="sales-card-time"
           >

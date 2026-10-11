@@ -89,7 +89,7 @@ export function SchemaFieldsBuilder({
   return (
     <div>
       {fields.length === 0 ? (
-        <div className="border border-dashed border-surface-700 rounded-lg p-6 text-center bg-[var(--sf2)]">
+        <div className="border border-dashed border-surface-700 rounded-[10px] p-6 text-center bg-[var(--sf2)]">
           <p className="text-sm text-surface-400 mb-3">
             {emptyHint ?? 'Nenhum campo ainda. Adicione o primeiro abaixo.'}
           </p>
@@ -137,25 +137,25 @@ function FieldRow({
   onRemove: () => void
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 p-3 rounded-lg bg-surface-900 border border-surface-700">
+    <div className="flex items-start justify-between gap-3 p-3 rounded-[10px] bg-surface-900 border border-surface-700">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
           <span className="font-mono text-sm text-surface-100">{field.name}</span>
-          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-xs border border-surface-700 bg-[var(--sf2)] text-surface-400">
+          <span className="text-[11px] uppercase tracking-wide px-1.5 py-0.5 rounded-[6px] border border-surface-700 bg-[var(--sf2)] text-surface-400">
             {field.prop.type}
           </span>
           {field.required && (
-            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-xs border border-status-active-border bg-status-active-bg text-status-active">
+            <span className="text-[11px] uppercase tracking-wide px-1.5 py-0.5 rounded-[6px] border border-status-active-border bg-status-active-bg text-status-active">
               obrigatório
             </span>
           )}
           {field.prop.enum && field.prop.enum.length > 0 && (
-            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-xs border border-brand-500/30 bg-accent-soft text-accent-dark">
+            <span className="text-[11px] uppercase tracking-wide px-1.5 py-0.5 rounded-[6px] border border-brand-500/30 bg-accent-soft text-accent-dark">
               enum
             </span>
           )}
           {field.prop.secret && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-xs border border-status-pending-border bg-status-pending-bg text-status-pending">
+            <span className="inline-flex items-center gap-0.5 text-[11px] uppercase tracking-wide px-1.5 py-0.5 rounded-[6px] border border-status-pending-border bg-status-pending-bg text-status-pending">
               <Lock className="w-2.5 h-2.5" /> sensível
             </span>
           )}

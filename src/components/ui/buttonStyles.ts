@@ -20,8 +20,8 @@ export const buttonVariantStyles: Record<ButtonVariant, string[]> = {
   primary: [
     // PO 01/10: o mesmo gradiente do avatar de operador, nos dois temas; o
     // hover escurece um tom (sem "luz"). Texto branco (≥7:1 nas duas pontas).
-    'bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] text-white font-semibold',
-    'hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)]',
+    'bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) text-white font-semibold',
+    'hover:bg-[#115E59] hover:bg-(image:--primario-img-hover)',
     'focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-[0.45]',
   ],
@@ -54,9 +54,9 @@ export const buttonVariantStyles: Record<ButtonVariant, string[]> = {
 
 // BTN-02/03/04/12: sm 28px/10px/12px · md 36/14/13 · lg 44/18/14 (HTML do canvas).
 export const buttonSizeStyles: Record<ButtonSize, string> = {
-  sm: 'h-7 px-2.5 text-xs gap-1.5 rounded-sm',
-  md: 'h-9 px-3.5 text-[13px] gap-1.5 rounded-sm',
-  lg: 'h-11 px-[18px] text-[14px] gap-1.5 rounded-sm',
+  sm: 'h-7 px-2.5 text-xs gap-1.5 rounded-[6px]',
+  md: 'h-9 px-3.5 text-[13px] gap-1.5 rounded-[6px]',
+  lg: 'h-11 px-[18px] text-[14px] gap-1.5 rounded-[6px]',
 }
 
 // BTN-10: só-ícone é quadrado (28/36/44), ícone 16px.

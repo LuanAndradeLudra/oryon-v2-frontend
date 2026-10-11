@@ -50,7 +50,7 @@ function ValorDoNegocio({ amountCents, noun, onSave }: { amountCents: number; no
         if (rascunho !== amountCents) onSave(rascunho)
       }}
       aria-label={`Valor do ${noun}`}
-      className="h-11 !text-2xl font-display font-bold text-surface-50 w-48"
+      className="h-11 !text-2xl font-display font-semibold text-surface-50 w-48"
     />
   )
 }
@@ -97,7 +97,7 @@ function InlineEditTitle({ value, onSave }: { value: string; onSave: (v: string)
           onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
           onBlur={handleSave}
           aria-label="Título do negócio"
-          className="bg-surface-800 border border-brand-500/50 rounded-lg px-2 py-1 text-lg font-semibold text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 min-w-0 flex-1"
+          className="bg-surface-800 border border-brand-500/50 rounded-[6px] px-2 py-1 text-lg font-semibold text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 min-w-0 flex-1"
         />
         {saving && <span className="text-xs text-surface-500">salvando…</span>}
       </div>
@@ -182,7 +182,7 @@ export function DealDetailHeader({
         <div className="min-w-0 flex-1">
           <InlineEditTitle value={deal.title} onSave={(title) => onPatch({ title })} />
           {contato && (
-            <p className="mt-0.5 text-[12.5px] text-surface-400 truncate" data-testid="deal-contact-line">
+            <p className="mt-0.5 text-xs text-surface-400 truncate" data-testid="deal-contact-line">
               {onOpenContact ? (
                 <button type="button" onClick={() => onOpenContact(contato.id)} className="font-medium text-surface-200 hover:text-brand-400 transition-colors">
                   {contato.name}
@@ -193,7 +193,7 @@ export function DealDetailHeader({
           )}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span
-              className="inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[5px] bg-surface-800 border border-surface-700 text-surface-300"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[6px] bg-surface-800 border border-surface-700 text-surface-300"
               title={kindOption.description}
             >
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
@@ -207,7 +207,7 @@ export function DealDetailHeader({
                 etapa, lado a lado. */}
             {stage && deal.status === 'open' && (
               <span
-                className="inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[5px] border color-chip-soft"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[6px] border color-chip-soft"
                 style={{ '--chip': stage.color } as React.CSSProperties}
                 data-testid="deal-current-stage"
                 title={`Etapa atual${tempoNaEtapa ? ` — ${tempoNaEtapa}` : ''}`}
@@ -217,7 +217,7 @@ export function DealDetailHeader({
             )}
             {deal.status !== 'open' && (
               <span className={cn(
-                'inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[5px] border',
+                'inline-flex items-center gap-1 text-[11px] font-semibold px-[7px] py-0.5 rounded-[6px] border',
                 deal.status === 'won' ? 'color-chip-soft [--chip:var(--color-status-active)]' : 'text-surface-400 border-surface-700 bg-surface-800',
               )}>
                 {deal.status === 'won' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
@@ -261,7 +261,7 @@ export function DealDetailHeader({
                 title="Mais ações"
                 aria-label="Mais ações"
                 data-testid="deal-more-button"
-                className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+                className="w-7 h-7 rounded-[6px] border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
               >
                 <MoreHorizontal className="w-[15px] h-[15px]" />
               </button>
@@ -278,7 +278,7 @@ export function DealDetailHeader({
             </div>
           </Dropdown>
           {onClose && (
-            <button type="button" onClick={onClose} title="Fechar" aria-label="Fechar" className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+            <button type="button" onClick={onClose} title="Fechar" aria-label="Fechar" className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -295,12 +295,12 @@ export function DealDetailHeader({
       <div className="flex items-end gap-4 flex-wrap" data-testid="deal-hero">
         {isSales ? (
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
+            <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">
               Valor do {noun}
             </span>
             {itemCount > 0 ? (
               <>
-                <span className="font-display text-3xl font-bold text-surface-50 tabular-nums tracking-tight leading-none" data-testid="deal-amount">
+                <span className="font-display text-3xl font-semibold text-surface-50 tabular-nums tracking-tight leading-none" data-testid="deal-amount">
                   {formatBRL(deal.amountCents)}
                 </span>
                 <span className="text-[11px] text-surface-500 mt-1">
@@ -319,10 +319,10 @@ export function DealDetailHeader({
           </div>
         ) : (
           <div className="flex flex-col gap-0.5 min-w-0" data-testid="deal-age">
-            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
+            <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">
               {deal.status === 'open' ? 'Aberto há' : 'Encerrado'}
             </span>
-            <span className="font-display text-3xl font-bold text-surface-50 tracking-tight leading-none">
+            <span className="font-display text-3xl font-semibold text-surface-50 tracking-tight leading-none">
               {idade ?? '—'}
             </span>
             {tempoNaEtapa && (
@@ -343,7 +343,7 @@ export function DealDetailHeader({
             Numa linha só, com separadores: empilhar aqui recriaria o problema
             que a mudança resolve. Cada item é `whitespace-nowrap` e o nome do
             dono trunca — assim a linha encolhe em vez de quebrar. */}
-        <div className="ml-auto flex flex-col items-end gap-1.5 min-w-0 text-[11.5px] text-surface-400">
+        <div className="ml-auto flex flex-col items-end gap-1.5 min-w-0 text-xs text-surface-400">
           <div className="flex items-center gap-2 min-w-0 text-[11px] text-surface-500">
             <UserPicker
               open={ownerPickerOpen}
@@ -413,7 +413,7 @@ export function DealDetailHeader({
                     onChange={(e) => setProbDraft(e.target.value)}
                     onBlur={handleProbabilitySave}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleProbabilitySave(); if (e.key === 'Escape') setProbEditing(false) }}
-                    className="w-14 bg-surface-800 border border-brand-500/50 rounded-sm px-1.5 py-0.5 text-xs text-surface-100"
+                    className="w-14 bg-surface-800 border border-brand-500/50 rounded-[6px] px-1.5 py-0.5 text-xs text-surface-100"
                   />
                 ) : (
                   <button
@@ -460,8 +460,8 @@ export function DealDetailHeader({
           palavras, o que fazer com ela. Instrução curta uma vez vale mais que
           um tooltip que só aparece depois da dúvida. */}
       {deal.status === 'open' && (
-        <div className="flex flex-col gap-1.5 rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5" data-testid="deal-progress-band">
-          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
+        <div className="flex flex-col gap-1.5 rounded-[10px] border border-surface-700 bg-surface-900 px-3 py-2.5" data-testid="deal-progress-band">
+          <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">
             Etapa <span className="font-normal normal-case tracking-normal text-surface-600">· clique para mover</span>
           </span>
           <DealProgress pipeline={pipeline} deal={deal} history={history} onMoveToStage={onMoveToStage} tempoNaEtapa={tempoNaEtapa} />

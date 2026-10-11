@@ -55,7 +55,7 @@ function CreditBar({ used, total }: { used: number; total: number | null }) {
 
   return (
     <div>
-      <div className="flex items-baseline justify-between text-[12.5px]">
+      <div className="flex items-baseline justify-between text-xs">
         <span className="font-semibold text-surface-100">Créditos de IA utilizados</span>
         <span className="text-surface-400">
           <span className={cn('font-semibold', numCls)}>{used.toLocaleString('pt-BR')}</span>
@@ -112,7 +112,7 @@ function LimitRow({
 
   return (
     <div className="grid grid-cols-[1fr_160px_90px] items-center h-9 border-b border-surface-700 last:border-b-0">
-      <span className="flex items-center gap-2 text-[13px] text-surface-100 min-w-0">
+      <span className="flex items-center gap-2 text-sm text-surface-100 min-w-0">
         <span className="text-surface-500 flex-shrink-0">{icon}</span>
         <span className="truncate">{label}</span>
       </span>
@@ -243,7 +243,7 @@ function UpgradeTable({
   if (chain.length < 2) return null
 
   return (
-    <div className="border border-surface-700 rounded-md overflow-hidden flex flex-col sm:flex-row">
+    <div className="border border-surface-700 rounded-[6px] overflow-hidden flex flex-col sm:flex-row">
       {chain.map((tier, i) => {
         const isCurrent = tier === currentTier
         const isRecommended = i === 1
@@ -274,18 +274,18 @@ function UpgradeTable({
             )}
           >
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[12.5px] font-semibold text-surface-100">{name}</span>
-              {isCurrent && <span className="text-[11px] font-medium text-surface-500">· atual</span>}
+              <span className="text-xs font-semibold text-surface-100">{name}</span>
+              {isCurrent && <span className="text-2xs font-medium text-surface-500">· atual</span>}
               {isRecommended && (
-                <span className="inline-flex items-center h-4 bg-accent-soft text-accent-dark text-[10px] font-bold px-[5px] rounded-[4px]">
+                <span className="inline-flex items-center h-4 bg-accent-soft text-accent-dark text-2xs font-semibold px-[5px] rounded-[6px]">
                   Recomendado
                 </span>
               )}
             </div>
-            <p className="text-lg font-extrabold text-surface-50 tabular-nums mt-1" style={{ letterSpacing: '-.02em' }}>
-              {priceLabel}<span className="text-[11px] text-surface-500 font-medium" style={{ letterSpacing: 0 }}>/mês</span>
+            <p className="text-lg font-semibold text-surface-50 tabular-nums mt-1" style={{ letterSpacing: '-.02em' }}>
+              {priceLabel}<span className="text-2xs text-surface-500 font-medium" style={{ letterSpacing: 0 }}>/mês</span>
             </p>
-            <p className="text-[11.5px] text-surface-400 mt-2 leading-[1.6]">{resourceLine}</p>
+            <p className="text-xs text-surface-400 mt-2 leading-[1.6]">{resourceLine}</p>
             {!isCurrent && (
               <Button
                 size="sm"
@@ -432,11 +432,11 @@ export function BillingSettings() {
       )}
 
       {status && !statusError && !isSubscribed && !isCanceled && (
-        <div className="mt-0 mb-1 flex items-center justify-between gap-3 rounded-lg border border-brand-500 bg-accent-soft px-3.5 py-2.5">
+        <div className="mt-0 mb-1 flex items-center justify-between gap-3 rounded-[10px] border border-brand-500 bg-accent-soft px-3.5 py-2.5">
           <div className="flex items-start gap-2.5">
             <Zap className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-[13px] font-semibold text-surface-100">Ative sua assinatura</p>
+              <p className="text-sm font-semibold text-surface-100">Ative sua assinatura</p>
               <p className="text-xs text-surface-400 mt-0.5">
                 Você está no período de avaliação. Contrate o plano {billing.plan.displayName} para manter os agentes ativos
                 {billing.planResetsAt && <> após {formatDayMonth(billing.planResetsAt)}</>}.
@@ -446,7 +446,7 @@ export function BillingSettings() {
           <Button
             size="sm"
             variant="primary"
-            className="flex-shrink-0 h-8 px-3.5 text-[12.5px]"
+            className="flex-shrink-0 h-8 px-3.5 text-xs"
             onClick={() => setIntent({
               kind: 'subscribe', tier: backendTier,
               plan: plans.find((p) => p.tier === backendTier) ?? {
@@ -471,15 +471,15 @@ export function BillingSettings() {
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-md bg-accent-soft flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-[6px] bg-accent-soft flex items-center justify-center flex-shrink-0">
               <Zap className="w-4 h-4 text-accent-dark" fill="currentColor" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-surface-50" style={{ letterSpacing: '-.01em' }}>Oryon {billing.plan.displayName}</h2>
+                <h2 className="text-base font-semibold text-surface-50" style={{ letterSpacing: '-.01em' }}>Oryon {billing.plan.displayName}</h2>
                 {!isSubscribed && !isCanceled && daysUntilReset != null && (
                   <span
-                    className="color-chip-soft inline-flex items-center h-5 px-[7px] rounded-[5px] border text-[11px] font-bold"
+                    className="color-chip-soft inline-flex items-center h-5 px-[7px] rounded-[6px] border text-2xs font-semibold"
                     style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
                   >
                     Avaliação · {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'} restante{daysUntilReset === 1 ? '' : 's'}
@@ -494,8 +494,8 @@ export function BillingSettings() {
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-[22px] font-extrabold text-surface-50 tabular-nums leading-[1.1]" style={{ letterSpacing: '-.02em' }}>
-              R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}<span className="text-[11.5px] text-surface-500 font-normal">/mês</span>
+            <p className="text-2xl font-semibold text-surface-50 tabular-nums leading-[1.1]" style={{ letterSpacing: '-.02em' }}>
+              R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}<span className="text-xs text-surface-500 font-normal">/mês</span>
             </p>
           </div>
         </div>
@@ -506,11 +506,11 @@ export function BillingSettings() {
         </div>
 
         <div className="flex items-center justify-between gap-3 mt-[5px]">
-          <p className="text-[11.5px] text-surface-500">
+          <p className="text-xs text-surface-500">
             1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
           </p>
           {daysUntilReset != null && (
-            <span className="text-[11.5px] text-surface-500 flex-shrink-0">
+            <span className="text-xs text-surface-500 flex-shrink-0">
               Renova em {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'}
             </span>
           )}
@@ -579,10 +579,10 @@ export function BillingSettings() {
                 key={pack.credits}
                 onClick={() => openCredits(pack)}
                 disabled={statusError}
-                className="rounded-sm border border-surface-700 hover:border-brand-500 hover:bg-[var(--rowhover)] transition-colors p-3 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-surface-700 disabled:hover:bg-transparent"
+                className="rounded-[6px] border border-surface-700 hover:border-brand-500 hover:bg-[var(--rowhover)] transition-colors p-3 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-surface-700 disabled:hover:bg-transparent"
               >
-                <p className="text-sm font-bold text-surface-100">{pack.credits.toLocaleString('pt-BR')}</p>
-                <p className="text-[11px] text-surface-500">créditos</p>
+                <p className="text-sm font-semibold text-surface-100">{pack.credits.toLocaleString('pt-BR')}</p>
+                <p className="text-2xs text-surface-500">créditos</p>
                 <p className="text-xs text-brand-400 font-semibold mt-1">
                   R$ {(pack.valueCents / 100).toLocaleString('pt-BR')}
                 </p>

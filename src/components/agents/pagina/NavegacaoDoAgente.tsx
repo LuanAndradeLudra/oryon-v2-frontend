@@ -34,7 +34,7 @@ export function NavegacaoDoAgente({
     <nav aria-label="Seções do agente" className={cn('flex flex-col min-h-0', className)}>
       {!movel && <Link
         to="/agents"
-        className="mx-2 mb-2 inline-flex items-center gap-1 h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        className="mx-2 mb-2 inline-flex items-center gap-1 h-7 px-2 rounded-[6px] text-xs font-semibold text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         <ChevronLeft className="w-3.5 h-3.5" aria-hidden />
         Todos os agentes
@@ -43,7 +43,7 @@ export function NavegacaoDoAgente({
       <div className={cn('flex-1 min-h-0 overflow-y-auto pb-3', movel ? 'px-0' : 'px-2')}>
         {GRUPOS.map((g, gi) => (
           <div key={g.id} className={cn(gi > 0 && 'mt-4')}>
-            <p className="px-2.5 mb-1 text-3xs font-bold uppercase tracking-[.14em] text-surface-500">{g.rotulo}</p>
+            <p className="px-2.5 mb-1 text-2xs font-semibold uppercase tracking-[.14em] text-surface-500">{g.rotulo}</p>
             <ul className="flex flex-col gap-px">
               {SECOES.filter((s) => s.grupo === g.id).map((s) => {
                 const Icone = s.icone
@@ -56,11 +56,11 @@ export function NavegacaoDoAgente({
                       onClick={aoEscolher}
                       aria-current={on ? 'page' : undefined}
                       className={cn(
-                        'flex items-center gap-2.5 px-2.5 rounded-sm text-sm font-medium transition-colors',
+                        'flex items-center gap-2.5 px-2.5 rounded-[6px] text-sm font-medium transition-colors',
                         movel ? 'h-11' : 'h-8',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                         on
-                          ? 'bg-[var(--rowhover)] text-surface-50 shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
+                          ? 'linha-ativa font-semibold bg-[var(--rowhover)] text-surface-50 shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
                           : 'text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)]',
                       )}
                     >
@@ -91,8 +91,8 @@ function FontesDasRespostas({ resumo, className }: { resumo: ResumoDoAgente; cla
     { rotulo: 'Itens do catálogo', valor: resumo.produtosAtivos == null ? '…' : String(resumo.produtosAtivos), ligado: (resumo.produtosAtivos ?? 0) > 0 },
   ]
   return (
-    <div className={cn('rounded-md border border-surface-700 bg-[var(--sf2)] px-3 py-2.5', className)}>
-      <p className="text-3xs font-bold uppercase tracking-[.14em] text-surface-500 mb-1.5">De onde saem as respostas</p>
+    <div className={cn('rounded-[6px] border border-surface-700 bg-[var(--sf2)] px-3 py-2.5', className)}>
+      <p className="text-2xs font-semibold uppercase tracking-[.14em] text-surface-500 mb-1.5">De onde saem as respostas</p>
       <ul className="flex flex-col gap-1">
         {linhas.map((l) => (
           <li key={l.rotulo} className="flex items-center gap-2 text-xs">

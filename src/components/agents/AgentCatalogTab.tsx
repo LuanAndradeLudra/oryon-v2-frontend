@@ -57,15 +57,15 @@ function ProductRow({
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.15 }}
       className={cn(
-        'flex items-center gap-3 px-3 py-2.5 rounded-lg border',
-        active ? 'bg-brand-600/10 border-brand-500/30' : 'bg-surface-900 border-surface-700',
+        // Linha de uma lista com divisórias (antes, um cartão solto por produto).
+        'flex items-center gap-3 px-3 py-2.5',
       )}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-surface-100 truncate">{product.name}</span>
           {!product.active && (
-            <span className="text-3xs font-semibold px-1.5 py-0.5 rounded-2xs bg-surface-800 text-surface-400 flex-shrink-0">
+            <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-2xs bg-surface-800 text-surface-400 flex-shrink-0">
               inativo
             </span>
           )}
@@ -85,13 +85,13 @@ function ProductRow({
 }
 
 /** Cabeçalho de uma seção (rótulo + contador). */
-function SectionHeader({ label, count, accent }: { label: string; count: number; accent?: boolean }) {
+function SectionHeader({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-center gap-2">
       <span
         className={cn(
           'text-xs font-semibold uppercase tracking-wider',
-          accent ? 'text-brand-400' : 'text-surface-400',
+          'text-surface-400',
         )}
       >
         {label}
@@ -270,15 +270,15 @@ export function AgentCatalogTab({ agentId, salvar, onMudou }: Props) {
 
       {/* Ativos no agente */}
       <section className="flex flex-col gap-2">
-        <SectionHeader label="Ativos no agente" count={selected.size} accent />
-        <div className="flex flex-col gap-1.5">
+        <SectionHeader label="Ativos no agente" count={selected.size} />
+        <div className="flex flex-col divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700 bg-surface-800 empty:border-0">
           <AnimatePresence initial={false}>
             {activeProducts.map((p) => (
               <ProductRow key={p.id} product={p} active canManage={canManage} onToggle={toggle} />
             ))}
           </AnimatePresence>
           {!activeProducts.length && (
-            <p className="text-xs text-surface-400 px-3 py-4 rounded-lg border border-dashed border-[var(--bd2)]">
+            <p className="text-xs text-surface-400 px-3 py-4 rounded-[10px] border border-dashed border-[var(--bd2)]">
               {search
                 ? 'Nenhum produto ativo corresponde à busca.'
                 : 'Nenhum produto ativo ainda — ative na lista abaixo.'}
@@ -290,14 +290,14 @@ export function AgentCatalogTab({ agentId, salvar, onMudou }: Props) {
       {/* Disponíveis */}
       <section className="flex flex-col gap-2">
         <SectionHeader label="Disponíveis" count={products.length - selected.size} />
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700 bg-surface-800 empty:border-0">
           <AnimatePresence initial={false}>
             {availableProducts.map((p) => (
               <ProductRow key={p.id} product={p} active={false} canManage={canManage} onToggle={toggle} />
             ))}
           </AnimatePresence>
           {!availableProducts.length && (
-            <p className="text-xs text-surface-400 px-3 py-4 rounded-lg border border-dashed border-[var(--bd2)]">
+            <p className="text-xs text-surface-400 px-3 py-4 rounded-[10px] border border-dashed border-[var(--bd2)]">
               {search
                 ? 'Nenhum produto disponível corresponde à busca.'
                 : 'Todos os produtos já estão ativos neste agente.'}

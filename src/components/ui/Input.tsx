@@ -36,7 +36,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {...aria}
         required={required}
         className={cn(
-          'w-full bg-surface-800 border rounded-sm text-surface-100',
+          'w-full bg-surface-800 border rounded-[6px] text-surface-100',
           sizeStyles[size],
           // FIELD-03/04: placeholder --tx3; borda de ênfase --bd2; foco = anel
           // 3px --acsoft + borda --ac + caret --ac.

@@ -5,7 +5,6 @@ import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -16,6 +15,7 @@ import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { TipCard } from '@/components/ui/TipCard'
 import type { Tenant } from '@/types'
 import { api } from '@/services/api'
+import { CABECALHO_FIXO } from '../barraDeSalvar'
 
 
 const TIMEZONES = [
@@ -131,6 +131,10 @@ export function CompanyProfile() {
       <SectionHeader
         title="Perfil da Empresa"
         description="Informações da sua organização na plataforma Oryon."
+        className={CABECALHO_FIXO}
+        action={podeEditar ? (
+          <Button onClick={save} loading={loading} disabled={nomeInvalido || emailInvalido}>Salvar alterações</Button>
+        ) : undefined}
       />
 
       <AnimatePresence>
@@ -157,14 +161,14 @@ export function CompanyProfile() {
       >
         {/* Logo + plan */}
         <div className="flex items-center gap-5 mb-6">
-          <div className="w-16 h-16 rounded-lg bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
+          <div className="w-16 h-16 rounded-[10px] bg-brand-600 flex items-center justify-center text-xl font-semibold text-surface-950 select-none">
             {tenant.name.slice(0, 2).toUpperCase()}
           </div>
           <div>
             <p className="text-base font-semibold text-surface-50">{tenant.name}</p>
             {/* Só com plano: sem ele sobrava uma pílula vazia. */}
             {tenant.plan && (
-              <span className={`mt-1 inline-flex px-1.5 py-px rounded-xs text-[11px] font-semibold uppercase tracking-wide ${planBadge[tenant.plan] ?? planBadge.free}`}>
+              <span className={`mt-1 inline-flex px-1.5 py-px rounded-[6px] text-2xs font-semibold uppercase tracking-wide ${planBadge[tenant.plan] ?? planBadge.free}`}>
                 {tenant.plan}
               </span>
             )}
@@ -219,29 +223,15 @@ export function CompanyProfile() {
           </FormField>
 
           <FormField label="Fuso horário" comingSoon hint="Ainda não é possível personalizar por conta.">
-            <Select value={form.timezone} disabled>
-              {TIMEZONES.map((tz) => (
-                <option key={tz.value} value={tz.value}>{tz.label}</option>
-              ))}
-            </Select>
+            <p className="flex h-9 items-center text-sm text-surface-200">{TIMEZONES.find((tz) => tz.value === form.timezone)?.label ?? form.timezone}</p>
           </FormField>
 
           <FormField label="Idioma" comingSoon hint="Ainda não é possível personalizar por conta.">
-            <Select value={form.language} disabled>
-              {LANGUAGES.map((l) => (
-                <option key={l.value} value={l.value}>{l.label}</option>
-              ))}
-            </Select>
+            <p className="flex h-9 items-center text-sm text-surface-200">{LANGUAGES.find((l) => l.value === form.language)?.label ?? form.language}</p>
           </FormField>
         </div>
 
-        {podeEditar ? (
-          <div className="flex justify-end mt-4">
-            <Button onClick={save} loading={loading} disabled={nomeInvalido || emailInvalido}>Salvar alterações</Button>
-          </div>
-        ) : (
-          <p className="mt-4 text-xs text-surface-500">Só um administrador da empresa altera estes dados.</p>
-        )}
+        {!podeEditar && <p className="mt-4 text-xs text-surface-500">Só um administrador da empresa altera estes dados.</p>}
       </SettingsSection>
     </div>
   )

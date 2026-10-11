@@ -172,7 +172,7 @@ export function CapabilitiesTab({
         const meta = CATEGORY_META[cat]
         return (
           <section key={cat} className="space-y-2">
-            <div className="flex items-center gap-2 text-3xs font-bold uppercase tracking-[.14em] text-surface-500">
+            <div className="flex items-center gap-2 text-2xs font-semibold uppercase tracking-[.14em] text-surface-500">
               {meta.icon}
               {meta.label}
             </div>
@@ -256,7 +256,7 @@ function CapabilityCard({
   return (
     <div
       className={cn(
-        'rounded-lg border px-3.5 py-3 transition-colors',
+        'rounded-[10px] border px-3.5 py-3 transition-colors',
         enabled
           ? 'border-[color-mix(in_srgb,var(--color-brand-500)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-brand-500)_6%,var(--sf2))]'
           : 'border-surface-700 bg-[var(--sf2)]',
@@ -265,7 +265,7 @@ function CapabilityCard({
       <div className="flex items-start gap-3">
         <span
           className={cn(
-            'mt-0.5 flex h-7 w-7 items-center justify-center rounded-md',
+            'mt-0.5 flex h-7 w-7 items-center justify-center rounded-[6px]',
             enabled ? 'bg-accent-soft text-accent-dark' : 'bg-surface-800 text-surface-500',
           )}
         >
@@ -281,7 +281,7 @@ function CapabilityCard({
         <button
           type="button"
           onClick={onEdit}
-          className="mt-2.5 ml-10 inline-flex items-center gap-1.5 rounded-sm px-1.5 -mx-1.5 h-6 text-xs font-medium text-surface-200 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          className="mt-2.5 ml-10 inline-flex items-center gap-1.5 rounded-[6px] px-1.5 -mx-1.5 h-6 text-xs font-medium text-surface-200 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           <span className="text-surface-400">Limites:</span>
           <span>{constraintsSummary}</span>
@@ -367,7 +367,7 @@ function StatusesPicker({ value, onChange }: { value: ConversationStatus[]; onCh
             <label
               key={opt.id}
               className={cn(
-                'flex items-start gap-2.5 px-2.5 py-2 rounded-md cursor-pointer hover:bg-[var(--rowhover)]',
+                'flex items-start gap-2.5 px-2.5 py-2 rounded-[6px] cursor-pointer hover:bg-[var(--rowhover)]',
                 selected && 'bg-surface-900/40',
               )}
             >
@@ -381,7 +381,7 @@ function StatusesPicker({ value, onChange }: { value: ConversationStatus[]; onCh
                 <div className="text-surface-200 font-medium">
                   {opt.label}
                   {isResolved && (
-                    <span className="ml-2 text-3xs font-bold uppercase tracking-wide text-status-pending">Cuidado</span>
+                    <span className="ml-2 text-2xs font-semibold uppercase tracking-wide text-status-pending">Cuidado</span>
                   )}
                 </div>
                 <div className="text-surface-500">{opt.help}</div>
@@ -513,7 +513,7 @@ function DealFlagsPicker({
           <label
             key={r.key}
             className={cn(
-              'flex items-start gap-2.5 px-2.5 py-2 rounded-md cursor-pointer hover:bg-[var(--rowhover)]',
+              'flex items-start gap-2.5 px-2.5 py-2 rounded-[6px] cursor-pointer hover:bg-[var(--rowhover)]',
               r.checked && 'bg-surface-900/40',
             )}
           >
@@ -569,7 +569,7 @@ function PickerSection({ title, hint, children }: { title: string; hint: string;
     <div>
       <div className="text-xs font-semibold text-surface-200">{title}</div>
       <div className="text-2xs text-surface-400 mt-0.5">{hint}</div>
-      <div className="mt-2 max-h-60 overflow-y-auto rounded-md border border-surface-700 bg-surface-950/40 p-1.5">
+      <div className="mt-2 max-h-60 overflow-y-auto rounded-[6px] border border-surface-700 bg-surface-950/40 p-1.5">
         {children}
       </div>
     </div>
@@ -594,7 +594,7 @@ function CheckboxList({
           <label
             key={it.id}
             className={cn(
-              'flex items-center gap-2.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-[var(--rowhover)]',
+              'flex items-center gap-2.5 px-2 py-1.5 rounded-[6px] cursor-pointer hover:bg-[var(--rowhover)]',
               selected && 'bg-surface-900/40',
             )}
           >

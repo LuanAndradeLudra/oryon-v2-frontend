@@ -112,7 +112,7 @@ export const SidebarSectionLabel = memo(function SidebarSectionLabel({ label }: 
       <div className="relative h-[15px]">
         <p
           className={cn(
-            'absolute inset-0 flex items-center text-3xs font-bold uppercase tracking-[0.14em] text-surface-500 whitespace-nowrap',
+            'absolute inset-0 flex items-center text-2xs font-semibold uppercase tracking-[0.14em] text-surface-500 whitespace-nowrap',
             'transition-opacity duration-200',
             collapsed ? 'opacity-0' : 'opacity-100',
           )}
@@ -195,7 +195,7 @@ export const SidebarLink = memo(function SidebarLink({
         {badge !== undefined && badge > 0 && animate && !open && (
           <span
             aria-label={`${badge} não lidas`}
-            className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-3xs font-bold [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center tabular-nums"
+            className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-2xs font-semibold [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center tabular-nums"
           >
             {badge > 99 ? '99+' : badge}
           </span>
@@ -226,13 +226,13 @@ export const SidebarLink = memo(function SidebarLink({
         {badge !== undefined && badge > 0 && (
           <span
             aria-label={`${badge} não lidas`}
-            className="ml-auto min-w-[18px] h-[18px] px-[5px] rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-[10.5px] font-bold [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center tabular-nums"
+            className="ml-auto min-w-[18px] h-[18px] px-[5px] rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-[11px] font-semibold [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center tabular-nums"
           >
             {badge > 99 ? '99+' : badge}
           </span>
         )}
         {nudge && (
-          <span className="text-3xs font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap hidden">
+          <span className="text-2xs font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap hidden">
             {nudge}
           </span>
         )}

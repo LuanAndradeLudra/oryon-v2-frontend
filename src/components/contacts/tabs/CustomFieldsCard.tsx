@@ -40,7 +40,7 @@ function FieldInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={def?.placeholder}
           rows={3}
-          className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 resize-none transition-colors"
+          className="w-full px-3 py-2 rounded-[6px] bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 resize-none transition-colors"
         />
       )
 
@@ -50,7 +50,7 @@ function FieldInput({
           value={field.value}
           onChange={(e) => onChange(e.target.value)}
           aria-label={field.label}
-          className="h-auto w-full px-3 py-2 pr-8 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+          className="h-auto w-full px-3 py-2 pr-8 rounded-[10px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
         >
           <option value="">— Selecione —</option>
           {options.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -108,11 +108,11 @@ function FieldDisplay({ field, flat }: { field: ContactCustomField; flat?: boole
     const yes = field.value === 'true'
     if (flat) {
       return yes ? (
-        <p className="flex items-center gap-1 text-[12.5px] font-semibold text-success">
+        <p className="flex items-center gap-1 text-xs font-semibold text-success">
           <Check className="w-3 h-3" strokeWidth={2.5} /> Sim
         </p>
       ) : (
-        <p className="text-[12.5px] font-medium text-surface-100">Não</p>
+        <p className="text-xs font-medium text-surface-100">Não</p>
       )
     }
     return <p className="text-sm text-surface-200">{yes ? 'Sim' : 'Não'}</p>
@@ -138,7 +138,7 @@ function FieldDisplay({ field, flat }: { field: ContactCustomField; flat?: boole
   if (flat) {
     const mono = field.type === 'number' || field.type === 'phone'
     return (
-      <p className={cn('text-[12.5px] font-medium text-surface-100 break-words', mono && 'font-mono text-[11.5px]')}>
+      <p className={cn('text-xs font-medium text-surface-100 break-words', mono && 'font-mono text-xs')}>
         {field.value || '—'}
       </p>
     )
@@ -201,18 +201,18 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
   }
 
   const actions = !editing ? (
-    <button onClick={() => setEditing(true)} aria-label="Editar campos personalizados" className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+    <button onClick={() => setEditing(true)} aria-label="Editar campos personalizados" className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
       <Pencil className="w-3 h-3" />
     </button>
   ) : (
     <div className="flex items-center gap-1">
-      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
         <XIcon className="w-3 h-3" />
       </button>
       <button
         onClick={handleSave}
         disabled={saving}
-        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
+        className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
       >
         <Save className="w-2.5 h-2.5" />
         {saving ? 'Salvando...' : 'Salvar'}
@@ -232,7 +232,7 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
           <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-1.5">
             {fields.map((field) => (
               <Fragment key={field.key}>
-                <p className="text-[12.5px] text-surface-400 truncate" title={field.label}>{field.label}</p>
+                <p className="text-xs text-surface-400 truncate" title={field.label}>{field.label}</p>
                 <FieldDisplay field={field} flat />
               </Fragment>
             ))}
@@ -245,7 +245,7 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
             <div key={field.key}>
               <div className="flex items-center justify-between mb-1">
                 <p className={cn(
-                  flat ? 'text-[11px] text-surface-500 font-semibold uppercase tracking-wide' : 'text-[11px] text-surface-500 font-medium uppercase tracking-wide',
+                  flat ? 'text-xs text-surface-500 font-semibold' : 'text-xs text-surface-500 font-medium',
                 )}>{field.label}</p>
                 {editing && (
                   <button onClick={() => handleRemoveField(field.key)} className="text-surface-600 hover:text-red-400 transition-colors">
@@ -269,7 +269,7 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
                 <button
                   key={def.key}
                   onClick={() => handleAddField(def)}
-                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-surface-800 border border-surface-700 text-surface-300 hover:border-brand-500/40 hover:text-accent-dark transition-all"
+                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-[6px] bg-surface-800 border border-surface-700 text-surface-300 hover:border-brand-500/40 hover:text-accent-dark transition-all"
                 >
                   <Plus className="w-3 h-3" /> {def.label}
                 </button>
@@ -284,7 +284,7 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
     return (
       <section>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Campos personalizados</p>
+          <p className="text-xs font-semibold text-surface-500">Campos personalizados</p>
           {actions}
         </div>
         {body}

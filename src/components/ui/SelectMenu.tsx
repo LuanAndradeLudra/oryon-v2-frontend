@@ -218,7 +218,7 @@ function SelectDeVidro({
         onBlur={(e) => { lista.fechar(); onBlur?.(e) }}
         className={cn(
           'flex w-full items-center text-left',
-          'appearance-none bg-surface-800 border rounded-sm text-surface-100',
+          'appearance-none bg-surface-800 border rounded-[6px] text-surface-100',
           tamanhos[size],
           'focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500',
           'disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer',
@@ -334,6 +334,10 @@ function PainelDaLista({ ancoraRef, id, idOpcao, rotulo, opcoes, escolhido, ativ
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
+      {/* SCRUM-1253 (PO, 07/10): o mesmo véu do Dropdown — antes a lista abria
+          sem escurecer a página e destoava dos outros menus. Sem clique: quem
+          recebe o clique fora continua sendo a camada (fecha a lista). */}
+      <div className="overlay-scrim pointer-events-none" aria-hidden />
       <motion.ul
         ref={listaRef}
         id={id}
@@ -353,7 +357,7 @@ function PainelDaLista({ ancoraRef, id, idOpcao, rotulo, opcoes, escolhido, ativ
         }}
         className={cn(
           // O vidro dos menus (index.css), no raio e respiro do Dropdown.
-          'overlay-surface overlay-vidro border rounded-lg p-1',
+          'overlay-surface overlay-vidro border rounded-[10px] p-1',
           // A barra de rolagem é a do vidro (index.css, "Rolagem no vidro").
           'overflow-y-auto overflow-x-hidden overscroll-contain',
         )}
@@ -378,7 +382,7 @@ function PainelDaLista({ ancoraRef, id, idOpcao, rotulo, opcoes, escolhido, ativ
                 onMouseMove={() => aoApontar(i)}
                 onClick={() => aoEscolher(i)}
                 className={cn(
-                  'flex cursor-pointer select-none items-center gap-2 rounded-[5px] px-2 whitespace-nowrap',
+                  'flex cursor-pointer select-none items-center gap-2 rounded-[6px] px-2 whitespace-nowrap',
                   linhas[size],
                   i === ativa && 'bg-[var(--rowhover)]',
                   marcada ? 'font-medium text-surface-50' : 'text-surface-100',

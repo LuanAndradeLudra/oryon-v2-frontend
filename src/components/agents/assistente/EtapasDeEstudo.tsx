@@ -28,7 +28,7 @@ function Opcao({ ativa, onClick, titulo, descricao }: { ativa: boolean; onClick:
       onClick={onClick}
       aria-pressed={ativa}
       className={cn(
-        'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
+        'flex w-full items-start gap-3 rounded-[10px] border px-4 py-3 text-left transition-colors',
         ativa ? 'border-brand-500 bg-accent-soft' : 'border-surface-700 hover:border-surface-600',
       )}
     >
@@ -193,7 +193,7 @@ export function EtapaEstudar({
         </div>
       </div>
 
-      <section className="rounded-lg border border-surface-700 p-4" aria-labelledby="empresa-titulo">
+      <section className="rounded-[10px] border border-surface-700 p-4" aria-labelledby="empresa-titulo">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 id="empresa-titulo" className="text-sm font-semibold text-surface-100">
@@ -239,7 +239,7 @@ export function EtapaEstudar({
         )}
       </section>
 
-      <section aria-label="Outras fontes" className="rounded-lg border border-surface-700 p-4">
+      <section aria-label="Outras fontes" className="rounded-[10px] border border-surface-700 p-4">
         <p className="text-sm font-semibold text-surface-100">O que mais dá para ler</p>
         <ul className="mt-2 divide-y divide-surface-700 text-sm">
           <li className="flex items-center justify-between gap-3 py-2">
@@ -285,9 +285,9 @@ function Achado({ f, onMudar }: { f: SpecFinding; onMudar: (p: Partial<SpecFindi
   const [texto, setTexto] = useState(f.text)
   const c = CERTEZA[f.confidence]
   return (
-    <li className={cn('rounded-lg border p-4', f.confirmed ? 'border-surface-700' : 'border-dashed border-surface-600')}>
+    <li className={cn('rounded-[10px] border p-4', f.confirmed ? 'border-surface-700' : 'border-dashed border-surface-600')}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-2xs font-bold uppercase tracking-[.1em] text-surface-400">{f.title}</p>
+        <p className="text-2xs font-semibold uppercase tracking-[.1em] text-surface-400">{f.title}</p>
         <Chip className={c.cor}>{c.rotulo}</Chip>
       </div>
       {editando ? (
@@ -347,10 +347,10 @@ export function EtapaOQueJaSei({
         Confira. O que estiver certo, confirme; o que estiver errado, corrija. É isso que vai deixar o agente com a cara da empresa.
       </p>
 
-      <section aria-label="Quanto o agente conhece" className="rounded-lg border border-surface-700 p-4">
+      <section aria-label="Quanto o agente conhece" className="rounded-[10px] border border-surface-700 p-4">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-sm font-semibold text-surface-100">O quanto o agente conhece a empresa</p>
-          <p className={cn('text-2xl font-extrabold tabular-nums', pct >= 70 ? 'text-accent-dark' : 'text-status-pending')}>{pct}%</p>
+          <p className={cn('text-2xl font-semibold tabular-nums', pct >= 70 ? 'text-accent-dark' : 'text-status-pending')}>{pct}%</p>
         </div>
         <div className="mt-2 h-1.5 rounded-full bg-surface-700" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Conhecimento da empresa">
           <div className={cn('h-1.5 rounded-full', pct >= 70 ? 'bg-brand-500' : 'bg-status-pending')} style={{ width: `${pct}%` }} />
@@ -377,7 +377,7 @@ export function EtapaOQueJaSei({
       )}
 
       {ctx.findings.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-surface-600 p-4 text-sm text-surface-400">
+        <p className="rounded-[10px] border border-dashed border-surface-600 p-4 text-sm text-surface-400">
           Nada para conferir ainda. Tudo bem: na próxima etapa a IA escreve com o que houver e diz o que precisou supor, para você responder.
         </p>
       ) : (
@@ -386,7 +386,7 @@ export function EtapaOQueJaSei({
         </ul>
       )}
 
-      <section aria-label="Preços" className="rounded-lg border border-surface-700 p-4">
+      <section aria-label="Preços" className="rounded-[10px] border border-surface-700 p-4">
         <p className="text-sm font-semibold text-surface-100">Preços</p>
         {temCatalogo ? (
           <p className="mt-1 text-sm text-surface-300">Vêm do catálogo ({fontes.catalogo!.count} itens), na hora da conversa. Mudou lá, o agente já sabe.</p>
@@ -401,7 +401,7 @@ export function EtapaOQueJaSei({
         )}
       </section>
 
-      <section aria-label="Quem atende" className="rounded-lg border border-surface-700 p-4">
+      <section aria-label="Quem atende" className="rounded-[10px] border border-surface-700 p-4">
         <p className="text-sm font-semibold text-surface-100">Quem atende</p>
         {temProfissionais ? (
           <p className="mt-1 text-sm text-surface-300">{fontes.profissionais} profissionais cadastrados. O agente só cita quem está no cadastro.</p>

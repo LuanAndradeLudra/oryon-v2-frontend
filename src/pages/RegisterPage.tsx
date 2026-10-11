@@ -142,13 +142,13 @@ export function RegisterPage() {
         {/* Brand */}
         <div className="flex flex-col items-center mb-5">
           <OryonLogo variant="symbol" className="h-14 mb-3 select-none" />
-          <h1 className="text-lg font-bold text-surface-50">Criar conta</h1>
+          <h1 className="text-lg font-semibold text-surface-50">Criar conta</h1>
           <p className="text-xs text-surface-400 mt-0.5">Configure sua empresa no Oryon</p>
         </div>
 
         {/* Card */}
         {successMessage ? (
-          <div className="bg-surface-800 border border-surface-700 rounded-lg p-8 text-center">
+          <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-8 text-center">
             <CheckCircle2 className="w-12 h-12 text-status-active mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-surface-100">Entraremos em contato</h2>
             <p className="text-sm text-surface-400 mt-2">{successMessage}</p>
@@ -156,7 +156,7 @@ export function RegisterPage() {
         ) : (
           <form
           onSubmit={handleSubmit}
-          className="bg-surface-800 border border-surface-700 rounded-lg p-5 flex flex-col gap-3"
+          className="bg-surface-800 border border-surface-700 rounded-[10px] p-5 flex flex-col gap-3"
         >
           {/* Section: company */}
           <div className="flex items-center gap-2">
@@ -180,9 +180,9 @@ export function RegisterPage() {
           {/* Divider */}
           <div className="border-t border-surface-700 -mx-1" />
 
-          <div className="flex items-center gap-2 p-2 border border-surface-700 rounded-lg">
+          <div className="flex items-center gap-2 p-2 border border-surface-700 rounded-[10px]">
             <Zap className="w-3.5 h-3.5 text-surface-500" />
-            <span className="text-[11px] font-bold text-surface-500 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider">
               Admin da conta
             </span>
           </div>
@@ -320,4 +320,4 @@ function Field({
 }
 
 const inputClass =
-  'w-full h-9 bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 text-[13px] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500 transition-colors'
+  'w-full h-9 bg-surface-800 border border-[var(--bd2)] rounded-[6px] px-2.5 text-[13px] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500 transition-colors'

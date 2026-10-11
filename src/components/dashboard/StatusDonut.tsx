@@ -16,9 +16,9 @@ export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: 
   const C = useChartColors()
   if (!data) {
     return (
-      <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
+      <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-3">
-          <p className="text-sm font-semibold text-surface-100">Status das Conversas</p>
+          <p className="text-sm font-semibold text-surface-100">{'Status das conversas'}</p>
           {escopo && <EscopoDoCartao className="ml-auto">{escopo}</EscopoDoCartao>}
         </div>
         <div className="flex flex-1 items-center justify-center text-sm text-surface-500">Status indisponível</div>
@@ -38,9 +38,9 @@ export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: 
   const anel = slices.filter((s) => s.recorte === 'agora')
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5 h-full flex flex-col">
       <div className="flex items-center gap-2 mb-3">
-        <p className="text-sm font-semibold text-surface-100">Status das Conversas</p>
+        <p className="text-sm font-semibold text-surface-100">{'Status das conversas'}</p>
         {escopo && <EscopoDoCartao className="ml-auto">{escopo}</EscopoDoCartao>}
       </div>
 
@@ -48,7 +48,7 @@ export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: 
         <ResponsiveContainer width="100%" height={160}>
           <PieChart>
             <Pie data={anel} cx="50%" cy="50%"
-              innerRadius={50} outerRadius={72}
+              innerRadius={54} outerRadius={72}
               paddingAngle={3} dataKey="value"
               startAngle={90} endAngle={-270}
               isAnimationActive={false}
@@ -59,8 +59,8 @@ export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: 
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xl font-bold text-surface-50 tabular-nums">{emAndamento.toLocaleString('pt-BR')}</span>
-          <span className="text-[10px] text-surface-500 uppercase tracking-wide">em andamento</span>
+          <span className="text-xl font-semibold text-surface-50 tabular-nums">{emAndamento.toLocaleString('pt-BR')}</span>
+          <span className="text-2xs leading-tight text-surface-500">em andamento</span>
         </div>
       </div>
 
@@ -69,7 +69,7 @@ export const StatusDonut = memo(function StatusDonut({ data, escopo, periodo }: 
           return (
             <div key={s.name} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }} />
+                <span className="w-2 h-2 rounded-[6px] flex-shrink-0" style={{ backgroundColor: s.color }} />
                 <span className="text-surface-400">{s.name}</span>
                 <span className="text-surface-600">· {s.recorte}</span>
               </div>

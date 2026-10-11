@@ -120,6 +120,17 @@
      o maior contraste da linha sem gastar cor. Escuro = claro sobre escuro. */
   --ink-bg: #ECF1F1;        /* quase branco = surface-100 (PO, 06/10, SCRUM-1253; era #B9CACA) */
   --ink-bg-hover: #F6FAFA;  /* hover no selecionado: um degrau acima (surface-50) */
+  /* Gradiente do selecionado (PO, 06/10, SCRUM-1253): espelha o do botão
+     primário (135deg, claro → um degrau abaixo; hover escurece) em tons
+     quase brancos. O --ink-bg acima segue como cor de fundo/fallback. */
+  --ink-grad: linear-gradient(135deg, #FFFFFF 0%, #BCCDCD 100%);
+  --ink-grad-hover: linear-gradient(135deg, #F6FAFA 0%, #AFC2C2 100%);
+  --ink-bd: transparent;    /* borda do chip ligado: só o claro usa (tint) */
+  /* Primário (SCRUM-1253): o escuro mantém o gradiente teal; o claro usa a
+     cor sólida (ver bloco claro). Os botões usam bg-[#0F766E] + esta imagem. */
+  --primario-img: linear-gradient(135deg, #0F766E 0%, #134E4A 100%);
+  --primario-img-hover: linear-gradient(135deg, #115E59 0%, #0B3B38 100%);
+  --primario-realce: 0 0 #0000; /* sem realce no escuro */
 
   /* Moldura de janela das telas em miniatura (landing) — a tela "emerge" do
      fundo: cantos só no topo, sem borda inferior, sombra profunda. Medido na
@@ -155,10 +166,6 @@
   /* Curva assinatura das transições públicas (Attio usa cubic-bezier(.32,.72,0,1)). */
   --ease-emph: cubic-bezier(.32, .72, 0, 1);
   --ink-fg: #060909;
-  /* Painel acoplado do contato (Leads, pedido do PO 23/09): no escuro, o mesmo
-     tom da sidebar (#0A0F0F, regra `.workspace-shell` → sidebar mais abaixo),
-     para lista e painel lerem como um só bloco de trabalho. */
-  --panel-bg: #0A0F0F;
 
   /* SCRUM-1097: `--sf2` é o nome que o handoff usa (seções 3.5/3.6/3.8/3.9/
    * 3.11) pro fundo de rail/nav secundário (painel Tutor do wizard, coluna
@@ -167,6 +174,12 @@
    * de produção (não um token de prototipo paralelo): resolve sozinho por
    * tema porque delega pra --color-surface-900, que já tem light/dark. */
   --sf2: var(--color-surface-900);
+  /* `--sf` (e o legado `--sf1`) = superfície do OBJETO no handoff (cartão,
+   * lista, painel — surface-800, ver "TopBar em --sf" abaixo). Eram usados
+   * (drill de execuções, Observabilidade, Turnos gravados) sem nunca terem
+   * sido definidos: o fundo ficava transparente (SCRUM-1253, 11/10). */
+  --sf: var(--color-surface-800);
+  --sf1: var(--color-surface-800);
 
   /* SCRUM-1097: `--bd2` = borda de ênfase do handoff (spec 1a TOK-05:
    * #2E4040 escuro / #C8CDD8 claro) — neutral, input, tracejado do
@@ -329,6 +342,7 @@
   --color-board-bar: #060909;
 
   --color-avatar-surface:  #ECF1F1; /* quase branco (PO, 06/10, SCRUM-1253; era #B5C8C8) */
+  --avatar-grad: linear-gradient(135deg, #FFFFFF 0%, #BCCDCD 100%); /* mesmo gradiente do --ink-grad */
   --color-avatar-initials: #060909;
 
 
@@ -603,9 +617,13 @@ html, body, #root {
 /* ── Typography base ─────────────────────────────────────────────────────── */
 
 /* Display (Satoshi): títulos, números-herói, nomes */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
-  font-weight: 700;
+/* Na camada base (SCRUM-1253, PO 11/10): fora de camada o 700 vencia o
+   font-semibold/font-medium de ~150 títulos. Peso padrão 600 (régua 400/500/600). */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
 }
 
 /* Mono: código, métricas, badges de número */
@@ -1063,8 +1081,12 @@ code, pre, kbd, samp {
 
   --color-board-bar: #FFFFFF;
 
-  --color-avatar-surface:  #374151;
+  /* SCRUM-1253 (PO, 07/10 — pacote B1) — avatar de contato: ardósia sólida
+     com inicial branca, a mesma linguagem do operador (disco cheio + inicial
+     clara), só que neutra. Suavizada a pedido do PO (era #64748B). */
+  --color-avatar-surface:  #687790; /* #6E7D93 dava 4,19:1 com a inicial branca → 4,54:1 (SCRUM-1253, 11/10) */
   --color-avatar-initials: #FFFFFF;
+  --avatar-grad: none;
 
 
   /* SCRUM-1097 — spec/1a-primitivos.md TOK-01..05 (HTML do canvas):
@@ -1075,8 +1097,12 @@ code, pre, kbd, samp {
      (dark #0E1414, é o `--sf2`). Uma correção anterior desta noite tinha
      posto 900=#FFF/800=#F5F6F8 — invertido; cards `bg-surface-800` saíam
      cinza sobre página quase branca. */
-  --color-surface-950: #FAFAFC;
-  --color-surface-900: #F5F6F8;
+  /* SCRUM-1253 (PO, 06/10) — escala de neutros com PAPÉIS no claro:
+       objeto #FFFFFF (800) · palco #F4F6F9 (950 = 900: chat, página, busca)
+       controle #EAEEF3 (trilho do seletor) · identidade #D9DFE7 (avatares).
+     Antes eram FAFAFC/F5F6F8 + vizinhos a 4% uns dos outros, sem regra. */
+  --color-surface-950: #F4F6F9;
+  --color-surface-900: #F4F6F9;
   --color-surface-800: #FFFFFF;
   /* Rodada 2 (pedido do usuário): linhas/bordas/divisores do tema claro mais
      ESCUROS para marcar o contraste entre elementos — era #E4E6EC (handoff). */
@@ -1123,8 +1149,20 @@ code, pre, kbd, samp {
   --rowhover: rgba(15, 23, 42, 0.035);
   --sel: rgba(15, 118, 110, .08);
   /* Claro = escuro sobre claro. */
-  --ink-bg: #3A4150;        /* não é preto puro (PO, 24/09): dois degraus acima */
-  --ink-bg-hover: #4A5163;  /* hover no selecionado: um degrau mais claro */
+  /* SCRUM-1253 (PO, 06/10): no claro, chip/filtro LIGADO é tint da marca —
+     teal é a cor de seleção. O seletor segmentado tem regra própria (trilho
+     cinza + selecionado branco, em SegmentedControl). */
+  --ink-bg: rgba(15, 118, 110, 0.10);
+  --ink-bg-hover: rgba(15, 118, 110, 0.16);
+  --ink-grad: none;
+  --ink-grad-hover: none;
+  --ink-bd: rgba(15, 118, 110, 0.30);
+  /* Primário no claro (PO, 06/10): gradiente SUTIL — mesma direção do escuro,
+     variação curta e clara (lê como volume, não como mancha) + realce interno
+     de 1 px no topo. Só o primário e o operador usam esta receita. */
+  --primario-img: linear-gradient(135deg, #14857A 0%, #0F766E 100%);
+  --primario-img-hover: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
+  --primario-realce: inset 0 1px 0 rgba(255, 255, 255, 0.14);
 
   --frame-stroke: rgba(15, 23, 42, .10);
   --frame-shadow: 0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.10), 0 32px 64px rgba(15,23,42,.14);
@@ -1141,10 +1179,7 @@ code, pre, kbd, samp {
   --landing-destaque: #0F766E;
   --landing-cartao: #FFFFFF;
   --landing-palco: #F1F3F6;
-  --ink-fg: #FFFFFF;
-  /* No claro, levemente tingido no tom da faixa de cabeçalho das colunas
-     (surface-900 = #F5F6F8), destacando-se do branco da lista. */
-  --panel-bg: var(--color-surface-900);
+  --ink-fg: #0F766E;
   --bd2: #A3ACBD;
   --color-topbar: var(--color-surface-800);
   --toast: #1A1F2E;
@@ -1168,13 +1203,13 @@ code, pre, kbd, samp {
      forte com o canvas cinza (#E4E7ED) e separação total do inbound branco. */
   --color-bubble-out:      #0F766E;
   --color-bubble-out-fg:   #FFFFFF;
-  --color-bubble-out-time: rgba(255, 255, 255, 0.70);
+  --color-bubble-out-time: rgba(255, 255, 255, 0.9); /* B1: 70% dava 3,54:1; 85% dava 4,42 → 90% = 4,76:1 */
   --color-bubble-in:       #FFFFFF;
   --color-bubble-in-fg:    #111827;
 
   /* Card 24h */
-  --color-card-24h-bg:     #FAFAFC;
-  --color-card-24h-border: #E4E6EC;
+  --color-card-24h-bg:     #FFFFFF; /* objeto branco sobre o palco (SCRUM-1253) */
+  --color-card-24h-border: var(--color-surface-700); /* = linhas divisórias do claro (PO, 06/10, SCRUM-1253; era #E4E6EC) */
 
   /* Composer */
   --color-composer-bg:     #F5F6F8;
@@ -1477,6 +1512,25 @@ code, pre, kbd, samp {
 [data-theme="light"] .card-24h-accent {
   color: color-mix(in srgb, var(--color-brand-600) 85%, #000);
 }
+/* SCRUM-1253 (PO, 06/10): no claro o card é AVISO, não ação — título neutro,
+   subtítulo no tom do meta, ícone âmbar (atenção). A cor de ação vai para o
+   "Escolher template" (.card-24h-cta), que vira o primário. */
+[data-theme="light"] .card-24h p.card-24h-accent { color: var(--color-surface-100); }
+[data-theme="light"] .card-24h p.card-24h-accent + p.card-24h-accent { color: var(--color-surface-400); }
+[data-theme="light"] .card-24h svg.card-24h-accent { color: #B45309; }
+/* Seletor reforçado: a regra de contraste 6D (styles/contraste.css) pinta todo
+   botão .bg-accent-soft de branco e carrega depois deste arquivo. */
+[data-theme="light"] .card-24h button.card-24h-cta.bg-accent-soft {
+  background-color: #0F766E;
+  background-image: var(--primario-img);
+  color: #FFFFFF;
+  box-shadow: var(--primario-realce);
+  border-color: transparent;
+}
+[data-theme="light"] .card-24h button.card-24h-cta.bg-accent-soft:hover {
+  background-color: #115E59;
+  background-image: var(--primario-img-hover);
+}
 
 /* ── Drawer de negócio: papéis invertidos no tema CLARO ────────────────────
  *
@@ -1631,6 +1685,16 @@ code, pre, kbd, samp {
   color: var(--color-accent-dark);
 }
 
+/* SCRUM-1253 (Onda 0, PO 06/10) — no PRODUTO o rótulo de seção é NEUTRO
+   (teal é ação/seleção) e entra na escala de tipo (11 / 600). A landing
+   mantém o eyebrow teal da marca. */
+.eyebrow:not([data-landing-root] *) {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--color-surface-400);
+}
+
 /* ── Oryon icons — global scale ─────────────────────────────────────────────
  * Escala todos os ícones em 1.4× mantendo o fluxo do layout (transform não
  * mexe na caixa; transform-origin: center garante que o scale não desloca).
@@ -1642,11 +1706,29 @@ code, pre, kbd, samp {
  * AI Observabilidade) desenhando 16,5px — 40% menores, lado a lado, com a
  * mesma classe `w-[16.5px]`. Mesmo desencontro em 14px (19,6 × 14,0).
  * A escala é do sistema de ícones, não de um dos dois fornecedores. */
-svg[data-oryon-icon],
-svg.lucide {
+[data-landing-root] svg[data-oryon-icon],
+[data-landing-root] svg.lucide {
   transform: scale(1.4);
   transform-origin: center;
 }
+
+/* SCRUM-1253 (Onda 0, PO 06/10) — no PRODUTO o ícone não é mais escalado por
+   transform: o desenho saía 1,4× maior que a própria caixa (16 px de caixa,
+   22,4 de desenho) e nenhum padding/alinhamento batia com o que se via. As
+   classes de tamanho viram os tamanhos ópticos do sistema, com a caixa certa:
+   w-2.5 → 12 · w-3 → 14 · w-3.5 → 16 · w-4 / w-[15px] → 18 · w-[16.5px] / w-5 → 20. */
+/* Degraus abaixo (SCRUM-1253, 11/10): w-1.5/w-2 ficaram de fora da régua e,
+   sem o scale antigo (×1,4 → 8,4/11,2 px), desenhavam 6/8 px — check/X dos
+   desfechos do funil, setas de mini-funil. Voltam ao tamanho que se via. */
+svg.w-1\.5:not([data-landing-root] *) { width: 8px; height: 8px; }
+svg.w-2:not([data-landing-root] *) { width: 10px; height: 10px; }
+svg.w-2\.5:not([data-landing-root] *) { width: 12px; height: 12px; }
+svg.w-3:not([data-landing-root] *) { width: 14px; height: 14px; }
+svg.w-3\.5:not([data-landing-root] *) { width: 16px; height: 16px; }
+svg.w-4:not([data-landing-root] *),
+svg.w-\[15px\]:not([data-landing-root] *) { width: 18px; height: 18px; }
+svg.w-\[16\.5px\]:not([data-landing-root] *),
+svg.w-5:not([data-landing-root] *) { width: 20px; height: 20px; }
 
 /* ── Card glow on hover ──────────────────────────────────────────────────────
  * Adiciona o efeito teal (border + shadow + radial gradient) ao passar o mouse
@@ -1725,8 +1807,11 @@ svg.lucide {
 }
 
 /* ── Tipografia display — tracking apertado em títulos (ar editorial) ──────*/
-h1, h2, h3 {
-  letter-spacing: -0.015em;
+/* Camada base: fora dela vencia tracking-* das utilitárias (SCRUM-1253). */
+@layer base {
+  h1, h2, h3 {
+    letter-spacing: -0.015em;
+  }
 }
 
 /* ── Acessibilidade: usuário pediu menos movimento — respeitar sempre ───────*/
@@ -1987,6 +2072,16 @@ h1, h2, h3 {
   --color-surface-500: #84999A;
 }
 [data-theme='light'] [data-landing-root] { --landing-elevado: #D5D5D9; }
+/* Avatar de contato nas telas da landing (iframe demo.html, que marca o <html>
+   com data-demo — src/demo/main.tsx), no escuro: o produto passou o disco a
+   quase branco com gradiente (PO 06/10); na miniatura do Hero os discos
+   brancos viravam manchas e roubavam a leitura da conversa. A demonstração
+   mantém o disco ardósia aprovado (#B5C8C8, letra recortada 11,48:1).
+   SCRUM-1253, 11/10. */
+:root[data-demo]:not([data-theme='light']) {
+  --color-avatar-surface: #B5C8C8;
+  --avatar-grad: none;
+}
 .landing-tom-elevado { background-color: var(--landing-elevado); }
 .landing-faixa-marca {
   --landing-borda: rgba(94, 234, 212, .16);
@@ -2106,4 +2201,287 @@ h1, h2, h3 {
 }
 [data-theme='light'] [data-landing-root] .bg-\[var\(--landing-cartao\)\] {
   box-shadow: 0 1px 2px rgba(24, 24, 27, .07), 0 12px 30px -14px rgba(24, 24, 27, .22);
+}
+
+/* ══ SCRUM-1253 (PO, 06/10) — tema claro: papéis de cor e neutros ═══════════
+   Validado na prévia lado a lado (claroV2). O escuro não muda aqui. */
+
+/* Operador: círculo teal com o gradiente sutil do primário no claro (o escuro mantém o seu). */
+[data-theme="light"] .avatar-operador {
+  background-color: #0F766E;
+  background-image: var(--primario-img);   /* mesma receita sutil do primário */
+}
+/* Avatar de contato: disco ardósia cheio (B1) — já tem forma própria, sem anel. */
+[data-theme="light"] .bg-avatar-surface {
+  box-shadow: none;
+}
+/* Etiquetas e chips cheios em tint: fundo claro, texto e borda na cor.
+   Texto a 55% da cor (era 72%: amarelo 3,18, âmbar 3,44, verde 3,57, ciano
+   3,72:1). 55% é o menor degrau em que as 12 cores da paleta passam de 4,5:1
+   sobre o tint, no objeto branco e no palco #F4F6F9 (SCRUM-1253, 11/10). */
+[data-theme="light"] .color-chip {
+  background-color: color-mix(in srgb, var(--chip) 13%, transparent);
+  color: color-mix(in srgb, var(--chip) 55%, #000);
+  border-color: color-mix(in srgb, var(--chip) 30%, transparent);
+}
+/* Bolha recebida: objeto branco sobre o palco — sem borda, sombra mínima
+   no tom do palco (B1). */
+[data-theme="light"] .bubble-in-elevate {
+  border-color: transparent;
+  box-shadow: 0 1px 1px rgba(15, 58, 54, 0.07), 0 0 0 1px rgba(15, 58, 54, 0.07);
+}
+
+/* ── SCRUM-1253 (PO, 07/10) — pacote B1 da crítica do tema claro ──────────
+   Validado na prévia lado a lado (claroAB). O escuro não muda aqui. */
+
+/* Palco do chat com leve tinta da marca: separa da lista/painel brancos e
+   das bolhas brancas sem brigar com o avatar ardósia. */
+[data-theme="light"] .chat-shell-bg {
+  background: #EAF0EF;
+}
+/* Item aberto/selecionado (lista de conversas, tabelas, lista de leads): tint
+   teal — o --rowhover/--sel cinza dava 1,07:1. */
+[data-theme="light"] :is(.conv-item-ativa, .linha-ativa) {
+  background-color: rgba(15, 118, 110, 0.08);
+}
+/* Painel do contato com borda própria (antes 1,08:1 contra o palco). */
+[data-theme="light"] aside.conv-surface {
+  border-left: 1px solid var(--color-surface-700);
+}
+/* Texto dos eventos no palco: #5C6476 (o surface-500 dava 4,39:1 no #EAF0EF). */
+[data-theme="light"] .linha-de-eventos :is(.text-surface-500, .text-surface-600) {
+  color: #5C6476;
+}
+/* Leads (PO, 07/10): "Configurar contato com IA" era gradiente branco→cinza
+   com texto quase branco no claro (~1,1:1). No claro vira o secundário padrão:
+   objeto branco, contorno e ícone teal. O escuro mantém o gradiente claro. */
+.botao-ia-contato {
+  background: linear-gradient(40deg, #ffffff, #a8a8b4);
+  color: var(--color-surface-950);
+}
+.botao-ia-contato:hover { opacity: 0.9; }
+[data-theme="light"] .botao-ia-contato {
+  background: #FFFFFF;
+  border: 1px solid var(--color-surface-700);
+  color: var(--color-surface-100);
+}
+[data-theme="light"] .botao-ia-contato svg { color: #0F766E; }
+[data-theme="light"] .botao-ia-contato:hover { opacity: 1; background: var(--color-surface-900); }
+/* Funis (PO, 07/10): card do negócio é objeto branco sobre o palco (antes da
+   mesma cor do palco, só a borda separava). */
+[data-theme="light"] .card-negocio {
+  background-color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+[data-theme="light"] .card-negocio:hover {
+  background-color: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.16);
+}
+/* Funis: "Adicionar do catálogo/personalizado" — no escuro seguem claros
+   (invertidos); no claro a inversão dava quase preto: viram secundário. */
+[data-theme="light"] .botao-itens {
+  background-color: #FFFFFF;
+  color: var(--color-surface-100);
+  border: 1px solid var(--color-surface-700);
+}
+[data-theme="light"] .botao-itens:hover { background-color: var(--color-surface-900); }
+[data-theme="light"] .botao-itens svg { color: #0F766E; }
+/* "Ocultar/Mostrar eventos": objeto branco sobre o palco, como a pílula de data. */
+[data-theme="light"] .botao-eventos {
+  background-color: #FFFFFF;
+}
+/* Citação (reply) na bolha recebida: a cor vem de QUEM escreveu a original
+   (padrão WhatsApp) — nossa (IA/equipe) em teal, do cliente em ardósia. Na
+   bolha enviada (teal) segue o currentColor. */
+[data-theme="light"] [data-bolha="inbound"][data-autor] {
+  border-left-width: 3px;
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+[data-theme="light"] [data-bolha="inbound"][data-autor] > p { opacity: 1; }
+[data-theme="light"] [data-bolha="inbound"][data-autor] > p:first-child { font-weight: 600; }
+[data-theme="light"] [data-bolha="inbound"][data-autor] > p:last-child { color: #4B5563; }
+[data-theme="light"] [data-bolha="inbound"][data-autor="nos"] {
+  background-color: rgba(15, 118, 110, 0.07);
+  border-left-color: #0F766E;
+}
+[data-theme="light"] [data-bolha="inbound"][data-autor="nos"] > p:first-child { color: #0F766E; }
+[data-theme="light"] [data-bolha="inbound"][data-autor="cliente"] {
+  background-color: rgba(71, 85, 105, 0.07);
+  border-left-color: #64748B;
+}
+[data-theme="light"] [data-bolha="inbound"][data-autor="cliente"] > p:first-child { color: #475569; }
+
+/* ══ SCRUM-1253 (PO, 07/10) — régua de tintas do tema claro ═══════════════════
+   No claro, cor viva a 5–20% sobre branco sumia (1,05–1,13:1). Cada degrau de
+   alfa sobe ~1,5×, o teal das tintas passa a ser o teal ESCURO da marca
+   (#0F766E — o #14B8A6 diluído puxava para menta acinzentado) e as bordas
+   tingidas vão a 36–42%. `--tinta-k` multiplica as tintas calculadas em código
+   (tint(), tintaDaEtapa, categoria do template); fora do claro vale 1. */
+[data-theme="light"] {
+  /* Multiplicador das tintas calculadas (tint(), tintaDaEtapa, categoria
+     do template, chips de cor): 1 no escuro, 1,5 no claro. */
+  --tinta-k: 1.5;
+}
+
+/* Camada utilities + :where() (SCRUM-1253, 11/10): fora de camada estas
+   regras (especificidade 0,2,0) venciam qualquer hover:bg-* no claro — o
+   hover não mudava nada. Agora pesam como uma utilitária (0,1,0) e vêm depois
+   das do Tailwind; a variante hover: da mesma classe segue a régua do claro. */
+@layer utilities {
+  /* Fundos tingidos: degrau de alfa sobe e o teal tinge com o tom escuro. */
+  :where([data-theme="light"]) .bg-brand-500\/5,
+  :where([data-theme="light"]) .hover\:bg-brand-500\/5:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 8%, transparent); }
+  :where([data-theme="light"]) .bg-brand-500\/10,
+  :where([data-theme="light"]) .hover\:bg-brand-500\/10:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 14%, transparent); }
+  :where([data-theme="light"]) .bg-brand-500\/15,
+  :where([data-theme="light"]) .hover\:bg-brand-500\/15:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 18%, transparent); }
+  :where([data-theme="light"]) .bg-brand-500\/20,
+  :where([data-theme="light"]) .hover\:bg-brand-500\/20:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 24%, transparent); }
+  :where([data-theme="light"]) .bg-brand-500\/25,
+  :where([data-theme="light"]) .hover\:bg-brand-500\/25:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 28%, transparent); }
+  :where([data-theme="light"]) .bg-brand-500\/30,
+  :where([data-theme="light"]) .hover\:bg-brand-500\/30:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 34%, transparent); }
+  :where([data-theme="light"]) .bg-brand-600\/5,
+  :where([data-theme="light"]) .hover\:bg-brand-600\/5:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 8%, transparent); }
+  :where([data-theme="light"]) .bg-brand-600\/10,
+  :where([data-theme="light"]) .hover\:bg-brand-600\/10:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 14%, transparent); }
+  :where([data-theme="light"]) .bg-brand-600\/15,
+  :where([data-theme="light"]) .hover\:bg-brand-600\/15:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 18%, transparent); }
+  :where([data-theme="light"]) .bg-brand-600\/20,
+  :where([data-theme="light"]) .hover\:bg-brand-600\/20:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 24%, transparent); }
+  :where([data-theme="light"]) .bg-brand-600\/25,
+  :where([data-theme="light"]) .hover\:bg-brand-600\/25:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 28%, transparent); }
+  :where([data-theme="light"]) .bg-brand-600\/30,
+  :where([data-theme="light"]) .hover\:bg-brand-600\/30:hover { background-color: color-mix(in oklab, var(--color-accent-dark) 34%, transparent); }
+  :where([data-theme="light"]) .bg-danger\/5,
+  :where([data-theme="light"]) .hover\:bg-danger\/5:hover { background-color: color-mix(in oklab, var(--color-danger) 8%, transparent); }
+  :where([data-theme="light"]) .bg-danger\/10,
+  :where([data-theme="light"]) .hover\:bg-danger\/10:hover { background-color: color-mix(in oklab, var(--color-danger) 14%, transparent); }
+  :where([data-theme="light"]) .bg-danger\/15,
+  :where([data-theme="light"]) .hover\:bg-danger\/15:hover { background-color: color-mix(in oklab, var(--color-danger) 18%, transparent); }
+  :where([data-theme="light"]) .bg-danger\/20,
+  :where([data-theme="light"]) .hover\:bg-danger\/20:hover { background-color: color-mix(in oklab, var(--color-danger) 24%, transparent); }
+  :where([data-theme="light"]) .bg-danger\/25,
+  :where([data-theme="light"]) .hover\:bg-danger\/25:hover { background-color: color-mix(in oklab, var(--color-danger) 28%, transparent); }
+  :where([data-theme="light"]) .bg-danger\/30,
+  :where([data-theme="light"]) .hover\:bg-danger\/30:hover { background-color: color-mix(in oklab, var(--color-danger) 34%, transparent); }
+  :where([data-theme="light"]) .bg-warning\/5,
+  :where([data-theme="light"]) .hover\:bg-warning\/5:hover { background-color: color-mix(in oklab, var(--color-warning) 8%, transparent); }
+  :where([data-theme="light"]) .bg-warning\/10,
+  :where([data-theme="light"]) .hover\:bg-warning\/10:hover { background-color: color-mix(in oklab, var(--color-warning) 14%, transparent); }
+  :where([data-theme="light"]) .bg-warning\/15,
+  :where([data-theme="light"]) .hover\:bg-warning\/15:hover { background-color: color-mix(in oklab, var(--color-warning) 18%, transparent); }
+  :where([data-theme="light"]) .bg-warning\/20,
+  :where([data-theme="light"]) .hover\:bg-warning\/20:hover { background-color: color-mix(in oklab, var(--color-warning) 24%, transparent); }
+  :where([data-theme="light"]) .bg-warning\/25,
+  :where([data-theme="light"]) .hover\:bg-warning\/25:hover { background-color: color-mix(in oklab, var(--color-warning) 28%, transparent); }
+  :where([data-theme="light"]) .bg-warning\/30,
+  :where([data-theme="light"]) .hover\:bg-warning\/30:hover { background-color: color-mix(in oklab, var(--color-warning) 34%, transparent); }
+  :where([data-theme="light"]) .bg-success\/5,
+  :where([data-theme="light"]) .hover\:bg-success\/5:hover { background-color: color-mix(in oklab, var(--color-success) 8%, transparent); }
+  :where([data-theme="light"]) .bg-success\/10,
+  :where([data-theme="light"]) .hover\:bg-success\/10:hover { background-color: color-mix(in oklab, var(--color-success) 14%, transparent); }
+  :where([data-theme="light"]) .bg-success\/15,
+  :where([data-theme="light"]) .hover\:bg-success\/15:hover { background-color: color-mix(in oklab, var(--color-success) 18%, transparent); }
+  :where([data-theme="light"]) .bg-success\/20,
+  :where([data-theme="light"]) .hover\:bg-success\/20:hover { background-color: color-mix(in oklab, var(--color-success) 24%, transparent); }
+  :where([data-theme="light"]) .bg-success\/25,
+  :where([data-theme="light"]) .hover\:bg-success\/25:hover { background-color: color-mix(in oklab, var(--color-success) 28%, transparent); }
+  :where([data-theme="light"]) .bg-success\/30,
+  :where([data-theme="light"]) .hover\:bg-success\/30:hover { background-color: color-mix(in oklab, var(--color-success) 34%, transparent); }
+
+  /* Bordas tingidas: 20–30% somem no branco — sobem para 36–42%. */
+  :where([data-theme="light"]) .border-brand-500\/20,
+  :where([data-theme="light"]) .hover\:border-brand-500\/20:hover { border-color: color-mix(in oklab, var(--color-accent-dark) 36%, transparent); }
+  :where([data-theme="light"]) .border-brand-500\/25,
+  :where([data-theme="light"]) .hover\:border-brand-500\/25:hover { border-color: color-mix(in oklab, var(--color-accent-dark) 38%, transparent); }
+  :where([data-theme="light"]) .border-brand-500\/30,
+  :where([data-theme="light"]) .hover\:border-brand-500\/30:hover { border-color: color-mix(in oklab, var(--color-accent-dark) 42%, transparent); }
+  :where([data-theme="light"]) .border-brand-500\/40,
+  :where([data-theme="light"]) .hover\:border-brand-500\/40:hover { border-color: color-mix(in oklab, var(--color-accent-dark) 48%, transparent); }
+  :where([data-theme="light"]) .border-brand-600\/20,
+  :where([data-theme="light"]) .hover\:border-brand-600\/20:hover { border-color: color-mix(in oklab, var(--color-accent-dark) 36%, transparent); }
+  :where([data-theme="light"]) .border-brand-600\/25,
+  :where([data-theme="light"]) .hover\:border-brand-600\/25:hover { border-color: color-mix(in oklab, var(--color-accent-dark) 38%, transparent); }
+  :where([data-theme="light"]) .border-brand-600\/30,
+  :where([data-theme="light"]) .hover\:border-brand-600\/30:hover { border-color: color-mix(in oklab, var(--color-accent-dark) 42%, transparent); }
+  :where([data-theme="light"]) .border-brand-600\/40,
+  :where([data-theme="light"]) .hover\:border-brand-600\/40:hover { border-color: color-mix(in oklab, var(--color-accent-dark) 48%, transparent); }
+  :where([data-theme="light"]) .border-danger\/20,
+  :where([data-theme="light"]) .hover\:border-danger\/20:hover { border-color: color-mix(in oklab, var(--color-danger) 36%, transparent); }
+  :where([data-theme="light"]) .border-danger\/25,
+  :where([data-theme="light"]) .hover\:border-danger\/25:hover { border-color: color-mix(in oklab, var(--color-danger) 38%, transparent); }
+  :where([data-theme="light"]) .border-danger\/30,
+  :where([data-theme="light"]) .hover\:border-danger\/30:hover { border-color: color-mix(in oklab, var(--color-danger) 42%, transparent); }
+  :where([data-theme="light"]) .border-danger\/40,
+  :where([data-theme="light"]) .hover\:border-danger\/40:hover { border-color: color-mix(in oklab, var(--color-danger) 48%, transparent); }
+  :where([data-theme="light"]) .border-warning\/20,
+  :where([data-theme="light"]) .hover\:border-warning\/20:hover { border-color: color-mix(in oklab, var(--color-warning) 36%, transparent); }
+  :where([data-theme="light"]) .border-warning\/25,
+  :where([data-theme="light"]) .hover\:border-warning\/25:hover { border-color: color-mix(in oklab, var(--color-warning) 38%, transparent); }
+  :where([data-theme="light"]) .border-warning\/30,
+  :where([data-theme="light"]) .hover\:border-warning\/30:hover { border-color: color-mix(in oklab, var(--color-warning) 42%, transparent); }
+  :where([data-theme="light"]) .border-warning\/40,
+  :where([data-theme="light"]) .hover\:border-warning\/40:hover { border-color: color-mix(in oklab, var(--color-warning) 48%, transparent); }
+  :where([data-theme="light"]) .border-success\/20,
+  :where([data-theme="light"]) .hover\:border-success\/20:hover { border-color: color-mix(in oklab, var(--color-success) 36%, transparent); }
+  :where([data-theme="light"]) .border-success\/25,
+  :where([data-theme="light"]) .hover\:border-success\/25:hover { border-color: color-mix(in oklab, var(--color-success) 38%, transparent); }
+  :where([data-theme="light"]) .border-success\/30,
+  :where([data-theme="light"]) .hover\:border-success\/30:hover { border-color: color-mix(in oklab, var(--color-success) 42%, transparent); }
+  :where([data-theme="light"]) .border-success\/40,
+  :where([data-theme="light"]) .hover\:border-success\/40:hover { border-color: color-mix(in oklab, var(--color-success) 48%, transparent); }
+}
+
+/* Texto na cor do status SOBRE a tinta do mesmo status (SCRUM-1253, 11/10):
+   a tinta escurece o fundo e o texto na cor cheia caía abaixo de 4,5:1 —
+   text-warning em /20 3,62 e /30 3,08; text-success em /10 4,15. No claro o
+   texto desce um degrau (800/900 da família) só nessa combinação; o mesmo
+   texto sobre branco segue igual. Razões medidas sobre o objeto branco. */
+@layer utilities {
+  /* laranja: 3,61–4,21 → 5,09–5,94 */
+  :where([data-theme="light"]) :is(.bg-warning\/10, .bg-warning\/15, .bg-warning\/20, .bg-warning\/25):is(.text-warning),
+  :where([data-theme="light"]) :is(.bg-warning\/10, .bg-warning\/15, .bg-warning\/20, .bg-warning\/25) :is(.text-warning) { color: #9A3412; }
+  /* laranja /30: 3,07 → 5,56 */
+  :where([data-theme="light"]) :is(.bg-warning\/30):is(.text-warning),
+  :where([data-theme="light"]) :is(.bg-warning\/30) :is(.text-warning) { color: #7C2D12; }
+  /* verde: 3,38–4,14 → 4,80–5,89 */
+  :where([data-theme="light"]) :is(.bg-success\/10, .bg-success\/15, .bg-success\/20, .bg-success\/25):is(.text-success),
+  :where([data-theme="light"]) :is(.bg-success\/10, .bg-success\/15, .bg-success\/20, .bg-success\/25) :is(.text-success) { color: #166534; }
+  /* verde /30: 3,10 → 5,63 */
+  :where([data-theme="light"]) :is(.bg-success\/30):is(.text-success),
+  :where([data-theme="light"]) :is(.bg-success\/30) :is(.text-success) { color: #14532D; }
+  /* vermelho: 3,52–4,26 → 4,51–5,47 */
+  :where([data-theme="light"]) :is(.bg-danger\/20, .bg-danger\/25, .bg-danger\/30):is(.text-danger),
+  :where([data-theme="light"]) :is(.bg-danger\/20, .bg-danger\/25, .bg-danger\/30) :is(.text-danger) { color: #991B1B; }
+  /* teal: 3,66–4,50 → 5,07–6,24 */
+  :where([data-theme="light"]) :is(.bg-brand-500\/10, .bg-brand-500\/15, .bg-brand-500\/20, .bg-brand-500\/25, .bg-brand-600\/10, .bg-brand-600\/15, .bg-brand-600\/20, .bg-brand-600\/25):is(.text-brand-400, .text-brand-500, .text-accent-dark),
+  :where([data-theme="light"]) :is(.bg-brand-500\/10, .bg-brand-500\/15, .bg-brand-500\/20, .bg-brand-500\/25, .bg-brand-600\/10, .bg-brand-600\/15, .bg-brand-600\/20, .bg-brand-600\/25) :is(.text-brand-400, .text-brand-500, .text-accent-dark) { color: #115E59; }
+  /* teal /30: 3,31 → 5,73 */
+  :where([data-theme="light"]) :is(.bg-brand-500\/30, .bg-brand-600\/30):is(.text-brand-400, .text-brand-500, .text-accent-dark, .text-brand-300),
+  :where([data-theme="light"]) :is(.bg-brand-500\/30, .bg-brand-600\/30) :is(.text-brand-400, .text-brand-500, .text-accent-dark, .text-brand-300) { color: #134E4A; }
+}
+
+/* Chips de cor (etiquetas): 13% → ~20% (o index.css já usa var(--chip)). */
+[data-theme="light"] .color-chip {
+  background-color: color-mix(in srgb, var(--chip) calc(13% * var(--tinta-k)), transparent);
+}
+
+/* ══ SCRUM-1253 (PO, 07/10) — Agentes IA ════════════════════════════════════ */
+/* Desempenho: com o agente sem dados, cinco caixas tracejadas com ícone viravam
+   um muro de vazios — vira uma linha discreta por seção. */
+.secao-desempenho .border-dashed {
+  border-style: solid;
+  border-color: transparent;
+  background-color: var(--color-surface-900);
+  padding: 10px 12px;
+  gap: 2px;
+}
+.secao-desempenho .border-dashed > svg:first-child { display: none; }
+/* Lista: abaixo de 1100px a coluna "Alterado" sai (a tabela exigia 820px e
+   rolava de lado com um agente só). */
+@media (max-width: 1099px) {
+  .tabela-agentes :is(th, td):last-child { display: none; }
 }

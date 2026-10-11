@@ -2,7 +2,6 @@ import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Search, Check, UserX,
-  ArrowRightLeft,
   MapPin, Phone,
   Bot, UserCog,
 } from 'lucide-react'
@@ -46,13 +45,13 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
   )
   return (
     <div>
-      <div className="flex items-center gap-2 bg-surface-900 rounded-lg px-3 py-2 mb-3">
+      <div className="flex items-center gap-2 bg-surface-900 rounded-[6px] px-3 py-2 mb-3">
         <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
         <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar usuário..." className="flex-1 bg-transparent text-sm text-surface-200 placeholder:text-surface-500 outline-none" />
       </div>
       <div className="max-h-64 overflow-y-auto -mx-1">
         {selectedUserId && (
-          <button onClick={() => onSelect(null)} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-700 rounded-lg transition-all">
+          <button onClick={() => onSelect(null)} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-700 rounded-[6px] transition-all">
             <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0"><UserX className="w-4 h-4 text-surface-400" /></div>
             <p className="text-sm text-surface-300">Remover atribuição</p>
           </button>
@@ -62,7 +61,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
         ) : filtered.map((user) => {
           const isSelected = user.id === selectedUserId
           return (
-            <button key={user.id} onClick={() => onSelect(user)} className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all', isSelected ? 'bg-brand-600/10' : 'hover:bg-surface-700')}>
+            <button key={user.id} onClick={() => onSelect(user)} className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-[6px] transition-all', isSelected ? 'bg-brand-600/10' : 'hover:bg-surface-700')}>
               <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" className="flex-shrink-0" />
               <div className="min-w-0 flex-1 text-left">
                 <p className={cn('text-sm font-medium', isSelected ? 'text-brand-300' : 'text-surface-200')}>{user.firstName} {user.lastName}</p>
@@ -81,7 +80,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
 
 function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[] }) {
   return (
-    <div className="grid grid-cols-[82px_1fr] gap-x-2 gap-y-[5px] text-[12.5px]">
+    <div className="grid grid-cols-[82px_1fr] gap-x-2 gap-y-[5px] text-xs">
       {rows.map(({ label, value }) => (
         <Fragment key={label}>
           <span className="text-surface-400">{label}</span>
@@ -124,7 +123,6 @@ export function ContactPanel({
 
   const [tagOpen,     setTagOpen]     = useState(false)
   const [assignOpen,  setAssignOpen]  = useState(false)
-  const [transferOpen, setTransferOpen] = useState(false)
   const [stageOpen,   setStageOpen]   = useState(false)
   const [localStage, setLocalStage] = useState<string | undefined | null>(contact.stage)
   useEffect(() => { setLocalStage(contact.stage) }, [contact.id, contact.stage])
@@ -154,7 +152,20 @@ export function ContactPanel({
         </span>
       ),
     },
-    { label: 'Responsável', value: assignedName ?? <span className="text-surface-500 font-normal">Sem responsável</span> },
+    {
+      label: 'Responsável',
+      value: (
+        // SCRUM-1253 (PO, 06/10): a ação mora no próprio campo, como "Situação ·
+        // Mudar". Uma ação só — "Transferir" e "Trocar" faziam a mesma coisa.
+        <span className="flex items-center gap-1.5 min-w-0">
+          {assignedName ? <span className="truncate">{assignedName}</span> : <span className="text-surface-500 font-normal">Sem responsável</span>}
+          <button onClick={() => setAssignOpen(true)} title={assignedUser ? 'Alterar responsável' : 'Atribuir responsável'}
+            className="flex-shrink-0 text-[11px] font-semibold text-accent-dark hover:underline">
+            {assignedUser ? 'Alterar' : 'Atribuir'}
+          </button>
+        </span>
+      ),
+    },
     { label: 'Origem', value: originLabel },
     ...(contact.email ? [{ label: 'E-mail', value: <span className="truncate block">{contact.email}</span> }] : []),
   ]
@@ -202,7 +213,7 @@ export function ContactPanel({
     <aside className="conv-surface relative w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-800 md:border-l md:border-surface-700">
       {/* CONV-PANEL-05: o mock não tem ícone de fechar — só no drawer MOBILE. */}
       <button onClick={onClose} title="Fechar" aria-label="Fechar"
-        className="md:hidden absolute top-2 right-2 z-10 w-7 h-7 rounded-sm flex items-center justify-center text-surface-400 hover:bg-surface-700 hover:text-surface-100 transition-all">
+        className="md:hidden absolute top-2 right-2 z-10 w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-400 hover:bg-surface-700 hover:text-surface-100 transition-all">
         <X className="w-4 h-4" />
       </button>
 
@@ -221,10 +232,10 @@ export function ContactPanel({
         <div className="px-4 pt-4 pb-3.5 flex flex-col items-start gap-2">
           <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="44" className="flex-shrink-0" />
           <div className="min-w-0 max-w-full">
-            <h4 className="text-[14px] font-bold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h4>
-            {subtitle && <p className="text-[11.5px] text-surface-400 truncate">{subtitle}</p>}
+            <h4 className="text-[14px] font-semibold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h4>
+            {subtitle && <p className="text-xs text-surface-400 truncate">{subtitle}</p>}
             {contact.lastSeenAt && (
-              <p className="text-[10px] text-surface-500 mt-0.5">Visto {formatRelativeTime(contact.lastSeenAt)}</p>
+              <p className="text-[11px] text-surface-500 mt-0.5">Visto {formatRelativeTime(contact.lastSeenAt)}</p>
             )}
           </div>
           <div className="flex items-center gap-1.5">
@@ -247,15 +258,17 @@ export function ContactPanel({
         {/* Revisão 02/10: os modais ficam FORA das seções recolhíveis — a seção
             recolhida não monta os filhos, e "Atribuir", "Transferir" e "Editar"
             etiquetas (que ficam no cabeçalho, sempre visível) não abriam nada. */}
-          <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Atribuir usuário" className="max-w-sm">
+          <Modal open={assignOpen} onClose={() => setAssignOpen(false)}
+            title={assignedUser ? 'Alterar responsável' : 'Atribuir responsável'} className="max-w-sm">
             <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
-              onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
-          </Modal>
-          {/* Transferir — endpoint/handler distinto de "Atribuir" (R13): já
-              existia no hook (useConversations.transferUser → PATCH .../transfer). */}
-          <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transferir conversa" className="max-w-sm">
-            <UserPickerList users={allUsers.filter((u) => u.id !== assignedUser?.id)}
-              onSelect={(user) => { if (user) onTransfer(user); setTransferOpen(false) }} />
+              onSelect={(user) => {
+                // SCRUM-1253: o front escolhe a chamada — dono → outro dono é
+                // TRANSFERÊNCIA (marco no chat, notificação certa); sem dono, ou
+                // removendo, é atribuição.
+                if (user && assignedUser && user.id !== assignedUser.id) onTransfer(user)
+                else onAssign(user)
+                setAssignOpen(false)
+              }} />
           </Modal>
           <Modal open={tagOpen} onClose={() => setTagOpen(false)} title="Gerenciar etiquetas" className="max-w-md">
             <TagPickerContent allTags={allTags} selectedTags={tags} onAdd={onAddTag} onRemove={onRemoveTag} onCreate={onCreateTag} onDelete={onDeleteTag} />
@@ -265,20 +278,6 @@ export function ContactPanel({
           title="Dados"
           storageKey="conv-panel.info"
           className="border-t border-surface-700"
-          actions={
-            <div className="flex items-center gap-2">
-              {assignedUser && (
-                <button onClick={() => setTransferOpen(true)} title="Transferir conversa"
-                  className="flex items-center gap-1 text-[11.5px] font-semibold text-accent-dark hover:underline">
-                  <ArrowRightLeft className="w-3 h-3" />
-                  Transferir
-                </button>
-              )}
-              <button onClick={() => setAssignOpen(true)} className="text-[11.5px] font-semibold text-accent-dark hover:underline">
-                {assignedUser ? 'Trocar' : 'Atribuir'}
-              </button>
-            </div>
-          }
         >
           <InfoTable rows={dadosRows} />
         </CollapsibleSection>
@@ -289,7 +288,7 @@ export function ContactPanel({
           storageKey="conv-panel.tags"
           className="border-t border-surface-700"
           actions={
-            <button onClick={() => setTagOpen(true)} className="text-[11.5px] font-semibold text-accent-dark hover:underline">
+            <button onClick={() => setTagOpen(true)} className="text-xs font-semibold text-accent-dark hover:underline">
               Editar
             </button>
           }
@@ -297,7 +296,7 @@ export function ContactPanel({
           {tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-[11px] h-5 px-2 rounded-xs font-semibold"
+                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-[11px] h-5 px-2 rounded-[6px] font-semibold"
                   style={{ ['--chip']: tag.color } as React.CSSProperties}
                   title={tag.name}>
                   <span>{tag.name}</span>

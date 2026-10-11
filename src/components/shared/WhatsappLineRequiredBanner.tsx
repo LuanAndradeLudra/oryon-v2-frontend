@@ -49,7 +49,7 @@ export function WhatsappLineRequiredBanner({
       action={
         <LinkComVolta
           to={settingsHref}
-          className="flex items-center gap-1.5 rounded-lg border border-current/25 bg-current/10 px-3 py-1.5 text-xs font-semibold text-current transition-colors hover:bg-current/20"
+          className="flex items-center gap-1.5 rounded-[10px] border border-current/25 bg-current/10 px-3 py-1.5 text-xs font-semibold text-current transition-colors hover:bg-current/20"
         >
           Configurar WhatsApp
           <ArrowRight className="h-3 w-3" />

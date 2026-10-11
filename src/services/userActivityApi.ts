@@ -12,6 +12,7 @@
 // endpoint — the operator panel sees them via agentActivityApi instead.
 
 import { api } from './api'
+import { compartilharEmVoo } from '@/lib/preBusca'
 
 /** Shape of a single row from /activity-feed/conversation/:id. The backend
  *  returns more in `metadata` than we currently render — only fields the
@@ -47,12 +48,14 @@ interface UserActivityResponse {
  *  outer try/catch handles network failures. */
 export async function fetchUserActivity(
   conversationId: string,
-  limit = 50,
+  limit = 100,
 ): Promise<UserActivity[]> {
-  const res = await api.get<UserActivityResponse>(
+  // SCRUM-1253: o chat (eventos) e a Timeline do painel pedem o mesmo feed ao
+  // mesmo tempo — um pedido só (mesmo limite nos dois: 100).
+  const res = await compartilharEmVoo(`atividade:${conversationId}:${limit}`, () => api.get<UserActivityResponse>(
     `/activity-feed/conversation/${conversationId}`,
     { params: { limit } },
-  )
+  ))
   return res.data?.data ?? []
 }
 

@@ -7,7 +7,7 @@ export function EscopoDoCartao({ children, className }: { children: string; clas
   return (
     <span
       className={cn(
-        'inline-flex items-center h-[18px] px-1.5 rounded-[5px] border border-surface-700 text-[10.5px] font-semibold text-surface-500 whitespace-nowrap',
+        'inline-flex items-center h-5 px-1.5 rounded-[6px] border border-surface-700 text-2xs font-semibold text-surface-500 whitespace-nowrap',
         className,
       )}
       title="Este cartão não segue o período escolhido"

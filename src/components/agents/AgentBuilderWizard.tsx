@@ -182,7 +182,7 @@ const HUB_TEAM_SIZES = [
 
 // ─── Shared input styles ───────────────────────────────────────────────────────
 
-const INPUT = 'w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-[13px] text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition'
+const INPUT = 'w-full bg-surface-800 border border-[var(--bd2)] rounded-[6px] px-2.5 py-2 text-[13px] text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition'
 const TEXTAREA = INPUT + ' resize-none'
 
 // ─── TagInput ─────────────────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ function TagInput({
         />
         <button
           type="button" onClick={add} disabled={!input.trim()}
-          className="px-3 rounded-lg bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition"
+          className="px-3 rounded-[6px] bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -216,7 +216,7 @@ function TagInput({
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {tags.map(tag => (
-            <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300">
+            <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[10px] bg-surface-800 border border-surface-700 text-xs text-surface-300">
               {tag}
               <button type="button" onClick={() => onChange(tags.filter(t => t !== tag))} className="text-surface-600 hover:text-surface-300 transition">
                 <X className="w-3 h-3" />
@@ -261,7 +261,7 @@ function CapabilityPicker({
         {presets.map(preset => (
           <button
             key={preset} type="button" onClick={() => toggle(preset)}
-            className={cn('px-3 py-1.5 rounded-lg border text-xs font-medium transition-all', selected.includes(preset) ? activeCls : idleCls)}
+            className={cn('px-3 py-1.5 rounded-[6px] border text-xs font-medium transition-all', selected.includes(preset) ? activeCls : idleCls)}
           >
             {preset}
           </button>
@@ -276,12 +276,12 @@ function CapabilityPicker({
           className={INPUT}
         />
         <button type="button" onClick={addCustom} disabled={!custom.trim()}
-          className="px-3 rounded-lg bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
+          className="px-3 rounded-[6px] bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
           <Plus className="w-4 h-4" />
         </button>
       </div>
       {selected.filter(i => !presets.includes(i)).map(item => (
-        <span key={item} className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs', activeCls)}>
+        <span key={item} className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-[10px] border text-xs', activeCls)}>
           {item}
           <button type="button" onClick={() => onChange(selected.filter(i => i !== item))} className="opacity-60 hover:opacity-100 transition">
             <X className="w-3 h-3" />
@@ -311,7 +311,7 @@ function Step1({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
               <button
                 key={id} type="button" onClick={() => setData(d => ({ ...d, icon: id }))}
                 className={cn(
-                  'group w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 border',
+                  'group w-12 h-12 rounded-[10px] flex items-center justify-center transition-all duration-200 border',
                   selected
                     ? ['bg-white', shadow, 'border-transparent ring-2 ring-offset-2 ring-offset-surface-950 ring-surface-100/40 scale-110 shadow-lg']
                     : ['bg-surface-800 border-surface-700 hover:border-transparent hover:scale-105 hover:shadow-lg', hoverBg, `hover:${shadow}`],
@@ -405,7 +405,7 @@ function Step2({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
               <button
                 key={t.value} type="button" onClick={() => setData(d => ({ ...d, tone: t.value }))}
                 className={cn(
-                  'flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-all',
+                  'flex flex-col items-start gap-1 p-3 rounded-[10px] border text-left transition-all',
                   selected
                     ? 'bg-surface-800 border-brand-500 ring-[3px] ring-accent-soft'
                     : 'bg-surface-800 border-surface-700 hover:bg-[var(--rowhover)]',
@@ -413,7 +413,7 @@ function Step2({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
               >
                 <span className={cn('transition-colors', selected ? 'text-accent-dark' : 'text-surface-400')}>{t.icon}</span>
                 <span className="text-[13px] font-semibold text-surface-100">{t.label}</span>
-                <span className="text-[11.5px] text-surface-400 leading-[1.45]">{t.desc}</span>
+                <span className="text-xs text-surface-400 leading-[1.45]">{t.desc}</span>
               </button>
             )
           })}
@@ -427,7 +427,7 @@ function Step2({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             <button
               key={l.value} type="button" onClick={() => setData(d => ({ ...d, language: l.value }))}
               className={cn(
-                'flex-1 h-9 rounded-sm border text-[13px] font-semibold transition-all',
+                'flex-1 h-9 rounded-[6px] border text-[13px] font-semibold transition-all',
                 data.language === l.value
                   ? 'bg-accent-soft border-brand-500 text-accent-dark'
                   : 'bg-surface-800 border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)]',
@@ -456,7 +456,7 @@ function Step2({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
                     : [...d.response_style, style],
                 }))}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
+                  'px-3 py-1.5 rounded-[6px] border text-xs font-medium transition-all',
                   on
                     ? 'bg-status-active-bg border-status-active-border text-status-active ring-1 ring-status-active-border'
                     : 'bg-surface-800 border-surface-700 text-surface-400 hover:border-surface-600',
@@ -489,7 +489,7 @@ function Step3({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           </div>
           <span className="text-xs font-semibold text-surface-300 uppercase tracking-wide">Pode fazer</span>
           {data.can_do.length > 0 && (
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-status-active-bg text-status-active">{data.can_do.length}</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-[6px] bg-status-active-bg text-status-active">{data.can_do.length}</span>
           )}
         </div>
         <CapabilityPicker
@@ -519,7 +519,7 @@ function Step3({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           <span className="text-xs font-semibold text-surface-300 uppercase tracking-wide">Não deve fazer</span>
           {data.cannot_do.length > 0 && (
             <span
-              className="text-xs px-1.5 py-0.5 rounded-md color-chip"
+              className="text-xs px-1.5 py-0.5 rounded-[6px] color-chip"
               style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
             >
               {data.cannot_do.length}
@@ -638,7 +638,7 @@ export function Step4({ data, setData }: { data: WizardData; setData: React.Disp
         </p>
       </div>
 
-      <div className="rounded-lg bg-brand-900/15 border border-brand-500/25 overflow-hidden">
+      <div className="rounded-[10px] bg-brand-900/15 border border-brand-500/25 overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-brand-500/20">
           <Sparkles className="w-4 h-4 text-brand-400 flex-shrink-0" />
@@ -650,7 +650,7 @@ export function Step4({ data, setData }: { data: WizardData; setData: React.Disp
           </div>
           {dirty && (
             <span
-              className="color-chip text-[10px] px-2 py-0.5 rounded-full border"
+              className="color-chip text-[11px] px-2 py-0.5 rounded-full border"
               style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
             >
               Não salvo
@@ -661,7 +661,7 @@ export function Step4({ data, setData }: { data: WizardData; setData: React.Disp
           )}
           {!dirty && savedAt && (
             <span
-              className="color-chip text-[10px] px-2 py-0.5 rounded-full border inline-flex items-center gap-1"
+              className="color-chip text-[11px] px-2 py-0.5 rounded-full border inline-flex items-center gap-1"
               style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
             >
               <Check className="w-3 h-3" /> Salvo
@@ -670,7 +670,7 @@ export function Step4({ data, setData }: { data: WizardData; setData: React.Disp
           <button
             type="button" onClick={handleSave} disabled={!dirty || saving || loading}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition',
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-xs font-medium transition',
               !dirty || saving || loading
                 ? 'bg-surface-800 text-surface-600 cursor-not-allowed'
                 : 'bg-brand-600 text-surface-950 hover:bg-brand-500',
@@ -689,7 +689,7 @@ export function Step4({ data, setData }: { data: WizardData; setData: React.Disp
           <div className="p-4 space-y-5">
             {/* Identidade */}
             <div className="space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Identidade</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-surface-500">Identidade</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="block text-[11px] text-surface-400 mb-1">Nome da empresa</label>
@@ -754,7 +754,7 @@ export function Step4({ data, setData }: { data: WizardData; setData: React.Disp
 
             {/* Sobre */}
             <div className="space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Sobre o negócio</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-surface-500">Sobre o negócio</p>
               <div>
                 <label className="block text-[11px] text-surface-400 mb-1">Descrição</label>
                 <textarea
@@ -781,7 +781,7 @@ export function Step4({ data, setData }: { data: WizardData; setData: React.Disp
 
             {/* Presença online */}
             <div className="space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Presença online</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-surface-500">Presença online</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {HUB_PRESENCE_FIELDS.map(({ key, label, placeholder }) => (
                   <div key={key}>
@@ -802,17 +802,17 @@ export function Step4({ data, setData }: { data: WizardData; setData: React.Disp
               <>
                 <div className="border-t border-surface-700" />
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Materiais da marca</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-surface-500">Materiais da marca</p>
                   <div className="space-y-1.5">
                     {hub.brandFiles.map(f => (
-                      <div key={f.id} className="flex items-center gap-2 px-3 py-2 bg-surface-900/60 border border-surface-700 rounded-lg">
+                      <div key={f.id} className="flex items-center gap-2 px-3 py-2 bg-surface-900/60 border border-surface-700 rounded-[10px]">
                         <FileText className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
                         <span className="text-xs text-surface-300 flex-1 truncate">{f.name}</span>
-                        <span className="text-[10px] text-surface-600 flex-shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
+                        <span className="text-[11px] text-surface-600 flex-shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-[10px] text-surface-600">
+                  <p className="text-[11px] text-surface-600">
                     Para adicionar ou remover materiais, acesse Configurações → Contexto da IA.
                   </p>
                 </div>
@@ -970,7 +970,7 @@ function PromptGeneratingAnimation() {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-lg border border-brand-500/25 bg-surface-900/80 overflow-hidden"
+      className="rounded-[10px] border border-brand-500/25 bg-surface-900/80 overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-surface-700 bg-surface-900">
@@ -1012,7 +1012,7 @@ function PromptGeneratingAnimation() {
 
         <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
           <span className="text-[11px] text-brand-400 font-mono font-semibold">{progressPct}%</span>
-          <span className="text-[10px] text-surface-600 font-mono">{elapsedLabel}</span>
+          <span className="text-[11px] text-surface-600 font-mono">{elapsedLabel}</span>
         </div>
       </div>
 
@@ -1038,7 +1038,7 @@ function PromptGeneratingAnimation() {
               animate={{ opacity: pending ? 0.28 : 1, x: 0 }}
               transition={{ delay: i * 0.05, duration: 0.2 }}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-2.5 py-1.5 transition-colors',
+                'flex items-center gap-3 rounded-[10px] px-2.5 py-1.5 transition-colors',
                 active && 'bg-brand-600/6 ring-1 ring-brand-500/15',
               )}
             >
@@ -1136,7 +1136,7 @@ function WizardKBProgress({ fileName }: { fileName: string }) {
   const progress = Math.min(95, elapsed * 1.2)
 
   return (
-    <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg space-y-2">
+    <div className="p-3 bg-surface-800 border border-surface-700 rounded-[10px] space-y-2">
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-brand-400 flex-shrink-0" />
         <p className="text-xs text-surface-200 font-medium truncate">{fileName}</p>
@@ -1155,7 +1155,7 @@ function WizardKBProgress({ fileName }: { fileName: string }) {
             style={{ width: `${progress}%` }}
           />
         </div>
-        <span className="text-[10px] text-surface-600 tabular-nums w-8 text-right">{elapsed}s</span>
+        <span className="text-[11px] text-surface-600 tabular-nums w-8 text-right">{elapsed}s</span>
       </div>
     </div>
   )
@@ -1280,7 +1280,7 @@ function Step6KB({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={!!uploadingFile}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 transition disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 transition disabled:opacity-50"
         >
           <Upload className="w-4 h-4" />
           {uploadingFile ? `Enviando ${uploadingFile}…` : 'Selecionar arquivos'}
@@ -1299,7 +1299,7 @@ function Step6KB({
         />
         <button
           type="button" onClick={addTextDoc} disabled={!textInput.trim()}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-surface-800 border border-surface-700 text-xs text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition"
         >
           <Plus className="w-3.5 h-3.5" /> Adicionar texto
         </button>
@@ -1314,11 +1314,11 @@ function Step6KB({
           <p className="text-xs font-medium text-surface-400">{data.knowledge_docs.length} documento(s) adicionado(s)</p>
           {data.knowledge_docs.map(doc => (
             <div key={doc.id} className="space-y-2">
-              <div className="flex items-center gap-3 p-3 bg-surface-800 border border-surface-700 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-surface-800 border border-surface-700 rounded-[10px]">
                 <FileText className="w-4 h-4 text-surface-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-surface-200 truncate">{doc.name}</p>
-                  <p className="text-[10px] text-surface-600">
+                  <p className="text-[11px] text-surface-600">
                     {doc.content.length.toLocaleString()} caracteres · {doc.source_type}
                   </p>
                 </div>
@@ -1423,13 +1423,13 @@ function PromptReviewModal({
         <div className="flex justify-end gap-2">
           <button
             type="button" onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] transition"
+            className="px-4 py-2 rounded-[6px] text-sm text-surface-300 hover:bg-[var(--rowhover)] transition"
           >
             Cancelar
           </button>
           <button
             type="button" onClick={() => onConfirm(draft)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 text-surface-950 hover:bg-brand-500 transition"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[6px] text-sm font-medium bg-brand-600 text-surface-950 hover:bg-brand-500 transition"
           >
             <Check className="w-3.5 h-3.5" /> Confirmar e continuar
           </button>
@@ -1523,8 +1523,8 @@ function Step6({
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {summaryItems.map(({ label, value }) => (
-          <div key={label} className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5">
-            <p className="text-[10px] text-surface-600 uppercase tracking-wide">{label}</p>
+          <div key={label} className="bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2.5">
+            <p className="text-[11px] text-surface-600 uppercase tracking-wide">{label}</p>
             <p className="text-sm text-surface-200 font-medium truncate">{value}</p>
           </div>
         ))}
@@ -1533,7 +1533,7 @@ function Step6({
       {/* Idle state — ready to generate */}
       {!data.generated_prompt && !manualMode && !generating && (
         <div className="flex flex-col items-center gap-4 py-6">
-          <div className="w-16 h-16 rounded-lg bg-brand-600/10 ring-1 ring-brand-500/20 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-[10px] bg-brand-600/10 ring-1 ring-brand-500/20 flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-brand-400" />
           </div>
           <div className="text-center">
@@ -1544,7 +1544,7 @@ function Step6({
             type="button" onClick={generate}
             // PL-C2-CAR-11: mesmo bug do rodapé — todo primary do app
             // escurece no hover (hover:brightness-90), este clareava.
-            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] font-semibold transition-all"
+            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-[6px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] font-semibold transition-all"
           >
             <Sparkles className="w-5 h-5" />
             Gerar System Prompt com IA
@@ -1603,7 +1603,7 @@ function Step6({
             onChange={e => setData(d => ({ ...d, generated_prompt: e.target.value }))}
             rows={18} maxLength={10000}
             placeholder="Escreva o system prompt do agente aqui..."
-            className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-xs text-surface-300 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
+            className="w-full bg-surface-800 border border-[var(--bd2)] rounded-[6px] px-2.5 py-2 text-xs text-surface-300 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
           />
           <p className="text-right text-xs text-surface-700">{data.generated_prompt.length.toLocaleString()} caracteres</p>
         </div>
@@ -1665,13 +1665,13 @@ function CapabilitiesReview({
   const enabledCount = data.crm_capabilities.capabilities.filter((c) => c.enabled).length
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 flex-shrink-0">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] px-4 py-3 flex-shrink-0">
       <div className="flex items-baseline justify-between mb-1">
         <p className="text-[11px] text-surface-300 font-semibold uppercase tracking-wide">
           Capacidades de CRM <span className="text-surface-600 font-normal normal-case">(opcional)</span>
         </p>
         {enabledCount > 0 && (
-          <span className="text-[10px] text-brand-400">{enabledCount} habilitada(s)</span>
+          <span className="text-[11px] text-brand-400">{enabledCount} habilitada(s)</span>
         )}
       </div>
       <p className="text-[11px] text-surface-500 mb-3">
@@ -1687,13 +1687,13 @@ function CapabilitiesReview({
               // hover:bg-surface-800/40 mistura a MESMA cor em si mesma —
               // matematicamente 0% de mudanca visual, em qualquer tema.
               className={cn(
-                'flex items-center gap-3 px-2 py-1.5 rounded-md cursor-pointer transition-colors',
+                'flex items-center gap-3 px-2 py-1.5 rounded-[6px] cursor-pointer transition-colors',
                 enabled ? 'bg-brand-950/30' : 'hover:bg-[var(--rowhover)]',
               )}
             >
               <span
                 className={cn(
-                  'w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0',
+                  'w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0',
                   enabled ? 'bg-brand-700/30 text-brand-300' : 'bg-surface-900 text-surface-500',
                 )}
               >
@@ -1731,7 +1731,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
         <p className="text-sm text-surface-500 mt-0.5">Revise as configurações antes de ativar o agente.</p>
       </div>
 
-      <div className="bg-surface-800 border border-surface-700 rounded-lg p-4 flex-shrink-0">
+      <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <AgentIcon iconId={data.icon} className="w-10 h-10" />
           <div className="flex-1 min-w-0">
@@ -1740,13 +1740,13 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           </div>
           {data.persona_name && data.persona_name !== data.name && (
             <div className="text-right flex-shrink-0">
-              <p className="text-[10px] text-surface-600">Persona</p>
+              <p className="text-[11px] text-surface-600">Persona</p>
               <p className="text-xs text-surface-300">{data.persona_name}</p>
             </div>
           )}
         </div>
         {data.objective && (
-          <p className="text-xs text-surface-500 mt-2 p-2 border-t border-surface-700 rounded-lg">{data.objective}</p>
+          <p className="text-xs text-surface-500 mt-2 p-2 border-t border-surface-700 rounded-[10px]">{data.objective}</p>
         )}
       </div>
 
@@ -1759,8 +1759,8 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           { label: 'FAQs',           value: `${data.faqs.filter(f => f.question).length} perguntas` },
           { label: 'Encaminhamentos', value: data.handoff_rules.length > 0 ? `${data.handoff_rules.length} regra(s)` : 'Nenhuma' },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5">
-            <p className="text-[10px] text-surface-600 uppercase tracking-wide">{label}</p>
+          <div key={label} className="bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2.5">
+            <p className="text-[11px] text-surface-600 uppercase tracking-wide">{label}</p>
             <p className="text-xs font-medium text-surface-200 truncate">{value}</p>
           </div>
         ))}
@@ -2125,7 +2125,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
             <div className="relative z-10 hidden w-80 flex-shrink-0 flex-col border-r border-surface-700 bg-surface-800 md:flex">
               <div className="flex-1 overflow-y-auto px-5 py-[18px]">
                 <div className="flex items-center gap-2 mb-[22px]">
-                  <span className="w-[22px] h-[22px] rounded-[6px] bg-gradient-to-br from-[#5EEAD4] via-[#14B8A6] to-[#0F766E] text-[#04201D] text-[12px] font-extrabold flex items-center justify-center">O</span>
+                  <span className="w-[22px] h-[22px] rounded-[6px] bg-gradient-to-br from-[#5EEAD4] via-[#14B8A6] to-[#0F766E] text-[#04201D] text-xs font-semibold flex items-center justify-center">O</span>
                   <span className="text-xs text-surface-400">Novo agente</span>
                 </div>
 
@@ -2137,11 +2137,11 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.2, ease: 'easeOut' }}
                   >
-                    <p className="text-[10px] font-bold text-accent-dark uppercase tracking-[.14em]">
+                    <p className="text-[11px] font-semibold text-accent-dark uppercase tracking-[.14em]">
                       Etapa {step} de {STEP_LABELS.length}
                     </p>
-                    <h2 className="text-[18px] font-bold tracking-[-0.01em] leading-[1.25] text-surface-100 mt-1.5">{teaching.title}</h2>
-                    <p className="text-[12.5px] text-surface-400 leading-[1.55] mt-2">{teaching.description}</p>
+                    <h2 className="text-lg font-semibold tracking-[-0.01em] leading-[1.25] text-surface-100 mt-1.5">{teaching.title}</h2>
+                    <p className="text-xs text-surface-400 leading-[1.55] mt-2">{teaching.description}</p>
                   </motion.div>
                 </AnimatePresence>
 
@@ -2158,7 +2158,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                         onClick={() => { if (done) { setValidationError(null); setStep(s) } }}
                         disabled={!done}
                         className={cn(
-                          'flex items-center gap-2.5 h-[30px] rounded-sm px-1.5 -mx-1.5 text-left text-[12.5px] transition-colors',
+                          'flex items-center gap-2.5 h-8 rounded-[6px] px-1.5 -mx-1.5 text-left text-xs transition-colors',
                           done && 'cursor-pointer hover:bg-[var(--rowhover)]',
                           !done && 'cursor-default',
                         )}
@@ -2170,7 +2170,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                           active && 'bg-[var(--color-btn-primary-bg)] border-transparent text-[var(--color-btn-primary-fg)]',
                           !done && !active && 'border-surface-600 text-surface-500',
                         )}>
-                          {done ? <Check className="w-3 h-3" strokeWidth={3} /> : <span className="text-[10px] font-bold">{s}</span>}
+                          {done ? <Check className="w-3 h-3" strokeWidth={3} /> : <span className="text-[11px] font-semibold">{s}</span>}
                         </span>
                         <span className={cn(
                           'truncate',
@@ -2193,7 +2193,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                 )}
               </div>
 
-              <p className="px-5 pb-[18px] text-[11.5px] text-surface-500 leading-[1.5] flex-shrink-0">
+              <p className="px-5 pb-[18px] text-xs text-surface-500 leading-[1.5] flex-shrink-0">
                 Só etapas concluídas são clicáveis.
               </p>
             </div>
@@ -2204,10 +2204,10 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   o que ela pede e fecha o assistente. */}
               <div className="flex flex-shrink-0 items-start gap-3 bg-surface-800 px-4 pb-2 pt-[max(12px,env(safe-area-inset-top))] md:hidden">
                 <div className="min-w-0 flex-1">
-                  <p className="text-3xs font-bold uppercase tracking-[.14em] text-accent-dark">
+                  <p className="text-2xs font-semibold uppercase tracking-[.14em] text-accent-dark">
                     Etapa {step} de {STEP_LABELS.length} · {STEP_LABELS[step - 1]}
                   </p>
-                  <p className="mt-1 text-base font-bold leading-tight tracking-[-0.01em] text-surface-100">{teaching.title}</p>
+                  <p className="mt-1 text-base font-semibold leading-tight tracking-[-0.01em] text-surface-100">{teaching.title}</p>
                 </div>
                 <Button type="button" variant="ghost" size="md" iconOnly aria-label="Fechar" onClick={handleCloseClick} disabled={publishing}>
                   <X className="h-5 w-5" />
@@ -2235,7 +2235,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   onClick={handleCloseClick}
                   disabled={publishing}
                   aria-label="Fechar"
-                  className="ml-3.5 hidden w-7 h-7 items-center justify-center rounded-sm md:flex text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition disabled:opacity-40 flex-shrink-0"
+                  className="ml-3.5 hidden w-7 h-7 items-center justify-center rounded-[6px] md:flex text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition disabled:opacity-40 flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -2247,7 +2247,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
               <div className="flex-1 overflow-y-auto">
                 <div className="max-w-[720px] px-4 py-5 md:px-10 md:py-8">
                   {/* Celular: o que o painel tutor ensina, recolhido. */}
-                  <details className="mb-5 rounded-md border border-surface-700 bg-[var(--sf2)] px-3 py-2.5 md:hidden">
+                  <details className="mb-5 rounded-[6px] border border-surface-700 bg-[var(--sf2)] px-3 py-2.5 md:hidden">
                     <summary className="cursor-pointer text-sm font-semibold text-surface-200">Como preencher esta etapa</summary>
                     <p className="mt-2 text-sm leading-relaxed text-surface-400">{teaching.description}</p>
                     {teaching.tips.length > 0 && (
@@ -2308,7 +2308,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                 )}
                 {/* PL-C2-CAR-11 (Eixo10/P4): os 4 botões do rodapé eram
                     <button> à mão reproduzindo ~90% do primitivo Button md
-                    (mesmo h-9/px-3.5/rounded-sm) mas com a franja errada:
+                    (mesmo h-9/px-3.5/rounded-[6px]) mas com a franja errada:
                     sem focus-visible ring (os 4), disabled:opacity-50 em vez
                     de 45% (Voltar/Rascunho), borda surface-700 em vez de
                     --bd2 (Rascunho) e — o mais visível — hover:brightness-110

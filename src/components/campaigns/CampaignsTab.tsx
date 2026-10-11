@@ -92,7 +92,9 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
 
   // SCRUM-1106 (tela 2c): contagem no rótulo da aba, no CampaignsPage —
   // reporta em vez de duplicar o fetch lá em cima.
-  useEffect(() => { onCountChange?.(campaigns.length) }, [campaigns.length, onCountChange])
+  // Só reporta depois do fetch: antes disso `campaigns.length` é 0 e o
+  // CampaignsPage tomava "ainda não carregou" por "não há campanhas".
+  useEffect(() => { if (!loading) onCountChange?.(campaigns.length) }, [loading, campaigns.length, onCountChange])
 
   const handleCreated = useCallback((camp: Campaign) => {
     setCampaigns((prev) => {
@@ -183,7 +185,7 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="p-4 flex flex-col gap-2">
-            {[0, 1, 2].map((i) => <div key={i} className="h-[108px] rounded-lg bg-surface-800 animate-pulse" />)}
+            {[0, 1, 2].map((i) => <div key={i} className="h-[108px] rounded-[10px] bg-surface-800 animate-pulse" />)}
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-5">
@@ -299,10 +301,10 @@ const num = (n: number) => n.toLocaleString('pt-BR')
 function Metrica({ rotulo, valor, tom }: { rotulo: string; valor: number; tom?: 'perigo' }) {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className={cn('text-[13px] font-semibold tabular-nums', tom === 'perigo' ? 'text-danger' : 'text-surface-100')}>
+      <span className={cn('text-sm font-semibold tabular-nums', tom === 'perigo' ? 'text-danger' : 'text-surface-100')}>
         {num(valor)}
       </span>
-      <span className="text-[11px] text-surface-500">{rotulo}</span>
+      <span className="text-2xs text-surface-500">{rotulo}</span>
     </div>
   )
 }
@@ -330,10 +332,10 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
   const quando = campaign.sentAt ?? campaign.scheduledAt ?? campaign.createdAt
 
   return (
-    <div className="border border-surface-700 rounded-lg bg-surface-800 px-4 py-3 flex flex-col gap-2.5">
+    <div className="border border-surface-700 rounded-[10px] bg-surface-800 px-4 py-3 flex flex-col gap-2.5">
       {/* Identidade */}
       <div className="flex items-center gap-2 min-w-0">
-        <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none', STATUS_CHIP_CLASS[campaign.status])}>
+        <span className={cn('inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-none', STATUS_CHIP_CLASS[campaign.status])}>
           {STATUS_CONFIG[campaign.status]?.label ?? campaign.status}
         </span>
         {/* Responsivo: flex-1 min-w-0 — sem isto um nome de campanha um
@@ -341,7 +343,7 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
             não encolhe abaixo do seu conteúdo, mesmo com `truncate`) e
             estourava a largura do card em 390px, com chip/badges/data
             fixos ao redor. */}
-        <span className="flex-1 min-w-0 text-[13px] font-semibold text-surface-50 truncate">{campaign.name}</span>
+        <span className="flex-1 min-w-0 text-sm font-semibold text-surface-50 truncate">{campaign.name}</span>
         {campaign.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
         <WhatsappLineChip whatsappNumberId={campaign.whatsappNumberId ?? undefined} />
         {/* Medido ao vivo em 390px: card estourava 3px, culpa da data +
@@ -350,7 +352,7 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
             data) pra continuar empurrando data+kebab juntos pra direita
             mesmo quando a data está escondida. */}
         <div className="ml-auto flex items-center gap-2 flex-none">
-          <span className="hidden sm:inline-flex text-[11px] text-surface-500 tabular-nums flex-none">
+          <span className="hidden sm:inline-flex text-2xs text-surface-500 tabular-nums flex-none">
             {new Date(quando).toLocaleDateString('pt-BR')}
           </span>
           <Dropdown
@@ -364,7 +366,7 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
                 aria-label={`Mais ações — ${campaign.name}`}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-none"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-none"
               >
                 <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
@@ -387,13 +389,13 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
         </div>
       </div>
 
-      <p className="text-[11px] text-surface-500 truncate">
+      <p className="text-2xs text-surface-500 truncate">
         modelo <span className="text-surface-400">{campaign.templateName}</span>
         {total > 0 && <> · {num(total)} destinatário{total === 1 ? '' : 's'}</>}
       </p>
 
       {interrompida && campaign.stopReason && (
-        <p className="text-[11.5px] text-danger line-clamp-2" title={campaign.stopReason}>{campaign.stopReason}</p>
+        <p className="text-xs text-danger line-clamp-2" title={campaign.stopReason}>{campaign.stopReason}</p>
       )}
 
       {/* Progresso + métricas, só quando já existe resultado */}
@@ -407,7 +409,7 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="text-[11px] text-surface-400 tabular-nums flex-none">
+            <span className="text-2xs text-surface-400 tabular-nums flex-none">
               {num(s.sent)} / {num(total)}
             </span>
           </div>
@@ -415,7 +417,7 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
             <Metrica rotulo="entregues" valor={s.delivered} />
             <Metrica rotulo="lidas" valor={s.read} />
             {s.replied !== undefined && <Metrica rotulo="respostas" valor={s.replied} />}
-            {s.failed > 0 && <Metrica rotulo="falhas" valor={s.failed} tom="perigo" />}
+            {s.failed > 0 && <Metrica rotulo={s.failed === 1 ? 'falha' : 'falhas'} valor={s.failed} tom="perigo" />}
           </div>
         </>
       )}

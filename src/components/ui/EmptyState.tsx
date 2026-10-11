@@ -38,7 +38,7 @@ export function EmptyState({ icon: Icon, title, hint, action, className, iconSty
   return (
     <div
       className={cn(
-        'mt-3 flex flex-col items-start gap-1.5 py-[18px] px-4 rounded-lg border border-dashed border-[var(--bd2)]',
+        'mt-3 flex flex-col items-start gap-1.5 py-[18px] px-4 rounded-[10px] border border-dashed border-[var(--bd2)]',
         className,
       )}
     >
@@ -50,7 +50,7 @@ export function EmptyState({ icon: Icon, title, hint, action, className, iconSty
           {'href' in action && action.href ? (
             <a
               href={action.href}
-              className="inline-flex items-center justify-center h-7 px-2.5 text-xs gap-1.5 rounded-sm bg-surface-800 text-surface-100 font-semibold border border-[var(--bd2)] hover:bg-[var(--rowhover)] transition-all"
+              className="inline-flex items-center justify-center h-7 px-2.5 text-xs gap-1.5 rounded-[6px] bg-surface-800 text-surface-100 font-semibold border border-[var(--bd2)] hover:bg-[var(--rowhover)] transition-all"
             >
               {action.label}
             </a>

@@ -120,16 +120,25 @@ describe('Dashboard · aba Agora', () => {
       'Abrir a conversa com Rafaela',
     ])
     expect(screen.queryByText('Bruno')).toBeNull()
-    expect(screen.getByText('IA passou')).toBeInTheDocument()
+    // SCRUM-1253 (D11): o selo é "Na fila" em toda pendente SEM dono, com ou sem IA
+    // na linha (Carla e Rafaela); a Joana é do Diego — o "com Diego" já diz.
+    expect(screen.queryByText('IA passou')).toBeNull()
+    const itens = screen.getAllByTestId('fila-item')
+    expect(within(itens[0]).getByText('Na fila')).toBeInTheDocument()
+    expect(within(itens[1]).queryByText('Na fila')).toBeNull()
+    expect(within(itens[2]).getByText('Na fila')).toBeInTheDocument()
     expect(within(screen.getAllByTestId('fila-item')[0]).getByText('42 min')).toBeInTheDocument()
   })
 
-  it('a faixa conta do mesmo dado: 3 esperando (2 sem dono), maior espera, IA passou, linhas', async () => {
+  it('a faixa conta do mesmo dado: 3 esperando (1 com dono), 2 sem dono, maior espera, linhas', async () => {
     montar()
     const faixa = await screen.findByTestId('faixa-do-agora')
-    await waitFor(() => expect(within(faixa).getByText('2 sem dono')).toBeInTheDocument())
+    await waitFor(() => expect(within(faixa).getByText('1 com dono, sem resposta')).toBeInTheDocument())
     // O valor sai com a unidade separada (menor) — `data-valor` guarda o texto.
     expect(faixa.querySelector('[data-valor="3"]')).not.toBeNull()
+    expect(faixa.querySelector('[data-celula="sem-dono"] [data-valor="2"]')).not.toBeNull()
+    // SCRUM-1253: "Pendentes" repetia "Esperando alguém" e saiu da faixa.
+    expect(faixa.querySelector('[data-celula="ia-passou"]')).toBeNull()
     expect(faixa.querySelector('[data-valor="42 min"]')).not.toBeNull()
     expect(faixa.querySelector('[data-valor="2 de 2"]')).not.toBeNull()
     expect(within(faixa).getByText('conectadas · 1 com IA')).toBeInTheDocument()
@@ -149,15 +158,16 @@ describe('Dashboard · aba Agora', () => {
   it('PO 01/10: a faixa vem em cartões por assunto, com filete só onde há urgência, e a célula filtra a fila', async () => {
     montar()
     const faixa = await screen.findByTestId('faixa-do-agora')
-    await waitFor(() => expect(within(faixa).getByText('2 sem dono')).toBeInTheDocument())
+    await waitFor(() => expect(within(faixa).getByText('ninguém assumiu ainda')).toBeInTheDocument())
     expect(within(faixa).getAllByRole('region').map((r) => r.getAttribute('aria-label'))).toEqual(['Fila', 'Verificação', 'Linhas'])
     const esperando = faixa.querySelector('[data-celula="esperando"]') as HTMLElement
-    const passou = faixa.querySelector('[data-celula="ia-passou"]') as HTMLElement
-    expect(esperando.style.boxShadow).toContain('status-pending') // 2 sem dono = atenção
+    const semDono = faixa.querySelector('[data-celula="sem-dono"]') as HTMLElement
+    expect(semDono.style.boxShadow).toContain('status-pending') // 2 sem dono = atenção
+    expect(esperando.getAttribute('style') ?? '').not.toContain('box-shadow')
     expect(faixa.querySelector('[data-celula="linhas"]')!.getAttribute('style') ?? '').not.toContain('box-shadow')
-    fireEvent.click(passou)
-    await waitFor(() => expect(screen.getByTestId('local').textContent).toContain('fila=ia-passou'))
-    expect(passou).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(semDono)
+    await waitFor(() => expect(screen.getByTestId('local').textContent).toContain('fila=sem-dono'))
+    expect(semDono).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('Assumir atribui a mim e abre a conversa', async () => {
@@ -180,10 +190,17 @@ describe('Dashboard · aba Agora', () => {
     expect(screen.getByTestId('local').textContent).toBe('/dashboard')
   })
 
-  it('o filtro da fila fica na URL', async () => {
+  it('PO 11/10: sem o filtro "Vindas da IA"; link antigo ?fila=ia-passou mostra todas', async () => {
     montar('/dashboard?fila=ia-passou')
     await screen.findByText('Joana')
-    expect(screen.getAllByTestId('fila-item')).toHaveLength(1)
+    expect(screen.getAllByTestId('fila-item')).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: /Vindas da IA/ })).toBeNull()
+  })
+
+  it('o filtro da fila fica na URL', async () => {
+    montar('/dashboard?fila=sem-dono')
+    await screen.findByText('Carla')
+    expect(screen.getAllByTestId('fila-item')).toHaveLength(2)
     fireEvent.click(screen.getByRole('button', { name: /Todas/ }))
     await waitFor(() => expect(screen.getAllByTestId('fila-item')).toHaveLength(3))
     expect(screen.getByTestId('local').textContent).toBe('/dashboard')

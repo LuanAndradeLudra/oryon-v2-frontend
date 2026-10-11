@@ -29,8 +29,8 @@ export function WabaAssignmentBadge({
       : 'Linha WhatsApp não atribuída')
 
   const baseClasses = cn(
-    'color-chip-soft inline-flex items-center gap-1 px-2 py-0.5 rounded-md border',
-    'text-[10px] font-medium uppercase tracking-wide',
+    'color-chip-soft inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] border',
+    'text-[11px] font-medium uppercase tracking-wide',
     onClick && 'cursor-pointer transition-colors',
     className,
   )

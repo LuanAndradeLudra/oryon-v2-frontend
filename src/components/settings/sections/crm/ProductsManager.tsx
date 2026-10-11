@@ -139,17 +139,17 @@ export function ProductsManager() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-surface-100 truncate">{p.name}</span>
                       {p.category && (
-                        <span className="text-[10px] text-surface-400 bg-[var(--sf2)] border border-surface-700 px-1.5 py-0.5 rounded-xs whitespace-nowrap">
+                        <span className="text-2xs text-surface-400 bg-[var(--sf2)] border border-surface-700 px-1.5 py-0.5 rounded-[6px] whitespace-nowrap">
                           {p.category}
                         </span>
                       )}
                       {!isActive && (
-                        <span className="text-[10px] text-surface-500 border border-surface-700 px-1.5 py-0.5 rounded-xs">
+                        <span className="text-2xs text-surface-500 border border-surface-700 px-1.5 py-0.5 rounded-[6px]">
                           Inativo
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-surface-500">
+                    <p className="text-2xs text-surface-500">
                       {priceRange(p)}
                       {p.priceVariations?.length
                         ? ` · ${p.priceVariations.length} ${p.priceVariations.length === 1 ? 'variação' : 'variações'}`
@@ -171,13 +171,13 @@ export function ProductsManager() {
                           setEditProduct(p)
                           setModalOpen(true)
                         }}
-                        className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+                        className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteProduct(p)}
-                        className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
+                        className="p-1.5 rounded-[6px] text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

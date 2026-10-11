@@ -21,7 +21,7 @@
 // feedback). Backend mirrors this; department scoping there still prevents
 // cross-line interference.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Bot, UserCog, ChevronDown, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -84,6 +84,8 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
   const [menuOpen, setMenuOpen] = useState(false)
   const [tipShow, setTipShow] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  // SCRUM-1253: id do gradiente do contorno do ícone no tooltip (sem ':' para caber no url(#…)).
+  const gradId = `op-grad-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
 
   // "Você" when the logged-in operator is the one driving the conversation,
   // otherwise the assignee's first name. Empty fallback (when the backend
@@ -164,7 +166,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
           disabled={busy}
           onClick={() => { setTipShow(false); handleIntervene() }}
           aria-label="Intervir agora — assumir a conversa da IA"
-          className="w-7 h-7 flex items-center justify-center rounded-sm border color-chip disabled:opacity-50 hover:brightness-110 active:brightness-95 transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] border color-chip disabled:opacity-50 hover:brightness-110 active:brightness-95 transition-all"
           style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
@@ -176,7 +178,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.92 }}
               transition={{ type: 'spring', stiffness: 520, damping: 30, mass: 0.6 }}
-              className="absolute top-full right-0 mt-2 z-50 w-60 origin-top-right rounded-xl overlay-surface border px-3 py-2.5 pointer-events-none"
+              className="absolute top-full right-0 mt-2 z-50 w-60 origin-top-right rounded-[10px] overlay-surface border px-3 py-2.5 pointer-events-none"
             >
               <p className="flex items-center gap-1.5 text-[11px] font-semibold text-surface-50">
                 <UserCog className="w-3 h-3 text-amber-400" /> Intervir agora
@@ -211,10 +213,11 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
           disabled={busy}
           onClick={() => { setTipShow(false); handleResume() }}
           aria-label="Reativar IA — devolver a conversa para a IA"
-          className="w-7 h-7 flex items-center justify-center rounded-sm border color-chip disabled:opacity-50 hover:brightness-110 active:brightness-95 transition-all"
-          style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
+          // SCRUM-1253 (PO, 06/10): mesmo gradiente dos botões principais
+          // (Nova conversa, Novo lead…), no lugar do verde cheio.
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-transparent [background-origin:border-box] bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) hover:bg-[#115E59] hover:bg-(image:--primario-img-hover) text-white disabled:opacity-50 transition-all"
         >
-          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCog className="w-4 h-4" />}
+          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCog className="w-3.5 h-3.5" />}
         </button>
         <AnimatePresence>
           {tipShow && (
@@ -223,10 +226,19 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.92 }}
               transition={{ type: 'spring', stiffness: 520, damping: 30, mass: 0.6 }}
-              className="absolute top-full right-0 mt-2 z-50 w-60 origin-top-right rounded-xl overlay-surface border px-3 py-2.5 pointer-events-none"
+              className="absolute top-full right-0 mt-2 z-50 w-60 origin-top-right rounded-[10px] overlay-surface border px-3 py-2.5 pointer-events-none"
             >
               <p className="flex items-center gap-1.5 text-[11px] font-semibold text-surface-50">
-                <UserCog className="w-3 h-3 text-emerald-400" /> {isMe ? 'Você está atendendo' : `${ownerLabel} está atendendo`}
+                {/* SCRUM-1253: contorno com o gradiente dos botões principais. */}
+                <svg width="0" height="0" className="absolute" aria-hidden>
+                  <defs>
+                    <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24">
+                      <stop offset="0%" stopColor="#0F766E" />
+                      <stop offset="100%" stopColor="#134E4A" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <UserCog className="w-3 h-3" color={`url(#${gradId})`} /> {isMe ? 'Você está atendendo' : `${ownerLabel} está atendendo`}
               </p>
               <p className="mt-1 text-[11px] leading-snug text-surface-400">
                 {isIndefinite
@@ -247,7 +259,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
           onClick={() => setMenuOpen((v) => !v)}
           title="Estender pausa da IA"
           aria-label="Estender pausa"
-          className="w-7 h-7 flex items-center justify-center rounded-sm text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-200 disabled:opacity-50 transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-200 disabled:opacity-50 transition-all"
         >
           <ChevronDown className={cn('w-4 h-4 transition-transform', menuOpen && 'rotate-180')} />
         </button>
@@ -259,7 +271,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.12 }}
-              className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg overlay-surface overlay-vidro border overflow-hidden"
+              className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-[10px] overlay-surface overlay-vidro border overflow-hidden"
             >
               {EXTEND_OPTIONS.map((opt) => (
                 <button

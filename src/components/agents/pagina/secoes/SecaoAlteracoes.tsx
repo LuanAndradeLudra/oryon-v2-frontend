@@ -95,7 +95,7 @@ export function SecaoAlteracoes({ agent }: { agent: AgentConfigWithTools }) {
       )}
       {eventos === null ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full bg-[var(--sf2)]" />)}</div>
-      ) : eventos.length <= 1 && !semAuditoria ? (
+      ) : eventos.length === 0 && !semAuditoria ? (
         <EmptyState icon={History} title="Nada mudou desde a criação" hint="Cada alteração salva e cada conversa de teste aparecem aqui, com data e autor." />
       ) : (
         <ol className="relative ml-3 border-l border-surface-700">

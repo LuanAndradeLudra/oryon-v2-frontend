@@ -22,16 +22,16 @@ function montar(slots: KpiId[] = SLOTS) {
 describe('Personalizar indicadores', () => {
   it('mostra a faixa na ordem e reordena com as setas', () => {
     const { selecionados } = montar()
-    expect(selecionados()[0]).toContain('Conversas Ativas')
-    fireEvent.click(screen.getByRole('button', { name: 'Descer Conversas Ativas' }))
+    expect(selecionados()[0]).toContain('Conversas ativas')
+    fireEvent.click(screen.getByRole('button', { name: 'Descer Conversas ativas' }))
     expect(selecionados()[0]).toContain('Resolvidas')
-    expect(selecionados()[1]).toContain('Conversas Ativas')
+    expect(selecionados()[1]).toContain('Conversas ativas')
   })
 
   it('adiciona pelo catálogo com busca, e Salvar grava o rascunho', () => {
     const { onSave, onClose } = montar()
     fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar indicador' }), { target: { value: 'recebidas' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Adicionar Msgs Recebidas' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar Msgs recebidas' }))
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(onSave).toHaveBeenCalledWith({ slots: [...SLOTS, 'msgs_received'], densidade: 'compacta', destaque: [] })
     expect(onClose).toHaveBeenCalled()
@@ -64,7 +64,7 @@ describe('Personalizar indicadores', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Clínica' }))
     const lista = screen.getByTestId('kpi-disponiveis')
     expect(within(lista).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      expect.stringContaining('Agendamentos Marcados'),
+      expect.stringContaining('Agendamentos marcados'),
       expect.stringContaining('Cancelamentos'),
     ])
   })
@@ -76,9 +76,9 @@ describe('DC-5/DC-6 — densidade, destaque e metas', () => {
     const { onSave } = montar()
     fireEvent.click(screen.getByRole('radio', { name: /Detalhada/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Destacar Resolvidas' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Destacar Em Fila' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Destacar Em fila' }))
     // O terceiro não entra: até 2.
-    expect(screen.getByRole('button', { name: 'Destacar Conversas Ativas' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Destacar Conversas ativas' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(onSave).toHaveBeenCalledWith({ slots: SLOTS, densidade: 'detalhada', destaque: ['resolved', 'queued'] })
   })

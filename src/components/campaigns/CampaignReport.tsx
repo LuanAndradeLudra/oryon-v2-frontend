@@ -43,9 +43,13 @@ function fmtDate(iso: string) {
   })
 }
 
+/** SCRUM-1253 (PO, 07/10): etapas do funil numa escala única de teal (forte → claro conforme
+ *  o funil afina); só "Falharam" sai da escala, em vermelho. */
+const RAMPA_TEAL = ['#0F766E', '#14857A', '#2A9D90', '#5BB5A9', '#8CCBC2']
+
 /** Tint temático — alpha via color-mix (funciona com var() e hex, nos dois temas). */
 function tint(color: string, pctVal: number) {
-  return `color-mix(in srgb, ${color} ${pctVal}%, transparent)`
+  return `color-mix(in srgb, ${color} calc(${pctVal}% * var(--tinta-k, 1)), transparent)`
 }
 
 // ── Conversion type config ────────────────────────────────────────────────────
@@ -114,7 +118,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
           onClick={generate}
           disabled={loading}
           className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-xs font-medium border transition-all',
             loading
               ? 'bg-surface-800 border-surface-700 text-surface-500 cursor-not-allowed'
               : 'bg-brand-600/20 border-brand-600 text-brand-300 hover:bg-brand-600/30',
@@ -131,7 +135,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
       </div>
 
       {!generated && !loading && (
-        <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-surface-700 rounded-lg">
+        <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-surface-700 rounded-[10px]">
           <Sparkles className="w-6 h-6 text-surface-600" />
           <p className="text-xs text-surface-500 text-center max-w-xs">
             Clique em "Gerar análise" para que a IA avalie conversões, churn e engajamento desta campanha.
@@ -155,7 +159,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
             {insights.map((ins) => (
               <div
                 key={ins.id}
-                className="p-3 rounded-lg border"
+                className="p-3 rounded-[10px] border"
                 style={{ backgroundColor: INSIGHT_BG[ins.type], borderColor: tint(INSIGHT_COLORS[ins.type], 19) }}
               >
                 <div className="flex items-start gap-2">
@@ -171,11 +175,11 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
                     <p className="text-2xs text-surface-400 mt-0.5 leading-relaxed">{ins.body}</p>
                     <div className="flex items-center gap-1 mt-1.5">
                       <Zap className="w-3 h-3" style={{ color: INSIGHT_COLORS[ins.type] }} />
-                      <span className="text-3xs" style={{ color: INSIGHT_COLORS[ins.type] }}>{ins.action}</span>
+                      <span className="text-2xs" style={{ color: INSIGHT_COLORS[ins.type] }}>{ins.action}</span>
                     </div>
                   </div>
                   <span className={cn(
-                    'text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0',
+                    'text-2xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0',
                     ins.priority === 'high' ? 'bg-danger/20 text-danger' :
                     ins.priority === 'medium' ? 'bg-status-pending-bg text-status-pending' :
                     'bg-[var(--sf2)] text-surface-400',
@@ -289,6 +293,12 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const delivered = funnel?.delivered ?? stats.delivered
   const read      = funnel?.read ?? stats.read
   const replied   = funnel?.replied ?? stats.replied ?? 0
+  // D9/D10 (PO, 06/10; backend K1/K2): opcionais — backend antigo não manda,
+  // e aí nada aparece (deduzidas = 0, sem etapa de cliques).
+  const readInferred = funnel?.readInferred ?? stats.readInferred ?? 0
+  const clickedRaw   = funnel?.clicked ?? stats.clicked
+  const temCliques   = clickedRaw !== undefined
+  const clicked      = clickedRaw ?? 0
   const failed    = funnel?.failed ?? stats.failed
   const excluded  = funilBruto?.excluded ?? stats.excluded ?? 0
   const optedOut  = funilBruto?.optedOut ?? stats.optedOut ?? 0
@@ -300,11 +310,17 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const pctDe = (n: number, base: number) => (base > 0 ? `${Math.min(100, Math.round((n / base) * 100))}%` : '—')
   const convRate  = stats.read > 0 && stats.conversions ? pct100(stats.conversions / stats.read) : 0
 
-  const funnelData = [
+  const DICA_DEDUZIDAS = 'Quem desliga a confirmação de leitura não envia o aviso de lido, mas quem respondeu ou clicou leu.'
+  const DICA_CLIQUES = 'Toques nos botões de resposta rápida do modelo. Também contam em Responderam.'
+  const funnelData: Array<{ label: string; value: number; base: number; baseLabel: string; color: string; nota?: string; dica?: string }> = [
     { label: 'Enviadas',    value: enviadas,  base: enviadas,  baseLabel: '',              color: 'var(--color-accent-blue)' },
     { label: 'Entregues',   value: delivered, base: enviadas,  baseLabel: 'das enviadas',  color: 'var(--color-accent-cyan)' },
-    { label: 'Lidas',       value: read,      base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-amber)' },
+    { label: 'Lidas',       value: read,      base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-amber)',
+      nota: readInferred > 0 ? `inclui ${readInferred} deduzida${readInferred > 1 ? 's' : ''} por resposta ou clique` : undefined, dica: readInferred > 0 ? DICA_DEDUZIDAS : undefined },
+    // Cliques ⊂ Responderam (o toque no botão conta como resposta): vem DEPOIS,
+    // para o funil afunilar — antes a barra alargava de Cliques para Responderam.
     { label: 'Responderam', value: replied,   base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-violet)' },
+    ...(temCliques ? [{ label: 'Cliques', value: clicked, base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-blue)', dica: DICA_CLIQUES }] : []),
     { label: 'Falharam',    value: failed,    base: enviadas,  baseLabel: 'das enviadas',  color: 'var(--color-danger)' },
   ]
 
@@ -354,10 +370,10 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
-          {/* Eixo 10: rounded-lg (8px), não rounded-xl (10px) — mesma medida
+          {/* Ladrilho de ícone 32px com raio 6px (SCRUM-1253) — mesma medida
               do ícone 32px de cabeçalho de drawer em CampaignLeadsDrawer.tsx
               e AttributionTab.tsx (mesma tela T7). */}
-          <div className="w-8 h-8 rounded-lg bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-[6px] bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
             <BarChart3 className="w-4 h-4 text-brand-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -366,7 +382,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
               Relatório de desempenho · {stats.total} contatos · {campaign.sentAt ? fmtDate(campaign.sentAt) : ''}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -386,20 +402,24 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
             {/* KPI Strip — direção C: número grande + rótulo miúdo, linha de
                 1px entre eles, sem cartão por item. */}
             <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
-              <StatStrip items={[
-                { label: 'Enviadas',    value: enviadas,                  sub: pending > 0 ? `${pending} na fila` : `de ${stats.total} contatos`, color: 'var(--color-accent-blue)' },
-                { label: 'Entregues',   value: pctDe(delivered, enviadas), sub: `${delivered} das enviadas`,  color: 'var(--color-accent-cyan)' },
-                { label: 'Lidas',       value: pctDe(read, delivered),    sub: `${read} das entregues`,      color: 'var(--color-accent-amber)' },
-                { label: 'Responderam', value: pctDe(replied, delivered), sub: `${replied} das entregues`,   color: 'var(--color-accent-violet)' },
-                { label: 'Falhas',      value: pctDe(failed, enviadas),   sub: `${failed} das enviadas`,     color: 'var(--color-danger)' },
-              ]} />
+              {/* SCRUM-1253 (PO, 07/10): número neutro, vermelho só em Falhas; base
+                  curta ("18 de 20") — antes uma cor por etapa (arco-íris). */}
+                <StatStrip items={[
+                  { label: 'Enviadas',    value: enviadas,                  sub: pending > 0 ? `${pending} na fila` : `de ${stats.total}` },
+                  { label: 'Entregues',   value: pctDe(delivered, enviadas), sub: `${delivered} de ${enviadas}` },
+                  { label: 'Lidas',       value: pctDe(read, delivered),    sub: `${read} de ${delivered}${readInferred > 0 ? ` · ${readInferred} deduzida${readInferred > 1 ? 's' : ''}` : ''}` },
+                  ...(temCliques ? [{ label: 'Cliques', value: pctDe(clicked, delivered), sub: `${clicked} de ${delivered}` }] : []),
+                  { label: 'Responderam', value: pctDe(replied, delivered), sub: `${replied} de ${delivered}` },
+                  { label: 'Falhas',      value: pctDe(failed, enviadas),   sub: `${failed} de ${enviadas}`, color: failed > 0 ? 'var(--color-danger)' : undefined },
+                ]} />
             </div>
 
             {/* Tab bar */}
-            <div className="flex items-center gap-1 px-5 py-2 border-b border-surface-700 flex-shrink-0">
+            {/* Uma linha só: quando não cabe, rola e a borda direita esmaece. */}
+            <div className="flex items-center gap-1 px-5 py-2 border-b border-surface-700 flex-shrink-0 overflow-x-auto [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_calc(100%-32px),transparent)]">
               {tabs.map((t) => (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  className={cn('px-3 py-1.5 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap flex-shrink-0',
                     tab === t.id ? 'bg-surface-800 text-surface-100' : 'text-surface-500 hover:text-surface-300',
                   )}>
                   {t.label}
@@ -423,7 +443,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {stopReason && (
                         <div
                           role="alert"
-                          className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5"
+                          className="flex items-start gap-2 rounded-[10px] border border-danger/30 bg-danger/10 px-3 py-2.5"
                         >
                           <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
                           <div className="text-2xs text-surface-200 space-y-1">
@@ -456,18 +476,23 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         <div className="space-y-2">
                           {funnelData.map((f, i) => (
                             <div key={f.label} className="flex items-center gap-3">
-                              <span className="text-2xs text-surface-400 w-24 flex-shrink-0">{f.label}</span>
-                              <div className="flex-1 h-6 bg-surface-800 rounded-lg overflow-hidden relative">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${f.base > 0 ? Math.min(100, (f.value / f.base) * 100) : 0}%` }}
-                                  transition={{ duration: 0.6, delay: i * 0.08 }}
-                                  className="h-full rounded-lg flex items-center pl-2"
-                                  style={{ backgroundColor: tint(f.color, 25), borderLeft: `3px solid ${f.color}` }}
-                                >
-                                  <span className="text-3xs font-bold" style={{ color: f.color }}>{f.value}</span>
-                                </motion.div>
-                              </div>
+                              <span className="w-24 flex-shrink-0" title={f.dica}>
+                                <span className="block text-2xs text-surface-400">{f.label}</span>
+                                {f.nota && <span className="block text-2xs leading-tight text-surface-500">{f.nota}</span>}
+                              </span>
+                              {/* Barra sólida numa escala de teal sobre trilho cinza; número fora. */}
+                                <div className="flex-1 flex items-center gap-2 min-w-0">
+                                  <div className="flex-1 h-3 rounded-full overflow-hidden bg-[#EAEEF3] [:root:not([data-theme=light])_&]:bg-surface-800">
+                                    <motion.div
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${f.base > 0 ? Math.min(100, (f.value / f.base) * 100) : 0}%` }}
+                                      transition={{ duration: 0.6, delay: i * 0.08 }}
+                                      className="h-full rounded-full"
+                                      style={{ backgroundColor: f.label === 'Falharam' ? 'var(--color-danger)' : RAMPA_TEAL[Math.min(i, RAMPA_TEAL.length - 1)] }}
+                                    />
+                                  </div>
+                                  <span className="w-8 text-xs font-semibold tabular-nums text-surface-100 text-right flex-shrink-0">{f.value}</span>
+                                </div>
                               <span className="text-2xs text-surface-500 w-32 text-right flex-shrink-0">
                                 {f.baseLabel ? `${pctDe(f.value, f.base)} ${f.baseLabel}` : ''}
                               </span>
@@ -494,7 +519,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                 {analytics.failures.map((f) => (
                                   <div
                                     key={f.code}
-                                    className="flex items-center justify-between gap-3 bg-surface-800 border border-surface-700 rounded-lg px-3 py-2"
+                                    className="flex items-center justify-between gap-3 bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2"
                                   >
                                     <span className="text-2xs text-surface-300" title={`Código ${f.code}`}>{f.reason}</span>
                                     <span className="text-2xs font-semibold text-danger flex-shrink-0">{f.count}</span>
@@ -598,7 +623,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         {analytics.conversionEvents.length === 0 ? (
                           <p className="text-xs text-surface-500 text-center py-6">Nenhum evento de conversão registrado</p>
                         ) : (
-                          <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
+                          <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
                             {analytics.conversionEvents.map((ev, i) => {
                               const cfg = CONV_CONFIG[ev.type]
                               return (
@@ -606,11 +631,11 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   <span style={{ color: C[cfg.color] }} className="flex-shrink-0">{cfg.icon}</span>
                                   <div className="flex-1 min-w-0">
                                     <p className="text-xs font-medium text-surface-200">{ev.contactName}</p>
-                                    {ev.detail && <p className="text-3xs text-surface-500">{ev.detail}</p>}
+                                    {ev.detail && <p className="text-2xs text-surface-500">{ev.detail}</p>}
                                   </div>
                                   <div className="flex-shrink-0 text-right">
-                                    <p className="text-3xs font-medium" style={{ color: C[cfg.color] }}>{cfg.label}</p>
-                                    <p className="text-[9px] text-surface-600">{fmtDate(ev.convertedAt)}</p>
+                                    <p className="text-2xs font-medium" style={{ color: C[cfg.color] }}>{cfg.label}</p>
+                                    <p className="text-2xs text-surface-600">{fmtDate(ev.convertedAt)}</p>
                                   </div>
                                 </div>
                               )
@@ -633,7 +658,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           // Direção C: quase nenhuma cor de fundo — o destaque
                           // vem do peso da tipografia; a cor fica só no ícone
                           // e no rótulo, que já identificam a origem.
-                          <div className="flex items-center gap-3 px-4 py-3 rounded-sm border border-surface-700">
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] border border-surface-700">
                             <Crown className="w-4 h-4 flex-shrink-0" style={{ color: cfg.color }} />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold" style={{ color: cfg.color }}>Melhor origem: {cfg.label}</p>
@@ -657,9 +682,9 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   <div className="flex items-center gap-1.5">
                                     <span style={{ color: cfg.color }}>{cfg.icon}</span>
                                     <span className="text-2xs text-surface-300">{cfg.label}</span>
-                                    <span className="text-3xs text-surface-600">({ab.contactCount} contatos)</span>
+                                    <span className="text-2xs text-surface-600">({ab.contactCount} contatos)</span>
                                   </div>
-                                  <span className="text-2xs font-bold" style={{ color: cfg.color }}>
+                                  <span className="text-2xs font-semibold" style={{ color: cfg.color }}>
                                     {pct100(ab.readRate)}%
                                   </span>
                                 </div>
@@ -690,7 +715,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                     <span style={{ color: cfg.color }}>{cfg.icon}</span>
                                     <span className="text-2xs text-surface-300">{cfg.label}</span>
                                   </div>
-                                  <span className="text-2xs font-bold" style={{ color: cfg.color }}>
+                                  <span className="text-2xs font-semibold" style={{ color: cfg.color }}>
                                     {pct100(ab.conversionRate)}%
                                   </span>
                                 </div>
@@ -712,7 +737,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {/* Comparison table */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-2">Tabela comparativa</p>
-                        <div className="overflow-x-auto rounded-lg border border-surface-700">
+                        <div className="overflow-x-auto rounded-[10px] border border-surface-700">
                           <table className="w-full text-2xs">
                             <thead>
                               <tr className="border-b border-surface-700 bg-surface-800">
@@ -736,14 +761,14 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                         <span className="text-surface-300 font-medium">{cfg.label}</span>
                                       </div>
                                       {ab.adCampaignName && (
-                                        <p className="text-3xs text-surface-600 mt-0.5 pl-4">{ab.adCampaignName}</p>
+                                        <p className="text-2xs text-surface-600 mt-0.5 pl-4">{ab.adCampaignName}</p>
                                       )}
                                     </td>
                                     <td className="px-3 py-2 text-right text-surface-300">{ab.contactCount}</td>
                                     <td className="px-3 py-2 text-right text-surface-300">{ab.readCount} <span className="text-surface-600">({pct100(ab.readRate)}%)</span></td>
                                     <td className="px-3 py-2 text-right text-surface-300">{ab.replyCount}</td>
-                                    <td className="px-3 py-2 text-right font-bold" style={{ color: cfg.color }}>{ab.conversionCount}</td>
-                                    <td className="px-3 py-2 text-right font-bold" style={{ color: cfg.color }}>{pct100(ab.conversionRate)}%</td>
+                                    <td className="px-3 py-2 text-right font-semibold" style={{ color: cfg.color }}>{ab.conversionCount}</td>
+                                    <td className="px-3 py-2 text-right font-semibold" style={{ color: cfg.color }}>{pct100(ab.conversionRate)}%</td>
                                   </tr>
                                 )
                               })}
@@ -774,13 +799,13 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {/* Sentiment + filters row */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <Filter className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
-                        <span className="text-3xs text-surface-500">Sentimento:</span>
+                        <span className="text-2xs text-surface-500">Sentimento:</span>
                         {['all', 'positive', 'neutral', 'negative'].map((s) => (
                           <button
                             key={s}
                             onClick={() => setSentimentFilter(s)}
                             className={cn(
-                              'px-2 py-0.5 rounded-full text-3xs font-medium border transition-all',
+                              'px-2 py-0.5 rounded-full text-2xs font-medium border transition-all',
                               sentimentFilter === s
                                 ? 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-200'
                                 : 'border-surface-700 text-surface-500 hover:text-surface-300',
@@ -792,7 +817,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         {(outcomeFilter !== 'all' || sentimentFilter !== 'all') && (
                           <button
                             onClick={() => { setOutcomeFilter('all'); setSentimentFilter('all') }}
-                            className="ml-auto text-3xs text-accent-dark hover:opacity-80 transition-colors"
+                            className="ml-auto text-2xs text-accent-dark hover:opacity-80 transition-colors"
                           >
                             Limpar filtros
                           </button>
@@ -807,7 +832,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           <p className="text-xs">Nenhuma conversa encontrada com esses filtros</p>
                         </div>
                       ) : (
-                      <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
+                      <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
                         {filteredConvs.map((conv) => {
                           const outcomeCfg = OUTCOME_CONFIG[conv.outcome] ?? { label: conv.outcome, color: 'var(--color-status-muted)' }
                           const sentimentCfg = SENTIMENT_CONFIG[conv.sentiment] ?? { label: conv.sentiment, color: 'var(--color-status-muted)' }
@@ -818,16 +843,16 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-xs font-semibold text-surface-200">{conv.contactName}</span>
-                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-2xs font-semibold"
                                       style={{ ['--chip']: outcomeCfg.color } as React.CSSProperties}>
                                       {outcomeCfg.label}
                                     </span>
-                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-medium"
+                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-2xs font-medium"
                                       style={{ ['--chip']: sentimentCfg.color } as React.CSSProperties}>
                                       {sentimentCfg.label}
                                     </span>
                                     {adCfg && (
-                                      <span className="color-chip flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium"
+                                      <span className="color-chip flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-2xs font-medium"
                                         style={{ ['--chip']: adCfg.color } as React.CSSProperties}>
                                         {adCfg.icon}
                                         {conv.adCampaignName ?? adCfg.label}
@@ -837,10 +862,10 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   <p className="text-2xs text-surface-400 mt-1 leading-relaxed line-clamp-2">{conv.lastMessageSnippet}</p>
                                 </div>
                                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                  <span className="text-[9px] text-surface-600">{fmtDate(conv.lastMessageAt)}</span>
+                                  <span className="text-2xs text-surface-600">{fmtDate(conv.lastMessageAt)}</span>
                                   <button
                                     onClick={() => { onClose(); navigate(`/contacts?contact=${conv.contactId}`) }}
-                                    className="text-[9px] text-accent-dark hover:opacity-80 transition-colors flex items-center gap-0.5"
+                                    className="text-2xs text-accent-dark hover:opacity-80 transition-colors flex items-center gap-0.5"
                                   >
                                     <ExternalLink className="w-2.5 h-2.5" />
                                     CRM
@@ -903,8 +928,8 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               <div key={i} className="flex items-center gap-2">
                                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[i % churnColors.length] }} />
                                 <span className="text-2xs text-surface-400 flex-1 truncate">{d.name}</span>
-                                <span className="text-2xs font-bold text-surface-200 flex-shrink-0">{d.value}</span>
-                                <span className="text-3xs text-surface-600 w-10 text-right flex-shrink-0">{pct(d.value, totalChurn)}</span>
+                                <span className="text-2xs font-semibold text-surface-200 flex-shrink-0">{d.value}</span>
+                                <span className="text-2xs text-surface-600 w-10 text-right flex-shrink-0">{pct(d.value, totalChurn)}</span>
                               </div>
                             ))}
                           </div>
@@ -914,7 +939,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {/* Interpretation — direção C: linha de 1px no topo em
                           vez de cartão com fundo. */}
                       <div className="border-t border-surface-700 pt-3 space-y-2.5">
-                        <p className="text-3xs font-semibold text-surface-400 uppercase tracking-wider">Interpretação dos motivos</p>
+                        <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wider">Interpretação dos motivos</p>
                         {analytics.churnBreakdown.optOut > 0 && (
                           <div className="flex gap-2">
                             <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[0] }} />

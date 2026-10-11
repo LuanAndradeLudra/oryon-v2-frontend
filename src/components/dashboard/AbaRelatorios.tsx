@@ -92,7 +92,7 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
         type="button"
         onClick={() => setPersonalizando(true)}
         disabled={!r.snapshot}
-        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border border-[var(--bd2)] text-xs font-semibold text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 disabled:pointer-events-none transition-colors"
+        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] border border-[var(--bd2)] text-xs font-semibold text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 disabled:pointer-events-none transition-colors"
         title="Escolher e ordenar os indicadores do topo"
       >
         <Settings2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden />
@@ -103,7 +103,7 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
       <button
         type="button"
         onClick={r.recarregar}
-        className="w-7 h-7 inline-flex items-center justify-center rounded-sm border border-[var(--bd2)] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
+        className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] border border-[var(--bd2)] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
         title="Atualizar"
         aria-label="Atualizar"
       >
@@ -129,13 +129,13 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
     return (
       <div className="space-y-3.5" aria-busy="true" aria-label="Carregando os relatórios">
         {cabecalho}
-        <div className="h-[104px] bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
+        <div className="h-[104px] bg-surface-800 border border-surface-700 rounded-[10px] animate-pulse" />
         <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {Array.from({ length: celular ? 4 : 6 }).map((_, i) => (
-            <div key={i} className="h-24 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
+            <div key={i} className="h-24 bg-surface-800 border border-surface-700 rounded-[10px] animate-pulse" />
           ))}
         </div>
-        <div className="h-72 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
+        <div className="h-72 bg-surface-800 border border-surface-700 rounded-[10px] animate-pulse" />
       </div>
     )
   }
@@ -160,13 +160,13 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
       {cabecalho}
 
       {snapshot.escopo === 'minhas' && (
-        <p role="note" className="text-[12.5px] text-surface-400">
+        <p role="note" className="text-xs text-surface-400">
           Números das suas conversas. A visão da empresa inteira é de administradores e supervisores.
         </p>
       )}
 
       {r.erro && (
-        <div role="status" className="flex items-center gap-3 px-3.5 py-2 rounded-lg border border-status-pending-border bg-status-pending-bg text-[12.5px] text-status-pending">
+        <div role="status" className="flex items-center gap-3 px-3.5 py-2 rounded-[10px] border border-status-pending-border bg-status-pending-bg text-xs text-status-pending">
           <span className="flex-1">
             Não foi possível carregar {periodoPorExtenso(periodo)}.
             {mostrandoOutro ? ` Mostrando ${rotuloDo(r.periodoCarregado!)}.` : ' Mostrando a última leitura.'}

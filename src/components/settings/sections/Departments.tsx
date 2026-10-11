@@ -130,7 +130,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
           </FormField>
           <div>
             <p className="text-xs font-medium text-surface-400 mb-1.5">Cor</p>
-            <div className="w-9 h-9 rounded-md border-2 border-surface-700 cursor-pointer" style={{ backgroundColor: form.color }} />
+            <div className="w-9 h-9 rounded-[6px] border-2 border-surface-700 cursor-pointer" style={{ backgroundColor: form.color }} />
           </div>
         </div>
 
@@ -189,7 +189,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
         <div className="flex justify-end gap-2 pt-1 flex-wrap">
           <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
           {blockedByNoNumbers ? (
-            <Link to="/settings/numbers" className="inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-sm text-[13px] font-semibold bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] text-white hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] transition">
+            <Link to="/settings/numbers" className="inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-[6px] text-sm font-semibold bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) text-white hover:bg-[#115E59] hover:bg-(image:--primario-img-hover) transition">
               <ExternalLink className="w-4 h-4" />Conectar número para salvar
             </Link>
           ) : (
@@ -223,7 +223,7 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
     <div className="group hover:bg-[var(--rowhover)] transition-colors">
       <div className="flex items-center justify-between gap-3 px-4 py-3.5">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-md flex-shrink-0 flex items-center justify-center"
+          <div className="w-9 h-9 rounded-[6px] flex-shrink-0 flex items-center justify-center"
             style={{ backgroundColor: `color-mix(in srgb, ${dept.color || 'var(--color-accent-violet)'} 13%, transparent)`, border: `2px solid color-mix(in srgb, ${dept.color || 'var(--color-accent-violet)'} 33%, transparent)` }}>
             <Layers className="w-4 h-4" style={{ color: dept.color || 'var(--color-accent-violet)' }} />
           </div>
@@ -251,10 +251,10 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
           {/* Visíveis também ao Tab (focus-within) e em tela de toque (sem hover). */}
           {onEdit && onDelete && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
-            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors" title="Editar" aria-label={`Editar setor ${dept.name}`}>
+            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors" title="Editar" aria-label={`Editar setor ${dept.name}`}>
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir" aria-label={`Excluir setor ${dept.name}`}>
+            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-[6px] text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir" aria-label={`Excluir setor ${dept.name}`}>
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>

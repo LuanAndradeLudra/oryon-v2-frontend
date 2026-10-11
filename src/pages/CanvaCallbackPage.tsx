@@ -64,7 +64,7 @@ export function CanvaCallbackPage() {
             <p className="text-surface-400 text-sm">{message}</p>
             <button
               onClick={() => window.close()}
-              className="mt-2 px-4 py-2 rounded-lg bg-surface-800 text-surface-200 text-sm hover:bg-surface-700 transition-colors"
+              className="mt-2 px-4 py-2 rounded-[6px] bg-surface-800 text-surface-200 text-sm hover:bg-surface-700 transition-colors"
             >
               Fechar
             </button>

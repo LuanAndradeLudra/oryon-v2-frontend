@@ -20,7 +20,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           onClick={() => setVisible((v) => !v)}
           aria-label="Mostrar senha"
           aria-pressed={visible}
-          className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-sm text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+          className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
         >
           {visible
             ? <EyeOff className="w-4 h-4" strokeWidth={1.75} />

@@ -353,7 +353,7 @@ export function NewDealDialog({
         />
       </div>
       {!pickedContact && search.trim().length >= 2 && (
-        <ul className="mt-1 max-h-48 overflow-y-auto rounded-lg border border-surface-700 bg-surface-800 divide-y divide-surface-700">
+        <ul className="mt-1 max-h-48 overflow-y-auto rounded-[10px] border border-surface-700 bg-surface-800 divide-y divide-surface-700">
           {searching && <li className="px-3 py-2 text-xs text-surface-400">Buscando…</li>}
           {!searching && results.length === 0 && (
             <li className="px-3 py-2 text-xs text-surface-400">Nenhum contato encontrado.</li>
@@ -431,7 +431,7 @@ export function NewDealDialog({
           placeholder={isProcess
             ? 'Ex: consulta de retorno, ajuste de plano'
             : 'Ex: site institucional + hospedagem dedicada'}
-          className="w-full min-h-[56px] resize-none overflow-hidden rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm leading-relaxed text-surface-100 placeholder:text-surface-500 transition-colors hover:border-surface-600 focus:border-brand-400/60 focus:outline-none focus:ring-2 focus:ring-brand-400/20"
+          className="w-full min-h-[56px] resize-none overflow-hidden rounded-[6px] border border-surface-700 bg-surface-800 px-3 py-2 text-sm leading-relaxed text-surface-100 placeholder:text-surface-500 transition-colors hover:border-surface-600 focus:border-brand-400/60 focus:outline-none focus:ring-2 focus:ring-brand-400/20"
         />
         <span className="text-[11px] text-surface-500">
           {isProcess
@@ -457,7 +457,7 @@ export function NewDealDialog({
   const FunilIcon = selectedPipeline ? pipelineKindOption(pipelineKindOf(selectedPipeline)).icon : Wallet
 
   const avatarDono = (
-    <span className={`w-4 h-4 rounded-[30%] text-[8px] font-semibold grid place-items-center shrink-0 ${donoUser ? 'avatar-operador' : 'bg-avatar-surface text-avatar-initials'}`} aria-hidden>
+    <span className={`w-5 h-5 rounded-full text-3xs font-semibold grid place-items-center shrink-0 ${donoUser ? 'avatar-operador' : 'bg-avatar-surface bg-(image:--avatar-grad) text-avatar-initials'}`} aria-hidden>
       {ownerUserId === null ? '–' : (donoUser ? iniciais(nomeDe(donoUser)) : '?')}
     </span>
   )
@@ -466,7 +466,7 @@ export function NewDealDialog({
     <div className="flex flex-col gap-3">
       {!semFunis && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Funil</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">Funil</span>
           <AttributeChip
             label="Funil"
             value={selectedPipeline?.name}
@@ -492,7 +492,7 @@ export function NewDealDialog({
       )}
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Dono</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">Dono</span>
         <AttributeChip
           label="Dono"
           value={donoValor}
@@ -516,7 +516,7 @@ export function NewDealDialog({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Previsão</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">Previsão</span>
         <AttributeChip
           label="Previsão"
           value={expectedCloseAt ? dataCurta(expectedCloseAt) : null}
@@ -537,7 +537,7 @@ export function NewDealDialog({
                 value={expectedCloseAt}
                 onChange={(e) => setExpectedCloseAt(e.target.value)}
                 aria-label={isProcess ? 'Previsão de conclusão' : 'Previsão de fechamento'}
-                className="w-full rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/60"
+                className="w-full rounded-[6px] border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/60"
               />
               <div className="flex items-center justify-between">
                 <button
@@ -573,7 +573,7 @@ export function NewDealDialog({
         initial={semMovimento ? false : { height: 0, opacity: 0 }}
         animate={{ height: 'auto', opacity: 1 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col gap-3 rounded-lg border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))] overflow-hidden">
+        className="flex flex-col gap-3 rounded-[10px] border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))] overflow-hidden">
         {/* O número só existe quando há o que mostrar: itens lançados ou um
             valor digitado. Bloco recém-aberto e vazio mostra os botões de
             adicionar, e mais nada — era o campo em branco no topo que fazia o
@@ -581,7 +581,7 @@ export function NewDealDialog({
         {(hasItems || mostraCampoValor) && (
           <div className="flex flex-col gap-1.5">
             <div className="flex items-end justify-between gap-3">
-              <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
+              <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">
                 Valor do {noun}
               </span>
               <span className="text-[11px] leading-snug text-right text-surface-500">
@@ -598,14 +598,14 @@ export function NewDealDialog({
                 onChange={(cents) => { setAmountCents(cents); setAmountTouched(true); setError('') }}
                 aria-label={`Valor do ${noun}`}
                 autoFocus
-                className="h-12 !text-xl font-display font-bold text-surface-50"
+                className="h-12 !text-xl font-display font-semibold text-surface-50"
               />
             ) : (
               // Somando: o total é LEITURA. Editá-lo é o gesto de exceção logo
               // abaixo, não o campo que se encontra primeiro.
               <p
                 data-testid="valor-total"
-                className="font-display text-2xl font-bold text-surface-50 tabular-nums tracking-tight"
+                className="font-display text-2xl font-semibold text-surface-50 tabular-nums tracking-tight"
               >
                 {formatBRL(shownTotal)}
               </p>
@@ -616,7 +616,7 @@ export function NewDealDialog({
         <div className="flex flex-col gap-1.5">
           {/* Sem `FormField` em volta: o contexto dele injeta o mesmo id em todos
               os campos descendentes e quebra os rótulos das linhas (A1/153). */}
-          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Itens</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-surface-500">Itens</span>
           <DealItemsEditor
             value={items}
             onChange={(next) => { setItems(next); setError('') }}
@@ -656,7 +656,7 @@ export function NewDealDialog({
       <button
         type="button"
         onClick={() => setValorAberto(true)}
-        className="flex items-center gap-2 rounded-lg border border-dashed border-[var(--bd2)] px-3.5 py-4 text-sm text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+        className="flex items-center gap-2 rounded-[10px] border border-dashed border-[var(--bd2)] px-3.5 py-4 text-sm text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
       >
         <Plus className="w-4 h-4" aria-hidden />
         Adicionar valor ou itens
@@ -672,9 +672,9 @@ export function NewDealDialog({
       <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-between')}>
         {!isMobile && (
           <span className="text-[11px] text-surface-500">
-            <kbd className="rounded-2xs border border-surface-700 px-1 py-0.5 font-mono text-[10px]">⌘</kbd>
+            <kbd className="rounded-2xs border border-surface-700 px-1 py-0.5 font-mono text-[11px]">⌘</kbd>
             {' '}
-            <kbd className="rounded-2xs border border-surface-700 px-1 py-0.5 font-mono text-[10px]">↵</kbd>
+            <kbd className="rounded-2xs border border-surface-700 px-1 py-0.5 font-mono text-[11px]">↵</kbd>
             {' '}{diverges ? 'não decide' : 'cria'}
           </span>
         )}
@@ -756,11 +756,11 @@ export function NewDealDialog({
   const HeadIcon = selectedPipeline ? pipelineKindOption(pipelineKindOf(selectedPipeline)).icon : Wallet
   const heading = (
     <div className="flex items-center gap-3 min-w-0">
-      <span className="w-9 h-9 rounded-xl bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0">
+      <span className="w-9 h-9 rounded-[10px] bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0">
         <HeadIcon className="w-4 h-4 text-surface-300" aria-hidden />
       </span>
       <span className="flex flex-col min-w-0">
-        <span className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50 leading-tight">{headingText}</span>
+        <span className="text-base font-display font-semibold tracking-[-0.01em] text-surface-50 leading-tight">{headingText}</span>
         {contextoLinha && (
           <span className="text-xs text-surface-400 truncate leading-tight mt-0.5">{contextoLinha}</span>
         )}

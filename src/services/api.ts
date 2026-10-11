@@ -58,6 +58,7 @@ import type { PipelineOverview, PipelineSummaryItem } from '@/types/pipelineAnal
 
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth-storage'
+import { compartilharEmVoo } from '@/lib/preBusca'
 
 const api = axios.create({
   baseURL: apiBaseUrl(),
@@ -1866,7 +1867,8 @@ export const departmentsApi = {
 export const whatsappNumbersApi = {
   list() { return api.get<WhatsAppNumber[]>('/meta/numbers') },
   /** Inclui campos do WABA (qualityRating, messagingLimit) que `list()` não traz. */
-  listDetailed() { return api.get<WhatsAppNumberDetailed[]>('/whatsapp/numbers') },
+  // SCRUM-1253: várias telas pedem as linhas ao mesmo tempo na carga — um pedido só.
+  listDetailed() { return compartilharEmVoo('whatsapp-numbers', () => api.get<WhatsAppNumberDetailed[]>('/whatsapp/numbers')) },
   update(id: string, data: { label?: string }) { return api.patch<WhatsAppNumber>(`/meta/numbers/${id}`, data) },
   // Desconectar (soft) — pausa o atendimento, mantém a row e permite
   // reconectar pelo OAuth ressuscitando o mesmo registro.
@@ -1967,7 +1969,8 @@ export async function getUploadsAuthToken(): Promise<string> {
   if (_uploadsAuthTokenCache && Date.now() < _uploadsAuthTokenCache.expiresAt - skew) {
     return _uploadsAuthTokenCache.token
   }
-  const { data } = await api.get<{ token: string }>('/auth/ws-token')
+  // SCRUM-1253: o socket pede o mesmo token na carga — um pedido só (ver services/socket.ts).
+  const { data } = await compartilharEmVoo('ws-token', () => api.get<{ token: string }>('/auth/ws-token'))
   _uploadsAuthTokenCache = {
     token: data.token,
     expiresAt: Date.now() + UPLOADS_AUTH_TOKEN_TTL_MS,

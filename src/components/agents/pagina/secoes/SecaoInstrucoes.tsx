@@ -153,7 +153,7 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
         />
       )}
 
-      <div className="overflow-hidden rounded-lg border border-surface-700 bg-[var(--sf2)]">
+      <div className="overflow-hidden rounded-[10px] border border-surface-700 bg-[var(--sf2)]">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-surface-700 px-4 py-2 text-xs text-surface-400">
           <span className="whitespace-nowrap font-semibold text-surface-200">{editando ? 'Editando' : 'Em uso'}</span>
           <span aria-hidden className="hidden sm:inline">·</span>
@@ -167,7 +167,8 @@ export function SecaoInstrucoes({ agent, onAtualizar }: { agent: AgentConfigWith
             onChange={(e) => setRascunho(e.target.value)}
             rows={24}
             autoFocus
-            className="min-h-[60dvh] rounded-none border-0 bg-transparent px-4 py-4 font-sans leading-relaxed focus:ring-0 sm:min-h-[420px] sm:px-5 sm:font-mono sm:text-[13px]"
+            // Instruções são prosa, não código: fonte normal (antes monoespaçada).
+            className="min-h-[60dvh] rounded-none border-0 bg-transparent px-4 py-4 font-sans text-[14px] leading-relaxed focus:ring-0 sm:min-h-[420px] sm:px-5"
           />
         ) : agent.system_prompt.trim() ? (
           <div className="flex flex-col gap-3 px-5 py-4 text-sm leading-relaxed text-surface-200">

@@ -55,6 +55,17 @@ function fileIcon(file: File) {
 /** Limite de texto do WhatsApp Cloud API (mensagem de texto). */
 const WA_TEXT_LIMIT = 4096
 
+/**
+ * SCRUM-1253 (PO, 07/10): janela de 24h fechada (aviso) e aberta (campo) ocupam
+ * EXATAMENTE o mesmo espaço — mesmo invólucro, mesma altura mínima da caixa e a
+ * mesma faixa de atalhos embaixo (vazia no aviso). Antes, ao reabrir a janela,
+ * o campo subia 60 px: o aviso era mais baixo e não reservava a fileira de
+ * respostas rápidas.
+ */
+const COMPOSER_INVOLUCRO = 'px-4 pt-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex-shrink-0 min-w-0 bg-transparent'
+const COMPOSER_ALTURA = 'min-h-[88px]'
+const FAIXA_ATALHOS = 'mt-2 h-6'
+
 interface MessageInputProps {
   /**
    * Returns a promise that rejects on send failure (e.g. backend rejected
@@ -123,11 +134,11 @@ function QuickReplyPicker({
   return (
     <div
       ref={listRef}
-      className="absolute bottom-full left-0 right-0 mb-2 z-50 overlay-surface overlay-vidro border rounded-xl overflow-hidden max-h-56 overflow-y-auto"
+      className="absolute bottom-full left-0 right-0 mb-2 z-50 overlay-surface overlay-vidro border rounded-[10px] overflow-hidden max-h-56 overflow-y-auto"
     >
       <div className="px-3 py-2 border-b border-surface-700 flex items-center gap-1.5 sticky top-0 overlay-vidro z-10">
         <Zap className="w-3 h-3 text-accent-dark" />
-        <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wide">
+        <span className="text-2xs font-semibold text-surface-400">
           Respostas rápidas {query ? `— /${query}` : ''}
         </span>
       </div>
@@ -575,7 +586,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
             // o caminho de volta para esta conversa.
             <Link
               to={irCom(blockedReason.ctaHref, 'Voltar para a conversa')}
-              className="text-xs font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-3 py-1.5 rounded-[6px] transition-colors"
             >
               {blockedReason.ctaLabel}
             </Link>
@@ -590,8 +601,8 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
 
   if (!windowOpen) {
     return (
-      <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
-        <div className="card-24h rounded-lg px-4 py-3">
+      <div className={COMPOSER_INVOLUCRO}>
+        <div className={cn('card-24h rounded-[10px] px-4 py-3 flex flex-col justify-center', COMPOSER_ALTURA)}>
           <div className="flex items-center gap-2">
             <AlertTriangle className="card-24h-accent w-4 h-4 text-brand-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
@@ -611,7 +622,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                 variant="secondary"
                 size="sm"
                 onClick={toggleTemplatePicker}
-                className="flex-shrink-0"
+                className="card-24h-cta flex-shrink-0" // SCRUM-1253: no claro vira o primário (index.css)
                 rightIcon={<ChevronDown className={cn('w-3 h-3', templatePickerOpen && 'rotate-180')} />}
               >
                 Escolher template
@@ -634,11 +645,11 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                     <button
                       key={tpl.id}
                       onClick={() => handleSelectTemplate(tpl)}
-                      className="w-full text-left p-2.5 rounded-lg border border-surface-700 bg-[var(--sf2)] hover:bg-[var(--rowhover)] hover:border-surface-600 transition-colors"
+                      className="w-full text-left p-2.5 rounded-[6px] border border-surface-700 bg-[var(--sf2)] hover:bg-[var(--rowhover)] hover:border-surface-600 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-xs font-semibold text-surface-200 truncate">{tpl.name}</span>
-                        <span className="text-[9px] font-medium text-surface-500 bg-[var(--sf2)]/70 px-1.5 py-0.5 rounded flex-shrink-0">
+                        <span className="text-[11px] font-medium text-surface-500 bg-[var(--sf2)]/70 px-1.5 py-0.5 rounded flex-shrink-0">
                           {tpl.language}
                         </span>
                       </div>
@@ -664,6 +675,8 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
             setPreviewTemplate(null)
           }}
         />
+        {/* Mesma faixa de atalhos do campo aberto, vazia — o campo não "pula" ao reabrir. */}
+        <div className={FAIXA_ATALHOS} aria-hidden />
       </div>
     )
   }
@@ -675,7 +688,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
     // auto` padrão deixa este bloco crescer até caber a fileira de respostas
     // rápidas inteira (ela tem overflow-x-auto própria, mas só rola dentro de
     // uma largura já contida) e a fileira vazava a coluna do chat inteira.
-    <div className="px-4 pt-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex-shrink-0 min-w-0 bg-transparent">
+    <div className={COMPOSER_INVOLUCRO}>
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker
@@ -687,7 +700,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
         )}
 
         {replyTo && (
-          <div className="mb-2 flex items-center gap-2 rounded-lg bg-[var(--sf2)] border-l-2 border-brand-500 px-3 py-2">
+          <div className="mb-2 flex items-center gap-2 rounded-[10px] bg-[var(--sf2)] border-l-2 border-brand-500 px-3 py-2">
             <CornerUpLeft className="w-3.5 h-3.5 text-accent-dark flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium text-accent-dark">
@@ -700,7 +713,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
               onClick={onCancelReply}
               title="Cancelar resposta"
               aria-label="Cancelar resposta"
-              className="w-6 h-6 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
+              className="w-6 h-6 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9 flex items-center justify-center rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -718,14 +731,15 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
             // (abaixo) se posicionar contra este container.
             // CONV-CHAT-32/41 (spec/1d-conversas.GAPS.md): sem sombra — o mock
             // é explícito ("Composer não tem sombra").
-            'relative msg-composer rounded-lg px-3 pt-2.5 pb-2 transition-all',
+            'relative msg-composer rounded-[10px] px-3 pt-2.5 pb-2 transition-all flex flex-col justify-end',
+            COMPOSER_ALTURA,
             'border focus-within:border-brand-500/50',
             dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
           {/* Dropzone: feedback "solte aqui" durante o arraste (SCRUM-275) */}
           {dragOver && (
-            <div className="absolute inset-0 z-10 rounded-lg bg-accent-soft border-2 border-dashed border-brand-500 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 z-10 rounded-[10px] bg-accent-soft border-2 border-dashed border-brand-500 flex items-center justify-center pointer-events-none">
               <span className="text-xs font-semibold text-accent-dark">Solte para anexar</span>
             </div>
           )}
@@ -741,7 +755,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                   <div
                     key={att.id}
                     className={cn(
-                      'flex items-center gap-2 bg-[var(--sf2)]/80 border border-surface-600 rounded-lg pl-2 pr-1.5 py-1.5 max-w-[220px]',
+                      'flex items-center gap-2 bg-[var(--sf2)]/80 border border-surface-600 rounded-[10px] pl-2 pr-1.5 py-1.5 max-w-[220px]',
                       isUploading && 'opacity-80'
                     )}
                   >
@@ -765,7 +779,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] font-medium text-surface-200 truncate">{att.file.name}</p>
-                      <p className="text-[10px] text-surface-500">{formatFileSize(att.file.size)}</p>
+                      <p className="text-[11px] text-surface-500">{formatFileSize(att.file.size)}</p>
                     </div>
                     <button
                       type="button"
@@ -851,14 +865,14 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
               {showAttachMenu && (
                 <div
                   ref={attachMenuRef}
-                  className="absolute bottom-full left-0 mb-2 overlay-surface overlay-vidro border rounded-lg p-1 z-50 w-40"
+                  className="absolute bottom-full left-0 mb-2 overlay-surface overlay-vidro border rounded-[10px] p-1 z-50 w-40"
                 >
                   <button
                     onClick={() => {
                       imageInputRef.current?.click()
                       setShowAttachMenu(false)
                     }}
-                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
+                    className="flex items-center gap-2.5 h-8 px-2 rounded-[6px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
                   >
                     <Image className="w-4 h-4 text-surface-400" />
                     <span className="text-[13px] text-surface-100">Imagem</span>
@@ -868,7 +882,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                       documentInputRef.current?.click()
                       setShowAttachMenu(false)
                     }}
-                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
+                    className="flex items-center gap-2.5 h-8 px-2 rounded-[6px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
                   >
                     <FileText className="w-4 h-4 text-surface-400" />
                     <span className="text-[13px] text-surface-100">Documento</span>
@@ -878,7 +892,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                       videoInputRef.current?.click()
                       setShowAttachMenu(false)
                     }}
-                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
+                    className="flex items-center gap-2.5 h-8 px-2 rounded-[6px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
                   >
                     <Video className="w-4 h-4 text-surface-400" />
                     <span className="text-[13px] text-surface-100">Vídeo</span>
@@ -893,7 +907,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
               <span
                 aria-live="polite"
                 className={cn(
-                  'text-[10px] tabular-nums flex-shrink-0',
+                  'text-[11px] tabular-nums flex-shrink-0',
                   text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
                 )}
               >
@@ -935,15 +949,17 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
       </div>
       {/* Quick reply shortcut chips — com o atalho de gerenciar no fim (admin+).
           Sem nenhuma resposta, o admin vê só o convite para criar a primeira. */}
+      {/* A faixa existe sempre (altura fixa), com ou sem atalhos — ver FAIXA_ATALHOS. */}
+      <div className={cn('flex items-center gap-1.5 overflow-x-auto', FAIXA_ATALHOS)} style={{ scrollbarWidth: 'none' }}>
       {(allResponses.length > 0 || podeGerenciarRespostas) && !pickerActive && (
-        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+        <>
           {allResponses.slice(0, 8).map((r) => (
             <button
               key={r.id}
               type="button"
               onClick={() => handleSelectResponse(r)}
               title={r.title}
-              className="flex-shrink-0 text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+              className="flex-shrink-0 text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] px-2 py-0.5 rounded-[6px] transition-colors whitespace-nowrap"
             >
               /{r.shortcut}
             </button>
@@ -952,14 +968,15 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
             <button
               type="button"
               onClick={() => setGerenciandoRespostas(true)}
-              className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+              className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] px-2 py-0.5 rounded-[6px] transition-colors whitespace-nowrap"
             >
               <Settings2 className="w-3 h-3" />
               {allResponses.length > 0 ? 'Gerenciar' : 'Criar resposta rápida'}
             </button>
           )}
-        </div>
+        </>
       )}
+      </div>
 
       {podeGerenciarRespostas && (
         <PainelDeConfiguracao

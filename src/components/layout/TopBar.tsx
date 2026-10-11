@@ -32,6 +32,8 @@ import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropd
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { rotaPermitida } from '@/lib/rotasPorPapel'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { topBarHoverProps, TopBarHoverBloom, TopBarHoverIcon } from './topBarHover'
+import api from '@/services/api'
 import {
   categoryOf,
   CATEGORY_STYLE,
@@ -198,7 +200,7 @@ function highlightText(text: string, query: string) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-brand-600/20 text-brand-300 rounded-sm not-italic font-semibold">
+      <mark className="bg-brand-600/20 text-brand-300 rounded-[6px] not-italic font-semibold">
         {text.slice(idx, idx + query.length)}
       </mark>
       {text.slice(idx + query.length)}
@@ -270,7 +272,7 @@ function SearchDropdown({
     <div className="overflow-hidden">
       {!trimmed && (
         <div className="px-3 pt-2.5 pb-1">
-          <span className="text-3xs font-semibold text-surface-500 uppercase tracking-widest">
+          <span className="text-2xs font-semibold text-surface-500 uppercase tracking-widest">
             Sugestões
           </span>
         </div>
@@ -281,7 +283,7 @@ function SearchDropdown({
           <div key={type}>
             {trimmed && (
               <div className="px-3 pt-2.5 pb-1 first:pt-2">
-                <span className="text-3xs font-semibold text-surface-500 uppercase tracking-widest">
+                <span className="text-2xs font-semibold text-surface-500 uppercase tracking-widest">
                   {TYPE_LABEL[type]}
                 </span>
               </div>
@@ -302,7 +304,7 @@ function SearchDropdown({
                   )}
                 >
                   <div className={cn(
-                    'w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0',
+                    'w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0',
                     type === 'page'     ? 'bg-brand-600/10 text-brand-400' :
                     type === 'action'   ? 'bg-surface-700 text-surface-400' :
                                          'bg-surface-700 text-surface-500',
@@ -336,7 +338,7 @@ function SearchDropdown({
               )}
               onMouseEnter={() => onHover(flatItems.length)}
             >
-              <div className="w-6 h-6 rounded-md bg-surface-700 flex items-center justify-center flex-shrink-0">
+              <div className="w-6 h-6 rounded-[6px] bg-surface-700 flex items-center justify-center flex-shrink-0">
                 <Users className="w-3 h-3 text-surface-400" />
               </div>
               <p className="text-xs text-surface-300 flex-1 min-w-0 truncate">
@@ -468,7 +470,7 @@ function buildFlow(
   // Origem cell — same shape across all types that carry a source.
   const origemCell = (
     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-      <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded border text-3xs font-medium', sourceStyle.className)}>
+      <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded border text-2xs font-medium', sourceStyle.className)}>
         {sourceStyle.label}
       </span>
       {actor && <span className="text-surface-300">· por {actor}</span>}
@@ -624,12 +626,12 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
       <motion.div
         ref={modalRef}
         {...motionProps}
-        className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-2xl overlay-frame border bg-surface-900"
+        className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-[10px] overlay-frame border bg-surface-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b border-surface-700">
           <div
-            className="w-10 h-10 rounded-xl color-chip border flex items-center justify-center flex-shrink-0"
+            className="w-10 h-10 rounded-[10px] color-chip border flex items-center justify-center flex-shrink-0"
             style={{ ['--chip']: catStyle.chip } as React.CSSProperties}
             aria-hidden
           >
@@ -655,7 +657,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
               description line so we don't duplicate info. Keys on the left,
               values on the right. Scannable in < 1 second. */}
           {flow && flow.length > 0 ? (
-            <dl className="rounded-xl border border-surface-700 bg-surface-950/40 overflow-hidden">
+            <dl className="rounded-[10px] border border-surface-700 bg-surface-950/40 overflow-hidden">
               {flow.map((step, i) => (
                 <div
                   key={step.label}
@@ -664,7 +666,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
                     i !== flow.length - 1 && 'border-b border-surface-700',
                   )}
                 >
-                  <dt className="text-3xs font-semibold uppercase tracking-wider text-surface-500 w-20 shrink-0">
+                  <dt className="text-2xs font-semibold uppercase tracking-wider text-surface-500 w-20 shrink-0">
                     {step.label}
                   </dt>
                   <dd className="flex-1 min-w-0 text-sm text-surface-100 break-words">
@@ -679,15 +681,15 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
           {/* Grouped contacts list — name first, phone formatted and smaller. */}
           {groupedContacts && groupedContacts.length > 0 && (
-            <div className="rounded-xl border border-surface-700 bg-surface-950/40 p-3">
-              <p className="text-3xs font-semibold uppercase tracking-wide text-surface-500 mb-2">
+            <div className="rounded-[10px] border border-surface-700 bg-surface-950/40 p-3">
+              <p className="text-2xs font-semibold uppercase tracking-wide text-surface-500 mb-2">
                 {pluralize(affectedTotal, 'Contato afetado', 'Contatos afetados')} ({affectedTotal})
               </p>
               <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
                 {groupedContacts.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center gap-2.5 p-2 rounded-lg bg-[var(--sf2)]"
+                    className="flex items-center gap-2.5 p-2 rounded-[10px] bg-[var(--sf2)]"
                   >
                     <div className="w-7 h-7 rounded-full bg-success/15 flex items-center justify-center shrink-0">
                       <UserPlus className="w-3.5 h-3.5 text-success" />
@@ -714,8 +716,8 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
           {/* User's supplemental note (from send_note action). Clearly labeled
               so it's never mistaken for the system-generated narrative above. */}
           {userNote && (
-            <div className="rounded-xl border border-brand-600/20 bg-brand-600/5 p-3">
-              <p className="text-3xs font-semibold uppercase tracking-wide text-brand-300 mb-1">
+            <div className="rounded-[10px] border border-brand-600/20 bg-brand-600/5 p-3">
+              <p className="text-2xs font-semibold uppercase tracking-wide text-brand-300 mb-1">
                 Observação da automação
               </p>
               <p className="text-xs text-surface-200 leading-relaxed whitespace-pre-line break-words">
@@ -726,7 +728,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
           {/* Advanced details — collapsed by default, stripped of UUIDs. */}
           {techEntries.length > 0 && (
-            <div className="rounded-xl border border-surface-700 bg-surface-950/30">
+            <div className="rounded-[10px] border border-surface-700 bg-surface-950/30">
               <button
                 type="button"
                 onClick={() => setShowTech((v) => !v)}
@@ -753,7 +755,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
           {isValidLink(n.link) && (
             <button
               onClick={() => { navigate(normalizeNotificationLink(n.link!)); onClose() }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-colors [@media(pointer:coarse)]:py-3"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[6px] bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-colors [@media(pointer:coarse)]:py-3"
             >
               Abrir <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -949,15 +951,15 @@ function NotificationsPanel() {
           (16/24/21) e chips de 10px; itens de 101px. Agora: cabeçalho de
           44px com ações como botões de ícone 28×28, uma linha de filtros com
           SegmentedControl sm + categoria em Dropdown, item de ~64px. */}
-      <div className="absolute top-full right-0 mt-2 w-[400px] max-w-[calc(100vw-1rem)] overlay-surface overlay-vidro border rounded-lg z-50 overflow-hidden animate-slide-in-right">
+      <div className="absolute top-full right-0 mt-2 w-[400px] max-w-[calc(100vw-1rem)] overlay-surface overlay-vidro border rounded-[10px] z-50 overflow-hidden animate-slide-in-right">
         <div className="h-11 px-3 flex items-center gap-2 border-b border-surface-700">
-          <span className="text-[13px] font-bold text-surface-50 tracking-[-0.01em]">Notificações</span>
+          <span className="text-sm font-semibold text-surface-50 tracking-[-0.01em]">Notificações</span>
           {!showArchived && (
-            <span className="text-[11px] text-surface-500 tabular-nums">
+            <span className="text-2xs text-surface-500 tabular-nums">
               {unreadCount > 0 ? `${unreadCount} não lida${unreadCount === 1 ? '' : 's'}` : 'em dia'}
             </span>
           )}
-          {showArchived && <span className="text-[11px] text-surface-500">arquivadas</span>}
+          {showArchived && <span className="text-2xs text-surface-500">arquivadas</span>}
           <div className="ml-auto flex items-center gap-0.5">
             {!showArchived && (
               <button
@@ -967,7 +969,7 @@ function NotificationsPanel() {
                 aria-label="Só não lidas"
                 aria-pressed={filter === 'unread'}
                 className={cn(
-                  'w-7 h-7 rounded-xs flex items-center justify-center transition-colors hover:bg-[var(--rowhover)]',
+                  'w-7 h-7 rounded-[6px] flex items-center justify-center transition-colors hover:bg-[var(--rowhover)]',
                   filter === 'unread' ? 'text-surface-100 bg-[var(--sf2)]' : 'text-surface-500 hover:text-surface-100',
                 )}
               >
@@ -980,7 +982,7 @@ function NotificationsPanel() {
                 onClick={() => markAllAsRead()}
                 title="Marcar todas como lidas (A)"
                 aria-label="Marcar todas como lidas"
-                className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
               </button>
@@ -992,7 +994,7 @@ function NotificationsPanel() {
               aria-label={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
               aria-pressed={showArchived}
               className={cn(
-                'w-7 h-7 rounded-xs flex items-center justify-center transition-colors hover:bg-[var(--rowhover)]',
+                'w-7 h-7 rounded-[6px] flex items-center justify-center transition-colors hover:bg-[var(--rowhover)]',
                 showArchived ? 'text-surface-100 bg-[var(--sf2)]' : 'text-surface-500 hover:text-surface-100',
               )}
             >
@@ -1003,7 +1005,7 @@ function NotificationsPanel() {
               onClick={() => navigate(comVolta('/settings/notifications', `${location.pathname}${location.search}`))}
               title="Preferências de notificação"
               aria-label="Preferências de notificação"
-              className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
             >
               <Settings2 className="w-3.5 h-3.5" />
             </button>
@@ -1026,7 +1028,7 @@ function NotificationsPanel() {
                     type="button"
                     onClick={() => toggleSection(g.key)}
                     aria-expanded={!collapsed[g.key]}
-                    className="w-full h-8 px-4 flex items-center gap-1.5 text-[11px] font-semibold text-surface-400 hover:text-surface-200 bg-[var(--color-overlay)] sticky top-0 z-10 transition-colors"
+                    className="w-full h-8 px-4 flex items-center gap-1.5 text-2xs font-semibold text-surface-400 hover:text-surface-200 bg-[var(--color-overlay)] sticky top-0 z-10 transition-colors"
                   >
                     <span>{g.label}</span>
                     <span className="font-medium text-surface-500 tabular-nums">· {g.items.filter((x) => !x.isRead).length || g.items.length}</span>
@@ -1072,7 +1074,7 @@ function NotificationsPanel() {
         {/* Phase 20 X1: keyboard shortcuts hint bar. Discoverable without
             being in the way. */}
         {sortedVisible.length > 0 && (
-          <div className="hidden sm:flex items-center justify-center gap-3 h-8 px-3 border-t border-surface-700 bg-[var(--sf2)] text-[11px] text-surface-500">
+          <div className="hidden sm:flex items-center justify-center gap-3 h-8 px-3 border-t border-surface-700 bg-[var(--sf2)] text-2xs text-surface-500">
             <span className="inline-flex items-center gap-1"><Kbd>J</Kbd><Kbd>K</Kbd> navegar</span>
             <span className="inline-flex items-center gap-1"><Kbd>↵</Kbd> abrir</span>
             <span className="inline-flex items-center gap-1"><Kbd>E</Kbd> arquivar</span>
@@ -1103,14 +1105,14 @@ const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: 'dark', label: 'Escuro' },
 ]
 
-/** Avatar de 28px `rounded-[30%]` do gatilho do menu — o componente `Avatar`
+/** Avatar de 28px `rounded-full` do gatilho do menu — o componente `Avatar`
  *  compartilhado só tem tamanhos fixos (24/32/40/48px, ver Avatar.tsx), então
  *  o gatilho replica seu visual "operador" (mesmas classes/tokens) no tamanho
- *  exato pedido pelo handoff. O header do menu (32px) já usa `Avatar` direto. */
+ *  exato pedido pelo handoff. O header do menu (36px) já usa `Avatar` direto. */
 function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: string; active: boolean }) {
   return (
     <span
-      className="relative inline-flex flex-shrink-0 w-7 h-7 rounded-[30%] overflow-hidden transition-shadow duration-150"
+      className="relative inline-flex flex-shrink-0 w-7 h-7 rounded-full overflow-hidden transition-shadow duration-150"
       // Anel teal — único estado em que o avatar recebe cor, sinaliza "menu aberto" (handoff 3.13).
       // SHELL-TOPBAR-07: camada interna do anel na cor da TopBar (--sf).
       style={active ? { boxShadow: '0 0 0 2px var(--color-topbar), 0 0 0 4px var(--color-accent)' } : undefined}
@@ -1131,9 +1133,41 @@ function UserMenu() {
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
   const [open, setOpen] = useState(false)
+  // SCRUM-1253 (PO, 08/10): a linha "Meu workspace · Trocar ›" (troca que não
+  // existe) virou o nome real da empresa, com link para o perfil dela. Só o
+  // papel que alcança a seção "Perfil da empresa" (hoje supervisor para cima,
+  // a mesma regra do menu de Configurações) lê `/settings/company`, e só se
+  // Configurações estiver visível; para os demais a linha não aparece.
+  const [empresa, setEmpresa] = useState<string | null>(null)
+  const settingsVisible = isRouteVisible('/settings', user?.email ?? null)
+  const alcancaEmpresa = settingsVisible
+    && isRouteVisible('/settings/company', user?.email ?? null)
+    && !!user?.role && papelAlcancaSecao('company', user.role)
+  useEffect(() => {
+    if (!alcancaEmpresa) return
+    let vivo = true
+    api.get('/settings/company').then((r) => {
+      const d = r.data as Record<string, unknown>
+      if (vivo) setEmpresa(String(d.businessName ?? d.name ?? '') || null)
+    }).catch(() => {})
+    return () => { vivo = false }
+  }, [alcancaEmpresa])
 
   const name = user ? `${user.firstName} ${user.lastName}` : ''
-  const settingsVisible = isRouteVisible('/settings', user?.email ?? null)
+  const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+
+  // O atalho que o menu anuncia (antes era só desenho): Ctrl+, / ⌘+, abre Configurações.
+  useEffect(() => {
+    if (!settingsVisible) return
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key !== ',') return
+      e.preventDefault()
+      setOpen(false)
+      navigate('/settings')
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [settingsVisible, navigate])
 
   const close = () => setOpen(false)
   const go = (href: string) => { navigate(href); close() }
@@ -1147,32 +1181,43 @@ function UserMenu() {
       open={open}
       onClose={close}
       align="right"
-      className="w-60"
+      className="w-64"
       anchor={
-        <button
+        <motion.button
+          {...topBarHoverProps}
           type="button"
           onClick={() => setOpen((v) => !v)}
           title="Menu do usuário"
           aria-label="Menu do usuário"
           aria-haspopup="menu"
           aria-expanded={open}
-          className="flex items-center justify-center w-7 h-7 rounded-sm hover:bg-[var(--rowhover)] transition-colors"
+          className="flex items-center justify-center w-7 h-7 rounded-[6px]"
         >
-          <UserMenuTrigger name={name} imageUrl={user?.avatarUrl} active={open} />
-        </button>
+          {/* SCRUM-1253: hover animado — o avatar sobe e cresce um pouco. */}
+          <TopBarHoverIcon fx="avatar" className="relative inline-flex rounded-full">
+            <UserMenuTrigger name={name} imageUrl={user?.avatarUrl} active={open} />
+          </TopBarHoverIcon>
+        </motion.button>
       }
     >
-      {/* Header: avatar 32px + nome + e-mail · papel — SHELL-USERMENU-02:
-          8 8 10, gap 10, mb 4, nome 13px. */}
-      <div className="flex items-center gap-2.5 px-2 pt-2 pb-2.5 mb-1">
-        <Avatar name={name} imageUrl={user?.avatarUrl} size="sm" kind="operator" />
+      {/* Cabeçalho (SCRUM-1253): o papel vira selo ao lado do nome e o e-mail
+          tem a linha só para ele — antes os dois dividiam a linha e cortavam. */}
+      <div className="flex items-center gap-2.5 px-2 pt-2 pb-2.5">
+        <Avatar name={name} imageUrl={user?.avatarUrl} size="36" kind="operator" />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-surface-100 truncate">{name}</p>
-          <p className="text-[11px] text-surface-500 truncate">
-            {user?.email}{user?.role ? ` · ${roleLabel(user.role)}` : ''}
+          <p className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm font-semibold text-surface-100 truncate">{name}</span>
+            {user?.role && (
+              <span className="flex-shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[6px] bg-[var(--sf2)] border border-surface-700 text-xs font-semibold text-surface-300">
+                {roleLabel(user.role)}
+              </span>
+            )}
           </p>
+          <p className="text-xs text-surface-400 truncate" title={user?.email}>{user?.email}</p>
         </div>
       </div>
+
+      <DropdownSeparator />
 
       <DropdownItem icon={User} onClick={() => go('/settings/account')}>
         Meu perfil
@@ -1181,45 +1226,46 @@ function UserMenu() {
       {settingsVisible && (
         <DropdownItem icon={Settings} onClick={() => go('/settings')}>
           <span className="flex-1">Configurações</span>
-          <kbd className="font-mono text-2xs text-surface-500">⌘,</kbd>
+          <span className="flex items-center gap-0.5" aria-label={mac ? 'Atalho: Command vírgula' : 'Atalho: Ctrl vírgula'}>
+            <Kbd>{mac ? '⌘' : 'Ctrl'}</Kbd><Kbd>,</Kbd>
+          </span>
         </DropdownItem>
       )}
 
+      <DropdownSeparator />
+
       {/* Tema — único item que NÃO fecha o menu ao interagir (handoff 3.13).
           Não é um DropdownItem: o SegmentedControl é interativo por dentro,
-          e DropdownItem é um <button> — não dá para aninhar botão em botão. */}
-      <div role="none" className="px-3 py-2.5 flex items-center justify-between gap-3">
-        <span className="text-[12.5px] text-surface-200">Tema</span>
+          e DropdownItem é um <button> — não dá para aninhar botão em botão.
+          `ink` (SCRUM-1253): no escuro o selecionado em "tinta" invertida —
+          com o `subtle` as três opções quase não se distinguiam. */}
+      <div role="none" className="px-3 py-2 flex items-center justify-between gap-3">
+        <span className="text-sm text-surface-200">Tema</span>
         <SegmentedControl
           label="Tema"
           size="sm"
+          variant="ink"
           value={theme}
           onChange={setTheme}
           options={THEME_OPTIONS}
         />
       </div>
 
-      <DropdownSeparator />
-
-      {/* Linha de workspace — produto hoje é single-tenant por login (não há
-          troca de workspace implementada em nenhum outro lugar da UI); o link
-          fica desabilitado em vez de simular uma ação que não existe. */}
-      <div role="none" className="px-3 py-2.5 flex items-center gap-2.5">
-        <span
-          className="w-5 h-5 rounded-[6px] flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-dark))' }}
-          aria-hidden
-        />
-        <span className="text-sm text-surface-200 truncate flex-1">Meu workspace</span>
-        <button
-          type="button"
-          disabled
-          title="Troca de workspace ainda não disponível"
-          className="text-2xs font-medium text-surface-600 cursor-not-allowed flex-shrink-0"
-        >
-          Trocar ›
-        </button>
-      </div>
+      {alcancaEmpresa && empresa && (
+        <>
+          <DropdownSeparator />
+          <DropdownItem onClick={() => go('/settings/company')} className="!h-auto py-2">
+            <span className="w-7 h-7 rounded-[6px] flex-shrink-0 flex items-center justify-center bg-brand-500/15 text-accent-dark text-2xs font-semibold">
+              {getInitials(empresa)}
+            </span>
+            <span className="min-w-0 flex-1 text-left leading-tight">
+              <span className="block text-sm text-surface-100 truncate">{empresa}</span>
+              <span className="block text-2xs text-surface-500">Perfil da empresa</span>
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" aria-hidden />
+          </DropdownItem>
+        </>
+      )}
 
       <DropdownSeparator />
 
@@ -1390,7 +1436,7 @@ export function TopBar() {
       {/* Left: page title + subtitle. Subtitle hidden on small viewports so
           the row stays single-line on phones. */}
       <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-sm font-display font-bold tracking-[-0.01em] text-surface-50 flex-shrink-0 truncate">
+        <span className="text-sm font-display font-semibold tracking-[-0.01em] text-surface-50 flex-shrink-0 truncate">
           {pageTitle}
         </span>
         {pageSubtitle && (
@@ -1416,42 +1462,57 @@ export function TopBar() {
             used to live inline at the top of the bar, now as a centered
             overlay. The pill shows the "/" hint so the shortcut is
             discoverable without expanding the input. */}
-        <button
+        <motion.button
+          {...topBarHoverProps}
           type="button"
           onClick={() => setDropOpen(true)}
           title="Buscar (atalho /)"
           aria-label="Abrir busca"
           // SHELL-TOPBAR-04: 28px, raio 7, fundo --sf2, borda --bd, 200px; kbd só borda --bd2.
-          className="hidden md:inline-flex items-center gap-2 px-2.5 h-7 rounded-sm border border-surface-700 hover:border-[var(--bd2)] bg-[var(--sf2)] text-xs text-surface-400 hover:text-surface-200 transition-colors w-[200px] flex-shrink-0"
+          // SCRUM-1253: hover animado (fundo floresce + lupa inclina); o
+          // conteúdo é `relative` para ficar acima do fundo.
+          className="relative hidden md:inline-flex items-center gap-2 px-2.5 h-7 rounded-[6px] border border-surface-700 hover:border-[var(--bd2)] bg-[var(--sf2)] text-xs text-surface-400 hover:text-surface-200 transition-colors w-[200px] flex-shrink-0"
         >
-          <Search className="w-3.5 h-3.5 flex-shrink-0" />
-          <span className="flex-1 text-left truncate">Buscar</span>
-          <kbd className="px-1 rounded-[4px] border border-[var(--bd2)] text-3xs text-surface-500 font-medium flex-shrink-0 leading-4">
+          <TopBarHoverBloom />
+          <TopBarHoverIcon fx="search" className="relative inline-flex flex-shrink-0">
+            <Search className="w-3.5 h-3.5" />
+          </TopBarHoverIcon>
+          <span className="relative flex-1 text-left truncate">Buscar</span>
+          <kbd className="relative px-1 rounded-[6px] border border-[var(--bd2)] text-2xs text-surface-500 font-medium flex-shrink-0 leading-4">
             /
           </kbd>
-        </button>
-        <button
+        </motion.button>
+        <motion.button
+          {...topBarHoverProps}
           type="button"
           onClick={() => setDropOpen(true)}
           title="Buscar"
           aria-label="Abrir busca"
-          className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+          className="relative md:hidden w-8 h-8 rounded-[6px] flex items-center justify-center text-surface-400 hover:text-surface-100 transition-colors"
         >
-          <Search className="w-4 h-4" />
-        </button>
+          <TopBarHoverBloom />
+          <TopBarHoverIcon fx="search">
+            <Search className="w-4 h-4" />
+          </TopBarHoverIcon>
+        </motion.button>
 
         {/* Copilot drawer shortcut — mirrors the admin + route gate used by
              the CopilotPanel itself, so the button only shows where the drawer
              can actually render. */}
         {isFeatureVisibleForUser('copilot') && isAdminTier(user?.role) && !location.pathname.startsWith('/copilot') && (
-          <button
+          <motion.button
+            {...topBarHoverProps}
             onClick={() => openCopilot()}
             title="Abrir Copilot"
             aria-label="Abrir Copilot"
-            className="flex items-center justify-center w-7 h-7 rounded-sm text-brand-400 hover:text-brand-300 hover:bg-[var(--rowhover)] transition-colors"
+            className="relative flex items-center justify-center w-7 h-7 rounded-[6px] text-brand-400 hover:text-brand-300 transition-colors"
           >
-            <Sparkles className="w-4 h-4" />
-          </button>
+            {/* SCRUM-1253: hover animado (fundo floresce + faísca cintila). */}
+            <TopBarHoverBloom />
+            <TopBarHoverIcon fx="sparkle">
+              <Sparkles className="w-4 h-4" />
+            </TopBarHoverIcon>
+          </motion.button>
         )}
 
         {/* Workspace readiness — botão de ícone (alerta + ponto âmbar) entre a
@@ -1461,23 +1522,28 @@ export function TopBar() {
 
         {/* Notifications */}
         <div className="relative" ref={notifRef}>
-          <button
+          <motion.button
+            {...topBarHoverProps}
             onClick={() => setNotifOpen((v) => !v)}
             title="Notificações"
             aria-haspopup="dialog"
             aria-expanded={notifOpen}
             aria-label={unreadCount > 0 ? `Notificações (${unreadCount > 9 ? '9+' : unreadCount} não lidas)` : 'Notificações'}
-            className="relative flex items-center justify-center w-7 h-7 rounded-sm text-surface-400 [html:not([data-theme=light])_&]:text-[#E3EBEB] hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
+            className="relative flex items-center justify-center w-7 h-7 rounded-[6px] text-surface-400 [html:not([data-theme=light])_&]:text-[#E3EBEB] hover:text-surface-200 transition-colors"
           >
-            <Bell className="w-4 h-4" />
+            {/* SCRUM-1253: hover animado (fundo floresce + sino balança). */}
+            <TopBarHoverBloom forceOn={notifOpen} />
+            <TopBarHoverIcon fx="bell">
+              <Bell className="w-4 h-4" />
+            </TopBarHoverIcon>
             {unreadCount > 0 && (
               /* PL-5-4: canvas 7a põe o contador DENTRO do alvo (top 2 / right 0),
                  14px e min-width 14 — não pendurado 2px fora do botão a 16px. */
-              <span className="absolute top-0.5 right-0 min-w-[14px] h-3.5 px-[3px] rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center">
+              <span className="absolute top-0.5 right-0 min-w-[14px] h-3.5 px-[3px] rounded-full bg-brand-cta text-2xs font-semibold text-surface-950 [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:text-white flex items-center justify-center">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
-          </button>
+          </motion.button>
 
           {notifOpen && (
             <>
@@ -1512,7 +1578,7 @@ export function TopBar() {
               <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" />
               <motion.div
                 ref={searchRef}
-                className="relative z-10 w-full max-w-xl bg-surface-900 overlay-frame border rounded-2xl overflow-hidden"
+                className="relative z-10 w-full max-w-xl bg-surface-900 overlay-frame border rounded-[10px] overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
                 initial={{ opacity: 0, y: -6, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1546,7 +1612,7 @@ export function TopBar() {
                     type="button"
                     onClick={() => setDropOpen(false)}
                     title="Fechar"
-                    className="text-3xs text-surface-500 hover:text-surface-300 px-1.5 py-0.5 rounded border border-surface-700"
+                    className="text-2xs text-surface-500 hover:text-surface-300 px-1.5 py-0.5 rounded border border-surface-700"
                   >
                     Esc
                   </button>

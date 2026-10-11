@@ -13,6 +13,9 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
 const stage = (id: string, label: string, extra: Partial<PipelineStage> = {}): PipelineStage => ({
   id, tenantId: 't', pipelineId: 'p', key: id, label, color: '#6366f1', order: 0, isWon: false, isLost: false, ...extra,
 })
+/** Ganho/Perdido nascem recolhidos (SCRUM-1253): estes testes olham o CONTEÚDO
+ *  das terminais, então abrem as duas antes de renderizar. */
+const abrirTerminais = (ids: string[]) => localStorage.setItem('funil-fechadas-abertas:p', JSON.stringify(ids))
 const STAGES = [
   stage('s1', 'Enviado'),
   stage('s2', 'Respondeu'),
@@ -37,6 +40,7 @@ const deal = (over: Partial<Deal>): Deal => ({
 describe('DealsBoard — funil de PROCESSO (F8)', () => {
   it('título = contato, sem R$, terminais Concluído/Cancelado, origem + IA + tempo + telefone no card', () => {
     const onOpenContact = vi.fn()
+    abrirTerminais(['s3', 's4'])
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [deal({})] }} onMoveStage={vi.fn()} pipeline={PROCESS} onOpenContact={onOpenContact} />)
 
     expect(screen.getByTestId('process-card-title')).toHaveTextContent('Mariana Souza')
@@ -67,6 +71,7 @@ describe('DealsBoard — funil de PROCESSO (F8)', () => {
 
   it('registro fechado mostra "fechado há …" a partir de closedAt', () => {
     const closed = deal({ status: 'won', stageId: 's3', closedAt: new Date(NOW - 2 * 3_600_000).toISOString() })
+    abrirTerminais(['s3', 's4'])
     render(<DealsBoard stages={STAGES} dealsByStage={{ s3: [closed] }} onMoveStage={vi.fn()} pipeline={PROCESS} />)
     // Direção C: fechados viram linha compacta na coluna terminal; em
     // processo (sem valor) a linha diz quando fechou.
@@ -77,6 +82,7 @@ describe('DealsBoard — funil de PROCESSO (F8)', () => {
 describe('DealsBoard — funil de VENDA continua como antes (regressão)', () => {
   it('título do negócio, valor, total da coluna, chips ganho/perdido e linha do contato', () => {
     const sales = deal({ pipelineId: 'ps', amountCents: 15_000, lastMovedByKind: 'user' })
+    abrirTerminais(['s3', 's4'])
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} />)
     const card = screen.getByText('Título do registro').closest('div')!
     expect(card).toBeInTheDocument()
@@ -91,6 +97,7 @@ describe('DealsBoard — funil de VENDA continua como antes (regressão)', () =>
   })
 
   it('sem `pipeline` (chamador antigo) também renderiza como venda', () => {
+    abrirTerminais(['s3', 's4'])
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [deal({})] }} onMoveStage={vi.fn()} />)
     expect(screen.getByText('Título do registro')).toBeInTheDocument()
     expect(screen.getByText('ganho')).toBeInTheDocument()
@@ -226,23 +233,33 @@ describe('DealsBoard — "Mover ▾" por toque e clique no card (F-FUNIL-09)', (
   })
 })
 
-describe('DealsBoard — coluna terminal única (R2-1E-COL)', () => {
-  it('etapas isWon/isLost ficam empilhadas na coluna terminal; as abertas fora dela', () => {
+describe('DealsBoard — Ganho e Perdido em colunas próprias (SCRUM-1253, variante B)', () => {
+  it('cada terminal é uma coluna no fim do funil, recolhida por padrão', () => {
+    localStorage.clear()
     render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} pipeline={SALES} />)
-    const terminal = screen.getByTestId('board-terminal-column')
-    expect(within(terminal).getByText('Confirmado')).toBeInTheDocument()
-    expect(within(terminal).getByText('Não confirmou')).toBeInTheDocument()
-    expect(within(terminal).queryByText('Enviado')).toBeNull()
-    expect(terminal).toHaveTextContent('Solte para Ganho')
-    expect(terminal).toHaveTextContent('Solte para Perdido')
+    expect(screen.queryByTestId('board-terminal-column')).toBeNull()
+    expect(screen.getByTestId('coluna-recolhida-s3')).toHaveTextContent('Confirmado · 0')
+    expect(screen.getByTestId('coluna-recolhida-s4')).toHaveTextContent('Não confirmou · 0')
+    expect(screen.queryByTestId('coluna-recolhida-s1')).toBeNull()
   })
 
-  it('soltar um card na etapa terminal continua chamando onMoveStage (o modal de motivo abre no pai)', async () => {
+  it('expandir a terminal mostra a coluna; recolher volta à faixa', () => {
+    localStorage.clear()
+    render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} pipeline={SALES} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Expandir a coluna Não confirmou' }))
+    expect(screen.queryByTestId('coluna-recolhida-s4')).toBeNull()
+    expect(screen.getByText('Solte para Perdido')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Recolher a coluna Não confirmou' }))
+    expect(screen.getByTestId('coluna-recolhida-s4')).toBeInTheDocument()
+  })
+
+  it('soltar um card na faixa terminal recolhida continua chamando onMoveStage (o modal de motivo abre no pai)', async () => {
+    localStorage.clear()
     const onMoveStage = vi.fn()
     const d = deal({ id: 'dd', pipelineId: 'ps' })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [d] }} onMoveStage={onMoveStage} pipeline={SALES} />)
     fireEvent.dragStart(screen.getByText('Título do registro').closest('[draggable]')!, { dataTransfer: { effectAllowed: '' } })
-    const perdido = within(screen.getByTestId('board-terminal-column')).getByText('Não confirmou').closest('div[class*="flex-col"]')!
+    const perdido = screen.getByTestId('coluna-recolhida-s4')
     // o id do card arrastado entra em setTimeout(0): repete o drop até o estado assentar
     await waitFor(() => {
       fireEvent.drop(perdido)
@@ -271,9 +288,25 @@ describe('DealsBoard — direção C (Quadro + lentes, 27/09)', () => {
 
   it('fechados: coluna diz a janela de 30 dias e oferece ver os escondidos', () => {
     const onToggle = vi.fn()
+    localStorage.clear()
     render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} pipeline={SALES} closedWindow={{ allClosed: false, hidden: 3, onToggle }} />)
+    // a janela aparece na 1ª terminal ABERTA (elas nascem recolhidas)
+    fireEvent.click(screen.getByRole('button', { name: 'Expandir a coluna Confirmado' }))
     expect(screen.getByTestId('board-closed-window')).toHaveTextContent('Fechados · 30 dias')
     fireEvent.click(screen.getByTestId('board-closed-toggle'))
     expect(onToggle).toHaveBeenCalled()
+  })
+
+  it('fechados todos recolhidos: o "Ver todos" fica na faixa, e a terminal aberta recolhe de novo', () => {
+    const onToggle = vi.fn()
+    localStorage.clear()
+    render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} pipeline={SALES} closedWindow={{ allClosed: false, hidden: 3, onToggle }} />)
+    const faixa = screen.getByTestId('board-closed-toggle')
+    expect(faixa).toHaveTextContent('Ver todos (+3)')
+    fireEvent.click(faixa)
+    expect(onToggle).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Expandir a coluna Confirmado' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Recolher a coluna Confirmado' }))
+    expect(screen.getByTestId('coluna-recolhida-s3')).toBeInTheDocument()
   })
 })

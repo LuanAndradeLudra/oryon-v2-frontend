@@ -994,6 +994,11 @@ export interface Conversation {
   lastMessagePreview: string
   /** Who sent the last message — drives the sender indicator on the preview. */
   lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
+  /** SCRUM-1161 C2 — tipo da última mensagem (null em conversa antiga). Com
+   *  ele, o preview é classificado pelo tipo, nunca pelo emoji do texto. */
+  lastMessageType?: MessageType | null
+  /** SCRUM-1161 C2 — origem da última mensagem enviada pela plataforma. */
+  lastMessageMeta?: { templateName?: string; campaignName?: string; automationName?: string; integration?: true } | null
   /**
    * SCRUM-1096 — trecho de mensagem que bateu a busca atual, com os
    * marcadores de `lib/searchHighlight.tsx`. Só vem preenchido quando a
@@ -1203,8 +1208,17 @@ export interface ConversationStatusCounts {
   resolved: number
 }
 
+/** SCRUM-1161 C5 — pendentes da empresa (linhas permitidas + linha do seletor),
+ *  independente de aba/busca/etiqueta: `queue` = sem dono, `mine` = minhas. */
+export interface PendingCounts {
+  queue: number
+  mine: number
+}
+
 export interface ConversationListResponse extends PaginatedResponse<Conversation> {
   statusCounts: ConversationStatusCounts
+  /** C5 — ausente no backend antigo (o cabeçalho cai nas 2 chamadas de antes). */
+  pendingCounts?: PendingCounts | null
   /** Tenant-wide count of conversations with a recent phantom-confirmation
    *  handoff — drives the "Verificar" indicator badge next to the search. */
   needsReviewCount?: number
@@ -1542,6 +1556,8 @@ export interface CampaignStats {
   failed: number
   replied?: number
   clicked?: number
+  /** D9: lidas deduzidas (já somadas em `read`). */
+  readInferred?: number
   optedOut?: number
   conversions?: number
   engagementScore?: number   // 0–100 composite
@@ -1619,6 +1635,10 @@ export interface CampaignFunnel {
   excluded:  number
   /** Saíram de marketing (131050) — à parte. */
   optedOut:  number
+  /** D9 (PO, 06/10): lidas deduzidas por resposta/clique — já somadas em `read`. */
+  readInferred?: number
+  /** D10 (PO, 06/10): cliques em botão de resposta rápida (também contam em `replied`). */
+  clicked?: number
 }
 
 export type CampaignRecipientStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'cancelled'

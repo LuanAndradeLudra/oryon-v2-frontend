@@ -72,18 +72,18 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = fal
   }
 
   const actions = !editing ? (
-    <button onClick={() => setEditing(true)} aria-label="Editar dados" className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+    <button onClick={() => setEditing(true)} aria-label="Editar dados" className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
       <Pencil className="w-3 h-3" />
     </button>
   ) : (
     <div className="flex items-center gap-1">
-      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
         <XIcon className="w-3 h-3" />
       </button>
       <button
         onClick={handleSave}
         disabled={saving}
-        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
+        className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
       >
         <Save className="w-2.5 h-2.5" />
         {saving ? 'Salvando...' : 'Salvar'}
@@ -109,8 +109,8 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = fal
         <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-1.5">
           {contact.source && (
             <Fragment>
-              <p className="text-[12.5px] text-surface-400 truncate">Origem</p>
-              <p className="text-[12.5px] font-medium text-surface-100 truncate capitalize">
+              <p className="text-xs text-surface-400 truncate">Origem</p>
+              <p className="text-xs font-medium text-surface-100 truncate capitalize">
                 {contact.source === 'meta_ads' ? 'Meta Ads' : contact.source}
               </p>
             </Fragment>
@@ -122,22 +122,22 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = fal
             if (!val) return null
             return (
               <Fragment key={f.key}>
-                <p className="text-[12.5px] text-surface-400 truncate">{f.label}</p>
-                <p className="text-[12.5px] font-medium text-surface-100 truncate">{val}</p>
+                <p className="text-xs text-surface-400 truncate">{f.label}</p>
+                <p className="text-xs font-medium text-surface-100 truncate">{val}</p>
               </Fragment>
             )
           })}
           {(contact.city || contact.state) && (
             <Fragment>
-              <p className="text-[12.5px] text-surface-400 truncate">Cidade</p>
-              <p className="text-[12.5px] font-medium text-surface-100 truncate">
+              <p className="text-xs text-surface-400 truncate">Cidade</p>
+              <p className="text-xs font-medium text-surface-100 truncate">
                 {[contact.city, contact.state].filter(Boolean).join(' · ')}
               </p>
             </Fragment>
           )}
           <Fragment>
-            <p className="text-[12.5px] text-surface-400 truncate">Criado em</p>
-            <p className="text-[12.5px] font-medium text-surface-100 truncate">
+            <p className="text-xs text-surface-400 truncate">Criado em</p>
+            <p className="text-xs font-medium text-surface-100 truncate">
               {new Date(contact.createdAt).toLocaleDateString('pt-BR')}
             </p>
           </Fragment>
@@ -166,7 +166,7 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = fal
     return (
       <section>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Dados</p>
+          <p className="text-xs font-semibold text-surface-500">Dados</p>
           {actions}
         </div>
         {body}

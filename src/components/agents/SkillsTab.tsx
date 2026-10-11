@@ -147,7 +147,7 @@ export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
   if (loadError && rows.length === 0) {
     return (
       <>
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+        <div className="flex items-start gap-3 p-4 rounded-[10px] bg-danger/10 border border-danger/30 text-sm">
           <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-danger font-medium mb-1">Erro ao carregar skills</p>
@@ -155,7 +155,7 @@ export function SkillsTab({ agentId, tenantId, semCabecalho = false }: Props) {
           </div>
           <button
             onClick={reload}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium flex-shrink-0"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[6px] bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium flex-shrink-0"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Tentar novamente
           </button>
@@ -395,7 +395,7 @@ function SkillRow({
       animate={toggling ? { scale: [1, 1.005, 1] } : { scale: 1 }}
       transition={{ duration: 0.25 }}
       className={cn(
-        'group relative grid grid-cols-[44px_1fr_auto] items-start gap-4 p-4 rounded-lg border transition-colors',
+        'group relative grid grid-cols-[44px_1fr_auto] items-start gap-4 p-4 rounded-[10px] border transition-colors',
         // Left accent only when active. Border colour comes from the same
         // status-active token used in the header chip — visual continuity.
         'border-l-2',
@@ -468,7 +468,7 @@ function SkillRow({
           disabled={disabled}
         />
         {toggling && (
-          <span className="text-3xs text-surface-500 inline-flex items-center gap-1">
+          <span className="text-2xs text-surface-500 inline-flex items-center gap-1">
             <Loader2 className="w-2.5 h-2.5 animate-spin" /> salvando
           </span>
         )}

@@ -93,7 +93,7 @@ export function ActivateAccountPage() {
         </div>
 
         <div className="mb-7">
-          <h2 className="text-2xl font-bold text-surface-50">Ativar sua conta</h2>
+          <h2 className="text-2xl font-semibold text-surface-50">Ativar sua conta</h2>
           <p className="text-sm text-surface-400 mt-1">Defina uma senha para começar a usar o Oryon.</p>
         </div>
 

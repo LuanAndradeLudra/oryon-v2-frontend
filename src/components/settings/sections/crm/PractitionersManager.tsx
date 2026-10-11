@@ -130,12 +130,12 @@ export function PractitionersManager() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-surface-100 truncate">{p.name}</span>
                       {p.category && (
-                        <span className="text-[10px] text-surface-400 bg-[var(--sf2)] border border-surface-700 px-1.5 py-0.5 rounded-xs whitespace-nowrap">
+                        <span className="text-2xs text-surface-400 bg-[var(--sf2)] border border-surface-700 px-1.5 py-0.5 rounded-[6px] whitespace-nowrap">
                           {p.category}
                         </span>
                       )}
                       {!isActive && (
-                        <span className="text-[10px] text-surface-500 border border-surface-700 px-1.5 py-0.5 rounded-xs">
+                        <span className="text-2xs text-surface-500 border border-surface-700 px-1.5 py-0.5 rounded-[6px]">
                           Inativo
                         </span>
                       )}
@@ -156,13 +156,13 @@ export function PractitionersManager() {
                           setEditPractitioner(p)
                           setModalOpen(true)
                         }}
-                        className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+                        className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeletePractitioner(p)}
-                        className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
+                        className="p-1.5 rounded-[6px] text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

@@ -56,7 +56,7 @@ function FilterChip({
       aria-label={ariaLabel}
       data-testid={testId}
       className={cn(
-        'inline-flex items-center gap-[5px] h-7 px-[9px] rounded-sm border text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0',
+        'inline-flex items-center gap-[5px] h-7 px-[9px] rounded-[6px] border text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0',
         active || open
           ? 'border-brand-500 bg-accent-soft text-accent-dark'
           : 'border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)]',
@@ -162,7 +162,7 @@ export function BoardFilterBar({
 
       {summary && (
       <p className="text-xs text-surface-400 tabular-nums" data-testid="board-summary" title={summaryTitle}>
-        <span className="font-bold text-surface-100">
+        <span className="font-semibold text-surface-100">
           {summary.total} {noun}{summary.total === 1 ? '' : 's'}
         </span>
         {!isProcess && (

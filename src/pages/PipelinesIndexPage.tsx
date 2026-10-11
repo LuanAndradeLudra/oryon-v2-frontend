@@ -82,10 +82,10 @@ export function PipelinesIndexPage() {
   return (
     <div className="flex flex-1 items-center justify-center p-6">
       <div className="w-full max-w-md text-center flex flex-col items-center gap-3">
-        <span className="w-11 h-11 rounded-lg flex items-center justify-center bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] text-white">
+        <span className="w-11 h-11 rounded-[10px] flex items-center justify-center bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) text-white">
           <Milestone className="w-5 h-5" />
         </span>
-        <h1 className="text-lg font-display font-bold text-surface-50">Nenhum funil ainda</h1>
+        <h1 className="text-lg font-display font-semibold text-surface-50">Nenhum funil ainda</h1>
         <p className="text-sm text-surface-400 leading-relaxed">
           O funil organiza os negócios por etapa — do primeiro contato ao fechamento — e mostra
           quanto está em aberto em cada uma.

@@ -312,10 +312,10 @@ export function AgentManagement() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-surface-700">
-                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Usuário</th>
-                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em] hidden lg:table-cell">Setor</th>
-                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Papel</th>
-                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Status</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-2xs font-semibold text-surface-500 uppercase tracking-[.14em]">Usuário</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-2xs font-semibold text-surface-500 uppercase tracking-[.14em] hidden lg:table-cell">Setor</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-2xs font-semibold text-surface-500 uppercase tracking-[.14em]">Papel</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-2xs font-semibold text-surface-500 uppercase tracking-[.14em]">Status</th>
                 <th className="px-3 py-2.5 first:pl-0 last:pr-0" />
               </tr>
             </thead>
@@ -340,7 +340,7 @@ export function AgentManagement() {
                     })()}
                   </td>
                   <td className="px-3 py-3 first:pl-0 last:pr-0">
-                    <span className={cn('color-chip-soft inline-flex items-center h-5 px-[7px] rounded-[5px] text-[11px] font-bold border')} style={{ ['--chip']: ROLE_COLORS[user.role] } as React.CSSProperties}>
+                    <span className={cn('color-chip-soft inline-flex items-center h-5 px-[7px] rounded-[6px] text-2xs font-semibold border')} style={{ ['--chip']: ROLE_COLORS[user.role] } as React.CSSProperties}>
                       {ROLE_LABELS[user.role]}
                     </span>
                   </td>
@@ -357,7 +357,7 @@ export function AgentManagement() {
                         <button
                           onClick={() => setOpenDropdown(openDropdown === user.id ? null : user.id)}
                           aria-label={`Ações de ${user.firstName} ${user.lastName}`.trim()}
-                          className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+                          className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
                         >
                           <MoreHorizontal className="w-3.5 h-3.5" />
                         </button>

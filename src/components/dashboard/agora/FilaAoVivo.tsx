@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bot, Check, ChevronDown, Clock, Inbox, ShieldAlert, UserPlus } from 'lucide-react'
+import { Check, ChevronDown, Clock, Inbox, ShieldAlert, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -15,7 +15,7 @@ import type { Conversation } from '@/types'
 // com o prazo à vista e as duas ações do PO (27/09) sem sair do painel —
 // Assumir (atribui a mim e abre a conversa) e Atribuir (escolhe alguém).
 
-export type FiltroDaFila = 'todas' | 'sem-dono' | 'ia-passou' | 'janela'
+export type FiltroDaFila = 'todas' | 'sem-dono' | 'janela'
 
 /** Conversas por página. A lista rola dentro do cartão (altura fixa, PO 28/09). */
 const POR_PAGINA = 20
@@ -73,7 +73,9 @@ interface Props {
 const FILTROS: Array<{ id: FiltroDaFila; rotulo: string }> = [
   { id: 'todas', rotulo: 'Todas' },
   { id: 'sem-dono', rotulo: 'Sem dono' },
-  { id: 'ia-passou', rotulo: 'A IA passou' },
+  // SCRUM-1253 (PO, 11/10): saiu o filtro das que a IA passou — com IA em
+  // todas as linhas ele repetia "Todas", e a origem não muda o que o operador
+  // faz. `?fila=ia-passou` em links antigos cai em "Todas".
   { id: 'janela', rotulo: 'Janela fechando' },
 ]
 
@@ -90,13 +92,15 @@ export function FilaAoVivo({
   return (
     <section
       aria-labelledby="fila-agora-titulo"
-      className="flex flex-col h-[min(640px,75vh)] xl:h-[600px] bg-surface-800 border border-surface-700 rounded-lg overflow-hidden"
+      className="flex flex-col h-[min(640px,75vh)] xl:h-[600px] bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden"
       data-testid="fila-ao-vivo"
     >
       <header className="flex-shrink-0 flex items-center gap-2 min-h-10 px-3.5 py-1.5 border-b border-surface-700 flex-wrap">
-        <h2 id="fila-agora-titulo" className="text-[13px] font-semibold text-surface-100">Fila agora</h2>
+        <h2 id="fila-agora-titulo" className="text-sm font-semibold text-surface-100">Fila agora</h2>
         <span className="text-xs text-surface-400 tabular-nums">{contagens.todas}</span>
-        <div className="ml-auto flex items-center gap-1" role="group" aria-label="Filtrar a fila">
+        {/* Num cartão estreito os filtros descem para a linha de baixo e rolam de lado,
+            em vez de vazar do cartão (SCRUM-1253). */}
+        <div className="ml-auto flex items-center gap-1 max-w-full overflow-x-auto [scrollbar-width:none]" role="group" aria-label="Filtrar a fila">
           {FILTROS.map((f) => (
             <button
               key={f.id}
@@ -104,9 +108,9 @@ export function FilaAoVivo({
               aria-pressed={filtro === f.id}
               onClick={() => onFiltro(f.id)}
               className={cn(
-                'inline-flex items-center gap-1.5 h-6 px-2 rounded-[6px] text-[11.5px] font-semibold transition-colors',
+                'inline-flex items-center gap-1.5 h-6 px-2 rounded-[6px] text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-colors',
                 filtro === f.id
-                  ? 'bg-[var(--ink-bg)] text-[var(--ink-fg)]'
+                  ? 'bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)]'
                   : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
               )}
             >
@@ -142,7 +146,7 @@ export function FilaAoVivo({
               <span
                 className={cn(
                   'inline-flex items-center rounded-[6px] font-semibold tabular-nums flex-shrink-0',
-                  celular ? 'ml-auto h-[18px] px-1.5 text-[11px]' : 'h-[22px] px-2 text-[11.5px]',
+                  celular ? 'ml-auto h-5 px-1.5 text-2xs' : 'h-[22px] px-2 text-xs',
                   CHIP_DA_FAIXA[item.faixa],
                 )}
                 title={`Esperando há ${formatarEspera(item.esperaMin)} · ${ROTULO_DA_FAIXA[item.faixa]}`}
@@ -169,16 +173,22 @@ export function FilaAoVivo({
                   <Avatar name={c.contact.displayName} imageUrl={c.contact.profilePicUrl} size="30" />
                   <span className="flex-1 min-w-0 leading-[1.3]">
                     <span className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[13px] font-semibold text-surface-100 truncate">{c.contact.displayName}</span>
-                      {item.iaPassou && (
-                        <span className="inline-flex items-center gap-1 h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-[var(--sf2)] text-surface-300 flex-shrink-0">
-                          <Bot className="w-3 h-3" aria-hidden />
-                          {celular ? <span className="sr-only">IA passou</span> : 'IA passou'}
-                        </span>
+                      <span className="text-sm font-semibold text-surface-100 truncate">{c.contact.displayName}</span>
+                      {/* Mesmo selo de Conversas (D11, SCRUM-1253): pendente sem dono = "Na fila",
+                          com ou sem IA na linha (toda a fila é pendente); com dono, o
+                          "com Fulano" da linha já diz. */}
+                      {c.status === 'pending' && !dono && (
+                        // No celular o selo espremia o nome até "C…"; lá o "sem dono" da
+                        // 3ª linha já diz o mesmo.
+                        celular ? <span className="sr-only">Na fila</span> : (
+                          <span className="inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-shrink-0 color-chip-soft border" style={{ ['--chip' as string]: 'var(--color-status-pending)' }}>
+                            Na fila
+                          </span>
+                        )
                       )}
                       {c.hasRecentAnomaly && (
                         <span
-                          className="inline-flex items-center gap-1 h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-status-pending-bg text-status-pending flex-shrink-0"
+                          className="inline-flex items-center gap-1 h-5 px-1.5 rounded-[6px] text-2xs font-semibold bg-status-pending-bg text-status-pending flex-shrink-0"
                           title="A IA disse ter feito algo que o sistema não confirmou"
                         >
                           <ShieldAlert className="w-3 h-3" aria-hidden />
@@ -187,8 +197,10 @@ export function FilaAoVivo({
                       )}
                       {celular && chip}
                     </span>
-                    <span className="block text-[12px] text-surface-400 truncate">{c.lastMessagePreview || 'Mídia'}</span>
-                    <span className="flex items-center gap-1.5 text-[11px] text-surface-500 truncate">
+                    <span className="block text-xs text-surface-400 truncate">{c.lastMessagePreview || 'Mídia'}</span>
+                    {/* Quebra em vez de cortar: no celular "janela fechada · só modelo"
+                        empurrava o "sem dono" para fora da linha (SCRUM-1253). */}
+                    <span className="flex flex-wrap items-center gap-x-1.5 min-w-0 text-2xs text-surface-500">
                       {item.janela?.state === 'closing' && (
                         <>
                           <span className="inline-flex items-center gap-1 text-status-pending font-semibold flex-shrink-0" title={item.janela.detail}>
@@ -252,7 +264,7 @@ export function FilaAoVivo({
                       </Button>
                     }
                   >
-                    <p className="px-2 pt-1 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-surface-500">Atribuir a</p>
+                    <p className="px-2 pt-1 pb-1.5 text-2xs font-semibold uppercase tracking-[0.08em] text-surface-500">Atribuir a</p>
                     {equipe.length === 0 && (
                       <p className="px-2 pb-2 text-xs text-surface-400">Sem ninguém ativo na equipe.</p>
                     )}
@@ -264,7 +276,7 @@ export function FilaAoVivo({
                       >
                         <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', u.isOnline ? 'bg-online' : 'bg-surface-600')} aria-hidden />
                         <span className="flex-1 min-w-0 truncate">{u.id === meuId ? `${nomeDe(u)} (você)` : nomeDe(u)}</span>
-                        <span className="text-[11px] text-surface-500 tabular-nums">{u.activeConversations} em aberto</span>
+                        <span className="text-2xs text-surface-500 tabular-nums">{u.activeConversations} em aberto</span>
                         {dono?.id === u.id && <Check className="w-3.5 h-3.5 text-brand-400" aria-hidden />}
                         <span className="sr-only">{u.isOnline ? ' · online' : ' · offline'}</span>
                       </DropdownItem>
@@ -296,7 +308,7 @@ export function FilaAoVivo({
       />
 
       {truncada && (
-        <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-[11.5px] text-surface-500">
+        <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-xs text-surface-500">
           {carregadas !== undefined && totalReal !== undefined && totalReal > carregadas
             ? `A lista mostra ${carregadas} de ${totalReal}: todas as sem dono e as mais recentes com dono. Os números acima são o total.`
             : 'A lista não coube inteira: mostra as mais recentes. Os números acima são o total.'}

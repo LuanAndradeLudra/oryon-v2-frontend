@@ -139,7 +139,7 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs, ag
 
       {/* ── Top-level error (network/4xx from /test endpoint) ──────────── */}
       {error && !result && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+        <div className="flex items-start gap-3 p-4 rounded-[10px] bg-danger/10 border border-danger/30 text-sm">
           <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-danger font-medium mb-1">Falhou antes de chegar ao n8n</p>
@@ -154,7 +154,7 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs, ag
           {/* Summary line */}
           <div
             className={cn(
-              'flex items-center gap-3 p-3 rounded-lg border',
+              'flex items-center gap-3 p-3 rounded-[10px] border',
               summary.ok
                 ? 'bg-status-active-bg/40 border-status-active-border'
                 : summary.status === 0
@@ -179,7 +179,7 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs, ag
           </div>
 
           {/* Tool result preview */}
-          <div className="bg-[var(--sf2)] border border-surface-700 rounded-md p-3">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-[6px] p-3">
             <div className="flex items-center gap-1.5 mb-2 text-xs text-surface-400 uppercase tracking-wide">
               <ClipboardList className="w-3.5 h-3.5" />
               Texto que a IA receberia
@@ -229,7 +229,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+    <section className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
       <header className="mb-4">
         <h2 className="text-base font-semibold text-surface-100 mb-0.5 flex items-center gap-2">
           <Beaker className="w-4 h-4 text-brand-400" /> {title}
@@ -252,7 +252,7 @@ function CollapsibleJson({ title, data }: { title: string; data: unknown }) {
   }
 
   return (
-    <div className="bg-[var(--sf2)] border border-surface-700 rounded-md overflow-hidden">
+    <div className="bg-[var(--sf2)] border border-surface-700 rounded-[6px] overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((s) => !s)}

@@ -234,7 +234,7 @@ export function SubcategoryPreview({ category, subCategory }: Props) {
           celular nem cabeçalho de app — a prévia real da Meta não tem
           nenhum dos dois (mesma correção de TemplatePreview.tsx). */}
       <div
-        className="relative rounded-lg overflow-hidden border border-surface-700/30 shadow-inner"
+        className="relative rounded-[10px] overflow-hidden border border-surface-700/30 shadow-inner"
         style={{ minHeight: 380, background: WA.papel }}
       >
         <div className="p-3">
@@ -278,7 +278,7 @@ export function SubcategoryPreview({ category, subCategory }: Props) {
 
         {/* Animation hint badge */}
         {(isCatalog || isFlows) && (
-          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-black/50 text-white text-[9px] font-medium px-2 py-1 rounded-full backdrop-blur-sm">
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-black/50 text-white text-2xs font-medium px-2 py-1 rounded-full backdrop-blur-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             ao vivo
           </div>
@@ -339,11 +339,11 @@ function MessageBubble({
         <div className="rounded-[6px] px-2.5 py-2 flex items-center gap-2.5" style={{ background: '#F3F4F6' }}>
           <div className="w-9 h-11 bg-red-50 border border-red-100 rounded-[6px] flex flex-col items-center justify-center gap-0.5 flex-shrink-0">
             <FileText className="w-4 h-4 text-red-500" />
-            <span className="text-[7px] font-bold text-red-400 uppercase">pdf</span>
+            <span className="text-[7px] font-semibold text-red-400 uppercase">pdf</span>
           </div>
           <div className="min-w-0">
             <p className="text-2xs font-medium leading-tight truncate" style={{ color: WA.texto }}>{cfg.documentName}</p>
-            <p className="text-3xs mt-0.5" style={{ color: WA.meta }}>2.4 MB · PDF</p>
+            <p className="text-2xs mt-0.5" style={{ color: WA.meta }}>2.4 MB · PDF</p>
           </div>
         </div>
       )}
@@ -351,14 +351,14 @@ function MessageBubble({
       {/* Header: text */}
       {cfg.headerType === 'text' && (
         <div className="px-[7px] pt-1.5">
-          <p className="text-xs font-bold" style={{ color: WA.texto }}>{cfg.headerLabel}</p>
+          <p className="text-xs font-semibold" style={{ color: WA.texto }}>{cfg.headerLabel}</p>
         </div>
       )}
 
       {/* Body */}
       <div style={{ padding: '6px 7px 4px' }}>
         <p
-          className="text-[12.5px] leading-relaxed whitespace-pre-line"
+          className="text-xs leading-relaxed whitespace-pre-line"
           style={{ color: WA.texto }}
           dangerouslySetInnerHTML={{
             __html: DOMPurify.sanitize(
@@ -373,28 +373,28 @@ function MessageBubble({
         {/* Order details summary (inline) */}
         {subCategory === 'order_details' && (
           <div className="mt-1.5 rounded-[6px] px-2.5 py-2 space-y-1" style={{ background: '#F3F4F6' }}>
-            <div className="flex justify-between text-3xs">
+            <div className="flex justify-between text-2xs">
               <span style={{ color: WA.meta }}>Camiseta Básica (M)</span>
               <span className="font-medium" style={{ color: WA.texto }}>R$ 89,90</span>
             </div>
-            <div className="flex justify-between text-3xs">
+            <div className="flex justify-between text-2xs">
               <span style={{ color: WA.meta }}>Tênis Running (42)</span>
               <span className="font-medium" style={{ color: WA.texto }}>R$ 299,00</span>
             </div>
-            <div className="flex justify-between text-3xs pt-1" style={{ borderTop: `1px solid ${WA.divisor}` }}>
+            <div className="flex justify-between text-2xs pt-1" style={{ borderTop: `1px solid ${WA.divisor}` }}>
               <span className="font-semibold" style={{ color: WA.texto }}>Total</span>
-              <span className="font-bold" style={{ color: WA.texto }}>R$ 388,90</span>
+              <span className="font-semibold" style={{ color: WA.texto }}>R$ 388,90</span>
             </div>
           </div>
         )}
 
         {cfg.footer && (
-          <p className="text-3xs" style={{ color: WA.meta, marginTop: 5 }}>{cfg.footer}</p>
+          <p className="text-2xs" style={{ color: WA.meta, marginTop: 5 }}>{cfg.footer}</p>
         )}
 
         {/* Sem tique: mensagem recebida não tem confirmação de entrega
             (mesma correção de TemplatePreview.tsx). */}
-        <p className="text-3xs text-right" style={{ color: WA.meta, marginTop: 1 }}>
+        <p className="text-2xs text-right" style={{ color: WA.meta, marginTop: 1 }}>
           {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
@@ -436,7 +436,7 @@ function CatalogPanel() {
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#f3f4f6] flex-shrink-0">
         <ChevronLeft className="w-4 h-4" style={{ color: WA.azul }} />
         <p className="text-xs font-semibold text-[#111827] flex-1">Catálogo da loja</p>
-        <span className="text-3xs text-[#6b7280] bg-[#f3f4f6] px-1.5 py-0.5 rounded-full">{PRODUCTS.length} itens</span>
+        <span className="text-2xs text-[#6b7280] bg-[#f3f4f6] px-1.5 py-0.5 rounded-full">{PRODUCTS.length} itens</span>
       </div>
 
       {/* Products list */}
@@ -450,7 +450,7 @@ function CatalogPanel() {
               <p className="text-2xs font-semibold text-[#111827] leading-tight">{p.name}</p>
               <p className="text-2xs text-emerald-600 font-medium mt-0.5">{p.price}</p>
             </div>
-            <button className="text-white text-3xs px-2 py-1 rounded-[6px] font-medium flex-shrink-0 whitespace-nowrap" style={{ background: WA.azul }}>
+            <button className="text-white text-2xs px-2 py-1 rounded-[6px] font-medium flex-shrink-0 whitespace-nowrap" style={{ background: WA.azul }}>
               + Add
             </button>
           </div>
@@ -480,7 +480,7 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
         <div className="flex-1">
           <p className="text-xs font-semibold leading-none text-[#111827]">Formulário de contato</p>
           {phase !== 'done' && (
-            <p className="text-3xs text-[#6b7280] mt-0.5">
+            <p className="text-2xs text-[#6b7280] mt-0.5">
               {phase === 'q1' || phase === 'selecting' ? 'Passo 1 de 2' : 'Passo 2 de 2'}
             </p>
           )}
@@ -548,7 +548,7 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
                 <span className="text-2xs font-medium" style={{ color: WA.azul }}>WhatsApp</span>
               </div>
               <div>
-                <p className="text-3xs text-[#6b7280] mb-1.5">Seu nome completo</p>
+                <p className="text-2xs text-[#6b7280] mb-1.5">Seu nome completo</p>
                 <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-[6px] px-3 py-2.5 text-2xs text-[#9ca3af] flex items-center gap-1">
                   <span className="inline-block w-0.5 h-3.5 bg-[#9ca3af] animate-pulse rounded-full" />
                   <span className="ml-1">Digitar aqui...</span>

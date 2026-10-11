@@ -167,7 +167,7 @@ export function PipelineRoutingSettings() {
                   <span className="text-xs text-surface-500">{n.displayPhoneNumber}</span>
                   {hasRouting && (
                     <span
-                      className="text-[10px] font-semibold color-chip border px-1.5 py-0.5 rounded-xs ml-auto"
+                      className="text-2xs font-semibold color-chip border px-1.5 py-0.5 rounded-[6px] ml-auto"
                       style={{ ['--chip']: 'var(--color-success)', ['--chip-mix']: '70%' } as React.CSSProperties}
                     >
                       Roteado

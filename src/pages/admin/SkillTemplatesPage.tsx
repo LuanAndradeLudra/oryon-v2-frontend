@@ -294,7 +294,7 @@ function TemplateCard({
   return (
     <div
       className={cn(
-        'p-4 rounded-lg border transition-colors flex flex-col h-full',
+        'p-4 rounded-[10px] border transition-colors flex flex-col h-full',
         template.enabled
           ? 'bg-surface-800 border-surface-700 hover:border-surface-600'
           : 'bg-[var(--sf2)] border-surface-700 opacity-70',
@@ -432,7 +432,7 @@ function Badge({
     pending: 'var(--color-status-pending)',
     danger:  'var(--color-danger)',
   }
-  const base = 'inline-flex items-center px-1.5 py-0.5 rounded-xs text-[10px] font-medium'
+  const base = 'inline-flex items-center px-1.5 py-0.5 rounded-[6px] text-[11px] font-medium'
   if (tone === 'muted') {
     return (
       <span className={cn(base, 'border bg-[var(--sf2)] text-surface-400 border-surface-700')}>

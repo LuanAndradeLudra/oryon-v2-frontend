@@ -214,7 +214,10 @@ export function AssistenteDeAgente({
     return () => clearTimeout(t)
   }, [spec, etapa, draftId])
 
+  // "Rascunho salvo" só depois de a pessoa mexer (SCRUM-1253, PO 07/10).
+  const [mexeu, setMexeu] = useState(false)
   const tentarDeNovo = () => {
+    setMexeu(true) // pediu para tentar de novo: confirma quando salvar
     if (!draftId) { setTentativa((n) => n + 1); return }
     setSalvo('salvando')
     saveSpecDraft(draftId, spec, etapa).then(() => setSalvo('salvo')).catch(() => setSalvo('sem-servidor'))
@@ -228,6 +231,7 @@ export function AssistenteDeAgente({
   }, [draftId, spec, etapa])
 
   const mudar = useCallback((fn: (s: AgentSpec) => AgentSpec) => {
+    setMexeu(true)
     setFalta(null)
     setSpec((s) => fn(s))
   }, [])
@@ -378,9 +382,9 @@ export function AssistenteDeAgente({
         <aside className="hidden w-80 flex-shrink-0 flex-col border-r border-surface-700 bg-surface-800 md:flex">
           <div className="flex-1 overflow-y-auto px-5 py-[18px]">
             <p className="text-xs text-surface-400">{agentId ? 'Revisar agente' : 'Novo agente'}</p>
-            <p className="mt-6 text-[10px] font-bold uppercase tracking-[.14em] text-accent-dark">Etapa {etapa} de {ETAPAS.length}</p>
-            <h2 className="mt-1.5 text-[18px] font-bold leading-[1.25] text-surface-100">{ETAPAS[etapa - 1]}</h2>
-            <p className="mt-2 text-[12.5px] leading-[1.55] text-surface-400">{ENSINO[etapa - 1]}</p>
+            <p className="mt-6 text-[11px] font-semibold uppercase tracking-[.14em] text-accent-dark">Etapa {etapa} de {ETAPAS.length}</p>
+            <h2 className="mt-1.5 text-lg font-semibold leading-[1.25] text-surface-100">{ETAPAS[etapa - 1]}</h2>
+            <p className="mt-2 text-xs leading-[1.55] text-surface-400">{ENSINO[etapa - 1]}</p>
             <ol className="mt-6 flex flex-col gap-0.5">
               {ETAPAS.map((rotulo, i) => {
                 const n = i + 1
@@ -391,15 +395,15 @@ export function AssistenteDeAgente({
                       type="button"
                       disabled={!feita}
                       onClick={() => setEtapa(n)}
-                      className={cn('flex h-[30px] w-full items-center gap-2.5 rounded-sm text-left text-[12.5px]', feita && 'hover:bg-[var(--rowhover)]')}
+                      className={cn('flex h-8 w-full items-center gap-2.5 rounded-[6px] text-left text-xs', feita && 'hover:bg-[var(--rowhover)]')}
                     >
                       <span className={cn(
-                        'flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full border',
+                        'flex h-4.5 w-4.5 flex-shrink-0 items-center justify-center rounded-full border',
                         feita && 'border-transparent bg-accent-soft text-accent-dark',
                         n === etapa && 'border-transparent bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)]',
                         !feita && n !== etapa && 'border-surface-600 text-surface-500',
                       )}>
-                        {feita ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[10px] font-bold">{n}</span>}
+                        {feita ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[11px] font-semibold">{n}</span>}
                       </span>
                       <span className={n === etapa ? 'font-semibold text-surface-100' : feita ? 'text-surface-400' : 'text-surface-500'}>{rotulo}</span>
                     </button>
@@ -413,15 +417,14 @@ export function AssistenteDeAgente({
         <main className="flex min-w-0 flex-1 flex-col">
           <header className="flex flex-shrink-0 items-center gap-3 border-b border-surface-700 bg-surface-800 px-4 py-3 md:px-6">
             <div className="min-w-0 flex-1 md:hidden">
-              <p className="text-3xs font-bold uppercase tracking-[.14em] text-accent-dark">Etapa {etapa} de {ETAPAS.length}</p>
-              <p className="truncate text-base font-bold text-surface-100">{ETAPAS[etapa - 1]}</p>
+              <p className="text-2xs font-semibold uppercase tracking-[.14em] text-accent-dark">Etapa {etapa} de {ETAPAS.length}</p>
+              <p className="truncate text-base font-semibold text-surface-100">{ETAPAS[etapa - 1]}</p>
             </div>
-            <div className="hidden flex-1 items-center gap-1 md:flex">
-              {ETAPAS.map((_, i) => <div key={i} className={cn('h-[3px] flex-1 rounded-[2px]', i < etapa ? 'bg-brand-500' : 'bg-surface-700')} />)}
-            </div>
+            {/* A régua de progresso do topo saiu: a lateral já mostra as 7 etapas. */}
+            <div className="flex-1" />
             <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-surface-400" aria-live="polite">
               {salvo === 'salvando' && <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando</>}
-              {salvo === 'salvo' && <><Cloud className="h-3.5 w-3.5" /> Rascunho salvo</>}
+              {salvo === 'salvo' && mexeu && <><Cloud className="h-3.5 w-3.5" /> Rascunho salvo</>}
               {salvo === 'sem-servidor' && (
                 <>
                   <CloudOff className="h-3.5 w-3.5 text-danger" /> Não salvo no servidor

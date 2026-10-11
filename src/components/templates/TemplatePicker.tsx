@@ -113,7 +113,7 @@ export function TemplatePicker({ onSelect, query = '', className }: TemplatePick
           onClick={() => onSelect(tpl)}
           className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors text-left group"
         >
-          <div className="w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <div className="w-8 h-8 rounded-[6px] bg-surface-800 flex items-center justify-center flex-shrink-0 mt-0.5">
             <MessageSquare className="w-4 h-4 text-surface-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -122,11 +122,11 @@ export function TemplatePicker({ onSelect, query = '', className }: TemplatePick
               {/* Idioma: chip neutro no padrão da casa (surface-200 sobre surface-700,
                   como o "IA" da lista) — surface-600 sobre surface-800 era quase
                   invisível nos dois temas (PO, 24/09). */}
-              <span className="text-[10.5px] font-semibold tabular-nums text-surface-200 bg-surface-700 px-1.5 h-[17px] inline-flex items-center rounded-[5px] flex-shrink-0">{tpl.language}</span>
+              <span className="text-[11px] font-semibold tabular-nums text-surface-200 bg-surface-700 px-1.5 h-5 inline-flex items-center rounded-[6px] flex-shrink-0">{tpl.language}</span>
             </div>
             <p className="text-xs text-surface-400 line-clamp-2">{tpl.body}</p>
             {tpl.footer && (
-              <p className="text-[10.5px] text-surface-500 mt-1 italic">{tpl.footer}</p>
+              <p className="text-[11px] text-surface-500 mt-1 italic">{tpl.footer}</p>
             )}
           </div>
           <div className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity">

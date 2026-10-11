@@ -51,8 +51,8 @@ function OQueUsou({ debug }: { debug?: ChatTurnDebug }) {
   const fontes = fontesDaResposta(debug)
   if (fontes.length === 0) return null
   return (
-    <div className="mt-1.5 rounded-md border border-surface-700 bg-[var(--sf2)] px-2.5 py-2">
-      <p className="mb-1 text-3xs font-bold uppercase tracking-[.12em] text-surface-500">O que a IA usou</p>
+    <div className="mt-1.5 rounded-[6px] border border-surface-700 bg-[var(--sf2)] px-2.5 py-2">
+      <p className="mb-1 text-2xs font-semibold uppercase tracking-[.12em] text-surface-500">O que a IA usou</p>
       <ul className="space-y-0.5">
         {fontes.map((f) => {
           const Icone = ICONE[f.tipo]
@@ -70,7 +70,7 @@ function OQueUsou({ debug }: { debug?: ChatTurnDebug }) {
             type="button"
             onClick={() => setTecnico((v) => !v)}
             aria-expanded={tecnico}
-            className="mt-1.5 inline-flex items-center gap-1 rounded-sm text-2xs font-semibold text-surface-400 hover:text-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            className="mt-1.5 inline-flex items-center gap-1 rounded-[6px] text-2xs font-semibold text-surface-400 hover:text-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             Detalhes técnicos
             <ChevronDown className={cn('h-3 w-3 transition-transform', tecnico && 'rotate-180')} aria-hidden />
@@ -219,15 +219,17 @@ export function BancadaDeTeste({
     <aside
       aria-label="Teste ao vivo"
       className={cn(
-        'flex flex-col min-h-0 bg-surface-900 border-l border-surface-700',
+        // O teste é uma CONVERSA à parte: sombra o separa da configuração.
+        'flex flex-col min-h-0 bg-surface-800 border-l border-surface-700 shadow-[-12px_0_28px_-16px_rgba(15,23,42,.28)] relative z-10',
         movel ? 'fixed inset-0 z-50 w-full h-[100dvh] border-l-0 pt-safe'
-          : flutuante ? 'fixed right-0 top-0 bottom-0 z-50 w-[min(400px,100vw)] shadow-[0_18px_55px_rgba(0,0,0,.28)]' : 'w-[372px] flex-shrink-0',
+          : flutuante ? 'fixed right-0 top-0 bottom-0 z-50 w-[min(400px,100vw)] shadow-[0_18px_55px_rgba(0,0,0,.28)]' : 'w-[400px] flex-shrink-0',
       )}
     >
       <div className={cn('flex flex-shrink-0 items-center gap-2 border-b border-surface-700 pl-4 pr-2', movel ? 'h-14' : 'h-12')}>
         <Sparkles className="h-4 w-4 text-accent-dark" aria-hidden />
         <h2 className="text-sm font-semibold text-surface-100">Teste ao vivo</h2>
-        <span className="inline-flex h-5 items-center rounded-xs border border-status-pending-border bg-status-pending-bg px-[7px] text-2xs font-semibold text-status-pending">
+        {/* Informação, não alerta: selo neutro. */}
+        <span className="inline-flex h-5 items-center rounded-[6px] border border-surface-700 bg-surface-900 px-[7px] text-2xs font-semibold text-surface-300">
           Simulação
         </span>
         <div className="ml-auto flex items-center gap-0.5">
@@ -274,7 +276,8 @@ export function BancadaDeTeste({
         </p>
       )}
 
-      <div className="flex-1 min-h-0 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
+      {/* Fundo do chat de Conversas: o teste não se confunde com o painel. */}
+      <div className="chat-shell-bg flex-1 min-h-0 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
         {exibidas.length === 0 && !pensando && (
           <div className="pt-6">
             <p className="text-sm font-semibold text-surface-100">Converse como se fosse um cliente</p>
@@ -282,7 +285,7 @@ export function BancadaDeTeste({
             <div className="mt-3 flex flex-col items-start gap-1.5">
               {SUGESTOES.map((s) => (
                 <button key={s} type="button" onClick={() => void enviar(s)}
-                  className={cn('rounded-md border border-[var(--bd2)] text-left text-surface-200 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500', movel ? 'min-h-10 px-3 py-2 text-sm' : 'px-2.5 py-1.5 text-xs')}>
+                  className={cn('rounded-[6px] border border-[var(--bd2)] text-left text-surface-200 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500', 'bg-surface-800 hover:bg-surface-800 hover:border-brand-500', movel ? 'min-h-10 px-3 py-2 text-sm' : 'px-2.5 py-1.5 text-xs')}>
                   {s}
                 </button>
               ))}
@@ -297,16 +300,17 @@ export function BancadaDeTeste({
               initial={semMovimento ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15 }}
-              className={cn('flex flex-col', m.papel === 'user' ? 'items-end' : 'items-start')}
+              // Mesmo lado de Conversas: cliente à esquerda, IA à direita.
+              className={cn('flex flex-col', m.papel === 'user' ? 'items-start' : 'items-end')}
             >
               <div className={cn(
-                'max-w-[88%] rounded-lg px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
+                'max-w-[88%] rounded-[10px] px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
                 m.papel === 'user'
-                  ? 'rounded-br-xs bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)]'
-                  : 'rounded-bl-xs border border-surface-700 bg-surface-800 text-surface-100',
+                  ? 'rounded-bl-xs bubble-in-elevate bg-bubble-in text-[var(--color-bubble-in-fg)]'
+                  : 'rounded-br-xs bubble-out-surface bg-bubble-out text-[var(--color-bubble-out-fg)]',
               )}>
                 {m.texto}
-                <span className={cn('mt-0.5 block text-right text-3xs', m.papel === 'user' ? 'opacity-70' : 'text-surface-500')}>{hora(m.em)}</span>
+                <span className={cn('mt-0.5 block text-right text-2xs', m.papel === 'user' ? 'text-surface-500' : 'text-bubble-out-time')}>{hora(m.em)}</span>
               </div>
               {m.papel === 'assistant' && <div className="w-[88%]"><OQueUsou debug={m.debug} /></div>}
             </motion.div>
@@ -314,7 +318,7 @@ export function BancadaDeTeste({
         </AnimatePresence>
 
         {pensando && (
-          <div className="inline-flex items-center gap-1 rounded-lg border border-surface-700 bg-surface-800 px-3 py-2.5" aria-label="O agente está escrevendo">
+          <div className={cn('inline-flex items-center gap-1 rounded-[10px] border border-surface-700 bg-surface-800 px-3 py-2.5', 'ml-auto flex w-fit')} aria-label="O agente está escrevendo">
             {[0, 1, 2].map((i) => (
               <span key={i} className="h-1.5 w-1.5 rounded-full bg-surface-500 motion-safe:animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
             ))}
@@ -322,7 +326,7 @@ export function BancadaDeTeste({
         )}
 
         {erro && (
-          <div role="alert" className="flex items-start gap-2 rounded-md border border-[color-mix(in_srgb,var(--color-danger)_30%,transparent)] px-3 py-2 text-xs text-danger">
+          <div role="alert" className="flex items-start gap-2 rounded-[6px] border border-[color-mix(in_srgb,var(--color-danger)_30%,transparent)] px-3 py-2 text-xs text-danger">
             <AlertTriangle className="mt-[1px] h-3.5 w-3.5 flex-shrink-0" aria-hidden />
             <span className="flex-1">{erro}</span>
             <button type="button" onClick={() => setErro(null)} aria-label="Dispensar erro"><X className="h-3.5 w-3.5" /></button>
@@ -344,7 +348,7 @@ export function BancadaDeTeste({
           placeholder={revendo ? 'Volte ao teste atual para escrever' : 'Escreva como o cliente…'}
           disabled={!!revendo}
           rows={1}
-          className="max-h-28 min-h-10 flex-1 resize-none rounded-sm border border-[var(--bd2)] bg-surface-800 px-2.5 py-2 text-[13px] text-surface-100 placeholder:text-surface-500 caret-brand-500 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft disabled:opacity-50"
+          className="max-h-28 min-h-10 flex-1 resize-none rounded-[6px] border border-[var(--bd2)] bg-surface-800 px-2.5 py-2 text-[13px] text-surface-100 placeholder:text-surface-500 caret-brand-500 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft disabled:opacity-50"
         />
         <Button type="submit" size={movel ? 'lg' : 'md'} iconOnly aria-label="Enviar" disabled={!texto.trim() || pensando || !!revendo} loading={pensando}>
           <Send className="h-4 w-4" />

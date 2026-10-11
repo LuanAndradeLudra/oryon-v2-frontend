@@ -28,7 +28,7 @@ export function DateRangePicker({ value, onChange }: { value: DateRange; onChang
           aria-haspopup="menu"
           aria-label={`Período: ${current.label}`}
           aria-expanded={open}
-          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border border-[var(--bd2)] text-xs font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] border border-[var(--bd2)] text-xs font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
         >
           {current.label}
           <ChevronDown className="w-3 h-3 text-surface-500" />

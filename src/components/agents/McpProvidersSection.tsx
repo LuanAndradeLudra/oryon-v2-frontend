@@ -100,7 +100,7 @@ function McpProvidersSectionVisivel({ agentId }: Props) {
     return (
       <section className="mt-6 pt-6 border-t border-surface-800">
         <SectionHeader />
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-surface-900/40 border border-surface-800 text-sm">
+        <div className="flex items-start gap-3 p-4 rounded-[10px] bg-surface-900/40 border border-surface-800 text-sm">
           <Lock className="w-4 h-4 text-surface-500 flex-shrink-0 mt-0.5" />
           <p className="text-surface-400">
             Disponível a partir do plano <strong className="text-surface-200">{upgrade ? PLANS[upgrade].name : 'Business'}</strong>.
@@ -127,12 +127,12 @@ function McpProvidersSectionVisivel({ agentId }: Props) {
           <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando…
         </div>
       ) : loadError ? (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+        <div className="flex items-start gap-3 p-4 rounded-[10px] bg-danger/10 border border-danger/30 text-sm">
           <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <p className="text-surface-400 break-words">{loadError}</p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="p-4 rounded-lg bg-surface-900/40 border border-dashed border-surface-800 text-sm text-surface-400">
+        <div className="p-4 rounded-[10px] bg-surface-900/40 border border-dashed border-surface-800 text-sm text-surface-400">
           {owner ? (
             <div className="flex items-center justify-between gap-3">
               <span>Nenhum servidor MCP anexado a este agente ainda.</span>
@@ -150,7 +150,7 @@ function McpProvidersSectionVisivel({ agentId }: Props) {
             <div
               key={row.id}
               className={cn(
-                'flex items-center justify-between gap-3 p-3 rounded-lg border',
+                'flex items-center justify-between gap-3 p-3 rounded-[10px] border',
                 row.enabled ? 'bg-surface-900 border-surface-700' : 'bg-surface-900/40 border-surface-800 opacity-80',
               )}
             >
@@ -324,7 +324,7 @@ function AttachMcpModal({
           )
         ) : (
           <>
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 text-xs text-surface-300">
+            <div className="flex items-start gap-2 p-3 rounded-[10px] bg-warning/10 border border-warning/30 text-xs text-surface-300">
               <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
               <p>
                 Você está conectando um servidor que a Oryon <strong>não revisou</strong>. Ele vai receber

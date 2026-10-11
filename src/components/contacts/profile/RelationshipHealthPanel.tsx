@@ -81,7 +81,7 @@ export function RelationshipHealthPanel({ contact, stats }: RelationshipHealthPa
             ativa, Pendente etc.), não a pílula cheia das tags. */}
         <span
           title="Índice de saúde do relacionamento: combina recência do último contato, frequência de conversas, tempo de resposta e sentimento. Prévia calculada no cliente a partir dos dados do contato."
-          className="color-chip-soft inline-flex items-center h-5 rounded-[5px] border px-[7px] text-[11px] font-semibold"
+          className="color-chip-soft inline-flex items-center h-5 rounded-[6px] border px-[7px] text-[11px] font-semibold"
           style={{ ['--chip']: band.color } as React.CSSProperties}
         >
           {band.label}
@@ -93,7 +93,7 @@ export function RelationshipHealthPanel({ contact, stats }: RelationshipHealthPa
         <div className="flex items-end gap-2 mb-3 shrink-0">
           <span className="text-2xl font-display font-semibold text-surface-50 tabular-nums leading-none">{score}</span>
           <span className="text-[11px] text-surface-400 mb-0.5">/100</span>
-          <span className="text-[10px] text-surface-500 uppercase tracking-wide mb-0.5 ml-1">prévia</span>
+          <span className="text-[11px] text-surface-500 uppercase tracking-wide mb-0.5 ml-1">prévia</span>
           <div className="flex-1 h-1.5 rounded-full bg-[var(--sf2)] overflow-hidden ml-1 mb-1">
             <div className="h-full rounded-full transition-all" style={{ width: `${score}%`, backgroundColor: band.color }} />
           </div>

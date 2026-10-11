@@ -71,7 +71,7 @@ export function ScopeSelector({ value, onChange, disabled }: Props) {
         role="radiogroup"
         aria-label="Escopo"
         className={cn(
-          'inline-flex bg-surface-900 ring-1 ring-surface-700 rounded-lg p-1 gap-1',
+          'inline-flex bg-surface-900 ring-1 ring-surface-700 rounded-[10px] p-1 gap-1',
           disabled && 'opacity-50',
         )}
       >
@@ -102,7 +102,7 @@ export function ScopeSelector({ value, onChange, disabled }: Props) {
               Carregando clientes…
             </div>
           ) : error ? (
-            <div className="flex items-start gap-2 text-xs text-danger bg-danger/10 border border-danger/30 rounded-md px-3 py-2">
+            <div className="flex items-start gap-2 text-xs text-danger bg-danger/10 border border-danger/30 rounded-[6px] px-3 py-2">
               <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="font-medium">Não foi possível carregar a lista de clientes</p>
@@ -169,7 +169,7 @@ function SegmentButton({
       onClick={onClick}
       title={hint}
       className={cn(
-        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors',
+        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-sm transition-colors',
         active
           ? 'bg-surface-800 text-surface-100 ring-1 ring-surface-600'
           : 'text-surface-400 hover:text-surface-200',

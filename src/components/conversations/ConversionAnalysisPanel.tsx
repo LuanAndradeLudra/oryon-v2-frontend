@@ -97,7 +97,7 @@ function ConfidenceBar({ value, color }: { value: number; color: string }) {
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-2xs font-bold tabular-nums text-surface-300">{pct}%</span>
+      <span className="text-2xs font-semibold tabular-nums text-surface-300">{pct}%</span>
     </div>
   )
 }
@@ -133,7 +133,7 @@ function CapiStatusBadge({
     return (
       <Banner variant="success">
         <p className="font-semibold">Evento enviado para Meta CAPI</p>
-        <p className="text-3xs text-surface-500">
+        <p className="text-2xs text-surface-500">
           Conversão de R$ {(analysis.dealValue ?? analysis.conversionValue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} reportada
         </p>
       </Banner>
@@ -141,17 +141,17 @@ function CapiStatusBadge({
   }
 
   return (
-    <div className="flex items-start gap-2 px-3 py-2 bg-[var(--sf2)] border border-surface-700 rounded-lg">
+    <div className="flex items-start gap-2 px-3 py-2 bg-[var(--sf2)] border border-surface-700 rounded-[10px]">
       <Send className="w-3.5 h-3.5 text-[#1877f2] flex-shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-surface-200">Reportar ao Meta CAPI</p>
-        <p className="text-3xs text-surface-500 mt-0.5">
+        <p className="text-2xs text-surface-500 mt-0.5">
           Fechar o loop: enviar evento de Purchase para o Meta usando o CTWA Click ID capturado no webhook.
         </p>
         <button
           onClick={handleSend}
           disabled={sending}
-          className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-semibold text-white transition-colors disabled:opacity-60"
+          className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-2xs font-semibold text-white transition-colors disabled:opacity-60"
           style={{ backgroundColor: '#1877f2' }}
         >
           {sending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
@@ -229,7 +229,7 @@ function AnalysisResult({
       {/* Outcome badge + confidence */}
       <div className="flex items-start gap-2.5">
         <div
-          className="color-chip border flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0"
+          className="color-chip border flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] text-xs font-semibold flex-shrink-0"
           style={{ ['--chip']: cfg.color } as React.CSSProperties}
         >
           {cfg.icon}
@@ -237,7 +237,7 @@ function AnalysisResult({
         </div>
         <div className="flex-1 min-w-0 pt-1">
           <ConfidenceBar value={analysis.confidence} color={cfg.color} />
-          <p className="text-3xs text-surface-500 mt-0.5">confiança da análise</p>
+          <p className="text-2xs text-surface-500 mt-0.5">confiança da análise</p>
         </div>
       </div>
 
@@ -273,7 +273,7 @@ function AnalysisResult({
 
       {/* Next action */}
       {analysis.nextAction && (
-        <div className="flex items-start gap-2 px-2.5 py-2 bg-brand-500/8 border border-brand-500/20 rounded-lg">
+        <div className="flex items-start gap-2 px-2.5 py-2 bg-brand-500/8 border border-brand-500/20 rounded-[10px]">
           <Sparkles className="w-3.5 h-3.5 text-brand-400 flex-shrink-0 mt-0.5" />
           <p className="text-2xs text-brand-300">{analysis.nextAction}</p>
         </div>
@@ -282,21 +282,21 @@ function AnalysisResult({
       {/* Deal value + suggested stage */}
       <div className="flex gap-2">
         {(analysis.conversionValue || analysis.outcome === 'converted') && (
-          <div className="flex-1 bg-surface-800 rounded-lg px-2.5 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-0.5">Valor detectado</p>
+          <div className="flex-1 bg-surface-800 rounded-[10px] px-2.5 py-2">
+            <p className="text-2xs font-semibold text-surface-500 mb-0.5">Valor detectado</p>
             {isPending ? (
               <div className="flex items-center gap-1">
-                <span className="text-3xs text-surface-500">R$</span>
+                <span className="text-2xs text-surface-500">R$</span>
                 <input
                   type="text"
                   value={dealInput}
                   onChange={(e) => setDealInput(e.target.value)}
                   placeholder="0,00"
-                  className="flex-1 bg-transparent text-sm font-bold text-surface-100 outline-none min-w-0 w-full"
+                  className="flex-1 bg-transparent text-sm font-semibold text-surface-100 outline-none min-w-0 w-full"
                 />
               </div>
             ) : (
-              <p className="text-sm font-bold text-online tabular-nums">
+              <p className="text-sm font-semibold text-online tabular-nums">
                 R$ {(analysis.dealValue ?? analysis.conversionValue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             )}
@@ -306,9 +306,9 @@ function AnalysisResult({
 
       {/* Stage suggestion + action buttons (hidden after confirm/reject) */}
       {isPending && analysis.suggestedStage && (
-        <div className="flex-1 bg-surface-800 rounded-lg px-2.5 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-0.5">Estágio sugerido</p>
-          <p className="text-sm font-bold text-surface-100 capitalize">{analysis.suggestedStage}</p>
+        <div className="flex-1 bg-surface-800 rounded-[10px] px-2.5 py-2">
+          <p className="text-2xs font-semibold text-surface-500 mb-0.5">Estágio sugerido</p>
+          <p className="text-sm font-semibold text-surface-100 capitalize">{analysis.suggestedStage}</p>
         </div>
       )}
 
@@ -318,7 +318,7 @@ function AnalysisResult({
             type="button"
             onClick={() => handleConfirm()}
             disabled={confirming}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-online text-white rounded-lg text-xs font-semibold transition-colors hover:bg-online/90 disabled:opacity-60 cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-online text-white rounded-[6px] text-xs font-semibold transition-colors hover:bg-online/90 disabled:opacity-60 cursor-pointer"
           >
             {confirming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
             Confirmar
@@ -326,7 +326,7 @@ function AnalysisResult({
           <button
             type="button"
             onClick={() => { onReject(); setJustActioned(true) }}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-surface-800 text-surface-300 rounded-lg text-xs font-medium hover:bg-surface-700 transition-colors cursor-pointer"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-surface-800 text-surface-300 rounded-[6px] text-xs font-medium hover:bg-surface-700 transition-colors cursor-pointer"
           >
             <XCircle className="w-3.5 h-3.5" />
             Rejeitar
@@ -342,7 +342,7 @@ function AnalysisResult({
       {(isConfirmed || isRejected) && (
         <button
           onClick={onReanalyze}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-surface-950 transition-opacity hover:opacity-90 mt-1"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-[6px] text-xs font-semibold text-surface-950 transition-opacity hover:opacity-90 mt-1"
           style={{ background: 'linear-gradient(40deg, var(--color-surface-50), var(--color-surface-300))' }}
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -450,13 +450,13 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
     <div className="px-4 py-3 border-t border-surface-700">
       {/* Section header */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-6 h-6 rounded-lg bg-brand-500/15 flex items-center justify-center flex-shrink-0">
+        <div className="w-6 h-6 rounded-[6px] bg-brand-500/15 flex items-center justify-center flex-shrink-0">
           <Sparkles className="w-3.5 h-3.5 text-brand-400" />
         </div>
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Análise de Conversão IA</p>
+          <p className="text-2xs font-semibold text-surface-500">Análise de conversão da IA</p>
           {hasAttribution && platformName && (
-            <p className="text-3xs mt-0.5" style={{ color: platformColor }}>
+            <p className="text-2xs mt-0.5" style={{ color: platformColor }}>
               {platformName}{campaignName ? ` · ${campaignName}` : ''}
             </p>
           )}
@@ -474,7 +474,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
       {phase === 'idle' && (
         <div className="space-y-2.5">
           {hasAttribution && (
-            <div className="flex items-start gap-2 px-2.5 py-2 bg-[var(--sf2)] rounded-lg border border-surface-700">
+            <div className="flex items-start gap-2 px-2.5 py-2 bg-[var(--sf2)] rounded-[10px] border border-surface-700">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: platformColor }} />
               <p className="text-2xs text-surface-400">
                 Lead com atribuição de anúncio detectada. Analise a conversa para fechar o ciclo de atribuição e calcular o ROAS real.
@@ -483,8 +483,9 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
           )}
           <button
             onClick={handleAnalyze}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-surface-950 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90"
-            style={{ background: 'linear-gradient(40deg, var(--color-surface-50), var(--color-surface-300))' }}
+            // SCRUM-1253 (PO, 06/10): no claro é SECUNDÁRIO (branco com borda) —
+            // um só primário por tela; no escuro segue o gradiente claro.
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-surface-950 rounded-[6px] text-xs font-semibold transition-opacity hover:opacity-90 bg-[linear-gradient(40deg,var(--color-surface-50),var(--color-surface-300))] [[data-theme=light]_&]:bg-none [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:text-surface-100 [[data-theme=light]_&]:shadow-[inset_0_0_0_1px_#C9CFDA] [[data-theme=light]_&]:hover:opacity-100 [[data-theme=light]_&]:hover:bg-[#F3F5F8]"
           >
             <Sparkles className="w-3.5 h-3.5" />
             Analisar conversa com IA

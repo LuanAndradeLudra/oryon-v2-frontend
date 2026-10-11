@@ -184,7 +184,7 @@ export function PipelinePage() {
             aria-expanded={seletorAberto}
             aria-label={`Trocar de funil — atual: ${pipelineValido.name}`}
             data-testid="pipeline-switcher"
-            className="inline-flex items-center gap-2 h-7 pl-2 pr-1.5 rounded-sm text-xs font-semibold bg-surface-800 border border-[var(--bd2)] text-surface-100 hover:border-surface-500 transition-colors"
+            className="inline-flex items-center gap-2 h-7 pl-2 pr-1.5 rounded-[6px] text-xs font-semibold bg-surface-800 border border-[var(--bd2)] text-surface-100 hover:border-surface-500 transition-colors"
           >
             <span className="w-2 h-2 rounded-[2px] flex-shrink-0" style={{ backgroundColor: pipelineValido.color }} />
             <span className="truncate max-w-[10rem]">{pipelineValido.name}</span>
@@ -227,7 +227,7 @@ export function PipelinePage() {
       {seletor}
       {/* O ícone sozinho não ensina qual é qual: a legenda diferencia venda de processo de relance. */}
       <span
-        className="inline-flex items-center gap-1 flex-shrink-0 rounded-[5px] border border-surface-700 bg-surface-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-surface-400"
+        className="inline-flex items-center gap-1 flex-shrink-0 rounded-[6px] border border-surface-700 bg-surface-800 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-surface-400"
         data-testid="pipeline-kind-badge"
       >
         {KindIconAtual && <KindIconAtual className="w-3 h-3" aria-hidden />}
@@ -312,7 +312,7 @@ export function PipelinePage() {
           { value: 'reports', label: 'Relatórios' },
         ]}
       />
-      <span className="w-px h-[18px] bg-surface-700 mx-1 flex-shrink-0" aria-hidden />
+      <span className="w-px h-5 bg-surface-700 mx-1 flex-shrink-0" aria-hidden />
 
       {/* Busca — casa nome, telefone, e-mail e empresa do CONTATO do negócio
           (deals.service.ts); só no QUADRO: a aba de relatórios agrega por
@@ -329,7 +329,7 @@ export function PipelinePage() {
             title="Busca pelo contato do negócio — nome, telefone, e-mail ou empresa"
             aria-label="Buscar negócio pelo contato"
             data-testid="board-search"
-            className="w-full h-7 pl-8 pr-7 rounded-sm text-xs bg-surface-800 border border-[var(--bd2)] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-all [&::-webkit-search-cancel-button]:appearance-none"
+            className="w-full h-7 pl-8 pr-7 rounded-[6px] text-xs bg-surface-800 border border-[var(--bd2)] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-all [&::-webkit-search-cancel-button]:appearance-none"
           />
           {busca && (
             <button
@@ -361,7 +361,7 @@ export function PipelinePage() {
         title={`Configurar etapas, motivos e acesso de "${pipeline.name}"`}
         aria-label={`Configurar o funil ${pipeline.name}`}
         data-testid="pipeline-settings-link"
-        className="inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
+        className="inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-[6px] text-xs font-semibold text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
       >
         <Settings2 className="w-3.5 h-3.5" />
         <span className="hidden md:inline">Etapas</span>

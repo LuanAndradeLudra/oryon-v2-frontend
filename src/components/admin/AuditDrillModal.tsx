@@ -86,7 +86,7 @@ export function AuditDrillModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-surface-800 overlay-frame border rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col"
+        className="bg-surface-800 overlay-frame border rounded-[10px] w-full max-w-4xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <header className="flex items-center justify-between px-5 py-4 border-b border-surface-700">
@@ -108,7 +108,7 @@ export function AuditDrillModal({
           )}
 
           {error && !loading && (
-            <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
+            <div className="flex items-center gap-2 px-4 py-3 rounded-[10px] border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
               <AlertCircle className="w-4 h-4" />
               {error}
             </div>

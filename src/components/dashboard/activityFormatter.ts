@@ -48,6 +48,8 @@ const FORMATTERS: Record<string, Formatter> = {
   deal_stage_changed:              ({ s, d }) => `Negócio ${q(s)} mudou de etapa${d.to ? ` para "${d.to}"` : ''}`,
   deal_status_changed:             ({ s, d }) => d.status === 'won' ? `Negócio ${q(s)} ganho` : d.status === 'lost' ? `Negócio ${q(s)} perdido` : `Negócio ${q(s)} reaberto`,
   deal_won:                        ({ s }) => `Negócio ${q(s)} ganho`,
+  deal_lost:                       ({ s }) => `Negócio ${q(s)} perdido`,
+  deal_reopened:                   ({ s }) => `Negócio ${q(s)} reaberto`,
   deal_pipeline_changed:           ({ s }) => `Negócio ${q(s)} levado para outro funil`,
   deal_conversation_linked:        ({ s }) => `Conversa ligada ao negócio ${q(s)}`,
   deal_line_item_promoted:         ({ s }) => `Item do negócio ${q(s)} virou negócio próprio`,
@@ -363,3 +365,67 @@ export function formatActivity(input: {
   return ctx.s ? `Atividade registrada — ${ctx.s}` : 'Atividade registrada na conta'
 }
 
+/**
+ * Aliases antigos que o backend não grava mais (o filtro manda UMA ação por
+ * vez; oferecer o alias dava uma opção repetida que nunca acha nada). A frase
+ * continua em FORMATTERS para os registros antigos.
+ */
+const FORA_DO_FILTRO = new Set(['user_login', 'user_logout', 'role_changed', 'new_conversation'])
+
+/**
+ * Rótulo do filtro quando a frase com sujeito vazio engana ou repete outra
+ * (revisão SCRUM-1253): `deal_status_changed` vinha como "Negócio reaberto"
+ * mesmo cobrindo ganho e perdido; pares que o backend grava separados
+ * ("Modelo enviado…", "Status da conversa…", "Modelos sincronizados…")
+ * saíam com o mesmo texto.
+ */
+const ROTULO_DO_FILTRO: Record<string, string> = {
+  deal_created:                 'Negócio criado',
+  deal_status_changed:          'Negócio marcado como ganho, perdido ou reaberto',
+  deal_won:                     'Negócio ganho',
+  deal_lost:                    'Negócio perdido',
+  deal_reopened:                'Negócio reaberto',
+  practitioner_created:         'Profissional cadastrado',
+  contact_stage_changed:        'Contato mudou de estágio',
+  template_sent:                'Modelo enviado na conversa',
+  contact_template_sent:        'Modelo enviado pela ficha do contato',
+  templates_pulled_from_meta:   'Modelos importados da Meta',
+  templates_synced:             'Status dos modelos atualizado pela Meta',
+  conversation_status_updated:  'Status da conversa alterado pela equipe',
+  conversation_status_changed:  'Status da conversa alterado (registro de atividade)',
+  user_logged_in:               'Login na plataforma',
+  user_logged_out:              'Sessão encerrada',
+  user_role_changed:            'Papel de usuário alterado',
+  user_invited:                 'Usuário convidado para a equipe',
+  feature_flag_toggled:         'Recurso ligado ou desligado na conta',
+  automation_toggled:           'Automação ativada ou pausada',
+  meta_business_created:        'Empresa conectada à Meta',
+  agent_status_changed:         'Status de agente IA alterado',
+  conversation_created:         'Nova conversa iniciada',
+  conversation_assigned:        'Conversa atribuída a um atendente',
+  interactive_reply_received:   'Contato escolheu uma opção no menu',
+  agent_online:                 'Atendente ficou online',
+  agent_offline:                'Atendente ficou offline',
+}
+
+/** A frase com sujeito vazio, sem os marcadores de "sem nome". */
+function rotuloGenerico(f: Formatter): string {
+  return f({ s: '', d: {} })
+    .replace(/ ?"sem identificação"/g, '')
+    .replace(/ sem identificação/g, '')
+    .replace(/ "um canal"/g, ' interno')
+    .replace(/ de um cliente/g, '')
+    .replace(/ (para|de|a) um contato/g, '')
+    .replace(/ para um usuário/g, '')
+    .replace(/ (com|atendeu|de) um cliente/g, (_m, p: string) => (p === 'atendeu' ? ' atendeu um cliente' : ''))
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Ações com frase conhecida, para o filtro da Auditoria (rótulo legível, sem repetidos). */
+export function acoesDaAuditoria(): { value: string; label: string }[] {
+  return Object.entries(FORMATTERS)
+    .filter(([value]) => !FORA_DO_FILTRO.has(value))
+    .map(([value, f]) => ({ value, label: ROTULO_DO_FILTRO[value] ?? rotuloGenerico(f) }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'))
+}

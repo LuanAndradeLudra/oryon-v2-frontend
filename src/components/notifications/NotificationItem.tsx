@@ -55,7 +55,7 @@ export function NotificationItem({
       role="listitem"
       aria-label={`${n.title}. ${n.isRead ? 'Lida' : 'Não lida'}. ${formatListTime(n.createdAt)}`}
       className={cn(
-        'group relative mx-2 my-0.5 flex items-start gap-3 pl-2.5 pr-2 py-2 rounded-sm cursor-pointer transition-colors',
+        'group relative mx-2 my-0.5 flex items-start gap-3 pl-2.5 pr-2 py-2 rounded-[6px] cursor-pointer transition-colors',
         'hover:bg-[var(--rowhover)]',
         isFocused && 'ring-1 ring-inset ring-brand-500',
         '[@media(pointer:coarse)]:min-h-[64px]',
@@ -126,9 +126,9 @@ export function NotificationItem({
             type="button"
             onClick={(e) => { e.stopPropagation(); navigate(action.href) }}
             className={cn(
-              'h-7 px-2 rounded-xs text-[11px] font-semibold mr-0.5',
+              'h-7 px-2 rounded-[6px] text-[11px] font-semibold mr-0.5',
               action.variant === 'primary'
-                ? 'bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] text-white hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)]'
+                ? 'bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) text-white hover:bg-[#115E59] hover:bg-(image:--primario-img-hover)'
                 : 'text-surface-200 hover:bg-[var(--rowhover)]',
             )}
           >
@@ -139,7 +139,7 @@ export function NotificationItem({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onMarkUnread() }}
-            className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
+            className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
             title="Marcar como não lida (U)"
             aria-label="Marcar como não lida"
           >
@@ -150,7 +150,7 @@ export function NotificationItem({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onArchive() }}
-            className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
+            className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
             title="Arquivar (E)"
             aria-label="Arquivar"
           >
@@ -165,7 +165,7 @@ export function NotificationItem({
 /** Kbd do rodapé de atalhos — 18px, raio 4 (--radius-2xs, canvas RAD-09). */
 export function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-2xs border border-[var(--bd2)] bg-surface-900 text-surface-400 font-mono text-[10.5px] leading-none">
+    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-2xs border border-[var(--bd2)] bg-surface-900 text-surface-400 font-mono text-[11px] leading-none">
       {children}
     </span>
   )

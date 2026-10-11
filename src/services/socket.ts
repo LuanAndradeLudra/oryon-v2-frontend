@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client'
 import axios from 'axios'
+import { compartilharEmVoo } from '@/lib/preBusca'
 
 let socket: Socket | null = null
 let wsTokenCache: { token: string; expiresAt: number } | null = null
@@ -13,7 +14,8 @@ async function fetchWsToken(): Promise<string | null> {
     return wsTokenCache.token
   }
   try {
-    const res = await axios.get<{ token: string }>(`${API}/auth/ws-token`, { withCredentials: true })
+    // SCRUM-1253: pedido compartilhado com o token de mídia (api.ts) na carga.
+    const res = await compartilharEmVoo('ws-token', () => axios.get<{ token: string }>(`${API}/auth/ws-token`, { withCredentials: true }))
     const token = res.data.token
     wsTokenCache = { token, expiresAt: Date.now() + 25_000 } // 30s token, cache for 25s
     return token

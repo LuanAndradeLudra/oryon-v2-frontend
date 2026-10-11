@@ -109,7 +109,7 @@ export function ConnectorInstallModal({ connector, onClose, onSaved }: Connector
         <div className="flex items-start gap-2.5 min-w-0">
           <ConnectorTile connector={view} size={32} radius={8} />
           <div className="min-w-0">
-            <h2 className="text-[15px] font-bold text-surface-50 truncate">{titulo} · {connector.name}</h2>
+            <h2 className="text-base font-semibold text-surface-50 truncate">{titulo} · {connector.name}</h2>
             <p className="text-xs text-surface-400 mt-px">Válida para todo o workspace. Agentes escolhem usar ou não.</p>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function ConnectorInstallModal({ connector, onClose, onSaved }: Connector
       ) : loadError ? (
         <p className="text-sm text-danger">{loadError}</p>
       ) : unsupported ? (
-        <div className="flex items-start gap-3 p-3 rounded-sm bg-warning/10 border border-warning/30 text-sm text-surface-300">
+        <div className="flex items-start gap-3 p-3 rounded-[6px] bg-warning/10 border border-warning/30 text-sm text-surface-300">
           <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
           <p>Esta integração ainda não pode ser configurada por aqui — fale com a Oryon para ativá-la.</p>
         </div>
@@ -153,7 +153,7 @@ export function ConnectorInstallModal({ connector, onClose, onSaved }: Connector
             </a>
           )}
           <div className="flex items-center gap-3 pt-1">
-            <Button size="sm" variant="neutral" className="h-8 px-3 text-[12.5px]" onClick={() => void handleTest()} disabled={!canSubmit || submitting} loading={testing}>
+            <Button size="sm" variant="neutral" className="h-8 px-3 text-xs" onClick={() => void handleTest()} disabled={!canSubmit || submitting} loading={testing}>
               {testResult && !testResult.success ? 'Testar de novo' : 'Testar conexão'}
             </Button>
             {testResult && (

@@ -29,6 +29,7 @@ import { SecuritySettings } from '@/components/settings/sections/SecuritySetting
 import { AdAccountsSettings }  from '@/components/settings/sections/AdAccountsSettings'
 import { VerticalSettings }    from '@/components/settings/sections/VerticalSettings'
 import { CompanyBrain }        from '@/components/settings/sections/CompanyBrain'
+import { CopilotInstrucoes }   from '@/components/settings/sections/CopilotInstrucoes'
 import { Notifications }       from '@/components/settings/sections/Notifications'
 import { AuditTrail }          from '@/components/settings/sections/AuditTrail'
 import { ProductsManager }     from '@/components/settings/sections/crm/ProductsManager'
@@ -53,6 +54,8 @@ const VALID_SECTIONS = [
   // credencial 1x por tenant aqui; qual agente usa é um toggle na aba
   // Skills de cada agente, não mais um formulário duplicado por agente.
   'connectors',
+  // SCRUM-1253 (11/10): instruções do Copilot para todos os papéis.
+  'copilot',
 ]
 
 const OWNER_ONLY_SECTIONS = new Set<string>(['billing', 'connectors'])
@@ -113,6 +116,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   'pipeline-stages': FunnelsSettings,
   'pipeline-routing': PipelineRoutingSettings,
   connectors:       ConnectorsSettings,
+  copilot:          CopilotInstrucoes,
 }
 
 export function SettingsPage() {
@@ -155,6 +159,10 @@ export function SettingsPage() {
   }
   // D12 — Conectores escondidos: a URL direta também fecha.
   if (section === 'connectors' && !isFeatureVisible('connectorsSelfService')) {
+    return <NavegarSePresente to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
+  }
+  // Copilot desligado pela flag de tela: a seção dele também fecha.
+  if (section === 'copilot' && !isFeatureVisible('copilot')) {
     return <NavegarSePresente to={preservarVolta(`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`, searchParams)} replace />
   }
   if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {

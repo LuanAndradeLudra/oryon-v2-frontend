@@ -294,7 +294,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
                   onClick={() => handleKindChange(opt.kind)}
                   data-testid={`pipeline-kind-${opt.kind}`}
                   className={cn(
-                    'relative text-left p-3 rounded-2xl border transition-all',
+                    'relative text-left p-3 rounded-[10px] border transition-all',
                     active
                       ? 'border-brand-500 bg-brand-500/10 text-surface-50'
                       : 'border-surface-700 bg-surface-800 text-surface-200 hover:border-surface-600',
@@ -362,7 +362,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
                       onDragEnd={!isTerminal ? handleDragEnd : undefined}
                       data-testid={`stage-row-${stage.role}`}
                       className={cn(
-                        'flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl border bg-surface-800 border-surface-700 transition-colors',
+                        'flex items-center gap-2.5 px-2.5 py-1.5 rounded-[10px] border bg-surface-800 border-surface-700 transition-colors',
                         !isTerminal && overIdx === normalIdx && 'border-brand-500 bg-brand-500/10',
                       )}
                     >
@@ -383,18 +383,18 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
                         className="flex-1 min-w-0 bg-transparent text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none"
                       />
                       {stage.role === 'won' && (
-                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={TERMINAL_CHIP_STYLE.won}>
+                        <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full color-chip border" style={TERMINAL_CHIP_STYLE.won}>
                           <Trophy className="w-2.5 h-2.5" /> {kindOption.terminalLabels.won}
                         </span>
                       )}
                       {stage.role === 'lost' && (
-                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={TERMINAL_CHIP_STYLE.lost}>
+                        <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full color-chip border" style={TERMINAL_CHIP_STYLE.lost}>
                           <X className="w-2.5 h-2.5" /> {kindOption.terminalLabels.lost}
                         </span>
                       )}
                       {isTerminal ? (
                         <Tooltip content="Os dois terminais existem sempre — dá para renomear, não para apagar." side="top">
-                          <span className="inline-flex items-center gap-1 text-[10px] text-surface-500 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-surface-500 whitespace-nowrap">
                             <Lock className="w-3 h-3" /> fixo · renomeável
                           </span>
                         </Tooltip>
@@ -403,7 +403,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
                           type="button"
                           onClick={() => setStages((prev) => removeStage(prev, stage.id))}
                           aria-label={`Remover etapa ${stage.label || ''}`.trim()}
-                          className="p-1 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-900/20 transition-all"
+                          className="p-1 rounded-[6px] text-surface-500 hover:text-red-400 hover:bg-red-900/20 transition-all"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>

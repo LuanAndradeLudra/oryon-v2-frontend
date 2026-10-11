@@ -25,7 +25,7 @@ function ShellLayout({ children }: { children: ReactNode }) {
       {/* Navegação por teclado: pula os 15+ itens da sidebar direto ao conteúdo */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-lg focus:bg-brand-500 focus:text-surface-950 focus:text-sm focus:font-semibold"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-[10px] focus:bg-brand-500 focus:text-surface-950 focus:text-sm focus:font-semibold"
       >
         Ir para o conteúdo principal
       </a>

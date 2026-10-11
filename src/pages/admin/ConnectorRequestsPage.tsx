@@ -130,7 +130,7 @@ function RequestRow({
   const [notes, setNotes] = useState(row.staff_notes ?? '')
 
   return (
-    <div className="p-4 rounded-xl border border-surface-800 bg-surface-900/60">
+    <div className="p-4 rounded-[10px] border border-surface-800 bg-surface-900/60">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-surface-100">{row.connector_name_freeform}</p>

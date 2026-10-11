@@ -6,7 +6,9 @@ import { donoDoEvento, type EventoDeAtribuicao } from '@/lib/conversationSignals
 import { ehFila } from '@/lib/filtrosDaInbox'
 import { connectSocket } from '@/services/socket'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User, DealOutcomeInput } from '@/types'
+import type { Conversation, ConversationFilters, ConversationStatusCounts, PendingCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User, DealOutcomeInput } from '@/types'
+import { usarPreBusca } from '@/lib/preBusca'
+import { chaveDaLista } from '@/lib/preBuscaConversas'
 
 /**
  * Phase 27 — sentinel timestamp used by the UI to mean "pause indefinitely
@@ -48,6 +50,8 @@ export function useConversations(filters: ConversationFilters = {}) {
     all: 0, open: 0, pending: 0, resolved: 0,
   })
   const [needsReviewCount, setNeedsReviewCount] = useState<number>(0)
+  // SCRUM-1161 C5: "na fila"/"aguardando você" vêm em toda leitura da lista (null = backend antigo).
+  const [pendingCounts, setPendingCounts] = useState<PendingCounts | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Filter scoping is owned by the page — admins pick via a local
@@ -98,7 +102,9 @@ export function useConversations(filters: ConversationFilters = {}) {
       if (ehFila(filtersRef.current)) {
         // Fila: tudo de uma vez (ver FILA_MAX_PAGINAS) para ordenar pela espera.
         let pagina = 1
-        let resp = (await withRetry(() => conversationsApi.list(filtersRef.current, 1, FILA_POR_PAGINA))).data
+        const preFila = !initialLoadDone.current ? usarPreBusca<Awaited<ReturnType<typeof conversationsApi.list>>>(chaveDaLista(filtersRef.current, 1, FILA_POR_PAGINA)) : null
+        const buscarFila = () => withRetry(() => conversationsApi.list(filtersRef.current, 1, FILA_POR_PAGINA))
+        let resp = (await (preFila ? preFila.catch(buscarFila) : buscarFila())).data
         const todas = [...resp.data]
         while (resp.hasMore && pagina < FILA_MAX_PAGINAS) {
           pagina += 1
@@ -114,18 +120,24 @@ export function useConversations(filters: ConversationFilters = {}) {
         setFilaIncompleta(resp.hasMore)
         setStatusCounts(resp.statusCounts)
         setNeedsReviewCount(resp.needsReviewCount ?? 0)
+        setPendingCounts(resp.pendingCounts ?? null)
         setError(null)
         initialLoadDone.current = true
         return
       }
       setFilaIncompleta(false)
-      const { data } = await withRetry(() => conversationsApi.list(filtersRef.current, 1, PAGE_SIZE))
+      // 1ª carga: a página pode já ter saído no boot (lib/preBuscaConversas).
+      const pre = !initialLoadDone.current ? usarPreBusca<Awaited<ReturnType<typeof conversationsApi.list>>>(chaveDaLista(filtersRef.current, 1, PAGE_SIZE)) : null
+      // Pré-busca que falhou cai na busca normal (não deixa a lista vazia).
+      const buscarLista = () => withRetry(() => conversationsApi.list(filtersRef.current, 1, PAGE_SIZE))
+      const { data } = await (pre ? pre.catch(buscarLista) : buscarLista())
       if (fetchTokenRef.current !== token) return
       setConversations(data.data)
       loadedConvIds.current = new Set(data.data.map((c) => c.id))
       setHasMore(data.hasMore)
       setStatusCounts(data.statusCounts)
       setNeedsReviewCount(data.needsReviewCount ?? 0)
+      setPendingCounts(data.pendingCounts ?? null)
       setError(null)
       initialLoadDone.current = true
     } catch {
@@ -161,6 +173,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       setHasMore(data.hasMore)
       setStatusCounts(data.statusCounts)
       setNeedsReviewCount(data.needsReviewCount ?? 0)
+      setPendingCounts(data.pendingCounts ?? null)
       pageRef.current = next
     } catch {
       // Keep the existing list; user can retry by scrolling again. No toast
@@ -212,6 +225,7 @@ export function useConversations(filters: ConversationFilters = {}) {
         const { data } = await conversationsApi.list(filtersRef.current, 1, 1)
         setStatusCounts(data.statusCounts)
         setNeedsReviewCount(data.needsReviewCount ?? 0)
+        setPendingCounts(data.pendingCounts ?? null)
       } catch {
         // Counters are advisory. On failure keep the previous values — the next
         // event or filter change refreshes them. Deliberately no error surface:
@@ -557,6 +571,7 @@ export function useConversations(filters: ConversationFilters = {}) {
     loadMore,
     statusCounts,
     needsReviewCount,
+    pendingCounts,
     error,
     refetch: fetchConversations,
     refetchCounts,

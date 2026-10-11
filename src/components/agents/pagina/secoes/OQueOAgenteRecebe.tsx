@@ -53,7 +53,7 @@ export function OQueOAgenteRecebe({ agent, tamanho }: { agent: AgentConfigWithTo
           {dados && (
             <>
               {dados.layers.map((camada) => (
-                <section key={camada.id} className="overflow-hidden rounded-lg border border-surface-700">
+                <section key={camada.id} className="overflow-hidden rounded-[10px] border border-surface-700">
                   <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-surface-700 bg-[var(--sf2)] px-4 py-2">
                     <h3 className="text-sm font-semibold text-surface-100">{camada.title}</h3>
                     <span className="text-xs text-surface-500">{camada.source}</span>

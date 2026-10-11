@@ -46,7 +46,7 @@ function PractitionerRow({
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.15 }}
       className={cn(
-        'flex items-center gap-3 px-3 py-2.5 rounded-lg border',
+        'flex items-center gap-3 px-3 py-2.5 rounded-[10px] border',
         active ? 'bg-brand-600/10 border-brand-500/30' : 'bg-surface-900 border-surface-700',
       )}
     >
@@ -54,7 +54,7 @@ function PractitionerRow({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-surface-100 truncate">{practitioner.name}</span>
           {!practitioner.active && (
-            <span className="text-3xs font-semibold px-1.5 py-0.5 rounded-2xs bg-surface-800 text-surface-400 flex-shrink-0">
+            <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-2xs bg-surface-800 text-surface-400 flex-shrink-0">
               inativo
             </span>
           )}
@@ -269,7 +269,7 @@ export function AgentPractitionerTab({ agentId, salvar, onMudou }: Props) {
             ))}
           </AnimatePresence>
           {!activePractitioners.length && (
-            <p className="text-xs text-surface-400 px-3 py-4 rounded-lg border border-dashed border-[var(--bd2)]">
+            <p className="text-xs text-surface-400 px-3 py-4 rounded-[10px] border border-dashed border-[var(--bd2)]">
               {search
                 ? 'Nenhum profissional ativo corresponde à busca.'
                 : 'Nenhum profissional ativo ainda — ative na lista abaixo.'}
@@ -288,7 +288,7 @@ export function AgentPractitionerTab({ agentId, salvar, onMudou }: Props) {
             ))}
           </AnimatePresence>
           {!availablePractitioners.length && (
-            <p className="text-xs text-surface-400 px-3 py-4 rounded-lg border border-dashed border-[var(--bd2)]">
+            <p className="text-xs text-surface-400 px-3 py-4 rounded-[10px] border border-dashed border-[var(--bd2)]">
               {search
                 ? 'Nenhum profissional disponível corresponde à busca.'
                 : 'Todos os profissionais já estão ativos neste agente.'}

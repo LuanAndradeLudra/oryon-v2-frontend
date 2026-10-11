@@ -22,12 +22,12 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
 function Verificacao({ g }: { g: GuardSignal }) {
   const achados = g.findings ?? []
   return (
-    <div className="space-y-2 rounded-md border border-[color-mix(in_srgb,var(--color-danger)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-danger)_7%,transparent)] p-2.5">
+    <div className="space-y-2 rounded-[6px] border border-[color-mix(in_srgb,var(--color-danger)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-danger)_7%,transparent)] p-2.5">
       <p className="font-semibold text-surface-100">{guardTypeLabel(g.outcome, g.claimType)}</p>
       <p className="leading-relaxed text-surface-300">{guardOutcomeDetail(g.outcome, g.claimType)}</p>
       {g.blockedText && (
         <div>
-          <p className="mb-1 text-3xs font-bold uppercase tracking-[.12em] text-surface-500">Texto retido (não chegou ao cliente)</p>
+          <p className="mb-1 text-2xs font-semibold uppercase tracking-[.12em] text-surface-500">Texto retido (não chegou ao cliente)</p>
           <p className="whitespace-pre-wrap break-words leading-relaxed text-surface-300">{renderHighlighted(g.blockedText, achados)}</p>
         </div>
       )}
@@ -47,7 +47,7 @@ function Verificacao({ g }: { g: GuardSignal }) {
           <span className="font-medium text-danger">{f.name}</span>{f.statusCode != null && ` · HTTP ${f.statusCode}`}{f.message && ` — ${f.message}`}
         </p>
       ))}
-      {g.correlationId && <p className="break-all font-mono text-3xs text-surface-500">ref: {g.correlationId}</p>}
+      {g.correlationId && <p className="break-all font-mono text-2xs text-surface-500">ref: {g.correlationId}</p>}
     </div>
   )
 }

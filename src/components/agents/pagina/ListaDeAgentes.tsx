@@ -50,13 +50,14 @@ function Resumo({ rotulo, valor, detalhe, onClick, ativo }: { rotulo: string; va
     <Tag
       {...(onClick ? { type: 'button' as const, onClick, 'aria-pressed': ativo } : {})}
       className={cn(
-        'rounded-lg border bg-[var(--sf2)] px-4 py-3 text-left',
+        'rounded-[10px] border bg-[var(--sf2)] px-4 py-3 text-left',
+        '[[data-theme=light]_&]:bg-surface-800', // objeto branco sobre o fundo (SCRUM-1253)
         ativo ? 'border-brand-500' : 'border-surface-700',
         onClick && 'hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
       )}
     >
-      <p className="text-3xs font-bold uppercase tracking-[.14em] text-surface-500">{rotulo}</p>
-      <p className="mt-1 font-display text-[22px] font-extrabold leading-tight tracking-[-0.02em] text-surface-50 tabular-nums">{valor}</p>
+      <p className="text-2xs font-semibold uppercase tracking-[.14em] text-surface-500">{rotulo}</p>
+      <p className="mt-1 text-[20px] font-semibold leading-tight tracking-[-0.01em] text-surface-50 tabular-nums">{valor}</p>
       <p className="mt-0.5 text-xs text-surface-400">{detalhe}</p>
     </Tag>
   )
@@ -83,7 +84,7 @@ function Linha({ a, desatualizado, numero }: { a: AgentConfig; desatualizado: bo
             <Link
               to={rotaDoAgente(a.id)}
               onClick={(e) => e.stopPropagation()}
-              className="block truncate text-sm font-semibold text-surface-100 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-xs"
+              className="block truncate text-sm font-semibold text-surface-100 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-[6px]"
             >
               {a.name}
             </Link>
@@ -96,7 +97,7 @@ function Linha({ a, desatualizado, numero }: { a: AgentConfig; desatualizado: bo
         <div className="flex flex-wrap items-center gap-1.5">
           <StatusDoAgente status={a.status} />
           {desatualizado && (
-            <span title="O Contexto da IA mudou depois das instruções" className="inline-flex h-5 items-center rounded-xs border border-status-pending-border bg-status-pending-bg px-[7px] text-2xs font-semibold text-status-pending whitespace-nowrap">
+            <span title="O Contexto da IA mudou depois das instruções" className="inline-flex h-5 items-center rounded-[6px] border border-status-pending-border bg-status-pending-bg px-[7px] text-2xs font-semibold text-status-pending whitespace-nowrap">
               Desatualizado
             </span>
           )}
@@ -172,7 +173,7 @@ export function ListaDeAgentes({ onNovo, rascunhos = [], onContinuarRascunho }: 
         title="Agentes IA"
         rightActions={
           <Button size="md" iconOnly aria-label="Novo agente" onClick={onNovo}>
-            <Plus className="h-[18px] w-[18px]" />
+            <Plus className="h-4.5 w-4.5" />
           </Button>
         }
       />
@@ -260,7 +261,7 @@ export function ListaDeAgentes({ onNovo, rascunhos = [], onContinuarRascunho }: 
   return casca(
       <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-8 sm:py-6">
         {rascunhos.length > 0 && onContinuarRascunho && (
-          <section aria-labelledby="rascunhos-titulo" className="mb-5 rounded-md border border-surface-700 bg-surface-800 px-4 py-3">
+          <section aria-labelledby="rascunhos-titulo" className="mb-5 rounded-[6px] border border-surface-700 bg-surface-800 px-4 py-3">
             <h2 id="rascunhos-titulo" className="text-sm font-semibold text-surface-100">Rascunhos esperando publicação</h2>
             <ul className="mt-2 divide-y divide-surface-700">
               {rascunhos.map((d) => (
@@ -268,7 +269,9 @@ export function ListaDeAgentes({ onNovo, rascunhos = [], onContinuarRascunho }: 
                   <span className="min-w-0 flex-1 truncate text-surface-200">
                     {d.spec.identity.name}
                     <span className="text-surface-400">
-                      {' · '}{d.agent_id ? `revisão de ${nomeDoAgente(d.agent_id) ?? 'um agente'}` : 'agente novo'}
+                      {' · '}{d.agent_id
+                        ? (nomeDoAgente(d.agent_id) === d.spec.identity.name ? 'revisão' : `revisão de ${nomeDoAgente(d.agent_id) ?? 'um agente'}`)
+                        : 'agente novo'}
                       {' · '}atualizado em {new Date(d.updated_at).toLocaleDateString('pt-BR')}
                     </span>
                   </span>
@@ -303,17 +306,17 @@ export function ListaDeAgentes({ onNovo, rascunhos = [], onContinuarRascunho }: 
         </div>
 
         {movel ? (
-          <ul className="mt-3 divide-y divide-surface-700 overflow-hidden rounded-lg border border-surface-700 bg-[var(--sf2)]">
+          <ul className="mt-3 divide-y divide-surface-700 overflow-hidden rounded-[10px] border border-surface-700 bg-[var(--sf2)]">
             {visiveis.map((a) => <CartaoMovel key={a.id} a={a} desatualizado={desatualizado(a)} numero={numeroDe(a)} />)}
             {visiveis.length === 0 && (
               <li className="px-4 py-8 text-center text-sm text-surface-400">Nenhum agente com esse filtro{busca ? ' e essa busca' : ''}.</li>
             )}
           </ul>
         ) : (
-        <div className="mt-3 overflow-x-auto rounded-lg border border-surface-700">
-          <table className="w-full min-w-[820px]">
+        <div className="mt-3 overflow-x-auto rounded-[10px] border border-surface-700">
+          <table className="tabela-agentes w-full min-w-[640px]">
             <caption className="sr-only">Agentes de IA</caption>
-            <thead className="bg-[var(--sf2)] text-left text-3xs font-bold uppercase tracking-[.1em] text-surface-500">
+            <thead className="bg-[var(--sf2)] text-left text-2xs font-semibold uppercase tracking-[.1em] text-surface-500">
               <tr>
                 <th scope="col" className="px-4 py-2.5">Agente</th>
                 <th scope="col" className="px-4 py-2.5">Número</th>

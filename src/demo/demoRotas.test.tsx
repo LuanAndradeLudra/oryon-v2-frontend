@@ -45,7 +45,7 @@ const TELAS: { rota: string; aparece: string | RegExp }[] = [
   { rota: '/agents/ag-recepcao/catalogo', aparece: 'Consulta de retorno' },
   // Dashboard (27/09): abre na aba Agora (a fila); o volume mora em Relatórios.
   { rota: '/dashboard', aparece: 'Fila agora' },
-  { rota: '/dashboard?aba=relatorios', aparece: 'Volume de Mensagens' },
+  { rota: '/dashboard?aba=relatorios', aparece: 'Volume de mensagens' },
   // Agentes IA, direção D (27/09): a lista, cada seção da página, o formato
   // antigo redirecionando e a bancada de teste aberta pela URL.
   { rota: '/agents', aparece: 'Precisam de atenção' },

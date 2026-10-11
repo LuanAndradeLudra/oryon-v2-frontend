@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { messagesApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
+import { usarPreBusca } from '@/lib/preBusca'
 import { inferMessageType } from '@/lib/inferMessageType'
 import { applyStatusUpdate } from '@/lib/messageStatus'
 import type { Message, SendMessageDto, SocketAnomalyReviewed, SocketMediaReady, SocketMessageStatus } from '@/types'
@@ -25,7 +26,11 @@ export function useMessages(conversationId: string | null) {
     setLoading(true)
     try {
       const page = reset ? 1 : pageRef.current
-      const { data } = await withRetry(() => messagesApi.list(conversationId, page, 50))
+      // A 1ª página pode já ter saído em paralelo com a lista (ver lib/preBusca).
+      const pre = reset ? usarPreBusca<Awaited<ReturnType<typeof messagesApi.list>>>(`mensagens:${conversationId}`) : null
+      // Pré-busca que falhou (ex.: 429 no boot) não pode deixar a conversa vazia: cai na busca normal.
+      const buscar = () => withRetry(() => messagesApi.list(conversationId, page, 50))
+      const { data } = await (pre ? pre.catch(buscar) : buscar())
       if (!valeAinda()) return
       if (reset) {
         setMessages(data.data.reverse())
@@ -137,7 +142,13 @@ export function useMessages(conversationId: string | null) {
         // por id: só tira a temporária, sem duplicar.
         setMessages((prev) => {
           const withoutTemp = prev.filter((m) => m.id !== tempId)
-          if (withoutTemp.some((m) => m.id === data.id)) return withoutTemp
+          // Homologação 06/10 (SCRUM-1253): o eco do socket chega SEM a
+          // miniatura (gerada depois, fila assíncrona) — manter a do navegador
+          // até `message:media-ready`, senão o PDF pisca para o balão genérico.
+          if (withoutTemp.some((m) => m.id === data.id)) {
+            return withoutTemp.map((m) => (m.id === data.id && !m.mediaThumbnailUrl
+              ? { ...m, mediaThumbnailUrl: dto.clientThumbnailUrl } : m))
+          }
           // A miniatura real (gerada no servidor, fila assíncrona) ainda não
           // chegou neste ponto — sem isto, a miniatura do navegador
           // desapareceria por alguns segundos bem na hora em que o status

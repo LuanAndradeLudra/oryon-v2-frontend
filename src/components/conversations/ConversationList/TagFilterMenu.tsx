@@ -35,6 +35,7 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
       onClose={() => setOpen(false)}
       align="left"
       className="w-56"
+      wrapperClassName="min-w-0"
       anchor={
         <button
           type="button"
@@ -44,22 +45,23 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
           className={cn(
             // Mesmo vocabulário dos chips (Opção A, PO 23/09): tinta invertida
             // quando há etiqueta selecionada ou o menu está aberto; fundo neutro no resto.
-            'inline-flex items-center gap-1 h-6 px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer',
+            // SCRUM-1253: encolhe (min-w-0) e trunca o nome — antes um nome longo
+            // vazava da coluna da lista e ficava cortado pela borda.
+            'inline-flex items-center gap-1 h-6 px-2 rounded-[6px] border text-[11px] font-semibold whitespace-nowrap transition-colors min-w-0 max-w-full cursor-pointer',
             selectedTags.length || open
-              ? 'border-transparent bg-[var(--ink-bg)] text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)]'
+              ? 'border-[color:var(--ink-bd)] bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)] hover:bg-(image:--ink-grad-hover)'
               : 'border-surface-700 bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100',
           )}
         >
-          {selectedTags.length === 1 && (
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedTags[0].color }} />
-          )}
+
           {/* PO, 23/09: na linha única (chips à esquerda, Minhas/Fila/Todas à
               direita) a palavra "Etiqueta" não cabe em 335px; em repouso vira
               só o ícone (aria-label/title continuam), e com seleção mostra o
               nome ou a contagem. */}
-          {selectedTags.length === 0
-            ? <TagIcon className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} aria-hidden />
-            : selectedTags.length === 1 ? selectedTags[0].name : `Etiqueta · ${selectedTags.length}`}
+          {/* SCRUM-1253: compacto sempre — ícone e, com seleção, a contagem. Os
+              nomes ficam nas pílulas logo abaixo (com × para remover cada um). */}
+          <TagIcon className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} aria-hidden />
+          {selectedTags.length > 0 && <span className="tabular-nums">{selectedTags.length}</span>}
           <ChevronDown className="w-3 h-3 flex-shrink-0" />
         </button>
       }
@@ -103,7 +105,7 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
           <button
             type="button"
             onClick={() => apply([])}
-            className="w-full text-[11px] text-surface-400 hover:text-surface-200 px-2 py-1 rounded-md hover:bg-surface-700 transition-colors flex items-center justify-center gap-1"
+            className="w-full text-[11px] text-surface-400 hover:text-surface-200 px-2 py-1 rounded-[6px] hover:bg-surface-700 transition-colors flex items-center justify-center gap-1"
           >
             <X className="w-3 h-3" /> Limpar{selectedIds.length > 1 ? ` (${selectedIds.length})` : ''}
           </button>

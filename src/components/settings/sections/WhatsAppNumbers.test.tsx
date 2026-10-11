@@ -10,7 +10,12 @@ const NUMEROS = [
 
 vi.mock('@/services/api', () => ({
   api: { get: vi.fn((url: string) => Promise.resolve({ data: url === '/whatsapp/numbers' ? NUMEROS : [] })), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
-  whatsappNumbersApi: { listDetailed: () => Promise.resolve({ data: NUMEROS }) },
+  whatsappNumbersApi: {
+    listDetailed: () => Promise.resolve({ data: NUMEROS }),
+    // SCRUM-1253: a saúde de cada linha mora no cartão do número.
+    health: () => Promise.resolve({ data: { lines: [], orphans: { templates: 0, campaigns: 0, automations: 0 } } }),
+  },
+  departmentsApi: { list: () => Promise.resolve({ data: [] }), update: vi.fn() },
 }))
 vi.mock('@/services/agentsApi', () => ({ listAgents: () => Promise.resolve([]) }))
 vi.mock('@/contexts/WorkspaceNumberContext', () => ({ useWorkspaceNumber: () => ({ refresh: vi.fn(), numbers: NUMEROS, loading: false }) }))
@@ -23,7 +28,8 @@ afterEach(() => cleanup())
 const cartaoDe = async (rotulo: string) => {
   const titulo = await screen.findByText(rotulo)
   let el: HTMLElement | null = titulo
-  while (el && !el.className.includes('py-5')) el = el.parentElement
+  // Cada número é um cartão (<article>) desde a fusão com a Saúde (SCRUM-1253).
+  while (el && el.tagName !== 'ARTICLE') el = el.parentElement
   return el!
 }
 

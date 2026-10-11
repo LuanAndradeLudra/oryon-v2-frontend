@@ -57,12 +57,12 @@ function RuleModal({
       title={
         <div className="flex-1 min-w-0 flex items-center gap-3 pb-3">
           {icon && (
-            <div className="w-8 h-8 rounded-xl bg-brand-600/15 ring-1 ring-brand-500/25 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-[6px] bg-brand-600/15 ring-1 ring-brand-500/25 flex items-center justify-center flex-shrink-0">
               {icon}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">{title}</h2>
+            <h2 className="text-base font-display font-semibold tracking-[-0.01em] text-surface-50">{title}</h2>
             {subtitle && <p className="text-xs text-surface-500 mt-0.5">{subtitle}</p>}
           </div>
         </div>
@@ -153,7 +153,7 @@ const ACTION_LABEL: Record<HandoffAction, string> = {
 
 // ─── Shared input style ───────────────────────────────────────────────────────
 
-const INPUT = 'w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition'
+const INPUT = 'w-full bg-surface-800 border border-surface-700 rounded-[6px] px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition'
 
 // ─── Rule Card (list display) ─────────────────────────────────────────────────
 
@@ -184,12 +184,12 @@ function RuleCard({
     <motion.div
       layout
       className={cn(
-        'rounded-lg border border-surface-700 bg-[var(--sf2)] overflow-hidden transition-opacity',
+        'rounded-[10px] border border-surface-700 bg-[var(--sf2)] overflow-hidden transition-opacity',
         !rule.enabled && 'opacity-70',
       )}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-3">
-        <span className="w-6 h-6 rounded-sm bg-surface-800 border border-surface-700 flex items-center justify-center text-2xs font-bold tabular-nums text-surface-400 flex-shrink-0" aria-label={`Ordem ${index + 1}`}>
+        <span className="w-6 h-6 rounded-[6px] bg-surface-800 border border-surface-700 flex items-center justify-center text-2xs font-semibold tabular-nums text-surface-400 flex-shrink-0" aria-label={`Ordem ${index + 1}`}>
           {index + 1}
         </span>
 
@@ -197,7 +197,7 @@ function RuleCard({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-surface-100">{rule.name}</span>
             <span
-              className="inline-flex items-center gap-1 h-5 px-[7px] rounded-xs border text-2xs font-semibold"
+              className="inline-flex items-center gap-1 h-5 px-[7px] rounded-[6px] border text-2xs font-semibold"
               style={{
                 color: ACTION_CHIP[rule.action],
                 backgroundColor: `color-mix(in srgb, ${ACTION_CHIP[rule.action]} 12%, transparent)`,
@@ -208,7 +208,7 @@ function RuleCard({
               {ACTION_LABEL[rule.action]}
             </span>
             {rule.aiGenerated && (
-              <span className="inline-flex items-center gap-1 h-5 px-[7px] rounded-xs text-2xs font-semibold bg-accent-soft text-accent-dark">
+              <span className="inline-flex items-center gap-1 h-5 px-[7px] rounded-[6px] text-2xs font-semibold bg-accent-soft text-accent-dark">
                 <Sparkles className="w-3 h-3" aria-hidden /> Sugerida pela IA
               </span>
             )}
@@ -252,7 +252,7 @@ function RuleCard({
               <dt className="text-surface-500">Palavras ({rule.matchMode === 'any_keyword' ? 'qualquer uma' : rule.matchMode === 'all_keywords' ? 'todas' : 'frase exata'})</dt>
               <dd className="flex flex-wrap gap-1">
                 {rule.keywords.map(kw => (
-                  <span key={kw} className="px-1.5 h-5 inline-flex items-center rounded-xs bg-surface-800 border border-surface-700 text-surface-200 font-mono">{kw}</span>
+                  <span key={kw} className="px-1.5 h-5 inline-flex items-center rounded-[6px] bg-surface-800 border border-surface-700 text-surface-200 font-mono">{kw}</span>
                 ))}
               </dd>
               {rule.template && (<><dt className="text-surface-500">Resposta</dt><dd className="text-surface-200 whitespace-pre-wrap leading-relaxed">{rule.template}</dd></>)}
@@ -292,14 +292,14 @@ function TemplateVariantPicker({
           type="button"
           onClick={() => onSelect(key)}
           className={cn(
-            'flex-1 flex flex-col items-center px-2 py-1.5 rounded-lg border text-center transition-all',
+            'flex-1 flex flex-col items-center px-2 py-1.5 rounded-[10px] border text-center transition-all',
             selected === key
               ? 'bg-brand-600/15 border-brand-500/30 ring-1 ring-brand-500/25 text-brand-300'
               : 'bg-surface-800 border-surface-700 text-surface-500 hover:border-surface-600 hover:text-surface-300',
           )}
         >
           <span className="text-2xs font-medium">{VARIANT_LABELS[key].label}</span>
-          <span className="text-3xs opacity-70">{VARIANT_LABELS[key].desc}</span>
+          <span className="text-2xs opacity-70">{VARIANT_LABELS[key].desc}</span>
         </button>
       ))}
     </div>
@@ -353,19 +353,19 @@ function KeywordTiersView({
           <div key={tier}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <span
-                className="color-chip text-3xs font-medium px-1.5 py-0.5 rounded border"
+                className="color-chip text-2xs font-medium px-1.5 py-0.5 rounded border"
                 style={{ ['--chip']: meta.chip } as React.CSSProperties}
               >
                 {meta.label}
               </span>
-              <span className="text-3xs text-surface-600">{meta.tip}</span>
+              <span className="text-2xs text-surface-600">{meta.tip}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {kws.map(kw => (
                 <span
                   key={kw}
                   className={cn(
-                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-xs font-mono',
+                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-[10px] border text-xs font-mono',
                     !flatKeywords.includes(kw) &&
                       'text-surface-600 bg-surface-800/50 border-surface-700/50 line-through opacity-50',
                   )}
@@ -387,10 +387,10 @@ function KeywordTiersView({
       {/* Manually added keywords */}
       {manualKws.length > 0 && (
         <div>
-          <span className="text-3xs text-surface-600 uppercase tracking-wide">Adicionadas manualmente</span>
+          <span className="text-2xs text-surface-600 uppercase tracking-wide">Adicionadas manualmente</span>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {manualKws.map(kw => (
-              <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
+              <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[10px] bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
                 {kw}
                 <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-danger transition">
                   <X className="w-3 h-3" />
@@ -455,7 +455,7 @@ function DraftEditor({
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-surface-700 bg-[var(--sf2)] p-3 sm:p-4">
+    <div className="space-y-4 rounded-[10px] border border-surface-700 bg-[var(--sf2)] p-3 sm:p-4">
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-brand-400" />
         <p className="text-sm font-semibold text-surface-100">Revisar e salvar regra</p>
@@ -482,7 +482,7 @@ function DraftEditor({
               type="button"
               onClick={() => onChange({ ...draft, action: opt.value })}
               className={cn(
-                'flex items-start gap-2.5 p-3 rounded-lg border text-left transition-all',
+                'flex items-start gap-2.5 p-3 rounded-[10px] border text-left transition-all',
                 draft.action === opt.value
                   ? 'ring-1'
                   : 'bg-surface-800 border-surface-700 hover:border-surface-600',
@@ -492,7 +492,7 @@ function DraftEditor({
               <span className={draft.action === opt.value ? '' : 'text-surface-500 mt-0.5'}>{opt.icon}</span>
               <div>
                 <p className="text-xs font-medium text-surface-200">{opt.label}</p>
-                <p className="text-3xs text-surface-500 leading-tight mt-0.5">{opt.desc}</p>
+                <p className="text-2xs text-surface-500 leading-tight mt-0.5">{opt.desc}</p>
               </div>
             </button>
           ))}
@@ -539,7 +539,7 @@ function DraftEditor({
             <p className="text-xs text-surface-600 mb-2">A regra dispara quando qualquer uma dessas palavras aparecer na mensagem do lead.</p>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {draft.keywords.map(kw => (
-                <span key={kw} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
+                <span key={kw} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[10px] bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
                   {kw}
                   <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-danger transition">
                     <X className="w-3 h-3" />
@@ -581,11 +581,11 @@ function DraftEditor({
             value={draft.template ?? ''}
             onChange={e => onChange({ ...draft, template: e.target.value })}
             rows={5}
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-600 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition leading-relaxed"
+            className="w-full bg-surface-800 border border-surface-700 rounded-[6px] px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-600 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition leading-relaxed"
             placeholder="Mensagem que será enviada ao lead..."
           />
           {draft.templateVariants && (
-            <p className="text-3xs text-surface-600 mt-1">Edite o texto acima para personalizar esta variante.</p>
+            <p className="text-2xs text-surface-600 mt-1">Edite o texto acima para personalizar esta variante.</p>
           )}
         </div>
       )}
@@ -650,11 +650,11 @@ function HandoffGeneratingCard() {
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-surface-800 border border-surface-700 rounded-2xl rounded-tl-sm px-4 py-3 space-y-3 max-w-[85%]"
+      className="bg-surface-800 border border-surface-700 rounded-[10px] rounded-tl-sm px-4 py-3 space-y-3 max-w-[85%]"
     >
       {/* Header */}
       <div className="flex items-center gap-2">
-        <div className="w-5 h-5 rounded-lg bg-brand-600/20 flex items-center justify-center flex-shrink-0">
+        <div className="w-5 h-5 rounded-[10px] bg-brand-600/20 flex items-center justify-center flex-shrink-0">
           <Sparkles className="w-3 h-3 text-brand-400" />
         </div>
         <span className="text-2xs font-medium text-surface-400">Gerando regra de handoff</span>
@@ -693,7 +693,7 @@ function HandoffGeneratingCard() {
               initial={{ opacity: 0, scale: 0.75 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-              className="px-2 py-0.5 rounded-md bg-surface-800 border border-[var(--bd2)] text-2xs text-surface-300"
+              className="px-2 py-0.5 rounded-[6px] bg-surface-800 border border-[var(--bd2)] text-2xs text-surface-300"
             >
               {kw}
             </motion.span>
@@ -841,7 +841,7 @@ function AIRuleBuilder({
             )}
             <div className={cn('max-w-[85%] space-y-2', msg.role === 'user' ? 'items-end' : 'items-start')}>
               <div className={cn(
-                'rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
+                'rounded-[10px] px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
                 msg.role === 'user'
                   ? 'bg-brand-600 text-surface-950 rounded-tr-sm'
                   : 'bg-surface-800 border border-surface-700 text-surface-200 rounded-tl-sm',
@@ -896,7 +896,7 @@ function AIRuleBuilder({
               placeholder="Ex: quando o lead pedir orçamento, encaminhar para equipe humana..."
               rows={2}
               disabled={generating}
-              className="flex-1 bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition leading-relaxed disabled:opacity-50"
+              className="flex-1 bg-surface-800 border border-surface-700 rounded-[6px] px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition leading-relaxed disabled:opacity-50"
               style={{ maxHeight: '100px' }}
             />
             <Button iconOnly onClick={handleSend} disabled={!input.trim() || generating} aria-label="Enviar descrição da regra">

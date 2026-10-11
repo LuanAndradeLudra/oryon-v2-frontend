@@ -57,13 +57,13 @@ function ConnectDrawer({
           <p className="text-sm font-semibold text-surface-100">
             Conectar {isMeta ? 'Meta Ads' : 'Google Ads'}
           </p>
-          <button onClick={onClose} className="p-1.5 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
             ✕
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4">
-          <div className="p-3 rounded-sm border border-surface-700 bg-[var(--sf2)] text-xs text-surface-400 space-y-2">
+          <div className="p-3 rounded-[6px] border border-surface-700 bg-[var(--sf2)] text-xs text-surface-400 space-y-2">
             {isMeta ? (
               <>
                 <p>1. Acesse o <strong className="text-surface-300">Meta Business Manager</strong> e crie um token de acesso com permissão <code className="text-brand-400">ads_read</code></p>
@@ -147,7 +147,7 @@ function ConnectedCard({
   return (
     <div className="py-1">
       <div className="py-4 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0"
+        <div className="w-9 h-9 rounded-[6px] flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: color + '1a', color }}>
           <CheckCircle2 className="w-5 h-5" />
         </div>
@@ -159,14 +159,14 @@ function ConnectedCard({
           <button
             onClick={() => void handleSync()}
             disabled={syncing}
-            className="p-2 rounded-sm border border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-colors"
+            className="p-2 rounded-[6px] border border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-colors"
             title="Sincronizar"
           >
             <RefreshCw className={cn('w-3.5 h-3.5', syncing && 'animate-spin')} />
           </button>
           <button
             onClick={() => setConfirmDisconnect(true)}
-            className="p-2 rounded-sm border border-danger/30 text-danger/60 hover:text-danger hover:border-danger/60 transition-colors"
+            className="p-2 rounded-[6px] border border-danger/30 text-danger/60 hover:text-danger hover:border-danger/60 transition-colors"
             title="Desconectar"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -340,7 +340,7 @@ export function AdAccountsSettings() {
 
       <div className="space-y-6">
       <div className="flex items-center gap-2 border-b border-surface-700 pb-3">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-xs"
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-[6px]"
           style={{ backgroundColor: '#1877f21a', color: '#1877f2' }}>
           Meta Ads
         </span>

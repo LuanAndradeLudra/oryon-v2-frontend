@@ -82,7 +82,7 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
           {primary.cta && (
             <LinkComVolta
               to={primary.cta.href}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-2.5 py-1 rounded-md transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-2.5 py-1 rounded-[6px] transition-colors"
             >
               {primary.cta.label}
               <ChevronRight className="w-3 h-3" />
@@ -145,7 +145,7 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
   return (
     <div
       className={cn(
-        'rounded-lg border p-5 bg-[#1A2424] border-[#2E4040]',
+        'rounded-[10px] border p-5 bg-[#1A2424] border-[#2E4040]',
         // PO 01/10 (2G, bordas só neutras): cinza-azulado + borda cinza (claro).
         '[[data-theme=light]_&]:bg-[#F1F5F9] [[data-theme=light]_&]:border-[#CBD5E1]',
         className,
@@ -153,18 +153,18 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
     >
       <div className="flex items-start gap-3">
         {/* Claro (2G): guia de configuração, não erro — lista em quadrado teal sólido. */}
-        <span className="flex w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 bg-[#0F766E] text-white">
+        <span className="flex w-9 h-9 rounded-[10px] items-center justify-center flex-shrink-0 bg-[#0F766E] text-white">
           <ClipboardList className="w-5 h-5" />
         </span>
         {hasBlockers ? (
           <span
-            className="hidden w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 color-chip-soft border"
+            className="hidden w-9 h-9 rounded-[10px] items-center justify-center flex-shrink-0 color-chip-soft border"
             style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
           >
             <AlertTriangle className="w-5 h-5" />
           </span>
         ) : (
-          <div className="hidden w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 bg-surface-800 text-surface-400">
+          <div className="hidden w-9 h-9 rounded-[10px] items-center justify-center flex-shrink-0 bg-surface-800 text-surface-400">
             <CheckCircle className="w-5 h-5" />
           </div>
         )}
@@ -184,7 +184,7 @@ function ChecklistItem({ check, podeAgir = true }: { check: WorkspaceCheck; pode
     // Eixo 10: surface-900 no claro é quase idêntico ao branco do card por
     // trás (bg-surface-800) — a 40% de opacidade a linha some. --sf2 tem
     // valor dedicado nos dois temas.
-    <li className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-surface-800 border border-[#2E4040] [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:border-[#C9CFDA]">
+    <li className="flex items-start gap-3 px-3 py-2.5 rounded-[10px] bg-surface-800 border border-[#2E4040] [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:border-[#C9CFDA]">
       <span
         className="hidden mt-0.5 w-5 h-5 rounded items-center justify-center flex-shrink-0 color-chip border"
         style={{ ['--chip']: isBlocker ? 'var(--color-danger)' : 'var(--color-warning)' } as React.CSSProperties}
@@ -195,7 +195,7 @@ function ChecklistItem({ check, podeAgir = true }: { check: WorkspaceCheck; pode
         <p className="text-xs font-medium text-surface-200 flex items-center gap-2 flex-wrap">
           {check.label}
           {/* Claro (4D): selo neutro + ponto na cor da severidade. */}
-          <span className="inline-flex items-center gap-1 h-[18px] px-1.5 rounded-[5px] border border-[#3A4D4D] bg-surface-900 text-[10.5px] font-semibold text-surface-200 [[data-theme=light]_&]:border-[#C9CFDA] [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:text-[#1F2937]">
+          <span className="inline-flex items-center gap-1 h-5 px-1.5 rounded-[6px] border border-[#3A4D4D] bg-surface-900 text-[11px] font-semibold text-surface-200 [[data-theme=light]_&]:border-[#C9CFDA] [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:text-[#1F2937]">
             <span aria-hidden className={cn('w-1.5 h-1.5 rounded-full', isBlocker ? 'bg-[#DC2626]' : 'bg-[#F59E0B]')} />
             {isBlocker ? 'Obrigatório' : 'Recomendado'}
           </span>
@@ -206,9 +206,9 @@ function ChecklistItem({ check, podeAgir = true }: { check: WorkspaceCheck; pode
         <LinkComVolta
           to={check.cta.href}
           className={cn(
-            'flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border',
+            'flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-[6px] transition-colors border',
             isBlocker
-              ? 'bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] border-transparent [background-origin:border-box] text-white hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)] [[data-theme=light]_&]:bg-[linear-gradient(135deg,#0F766E_0%,#134E4A_100%)] [[data-theme=light]_&]:border-transparent [[data-theme=light]_&]:[background-origin:border-box] [[data-theme=light]_&]:text-white [[data-theme=light]_&]:hover:bg-[linear-gradient(135deg,#115E59_0%,#0B3B38_100%)]'
+              ? 'bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) border-transparent [background-origin:border-box] text-white hover:bg-[#115E59] hover:bg-(image:--primario-img-hover) [[data-theme=light]_&]:bg-[#0F766E] [[data-theme=light]_&]:bg-(image:--primario-img) [[data-theme=light]_&]:shadow-(--primario-realce) [[data-theme=light]_&]:border-transparent [[data-theme=light]_&]:[background-origin:border-box] [[data-theme=light]_&]:text-white [[data-theme=light]_&]:hover:bg-[#115E59] [[data-theme=light]_&]:hover:bg-(image:--primario-img-hover)'
               : 'text-surface-200 hover:text-surface-100 bg-surface-900 hover:bg-surface-700 border-[#3A4D4D] [[data-theme=light]_&]:bg-white [[data-theme=light]_&]:border-[#C9CFDA] [[data-theme=light]_&]:text-[#1F2937] [[data-theme=light]_&]:hover:bg-[#F1F5F9]',
           )}
         >

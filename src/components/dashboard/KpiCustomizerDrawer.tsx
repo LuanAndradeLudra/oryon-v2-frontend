@@ -223,14 +223,14 @@ export function KpiCustomizerDrawer({
     >
       <header className="flex items-start justify-between gap-3 px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
         <div className="min-w-0">
-          <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">Personalizar indicadores</h2>
-          <p className="text-[12.5px] text-surface-400 mt-0.5">Escolha, ordene e destaque o que aparece no topo. Vale só para você.</p>
+          <h2 className="text-base font-display font-semibold tracking-[-0.01em] text-surface-50">Personalizar indicadores</h2>
+          <p className="text-xs text-surface-400 mt-0.5">Escolha, ordene e destaque o que aparece no topo. Vale só para você.</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
+          className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -239,8 +239,8 @@ export function KpiCustomizerDrawer({
       <div className="flex-1 min-h-0 overflow-y-auto">
         {/* ── Exibição ─────────────────────────────────────────────────── */}
         <section aria-labelledby="kpi-exibicao" className="px-[18px] pt-4">
-          <h3 id="kpi-exibicao" className="text-[11px] font-bold uppercase tracking-[0.1em] text-surface-400 mb-2">Exibição</h3>
-          <div role="radiogroup" aria-label="Densidade dos cartões" className="grid grid-cols-2 gap-1 p-0.5 rounded-lg border border-surface-700 bg-surface-800">
+          <h3 id="kpi-exibicao" className="text-2xs font-semibold uppercase tracking-[0.1em] text-surface-400 mb-2">Exibição</h3>
+          <div role="radiogroup" aria-label="Densidade dos cartões" className="grid grid-cols-2 gap-1 p-0.5 rounded-[8px] border border-surface-700 bg-surface-800">
             {DENSIDADES.map((d) => (
               <button
                 key={d.valor}
@@ -249,12 +249,12 @@ export function KpiCustomizerDrawer({
                 aria-checked={dens === d.valor}
                 onClick={() => setDens(d.valor)}
                 className={cn(
-                  'flex flex-col items-start px-2.5 py-1.5 rounded-md text-left transition-colors',
-                  dens === d.valor ? 'bg-[var(--ink-bg)] text-[var(--ink-fg)]' : 'text-surface-300 hover:bg-[var(--rowhover)]',
+                  'flex flex-col items-start px-2.5 py-1.5 rounded-[6px] text-left transition-colors',
+                  dens === d.valor ? 'bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)]' : 'text-surface-300 hover:bg-[var(--rowhover)]',
                 )}
               >
-                <span className="text-[12.5px] font-semibold">{d.rotulo}</span>
-                <span className={cn('text-[11px]', dens === d.valor ? 'opacity-80' : 'text-surface-500')}>{d.dica}</span>
+                <span className="text-xs font-semibold">{d.rotulo}</span>
+                <span className={cn('text-2xs', dens === d.valor ? 'opacity-80' : 'text-surface-500')}>{d.dica}</span>
               </button>
             ))}
           </div>
@@ -263,13 +263,13 @@ export function KpiCustomizerDrawer({
         {/* ── Na faixa ─────────────────────────────────────────────────── */}
         <section aria-labelledby="kpi-na-faixa" className="px-[18px] pt-4 pb-3">
           <div className="flex items-baseline gap-2 mb-2">
-            <h3 id="kpi-na-faixa" className="text-[11px] font-bold uppercase tracking-[0.1em] text-surface-400">Na faixa</h3>
-            <span className="text-[11.5px] text-surface-500 tabular-nums">{count} de {KPI_MAX} · mínimo {KPI_MIN}</span>
+            <h3 id="kpi-na-faixa" className="text-2xs font-semibold uppercase tracking-[0.1em] text-surface-400">Na faixa</h3>
+            <span className="text-xs text-surface-500 tabular-nums">{count} de {KPI_MAX} · mínimo {KPI_MIN}</span>
           </div>
-          <p className="text-[11.5px] text-surface-500 mb-2">
+          <p className="text-xs text-surface-500 mb-2">
             Arraste para mudar a ordem. Fixe até {DESTAQUE_MAX} em destaque — aparecem maiores, acima dos grupos.
           </p>
-          <ol className="rounded-lg border border-surface-700 bg-surface-800 overflow-hidden" data-testid="kpi-selecionados">
+          <ol className="rounded-[10px] border border-surface-700 bg-surface-800 overflow-hidden" data-testid="kpi-selecionados">
             {rascunho.map((id, idx) => {
               const def = DEF_BY_ID.get(id)
               if (!def) return null
@@ -289,11 +289,11 @@ export function KpiCustomizerDrawer({
                   )}
                 >
                   <GripVertical className="w-3.5 h-3.5 flex-shrink-0 text-surface-500 cursor-grab active:cursor-grabbing" aria-hidden />
-                  <span className="w-5 text-right text-[11px] font-semibold text-surface-500 tabular-nums flex-shrink-0">{idx + 1}</span>
+                  <span className="w-5 text-right text-2xs font-semibold text-surface-500 tabular-nums flex-shrink-0">{idx + 1}</span>
                   <PontoDaCategoria categoria={def.category} />
-                  <span className="flex-1 min-w-0 text-[13px] font-medium text-surface-100 truncate">
+                  <span className="flex-1 min-w-0 text-sm font-medium text-surface-100 truncate">
                     {def.label}
-                    {def.hasData === false && <span className="ml-1.5 text-[11px] font-normal text-surface-500">sem dado</span>}
+                    {def.hasData === false && <span className="ml-1.5 text-2xs font-normal text-surface-500">sem dado</span>}
                   </span>
                   {/* Toque não tem hover nem arrastar (HTML5 drag): no celular as setas ficam sempre à vista. */}
                   <span className="flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
@@ -302,7 +302,7 @@ export function KpiCustomizerDrawer({
                       onClick={() => mover(idx, -1)}
                       disabled={idx === 0}
                       aria-label={`Subir ${def.label}`}
-                      className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none"
+                      className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none"
                     >
                       <ArrowUp className="w-3.5 h-3.5" />
                     </button>
@@ -311,7 +311,7 @@ export function KpiCustomizerDrawer({
                       onClick={() => mover(idx, 1)}
                       disabled={ultimo}
                       aria-label={`Descer ${def.label}`}
-                      className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none"
+                      className="p-1 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none"
                     >
                       <ArrowDown className="w-3.5 h-3.5" />
                     </button>
@@ -324,7 +324,7 @@ export function KpiCustomizerDrawer({
                     aria-label={fixos.includes(id) ? `Tirar ${def.label} do destaque` : `Destacar ${def.label}`}
                     title={fixos.includes(id) ? 'Tirar do destaque' : fixos.length >= DESTAQUE_MAX ? `Até ${DESTAQUE_MAX} em destaque` : 'Destacar'}
                     className={cn(
-                      'p-1 rounded-md hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none',
+                      'p-1 rounded-[6px] hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none',
                       fixos.includes(id) ? 'text-brand-500' : 'text-surface-500 hover:text-surface-200',
                     )}
                   >
@@ -336,7 +336,7 @@ export function KpiCustomizerDrawer({
                     disabled={noMinimo}
                     aria-label={`Tirar ${def.label} da faixa`}
                     title={noMinimo ? `A faixa precisa de pelo menos ${KPI_MIN} indicadores` : 'Tirar da faixa'}
-                    className="p-1 rounded-md text-surface-500 hover:text-danger hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none"
+                    className="p-1 rounded-[6px] text-surface-500 hover:text-danger hover:bg-[var(--rowhover)] disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -348,7 +348,7 @@ export function KpiCustomizerDrawer({
 
         {/* ── Adicionar ────────────────────────────────────────────────── */}
         <section aria-labelledby="kpi-adicionar" className="px-[18px] pt-2 pb-5">
-          <h3 id="kpi-adicionar" className="text-[11px] font-bold uppercase tracking-[0.1em] text-surface-400 mb-2">Adicionar</h3>
+          <h3 id="kpi-adicionar" className="text-2xs font-semibold uppercase tracking-[0.1em] text-surface-400 mb-2">Adicionar</h3>
           <div className="relative mb-2.5">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" aria-hidden />
             <input
@@ -357,7 +357,7 @@ export function KpiCustomizerDrawer({
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar indicador..."
               aria-label="Buscar indicador"
-              className="w-full h-8 pl-8 pr-2.5 rounded-sm text-[13px] bg-surface-800 border border-[var(--bd2)] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+              className="w-full h-8 pl-8 pr-2.5 rounded-[6px] text-sm bg-surface-800 border border-[var(--bd2)] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
             />
           </div>
           <div className="flex flex-wrap gap-1 mb-3" role="group" aria-label="Filtrar por categoria">
@@ -370,9 +370,9 @@ export function KpiCustomizerDrawer({
                   aria-pressed={ativo}
                   onClick={() => setCategoria(cat)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 h-6 px-2 rounded-[6px] text-[11.5px] font-semibold transition-colors',
+                    'inline-flex items-center gap-1.5 h-6 px-2 rounded-[6px] text-xs font-semibold transition-colors',
                     ativo
-                      ? 'bg-[var(--ink-bg)] text-[var(--ink-fg)]'
+                      ? 'bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)]'
                       : 'text-surface-400 border border-surface-700 hover:text-surface-200 hover:bg-[var(--rowhover)]',
                   )}
                 >
@@ -384,13 +384,13 @@ export function KpiCustomizerDrawer({
           </div>
 
           {comDado.length === 0 && semDadoLista.length === 0 ? (
-            <p className="py-6 text-center text-[12.5px] text-surface-500">
+            <p className="py-6 text-center text-xs text-surface-500">
               {busca || categoria ? 'Nenhum indicador com esse filtro.' : 'Todos os indicadores já estão na faixa.'}
             </p>
           ) : (
             <>
               {comDado.length > 0 ? (
-                <ul className="rounded-lg border border-surface-700 bg-surface-800 overflow-hidden" data-testid="kpi-disponiveis">
+                <ul className="rounded-[10px] border border-surface-700 bg-surface-800 overflow-hidden" data-testid="kpi-disponiveis">
                   {comDado.map((def, i) => (
                     <li
                       key={def.id}
@@ -398,8 +398,8 @@ export function KpiCustomizerDrawer({
                     >
                       <PontoDaCategoria categoria={def.category} />
                       <span className="flex-1 min-w-0 leading-[1.25]">
-                        <span className="block text-[13px] font-medium text-surface-100 truncate">{def.label}</span>
-                        <span className="block text-[11px] text-surface-500 truncate">{def.category}</span>
+                        <span className="block text-sm font-medium text-surface-100 truncate">{def.label}</span>
+                        <span className="block text-2xs text-surface-500 truncate">{def.category}</span>
                       </span>
                       <button
                         type="button"
@@ -407,7 +407,7 @@ export function KpiCustomizerDrawer({
                         disabled={cheio}
                         aria-label={`Adicionar ${def.label}`}
                         title={cheio ? `Limite de ${KPI_MAX} indicadores` : 'Adicionar à faixa'}
-                        className="inline-flex items-center gap-1 h-7 px-2 rounded-sm text-[12px] font-semibold text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                        className="inline-flex items-center gap-1 h-7 px-2 rounded-[6px] text-xs font-semibold text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-40 disabled:pointer-events-none transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5" aria-hidden />
                         Adicionar
@@ -416,7 +416,7 @@ export function KpiCustomizerDrawer({
                   ))}
                 </ul>
               ) : (
-                <p className="py-3 text-[12.5px] text-surface-500">Nada disponível para adicionar com esse filtro.</p>
+                <p className="py-3 text-xs text-surface-500">Nada disponível para adicionar com esse filtro.</p>
               )}
 
               {semDadoLista.length > 0 && (
@@ -425,7 +425,7 @@ export function KpiCustomizerDrawer({
                     type="button"
                     onClick={() => setVerSemDado((v) => !v)}
                     aria-expanded={semDadoAberto}
-                    className="flex items-center gap-1.5 text-[12px] font-semibold text-surface-400 hover:text-surface-200 transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-surface-400 hover:text-surface-200 transition-colors"
                   >
                     <ChevronRight className={cn('w-3.5 h-3.5 transition-transform', semDadoAberto && 'rotate-90')} aria-hidden />
                     Ainda sem dado
@@ -433,18 +433,18 @@ export function KpiCustomizerDrawer({
                   </button>
                   {semDadoAberto && (
                     <>
-                      <p className="mt-1 mb-2 text-[11.5px] text-surface-500">
+                      <p className="mt-1 mb-2 text-xs text-surface-500">
                         O sistema ainda não calcula estes indicadores — ficariam em 0, por isso não entram na faixa.
                       </p>
-                      <ul className="rounded-lg border border-dashed border-[var(--bd2)] overflow-hidden" data-testid="kpi-sem-dado">
+                      <ul className="rounded-[10px] border border-dashed border-[var(--bd2)] overflow-hidden" data-testid="kpi-sem-dado">
                         {semDadoLista.map((def, i) => (
                           <li
                             key={def.id}
                             className={cn('flex items-center gap-2.5 h-9 px-3', i < semDadoLista.length - 1 && 'border-b border-surface-700')}
                           >
                             <PontoDaCategoria categoria={def.category} />
-                            <span className="flex-1 min-w-0 text-[12.5px] text-surface-500 truncate">{def.label}</span>
-                            <span className="text-[11px] text-surface-600 flex-shrink-0">{def.category}</span>
+                            <span className="flex-1 min-w-0 text-xs text-surface-500 truncate">{def.label}</span>
+                            <span className="text-2xs text-surface-600 flex-shrink-0">{def.category}</span>
                           </li>
                         ))}
                       </ul>
@@ -458,24 +458,24 @@ export function KpiCustomizerDrawer({
 
         {/* ── Metas da empresa ─────────────────────────────────────────── */}
         <section aria-labelledby="kpi-metas" className="px-[18px] pt-1 pb-5 border-t border-surface-700">
-          <h3 id="kpi-metas" className="text-[11px] font-bold uppercase tracking-[0.1em] text-surface-400 mt-4 mb-1">Metas da empresa</h3>
-          <p className="text-[11.5px] text-surface-500 mb-2.5">
+          <h3 id="kpi-metas" className="text-2xs font-semibold uppercase tracking-[0.1em] text-surface-400 mt-4 mb-1">Metas da empresa</h3>
+          <p className="text-xs text-surface-500 mb-2.5">
             {podeEditarMetas
               ? 'Valem para todos. Cada cartão mostra se está na meta. Deixe vazio para não ter meta.'
               : 'Definidas pelos administradores. Cada cartão mostra se está na meta.'}
           </p>
-          {erroMetas && <p role="alert" className="mb-2 text-[12px] font-semibold text-danger">{erroMetas}</p>}
+          {erroMetas && <p role="alert" className="mb-2 text-xs font-semibold text-danger">{erroMetas}</p>}
           {!metas ? (
-            !erroMetas && <p className="py-3 text-[12.5px] text-surface-500">Carregando metas…</p>
+            !erroMetas && <p className="py-3 text-xs text-surface-500">Carregando metas…</p>
           ) : (
-            <ul className="rounded-lg border border-surface-700 bg-surface-800 overflow-hidden" data-testid="kpi-metas">
+            <ul className="rounded-[10px] border border-surface-700 bg-surface-800 overflow-hidden" data-testid="kpi-metas">
               {CAMPOS_DAS_METAS.map((c, i) => {
                 const erro = errosDasMetas[c.campo]
                 return (
                   <li key={c.campo} className={cn('flex items-center gap-2 min-h-10 pl-3 pr-2 py-1.5', i < CAMPOS_DAS_METAS.length - 1 && 'border-b border-surface-700')}>
-                    <label htmlFor={`meta-${c.campo}`} className="flex-1 min-w-0 text-[12.5px] text-surface-200 leading-[1.3]">
+                    <label htmlFor={`meta-${c.campo}`} className="flex-1 min-w-0 text-xs text-surface-200 leading-[1.3]">
                       {c.rotulo}
-                      {erro && <span className="block text-[11px] font-semibold text-danger">{erro}</span>}
+                      {erro && <span className="block text-2xs font-semibold text-danger">{erro}</span>}
                     </label>
                     {podeEditarMetas ? (
                       <span className="flex items-center gap-1 flex-shrink-0">
@@ -487,14 +487,14 @@ export function KpiCustomizerDrawer({
                           placeholder="—"
                           aria-invalid={!!erro}
                           className={cn(
-                            'w-16 h-7 px-2 rounded-sm text-right text-[13px] tabular-nums bg-surface-900 border text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500',
+                            'w-16 h-7 px-2 rounded-[6px] text-right text-sm tabular-nums bg-surface-900 border text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500',
                             erro ? 'border-danger' : 'border-[var(--bd2)]',
                           )}
                         />
-                        <span className="w-6 text-[11.5px] text-surface-500">{c.unidade}</span>
+                        <span className="w-6 text-xs text-surface-500">{c.unidade}</span>
                       </span>
                     ) : (
-                      <span id={`meta-${c.campo}`} className="flex-shrink-0 text-[13px] font-semibold tabular-nums text-surface-100">
+                      <span id={`meta-${c.campo}`} className="flex-shrink-0 text-sm font-semibold tabular-nums text-surface-100">
                         {metas[c.campo] ? `${metas[c.campo]} ${c.unidade}` : <span className="font-normal text-surface-500">sem meta</span>}
                       </span>
                     )}

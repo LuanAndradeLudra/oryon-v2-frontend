@@ -36,7 +36,11 @@ export function ContactDetailTabs({ activeTab, onChange, dealsCount, conversatio
         value={activeTab}
         onChange={onChange}
         label="Seções do contato"
-        className={compact ? 'flex-1 min-w-0' : 'flex-shrink-0'}
+        // SCRUM-1253 (PO, 07/10): no painel estreito as abas não cabem — a borda
+        // direita esmaece ("tem mais, role") em vez de cortar no meio da palavra.
+        className={compact
+          ? 'flex-1 min-w-0 !gap-[14px] [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_calc(100%-32px),transparent)]'
+          : 'flex-shrink-0'}
       />
       {onExpand && (
         <button

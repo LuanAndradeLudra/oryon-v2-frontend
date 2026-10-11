@@ -49,7 +49,7 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
       aria-label="Métricas em tempo real"
       className={cn(
         // DASH-* transversal: --sf/--bd/raio 8, sem sombra/glow fora de overlay.
-        'bg-surface-800 border border-surface-700 rounded-lg p-5 transition-colors',
+        'bg-surface-800 border border-surface-700 rounded-[10px] p-5 transition-colors',
       )}
     >
       <div className="flex items-center gap-2 mb-4">
@@ -57,9 +57,9 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-online opacity-60" />
           <span className="relative inline-flex rounded-full w-2 h-2 bg-online" />
         </span>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Ao Vivo</p>
+        <p className="text-2xs font-semibold uppercase tracking-widest text-surface-500">Ao Vivo</p>
         {critical && (
-          <span className="ml-auto text-[10px] font-semibold text-white bg-warning px-1.5 py-0.5 rounded-full">
+          <span className="ml-auto text-2xs font-semibold text-white bg-warning px-1.5 py-0.5 rounded-full">
             Atenção
           </span>
         )}
@@ -70,9 +70,9 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
           <div key={label} className="min-w-0">
             <div className="flex items-center gap-1.5 text-surface-500 mb-1">
               <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="text-[11px] truncate">{label}</span>
+              <span className="text-2xs truncate">{label}</span>
             </div>
-            <p className={cn('text-xl font-display font-bold tabular-nums leading-none', valueClass)}>
+            <p className={cn('text-xl font-display font-semibold tabular-nums leading-none', valueClass)}>
               {value}
             </p>
           </div>

@@ -3,9 +3,8 @@ import {
   useEffect,
   useRef,
   useCallback,
+  type SetStateAction,
 } from 'react'
-import { Square, Send } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 import { useCopilot } from '@/hooks/useCopilot'
 import { generateSessionTitle } from '@/services/copilotService'
@@ -14,35 +13,69 @@ import { revokeAttachmentUrls } from '@/lib/attachmentUtils'
 import { Banner } from '@/components/ui/Banner'
 import type { CopilotAttachment, CopilotMessage } from '@/contexts/CopilotContext'
 import { GlassChatInput } from './GlassChatInput'
-import { PendingApprovalBar } from './PendingApprovalBar'
+import { expirarLotesOrfaos } from './bancada/lotes'
 
 // ─── Session chat ─────────────────────────────────────────────────────────────
 
 export interface SessionChatProps {
   sessionId: string
-  sessionTitle: string
   initialMessages: CopilotMessage[]
   onMessagesChange: (id: string, msgs: CopilotMessage[]) => void
   onTitleChange: (id: string, title: string) => void
   tools?: unknown[]
   autoSendMessage?: { text: string; attachments?: CopilotAttachment[] }
   onAutoSendConsumed?: () => void
+  /** Desenha a bancada ao lado da conversa (aprovações, resultados, artefatos). */
+  renderBancada: (ctx: ContextoDaBancada) => React.ReactNode
+  /** Leva da conversa ao item na bancada (aba + id do item). */
+  onIrParaBancada?: (aba: AbaDaBancada, alvoId?: string) => void
+}
+
+export type AbaDaBancada = 'aprovacoes' | 'resultados' | 'artefatos'
+export interface ContextoDaBancada {
+  messages: CopilotMessage[]
+  resolveBatch: (batchTcId: string, approvedIds: string[], editedInputs?: Record<string, Record<string, unknown>>) => void
+  enviar: (texto: string) => void
+  ocupado: boolean
 }
 
 export function SessionChat({
   sessionId,
-  sessionTitle,
   initialMessages,
   onMessagesChange,
   onTitleChange,
   tools,
   autoSendMessage,
   onAutoSendConsumed,
+  renderBancada,
+  onIrParaBancada,
 }: SessionChatProps) {
-  const [messages, setMessages] = useState<CopilotMessage[]>(initialMessages)
+  // Lote pendente que chega pelo histórico não tem turno vivo (o turno fica
+  // na memória da conversa aberta): entra como expirado, não aprovável.
+  const [messages, setMessagesLocal] = useState<CopilotMessage[]>(() => expirarLotesOrfaos(initialMessages))
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<CopilotAttachment[]>([])
   const [attachError, setAttachError] = useState<string | null>(null)
+
+  // Revisão 11/10: trocar de conversa com uma aprovação "Enviando…" deixava o
+  // lote preso — a resposta do servidor chegava com esta conversa já
+  // desmontada e se perdia. Depois de desmontar, as atualizações seguem para
+  // a lista de conversas (onMessagesChange) em vez do estado local.
+  const montadoRef = useRef(true)
+  const ultimasRef = useRef(messages)
+  ultimasRef.current = messages
+  useEffect(() => {
+    montadoRef.current = true
+    return () => { montadoRef.current = false }
+  }, [])
+  const setMessages = useCallback((upd: SetStateAction<CopilotMessage[]>) => {
+    if (montadoRef.current) { setMessagesLocal(upd); return }
+    const prox = typeof upd === 'function' ? upd(ultimasRef.current) : upd
+    if (prox === ultimasRef.current) return
+    ultimasRef.current = prox
+    onMessagesChange(sessionId, prox)
+  }, [onMessagesChange, sessionId])
+
   const { status, error, sendMessage, rerunFromMessage, abort, resolveBatch } = useCopilot(messages, setMessages, tools as Array<{ name: string; description?: string; input_schema: Record<string, unknown> }>, sessionId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isNearBottomRef = useRef(true)
@@ -51,7 +84,7 @@ export function SessionChat({
   // Sync messages when loaded from DB (initialMessages goes from [] to loaded)
   useEffect(() => {
     if (initialMessages.length > 0) {
-      setMessages((prev) => prev.length === 0 ? initialMessages : prev)
+      setMessagesLocal((prev) => prev.length === 0 ? expirarLotesOrfaos(initialMessages) : prev)
     }
   }, [initialMessages])
   // Branch state: saved tails per branchGroup
@@ -207,87 +240,54 @@ export function SessionChat({
     setMessages([...messages.slice(0, msgIndex), ...targetTail])
   }
 
+  // "Conversa + bancada" (SCRUM-1253): a conversa é uma coluna de leitura e o
+  // que ela produz (plano, resultados, aprovações) vai para a bancada ao lado,
+  // desenhada por quem chama.
+const ctx: ContextoDaBancada = { messages, resolveBatch, enviar: (t) => { void sendMessage(t) }, ocupado: isBusy }
   return (
-    <div className="relative flex flex-col h-full">
-      {/* Chat header — session title */}
-      <div className="relative z-10 flex-shrink-0 border-b border-surface-700 px-6 py-3 flex items-center justify-center">
-        <AnimatePresence mode="wait">
-          <motion.h2
-            key={sessionTitle}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.2 }}
-            className="text-sm font-medium text-surface-300 truncate max-w-xl"
-          >
-            {sessionTitle === 'Nova conversa' ? (
-              <span className="text-surface-500 italic">Nova conversa</span>
-            ) : (
-              sessionTitle
-            )}
-          </motion.h2>
-        </AnimatePresence>
-      </div>
-
-      {/* Messages */}
-      <div
-        ref={scrollContainerRef}
-        className="relative z-10 flex-1 overflow-y-auto py-6 px-4"
-        onScroll={handleScroll}
-        style={{ contain: 'layout style', willChange: 'transform' }}
-      >
-        <div className="max-w-4xl mx-auto space-y-6">
-          {messages.map((msg) => (
-            <CopilotMessageBubble
-              key={msg.id}
-              message={msg}
-              onResolveBatch={resolveBatch}
-              onEdit={msg.role === 'user' ? (newText) => handleEditMessage(msg.id, newText) : undefined}
-              onSwitchBranch={msg.role === 'user' && msg.branchGroup ? (dir) => handleSwitchBranch(msg.id, dir) : undefined}
-            />
-          ))}
-          <div ref={messagesEndRef} />
+    <div className="flex h-full min-h-0">
+      <section aria-label="Conversa" className="chat-shell-bg relative flex flex-col flex-1 min-w-0 h-full">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto px-4 pt-5 pb-3"
+          onScroll={handleScroll}
+        >
+          <div className="space-y-5">
+            {messages.map((msg) => (
+              <CopilotMessageBubble
+                key={msg.id}
+                message={msg}
+                onResolveBatch={resolveBatch}
+                naBancada={onIrParaBancada}
+                onSendFollowup={(t) => sendMessage(t)}
+                onEdit={msg.role === 'user' ? (newText) => handleEditMessage(msg.id, newText) : undefined}
+                onSwitchBranch={msg.role === 'user' && msg.branchGroup ? (dir) => handleSwitchBranch(msg.id, dir) : undefined}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
-      </div>
-
-      {/* Error */}
-      <AnimatePresence>
         {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative z-10 px-4 mb-3"
-          >
-            <Banner variant="danger" className="max-w-4xl mx-auto">
-              {error}
-            </Banner>
-          </motion.div>
+          <div className="px-4 pb-2">
+            <Banner variant="danger">{error}</Banner>
+          </div>
         )}
-      </AnimatePresence>
-
-      {/* Pending approval bar (Claude Code-style sticky above composer) */}
-      <div className="relative z-10 px-4 pt-3">
-        <div className="mx-auto max-w-4xl">
-          <PendingApprovalBar messages={messages} onResolveBatch={resolveBatch} />
-        </div>
-      </div>
-
-      {/* Input */}
-      <div className="relative z-10 px-4 py-4 border-t border-surface-700">
-        <div className="max-w-4xl mx-auto">
+        <div className="px-3 pb-3 pt-1">
           <GlassChatInput
             value={input}
             onChange={setInput}
             onSend={handleSend}
             onAbort={abort}
             isBusy={isBusy}
+            placeholder="Pergunte ou peça uma ação…"
             attachments={attachments}
             onAttachmentsChange={handleAttachmentsChange}
             attachError={attachError}
+            onAttachError={setAttachError}
           />
         </div>
-      </div>
+      </section>
+      {renderBancada(ctx)}
     </div>
   )
 }

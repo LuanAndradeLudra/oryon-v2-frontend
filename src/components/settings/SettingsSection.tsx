@@ -79,7 +79,7 @@ export function SettingsOutline() {
   if (entries.length < 3) return null
   return (
     <nav aria-label="Nesta página" className="hidden xl:block w-[180px] flex-shrink-0 sticky top-8 self-start">
-      <p className="text-[10px] font-bold uppercase text-surface-500 mb-1" style={{ letterSpacing: '.14em' }}>Nesta página</p>
+      <p className="text-2xs font-semibold uppercase text-surface-500 mb-1" style={{ letterSpacing: '.14em' }}>Nesta página</p>
       <ul className="flex flex-col gap-1.5">
         {entries.map((e) => {
           const isActive = e.id === effectiveActiveId
@@ -135,13 +135,15 @@ export function SettingsSection({ title, description, children, className, label
       className={cn(
         dense ? 'pt-4 pb-4 first-of-type:pt-[18px]' : 'py-[22px] first-of-type:pt-[26px]',
         'border-b border-surface-700 last:border-0 scroll-mt-6',
-        'md:grid md:grid-cols-[var(--label-w)_1fr] md:gap-6 md:items-start',
+        // SCRUM-1253 (PO, 07/10): duas colunas só a partir de lg, e o rótulo nunca
+        // passa de 34% — antes, em janela estreita, os campos ficavam com ~200px.
+        'lg:grid lg:grid-cols-[min(var(--label-w),34%)_minmax(0,1fr)] lg:gap-6 lg:items-start',
         className,
       )}
       style={{ ['--label-w' as string]: `${labelWidth}px` }}
     >
-      <div className="mb-4 md:mb-0 md:sticky md:top-2">
-        <h3 className="text-[13px] font-semibold text-surface-100 flex items-center gap-2">
+      <div className="mb-4 lg:mb-0 lg:sticky lg:top-2">
+        <h3 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
           {Icon && <Icon className="w-4 h-4 flex-shrink-0" style={accentColor ? { color: accentColor } : undefined} />}
           {title}
         </h3>

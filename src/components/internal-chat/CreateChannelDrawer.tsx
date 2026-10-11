@@ -37,7 +37,7 @@ function EmojiQuickPick({ value, onChange }: { value: string; onChange: (e: stri
           onClick={() => onChange(e)}
           aria-label={`Usar emoji ${e}`}
           className={cn(
-            'w-9 h-9 rounded-lg flex items-center justify-center text-xl transition-all hover:scale-110',
+            'w-9 h-9 rounded-[6px] flex items-center justify-center text-xl transition-all hover:scale-110',
             value === e
               ? 'bg-blue-500/20 ring-1 ring-blue-500'
               : 'bg-surface-800 hover:bg-surface-700',
@@ -91,7 +91,7 @@ function SectorCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
+        'w-full flex items-center gap-3 p-3 rounded-[10px] border transition-all text-left',
         selected
           ? 'border-blue-500 bg-blue-500/10'
           : 'border-surface-700 bg-surface-800/50 hover:border-surface-600 hover:bg-surface-800',
@@ -99,7 +99,7 @@ function SectorCard({
     >
       {/* Color swatch */}
       <div
-        className="w-9 h-9 rounded-lg flex-shrink-0"
+        className="w-9 h-9 rounded-[10px] flex-shrink-0"
         style={{ background: `color-mix(in srgb, ${dept.color} 19%, transparent)`, border: `2px solid color-mix(in srgb, ${dept.color} 25%, transparent)` }}
       >
         <div className="w-full h-full flex items-center justify-center">
@@ -153,7 +153,7 @@ function MemberRow({
       )}
     >
       <div className={cn(
-        'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0',
+        'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white flex-shrink-0',
         avatarColor(name),
       )}>
         {name.charAt(0).toUpperCase()}
@@ -162,7 +162,7 @@ function MemberRow({
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium text-surface-100 truncate">{name}</p>
           {isSectorMember && (
-            <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-status-active-bg text-status-active">
+            <span className="flex-shrink-0 text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-status-active-bg text-status-active">
               Setor
             </span>
           )}
@@ -369,7 +369,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
           <div>
-            <h2 className="text-sm font-bold text-surface-50">Criar canal</h2>
+            <h2 className="text-sm font-semibold text-surface-50">Criar canal</h2>
             <p className="text-[11px] text-surface-500 mt-0.5">
               {step === 0 && 'Escolha o tipo de canal'}
               {step === 1 && (channelType === 'department_room' ? 'Selecione o setor e configure o canal' : 'Configure as informações do canal')}
@@ -379,7 +379,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+            className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -411,14 +411,14 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   type="button"
                   onClick={() => setChannelType('group')}
                   className={cn(
-                    'w-full flex items-start gap-4 p-4 rounded-lg border transition-all text-left',
+                    'w-full flex items-start gap-4 p-4 rounded-[10px] border transition-all text-left',
                     channelType === 'group'
                       ? 'border-blue-500 bg-blue-500/10'
                       : 'border-surface-700 bg-surface-800/50 hover:border-surface-600',
                   )}
                 >
                   <div className={cn(
-                    'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
+                    'w-11 h-11 rounded-[10px] flex items-center justify-center flex-shrink-0 transition-colors',
                     channelType === 'group' ? 'bg-blue-500/20' : 'bg-[var(--sf2)]',
                   )}>
                     <Hash className={cn('w-5 h-5', channelType === 'group' ? 'text-blue-400' : 'text-surface-400')} />
@@ -442,14 +442,14 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   type="button"
                   onClick={() => setChannelType('department_room')}
                   className={cn(
-                    'w-full flex items-start gap-4 p-4 rounded-lg border transition-all text-left',
+                    'w-full flex items-start gap-4 p-4 rounded-[10px] border transition-all text-left',
                     channelType === 'department_room'
                       ? 'border-blue-500 bg-blue-500/10'
                       : 'border-surface-700 bg-surface-800/50 hover:border-surface-600',
                   )}
                 >
                   <div className={cn(
-                    'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
+                    'w-11 h-11 rounded-[10px] flex items-center justify-center flex-shrink-0 transition-colors',
                     channelType === 'department_room' ? 'bg-blue-500/20' : 'bg-[var(--sf2)]',
                   )}>
                     <Building2 className={cn('w-5 h-5', channelType === 'department_room' ? 'text-blue-400' : 'text-surface-400')} />
@@ -491,7 +491,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                         <Loader2 className="w-5 h-5 text-surface-500 animate-spin" />
                       </div>
                     ) : departments.length === 0 ? (
-                      <div className="py-6 text-center rounded-lg border border-dashed border-surface-700">
+                      <div className="py-6 text-center rounded-[10px] border border-dashed border-surface-700">
                         <Building2 className="w-7 h-7 text-surface-600 mx-auto mb-1.5" />
                         <p className="text-xs text-surface-500">Nenhum setor cadastrado.</p>
                         <p className="text-[11px] text-surface-600 mt-0.5">Configure setores em Configurações → Setores.</p>
@@ -521,7 +521,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   </label>
                   <div className="flex items-center gap-3 mb-3">
                     <div
-                      className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                      className="w-12 h-12 rounded-[10px] flex items-center justify-center flex-shrink-0"
                       style={channelType === 'department_room' && selectedDept
                         ? { background: `color-mix(in srgb, ${selectedDept.color} 15%, transparent)`, border: `1.5px solid color-mix(in srgb, ${selectedDept.color} 25%, transparent)` }
                         : { background: 'var(--color-surface-800)' }
@@ -553,7 +553,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                     placeholder={channelType === 'department_room'
                       ? 'Ex: atendimento-geral, vendas-equipe…'
                       : 'Ex: projeto-alpha, avisos-gerais…'}
-                    className="w-full bg-surface-800 border border-surface-700 rounded-sm px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-blue-500/60 transition-colors"
+                    className="w-full bg-surface-800 border border-surface-700 rounded-[6px] px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-blue-500/60 transition-colors"
                   />
                 </div>
 
@@ -567,7 +567,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Sobre o que é este canal?"
                     rows={2}
-                    className="w-full bg-surface-800 border border-surface-700 rounded-sm px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-blue-500/60 transition-colors resize-none"
+                    className="w-full bg-surface-800 border border-surface-700 rounded-[6px] px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-blue-500/60 transition-colors resize-none"
                   />
                 </div>
 
@@ -600,7 +600,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   {/* Info banner for department rooms */}
                   {channelType === 'department_room' && selectedDept && (
                     <div
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg mb-1 text-[11px]"
+                      className="flex items-center gap-2 px-3 py-2 rounded-[10px] mb-1 text-[11px]"
                       style={{ background: `color-mix(in srgb, ${selectedDept.color} 9%, transparent)`, border: `1px solid color-mix(in srgb, ${selectedDept.color} 19%, transparent)` }}
                     >
                       <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: selectedDept.color }} />
@@ -620,7 +620,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-sm bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-[6px] bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
                     <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
                     <input
                       autoFocus
@@ -702,7 +702,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-sm border border-surface-700 text-sm font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-[6px] border border-surface-700 text-sm font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Voltar
@@ -715,7 +715,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                 onClick={() => setStep((s) => s + 1)}
                 disabled={!canNext}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[6px] text-sm font-semibold transition-all',
                   canNext
                     ? 'bg-blue-600 hover:bg-blue-500 text-white'
                     : 'bg-surface-800 text-surface-600 cursor-not-allowed',
@@ -730,7 +730,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                 onClick={handleCreate}
                 disabled={saving}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[6px] text-sm font-semibold transition-all',
                   saving
                     ? 'bg-brand-600/60 text-white/70 cursor-not-allowed'
                     : 'bg-brand-600 hover:bg-brand-500 text-surface-950',

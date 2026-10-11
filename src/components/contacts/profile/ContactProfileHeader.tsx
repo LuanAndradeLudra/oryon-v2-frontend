@@ -98,7 +98,7 @@ export function ContactProfileHeader({
           onClick={onBack}
           title={backLabel}
           aria-label={backLabel}
-          className="mt-0.5 p-2 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0 cursor-pointer"
+          className="mt-0.5 p-2 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -108,7 +108,7 @@ export function ContactProfileHeader({
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           {/* Linha 1 — identidade */}
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h1 className="font-display text-base font-bold tracking-[-0.01em] text-surface-50 truncate">
+            <h1 className="font-display text-base font-semibold tracking-[-0.01em] text-surface-50 truncate">
               {contact.displayName || contact.waId}
             </h1>
             {onStageChanged ? (
@@ -140,7 +140,7 @@ export function ContactProfileHeader({
                 {shownTags.map((tag) => (
                   <span
                     key={tag.id}
-                    className="color-chip inline-flex items-center rounded-md border px-1.5 py-px text-[11px] font-medium truncate max-w-[110px]"
+                    className="color-chip inline-flex items-center rounded-[6px] border px-1.5 py-px text-[11px] font-medium truncate max-w-[110px]"
                     style={{ ['--chip']: tag.color } as React.CSSProperties}
                   >
                     {tag.name}
@@ -196,7 +196,7 @@ export function ContactProfileHeader({
           {window24h && (
             <span
               title={window24h.detail}
-              className="color-chip-soft hidden sm:inline-flex items-center gap-1 rounded-xs border px-2 py-0.5 text-[11px] font-semibold"
+              className="color-chip-soft hidden sm:inline-flex items-center gap-1 rounded-[6px] border px-2 py-0.5 text-[11px] font-semibold"
               style={{ ['--chip']: WINDOW_CHIP[window24h.state] } as React.CSSProperties}
             >
               <MessageCircle className="w-3 h-3" />
@@ -258,7 +258,7 @@ export function ContactProfileHeader({
                 aria-label="Mais ações"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all cursor-pointer"
+                className="w-7 h-7 rounded-[6px] border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all cursor-pointer"
               >
                 <MoreHorizontal className="w-[15px] h-[15px]" />
               </button>

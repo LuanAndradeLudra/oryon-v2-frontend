@@ -14,10 +14,11 @@ import { TagChips } from './TagChips'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { type ContactColumnsConfig } from '@/hooks/useContactColumnsConfig'
-import { relativeDate, getActivePipelines, formatPhoneBR } from '@/lib/utils'
+import { cn, relativeDate, getActivePipelines, formatPhoneBR } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
 import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import type { Contact, ContactStage, Pipeline } from '@/types'
+import { SeloForaDoFiltro } from '@/components/ui/SeloForaDoFiltro'
 
 const SENTIMENT_ICON = {
   positive: <Smile className="w-4 h-4 text-status-active" />,
@@ -70,7 +71,7 @@ function ActionsMenuCell({ contact, onOpenPanel, onOpenConversation }: {
             // data-row-action-open o mantém visível com o menu aberto.
             data-row-action=""
             data-row-action-open={open ? '' : undefined}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+            className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
@@ -102,6 +103,8 @@ interface ContactsTableProps {
   onAddToPipeline?: (contact: Contact, pipeline: Pipeline) => void
   /** Contato com o drawer aberto — pinta a linha como ativa (README 3.2). */
   activeKey?: string | null
+  /** Contato aberto fixado no topo que não atende aos filtros (SCRUM-1253). */
+  foraDoFiltroId?: string | null
   selectedIds?: Set<string>
   onToggleSelect?: (id: string) => void
   onSelectAll?: (ids: string[]) => void
@@ -126,6 +129,7 @@ export function ContactsTable({
   onMoveStage,
   onAddToPipeline,
   activeKey,
+  foraDoFiltroId = null,
   selectedIds,
   onToggleSelect,
   onSelectAll,
@@ -333,7 +337,7 @@ export function ContactsTable({
             {c.source === 'meta_ads' ? 'Meta Ads' : c.source ?? '—'}
           </span>
           {c.source === 'meta_ads' && (
-            <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: '#1877f2', opacity: 0.9 }} title="Meta Ads" />
+            <span className="w-3 h-3 rounded-[6px] flex-shrink-0" style={{ backgroundColor: '#1877f2', opacity: 0.9 }} title="Meta Ads" />
           )}
         </div>
       ),
@@ -381,20 +385,30 @@ export function ContactsTable({
     key: 'name',
     header: 'Nome',
     sortable: true,
-    render: (c) => (
+    render: (c) => {
+      const comEtiquetas = tagsInName && (c.tags?.length ?? 0) > 0
+      return (
       <div className="flex items-center gap-[9px] min-w-0">
         <Avatar name={c.displayName} imageUrl={c.profilePicUrl} size="xs" />
-        <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-surface-100 truncate">{c.displayName}</p>
+        {/* SCRUM-1253 (07/10): o NOME tem prioridade sobre as etiquetas — antes
+            os chips (fixos) espremiam o nome em "Mari…". Agora o nome fica na
+            largura natural (até deixar ~100px para os chips) e as etiquetas
+            cedem: truncam e viram "+N". */}
+        <div className={cn('min-w-0', comEtiquetas && 'flex-shrink-0 max-w-[calc(100%-140px)]')}>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="min-w-0 text-[13px] font-semibold text-surface-100 truncate">{c.displayName}</p>
+            {foraDoFiltroId === c.id && <SeloForaDoFiltro title="Este contato não atende aos filtros atuais. Fica na lista porque está aberto." />}
+          </div>
           {phoneInName && c.waId && (
             <p className="text-[11px] text-surface-500 tabular-nums truncate">{formatPhoneBR(c.waId)}</p>
           )}
         </div>
-        {tagsInName && (c.tags?.length ?? 0) > 0 && (
-          <div className="flex-shrink-0"><TagChips tags={c.tags} /></div>
+        {comEtiquetas && (
+          <div className="min-w-0 flex-1 overflow-hidden"><TagChips tags={c.tags} inline /></div>
         )}
       </div>
-    ),
+      )
+    },
   }
 
   const actionsColumn: DataTableColumn<Contact> = {
@@ -412,7 +426,7 @@ export function ContactsTable({
       .filter((c): c is DataTableColumn<Contact> => !!c)
     return [nameColumn, ...middle, actionsColumn]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columnsConfig.order, columnsConfig.hiddenKeys, multiPipeline, allColumnsByKey])
+  }, [columnsConfig.order, columnsConfig.hiddenKeys, multiPipeline, allColumnsByKey, foraDoFiltroId])
 
   const sort: DataTableSort | null = sortBy && SORT_KEY_TO_COLUMN[sortBy]
     ? { key: SORT_KEY_TO_COLUMN[sortBy], dir: sortDir ?? 'desc' }

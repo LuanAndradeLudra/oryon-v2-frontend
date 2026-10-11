@@ -21,7 +21,7 @@ function ConversationRow({ conversation, isOrigin, onOpenBeside }: { conversatio
   return (
     <div
       className={cn(
-        'flex items-start gap-2.5 px-3.5 py-3 rounded-lg border transition-colors',
+        'flex items-start gap-2.5 px-3.5 py-3 rounded-[10px] border transition-colors',
         isOrigin ? 'border-brand-500/40 bg-brand-500/5' : 'border-surface-700 bg-surface-900',
       )}
       data-testid={isOrigin ? 'deal-origin-conversation' : 'deal-other-conversation'}
@@ -30,13 +30,13 @@ function ConversationRow({ conversation, isOrigin, onOpenBeside }: { conversatio
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 flex-wrap">
           {isOrigin && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-brand-300">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-300">
               <Star className="w-3 h-3" /> origem deste negócio
             </span>
           )}
           <span className="text-[11px] text-surface-500">{STATUS_LABEL[conversation.status] ?? conversation.status}</span>
           {conversation.unreadCount > 0 && (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-600 text-surface-950">{conversation.unreadCount}</span>
+            <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-600 text-surface-950">{conversation.unreadCount}</span>
           )}
         </div>
         <p className="text-sm text-surface-200 truncate mt-0.5">{conversation.lastMessagePreview || '(sem mensagens)'}</p>
@@ -50,7 +50,7 @@ function ConversationRow({ conversation, isOrigin, onOpenBeside }: { conversatio
         onClick={onOpenBeside}
         title="Abrir ao lado"
         data-testid="deal-conversation-open-beside"
-        className="flex-shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+        className="flex-shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-[6px] text-[11px] font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
       >
         Abrir ao lado <ArrowUpRight className="w-3 h-3" />
       </button>

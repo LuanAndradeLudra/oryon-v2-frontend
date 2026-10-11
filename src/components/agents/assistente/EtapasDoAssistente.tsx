@@ -24,7 +24,7 @@ function Opcao({ ativa, onClick, titulo, descricao }: { ativa: boolean; onClick:
       onClick={onClick}
       aria-pressed={ativa}
       className={cn(
-        'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
+        'flex w-full items-start gap-3 rounded-[10px] border px-4 py-3 text-left transition-colors',
         ativa ? 'border-brand-500 bg-accent-soft' : 'border-surface-700 hover:border-surface-600',
       )}
     >
@@ -108,7 +108,7 @@ export function EtapaQuemE({ spec, mudar }: { spec: AgentSpec; mudar: Mudar }) {
         </Banner>
       )}
       {suposicoes.length > 0 && (
-        <section aria-labelledby="suposicoes-titulo" className="rounded-lg border border-surface-700 p-4">
+        <section aria-labelledby="suposicoes-titulo" className="rounded-[10px] border border-surface-700 p-4">
           <h3 id="suposicoes-titulo" className="flex items-center gap-2 text-sm font-semibold text-surface-100">
             <HelpCircle className="h-4 w-4 text-status-pending" aria-hidden /> O que a IA precisou supor
           </h3>
@@ -158,7 +158,7 @@ export function EtapaPodeFazer({ spec, mudar }: { spec: AgentSpec; mudar: Mudar 
   }))
   return (
     <div className="space-y-4">
-      <ul className="divide-y divide-surface-700 rounded-lg border border-surface-700">
+      <ul className="divide-y divide-surface-700 rounded-[10px] border border-surface-700">
         {CRM_CAPABILITIES_CATALOG.map((c) => (
           <li key={c.id} className="flex items-start gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
@@ -270,7 +270,7 @@ export function EtapaEnsaio({ spec, mudar, draftId, agentId, salvarAgora }: {
       {erro && <Banner variant="danger">{erro}</Banner>}
       <ul className="space-y-3">
         {spec.tests.map((t, i) => (
-          <li key={`${t.question}-${i}`} className="rounded-lg border border-surface-700 p-4">
+          <li key={`${t.question}-${i}`} className="rounded-[10px] border border-surface-700 p-4">
             <p className="text-sm font-medium text-surface-100">{t.question}</p>
             <p className="mt-2 whitespace-pre-wrap text-sm text-surface-300">{t.answer}</p>
             <div className="mt-3 flex items-center gap-2">
@@ -358,7 +358,7 @@ export function EtapaNoAr({
             {prontidao.map((i) => (
               <li key={i.id} className="flex items-start gap-2 text-sm">
                 <span className={cn('mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full', i.ok ? 'bg-status-active text-white' : i.blocking ? 'bg-danger text-white' : 'bg-surface-600 text-white')}>
-                  {i.ok ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[10px] font-bold">!</span>}
+                  {i.ok ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[11px] font-semibold">!</span>}
                 </span>
                 <span>
                   <span className={i.ok ? 'text-surface-200' : 'text-surface-100'}>{i.label}</span>

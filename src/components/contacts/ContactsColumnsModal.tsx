@@ -76,8 +76,8 @@ export function ContactsColumnsModal({ open, onClose, config, multiPipeline }: C
       aria-label="Configurar colunas"
       title={
         <div>
-          <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">Configurar colunas</h2>
-          <p className="text-[12.5px] text-surface-400 mt-0.5">Ordem e visibilidade valem só para você.</p>
+          <h2 className="text-base font-display font-semibold tracking-[-0.01em] text-surface-50">Configurar colunas</h2>
+          <p className="text-xs text-surface-400 mt-0.5">Ordem e visibilidade valem só para você.</p>
         </div>
       }
       className="max-w-[520px]"
@@ -121,7 +121,7 @@ export function ContactsColumnsModal({ open, onClose, config, multiPipeline }: C
               <span className={cn('flex-1 text-[13px] font-medium', disabled ? 'text-surface-500' : 'text-surface-100')}>
                 {item.label}
                 {item.gated && (
-                  <span className="ml-1 inline-flex items-center h-4 px-1 rounded-xs border border-dashed border-[var(--bd2)] text-surface-500 text-[9.5px] font-semibold align-middle">
+                  <span className="ml-1 inline-flex items-center h-4 px-1 rounded-[6px] border border-dashed border-[var(--bd2)] text-surface-500 text-[9.5px] font-semibold align-middle">
                     MULTI-FUNIL
                   </span>
                 )}

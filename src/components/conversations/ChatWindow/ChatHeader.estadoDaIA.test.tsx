@@ -6,7 +6,8 @@ import { ChatHeader } from './ChatHeader'
 import { pedirResolver } from '@/lib/conversationActions'
 import type { Conversation } from '@/types'
 
-vi.mock('@/hooks/useIsMobile', () => ({ useIsMobile: () => false }))
+let celular = false
+vi.mock('@/hooks/useIsMobile', () => ({ useIsMobile: () => celular }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => false }))
 vi.mock('@/contexts/CRMConfigContext', () => ({ useCRMConfig: () => ({ pipelines: [] }) }))
 vi.mock('@/contexts/TenantVocabContext', () => ({ useTenantVocab: () => ({ vocab: { deal: 'Negócio', deals: 'Negócios' } }) }))
@@ -38,20 +39,71 @@ function props(c: Conversation) {
   }
 }
 
-beforeEach(() => { linhas = { linhasComIA: new Set(['linha-ia']), conhecidas: true } })
+beforeEach(() => { linhas = { linhasComIA: new Set(['linha-ia']), conhecidas: true }; celular = false })
 
 describe('ChatHeader — estado da IA', () => {
-  it('linha com IA, sem transferência: "IA atendendo" + Assumir', () => {
+  // SCRUM-1253: "Assumir" mora no menu do responsável (cabeçalho nomeado).
+  const abrirResponsavel = () => fireEvent.click(screen.getByTitle('Responsável e agente de IA'))
+
+  it('linha com IA, sem transferência: "IA atendendo" + Assumir no menu', () => {
     render(<ChatHeader {...props(conv())} />)
     expect(screen.getByText('IA atendendo')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Assumir' })).toBeInTheDocument()
+    abrirResponsavel()
+    expect(screen.getByRole('menuitem', { name: /Assumir/ })).toBeInTheDocument()
   })
 
-  it('pendente numa linha com IA: "IA passou para a equipe" (antes: "Agente IA no controle")', () => {
+  it('pendente numa linha com IA, sem dono: status "Pendente" no botão e "Na fila" no controle (D11)', () => {
     render(<ChatHeader {...props(conv({ status: 'pending' }))} />)
-    expect(screen.getByText('IA passou para a equipe')).toBeInTheDocument()
-    expect(screen.getByText('IA passou')).toBeInTheDocument()
+    // SCRUM-1253: o status aparece no botão dividido; o estado, no controle.
+    expect(screen.getByLabelText('Status da conversa: Pendente')).toBeInTheDocument()
+    // Revisão 11/10: a IA já passou — "IA atendendo" ali era mentira.
+    expect(screen.queryByText('IA atendendo')).toBeNull()
+    expect(screen.getByText('Na fila')).toBeInTheDocument()
     expect(screen.queryByText(/Agente IA no controle/)).toBeNull()
+  })
+
+  it('revisão 11/10: pendente COM dono não diz "Na fila" — diz para quem espera', () => {
+    render(<ChatHeader {...props(conv({ status: 'pending', assignedUser: { id: 'u2', firstName: 'Beto', lastName: null } }))} />)
+    expect(screen.queryByText('Na fila')).toBeNull()
+    expect(screen.getByText('Aguardando Beto')).toBeInTheDocument()
+  })
+
+  it('revisão 11/10 (celular): o chip do estado segue a mesma regra dos selos da lista', () => {
+    celular = true
+    const { unmount } = render(<ChatHeader {...props(conv({ status: 'pending' }))} />)
+    expect(screen.getByText('Na fila')).toBeInTheDocument()
+    unmount()
+    render(<ChatHeader {...props(conv({ status: 'pending', assignedUser: { id: 'u1', firstName: 'Ana', lastName: null } }))} />)
+    expect(screen.queryByText('Na fila')).toBeNull()
+    expect(screen.getByText('Aguardando você')).toBeInTheDocument()
+  })
+
+  it('revisão 11/10: com dono, escolher outra pessoa TRANSFERE; sem dono, atribui (igual ao painel)', () => {
+    const ana = { id: 'u3', firstName: 'Carla', lastName: 'Dias', isActive: true }
+    const comDono = { ...props(conv({ assignedUser: { id: 'u2', firstName: 'Beto', lastName: null } })), allUsers: [ana], onTransfer: vi.fn() }
+    const { unmount } = render(<ChatHeader {...(comDono as unknown as Parameters<typeof ChatHeader>[0])} />)
+    abrirResponsavel()
+    fireEvent.click(screen.getByRole('menuitem', { name: /Carla Dias/ }))
+    expect(comDono.onTransfer).toHaveBeenCalledWith(expect.objectContaining({ id: 'u3' }))
+    expect(comDono.onAssign).not.toHaveBeenCalled()
+    unmount()
+    const semDono = { ...props(conv()), allUsers: [ana], onTransfer: vi.fn() }
+    render(<ChatHeader {...(semDono as unknown as Parameters<typeof ChatHeader>[0])} />)
+    abrirResponsavel()
+    fireEvent.click(screen.getByRole('menuitem', { name: /Carla Dias/ }))
+    expect(semDono.onAssign).toHaveBeenCalledWith(expect.objectContaining({ id: 'u3' }))
+    expect(semDono.onTransfer).not.toHaveBeenCalled()
+  })
+
+  it('revisão 11/10: com muitas pessoas, mostra todas e oferece busca (antes cortava em 6)', () => {
+    const nomes = ['Ana', 'Beto', 'Carla', 'Davi', 'Eva', 'Fábio', 'Gil', 'Hugo', 'Iara']
+    const users = nomes.map((n, i) => ({ id: `p${i}`, firstName: n, lastName: 'Teste', isActive: true }))
+    render(<ChatHeader {...({ ...props(conv()), allUsers: users } as unknown as Parameters<typeof ChatHeader>[0])} />)
+    abrirResponsavel()
+    expect(screen.getByRole('menuitem', { name: /Iara Teste/ })).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Buscar pessoa para atribuir'), { target: { value: 'hu' } })
+    expect(screen.getByRole('menuitem', { name: /Hugo Teste/ })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /Iara Teste/ })).toBeNull()
   })
 
   it('linha sem agente: "Linha sem IA" (antes: "Agente IA no controle")', () => {
@@ -64,7 +116,16 @@ describe('ChatHeader — estado da IA', () => {
       whatsappNumber: { id: 'linha-sem', displayPhoneNumber: '+55', status: 'active' } as Conversation['whatsappNumber'],
       assignedUser: { id: 'u1', firstName: 'Ana', lastName: null },
     }))} />)
-    expect(screen.queryByRole('button', { name: 'Assumir' })).toBeNull()
+    abrirResponsavel()
+    expect(screen.queryByRole('menuitem', { name: /Atribuir a mim|Assumir/ })).toBeNull()
+  })
+
+  it('conversa já é minha e a IA atende: o menu oferece PAUSAR a IA', () => {
+    const p = props(conv({ assignedUser: { id: 'u1', firstName: 'Ana', lastName: null } }))
+    render(<ChatHeader {...p} />)
+    abrirResponsavel()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Pausar a IA por 1 hora' }))
+    expect(p.onSetAiPause).toHaveBeenCalledWith(expect.any(String))
   })
 
   it('sem saber ainda as linhas, não afirma "sem IA"', () => {
@@ -77,7 +138,8 @@ describe('ChatHeader — estado da IA', () => {
   it('"Assumir" é a ação única da página (a mesma da tecla R)', () => {
     const p = props(conv({ status: 'pending' }))
     render(<ChatHeader {...p} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Assumir' }))
+    abrirResponsavel()
+    fireEvent.click(screen.getByRole('menuitem', { name: /Assumir/ }))
     expect(p.onAssumir).toHaveBeenCalled()
     expect(p.onInterveneAi).not.toHaveBeenCalled()
   })
