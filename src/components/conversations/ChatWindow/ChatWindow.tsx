@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MessageSquare } from 'lucide-react'
+import { useReducedMotion } from 'framer-motion'
 import { ChatHeader } from './ChatHeader'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
@@ -62,7 +63,7 @@ export function ChatWindow({
   onSendError, sendBlockedReason,
   onBack,
 }: ChatWindowProps) {
-  const { messages, loading, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, updateMediaThumbnail, markAnomaliesReviewed } =
+  const { messages, loading, carregadaPara, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, updateMediaThumbnail, markAnomaliesReviewed } =
     useMessages(conversation?.id ?? null)
 
   // T4 fase 1 — eventos da IA e da equipe entre as mensagens. SCRUM-1253 (PO,
@@ -164,6 +165,9 @@ export function ChatWindow({
     : 0
   const windowOpen = windowLeftMs > 0
 
+  // Hook antes do retorno da tela vazia (regra dos hooks).
+  const semMovimento = useReducedMotion()
+
   if (!conversation) {
     // Estado vazio como CENTRO DE COMANDO — o espaço morto vira onboarding
     // dos atalhos de triagem. Quem aprende J/K/E/R atende sem tirar a mão
@@ -203,6 +207,20 @@ export function ChatWindow({
     )
   }
 
+  // SCRUM-1253 (PO, 11/10): troca de conversa com transição leve — ao trocar,
+  // o corpo some NA HORA (a lista anterior não pisca) e, quando a 1ª página
+  // DESTA conversa chega, sobe 6px com fade (240 ms, ease-out). O cabeçalho e
+  // o campo de texto ficam firmes. Com "reduzir movimento", só o fade.
+  // CSS puro, SEM `key` e sem motion.div: a página vive dentro do
+  // AnimatePresence do PageTransition — com `key` os corpos antigos ficavam
+  // empilhados (vários scrolls numa conversa só) e o motion.div não voltava
+  // do estado escondido. Visível termina em `transform: none` (não cria
+  // contêiner para nada `fixed` lá dentro).
+  const conversaPronta = carregadaPara === conversation.id
+  const estiloDoCorpo: React.CSSProperties = conversaPronta
+    ? { opacity: 1, transform: 'none', transition: 'opacity 240ms cubic-bezier(0.22,1,0.36,1), transform 240ms cubic-bezier(0.22,1,0.36,1)' }
+    : { opacity: 0, transform: semMovimento ? 'none' : 'translateY(6px)', transition: 'none' }
+
   return (
     <div className="chat-shell-bg flex-1 flex flex-col min-w-0 min-h-0 relative overflow-hidden">
       {/* Phase 32 — the tenant-wide setup blockers banner moved into the
@@ -234,6 +252,7 @@ export function ChatWindow({
           here. The chip in the header carries the actions; the strip is just
           the "where am I?" sticky signal. */}
       <HandoffStripe aiPausedUntil={conversation.aiPausedUntil} />
+      <div className="flex-1 min-h-0 flex flex-col" style={estiloDoCorpo}>
       <MessageList
         messages={messages}
         loading={loading}
@@ -245,6 +264,7 @@ export function ChatWindow({
         mostrarEventos={mostrarEventos}
         onAlternarEventos={alternarEventos}
       />
+      </div>
       {/* key por conversa (28/09): sem ela o rascunho, os anexos e o
           "modelo enviado" sobreviviam à troca de conversa — digitar em A,
           apertar J e Enviar mandava o texto para B. */}

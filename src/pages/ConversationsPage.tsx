@@ -36,6 +36,7 @@ import type {
   Conversation, ConversationFilters,
   SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew,
   Tag, User, DealOutcomeInput } from '@/types'
+import { useEstadoNaUrl, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
 
 // SCRUM-1253 (PO, 06/10): abaixo de 1280 px o painel do contato nasce
 // recolhido (abre pelo botão de informações) — com lista e painel fixos o chat
@@ -51,6 +52,12 @@ export function ConversationsPage() {
   // SCRUM-1253: o chat aberto também perde/atualiza a etiqueta na hora.
   useMudancaDeEtiqueta((m) => setActiveConversation((c) => (c ? aplicarNaConversa(c, m) : c)))
   const [infoOpen, setInfoOpen]     = useState(false)
+  // SCRUM-1253 (PO, 11/10): o painel do contato abre por padrão, mas se a
+  // pessoa o fecha ele continua fechado ao trocar de conversa. A escolha mora
+  // no endereço (`contato-fechado=1`, regra do PO) — vale ao trocar de
+  // conversa, recarregar e voltar; sair de Conversas e voltar reabre.
+  // Só no computador: no celular o painel é uma folha por cima do chat.
+  const [contatoFechado, setContatoFechado] = useEstadoNaUrl<boolean>('contato-fechado', { padrao: false, ler: lerBool, escrever: escreverBool })
   const [newConversationOpen, setNewConversationOpen] = useState(false)
   const openNewConversation = useCallback(() => setNewConversationOpen(true), [])
   // PL-1-1 (P12/P14): a caixa de entrada abria com o período "Hoje" ligado por
@@ -313,7 +320,7 @@ export function ConversationsPage() {
     // Em desktop o ContactPanel e' uma coluna lateral persistente — abrir
     // junto com a conversa e' o comportamento esperado. Em mobile o painel
     // sobrepoe o chat; deve aparecer so quando o usuario aciona via menu.
-    if (!isMobile && painelCabe()) setInfoOpen(true)
+    if (!isMobile && painelCabe() && !contatoFechado) setInfoOpen(true)
     markAsRead(conv.id)
     // No mobile, lista e chat são telas alternadas — abrir uma conversa
     // precisa empilhar uma entrada de histórico própria (replace: false),
@@ -361,11 +368,11 @@ export function ConversationsPage() {
     activeId: activeConversation?.id ?? null,
     onFoundInList: (match) => {
       setActiveConversation(match)
-      if (!isMobile && painelCabe()) setInfoOpen(true)
+      if (!isMobile && painelCabe() && !contatoFechado) setInfoOpen(true)
     },
     onFetched: (conv) => {
       setActiveConversation(conv)
-      if (!isMobile && painelCabe()) setInfoOpen(true)
+      if (!isMobile && painelCabe() && !contatoFechado) setInfoOpen(true)
       setFilters((f) => ({ ...f, startDate: undefined, endDate: undefined }))
     },
     fetchById: (id) => conversationsApi.get(id).then((r) => r.data),
@@ -752,7 +759,11 @@ export function ConversationsPage() {
           allTags={allTags}
           allUsers={allUsers}
           onStatusChange={handleStatusChange}
-          onToggleInfo={() => setInfoOpen((v) => !v)}
+          onToggleInfo={() => {
+            const abrir = !infoOpen
+            setInfoOpen(abrir)
+            if (!isMobile) setContatoFechado(!abrir)
+          }}
           infoOpen={infoOpen}
           onAddTag={handleAddTag}
           onRemoveTag={handleRemoveTag}
@@ -833,7 +844,7 @@ export function ConversationsPage() {
               conversation={activeConversation}
               allTags={allTags}
               allUsers={allUsers}
-              onClose={() => setInfoOpen(false)}
+              onClose={() => { setInfoOpen(false); setContatoFechado(true) }}
               onAddTag={(tag) => handleAddTag(activeConversation.id, tag)}
               onRemoveTag={(tagId) => handleRemoveTag(activeConversation.id, tagId)}
               onCreateTag={createTag}

@@ -1,7 +1,7 @@
-import { useState, useCallback, useMemo, type ReactNode } from 'react'
+import { useState, useCallback, useMemo, useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Download, ZoomIn, ZoomOut } from 'lucide-react'
+import { X, Download, ZoomIn, ZoomOut, FileX } from 'lucide-react'
 import { useLayer } from '@/contexts/LayerContext'
 import { useImageZoom } from '@/hooks/useImageZoom'
 import { MediaViewerCtx } from '@/contexts/mediaViewerCore'
@@ -27,6 +27,38 @@ import type { Message } from '@/types'
  * DOC/XLS/PPT: nenhum navegador renderiza isso nativamente (nem o WhatsApp
  * tenta) — sempre cai no botão de baixar, em qualquer plataforma.
  */
+/**
+ * SCRUM-1253 (revisão 11/10): arquivo que não existe mais abria o iframe com o
+ * JSON cru do 404 — incluindo a URL com o token. Antes de mostrar, confere se
+ * o PDF responde (o iframe mostraria o corpo do erro); 404/410/403 viram uma
+ * mensagem para a pessoa, sem URL. Imagem e vídeo abrem direto e caem na mesma
+ * mensagem pelo onError. Outros erros (ex.: HEAD não suportado) seguem normais.
+ */
+type Disponibilidade = 'checando' | 'ok' | 'indisponivel'
+function useDisponibilidade(src: string | undefined, ativo: boolean): Disponibilidade {
+  const [estado, setEstado] = useState<{ src?: string; v: Disponibilidade }>({ v: 'checando' })
+  useEffect(() => {
+    if (!ativo || !src) return
+    let vivo = true
+    fetch(src, { method: 'HEAD' })
+      .then((res) => { if (vivo) setEstado({ src, v: [403, 404, 410].includes(res.status) ? 'indisponivel' : 'ok' }) })
+      .catch(() => { if (vivo) setEstado({ src, v: 'ok' }) })
+    return () => { vivo = false }
+  }, [src, ativo])
+  if (!ativo || !src) return 'ok'
+  return estado.src === src ? estado.v : 'checando'
+}
+
+function ArquivoIndisponivel() {
+  return (
+    <div className="flex flex-col items-center gap-2 text-center text-surface-100 px-6">
+      <FileX className="w-8 h-8 opacity-70" aria-hidden />
+      <p className="text-sm font-semibold">Este arquivo não está mais disponível.</p>
+      <p className="text-xs opacity-70">Ele pode ter sido removido ou o link expirou. Peça para enviarem de novo.</p>
+    </div>
+  )
+}
+
 function MediaViewerOverlay({ message, onClose }: { message: Message | null; onClose: () => void }) {
   const open = !!message
   const { zIndex } = useLayer(open, onClose)
@@ -40,20 +72,28 @@ function MediaViewerOverlay({ message, onClose }: { message: Message | null; onC
 
   const isPdf = message?.type === 'document' && (message.mediaMimeType === 'application/pdf' || message.mediaCaption?.toLowerCase().endsWith('.pdf'))
   const canPreviewInline = isImageLike || message?.type === 'video' || (isPdf && !isNativePlatform())
+  const disponibilidade = useDisponibilidade(src, !!(open && isPdf && !isNativePlatform()))
+  const [falhou, setFalhou] = useState<string | null>(null)
+  const indisponivel = disponibilidade === 'indisponivel' || (!!message && falhou === message.id)
 
   let body: ReactNode = null
   if (message) {
-    if (isImageLike) {
+    if (indisponivel) {
+      body = <ArquivoIndisponivel />
+    } else if (isPdf && !isNativePlatform() && disponibilidade === 'checando') {
+      body = <p className="text-sm text-white/70" role="status">Abrindo…</p>
+    } else if (isImageLike) {
       body = (
         <img
           src={src}
           alt={message.mediaCaption || 'Imagem'}
           className="max-w-full max-h-full object-contain"
+          onError={() => setFalhou(message.id)}
           {...zoom.imgProps}
         />
       )
     } else if (message.type === 'video') {
-      body = <video src={src} controls autoPlay className="max-w-full max-h-full" />
+      body = <video src={src} controls autoPlay className="max-w-full max-h-full" onError={() => setFalhou(message.id)} />
     } else if (isPdf && !isNativePlatform()) {
       body = <iframe src={src} title={message.mediaCaption || 'Documento'} className="w-full h-full bg-white rounded" />
     } else {
@@ -140,7 +180,7 @@ function MediaViewerOverlay({ message, onClose }: { message: Message | null; onC
                 </button>
               </div>
             )}
-            {canPreviewInline && (
+            {canPreviewInline && !indisponivel && (
               <button
                 type="button"
                 onClick={() => void downloadMedia(src, message?.mediaCaption ?? undefined)}

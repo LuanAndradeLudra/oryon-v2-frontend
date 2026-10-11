@@ -30,6 +30,11 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
   // gets clipped by an ancestor with `overflow:hidden` (e.g. the rounded
   // wrapper of the Performance da Equipe table).
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null)
+  // SCRUM-1253 (PO, 11/10): perto da borda (o botão de Informações do
+  // contato, com o painel fechado) o balão saía da tela. Depois de medir,
+  // empurra para dentro com 8px de folga.
+  const balaoRef = useRef<HTMLDivElement>(null)
+  const [desvio, setDesvio] = useState(0)
 
   useLayoutEffect(() => {
     if (!show || !wrapperRef.current) return
@@ -44,7 +49,17 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
       right:  { top: rect.top + rect.height / 2,   left: rect.right + 8 },
     }
     setCoords(positions[side])
+    setDesvio(0)
   }, [show, side])
+
+  useLayoutEffect(() => {
+    const el = balaoRef.current
+    if (!coords || !el) return
+    const r = el.getBoundingClientRect()
+    const margem = 8
+    if (r.right > window.innerWidth - margem) setDesvio((d) => d - (r.right - (window.innerWidth - margem)))
+    else if (r.left < margem) setDesvio((d) => d + (margem - r.left))
+  }, [coords])
 
   const transforms = {
     top:    '-translate-x-1/2 -translate-y-full',
@@ -65,8 +80,9 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
       {children}
       {show && coords && createPortal(
         <div
+          ref={balaoRef}
           role="tooltip"
-          style={{ position: 'fixed', top: coords.top, left: coords.left }}
+          style={{ position: 'fixed', top: coords.top, left: coords.left + desvio }}
           // TIP-01 (spec 1a): superfície invertida (--toast/--toasttx), 24px,
           // raio 5, 11.5/500, sem borda nem sombra.
           className={cn(
