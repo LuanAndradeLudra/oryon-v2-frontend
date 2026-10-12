@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown, Clock, Inbox, ShieldAlert, UserPlus } from 'lucide-react'
+import { AlertTriangle, Check, ChevronDown, Clock, Inbox, UserPlus } from 'lucide-react'
+import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -186,13 +187,16 @@ export function FilaAoVivo({
                           </span>
                         )
                       )}
+                      {/* Auditoria 12/10: mesma linguagem da lista de Conversas — só o
+                          ⚠ na cor de alerta (o chip âmbar "Verificar" se confundia
+                          com o "Na fila" ao lado e espremia o nome). */}
                       {c.hasRecentAnomaly && (
                         <span
-                          className="inline-flex items-center gap-1 h-5 px-1.5 rounded-[6px] text-2xs font-semibold bg-status-pending-bg text-status-pending flex-shrink-0"
-                          title="A IA disse ter feito algo que o sistema não confirmou"
+                          className="inline-flex items-center justify-center w-4 h-4 text-danger flex-shrink-0"
+                          title={GUARD_LIST_BADGE_TITLE}
                         >
-                          <ShieldAlert className="w-3 h-3" aria-hidden />
-                          {celular ? <span className="sr-only">Verificar</span> : 'Verificar'}
+                          <AlertTriangle className="w-3.5 h-3.5" aria-hidden />
+                          <span className="sr-only">Verificar</span>
                         </span>
                       )}
                       {celular && chip}

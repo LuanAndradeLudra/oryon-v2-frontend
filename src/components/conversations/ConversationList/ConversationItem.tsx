@@ -139,7 +139,8 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               // tira de baixo do operador; J/K não perde a posição) — mas o selo
               // diz isso com todas as letras, em vez de só repetir o status.
               <SeloForaDoFiltro
-                title={`Esta conversa não corresponde ao filtro atual (status: ${statusLabel(conversation.status)}). Fica visível porque está aberta.`}
+                compacto
+                title={`Fora deste filtro — esta conversa não corresponde ao filtro atual (status: ${statusLabel(conversation.status)}). Fica visível porque está aberta.`}
               />
             )}
             <span className="text-[11px] text-surface-500">
@@ -188,8 +189,12 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             28/09: IA e responsável são DOIS eixos — o chip "IA" escondia o
             responsável, aparecia em linha sem agente e em conversa que a IA
             já tinha passado para a equipe (ver estadoDaIA). */}
+        {/* SCRUM-1253 (PO, 12/10 — auditoria de selos): o grupo da esquerda
+            CORTA (overflow-hidden) em vez de vazar por baixo do da direita —
+            com "Aguardando você" + verificação + espera os selos se
+            sobrepunham. Dentro do "Aguardando <nome>", só o nome encurta. */}
         <div className="flex items-center gap-1.5 mt-1">
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
             {status === "resolved" ? (
               /* PO, 23/09: mesma tinta leve do status no menu do cabeçalho
                  (verde translúcido), não mais o chip neutro. */
@@ -201,12 +206,17 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                  na mesma forma do "Resolvida" (âmbar = cor de Pendente). Ele
                  substitui o antigo "IA passou", que era o mesmo pendente lido
                  por outro ângulo (pendente + IA sem pausa) e confundia. */
-              <span className="inline-flex items-center h-5 px-1.5 rounded-[6px] text-[11px] font-semibold bg-cstatus-pending/[.14] text-cstatus-pending flex-shrink-0">
+              <span className="inline-flex items-center h-5 px-1.5 rounded-[6px] text-[11px] font-semibold bg-cstatus-pending/[.14] text-cstatus-pending min-w-0 max-w-full">
                 {/* SCRUM-1253 (PO, 06/10 — D11): o selo diz PARA QUEM a conversa
                     espera. Fila = pendentes sem responsável. */}
-                {!assignedUser ? 'Na fila'
-                  : assignedUser.id === currentUserId ? 'Aguardando você'
-                  : `Aguardando ${truncate(assignedUser.firstName, 12)}`}
+                {!assignedUser ? <span className="whitespace-nowrap">Na fila</span>
+                  : assignedUser.id === currentUserId ? <span className="whitespace-nowrap">Aguardando você</span>
+                  : (
+                    <>
+                      <span className="flex-shrink-0 whitespace-pre">Aguardando </span>
+                      <span className="truncate">{assignedUser.firstName}</span>
+                    </>
+                  )}
               </span>
             ) : null}
             {/* Revisão 11/10: "IA" só quando a IA está respondendo de fato. Em
@@ -251,26 +261,35 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 {tags.slice(0, 2).map((tag) => (
                   <i key={tag.id} className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }} aria-hidden />
                 ))}
+                {/* Auditoria 12/10: a 3ª etiqueta em diante sumia sem aviso. */}
+                {tags.length > 2 && <span className="text-[10px] font-medium text-surface-500 tabular-nums">+{tags.length - 2}</span>}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2 ml-auto flex-shrink-0 pl-2 text-[11px]">
+            {/* Auditoria 12/10: só o ícone, na cor de ALERTA — o texto
+                "Verificação pendente" em âmbar brigava por espaço com o selo
+                de status e se confundia com "Pendente". Frase no tooltip e no
+                leitor de tela. */}
             {hasRecentAnomaly && (
-              <span className="inline-flex items-center gap-1 font-semibold text-status-pending whitespace-nowrap" title={GUARD_LIST_BADGE_TITLE}>
-                <AlertTriangle className="w-3 h-3" />
-                Verificação pendente
+              <span className="inline-flex items-center justify-center w-4 h-4 text-danger" title={GUARD_LIST_BADGE_TITLE}>
+                <AlertTriangle className="w-3.5 h-3.5" aria-hidden />
+                <span className="sr-only">Verificação pendente</span>
               </span>
             )}
             {awaiting && (() => {
               // SCRUM-1253 (PO, 06/10): urgência em degraus — ver tomDaEspera.
               const tom = tomDaEspera(awaiting.minutes)
               return (
+                // Auditoria 12/10: a cor fica no PONTO (âmbar 15–59 min,
+                // vermelho 1 h+) e o texto neutro — âmbar na linha é só do
+                // status pendente.
                 <span
-                  className={cn('inline-flex items-center gap-1 whitespace-nowrap', tom === 'atencao' ? 'text-status-pending font-medium' : 'text-surface-400')}
+                  className="inline-flex items-center gap-1 whitespace-nowrap text-surface-400"
                   title={`Cliente aguardando resposta há ${chatRelTime(lastMessageAt)}`}
                 >
-                  {tom === 'atrasada' && <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-danger" />}
+                  {tom !== 'neutro' && <span aria-hidden className={cn('w-1.5 h-1.5 rounded-full', tom === 'atencao' ? 'bg-status-pending' : 'bg-danger')} />}
                   {esperaCurta(awaiting.minutes)} sem resposta
                 </span>
               )
