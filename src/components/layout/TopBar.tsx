@@ -32,6 +32,7 @@ import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropd
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { rotaPermitida } from '@/lib/rotasPorPapel'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useCobrancaOculta } from '@/hooks/useCobrancaOculta'
 import { topBarHoverProps, TopBarHoverBloom, TopBarHoverIcon } from './topBarHover'
 import api from '@/services/api'
 import {
@@ -1284,13 +1285,16 @@ export function TopBar() {
   const { user }  = useAuth()
   const { userEmail, isFeatureVisible: isFeatureVisibleForUser } = useFeatureVisibility()
   const multiPipeline = useMultiPipeline()
+  const cobrancaOculta = useCobrancaOculta()
 
   const visibleSearchIndex = useMemo(
     () => SEARCH_INDEX.filter((item) => isRouteVisible(item.href, userEmail)
       && rotaPermitida(item.href, { role: user?.role, multiPipeline })
       // Revisão 02/10: a busca não oferece seção de Configurações que o papel não abre.
-      && (item.type !== 'settings' || !user?.role || papelAlcancaSecao(item.href.replace('/settings/', ''), user.role))),
-    [userEmail, user?.role, multiPipeline],
+      && (item.type !== 'settings' || !user?.role || papelAlcancaSecao(item.href.replace('/settings/', ''), user.role))
+      // FF_OCULTAR_COBRANCA (PO 12/10): sem atalho para "Plano e cobrança".
+      && !(cobrancaOculta && item.href === '/settings/billing')),
+    [userEmail, user?.role, multiPipeline, cobrancaOculta],
   )
   const { open: openCopilot } = useCopilotContext()
   const { pageActions, pageSubtitle: dynamicSubtitle } = useTopBarActions()

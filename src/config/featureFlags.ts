@@ -182,3 +182,17 @@ export const TENANT_FLAG_MULTI_PIPELINE = 'FF_MULTI_PIPELINE'
 export function multiPipelineEnabled(featureFlags?: readonly string[] | null): boolean {
   return featureFlags?.includes(TENANT_FLAG_MULTI_PIPELINE) ?? false
 }
+
+/**
+ * Cobrança fora do Oryon (PO, 12/10 — SCRUM-1161): clientes com modelo de
+ * cobrança próprio não veem o consumo de créditos nem "Plano & faturamento".
+ * Só esconde as telas — a IA desses tenants segue liberada pela assinatura
+ * ilimitada (`creditsTotal` NULL), e o consumo continua registrado.
+ * Ao contrário dos demais flags, ligar ESCONDE: sem a linha, nada muda.
+ */
+export const TENANT_FLAG_OCULTAR_COBRANCA = 'FF_OCULTAR_COBRANCA'
+
+/** `true` quando o backend listou `FF_OCULTAR_COBRANCA` para o tenant. */
+export function cobrancaOcultaPara(featureFlags?: readonly string[] | null): boolean {
+  return featureFlags?.includes(TENANT_FLAG_OCULTAR_COBRANCA) ?? false
+}
