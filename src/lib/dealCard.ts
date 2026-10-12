@@ -66,6 +66,28 @@ export function humanDuration(ms: number): string {
   return `${days} ${days === 1 ? 'dia' : 'dias'}`
 }
 
+// DEAL-CARD-11 (spec/1e-funis.md/GAPS.md): "parado Nd" com cor de perigo —
+// o mock só dá exemplos (6 d, 9 d), sem citar o limiar exato. 5 dias fica
+// abaixo dos dois exemplos e acima do que normalmente é giro saudável de
+// etapa; ajustar se o produto definir um número oficial.
+const STUCK_DAYS_THRESHOLD = 5
+
+/** Dias parado na etapa ATUAL de um registro aberto, quando passa do limiar
+ *  de "parado" (DEAL-CARD-11) — `null` fora dessa condição (fechado, sem
+ *  dado de entrada, ou ainda dentro do normal). Não mexe em `timeInStage`
+ *  (usado por 4 outras telas) — só um sinal adicional pro card do board. */
+export function stuckDaysInStage(
+  deal: Pick<Deal, 'status' | 'stageEnteredAt' | 'updatedAt' | 'createdAt'>,
+  now: number = Date.now(),
+): number | null {
+  if (deal.status !== 'open') return null
+  const raw = deal.stageEnteredAt ?? deal.updatedAt ?? deal.createdAt
+  const entered = raw ? new Date(raw).getTime() : NaN
+  if (!Number.isFinite(entered)) return null
+  const days = Math.floor((now - entered) / DAY)
+  return days >= STUCK_DAYS_THRESHOLD ? days : null
+}
+
 /**
  * Tempo na etapa atual — "3 h na etapa"; para registro fechado, "fechado há
  * 2 h" (a partir de `closedAt`). Sem dado (`stageEnteredAt` ausente e sem

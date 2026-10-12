@@ -77,7 +77,7 @@ export function AttributeChip({
           aria-expanded={open}
           aria-label={preenchida ? `${label}: ${value}` : `Definir ${label.toLowerCase()}`}
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs leading-tight',
+            'inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1.5 text-xs leading-tight',
             'min-h-9 sm:min-h-0 transition-colors cursor-pointer',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
             'disabled:cursor-not-allowed disabled:opacity-50',
@@ -118,7 +118,7 @@ export function AttributeChip({
  */
 function ChipHeader({ label, hint }: { label: string; hint?: string }) {
   return (
-    <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-800">
+    <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-700">
       <p className="text-xs font-semibold text-surface-200">{label}</p>
       {hint && <p className="mt-0.5 text-[11px] leading-snug text-surface-500">{hint}</p>}
     </div>
@@ -145,10 +145,16 @@ export function ChipOption({
       role="menuitem"
       onClick={onSelect}
       className={cn(
-        'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm',
+        'w-full flex items-center gap-2 rounded-[10px] px-3 py-2 text-left text-sm',
         'min-h-11 sm:min-h-9 transition-colors cursor-pointer',
-        'focus-visible:outline-none focus-visible:bg-surface-800',
-        selected ? 'bg-surface-800 text-surface-50' : 'text-surface-200 hover:bg-surface-800',
+        // Eixo 10: o painel do Dropdown usa overlay-surface, que em tema claro
+        // e' branco (#FFFFFF) — igual ao surface-800 usado no hover/focus,
+        // tornando o item invisivel ao passar o mouse. --rowhover funciona
+        // sobre qualquer fundo (mesma receita do DropdownItem em ui/Dropdown.tsx)
+        // — inclusive o vidro dos menus (01/10), por isso a escolhida também
+        // usa --rowhover, com o visto teal marcando a escolha.
+        'focus-visible:outline-none focus-visible:bg-[var(--rowhover)]',
+        selected ? 'bg-[var(--rowhover)] text-surface-50' : 'text-surface-200 hover:bg-[var(--rowhover)]',
       )}
     >
       <span className="truncate">{children}</span>
@@ -183,7 +189,7 @@ export function ToggleChip({
       aria-expanded={active}
       aria-label={value ? `${label}: ${value}` : `Definir ${label.toLowerCase()}`}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs leading-tight',
+        'inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1.5 text-xs leading-tight',
         'min-h-9 sm:min-h-0 transition-colors cursor-pointer',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
         preenchida

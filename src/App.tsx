@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { isFeatureVisible } from '@/config/featureFlags'
 import { useEffect, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
@@ -42,7 +43,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
-import { isOryonStaff } from '@/lib/roleHelpers'
+import { isAdminTier, isOryonStaff } from '@/lib/roleHelpers'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TagsProvider }         from '@/contexts/TagsContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
@@ -53,6 +54,7 @@ import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { DealPanelProvider } from '@/contexts/DealPanelContext'
 import { LayerProvider } from '@/contexts/LayerContext'
 import { AppShell } from '@/components/layout/AppShell'
+import { PageTransition, sectionKeyOf } from '@/components/layout/PageTransition'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 
@@ -67,6 +69,10 @@ const SetupPage         = lazyRoute(() => import('@/pages/SetupPage').then(m => 
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
 const WelcomePage       = lazyRoute(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })))
+const PlataformaPublicaPage = lazyRoute(() => import('@/pages/landing/PaginasPublicas').then(m => ({ default: m.PlataformaPage })))
+const SolucoesPage      = lazyRoute(() => import('@/pages/landing/PaginasPublicas').then(m => ({ default: m.SolucoesPage })))
+const PerguntasPage     = lazyRoute(() => import('@/pages/landing/PaginasPublicas').then(m => ({ default: m.PerguntasPage })))
+const DemonstracaoPage  = lazyRoute(() => import('@/pages/landing/PaginasPublicas').then(m => ({ default: m.DemonstracaoPage })))
 const ForgotPasswordPage = lazyRoute(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
@@ -76,7 +82,6 @@ const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m =
 const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
 const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
 const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
-const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m => ({ default: m.PricingPage })))
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
@@ -93,6 +98,8 @@ const SkillTemplatesPage       = lazyRoute(() => import('@/pages/admin/SkillTemp
 const SkillTemplateEditorPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateEditorPage').then(m => ({ default: m.SkillTemplateEditorPage })))
 const SkillTemplateTesterPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateTesterPage').then(m => ({ default: m.SkillTemplateTesterPage })))
 const AssignSkillPage          = lazyRoute(() => import('@/pages/admin/AssignSkillPage').then(m => ({ default: m.AssignSkillPage })))
+const ConnectorRequestsPage    = lazyRoute(() => import('@/pages/admin/ConnectorRequestsPage').then(m => ({ default: m.ConnectorRequestsPage })))
+const ConnectorAdminPage       = lazyRoute(() => import('@/pages/admin/ConnectorAdminPage').then(m => ({ default: m.ConnectorAdminPage })))
 const AuditPage                = lazyRoute(() => import('@/pages/admin/AuditPage').then(m => ({ default: m.AuditPage })))
 const AiObservabilityPage      = lazyRoute(() => import('@/pages/admin/AiObservabilityPage').then(m => ({ default: m.AiObservabilityPage })))
 const AiExecutionsPage         = lazyRoute(() => import('@/pages/admin/AiExecutionsPage').then(m => ({ default: m.AiExecutionsPage })))
@@ -125,6 +132,12 @@ function OnboardingGate({ children }: { children: ReactNode }) {
   if (isOryonStaff(user?.role)) {
     return <>{children}</>
   }
+  // Revisão final 04/10: a configuração inicial é do administrador. Atendente
+  // ou supervisor convidado antes de o dono terminar caía no /setup, os dados
+  // não eram salvos (403) e mesmo assim a empresa ficava "configurada".
+  if (!isAdminTier(user?.role)) {
+    return <>{children}</>
+  }
   // F13-899: o wizard virou rota (`/setup`) — retomável e linkável. O gate só
   // redireciona; o bloqueio de mobile e o provider de linha WhatsApp moram na
   // página. `/setup` fica FORA deste gate, senão o redirect entraria em loop.
@@ -134,12 +147,19 @@ function OnboardingGate({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+/** O /setup também fecha pela URL para quem não é administrador. */
+function SoAdminNoSetup({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  if (user && !isAdminTier(user.role) && !isOryonStaff(user.role)) return <Navigate to="/home" replace />
+  return <>{children}</>
+}
+
 function ProtectedRoute({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
       <OnboardingGate>
         <AppShell>
-          {children}
+          <PageTransition>{children}</PageTransition>
         </AppShell>
       </OnboardingGate>
     </RequireAuth>
@@ -156,16 +176,21 @@ function RequireGuest({ children }: { children: ReactNode }) {
 
 // ── Animated routes ───────────────────────────────────────────────────────────
 
+/** Rotas fora do AppShell (login, cadastro, onboarding, páginas públicas). */
+const SHELL_LESS_SECTIONS = new Set([
+  '/', '/login', '/register', '/forgot-password', '/reset-password', '/activate',
+  '/set-password', '/setup', '/canva',
+  // Páginas públicas da landing (30/09: home de venda + páginas de produto).
+  '/plataforma', '/solucoes', '/perguntas', '/demonstracao',
+])
+
 function AnimatedRoutes() {
   const location = useLocation()
-  const segments = location.pathname.split('/')
-  // Por padrão a chave é o 1º segmento (transição por seção). Exceção: o
-  // perfil do contato (/contacts/:id) ganha chave própria para que o drawer
-  // aberto na lista faça crossfade suave ao "Expandir" para a página — e
-  // vice-versa no voltar.
-  const routeKey = segments[1] === 'contacts' && segments[2]
-    ? '/contacts/:id'
-    : '/' + segments[1]
+  // Todas as seções COM shell compartilham UMA chave ('shell'): trocar de
+  // seção não desmonta o AppShell (a transição é do PageTransition). O fade do
+  // wrapper de fora só acontece entre "com shell" e "sem shell" (login ↔ app).
+  const section = sectionKeyOf(location.pathname)
+  const routeKey = SHELL_LESS_SECTIONS.has(section) ? section : 'shell'
 
   return (
     <AnimatePresence initial={false}>
@@ -200,7 +225,7 @@ function AnimatedRoutes() {
           {/* Primeiro uso — protegido por login, mas FORA do OnboardingGate
               (é o destino dele) e fora do AppShell (é tela cheia). */}
           <Route path="/setup" element={
-            <RequireAuth><SetupPage /></RequireAuth>
+            <RequireAuth><SoAdminNoSetup><SetupPage /></SoAdminNoSetup></RequireAuth>
           } />
 
           {/* Protected */}
@@ -236,8 +261,10 @@ function AnimatedRoutes() {
             <ProtectedRoute><NotificationsPage /></ProtectedRoute>
           } />
           <Route path="/campaigns" element={
-            <ProtectedRoute><CampaignsPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><CampaignsPage /></RotaPorPapel></ProtectedRoute>
           } />
+          {/* Leva 9 (SCRUM-1107) — casca visual de Agendamentos, dado de
+              exemplo fixo, sem integração real de agenda por trás. */}
           {/* Raiz de settings = hub navegável (mapa das configurações) */}
           <Route path="/settings" element={
             <ProtectedRoute><SettingsPage /></ProtectedRoute>
@@ -246,18 +273,22 @@ function AnimatedRoutes() {
             <ProtectedRoute><SettingsPage /></ProtectedRoute>
           } />
           <Route path="/copilot" element={
-            <ProtectedRoute><CopilotPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><CopilotPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/marketing" element={
-            <ProtectedRoute><MarketingPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><MarketingPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/automations" element={
-            <ProtectedRoute><AutomationsPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><AutomationsPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/team" element={
-            <ProtectedRoute><TeamChatPage /></ProtectedRoute>
+            <ProtectedRoute><RotaPorPapel><TeamChatPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/agents" element={
+            <ProtectedRoute><AgentsPage /></ProtectedRoute>
+          } />
+          {/* Direção D (27/09): cada agente é uma página, a seção na URL. */}
+          <Route path="/agents/:agentId/:secao?" element={
             <ProtectedRoute><AgentsPage /></ProtectedRoute>
           } />
 
@@ -277,6 +308,14 @@ function AnimatedRoutes() {
           <Route path="/admin/skills/assign" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Atribuir skills"><AssignSkillPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
+          {/* O3 / D12: com connectorsSelfService desligada, as telas de staff de
+              Conectores também fecham por URL (o agent-server responde 404). */}
+          <Route path="/admin/connector-requests" element={isFeatureVisible('connectorsSelfService') ? (
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Solicitações de conector"><ConnectorRequestsPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          ) : <Navigate to="/admin/skill-templates" replace />} />
+          <Route path="/admin/connectors" element={isFeatureVisible('connectorsSelfService') ? (
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Conectores"><ConnectorAdminPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          ) : <Navigate to="/admin/skill-templates" replace />} />
           <Route path="/admin/audit" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Auditoria"><AuditPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
@@ -290,14 +329,16 @@ function AnimatedRoutes() {
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de agentes"><AdminAgentEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
 
-          {/* Public pricing */}
-          <Route path="/pricing" element={<PricingPage />} />
 
           {/* Canva OAuth callback — public, opened as popup */}
           <Route path="/canva/callback" element={<CanvaCallbackPage />} />
 
           {/* Welcome page — public */}
           <Route path="/" element={<WelcomePage />} />
+          <Route path="/plataforma/:slug" element={<PlataformaPublicaPage />} />
+          <Route path="/solucoes" element={<SolucoesPage />} />
+          <Route path="/perguntas" element={<PerguntasPage />} />
+          <Route path="/demonstracao" element={<DemonstracaoPage />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
         </Suspense>
@@ -309,6 +350,7 @@ function AnimatedRoutes() {
 // ── Global toast container — reads do singleton em useToast.ts ──────────────
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
+import { RotaPorPapel } from '@/components/navegacao/RotaPorPapel'
 
 function GlobalToastContainer() {
   const { toasts, dismiss } = useToast()

@@ -141,7 +141,7 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
             aria-haspopup="menu"
             aria-expanded={listaAberta}
             aria-label={`Etapa: ${ativa?.label ?? 'nenhuma'}. Trocar.`}
-            className="flex items-center gap-3 min-w-0 rounded-lg px-1 py-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+            className="flex items-center gap-3 min-w-0 rounded-[6px] px-1 py-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
           >
             <span className="flex items-center gap-1.5 shrink-0" aria-hidden>
               {ordenadas.map((s) => {
@@ -166,7 +166,7 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
               >
                 {ativa?.label}
               </span>
-              <span className="text-[10.5px] text-surface-500 shrink-0">
+              <span className="text-[11px] text-surface-500 shrink-0">
                 {idxAtivo + 1} de {ordenadas.length}
               </span>
             </span>
@@ -189,7 +189,7 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
         )
       }
     >
-      <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-800">
+      <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-700">
         <p className="text-xs font-semibold text-surface-200">Etapa</p>
         <p className="mt-0.5 text-[11px] leading-snug text-surface-500">
           Coluna do quadro em que o registro nasce.
@@ -217,8 +217,8 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
   // ─── Degrau 4 ────────────────────────────────────────────────────────────
   if (compact) {
     return (
-      <nav aria-label="Etapa de entrada" className={cn('flex items-center gap-2.5 px-4 py-2.5 bg-surface-950 border-b border-surface-800', className)}>
-        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500 shrink-0">Etapas</span>
+      <nav aria-label="Etapa de entrada" className={cn('flex items-center gap-2.5 px-4 py-2.5 bg-surface-950 border-b border-surface-700', className)}>
+        <span className="text-2xs font-mono uppercase tracking-wider text-surface-500 shrink-0">Etapas</span>
         <span className="w-px h-3 bg-surface-800 shrink-0" aria-hidden />
         {listaCompleta}
       </nav>
@@ -243,11 +243,11 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
 
        Com os dois, o pior caso vira um rótulo cortado — e cortado tem quem o
        leia: é exatamente para isso que o balão carrega o nome inteiro. */
-    <nav aria-label="Etapa de entrada" className={cn('flex items-center min-w-0 overflow-hidden px-4 py-3 bg-surface-950 border-b border-surface-800', className)}>
+    <nav aria-label="Etapa de entrada" className={cn('flex items-center min-w-0 overflow-hidden px-4 py-3 bg-surface-950 border-b border-surface-700', className)}>
       {/* Diz de que eixo a faixa fala. O cabeçalho logo acima nomeia o funil,
           então aqui basta o substantivo. */}
       <span className="flex items-center gap-2.5 shrink-0 mr-2.5">
-        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Etapas</span>
+        <span className="text-2xs font-mono uppercase tracking-wider text-surface-500">Etapas</span>
         <span className="w-px h-3 bg-surface-800" aria-hidden />
       </span>
       {itens.map((item, i) => (
@@ -317,7 +317,7 @@ function Passo({
       onClick={() => onSelect(etapa.id)}
       aria-current={ativa ? 'step' : undefined}
       className={cn(
-        'flex items-center gap-1.5 min-w-0 rounded-md px-1 py-0.5',
+        'flex items-center gap-1.5 min-w-0 rounded-[6px] px-1 py-0.5',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
         // O passo CRESCE ao passar o mouse. Numa faixa de texto pequeno, fundo
         // sozinho é fraco demais para dizer "isto reage"; escala diz na hora.
@@ -331,7 +331,7 @@ function Passo({
         'motion-reduce:transition-none',
         terminal
           ? 'cursor-default'
-          : 'cursor-pointer hover:bg-surface-900 hover:scale-[1.03] motion-reduce:hover:scale-100',
+          : 'cursor-pointer hover:bg-[var(--rowhover)] hover:scale-[1.03] motion-reduce:hover:scale-100',
       )}
     >
       {terminal ? (
@@ -384,7 +384,7 @@ function Passo({
            recurso que ainda estava livre. */
         className={cn(
           'truncate transition-colors duration-200 ease-out',
-          ativa ? 'text-[13px] font-semibold' : 'text-[12.5px]',
+          ativa ? 'text-[13px] font-semibold' : 'text-xs',
         )}
         style={ativa
           ? { color: tintaDaEtapa(cor) }

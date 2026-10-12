@@ -10,12 +10,14 @@ interface PlanCardProps {
   /** Phase 9 UX: tool calls of the same message; those with stepId are
    *  rendered inline under their matching step. */
   toolCalls?: ToolCallRecord[]
+  /** Cartões que respondem ao Copilot (ex.: "Qual linha WhatsApp?"). */
+  onSendFollowup?: (text: string) => void | Promise<void>
 }
 
 /** Phase 9: Visual representation of a TaskPlan. Each step is collapsible;
  *  functionality (auto expand/collapse, real-time chip updates, stepId
  *  tagging) is unchanged — this module only owns the presentation. */
-function PlanCardImpl({ plan, toolCalls }: PlanCardProps) {
+function PlanCardImpl({ plan, toolCalls, onSendFollowup }: PlanCardProps) {
   // Defensive: some persisted messages carry toolCalls=null (not undefined),
   // which bypasses the default-value syntax and crashed the for-of below.
   const safeToolCalls: ToolCallRecord[] = Array.isArray(toolCalls) ? toolCalls : []
@@ -39,13 +41,13 @@ function PlanCardImpl({ plan, toolCalls }: PlanCardProps) {
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="my-3 rounded-xl border border-surface-700/60 bg-surface-900/40 p-2 text-sm"
+      className="my-1 rounded-[10px] border border-surface-700/70 bg-surface-800 p-1.5 text-sm"
     >
       {/* Outer header — rationale + counter + toggle */}
       <button
         type="button"
         onClick={() => setHeaderCollapsed((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-surface-800/40"
+        className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left transition-colors hover:bg-surface-800/40"
       >
         <ListChecks className="h-4 w-4 flex-shrink-0 text-brand-400" />
         <span className="flex-1 truncate text-[13px] font-medium text-surface-100">
@@ -72,7 +74,7 @@ function PlanCardImpl({ plan, toolCalls }: PlanCardProps) {
             className="mt-1 space-y-1.5 overflow-hidden px-1 pb-1"
           >
             {plan.steps.map((step) => (
-              <PlanStepCard key={step.id} step={step} calls={callsByStep.get(step.id) ?? []} />
+              <PlanStepCard key={step.id} step={step} calls={callsByStep.get(step.id) ?? []} onSendFollowup={onSendFollowup} />
             ))}
           </motion.ol>
         )}
@@ -81,7 +83,7 @@ function PlanCardImpl({ plan, toolCalls }: PlanCardProps) {
   )
 }
 
-function PlanStepCard({ step, calls }: { step: PlanStep; calls: ToolCallRecord[] }) {
+function PlanStepCard({ step, calls, onSendFollowup }: { step: PlanStep; calls: ToolCallRecord[]; onSendFollowup?: (text: string) => void | Promise<void> }) {
   // requires_setup blockers (e.g. "no WhatsApp line") are surfaced inside
   // tool_result chips. If we auto-collapse when the step transitions to
   // 'done', those CTA cards get hidden and the operator misses the
@@ -109,25 +111,20 @@ function PlanStepCard({ step, calls }: { step: PlanStep; calls: ToolCallRecord[]
   const hasContent = calls.length > 0 || Boolean(step.error)
   const clickable = hasContent
 
-  // Compact "Tools: name1, name2, ..." line (always visible inside card header)
-  const toolNames = calls.length > 0
-    ? Array.from(new Set(calls.map((c) => c.name))).join(', ')
-    : null
-
   return (
     <motion.li
       initial={{ opacity: 0, y: -3 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="rounded-lg border border-surface-700/50 bg-surface-900/50"
+      className="rounded-[6px]"
     >
       {/* Step header row */}
       <button
         type="button"
         onClick={() => { if (clickable) setCollapsed((v) => !v) }}
         disabled={!clickable}
-        className={`flex w-full items-start gap-2 px-3 py-2 text-left ${clickable ? 'cursor-pointer hover:bg-surface-800/40' : 'cursor-default'} rounded-lg transition-colors`}
+        className={`flex w-full items-start gap-2 px-3 py-2 text-left ${clickable ? 'cursor-pointer hover:bg-surface-800/40' : 'cursor-default'} rounded-[6px] transition-colors`}
       >
         <StatusIcon status={step.status} />
 
@@ -135,16 +132,11 @@ function PlanStepCard({ step, calls }: { step: PlanStep; calls: ToolCallRecord[]
           <div className={`truncate text-[13px] font-medium ${step.status === 'failed' ? 'text-danger' : 'text-surface-100'}`}>
             {step.title}
           </div>
-          {toolNames && (
-            <div className="mt-0.5 truncate text-[11px] text-surface-500">
-              <span className="text-surface-600">Tools: </span>
-              <span className="font-mono">{toolNames}</span>
-            </div>
+          {step.status === 'running' && (
+            <div className="mt-0.5 text-xs text-surface-400">Em andamento…</div>
           )}
         </div>
 
-        <AgentChip agent={step.agent} />
-        <StatusBadge status={step.status} />
         {hasContent && (
           <ChevronDown
             className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-surface-500 transition-transform duration-200 ${collapsed ? '-rotate-90' : 'rotate-0'}`}
@@ -165,7 +157,7 @@ function PlanStepCard({ step, calls }: { step: PlanStep; calls: ToolCallRecord[]
           >
             <div className="flex flex-col gap-1.5 border-t border-surface-700/40 px-3 py-2">
               {calls.map((tc) => (
-                <ToolCallChip key={tc.id} tc={tc} />
+                <ToolCallChip key={tc.id} tc={tc} onSendFollowup={onSendFollowup} />
               ))}
               {step.error && (
                 <div className="text-xs text-danger">{truncate(step.error, 200)}</div>
@@ -191,44 +183,6 @@ function StatusIcon({ status }: { status: PlanStepStatus }) {
     default:
       return <Circle className={`${base} text-surface-500`} aria-label="Pendente" />
   }
-}
-
-const AGENT_LABEL: Record<string, string> = {
-  crm_read: 'CRM',
-  crm_write: 'CRM (escrita)',
-  analytics: 'Analytics',
-  artifact: 'Artefato',
-  composer: 'Compositor',
-  web: 'Web',
-  agent_builder: 'Builder',
-  planner: 'Planejador',
-  orchestrator: 'Orq.',
-}
-
-function AgentChip({ agent }: { agent: string }) {
-  return (
-    <span className="flex-shrink-0 rounded bg-surface-800/80 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-surface-300">
-      {AGENT_LABEL[agent] ?? agent}
-    </span>
-  )
-}
-
-function StatusBadge({ status }: { status: PlanStepStatus }) {
-  const cls =
-    status === 'done' ? 'bg-success/15 text-success border-success/30'
-    : status === 'running' ? 'bg-info/15 text-info border-info/30'
-    : status === 'failed' ? 'bg-danger/15 text-danger border-danger/30'
-    : 'bg-surface-800/70 text-surface-400 border-surface-700/60'
-  const label =
-    status === 'done' ? 'CONCLUÍDO'
-    : status === 'running' ? 'EM EXECUÇÃO'
-    : status === 'failed' ? 'FALHOU'
-    : 'PENDENTE'
-  return (
-    <span className={`flex-shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}>
-      {label}
-    </span>
-  )
 }
 
 function truncate(s: string, n: number): string {

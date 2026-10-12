@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Activity, MessageSquare, Clock, CalendarDays, Eye, Tag, Repeat2, UserPlus } from 'lucide-react'
+import { MessageSquare, Clock, CalendarDays, Eye, Repeat2, UserPlus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { contactsApi } from '@/services/api'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import type { Contact } from '@/types'
 
 function formatAbsolute(iso?: string) {
@@ -22,7 +23,7 @@ function Stat({ icon, label, value, sub }: { icon: React.ReactNode; label: strin
       <div className="min-w-0">
         <p className="text-[11px] text-surface-500 font-medium">{label}</p>
         <p className="text-sm text-surface-200 truncate">{value}</p>
-        {sub && <p className="text-[10px] text-surface-500 truncate">{sub}</p>}
+        {sub && <p className="text-[11px] text-surface-500 truncate">{sub}</p>}
       </div>
     </div>
   )
@@ -49,8 +50,6 @@ export function ContactInsightsCard({ contact }: Props) {
   }, [contact.id])
 
   const isNew = (contact.conversationCount ?? 0) <= 1
-  const daysSinceCreation = Math.floor((Date.now() - new Date(contact.createdAt).getTime()) / 86400000)
-
   const STATUS_LABELS: Record<string, string> = {
     open: 'Aberta',
     pending: 'Pendente',
@@ -58,22 +57,20 @@ export function ContactInsightsCard({ contact }: Props) {
     abandoned: 'Abandonada',
   }
 
-  return (
-    <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
-        <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
-          <Activity className="w-4 h-4 text-surface-400" /> Visão Rápida
-        </h3>
-        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-surface-700 text-surface-400 bg-surface-800">
-          {isNew ? (
-            <span className="flex items-center gap-1"><UserPlus className="w-3 h-3" /> Novo contato</span>
-          ) : (
-            <span className="flex items-center gap-1"><Repeat2 className="w-3 h-3" /> Recorrente · {contact.conversationCount} conversas</span>
-          )}
-        </span>
-      </div>
+  const actions = (
+    // SCRUM-1253 (PO, 07/10): é um estado, não um botão — texto neutro, sem pílula.
+    <span className="text-[11px] text-surface-400">
+      {isNew ? (
+        <span className="flex items-center gap-1"><UserPlus className="w-3 h-3" /> Novo contato</span>
+      ) : (
+        <span className="flex items-center gap-1"><Repeat2 className="w-3 h-3" /> Recorrente · {contact.conversationCount} conversas</span>
+      )}
+    </span>
+  )
 
-      <div className="px-4 py-4 grid grid-cols-2 gap-4">
+  return (
+    <CollapsibleSection title="Visão rápida" storageKey="contact-drawer.insights" actions={actions} className="border-t border-surface-700">
+      <div className="grid grid-cols-2 gap-4">
         {/* Last message */}
         {lastMessage && (
           <div className="col-span-2">
@@ -99,7 +96,8 @@ export function ContactInsightsCard({ contact }: Props) {
           icon={<CalendarDays className="w-3.5 h-3.5" />}
           label="Primeiro contato"
           value={contact.firstContactedAt ? formatRelative(contact.firstContactedAt)! : formatRelative(contact.createdAt)!}
-          sub={daysSinceCreation === 0 ? 'Hoje' : `Há ${daysSinceCreation} dia${daysSinceCreation > 1 ? 's' : ''}`}
+          // SCRUM-1253 (PO, 07/10): a 2ª linha é a data exata (antes repetia "há N dias").
+          sub={formatAbsolute(contact.firstContactedAt ?? contact.createdAt)}
         />
 
         {/* Last seen */}
@@ -112,27 +110,9 @@ export function ContactInsightsCard({ contact }: Props) {
           />
         )}
 
-        {/* Tags */}
-        {(contact.tags?.length ?? 0) > 0 && (
-          <div className="col-span-2">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Tag className="w-3.5 h-3.5 text-surface-500" />
-              <p className="text-[11px] text-surface-500 font-medium">Tags</p>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {contact.tags!.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="color-chip text-[11px] font-medium px-2 py-0.5 rounded-full border"
-                  style={{ ['--chip']: tag.color } as React.CSSProperties}
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Etiquetas NÃO se repetem aqui: a única seção delas no painel é a
+            TagsCard (editável). Pedido do PO, 23/09. */}
       </div>
-    </div>
+    </CollapsibleSection>
   )
 }

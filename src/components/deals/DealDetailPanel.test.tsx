@@ -2,18 +2,20 @@
 // 404 · sem acesso · ok), stepper clicável, abas, e o realtime `deal:changed`.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { escolherOpcao } from '@/test/escolherOpcao'
 import type { Deal, Pipeline, PipelineStage, User, DealStageHistoryEntry } from '@/types'
 
-const { dealsApi, usersApi, conversationsApi, socket } = vi.hoisted(() => ({
+const { dealsApi, usersApi, conversationsApi, contactsApi, socket } = vi.hoisted(() => ({
   dealsApi: {
     get: vi.fn(), history: vi.fn(), update: vi.fn(), setStatus: vi.fn(), moveStage: vi.fn(),
     movePipeline: vi.fn(), remove: vi.fn(),
   },
   usersApi: { list: vi.fn() },
   conversationsApi: { list: vi.fn() },
+  contactsApi: { get: vi.fn(() => Promise.resolve({ data: { id: 'c1', displayName: 'Marina Alves', waId: '5547999990000' } })) },
   socket: { on: vi.fn(), off: vi.fn() },
 }))
-vi.mock('@/services/api', () => ({ dealsApi, usersApi, conversationsApi }))
+vi.mock('@/services/api', () => ({ dealsApi, usersApi, conversationsApi, contactsApi }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
 
 const STAGES: PipelineStage[] = [
@@ -61,6 +63,25 @@ beforeEach(() => {
   dealsApi.history.mockResolvedValue({ data: HISTORY })
   usersApi.list.mockResolvedValue({ data: [USER] })
   conversationsApi.list.mockResolvedValue({ data: { data: [] } })
+})
+
+// Revisão 02/10: o painel troca de negócio sem desmontar; a resposta atrasada
+// do negócio anterior não pode ocupar a ficha do atual.
+describe('DealDetailPanel — troca rápida de negócio', () => {
+  it('a carga atrasada de A, chegando depois da de B, não substitui B', async () => {
+    const B: Deal = { ...DEAL, id: 'd2', title: 'Negócio do Bruno' }
+    let soltarA: (v: unknown) => void = () => {}
+    dealsApi.get.mockImplementation((id: string) => (id === 'd1'
+      ? new Promise((r) => { soltarA = r })
+      : Promise.resolve({ data: B })))
+    const { rerender } = render(<DealDetailPanel dealId="d1" />)
+    rerender(<DealDetailPanel dealId="d2" />)
+    expect((await screen.findAllByText('Negócio do Bruno')).length).toBeGreaterThan(0)
+    soltarA({ data: DEAL })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByText('Negócio da Ana')).toBeNull()
+    expect(screen.getAllByText('Negócio do Bruno').length).toBeGreaterThan(0)
+  })
 })
 
 describe('DealDetailPanel — estados de carregamento', () => {
@@ -166,7 +187,7 @@ describe('DealDetailPanel — carregado', () => {
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
     fireEvent.click(screen.getByTestId('deal-mark-won'))
-    fireEvent.change(await screen.findByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'fechou' } })
+    escolherOpcao(await screen.findByRole('combobox', { name: 'Motivo do desfecho' }), 'fechou')
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     await waitFor(() => expect(dealsApi.setStatus).toHaveBeenCalledWith('d1', { status: 'won', closeReason: 'fechou', closeNote: undefined, stageId: 's-won' }))
   })
@@ -304,5 +325,25 @@ describe('DealDetailPanel — a etapa atual se encontra sozinha', () => {
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
     expect(screen.queryByTestId('deal-current-stage')).not.toBeInTheDocument()
+  })
+})
+
+describe('DealDetailPanel — de quem é o negócio (Funis, 27/09)', () => {
+  it('mostra o nome e o telefone do contato sob o título; o nome abre o contato', async () => {
+    const onOpenContact = vi.fn()
+    render(<DealDetailPanel dealId="d1" onOpenContact={onOpenContact} />)
+    const linha = await screen.findByTestId('deal-contact-line')
+    expect(linha).toHaveTextContent('Marina Alves')
+    expect(linha).toHaveTextContent('+55 47 99999-0000')
+    fireEvent.click(within(linha).getByRole('button', { name: 'Marina Alves' }))
+    expect(onOpenContact).toHaveBeenCalledWith('c1')
+  })
+
+  it('aba controlada por quem mostra a ficha (URL): segue a prop e avisa a troca', async () => {
+    const onAbaChange = vi.fn()
+    render(<DealDetailPanel dealId="d1" aba="activity" onAbaChange={onAbaChange} />)
+    await waitFor(() => expect(screen.getByTestId('deal-tab-activity')).toHaveAttribute('aria-selected', 'true'))
+    fireEvent.click(screen.getByTestId('deal-tab-conversations'))
+    expect(onAbaChange).toHaveBeenCalledWith('conversations')
   })
 })

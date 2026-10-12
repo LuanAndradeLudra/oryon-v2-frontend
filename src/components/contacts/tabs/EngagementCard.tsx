@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import {
-  BarChart3, MessageSquare, Clock, ArrowDownLeft, ArrowUpRight,
+  MessageSquare, Clock, ArrowDownLeft, ArrowUpRight,
   CheckCheck, XCircle, Image, FileText, Mic, Video,
   TrendingUp, Target, UserCheck, Loader2, Zap,
 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { cn } from '@/lib/utils'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 
 type Stats = Awaited<ReturnType<typeof contactsApi.getStats>>['data']
 
@@ -35,13 +35,13 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 function Stat({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string | number; sub?: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="w-7 h-7 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 text-surface-400">
+      <div className="w-7 h-7 rounded-[6px] bg-surface-800 flex items-center justify-center flex-shrink-0 text-surface-400">
         {icon}
       </div>
       <div className="min-w-0">
         <p className="text-2xs text-surface-500">{label}</p>
         <p className="text-sm font-semibold text-surface-200 tabular-nums">{value}</p>
-        {sub && <p className="text-3xs text-surface-500">{sub}</p>}
+        {sub && <p className="text-2xs text-surface-500">{sub}</p>}
       </div>
     </div>
   )
@@ -54,7 +54,7 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
       <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span className="text-3xs text-surface-500 tabular-nums w-6 text-right">{value}</span>
+      <span className="text-2xs text-surface-500 tabular-nums w-6 text-right">{value}</span>
     </div>
   )
 }
@@ -83,10 +83,8 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
-        </div>
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 text-accent-dark animate-spin" />
       </div>
     )
   }
@@ -103,21 +101,14 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
   const totalMsgs = messages.total
   const maxDir = Math.max(messages.totalInbound, messages.totalOutbound)
 
-  return (
-    <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      {/* Header */}
-      <div className={cn('flex items-center px-4 py-3', hideTitle ? 'justify-start' : 'justify-between border-b border-surface-800')}>
-        {!hideTitle && (
-          <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-surface-400" /> Engajamento
-          </h3>
-        )}
-        <span className="text-2xs text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">
-          {totalMsgs} mensagens · {conversations.total} conversas
-        </span>
-      </div>
+  const actions = (
+    <span className="text-2xs text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">
+      {totalMsgs} mensagens · {conversations.total} conversas
+    </span>
+  )
 
-      <div className="px-4 py-4 flex flex-col gap-4">
+  const body = (
+    <div className="flex flex-col gap-4">
         {/* Message flow */}
         <div className="grid grid-cols-2 gap-3">
           <Stat
@@ -146,7 +137,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
         {/* Delivery stats */}
         {(messages.readCount > 0 || messages.failedCount > 0) && (
-          <div className="flex items-center gap-4 pt-1 border-t border-surface-800">
+          <div className="flex items-center gap-4 pt-1 border-t border-surface-700">
             {messages.readCount > 0 && (
               <div className="flex items-center gap-1.5">
                 <CheckCheck className="w-3 h-3 text-blue-400" />
@@ -164,11 +155,11 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
         {/* Message types */}
         {Object.keys(messages.byType).length > 1 && (
-          <div className="pt-1 border-t border-surface-800">
-            <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Tipos de mensagem</p>
+          <div className="pt-1 border-t border-surface-700">
+            <p className="text-xs text-surface-500 mb-2">Tipos de mensagem</p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(messages.byType).map(([type, count]) => (
-                <div key={type} className="flex items-center gap-1.5 text-2xs text-surface-400 bg-surface-800 px-2 py-1 rounded-lg">
+                <div key={type} className="flex items-center gap-1.5 text-2xs text-surface-400 bg-surface-800 px-2 py-1 rounded-[10px]">
                   {TYPE_ICONS[type] ?? <MessageSquare className="w-3 h-3" />}
                   <span className="capitalize">{type}</span>
                   <span className="text-surface-500 font-medium">{count}</span>
@@ -179,7 +170,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
         )}
 
         {/* Response time + assigned */}
-        <div className="grid grid-cols-2 gap-3 pt-1 border-t border-surface-800">
+        <div className="grid grid-cols-2 gap-3 pt-1 border-t border-surface-700">
           <Stat
             icon={<Clock className="w-3.5 h-3.5" />}
             label="Tempo médio de resposta"
@@ -196,8 +187,8 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
         {/* Conversation status breakdown */}
         {conversations.total > 0 && (
-          <div className="pt-1 border-t border-surface-800">
-            <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Conversas por status</p>
+          <div className="pt-1 border-t border-surface-700">
+            <p className="text-xs text-surface-500 mb-2">Conversas por status</p>
             <div className="flex gap-2">
               {Object.entries(conversations.byStatus).map(([status, count]) => {
                 const chips: Record<string, string> = {
@@ -210,7 +201,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
                 return (
                   <span
                     key={status}
-                    className="color-chip text-2xs font-medium px-2.5 py-1 rounded-full border"
+                    className="color-chip-soft inline-flex items-center h-5 text-[11px] font-semibold px-[7px] rounded-[6px] border"
                     style={{ ['--chip']: chips[status] ?? chips.abandoned } as React.CSSProperties}
                   >
                     {labels[status] ?? status} {count}
@@ -223,8 +214,8 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
         {/* Last analysis */}
         {lastAnalysis && (
-          <div className="pt-1 border-t border-surface-800">
-            <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Última análise de conversa</p>
+          <div className="pt-1 border-t border-surface-700">
+            <p className="text-xs text-surface-500 mb-2">Última análise de conversa</p>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <Target className="w-3 h-3 text-surface-400" />
@@ -244,7 +235,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
               )}
               {lastAnalysis.status === 'confirmed' && (
                 <span
-                  className="color-chip text-3xs font-medium px-2 py-0.5 rounded-full border"
+                  className="color-chip-soft inline-flex items-center h-5 text-[11px] font-semibold px-[7px] rounded-[6px] border"
                   style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
                 >
                   Confirmada
@@ -254,13 +245,27 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
             {lastAnalysis.keyTopics.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {lastAnalysis.keyTopics.map((topic, i) => (
-                  <span key={i} className="text-3xs text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">{topic}</span>
+                  <span key={i} className="text-2xs text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">{topic}</span>
                 ))}
               </div>
             )}
           </div>
         )}
-      </div>
     </div>
+  )
+
+  if (hideTitle) {
+    return (
+      <div>
+        <div className="flex items-center justify-start mb-2">{actions}</div>
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <CollapsibleSection title="Engajamento" storageKey="contact-drawer.engagement" actions={actions} className="border-t border-surface-700">
+      {body}
+    </CollapsibleSection>
   )
 }

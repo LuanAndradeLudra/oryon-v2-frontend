@@ -19,13 +19,26 @@
 // the next refetch would also put it. When the two drift, the symptom is a row
 // that appears and then vanishes — or worse, never appears.
 
-import { getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
+import { isAiActive } from '@/lib/conversationSignals'
 import type { Conversation, ConversationFilters, User } from '@/types'
 
+/** Sem acento, minúsculo — para comparar a busca com o nome do contato. */
+function normalizar(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+/**
+ * `entrada`: a conversa ainda NÃO está na lista (chegou por socket). Só aí a
+ * busca é conferida — pelo nome e telefone do contato; o servidor também acha
+ * pelo texto das mensagens, e uma linha que ele trouxe por isso não pode ser
+ * expulsa a cada atualização (28/09: antes a busca era ignorada e conversas
+ * que não batiam entravam no topo durante uma busca).
+ */
 export function conversationMatchesFilters(
   conv: Conversation,
   f: ConversationFilters,
   currentUser?: User | null,
+  opts: { entrada?: boolean } = {},
 ): boolean {
   if (f.status && f.status !== 'all' && conv.status !== f.status) return false
   if (f.whatsappNumberId && conv.whatsappNumber?.id !== f.whatsappNumberId) return false
@@ -45,7 +58,16 @@ export function conversationMatchesFilters(
   if (f.aiHandling === 'active' && !isAiActive(conv)) return false
   if (f.aiHandling === 'paused' && isAiActive(conv)) return false
   if (f.unreadOnly && conv.unreadCount === 0) return false
-  if (f.awaitingReply && !getAwaitingReply(conv)) return false
+  // Mesma regra do filtro do SERVIDOR (sem resposta humana desde a última
+  // mensagem, não encerrada) — não a do chip "sem resposta", que é mais
+  // estreita: o predicado tem que concordar com a lista paginada.
+  if (f.awaitingReply) {
+    if (conv.status === 'resolved' || conv.status === 'abandoned') return false
+    const ultima = new Date(conv.lastMessageAt).getTime()
+    const humana = conv.lastAgentReplyAt ? new Date(conv.lastAgentReplyAt).getTime() : null
+    if (humana !== null && humana >= ultima) return false
+  }
+  if (f.tagId && !(conv.tags ?? []).some((t) => t.id === f.tagId)) return false
   if (f.untagged && conv.tags && conv.tags.length > 0) return false
   if (f.needsReview && !conv.hasRecentAnomaly) return false
 
@@ -53,6 +75,14 @@ export function conversationMatchesFilters(
   // realtime path stays consistent with the paginated list.
   if (f.startDate && conv.lastMessageAt && conv.lastMessageAt < f.startDate) return false
   if (f.endDate && conv.lastMessageAt && conv.lastMessageAt >= f.endDate) return false
+
+  if (opts.entrada && f.search?.trim()) {
+    const termo = normalizar(f.search.trim())
+    const digitos = termo.replace(/\D/g, '')
+    const nome = normalizar(conv.contact?.displayName ?? '')
+    const fone = (conv.contact?.waId ?? '').replace(/\D/g, '')
+    if (!nome.includes(termo) && !(digitos.length > 0 && fone.includes(digitos))) return false
+  }
 
   return true
 }

@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Maximize2, X, AlertTriangle, Sparkles, Search, Replace } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { getAgentServerAuth } from '@/services/copilotServiceBackend'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 
 // ─── Shared utility: ExpandableTextarea ────────────────────────────────────
 // Auto-grows with content (min 6 rows, max 20 rows inline). A button in the
@@ -52,7 +53,7 @@ export function ExpandableTextarea({
   }, [value, isExpanded, minRows, maxRows])
 
   const fontClass = monospace
-    ? 'font-mono text-2xs leading-snug'
+    ? 'font-mono text-xs leading-snug'
     : 'text-xs leading-relaxed'
 
   const charCount = value.length
@@ -60,15 +61,15 @@ export function ExpandableTextarea({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">
+        <label className="text-xs font-medium text-surface-500">
           {label}
         </label>
         <div className="flex items-center gap-2">
-          <span className="text-3xs tabular-nums text-surface-500">{charCount.toLocaleString('pt-BR')} chars</span>
+          <span className="text-xs tabular-nums text-surface-500">{charCount.toLocaleString('pt-BR')} caracteres</span>
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="inline-flex items-center gap-1 text-3xs text-surface-400 hover:text-brand-300 transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-surface-400 hover:text-accent-dark transition-colors"
             aria-label="Abrir editor em tela cheia"
           >
             <Maximize2 className="h-3 w-3" />
@@ -77,7 +78,7 @@ export function ExpandableTextarea({
         </div>
       </div>
       {helperText && (
-        <p className="text-3xs text-surface-500 italic">{helperText}</p>
+        <p className="text-xs text-surface-500 italic">{helperText}</p>
       )}
       <textarea
         ref={textareaRef}
@@ -85,7 +86,7 @@ export function ExpandableTextarea({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={minRows}
-        className={`w-full px-2.5 py-2 rounded-lg border border-surface-700/60 bg-surface-800/60 text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 resize-none overflow-auto ${fontClass}`}
+        className={`w-full px-2.5 py-2 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 resize-none overflow-auto ${fontClass}`}
         style={{ minHeight: `${minRows * 16 + 16}px`, maxHeight: `${maxRows * 16 + 16}px` }}
       />
       {isExpanded && createPortal(
@@ -129,8 +130,8 @@ function ExpandedEditorModal({
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="relative flex h-[88vh] w-[min(96vw,1100px)] flex-col overflow-hidden rounded-2xl border border-surface-700/60 bg-surface-900 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-surface-800 px-5 py-3">
+      <div className="relative flex h-[88vh] w-[min(96vw,1100px)] flex-col overflow-hidden rounded-[10px] border border-surface-700/60 bg-surface-900 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-surface-700 px-5 py-3">
           <h3 className="text-sm font-medium text-surface-100">{label}</h3>
           <div className="flex items-center gap-3">
             <span className="text-xs tabular-nums text-surface-400">
@@ -139,7 +140,7 @@ function ExpandedEditorModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-800 hover:text-surface-100"
+              className="rounded-[6px] p-1.5 text-surface-400 hover:bg-surface-800 hover:text-surface-100"
               aria-label="Fechar"
             >
               <X className="h-4 w-4" />
@@ -151,14 +152,14 @@ function ExpandedEditorModal({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoFocus
-          className={`flex-1 resize-none bg-surface-900 px-6 py-4 text-surface-100 placeholder:text-surface-600 focus:outline-none ${fontClass}`}
+          className={`flex-1 resize-none bg-surface-900 px-6 py-4 text-surface-100 placeholder:text-surface-500 focus:outline-none ${fontClass}`}
         />
-        <div className="flex items-center justify-between border-t border-surface-800 px-5 py-2.5 text-2xs text-surface-500">
+        <div className="flex items-center justify-between border-t border-surface-700 px-5 py-2.5 text-xs text-surface-500">
           <span>Esc para fechar. As alterações já estão salvas no card.</span>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-brand-500/10 px-3 py-1 text-brand-300 hover:bg-brand-500/20"
+            className="rounded-[6px] bg-brand-500/10 px-3 py-1 text-brand-300 hover:bg-brand-500/20"
           >
             Pronto
           </button>
@@ -184,19 +185,19 @@ export function MatchCountHint({
   replaceAll: boolean
 }) {
   if (loading) {
-    return <p className="text-3xs text-surface-500 italic">Buscando conteúdo atual...</p>
+    return <p className="text-xs text-surface-500 italic">Buscando conteúdo atual...</p>
   }
   if (currentText === null) {
     return null // not fetched yet or failed silently
   }
   if (!find) {
-    return <p className="text-3xs text-surface-500 italic">Preencha o campo &quot;Buscar&quot; para ver quantas ocorrências casam.</p>
+    return <p className="text-xs text-surface-500 italic">Preencha o campo &quot;Buscar&quot; para ver quantas ocorrências casam.</p>
   }
   // Count occurrences in the current text
   const count = currentText.split(find).length - 1
   if (count === 0) {
     return (
-      <p className="text-3xs flex items-center gap-1 text-danger">
+      <p className="text-xs flex items-center gap-1 text-danger">
         <AlertTriangle className="h-3 w-3" />
         <span><strong>0 ocorrências</strong> encontradas — a tool vai falhar. Verifique pontuação/acentos exatos.</span>
       </p>
@@ -204,7 +205,7 @@ export function MatchCountHint({
   }
   if (count === 1) {
     return (
-      <p className="text-3xs flex items-center gap-1 text-success">
+      <p className="text-xs flex items-center gap-1 text-success">
         <Sparkles className="h-3 w-3" />
         <span><strong>1 ocorrência</strong> encontrada — substituição segura.</span>
       </p>
@@ -213,14 +214,14 @@ export function MatchCountHint({
   // Multiple matches
   if (replaceAll) {
     return (
-      <p className="text-3xs flex items-center gap-1 text-warning">
+      <p className="text-xs flex items-center gap-1 text-warning">
         <AlertTriangle className="h-3 w-3" />
         <span><strong>{count} ocorrências</strong> — todas serão substituídas (replaceAll).</span>
       </p>
     )
   }
   return (
-    <p className="text-3xs flex items-center gap-1 text-danger">
+    <p className="text-xs flex items-center gap-1 text-danger">
       <AlertTriangle className="h-3 w-3" />
       <span><strong>{count} ocorrências</strong> — a tool vai falhar sem replaceAll. Use find mais específico OU ative replaceAll.</span>
     </p>
@@ -257,20 +258,20 @@ export function DiffContextPreview({ find, replace, currentText }: DiffContextPr
 
   return (
     <div className="mt-2 space-y-1.5">
-      <div className="text-3xs font-medium uppercase tracking-wider text-surface-500">
+      <div className="text-xs font-medium text-surface-500">
         Pré-visualização (primeira ocorrência)
       </div>
       {/* BEFORE — red-highlighted find */}
-      <div className="rounded-md border border-danger/20 bg-danger/5 px-2.5 py-1.5">
-        <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-danger">antes</div>
-        <pre className="whitespace-pre-wrap break-words font-mono text-2xs leading-snug text-surface-300">
+      <div className="rounded-[6px] border border-danger/20 bg-danger/5 px-2.5 py-1.5">
+        <div className="mb-0.5 text-[11px] font-semibold text-danger">antes</div>
+        <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-snug text-surface-300">
 {truncBefore ? '… ' : ''}{leading}<span className="rounded bg-danger/30 px-0.5 text-danger line-through decoration-danger/70">{find}</span>{trailing}{truncAfter ? ' …' : ''}
         </pre>
       </div>
       {/* AFTER — green-highlighted replace */}
-      <div className="rounded-md border border-success/20 bg-success/5 px-2.5 py-1.5">
-        <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-success">depois</div>
-        <pre className="whitespace-pre-wrap break-words font-mono text-2xs leading-snug text-surface-300">
+      <div className="rounded-[6px] border border-success/20 bg-success/5 px-2.5 py-1.5">
+        <div className="mb-0.5 text-[11px] font-semibold text-success">depois</div>
+        <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-snug text-surface-300">
 {truncBefore ? '… ' : ''}{leading}<span className="rounded bg-success/30 px-0.5 text-success">{replace || <span className="italic text-success/70">(vazio)</span>}</span>{trailing}{truncAfter ? ' …' : ''}
         </pre>
       </div>
@@ -361,8 +362,8 @@ export function SystemPromptApprovalPreview({
   return (
     <div className="space-y-3">
       {/* Agent reference */}
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
+      <div className="rounded-[10px] border border-surface-700 bg-surface-900/50 px-3 py-2">
+        <div className="text-xs font-medium text-surface-500">Agente alvo</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
       </div>
 
@@ -381,14 +382,14 @@ export function SystemPromptApprovalPreview({
       {isReplace && (
         <div className="space-y-2.5">
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-surface-500">
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-surface-500">
               <Search className="h-3 w-3" /> Buscar (texto EXATO)
             </div>
             <textarea
               value={String(input.find ?? '')}
               onChange={(e) => onChange('find', e.target.value)}
               rows={4}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-2xs leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-xs leading-snug text-surface-200 placeholder:text-surface-500 focus:border-brand-500/50 focus:outline-none resize-none"
               placeholder="Trecho exato a procurar no prompt atual (case-sensitive)"
             />
             <MatchCountHint
@@ -400,14 +401,14 @@ export function SystemPromptApprovalPreview({
           </div>
 
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-surface-500">
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-surface-500">
               <Replace className="h-3 w-3" /> Substituir por
             </div>
             <textarea
               value={String(input.replace ?? '')}
               onChange={(e) => onChange('replace', e.target.value)}
               rows={4}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-2xs leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-xs leading-snug text-surface-200 placeholder:text-surface-500 focus:border-brand-500/50 focus:outline-none resize-none"
               placeholder="Texto que substitui o trecho acima"
             />
           </div>
@@ -432,7 +433,7 @@ export function SystemPromptApprovalPreview({
 
       {isUpdate && (
         <div className="space-y-2.5">
-          <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+          <div className="flex items-start gap-2 rounded-[10px] border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <div>
               <strong>Reescrita TOTAL do system prompt.</strong> O conteúdo anterior será substituído inteiramente.
@@ -476,12 +477,12 @@ export function KnowledgeDocApprovalPreview({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
+      <div className="rounded-[10px] border border-surface-700 bg-surface-900/50 px-3 py-2">
+        <div className="text-xs font-medium text-surface-500">Agente alvo</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         {docId && (
           <>
-            <div className="mt-1.5 text-3xs font-medium text-surface-500 uppercase tracking-wider">Documento</div>
+            <div className="mt-1.5 text-xs font-medium text-surface-500">Documento</div>
             <div className="font-mono text-xs text-surface-300">{docId}</div>
           </>
         )}
@@ -491,27 +492,29 @@ export function KnowledgeDocApprovalPreview({
         <>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome do documento</label>
+              <label className="mb-1 block text-xs font-medium text-surface-500">Nome do documento</label>
               <input
                 type="text"
                 value={String(input.documentName ?? '')}
                 onChange={(e) => onChange('documentName', e.target.value)}
-                className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+                className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
                 placeholder="Ex: Política de devolução"
               />
             </div>
             <div>
-              <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Tipo</label>
-              <select
+              <label className="mb-1 block text-xs font-medium text-surface-500">Tipo</label>
+              <SelectMenu
+                aria-label="Tipo"
                 value={String(input.sourceType ?? 'text')}
                 onChange={(e) => onChange('sourceType', e.target.value)}
-                className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+                chevronClassName="right-2 h-3 w-3"
+                className="h-auto w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
               >
                 <option value="text">Texto</option>
                 <option value="pdf">PDF</option>
                 <option value="url">URL</option>
                 <option value="file">Arquivo</option>
-              </select>
+              </SelectMenu>
             </div>
           </div>
           <ExpandableTextarea
@@ -537,14 +540,14 @@ export function KnowledgeDocApprovalPreview({
       {isReplace && (
         <div className="space-y-2.5">
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-surface-500">
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-surface-500">
               <Search className="h-3 w-3" /> Buscar no documento
             </div>
             <textarea
               value={String(input.find ?? '')}
               onChange={(e) => onChange('find', e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-2xs leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-xs leading-snug text-surface-200 placeholder:text-surface-500 focus:border-brand-500/50 focus:outline-none resize-none"
             />
             <MatchCountHint
               find={String(input.find ?? '')}
@@ -554,14 +557,14 @@ export function KnowledgeDocApprovalPreview({
             />
           </div>
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-surface-500">
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-surface-500">
               <Replace className="h-3 w-3" /> Substituir por
             </div>
             <textarea
               value={String(input.replace ?? '')}
               onChange={(e) => onChange('replace', e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-2xs leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-xs leading-snug text-surface-200 placeholder:text-surface-500 focus:border-brand-500/50 focus:outline-none resize-none"
             />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -584,7 +587,7 @@ export function KnowledgeDocApprovalPreview({
 
       {isUpdate && (
         <div className="space-y-2.5">
-          <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+          <div className="flex items-start gap-2 rounded-[10px] border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <div>
               <strong>Reescrita TOTAL do documento.</strong> O conteúdo anterior será substituído e o RAG re-indexado.
@@ -627,33 +630,33 @@ export function HandoffRuleApprovalPreview({
   if (isRemove) {
     return (
       <div className="space-y-2.5">
-        <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-          <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+        <div className="rounded-[10px] border border-surface-700 bg-surface-900/50 px-3 py-2">
+          <div className="text-xs font-medium text-surface-500">Agente</div>
           <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         </div>
-        <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+        <div className="flex items-start gap-2 rounded-[10px] border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div>Remover uma regra de handoff do agente. Esta ação <strong>não pode ser desfeita</strong>.</div>
         </div>
         {input.ruleName !== undefined && (
           <div>
-            <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome da regra a remover</label>
+            <label className="mb-1 block text-xs font-medium text-surface-500">Nome da regra a remover</label>
             <input
               type="text"
               value={String(input.ruleName ?? '')}
               onChange={(e) => onChange('ruleName', e.target.value)}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+              className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
             />
           </div>
         )}
         {input.ruleIndex !== undefined && (
           <div>
-            <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Índice da regra (0-based)</label>
+            <label className="mb-1 block text-xs font-medium text-surface-500">Número da regra (a 1ª é 0)</label>
             <input
               type="number"
               value={String(input.ruleIndex ?? '')}
               onChange={(e) => onChange('ruleIndex', e.target.value)}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+              className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
             />
           </div>
         )}
@@ -674,24 +677,24 @@ export function HandoffRuleApprovalPreview({
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+      <div className="rounded-[10px] border border-surface-700 bg-surface-900/50 px-3 py-2">
+        <div className="text-xs font-medium text-surface-500">Agente</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
       </div>
 
       <div>
-        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome da regra</label>
+        <label className="mb-1 block text-xs font-medium text-surface-500">Nome da regra</label>
         <input
           type="text"
           value={String(rule.name ?? '')}
           onChange={(e) => updateRule('name', e.target.value)}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+          className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
           placeholder="Ex: Pedido de cancelamento"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">
+        <label className="mb-1 block text-xs font-medium text-surface-500">
           Palavras-chave (separadas por vírgula)
         </label>
         <textarea
@@ -701,60 +704,64 @@ export function HandoffRuleApprovalPreview({
             updateRule('keywords', arr)
           }}
           rows={2}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
+          className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
           placeholder="cancelar, cancelamento, desistir, desistência"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Modo</label>
-          <select
+          <label className="mb-1 block text-xs font-medium text-surface-500">Modo</label>
+          <SelectMenu
+            aria-label="Modo"
             value={String(rule.matchMode ?? 'any_keyword')}
             onChange={(e) => updateRule('matchMode', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_MATCH_MODES.map((m) => (
-              <option key={m.value} value={m.value} className="bg-surface-900">{m.label}</option>
+              <option key={m.value} value={m.value}>{m.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
         <div>
-          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Ação</label>
-          <select
+          <label className="mb-1 block text-xs font-medium text-surface-500">Ação</label>
+          <SelectMenu
+            aria-label="Ação"
             value={String(rule.action ?? 'human_handoff')}
             onChange={(e) => updateRule('action', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_ACTIONS.map((a) => (
-              <option key={a.value} value={a.value} className="bg-surface-900">{a.label}</option>
+              <option key={a.value} value={a.value}>{a.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       </div>
 
       <div>
-        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">
+        <label className="mb-1 block text-xs font-medium text-surface-500">
           Template de resposta (opcional)
         </label>
         <textarea
           value={String(rule.template ?? '')}
           onChange={(e) => updateRule('template', e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
+          className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
           placeholder="Mensagem mostrada ao cliente quando a regra casa."
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">
+        <label className="mb-1 block text-xs font-medium text-surface-500">
           Departamento (opcional)
         </label>
         <input
           type="text"
           value={String(rule.department ?? '')}
           onChange={(e) => updateRule('department', e.target.value)}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+          className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
           placeholder="Ex: vendas, suporte, financeiro"
         />
       </div>
@@ -780,8 +787,8 @@ export function AgentConfigApprovalPreview({
   return (
     <div className="space-y-2.5">
       {!isCreate && (
-        <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-          <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+        <div className="rounded-[10px] border border-surface-700 bg-surface-900/50 px-3 py-2">
+          <div className="text-xs font-medium text-surface-500">Agente</div>
           <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
         </div>
       )}
@@ -789,43 +796,43 @@ export function AgentConfigApprovalPreview({
       {(isCreate || isMetadata) && (
         <>
           <div>
-            <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome</label>
+            <label className="mb-1 block text-xs font-medium text-surface-500">Nome</label>
             <input
               type="text"
               value={String(input.name ?? '')}
               onChange={(e) => onChange('name', e.target.value)}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+              className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
               placeholder="Ex: SDR Vendas, Suporte Técnico"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Setor</label>
+              <label className="mb-1 block text-xs font-medium text-surface-500">Setor</label>
               <input
                 type="text"
                 value={String(input.sector ?? '')}
                 onChange={(e) => onChange('sector', e.target.value)}
-                className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+                className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
                 placeholder="saúde, varejo..."
               />
             </div>
             <div>
-              <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Ícone</label>
+              <label className="mb-1 block text-xs font-medium text-surface-500">Ícone</label>
               <input
                 type="text"
                 value={String(input.icon ?? 'bot')}
                 onChange={(e) => onChange('icon', e.target.value)}
-                className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+                className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
               />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Objetivo</label>
+            <label className="mb-1 block text-xs font-medium text-surface-500">Objetivo</label>
             <textarea
               value={String(input.objective ?? '')}
               onChange={(e) => onChange('objective', e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
               placeholder="Ex: qualificar leads e agendar demos"
             />
           </div>
@@ -834,16 +841,18 @@ export function AgentConfigApprovalPreview({
 
       {isStatus && (
         <div>
-          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Novo status</label>
-          <select
+          <label className="mb-1 block text-xs font-medium text-surface-500">Novo status</label>
+          <SelectMenu
+            aria-label="Novo status"
             value={String(input.status ?? 'draft')}
             onChange={(e) => onChange('status', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {AGENT_STATUSES.map((s) => (
-              <option key={s.value} value={s.value} className="bg-surface-900">{s.label}</option>
+              <option key={s.value} value={s.value}>{s.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       )}
     </div>
@@ -861,21 +870,21 @@ export function AgentFaqApprovalPreview({
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+      <div className="rounded-[10px] border border-surface-700 bg-surface-900/50 px-3 py-2">
+        <div className="text-xs font-medium text-surface-500">Agente</div>
         <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
       </div>
       <div>
-        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome da FAQ</label>
+        <label className="mb-1 block text-xs font-medium text-surface-500">Nome da FAQ</label>
         <input
           type="text"
           value={String(input.name ?? '')}
           onChange={(e) => onChange('name', e.target.value)}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+          className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
         />
       </div>
       <div>
-        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Palavras-chave</label>
+        <label className="mb-1 block text-xs font-medium text-surface-500">Palavras-chave</label>
         <textarea
           value={keywords}
           onChange={(e) => {
@@ -883,30 +892,32 @@ export function AgentFaqApprovalPreview({
             onChange('keywords', JSON.stringify(arr))
           }}
           rows={2}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
+          className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
           placeholder="preço, valor, custo, quanto custa"
         />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Modo</label>
-          <select
+          <label className="mb-1 block text-xs font-medium text-surface-500">Modo</label>
+          <SelectMenu
+            aria-label="Modo"
             value={String(input.matchMode ?? 'any_keyword')}
             onChange={(e) => onChange('matchMode', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {HANDOFF_MATCH_MODES.map((m) => (
-              <option key={m.value} value={m.value} className="bg-surface-900">{m.label}</option>
+              <option key={m.value} value={m.value}>{m.label}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
         <div>
-          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Prioridade</label>
+          <label className="mb-1 block text-xs font-medium text-surface-500">Prioridade</label>
           <input
             type="number"
             value={String(input.priority ?? '0')}
             onChange={(e) => onChange('priority', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+            className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
           />
         </div>
       </div>
@@ -928,50 +939,52 @@ export function AgentToolHttpApprovalPreview({
 }: ApprovalPreviewProps) {
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+      <div className="rounded-[10px] border border-surface-700 bg-surface-900/50 px-3 py-2">
+        <div className="text-xs font-medium text-surface-500">Agente</div>
         <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
       </div>
       <div className="grid grid-cols-[1fr_auto] gap-2">
         <div>
-          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome</label>
+          <label className="mb-1 block text-xs font-medium text-surface-500">Nome</label>
           <input
             type="text"
             value={String(input.name ?? '')}
             onChange={(e) => onChange('name', e.target.value)}
-            className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+            className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
           />
         </div>
         <div>
-          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Método</label>
-          <select
+          <label className="mb-1 block text-xs font-medium text-surface-500">Método</label>
+          <SelectMenu
+            aria-label="Método"
             value={String(input.method ?? 'GET')}
             onChange={(e) => onChange('method', e.target.value)}
-            className="rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none appearance-none cursor-pointer"
+            chevronClassName="right-2 h-3 w-3"
+            className="h-auto rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 pr-7 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none cursor-pointer"
           >
             {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => (
-              <option key={m} value={m} className="bg-surface-900">{m}</option>
+              <option key={m} value={m}>{m}</option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
       </div>
       <div>
-        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">URL</label>
+        <label className="mb-1 block text-xs font-medium text-surface-500">URL</label>
         <input
           type="text"
           value={String(input.url ?? '')}
           onChange={(e) => onChange('url', e.target.value)}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 font-mono text-2xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+          className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 font-mono text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
           placeholder="https://api.exemplo.com/endpoint"
         />
       </div>
       <div>
-        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Descrição (o que o LLM chama isso)</label>
+        <label className="mb-1 block text-xs font-medium text-surface-500">Descrição (como a IA entende esta ferramenta)</label>
         <textarea
           value={String(input.description ?? '')}
           onChange={(e) => onChange('description', e.target.value)}
           rows={2}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
+          className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
         />
       </div>
     </div>
@@ -988,8 +1001,8 @@ export function CompanyBrainApprovalPreview({
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
-        Esta alteração afeta <strong>TODOS os agentes</strong> do tenant.
+      <div className="rounded-[10px] border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
+        Esta alteração afeta <strong>todos os agentes</strong> da sua empresa.
       </div>
 
       {isBrain && (
@@ -1003,20 +1016,20 @@ export function CompanyBrainApprovalPreview({
           ].map(([key, label]) => (
             input[key as string] !== undefined ? (
               <div key={key as string}>
-                <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">{label}</label>
+                <label className="mb-1 block text-xs font-medium text-surface-500">{label}</label>
                 {(key === 'description' || key === 'productsServices') ? (
                   <textarea
                     value={String(input[key as string] ?? '')}
                     onChange={(e) => onChange(key as string, e.target.value)}
                     rows={3}
-                    className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
+                    className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none resize-none"
                   />
                 ) : (
                   <input
                     type="text"
                     value={String(input[key as string] ?? '')}
                     onChange={(e) => onChange(key as string, e.target.value)}
-                    className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
+                    className="w-full rounded-[6px] border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 text-xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
                   />
                 )}
               </div>
@@ -1034,7 +1047,7 @@ export function CompanyBrainApprovalPreview({
             minRows={6} maxRows={20}
           />
           {input.documents !== undefined && (
-            <div className="rounded-lg border border-surface-800 bg-surface-900/40 px-3 py-2 text-2xs text-surface-400">
+            <div className="rounded-[10px] border border-surface-700 bg-surface-900/40 px-3 py-2 text-xs text-surface-400">
               {Array.isArray(input.documents) ? `${(input.documents as unknown[]).length} documento(s) na payload` : 'documents incluído'}
             </div>
           )}

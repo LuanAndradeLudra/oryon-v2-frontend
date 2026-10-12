@@ -83,7 +83,8 @@ export function EmojiPickerButton({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors',
+          // CONV-CHAT-36: ícone de ação do composer = 28×28 raio 6 cor --tx2, hover --rowhover.
+          'flex items-center justify-center rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors',
           className,
         )}
         title="Emoji"

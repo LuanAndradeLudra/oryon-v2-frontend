@@ -40,7 +40,7 @@ function BlockTitle({ icon: Icon, children, tone = 'default' }: {
   icon: typeof Quote; children: ReactNode; tone?: 'default' | 'warn' | 'ok'
 }) {
   return (
-    <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium flex items-center gap-1.5 mb-2">
+    <p className="text-2xs font-semibold text-surface-500 flex items-center gap-1.5 mb-2">
       <Icon className={cn('w-3.5 h-3.5',
         tone === 'warn' ? 'text-[var(--color-warning)]' : tone === 'ok' ? 'text-emerald-400' : 'text-surface-500')} />
       {children}
@@ -53,7 +53,7 @@ function Detail({ icon: Icon, label, children }: { icon: typeof Quote; label: st
     <div className="flex items-start gap-2.5">
       <Icon className="w-4 h-4 text-surface-500 flex-shrink-0 mt-0.5" />
       <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium">{label}</p>
+        <p className="text-2xs font-semibold text-surface-500">{label}</p>
         <div className="text-sm text-surface-200 break-words">{children}</div>
       </div>
     </div>
@@ -193,7 +193,7 @@ export function AnomalyDetailModal({
             onClick={handleResolve}
             disabled={resolving}
             style={{ ['--chip']: 'var(--color-brand-600)' } as CSSProperties}
-            className="color-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border hover:brightness-110 disabled:opacity-60 transition"
+            className="color-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] text-sm font-semibold border hover:brightness-110 disabled:opacity-60 transition"
           >
             {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
             {resolving ? 'Marcando…' : 'Marcar como verificada'}
@@ -206,7 +206,7 @@ export function AnomalyDetailModal({
           {/* Banner — largura total, sempre no topo */}
           <div
             className={cn(
-              'anomaly-elevated-surface flex items-start gap-2.5 rounded-lg px-3 py-2.5 border flex-shrink-0',
+              'anomaly-elevated-surface flex items-start gap-2.5 rounded-[10px] px-3 py-2.5 border flex-shrink-0',
               (isHandoff || isReviewed) ? 'bg-surface-700/50 border-l-[3px]' : 'bg-surface-700/50',
             )}
             style={
@@ -249,7 +249,7 @@ export function AnomalyDetailModal({
                 <BlockTitle icon={MessageSquareOff} tone="warn">
                   Mensagem retida (não enviada ao cliente)
                 </BlockTitle>
-                <div className="anomaly-elevated-surface flex-1 min-h-0 overflow-y-auto rounded-lg bg-surface-700/50 border px-3 py-2.5">
+                <div className="anomaly-elevated-surface flex-1 min-h-0 overflow-y-auto rounded-[10px] bg-surface-700/50 border px-3 py-2.5">
                   <p className="text-sm text-surface-200 whitespace-pre-wrap break-words leading-relaxed">
                     {renderHighlighted(anomaly.blockedText!, findings)}
                   </p>
@@ -286,7 +286,7 @@ export function AnomalyDetailModal({
                 </div>
               )}
               {isHandoff && (
-                <div className="anomaly-elevated-surface-compact rounded-lg bg-surface-700/50 border px-3 py-2.5 flex-shrink-0">
+                <div className="anomaly-elevated-surface-compact rounded-[10px] bg-surface-700/50 border px-3 py-2.5 flex-shrink-0">
                   <p className="text-xs font-medium text-surface-200 mb-1">O que verificar</p>
                   <p className="text-xs text-surface-400">
                     {guardCheckGuidance(anomaly.outcome, anomaly.claimType)}
@@ -299,11 +299,11 @@ export function AnomalyDetailModal({
                   <BlockTitle icon={XCircle} tone="warn">Falha no retorno da skill</BlockTitle>
                   <div className="space-y-2">
                     {failures.map((f, i) => (
-                      <div key={i} className="rounded-lg bg-red-500/10 border border-red-500/25 px-3 py-2">
+                      <div key={i} className="rounded-[10px] bg-red-500/10 border border-red-500/25 px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium text-red-200 truncate">{f.name}</span>
                           {f.statusCode != null && (
-                            <span className="text-[10px] font-mono text-red-300/80 flex-shrink-0">HTTP {f.statusCode}</span>
+                            <span className="text-[11px] font-mono text-red-300/80 flex-shrink-0">HTTP {f.statusCode}</span>
                           )}
                         </div>
                         {f.message && <p className="text-xs text-surface-300 mt-1 break-words">{f.message}</p>}
@@ -341,7 +341,7 @@ export function AnomalyDetailModal({
                 )}
 
                 {anomaly.outcome && (
-                  <p className="text-[10px] text-surface-600">código técnico: {anomaly.outcome}</p>
+                  <p className="text-[11px] text-surface-600">código técnico: {anomaly.outcome}</p>
                 )}
               </div>
             </div>

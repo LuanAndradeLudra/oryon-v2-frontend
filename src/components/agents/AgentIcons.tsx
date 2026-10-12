@@ -19,15 +19,50 @@ export const AGENT_ICONS = [
   { id: 'zap',        Icon: Zap,           bg: 'bg-yellow-500',  hoverBg: 'hover:bg-yellow-500',  shadow: 'shadow-yellow-900/40',  stroke: 'text-yellow-700',   hoverStroke: 'group-hover:text-white' },
 ]
 
-export function AgentIcon({ iconId, className }: { iconId?: string; className?: string }) {
+/** Cor de cada ícone em TOKENS do tema (antes: paleta crua do Tailwind, e o
+ *  ícone do robô ficava preto sobre teal escuro no tema claro). Tile suave:
+ *  12–16% da cor no fundo, o traço na cor — lê bem nos dois temas. */
+const COR_DO_ICONE: Record<string, string> = {
+  bot: 'var(--color-brand-500)',
+  headphones: 'var(--color-accent-violet)',
+  message: 'var(--color-accent-blue)',
+  star: 'var(--color-accent-amber)',
+  bag: 'var(--color-accent-amber)',
+  home: 'var(--color-brand-500)',
+  trending: 'var(--color-accent-green)',
+  briefcase: 'var(--color-accent-violet)',
+  rocket: 'var(--color-accent-blue)',
+  shield: 'var(--color-status-muted)',
+  book: 'var(--color-accent-green)',
+  zap: 'var(--color-accent-amber)',
+}
+
+export function AgentIcon({ iconId, className, dashed }: { iconId?: string; className?: string; dashed?: boolean }) {
   const entry = AGENT_ICONS.find(i => i.id === iconId) ?? AGENT_ICONS[0]
-  const { Icon, bg, shadow } = entry
-  // The bot's bg-brand-600 token is near-white in dark mode → text-white loses
-  // contrast and the icon disappears. Mirror the picker's contrast fix here.
-  const iconColor = entry.id === 'bot' ? 'text-black' : 'text-white'
+  const { Icon } = entry
+  // Rascunho = sem fundo, borda tracejada e ícone terciário.
+  if (dashed) {
+    return (
+      <div className={cn('rounded-[10px] flex items-center justify-center flex-shrink-0 border border-dashed border-[var(--bd2)]', className)}>
+        <Icon className="w-[45%] h-[45%] text-surface-500" aria-hidden />
+      </div>
+    )
+  }
+  const cor = COR_DO_ICONE[entry.id] ?? COR_DO_ICONE.bot
   return (
-    <div className={cn('rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg', bg, shadow, className)}>
-      <Icon className={cn('w-[45%] h-[45%]', iconColor)} />
+    <div
+      className={cn('rounded-[10px] flex items-center justify-center flex-shrink-0 border', className)}
+      // SCRUM-1253 (PO, 07/10): ladrilho SÓLIDO com o desenho em branco — o
+      // idioma do círculo teal da IA em Conversas (antes, tinta pálida que
+      // lavava no claro).
+      style={{
+        color: '#FFFFFF',
+        backgroundColor: `color-mix(in oklab, ${cor} 74%, black)`,
+        borderColor: 'transparent',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,.18)',
+      }}
+    >
+      <Icon className="w-[52%] h-[52%]" strokeWidth={2} aria-hidden />
     </div>
   )
 }

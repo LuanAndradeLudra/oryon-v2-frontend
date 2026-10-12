@@ -6,6 +6,7 @@ import { formatRelativeTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { ActorChip } from '@/components/ui/ActorChip'
 import type { ActivityEvent, ActivityEventType } from '@/types/dashboard'
+import { emFrase } from '@/lib/emFrase'
 
 // Each entry maps an ActivityEventType to its ICON only — the text comes
 // from DashboardPage, which delegates to activityFormatter.formatActivity.
@@ -48,12 +49,12 @@ export function ActivityFeed({ events }: { events: ActivityEvent[] }) {
   //
   // Net effect: panel == sibling table height, always. No magic numbers.
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden h-full relative min-h-[320px]">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden h-full relative min-h-[320px]">
       <div className="absolute inset-0 flex flex-col">
-        <div className="px-5 py-4 border-b border-surface-800 flex items-center justify-between flex-shrink-0">
+        <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between flex-shrink-0">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-surface-100">Atividade Recente</p>
-            <p className="text-[10px] text-surface-500 mt-0.5">Últimas 4 horas</p>
+            <p className="text-sm font-semibold text-surface-100">{emFrase('Atividade Recente')}</p>
+            <p className="text-2xs text-surface-500 mt-0.5">Últimas 4 horas</p>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
@@ -75,9 +76,12 @@ export function ActivityFeed({ events }: { events: ActivityEvent[] }) {
           // Layout: ícone da operação à esquerda; descrição passiva no
           // topo do bloco direito; rodapé com timestamp à esquerda e
           // ActorChip (ícone monocromático + nome) à direita.
+          // Eixo 10 (tema claro): hover:bg-surface-800/30 sobre o card, que
+          // É surface-800 — no claro (#FFFFFF) fica completamente invisível
+          // (branco + 30% branco = branco). --rowhover.
           return (
-            <div key={event.id} className="flex items-start gap-3 px-5 py-3 border-b border-surface-800/60 hover:bg-surface-800/30 transition-colors">
-              <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5', cfg.bgClass, cfg.iconClass)}>
+            <div key={event.id} className="flex items-start gap-3 px-5 py-3 border-b border-surface-700 hover:bg-[var(--rowhover)] transition-colors">
+              <div className={cn('w-7 h-7 rounded-[6px] flex items-center justify-center flex-shrink-0 mt-0.5', cfg.bgClass, cfg.iconClass)}>
                 {cfg.icon}
               </div>
               <div className="flex-1 min-w-0">
@@ -85,14 +89,14 @@ export function ActivityFeed({ events }: { events: ActivityEvent[] }) {
                   {event.subject || 'Atividade do sistema'}
                 </p>
                 <div className="flex items-center justify-between gap-2 mt-1.5">
-                  <span className="text-[10px] text-surface-500 flex-shrink-0">
+                  <span className="text-2xs text-surface-500 flex-shrink-0">
                     {formatRelativeTime(event.timestamp)}
                   </span>
                   <ActorChip
                     actorType={event.actorType}
                     actorName={event.actorName}
                     maxNameWidth={140}
-                    className="text-[10px]"
+                    className="text-2xs"
                   />
                 </div>
               </div>

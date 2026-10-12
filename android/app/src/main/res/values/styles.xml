@@ -38,7 +38,8 @@
              windowSplashScreenBackground define a cor do splash; windowSplashScreenAnimatedIcon
              a logo centralizada. Estes atributos so funcionam quando MainActivity chama
              SplashScreen.installSplashScreen(this) em onCreate. -->
-        <item name="windowSplashScreenBackground">@android:color/black</item>
+        <!-- Fundo da marca (o mesmo dos ícones, kit Órbita em marca-oryon/). -->
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/oryon_splash_logo</item>
         <!-- postSplashScreenTheme troca o tema da activity para AppTheme.NoActionBar
              APOS o splash terminar. -->

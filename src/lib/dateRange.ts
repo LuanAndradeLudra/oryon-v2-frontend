@@ -83,3 +83,20 @@ export function resolveActivePreset(startDate?: string): DateRangePreset | null 
   if (startDate === resolveRange('last7').startDate) return 'last7'
   return 'custom'
 }
+
+/**
+ * Períodos dos Relatórios do funil que as conversas não usam (Funis, 27/09):
+ * "Últimos 30 dias" e "Este mês" — o mês é o recorte do "ganhos no mês" do
+ * quadro, e sem ele os dois números nunca se encontravam. Função à parte para
+ * não alargar `DateRangePreset`, que os filtros da inbox tratam por completo.
+ */
+export function resolveReportRange(preset: 'last30' | 'thisMonth'): ResolvedRange {
+  const todayStart = startOfBrasiliaDay()
+  const tomorrowStart = new Date(todayStart.getTime() + DAY_MS)
+  if (preset === 'last30') {
+    return { startDate: new Date(todayStart.getTime() - 29 * DAY_MS).toISOString(), endDate: tomorrowStart.toISOString() }
+  }
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit' }).formatToParts(new Date())
+  const get = (type: string) => parts.find((p) => p.type === type)!.value
+  return { startDate: new Date(`${get('year')}-${get('month')}-01T03:00:00.000Z`).toISOString(), endDate: tomorrowStart.toISOString() }
+}

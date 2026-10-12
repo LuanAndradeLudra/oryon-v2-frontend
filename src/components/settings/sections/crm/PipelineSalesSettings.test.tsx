@@ -1,6 +1,7 @@
 // B5 (SCRUM-931, D0-9/12, D0-1) — dono padrão e multiplicidade, só em vendas.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { escolherOpcao, valoresDasOpcoes } from '@/test/escolherOpcao'
 import type { Pipeline, User } from '@/types'
 
 const SALES: Pipeline = {
@@ -34,8 +35,8 @@ describe('PipelineSalesSettings', () => {
   it('lista "Quem cria o negócio", "Ninguém" e os usuários ativos como opções de dono padrão', async () => {
     render(<PipelineSalesSettings pipeline={SALES} onChanged={vi.fn()} />)
     await waitFor(() => expect(users.list).toHaveBeenCalled())
-    const select = screen.getByRole('combobox') as HTMLSelectElement
-    expect(Array.from(select.options).map((o) => o.value)).toEqual(['creator', 'none', 'user:u1', 'user:u2'])
+    const select = screen.getByRole('combobox') as HTMLButtonElement
+    expect(valoresDasOpcoes(select)).toEqual(['creator', 'none', 'user:u1', 'user:u2'])
     expect(select.value).toBe('creator')
   })
 
@@ -45,7 +46,7 @@ describe('PipelineSalesSettings', () => {
     render(<PipelineSalesSettings pipeline={SALES} onChanged={onChanged} />)
     await waitFor(() => expect(users.list).toHaveBeenCalled())
 
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'none' } })
+    escolherOpcao(screen.getByRole('combobox'), 'none')
 
     await waitFor(() => expect(pipelines.update).toHaveBeenCalledWith('p1', { defaultOwnerRule: 'none' }))
     expect(onChanged).toHaveBeenCalled()
@@ -56,7 +57,7 @@ describe('PipelineSalesSettings', () => {
     render(<PipelineSalesSettings pipeline={SALES} onChanged={vi.fn()} />)
     await waitFor(() => expect(users.list).toHaveBeenCalled())
 
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'user:u2' } })
+    escolherOpcao(screen.getByRole('combobox'), 'user:u2')
 
     await waitFor(() => expect(pipelines.update).toHaveBeenCalledWith('p1', { defaultOwnerRule: 'user:u2' }))
   })

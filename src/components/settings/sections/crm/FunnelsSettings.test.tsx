@@ -4,7 +4,7 @@
 //     ações de ciclo de vida (Novo/Renomear/Arquivar/Excluir) somem para
 //     quem não é admin-tier; a tela continua legível (só uso).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import type { Pipeline, User } from '@/types'
 
@@ -96,7 +96,9 @@ describe('FunnelsSettings — gate de papel (P13)', () => {
     renderTela()
     await screen.findByRole('heading', { name: 'Etapas', level: 3 })
     expect(screen.getByRole('button', { name: /Novo funil/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Renomear \/ cor/ })).toBeInTheDocument()
+    // SCRUM-1253: renomear, tornar padrão, arquivar e excluir moram no menu ⋯.
+    fireEvent.click(screen.getByRole('button', { name: 'Mais ações do funil' }))
+    expect(await screen.findByText('Renomear e cor')).toBeInTheDocument()
   })
 
   it('agent não vê nenhuma ação de criar/renomear/arquivar/excluir', async () => {
@@ -104,7 +106,7 @@ describe('FunnelsSettings — gate de papel (P13)', () => {
     renderTela()
     await screen.findByRole('heading', { name: 'Etapas', level: 3 })
     expect(screen.queryByRole('button', { name: /Novo funil/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Renomear \/ cor/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Mais ações do funil' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Arquivar/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Excluir/ })).toBeNull()
   })
@@ -118,14 +120,14 @@ describe('FunnelsSettings — o funil selecionado vem da URL', () => {
   it('abre no funil pedido por ?pipeline=, e não no padrão do tenant', async () => {
     currentPipelines = [SALES, PROCESS]
     renderTela('/settings/pipeline-stages?pipeline=' + PROCESS.id)
-    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLSelectElement
+    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLButtonElement
     expect(seletor.value).toBe(PROCESS.id)
   })
 
   it('sem o parâmetro, cai no padrão do tenant como antes', async () => {
     currentPipelines = [SALES, PROCESS]
     renderTela()
-    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLSelectElement
+    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLButtonElement
     expect(seletor.value).toBe(SALES.id)
   })
 })

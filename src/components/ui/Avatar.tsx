@@ -3,7 +3,11 @@ import { cn, getInitials } from '@/lib/utils'
 interface AvatarProps {
   name: string
   imageUrl?: string
-  size?: 'xs' | 'sm' | 'md' | 'lg'
+  /** `2xs` = 20px (spec 1b TEAM-03: avatar mono de lista densa).
+   *  Tamanhos numéricos = px exatos da spec 1d: `30` chat header (CONV-CHAT-02,
+   *  11px), `36` item da lista (CONV-LIST-14, 12px), `44` painel do contato
+   *  (CONV-PANEL-02, 15px). `xs` = 24 (bolha, CONV-CHAT-16), `md` = 40 (drawer). */
+  size?: '2xs' | 'xs' | 'sm' | '30' | '36' | 'md' | '44' | 'lg'
   online?: boolean
   className?: string
   /**
@@ -19,28 +23,33 @@ interface AvatarProps {
 }
 
 const sizes = {
-  xs: 'w-6 h-6 text-[10px]',
+  '2xs': 'w-5 h-5 text-3xs',
+  xs: 'w-6 h-6 text-2xs',
   sm: 'w-8 h-8 text-xs',
+  '30': 'w-7.5 h-7.5 text-2xs',
+  '36': 'w-9 h-9 text-xs',
   md: 'w-10 h-10 text-sm',
+  '44': 'w-11 h-11 text-base',
   lg: 'w-12 h-12 text-base',
 }
 
 const dotSizes = {
+  '2xs': 'w-[7px] h-[7px]',
   xs: 'w-1.5 h-1.5',
   sm: 'w-2 h-2',
+  '30': 'w-2 h-2',
+  '36': 'w-2.5 h-2.5',
   md: 'w-2.5 h-2.5',
+  '44': 'w-3 h-3',
   lg: 'w-3 h-3',
 }
 
 
 export function Avatar({ name, imageUrl, size = 'md', online, className, kind = 'contact' }: AvatarProps) {
-  /* A FORMA é o sinal principal: círculo para o cliente, quadrado de cantos
-     arredondados para quem é da casa. Raio em PORCENTAGEM para acompanhar o
-     tamanho — a 40 px dá 12 px de canto, a 24 px dá 7 px; um raio fixo viraria
-     quase-círculo nos avatares pequenos e a distinção se perderia justamente
-     onde ela mais aparece (listas). Vale também para a FOTO: um operador com
-     foto continua sendo um quadrado arredondado. */
-  const forma = kind === 'operator' ? 'rounded-[30%]' : 'rounded-full'
+  /* SCRUM-1253 (PO, 06/10): pessoa é CÍRCULO — contato e operador (padrão
+     Garden/SLDS: quadrado é objeto/marca). O que distingue quem é da casa é a
+     COR (teal de operador × neutro de contato), não a forma. */
+  const forma = 'rounded-full'
 
   return (
     <div className={cn('relative flex-shrink-0', className)}>
@@ -77,14 +86,16 @@ export function Avatar({ name, imageUrl, size = 'md', online, className, kind = 
         <div
           className={cn(
             forma,
+            // Iniciais 700 em toda a spec (CONT-HDR-10, CONV-LIST-14, CONV-CHAT-02…).
             'flex items-center justify-center font-semibold',
-            // Operador leva o gradiente da marca (`.avatar-operador`, no
-            // index.css) — teal diz "é da casa". O contato fica no par
-            // monocromático por tema: cliente é identidade, e identidade não
-            // se codifica em cor.
-            kind === 'operator'
-              ? 'avatar-operador'
-              : 'bg-avatar-surface text-avatar-initials',
+            // SCRUM-1097 (spec 1a/1d/shell: `--avs/--avi`): operador e contato
+            // no MESMO par monocromático por tema — o que distingue "é da
+            // casa" é a FORMA (quadrado arredondado), não um gradiente teal.
+            // `.avatar-operador` (gradiente) saiu de uso.
+            // Operador volta ao gradiente teal da casa (`.avatar-operador`,
+            // index.css) — pedido do PO em 23/09 ("padrão antigo com teal
+            // gradiente"); o contato segue no par monocromático por tema.
+            kind === 'operator' ? 'avatar-operador' : 'bg-avatar-surface bg-(image:--avatar-grad) text-avatar-initials',
             sizes[size],
           )}
         >
@@ -94,7 +105,8 @@ export function Avatar({ name, imageUrl, size = 'md', online, className, kind = 
       {online !== undefined && (
         <span
           className={cn(
-            'absolute bottom-0 right-0 rounded-full border-2 border-surface-900',
+            // Canvas 1b (Equipe): dot 7px com anel de 1.5px na cor da SUPERFÍCIE (--sf).
+            'absolute bottom-0 right-0 rounded-full border-[1.5px] border-surface-800',
             dotSizes[size],
             online ? 'bg-online' : 'bg-offline'
           )}

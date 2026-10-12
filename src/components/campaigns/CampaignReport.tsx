@@ -1,10 +1,11 @@
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, BarChart3, TrendingUp, Users, MessageCircle, ShoppingCart,
   AlertTriangle, CheckCircle2, Sparkles, ChevronRight,
-  ThumbsDown, Target, Zap, Megaphone, Globe, Crown, Filter, ExternalLink,
+  Target, Zap, Megaphone, Globe, Crown, Filter, ExternalLink,
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -12,10 +13,14 @@ import {
 } from 'recharts'
 import { cn } from '@/lib/utils'
 import { Spinner } from '@/components/ui/Spinner'
+import { StatStrip } from './StatStrip'
+import { RecipientsTab, RepliesTab } from './CampaignReportTabs'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { campaignsApi } from '@/services/api'
 import { generateCampaignInsights } from '@/services/copilotService'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { ChartColors } from '@/components/dashboard/utils'
+import { normalizeCampaignAnalytics, formatMinutes } from '@/lib/campaignAnalytics'
 import type { Campaign, CampaignAnalytics, CampaignConversionEvent, CampaignAttributionBreakdown, CampaignConversationSummary } from '@/types'
 import type { CampaignInsight } from '@/services/copilotService'
 
@@ -23,7 +28,13 @@ import type { CampaignInsight } from '@/services/copilotService'
 
 function pct(num: number, den: number) {
   if (!den) return '0%'
-  return Math.round((num / den) * 100) + '%'
+  return Math.min(100, Math.round((num / den) * 100)) + '%'
+}
+
+/** Taxa (0–1) em % inteiro, com teto de 100 (M7: conversão ou leitura contada
+ *  sem a etapa anterior — webhook perdido — passava de 100%). */
+function pct100(taxa: number) {
+  return Math.min(100, Math.round(taxa * 100))
 }
 
 function fmtDate(iso: string) {
@@ -32,26 +43,13 @@ function fmtDate(iso: string) {
   })
 }
 
+/** SCRUM-1253 (PO, 07/10): etapas do funil numa escala única de teal (forte → claro conforme
+ *  o funil afina); só "Falharam" sai da escala, em vermelho. */
+const RAMPA_TEAL = ['#0F766E', '#14857A', '#2A9D90', '#5BB5A9', '#8CCBC2']
+
 /** Tint temático — alpha via color-mix (funciona com var() e hex, nos dois temas). */
 function tint(color: string, pctVal: number) {
-  return `color-mix(in srgb, ${color} ${pctVal}%, transparent)`
-}
-
-// ── KPI Card ─────────────────────────────────────────────────────────────────
-
-function KpiCard({ label, value, sub, color, icon }: {
-  label: string; value: string | number; sub?: string; color: string; icon: React.ReactNode
-}) {
-  return (
-    <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 flex flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-surface-500">
-        <span style={{ color }} className="opacity-70">{icon}</span>
-        <span className="text-3xs font-medium">{label}</span>
-      </div>
-      <p className="text-lg font-bold" style={{ color }}>{value}</p>
-      {sub && <p className="text-3xs text-surface-600">{sub}</p>}
-    </div>
-  )
+  return `color-mix(in srgb, ${color} calc(${pctVal}% * var(--tinta-k, 1)), transparent)`
 }
 
 // ── Conversion type config ────────────────────────────────────────────────────
@@ -120,7 +118,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
           onClick={generate}
           disabled={loading}
           className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-xs font-medium border transition-all',
             loading
               ? 'bg-surface-800 border-surface-700 text-surface-500 cursor-not-allowed'
               : 'bg-brand-600/20 border-brand-600 text-brand-300 hover:bg-brand-600/30',
@@ -137,7 +135,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
       </div>
 
       {!generated && !loading && (
-        <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-surface-700 rounded-xl">
+        <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-surface-700 rounded-[10px]">
           <Sparkles className="w-6 h-6 text-surface-600" />
           <p className="text-xs text-surface-500 text-center max-w-xs">
             Clique em "Gerar análise" para que a IA avalie conversões, churn e engajamento desta campanha.
@@ -161,7 +159,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
             {insights.map((ins) => (
               <div
                 key={ins.id}
-                className="p-3 rounded-xl border"
+                className="p-3 rounded-[10px] border"
                 style={{ backgroundColor: INSIGHT_BG[ins.type], borderColor: tint(INSIGHT_COLORS[ins.type], 19) }}
               >
                 <div className="flex items-start gap-2">
@@ -177,14 +175,14 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
                     <p className="text-2xs text-surface-400 mt-0.5 leading-relaxed">{ins.body}</p>
                     <div className="flex items-center gap-1 mt-1.5">
                       <Zap className="w-3 h-3" style={{ color: INSIGHT_COLORS[ins.type] }} />
-                      <span className="text-3xs" style={{ color: INSIGHT_COLORS[ins.type] }}>{ins.action}</span>
+                      <span className="text-2xs" style={{ color: INSIGHT_COLORS[ins.type] }}>{ins.action}</span>
                     </div>
                   </div>
                   <span className={cn(
-                    'text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0',
+                    'text-2xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0',
                     ins.priority === 'high' ? 'bg-danger/20 text-danger' :
                     ins.priority === 'medium' ? 'bg-status-pending-bg text-status-pending' :
-                    'bg-surface-700 text-surface-400',
+                    'bg-[var(--sf2)] text-surface-400',
                   )}>
                     {ins.priority === 'high' ? 'ALTA' : ins.priority === 'medium' ? 'MÉD' : 'BAIXA'}
                   </span>
@@ -228,7 +226,9 @@ const SENTIMENT_CONFIG: Record<string, { label: string; color: string }> = {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'conversions' | 'churn' | 'attribution' | 'conversations'
+type Tab = 'overview' | 'recipients' | 'replies' | 'conversions' | 'churn' | 'attribution' | 'conversations'
+/** D8 — abas sem fonte de dados, atrás de campaignReportLegacyTabs. */
+const LEGACY_TABS: ReadonlySet<Tab> = new Set<Tab>(['conversions', 'churn', 'attribution', 'conversations'])
 
 // ── Main report drawer ────────────────────────────────────────────────────────
 
@@ -237,43 +237,91 @@ interface CampaignReportProps {
   onClose: () => void
 }
 
+const lerAbaRelatorio = lerUmDe(['overview', 'recipients', 'replies', 'conversions', 'churn', 'attribution', 'conversations'] as const, 'overview')
+
 export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const navigate = useNavigate()
   const C = useChartColors()
   const [analytics, setAnalytics] = useState<CampaignAnalytics | null>(null)
   const [conversations, setConversations] = useState<CampaignConversationSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<Tab>('overview')
-  const [outcomeFilter, setOutcomeFilter] = useState<string>('all')
-  const [sentimentFilter, setSentimentFilter] = useState<string>('all')
+  const [loadError, setLoadError] = useState(false)
+  const legacy = useFeatureVisibility().isFeatureVisible('campaignReportLegacyTabs')
+  // Aba e filtros do relatório na URL (limpos junto com ?report= ao fechar).
+  const [tabNaUrl, setTab] = useEstadoNaUrl<Tab>('relatorioAba', { padrao: 'overview', ler: lerAbaRelatorio })
+  // D8 — link antigo para uma aba escondida cai na visão geral.
+  const tab: Tab = !legacy && LEGACY_TABS.has(tabNaUrl) ? 'overview' : tabNaUrl
+  const [outcomeFilter, setOutcomeFilter] = useEstadoNaUrl<string>('resultado', { padrao: 'all' })
+  const [sentimentFilter, setSentimentFilter] = useEstadoNaUrl<string>('sentimento', { padrao: 'all' })
 
-  const { stats } = campaign
+  // Os contadores do `/analytics` são lidos AGORA; `campaign.stats` vem da lista e
+  // pode estar velho (delivered/read sobem depois, por webhook, e a aba não recarrega).
+  const stats = analytics?.stats ?? campaign.stats
+  // SCRUM-1150: campanha parada sozinha pelo circuit breaker; o /analytics traz o motivo atual.
+  const stopReason = analytics?.stopReason ?? campaign.stopReason ?? null
 
+  // T2 — o analytics não depende mais de `/campaigns/:id/conversations`: esse
+  // endpoint não existe, e no Promise.all a falha dele derrubava o relatório
+  // inteiro (em silêncio). As conversas por campanha só com as abas legadas (D8).
   useEffect(() => {
-    Promise.all([
-      campaignsApi.getAnalytics(campaign.id),
-      campaignsApi.getConversations(campaign.id),
-    ])
-      .then(([analyticsRes, convsRes]) => {
-        setAnalytics(analyticsRes.data)
-        setConversations(convsRes.data ?? [])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [campaign.id])
+    let vivo = true
+    setLoading(true)
+    setLoadError(false)
+    campaignsApi.getAnalytics(campaign.id)
+      .then((r) => { if (vivo) setAnalytics(normalizeCampaignAnalytics(r.data)) })
+      .catch(() => { if (vivo) setLoadError(true) })
+      .finally(() => { if (vivo) setLoading(false) })
+    if (legacy) {
+      campaignsApi.getConversations(campaign.id)
+        .then((r) => { if (vivo) setConversations(r.data ?? []) })
+        .catch(() => { if (vivo) setConversations([]) })
+    }
+    return () => { vivo = false }
+  }, [campaign.id, legacy])
 
-  // Derived metrics
-  const deliveredRate = stats.sent > 0 ? Math.round((stats.delivered / stats.sent) * 100) : 0
-  const readRate      = stats.sent > 0 ? Math.round((stats.read / stats.sent) * 100) : 0
-  const replyRate     = stats.read > 0 && stats.replied ? Math.round((stats.replied / stats.read) * 100) : 0
-  const convRate      = stats.read > 0 && stats.conversions ? Math.round((stats.conversions / stats.read) * 100) : 0
+  // D7 — cada percentual com a base escrita na tela: entregues e falhas sobre
+  // as ENVIADAS; lidas e respostas sobre as ENTREGUES. Excluídos e opt-out à
+  // parte, fora de toda base. Sem base (0), mostra "—", não "0%".
+  // Revisão 02/10: campanha antiga (sem linhas em campaign_recipients) chega
+  // com o funil todo zerado e os números reais no `stats` gravado — o funil só
+  // vale quando há destinatários registrados; senão o relatório zerava.
+  const funilBruto = analytics?.funnel
+  const funnel = funilBruto && ((funilBruto.sent ?? 0) + (funilBruto.failed ?? 0) + (funilBruto.pending ?? 0) + (funilBruto.cancelled ?? 0)) > 0
+    ? funilBruto
+    : undefined
+  const sent      = funnel?.sent ?? stats.sent
+  const delivered = funnel?.delivered ?? stats.delivered
+  const read      = funnel?.read ?? stats.read
+  const replied   = funnel?.replied ?? stats.replied ?? 0
+  // D9/D10 (PO, 06/10; backend K1/K2): opcionais — backend antigo não manda,
+  // e aí nada aparece (deduzidas = 0, sem etapa de cliques).
+  const readInferred = funnel?.readInferred ?? stats.readInferred ?? 0
+  const clickedRaw   = funnel?.clicked ?? stats.clicked
+  const temCliques   = clickedRaw !== undefined
+  const clicked      = clickedRaw ?? 0
+  const failed    = funnel?.failed ?? stats.failed
+  const excluded  = funilBruto?.excluded ?? stats.excluded ?? 0
+  const optedOut  = funilBruto?.optedOut ?? stats.optedOut ?? 0
+  const pending   = funnel?.pending ?? 0
+  // "Enviadas" = tudo que tentamos mandar (aceitas pela Meta + falhas): é a
+  // base de entregues e de falhas (D7), então as duas somam no máximo 100%.
+  const enviadas  = sent + failed
+  // R3: teto de 100% — um contador fora de ordem (webhook atrasado) nunca vira "150%".
+  const pctDe = (n: number, base: number) => (base > 0 ? `${Math.min(100, Math.round((n / base) * 100))}%` : '—')
+  const convRate  = stats.read > 0 && stats.conversions ? pct100(stats.conversions / stats.read) : 0
 
-  const funnelData = [
-    { label: 'Enviadas',    value: stats.sent,      color: 'var(--color-accent-blue)' },
-    { label: 'Entregues',   value: stats.delivered, color: 'var(--color-accent-cyan)' },
-    { label: 'Lidas',       value: stats.read,      color: 'var(--color-accent-amber)' },
-    { label: 'Responderam', value: stats.replied ?? 0, color: 'var(--color-accent-violet)' },
-    { label: 'Convertidas', value: stats.conversions ?? 0, color: 'var(--color-accent-green)' },
+  const DICA_DEDUZIDAS = 'Quem desliga a confirmação de leitura não envia o aviso de lido, mas quem respondeu ou clicou leu.'
+  const DICA_CLIQUES = 'Toques nos botões de resposta rápida do modelo. Também contam em Responderam.'
+  const funnelData: Array<{ label: string; value: number; base: number; baseLabel: string; color: string; nota?: string; dica?: string }> = [
+    { label: 'Enviadas',    value: enviadas,  base: enviadas,  baseLabel: '',              color: 'var(--color-accent-blue)' },
+    { label: 'Entregues',   value: delivered, base: enviadas,  baseLabel: 'das enviadas',  color: 'var(--color-accent-cyan)' },
+    { label: 'Lidas',       value: read,      base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-amber)',
+      nota: readInferred > 0 ? `inclui ${readInferred} deduzida${readInferred > 1 ? 's' : ''} por resposta ou clique` : undefined, dica: readInferred > 0 ? DICA_DEDUZIDAS : undefined },
+    // Cliques ⊂ Responderam (o toque no botão conta como resposta): vem DEPOIS,
+    // para o funil afunilar — antes a barra alargava de Cliques para Responderam.
+    { label: 'Responderam', value: replied,   base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-violet)' },
+    ...(temCliques ? [{ label: 'Cliques', value: clicked, base: delivered, baseLabel: 'das entregues', color: 'var(--color-accent-blue)', dica: DICA_CLIQUES }] : []),
+    { label: 'Falharam',    value: failed,    base: enviadas,  baseLabel: 'das enviadas',  color: 'var(--color-danger)' },
   ]
 
   const churnColors = CHURN_COLOR_KEYS.map((k) => C[k])
@@ -290,10 +338,14 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview',       label: 'Visão Geral' },
-    { id: 'conversions',    label: `Conversões (${stats.conversions ?? 0})` },
-    { id: 'churn',          label: `Churn (${stats.churnCount ?? totalChurn})` },
-    { id: 'attribution',    label: 'Atribuição' },
-    { id: 'conversations',  label: `Conversas (${conversations.length})` },
+    { id: 'recipients',     label: 'Destinatários' },
+    { id: 'replies',        label: `Respostas (${replied})` },
+    ...(legacy ? [
+      { id: 'conversions' as const,   label: `Conversões (${stats.conversions ?? 0})` },
+      { id: 'churn' as const,         label: `Churn (${stats.churnCount ?? totalChurn})` },
+      { id: 'attribution' as const,   label: 'Atribuição' },
+      { id: 'conversations' as const, label: `Conversas (${conversations.length})` },
+    ] : []),
   ]
 
   // Filtered conversations
@@ -306,7 +358,9 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/70" onClick={onClose} />
+      {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/70 cru — preto
+          cru fica pesado demais no tema claro (MODAL-07). */}
+      <div className="fixed inset-0 z-40 bg-[var(--color-scrim-soft)]" onClick={onClose} />
 
       {/* Drawer */}
       <motion.div
@@ -315,8 +369,11 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
         className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[600px] bg-surface-950 border-l overlay-frame flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
+          {/* Ladrilho de ícone 32px com raio 6px (SCRUM-1253) — mesma medida
+              do ícone 32px de cabeçalho de drawer em CampaignLeadsDrawer.tsx
+              e AttributionTab.tsx (mesma tela T7). */}
+          <div className="w-8 h-8 rounded-[6px] bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
             <BarChart3 className="w-4 h-4 text-brand-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -325,7 +382,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
               Relatório de desempenho · {stats.total} contatos · {campaign.sentAt ? fmtDate(campaign.sentAt) : ''}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -335,40 +392,34 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
             <Spinner className="w-5 h-5 text-brand-400" />
             Carregando dados...
           </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center flex-1 gap-2 text-xs text-surface-400 px-6 text-center">
+            <AlertTriangle className="w-5 h-5 text-danger" />
+            Não foi possível carregar o relatório desta campanha. Os números não aparecem para não mostrar zero no lugar do dado real.
+          </div>
         ) : (
           <>
-            {/* KPI Strip */}
-            <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
-              <div className="grid grid-cols-4 gap-2">
-                <KpiCard label="Lidas"        value={`${readRate}%`}  sub={`${stats.read} de ${stats.sent}`}      color="var(--color-accent-amber)" icon={<BarChart3 className="w-3.5 h-3.5" />} />
-                <KpiCard label="Responderam"  value={`${replyRate}%`} sub={`${stats.replied ?? 0} respostas`}       color="var(--color-accent-violet)" icon={<MessageCircle className="w-3.5 h-3.5" />} />
-                <KpiCard label="Conversões"   value={`${convRate}%`}  sub={`${stats.conversions ?? 0} confirmadas`} color="var(--color-accent-green)" icon={<ShoppingCart className="w-3.5 h-3.5" />} />
-                <KpiCard label="Churn"        value={totalChurn}      sub={`${pct(totalChurn, stats.sent)} do total`} color="var(--color-accent-rose)" icon={<ThumbsDown className="w-3.5 h-3.5" />} />
-              </div>
-              {stats.engagementScore !== undefined && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-3xs text-surface-500">Score de engajamento</span>
-                  <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${stats.engagementScore}%`,
-                        background: stats.engagementScore >= 70 ? 'var(--color-accent-green)' : stats.engagementScore >= 40 ? 'var(--color-accent-amber)' : 'var(--color-accent-rose)',
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs font-bold" style={{
-                    color: stats.engagementScore >= 70 ? 'var(--color-accent-green)' : stats.engagementScore >= 40 ? 'var(--color-accent-amber)' : 'var(--color-accent-rose)',
-                  }}>{stats.engagementScore}/100</span>
-                </div>
-              )}
+            {/* KPI Strip — direção C: número grande + rótulo miúdo, linha de
+                1px entre eles, sem cartão por item. */}
+            <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
+              {/* SCRUM-1253 (PO, 07/10): número neutro, vermelho só em Falhas; base
+                  curta ("18 de 20") — antes uma cor por etapa (arco-íris). */}
+                <StatStrip items={[
+                  { label: 'Enviadas',    value: enviadas,                  sub: pending > 0 ? `${pending} na fila` : `de ${stats.total}` },
+                  { label: 'Entregues',   value: pctDe(delivered, enviadas), sub: `${delivered} de ${enviadas}` },
+                  { label: 'Lidas',       value: pctDe(read, delivered),    sub: `${read} de ${delivered}${readInferred > 0 ? ` · ${readInferred} deduzida${readInferred > 1 ? 's' : ''}` : ''}` },
+                  ...(temCliques ? [{ label: 'Cliques', value: pctDe(clicked, delivered), sub: `${clicked} de ${delivered}` }] : []),
+                  { label: 'Responderam', value: pctDe(replied, delivered), sub: `${replied} de ${delivered}` },
+                  { label: 'Falhas',      value: pctDe(failed, enviadas),   sub: `${failed} de ${enviadas}`, color: failed > 0 ? 'var(--color-danger)' : undefined },
+                ]} />
             </div>
 
             {/* Tab bar */}
-            <div className="flex items-center gap-1 px-5 py-2 border-b border-surface-800 flex-shrink-0">
+            {/* Uma linha só: quando não cabe, rola e a borda direita esmaece. */}
+            <div className="flex items-center gap-1 px-5 py-2 border-b border-surface-700 flex-shrink-0 overflow-x-auto [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_calc(100%-32px),transparent)]">
               {tabs.map((t) => (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  className={cn('px-3 py-1.5 rounded-[6px] text-xs font-medium transition-all whitespace-nowrap flex-shrink-0',
                     tab === t.id ? 'bg-surface-800 text-surface-100' : 'text-surface-500 hover:text-surface-300',
                   )}>
                   {t.label}
@@ -388,34 +439,100 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                   {/* ── OVERVIEW ── */}
                   {tab === 'overview' && (
                     <>
+                      {/* Pausa automática (circuit breaker) e contatos suprimidos */}
+                      {stopReason && (
+                        <div
+                          role="alert"
+                          className="flex items-start gap-2 rounded-[10px] border border-danger/30 bg-danger/10 px-3 py-2.5"
+                        >
+                          <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                          <div className="text-2xs text-surface-200 space-y-1">
+                            <p>{stopReason}</p>
+                            {/* Decisão do PO (plano MA): a campanha parada não volta sozinha. */}
+                            {campaign.status === 'stopped' && (
+                              <p className="text-surface-400">Os contatos que ainda não tinham recebido não vão receber. Para reenviar, crie uma nova campanha.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {(excluded > 0 || optedOut > 0) && (
+                        <p className="text-2xs text-surface-400">
+                          À parte, fora dos percentuais:{' '}
+                          {excluded > 0 && (
+                            <><span className="font-semibold text-surface-200">{excluded}</span> {excluded === 1 ? 'contato ficou' : 'contatos ficaram'} fora do envio (número inválido ou opt-out)</>
+                          )}
+                          {excluded > 0 && optedOut > 0 && '; '}
+                          {optedOut > 0 && (
+                            <><span className="font-semibold text-surface-200">{optedOut}</span> {optedOut === 1 ? 'saiu' : 'saíram'} de marketing ao receber</>
+                          )}
+                          .{' '}
+                          <button type="button" className="underline hover:text-surface-200" onClick={() => setTab('recipients')}>Ver destinatários</button>
+                        </p>
+                      )}
+
                       {/* Funnel */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-3">Funil de engajamento</p>
                         <div className="space-y-2">
                           {funnelData.map((f, i) => (
                             <div key={f.label} className="flex items-center gap-3">
-                              <span className="text-2xs text-surface-400 w-24 flex-shrink-0">{f.label}</span>
-                              <div className="flex-1 h-6 bg-surface-800 rounded-lg overflow-hidden relative">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${(f.value / stats.sent) * 100}%` }}
-                                  transition={{ duration: 0.6, delay: i * 0.08 }}
-                                  className="h-full rounded-lg flex items-center pl-2"
-                                  style={{ backgroundColor: tint(f.color, 25), borderLeft: `3px solid ${f.color}` }}
-                                >
-                                  <span className="text-3xs font-bold" style={{ color: f.color }}>{f.value}</span>
-                                </motion.div>
-                              </div>
-                              <span className="text-2xs text-surface-500 w-12 text-right flex-shrink-0">
-                                {pct(f.value, stats.sent)}
+                              <span className="w-24 flex-shrink-0" title={f.dica}>
+                                <span className="block text-2xs text-surface-400">{f.label}</span>
+                                {f.nota && <span className="block text-2xs leading-tight text-surface-500">{f.nota}</span>}
+                              </span>
+                              {/* Barra sólida numa escala de teal sobre trilho cinza; número fora. */}
+                                <div className="flex-1 flex items-center gap-2 min-w-0">
+                                  <div className="flex-1 h-3 rounded-full overflow-hidden bg-[#EAEEF3] [:root:not([data-theme=light])_&]:bg-surface-800">
+                                    <motion.div
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${f.base > 0 ? Math.min(100, (f.value / f.base) * 100) : 0}%` }}
+                                      transition={{ duration: 0.6, delay: i * 0.08 }}
+                                      className="h-full rounded-full"
+                                      style={{ backgroundColor: f.label === 'Falharam' ? 'var(--color-danger)' : RAMPA_TEAL[Math.min(i, RAMPA_TEAL.length - 1)] }}
+                                    />
+                                  </div>
+                                  <span className="w-8 text-xs font-semibold tabular-nums text-surface-100 text-right flex-shrink-0">{f.value}</span>
+                                </div>
+                              <span className="text-2xs text-surface-500 w-32 text-right flex-shrink-0">
+                                {f.baseLabel ? `${pctDe(f.value, f.base)} ${f.baseLabel}` : ''}
                               </span>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      {/* Timeline */}
-                      {analytics && analytics.engagementTimeline.length > 0 && (
+                      {/* Falhas de entrega por motivo (SCRUM-1142) */}
+                      {analytics && (analytics.failures.length > 0 || analytics.avgTimeToReadMinutes != null) && (
+                        <div>
+                          {analytics.avgTimeToReadMinutes != null && (
+                            <p className="text-2xs text-surface-400 mb-3">
+                              Tempo médio até a leitura:{' '}
+                              <span className="font-semibold text-surface-200">{formatMinutes(analytics.avgTimeToReadMinutes)}</span>
+                            </p>
+                          )}
+                          {analytics.failures.length > 0 && (
+                            <>
+                              <p className="text-xs font-semibold text-surface-300 mb-3">
+                                Falhas por motivo ({analytics.failures.reduce((n, f) => n + f.count, 0)})
+                              </p>
+                              <div className="space-y-1.5">
+                                {analytics.failures.map((f) => (
+                                  <div
+                                    key={f.code}
+                                    className="flex items-center justify-between gap-3 bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2"
+                                  >
+                                    <span className="text-2xs text-surface-300" title={`Código ${f.code}`}>{f.reason}</span>
+                                    <span className="text-2xs font-semibold text-danger flex-shrink-0">{f.count}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Timeline (D8: sem fonte — só com as abas legadas) */}
+                      {legacy && analytics && analytics.engagementTimeline.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-surface-300 mb-3">Engajamento ao longo do tempo</p>
                           <div className="h-44">
@@ -449,29 +566,28 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         </div>
                       )}
 
-                      {/* AI Insights */}
-                      {analytics && <AiInsightsSection campaign={campaign} analytics={analytics} />}
+                      {/* AI Insights (D8: analisava números sem fonte — só com as abas legadas) */}
+                      {legacy && analytics && <AiInsightsSection campaign={campaign} analytics={analytics} />}
                     </>
                   )}
+
+                  {/* ── DESTINATÁRIOS (T2 + D9) ── */}
+                  {tab === 'recipients' && (
+                    <RecipientsTab campaignId={campaign.id} failures={analytics?.failures ?? []} />
+                  )}
+
+                  {/* ── RESPOSTAS (T2) ── */}
+                  {tab === 'replies' && <RepliesTab replies={analytics?.replies ?? []} />}
 
                   {/* ── CONVERSIONS ── */}
                   {tab === 'conversions' && analytics && (
                     <>
                       {/* Stats row */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-emerald-400">{stats.conversions ?? 0}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Total de conversões</p>
-                        </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-brand-400">{convRate}%</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Taxa (lidas → converteu)</p>
-                        </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-amber-400">{pct(stats.conversions ?? 0, stats.sent)}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Taxa sobre enviadas</p>
-                        </div>
-                      </div>
+                      <StatStrip items={[
+                        { label: 'Total de conversões',    value: stats.conversions ?? 0, color: 'var(--color-accent-green)' },
+                        { label: 'Taxa (lidas → converteu)', value: `${convRate}%`,        color: 'var(--color-brand-400)' },
+                        { label: 'Taxa sobre enviadas',    value: pct(stats.conversions ?? 0, stats.sent), color: 'var(--color-accent-amber)' },
+                      ]} />
 
                       {/* Conversion type breakdown */}
                       <div>
@@ -500,33 +616,32 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         </div>
                       </div>
 
-                      {/* Events table */}
+                      {/* Events table — direção C: faixa com linha de 1px
+                          entre eventos, não um cartão por evento. */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-2">Eventos de conversão</p>
-                        <div className="space-y-1.5">
-                          {analytics.conversionEvents.map((ev, i) => {
-                            const cfg = CONV_CONFIG[ev.type]
-                            return (
-                              <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface-800 border border-surface-700 rounded-xl">
-                                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                                  style={{ backgroundColor: tint(C[cfg.color], 12), color: C[cfg.color] }}>
-                                  {cfg.icon}
+                        {analytics.conversionEvents.length === 0 ? (
+                          <p className="text-xs text-surface-500 text-center py-6">Nenhum evento de conversão registrado</p>
+                        ) : (
+                          <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
+                            {analytics.conversionEvents.map((ev, i) => {
+                              const cfg = CONV_CONFIG[ev.type]
+                              return (
+                                <div key={i} className="flex items-center gap-3 px-3 py-2">
+                                  <span style={{ color: C[cfg.color] }} className="flex-shrink-0">{cfg.icon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium text-surface-200">{ev.contactName}</p>
+                                    {ev.detail && <p className="text-2xs text-surface-500">{ev.detail}</p>}
+                                  </div>
+                                  <div className="flex-shrink-0 text-right">
+                                    <p className="text-2xs font-medium" style={{ color: C[cfg.color] }}>{cfg.label}</p>
+                                    <p className="text-2xs text-surface-600">{fmtDate(ev.convertedAt)}</p>
+                                  </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-surface-200">{ev.contactName}</p>
-                                  {ev.detail && <p className="text-3xs text-surface-500">{ev.detail}</p>}
-                                </div>
-                                <div className="flex-shrink-0 text-right">
-                                  <p className="text-3xs font-medium" style={{ color: C[cfg.color] }}>{cfg.label}</p>
-                                  <p className="text-[9px] text-surface-600">{fmtDate(ev.convertedAt)}</p>
-                                </div>
-                              </div>
-                            )
-                          })}
-                          {analytics.conversionEvents.length === 0 && (
-                            <p className="text-xs text-surface-500 text-center py-6">Nenhum evento de conversão registrado</p>
-                          )}
-                        </div>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -540,13 +655,15 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         if (!best) return null
                         const cfg = getPlatformCfg(best.source)
                         return (
-                          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border"
-                            style={{ backgroundColor: tint(cfg.color, 7), borderColor: tint(cfg.color, 19) }}>
+                          // Direção C: quase nenhuma cor de fundo — o destaque
+                          // vem do peso da tipografia; a cor fica só no ícone
+                          // e no rótulo, que já identificam a origem.
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] border border-surface-700">
                             <Crown className="w-4 h-4 flex-shrink-0" style={{ color: cfg.color }} />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold" style={{ color: cfg.color }}>Melhor origem: {cfg.label}</p>
                               <p className="text-2xs text-surface-400 mt-0.5">
-                                {best.conversionCount} conversões · {Math.round(best.conversionRate * 100)}% de taxa · {best.contactCount} contatos
+                                {best.conversionCount} conversões · {pct100(best.conversionRate)}% de taxa · {best.contactCount} contatos
                               </p>
                             </div>
                           </div>
@@ -565,16 +682,16 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   <div className="flex items-center gap-1.5">
                                     <span style={{ color: cfg.color }}>{cfg.icon}</span>
                                     <span className="text-2xs text-surface-300">{cfg.label}</span>
-                                    <span className="text-3xs text-surface-600">({ab.contactCount} contatos)</span>
+                                    <span className="text-2xs text-surface-600">({ab.contactCount} contatos)</span>
                                   </div>
-                                  <span className="text-2xs font-bold" style={{ color: cfg.color }}>
-                                    {Math.round(ab.readRate * 100)}%
+                                  <span className="text-2xs font-semibold" style={{ color: cfg.color }}>
+                                    {pct100(ab.readRate)}%
                                   </span>
                                 </div>
                                 <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
                                   <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${ab.readRate * 100}%` }}
+                                    animate={{ width: `${pct100(ab.readRate)}%` }}
                                     transition={{ duration: 0.5 }}
                                     className="h-full rounded-full"
                                     style={{ backgroundColor: cfg.color }}
@@ -598,14 +715,14 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                     <span style={{ color: cfg.color }}>{cfg.icon}</span>
                                     <span className="text-2xs text-surface-300">{cfg.label}</span>
                                   </div>
-                                  <span className="text-2xs font-bold" style={{ color: cfg.color }}>
-                                    {Math.round(ab.conversionRate * 100)}%
+                                  <span className="text-2xs font-semibold" style={{ color: cfg.color }}>
+                                    {pct100(ab.conversionRate)}%
                                   </span>
                                 </div>
                                 <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
                                   <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${ab.conversionRate * 100}%` }}
+                                    animate={{ width: `${pct100(ab.conversionRate)}%` }}
                                     transition={{ duration: 0.5 }}
                                     className="h-full rounded-full"
                                     style={{ backgroundColor: tint(cfg.color, 80) }}
@@ -620,7 +737,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {/* Comparison table */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-2">Tabela comparativa</p>
-                        <div className="overflow-x-auto rounded-xl border border-surface-700">
+                        <div className="overflow-x-auto rounded-[10px] border border-surface-700">
                           <table className="w-full text-2xs">
                             <thead>
                               <tr className="border-b border-surface-700 bg-surface-800">
@@ -637,21 +754,21 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                 const cfg = getPlatformCfg(ab.source)
                                 const isLast = i === analytics.attributionBreakdown.length - 1
                                 return (
-                                  <tr key={ab.source} className={cn('transition-colors hover:bg-surface-800/50', !isLast && 'border-b border-surface-800')}>
+                                  <tr key={ab.source} className={cn('transition-colors hover:bg-[var(--rowhover)]', !isLast && 'border-b border-surface-700')}>
                                     <td className="px-3 py-2">
                                       <div className="flex items-center gap-1.5">
                                         <span style={{ color: cfg.color }}>{cfg.icon}</span>
                                         <span className="text-surface-300 font-medium">{cfg.label}</span>
                                       </div>
                                       {ab.adCampaignName && (
-                                        <p className="text-3xs text-surface-600 mt-0.5 pl-4">{ab.adCampaignName}</p>
+                                        <p className="text-2xs text-surface-600 mt-0.5 pl-4">{ab.adCampaignName}</p>
                                       )}
                                     </td>
                                     <td className="px-3 py-2 text-right text-surface-300">{ab.contactCount}</td>
-                                    <td className="px-3 py-2 text-right text-surface-300">{ab.readCount} <span className="text-surface-600">({Math.round(ab.readRate * 100)}%)</span></td>
+                                    <td className="px-3 py-2 text-right text-surface-300">{ab.readCount} <span className="text-surface-600">({pct100(ab.readRate)}%)</span></td>
                                     <td className="px-3 py-2 text-right text-surface-300">{ab.replyCount}</td>
-                                    <td className="px-3 py-2 text-right font-bold" style={{ color: cfg.color }}>{ab.conversionCount}</td>
-                                    <td className="px-3 py-2 text-right font-bold" style={{ color: cfg.color }}>{Math.round(ab.conversionRate * 100)}%</td>
+                                    <td className="px-3 py-2 text-right font-semibold" style={{ color: cfg.color }}>{ab.conversionCount}</td>
+                                    <td className="px-3 py-2 text-right font-semibold" style={{ color: cfg.color }}>{pct100(ab.conversionRate)}%</td>
                                   </tr>
                                 )
                               })}
@@ -669,43 +786,29 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {conversations.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-surface-300 mb-3">Distribuição por resultado</p>
-                          <div className="grid grid-cols-4 gap-2">
-                            {Object.entries(OUTCOME_CONFIG).map(([key, cfg]) => {
-                              const count = conversations.filter((c) => c.outcome === key).length
-                              return (
-                                <button
-                                  key={key}
-                                  onClick={() => setOutcomeFilter(outcomeFilter === key ? 'all' : key)}
-                                  className={cn(
-                                    'rounded-xl p-2.5 border text-center transition-all',
-                                    outcomeFilter === key
-                                      ? 'border-current'
-                                      : 'bg-surface-800 border-surface-700 hover:border-surface-600',
-                                  )}
-                                  style={outcomeFilter === key ? { backgroundColor: tint(cfg.color, 9), borderColor: tint(cfg.color, 38), color: cfg.color } : undefined}
-                                >
-                                  <p className="text-base font-bold" style={{ color: cfg.color }}>{count}</p>
-                                  <p className="text-[9px] text-surface-500 mt-0.5 leading-tight">{cfg.label}</p>
-                                </button>
-                              )
-                            })}
-                          </div>
+                          <StatStrip items={Object.entries(OUTCOME_CONFIG).map(([key, cfg]) => ({
+                            label: cfg.label,
+                            value: conversations.filter((c) => c.outcome === key).length,
+                            color: cfg.color,
+                            active: outcomeFilter === key,
+                            onClick: () => setOutcomeFilter(outcomeFilter === key ? 'all' : key),
+                          }))} />
                         </div>
                       )}
 
                       {/* Sentiment + filters row */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <Filter className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
-                        <span className="text-3xs text-surface-500">Sentimento:</span>
+                        <span className="text-2xs text-surface-500">Sentimento:</span>
                         {['all', 'positive', 'neutral', 'negative'].map((s) => (
                           <button
                             key={s}
                             onClick={() => setSentimentFilter(s)}
                             className={cn(
-                              'px-2 py-0.5 rounded-full text-3xs font-medium border transition-all',
+                              'px-2 py-0.5 rounded-full text-2xs font-medium border transition-all',
                               sentimentFilter === s
-                                ? 'bg-surface-700 border-surface-500 text-surface-200'
-                                : 'border-surface-800 text-surface-500 hover:text-surface-300',
+                                ? 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-200'
+                                : 'border-surface-700 text-surface-500 hover:text-surface-300',
                             )}
                           >
                             {s === 'all' ? 'Todos' : SENTIMENT_CONFIG[s]?.label ?? s}
@@ -714,41 +817,42 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         {(outcomeFilter !== 'all' || sentimentFilter !== 'all') && (
                           <button
                             onClick={() => { setOutcomeFilter('all'); setSentimentFilter('all') }}
-                            className="ml-auto text-3xs text-brand-400 hover:text-brand-300 transition-colors"
+                            className="ml-auto text-2xs text-accent-dark hover:opacity-80 transition-colors"
                           >
                             Limpar filtros
                           </button>
                         )}
                       </div>
 
-                      {/* Conversation list */}
-                      <div className="space-y-2">
-                        {filteredConvs.length === 0 && (
-                          <div className="flex flex-col items-center py-8 gap-2 text-surface-500">
-                            <MessageCircle className="w-6 h-6" />
-                            <p className="text-xs">Nenhuma conversa encontrada com esses filtros</p>
-                          </div>
-                        )}
+                      {/* Conversation list — direção C: faixa com linha de
+                          1px entre conversas, não um cartão por conversa. */}
+                      {filteredConvs.length === 0 ? (
+                        <div className="flex flex-col items-center py-8 gap-2 text-surface-500">
+                          <MessageCircle className="w-6 h-6" />
+                          <p className="text-xs">Nenhuma conversa encontrada com esses filtros</p>
+                        </div>
+                      ) : (
+                      <div className="border border-surface-700 rounded-[10px] divide-y divide-surface-700 overflow-hidden">
                         {filteredConvs.map((conv) => {
                           const outcomeCfg = OUTCOME_CONFIG[conv.outcome] ?? { label: conv.outcome, color: 'var(--color-status-muted)' }
                           const sentimentCfg = SENTIMENT_CONFIG[conv.sentiment] ?? { label: conv.sentiment, color: 'var(--color-status-muted)' }
                           const adCfg = conv.adSource ? getPlatformCfg(conv.adSource) : null
                           return (
-                            <div key={conv.contactId} className="px-3 py-2.5 bg-surface-800 border border-surface-700 rounded-xl space-y-1.5">
+                            <div key={conv.contactId} className="px-3 py-2.5 space-y-1.5">
                               <div className="flex items-start gap-2">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-xs font-semibold text-surface-200">{conv.contactName}</span>
-                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-2xs font-semibold"
                                       style={{ ['--chip']: outcomeCfg.color } as React.CSSProperties}>
                                       {outcomeCfg.label}
                                     </span>
-                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-medium"
+                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-2xs font-medium"
                                       style={{ ['--chip']: sentimentCfg.color } as React.CSSProperties}>
                                       {sentimentCfg.label}
                                     </span>
                                     {adCfg && (
-                                      <span className="color-chip flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium"
+                                      <span className="color-chip flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-2xs font-medium"
                                         style={{ ['--chip']: adCfg.color } as React.CSSProperties}>
                                         {adCfg.icon}
                                         {conv.adCampaignName ?? adCfg.label}
@@ -758,10 +862,10 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   <p className="text-2xs text-surface-400 mt-1 leading-relaxed line-clamp-2">{conv.lastMessageSnippet}</p>
                                 </div>
                                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                  <span className="text-[9px] text-surface-600">{fmtDate(conv.lastMessageAt)}</span>
+                                  <span className="text-2xs text-surface-600">{fmtDate(conv.lastMessageAt)}</span>
                                   <button
                                     onClick={() => { onClose(); navigate(`/contacts?contact=${conv.contactId}`) }}
-                                    className="text-[9px] text-brand-400 hover:text-brand-300 transition-colors flex items-center gap-0.5"
+                                    className="text-2xs text-accent-dark hover:opacity-80 transition-colors flex items-center gap-0.5"
                                   >
                                     <ExternalLink className="w-2.5 h-2.5" />
                                     CRM
@@ -772,24 +876,22 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           )
                         })}
                       </div>
+                      )}
 
                       {/* Sentiment summary chart */}
                       {conversations.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-surface-300 mb-3">Sentimento geral</p>
-                          <div className="flex gap-2">
-                            {Object.entries(SENTIMENT_CONFIG).map(([key, cfg]) => {
-                              const count = conversations.filter((c) => c.sentiment === key).length
-                              const pctVal = Math.round((count / conversations.length) * 100)
-                              return (
-                                <div key={key} className="flex-1 bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                                  <p className="text-lg font-bold" style={{ color: cfg.color }}>{pctVal}%</p>
-                                  <p className="text-3xs text-surface-500 mt-0.5">{cfg.label}</p>
-                                  <p className="text-3xs text-surface-600">{count} conversa{count !== 1 ? 's' : ''}</p>
-                                </div>
-                              )
-                            })}
-                          </div>
+                          <StatStrip items={Object.entries(SENTIMENT_CONFIG).map(([key, cfg]) => {
+                            const count = conversations.filter((c) => c.sentiment === key).length
+                            const pctVal = Math.round((count / conversations.length) * 100)
+                            return {
+                              label: cfg.label,
+                              value: `${pctVal}%`,
+                              sub: `${count} conversa${count !== 1 ? 's' : ''}`,
+                              color: cfg.color,
+                            }
+                          })} />
                         </div>
                       )}
                     </>
@@ -799,20 +901,11 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                   {tab === 'churn' && analytics && (
                     <>
                       {/* Summary */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-danger">{totalChurn}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Total churn</p>
-                        </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-amber-400">{pct(totalChurn, stats.sent)}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Taxa de churn</p>
-                        </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-surface-300">{pct(stats.optedOut ?? analytics.churnBreakdown.optOut + analytics.churnBreakdown.blocked, stats.sent)}</p>
-                          <p className="text-3xs text-surface-500 mt-0.5">Descadastraram</p>
-                        </div>
-                      </div>
+                      <StatStrip items={[
+                        { label: 'Total churn',      value: totalChurn,                     color: 'var(--color-danger)' },
+                        { label: 'Taxa de churn',    value: pct(totalChurn, stats.sent),     color: 'var(--color-accent-amber)' },
+                        { label: 'Descadastraram',   value: pct(stats.optedOut ?? analytics.churnBreakdown.optOut + analytics.churnBreakdown.blocked, stats.sent) },
+                      ]} />
 
                       {/* Pie + breakdown */}
                       {churnPieData.length > 0 && (
@@ -835,17 +928,18 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               <div key={i} className="flex items-center gap-2">
                                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[i % churnColors.length] }} />
                                 <span className="text-2xs text-surface-400 flex-1 truncate">{d.name}</span>
-                                <span className="text-2xs font-bold text-surface-200 flex-shrink-0">{d.value}</span>
-                                <span className="text-3xs text-surface-600 w-10 text-right flex-shrink-0">{pct(d.value, totalChurn)}</span>
+                                <span className="text-2xs font-semibold text-surface-200 flex-shrink-0">{d.value}</span>
+                                <span className="text-2xs text-surface-600 w-10 text-right flex-shrink-0">{pct(d.value, totalChurn)}</span>
                               </div>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      {/* Interpretation */}
-                      <div className="bg-surface-800 border border-surface-700 rounded-xl p-4 space-y-2.5">
-                        <p className="text-3xs font-semibold text-surface-400 uppercase tracking-wider">Interpretação dos motivos</p>
+                      {/* Interpretation — direção C: linha de 1px no topo em
+                          vez de cartão com fundo. */}
+                      <div className="border-t border-surface-700 pt-3 space-y-2.5">
+                        <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wider">Interpretação dos motivos</p>
                         {analytics.churnBreakdown.optOut > 0 && (
                           <div className="flex gap-2">
                             <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[0] }} />

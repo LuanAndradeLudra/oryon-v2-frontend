@@ -50,3 +50,22 @@ describe('destinoDeVolta', () => {
     expect(destinoDeVolta(new URLSearchParams(`voltarPara=${encodeURIComponent(destino)}`))).toBeNull()
   })
 })
+
+// Revisão 02/10: barra invertida e caracteres de controle passavam na checagem
+// "começa com / e não com //" e o navegador os resolve para OUTRA origem
+// ('/\evil.com' → https://evil.com) — redirecionamento aberto.
+describe('voltarPara — não aceita truques que levam para fora da aplicação', () => {
+  const p = (v: string) => new URLSearchParams({ voltarPara: v })
+  it.each([
+    ['/' + String.fromCharCode(92) + 'evil.com'],
+    ['/' + String.fromCharCode(92) + String.fromCharCode(92) + 'evil.com'],
+    ['/\t/evil.com'],
+    ['/\n/evil.com'],
+    ['/%5Cevil.com'.replace('%5C', String.fromCharCode(92))],
+  ])('recusa %j', (valor) => {
+    expect(destinoDeVolta(p(valor))).toBeNull()
+  })
+  it('continua aceitando caminho interno com busca e hash', () => {
+    expect(destinoDeVolta(p('/conversations?id=1&aba=fila#x'))?.para).toBe('/conversations?id=1&aba=fila#x')
+  })
+})

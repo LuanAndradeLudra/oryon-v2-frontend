@@ -188,3 +188,16 @@ describe('findingReasonLabel', () => {
     expect(findingReasonLabel(null, null)).toBe('sem confirmação nas fontes')
   })
 })
+
+// Onda 2 da auditoria dos agentes: falhas e laço sem resposta não são "ação alegada".
+describe('outcomes de falha e laço sem resposta (onda 2)', () => {
+  it.each(['chat_deadline_exceeded', 'chat_failed', 'chat_unavailable', 'agent_max_turns', 'agent_loop_aborted', 'agent_empty_reply'])(
+    '%s não fala em ação alegada',
+    (outcome) => {
+      const label = guardReasonLabel({ kind: 'handoff', outcome, claimType: null })
+      expect(label).toMatch(/passada para a equipe/)
+      expect(label).not.toContain('uma ação')
+      expect(guardCheckGuidance(outcome, null)).not.toContain('uma ação')
+    },
+  )
+})

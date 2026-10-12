@@ -1,25 +1,32 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Brain, Bot, BarChart2, Sparkles,
+  Bot, BarChart2, Sparkles,
   Globe, Instagram, Facebook, Linkedin, Twitter, Phone,
-  UploadCloud, FileText, FileImage, File, X, Loader2, CheckCircle2, AlertCircle, RefreshCw,
+  UploadCloud, FileText, FileImage, File, X, CheckCircle2, AlertCircle, RefreshCw,
 } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
+import { Textarea } from '@/components/ui/Textarea'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Button } from '@/components/ui/Button'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast, showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-  loadHubAsync, saveHub, syncBrainToRag, DEFAULT_HUB,
+  loadHubOrNull, saveHubAndWait, syncBrainToRag, DEFAULT_HUB,
   type CompanyHubData, type BrandFile,
 } from '@/services/companyContextService'
 import { extractBrandFile } from '@/services/agentsApi'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
+import { CABECALHO_FIXO } from '../barraDeSalvar'
+import { cn } from '@/lib/utils'
+import { SettingsSectionsProvider } from '../SettingsSection'
+import { Check, Circle } from 'lucide-react'
+import { useKnowledgeBase } from '@/hooks/useKnowledgeBase'
+import { ItensDaBaseDoCopilot } from '@/components/copilot/BaseDoCopilot'
+import { useAvisoAoSair } from './useAvisoAoSair'
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
@@ -55,29 +62,12 @@ function PillToggle({ label, selected, onClick }: { label: string; selected: boo
       onClick={onClick}
       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
         selected
-          ? 'bg-brand-600 border-brand-500 text-surface-950 shadow-sm shadow-brand-900/40'
+          ? 'bg-accent-soft border-brand-500/40 text-accent-dark'
           : 'bg-surface-800 border-surface-700 text-surface-300 hover:border-surface-600 hover:text-surface-100'
       }`}
     >
       {label}
     </button>
-  )
-}
-
-function UsedByBadges() {
-  return (
-    <div className="flex items-center flex-wrap gap-2">
-      <span className="text-xs text-surface-500">Alimenta automaticamente:</span>
-      {[
-        { icon: Sparkles,  label: 'Copilot',       color: 'text-brand-400 bg-brand-500/10 border-brand-500/25' },
-        { icon: Bot,       label: 'Agent Builder', color: 'text-status-active bg-status-active-bg border-status-active-border' },
-        { icon: BarChart2, label: 'CRM Setup',     color: 'text-status-pending bg-status-pending-bg border-status-pending-border' },
-      ].map(({ icon: Icon, label, color }) => (
-        <span key={label} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${color}`}>
-          <Icon className="w-3 h-3" />{label}
-        </span>
-      ))}
-    </div>
   )
 }
 
@@ -127,16 +117,16 @@ function AnalysisProgress() {
           <div className="absolute inset-0 rounded-full border-2 border-brand-500/30" />
           <div className="absolute inset-0 rounded-full border-2 border-brand-400 border-t-transparent animate-spin" />
         </div>
-        <p className="text-[11px] text-brand-400 transition-all duration-500">{ANALYSIS_STEPS[step]}</p>
+        <p className="text-xs text-brand-400 transition-all duration-500">{ANALYSIS_STEPS[step]}</p>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1 bg-surface-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-brand-600 to-brand-400 rounded-full transition-all duration-1000 ease-out"
+            className="h-full bg-brand-500 rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <span className="text-[10px] text-surface-600 tabular-nums w-8 text-right">{elapsed}s</span>
+        <span className="text-xs text-surface-600 tabular-nums w-8 text-right">{elapsed}s</span>
       </div>
     </div>
   )
@@ -246,21 +236,24 @@ function BrandFilesSection({
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onClick={() => inputRef.current?.click()}
-        className={`flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
+        // Eixo 10: surface-800 é branco no claro — a 40/70% de opacidade a
+        // zona quase some contra o fundo da página. --sf2/--rowhover têm
+        // valor dedicado nos dois temas.
+        className={`flex items-center gap-3 rounded-[6px] border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
           dragOver
-            ? 'border-brand-500 bg-brand-500/8'
-            : 'border-surface-700 bg-surface-800/40 hover:border-surface-600 hover:bg-surface-800/70'
+            ? 'border-brand-500 bg-accent-soft'
+            : 'border-surface-700 bg-[var(--sf2)] hover:border-surface-600 hover:bg-[var(--rowhover)]'
         }`}
       >
         <input ref={inputRef} type="file" multiple accept={ACCEPTED_ATTR} className="sr-only" onChange={handleInput} />
-        <div className="w-8 h-8 rounded-lg bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-[6px] bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0">
           <UploadCloud className="w-4 h-4 text-surface-400" />
         </div>
         <div>
           <p className="text-xs font-medium text-surface-200">
             Arraste ou <span className="text-brand-400">clique para selecionar</span>
           </p>
-          <p className="text-[11px] text-surface-500 mt-0.5">PDF · DOCX · PNG · JPG · WEBP · TXT — até {MAX_FILE_MB} MB</p>
+          <p className="text-xs text-surface-500 mt-0.5">PDF · DOCX · PNG · JPG · WEBP · TXT — até {MAX_FILE_MB} MB</p>
         </div>
       </div>
 
@@ -269,25 +262,25 @@ function BrandFilesSection({
         <div className="mt-3 space-y-2">
           {entries.map(({ file, status, error: fileError }) => (
             <div key={file.id}>
-              <div className="flex items-start gap-3 rounded-xl bg-surface-800/60 border border-surface-700/60 px-3 py-2.5">
+              <div className="flex items-start gap-3 rounded-[6px] border border-surface-700 px-3 py-2.5">
                 <div className="flex-shrink-0 mt-0.5">{fileIcon(file.mimeType)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-xs font-medium text-surface-200 truncate">{file.name}</p>
-                    <span className="text-[10px] text-surface-600 flex-shrink-0">{formatBytes(file.size)}</span>
+                    <span className="text-xs text-surface-600 flex-shrink-0">{formatBytes(file.size)}</span>
                   </div>
                   {status === 'analyzing' && <AnalysisProgress />}
                   {status === 'done' && file.extractedText ? (
-                    <p className="text-[11px] text-status-active mt-0.5 flex items-center gap-1">
+                    <p className="text-xs text-status-active mt-0.5 flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />{file.extractedText.length.toLocaleString()} caracteres extraídos
                     </p>
                   ) : status === 'done' && !file.extractedText ? (
-                    <p className="text-[11px] text-red-400 mt-0.5 flex items-center gap-1">
+                    <p className="text-xs text-red-400 mt-0.5 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />Sem conteúdo — edite manualmente
                     </p>
                   ) : null}
                   {status === 'error' && (
-                    <p className="text-[11px] text-red-400 mt-0.5 flex items-center gap-1">
+                    <p className="text-xs text-red-400 mt-0.5 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />{fileError ?? 'Erro ao analisar'}
                     </p>
                   )}
@@ -301,14 +294,14 @@ function BrandFilesSection({
                         else { setEditingId(file.id); setEditText(file.extractedText ?? '') }
                       }}
                       title="Ver/Editar texto"
-                      className="p-1 rounded-lg text-surface-600 hover:text-brand-400 hover:bg-surface-700 transition"
+                      className="p-1 rounded-[6px] text-surface-600 hover:text-brand-400 hover:bg-[var(--rowhover)] transition"
                     >
                       {editingId === file.id ? <X className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
                     </button>
                     <button
                       type="button"
                       onClick={() => setRemoveTarget(file.id)}
-                      className="p-1 rounded-lg text-surface-600 hover:text-red-400 hover:bg-surface-700 transition"
+                      className="p-1 rounded-[6px] text-surface-600 hover:text-danger hover:bg-[var(--rowhover)] transition"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -340,7 +333,7 @@ function BrandFilesSection({
       )}
 
       {analyzing && (
-        <p className="mt-2 text-[11px] text-surface-500 text-center">
+        <p className="mt-2 text-xs text-surface-500 text-center">
           Salve após a análise concluir para persistir os arquivos no contexto.
         </p>
       )}
@@ -350,6 +343,7 @@ function BrandFilesSection({
         onClose={() => setRemoveTarget(null)}
         onConfirm={remove}
         title="Remover arquivo da marca"
+        impact={{ label: `Arquivo ${entries.find(e => e.file.id === removeTarget)?.file.name ?? ''}`.trim(), tone: 'danger' }}
         description="O arquivo será removido do contexto da empresa. Salve para confirmar a remoção permanente."
         confirmLabel="Remover arquivo"
         danger
@@ -362,23 +356,44 @@ function BrandFilesSection({
 
 export function CompanyBrain() {
   const { user } = useAuth()
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const [form, setForm] = useState<CompanyHubData>({ ...DEFAULT_HUB })
   const [fetching, setFetching] = useState(true)
+  // Revisão 11/10: leitura do contexto que falhou NÃO vira formulário vazio
+  // salvável — gravar em cima de um vazio falso apagaria tudo no servidor.
+  const [erroHub, setErroHub] = useState(false)
+  const [tentativaHub, setTentativaHub] = useState(0)
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  // O que está salvo, para dizer "alterações não salvas".
+  const [salvoJson, setSalvoJson] = useState('')
+  // Proposta SCRUM-1253 (PO, 08/10): a base do Copilot entrou aqui — um lugar
+  // só para o que a IA sabe. As instruções salvam junto com o contexto.
+  // Uma fonte só da base (revisão 11/10): esta instância é passada aos itens
+  // do Copilot por props, e o hook compartilha o estado com o resto do app.
+  const base = useKnowledgeBase(user?.tenantId)
+  const basePronta = base.carga === 'pronta'
+  const [instrucoes, setInstrucoes] = useState<string | null>(null)
+  const instrucoesValor = instrucoes ?? base.kb.instructions
+  const instrucoesMudaram = instrucoes !== null && instrucoes !== base.kb.instructions
 
   useEffect(() => {
     if (!user?.tenantId) { setFetching(false); return }
     let cancelled = false
     setFetching(true)
-    loadHubAsync(user.tenantId).then(hub => {
+    setErroHub(false)
+    loadHubOrNull(user.tenantId).then(hub => {
       if (cancelled) return
-      setForm(hub)
+      if (hub) {
+        setForm(hub)
+        setSalvoJson(JSON.stringify(hub))
+      } else {
+        setErroHub(true)
+      }
       setFetching(false)
     })
     return () => { cancelled = true }
-  }, [user?.tenantId])
+  }, [user?.tenantId, tentativaHub])
 
   const patch = (partial: Partial<CompanyHubData>) =>
     setForm(prev => ({ ...prev, ...partial }))
@@ -391,19 +406,40 @@ export function CompanyBrain() {
         : [...prev.businessType, value],
     }))
 
-  const save = () => {
+  // Revisão 11/10: as duas gravações são esperadas; o "não salvo" só some
+  // do que de fato gravou, e qualquer falha aparece.
+  const save = async () => {
+    if (erroHub || fetching) return
     setLoading(true)
+    const erros: string[] = []
     try {
-      saveHub(user?.tenantId, form)
-      toast('Contexto salvo. Copilot, agentes e CRM já usam as novas informações.', 'success')
-    } catch {
-      toast('Erro ao salvar. Tente novamente.', 'error')
+      const hubMudou = JSON.stringify(form) !== salvoJson
+      if (hubMudou) {
+        const r = await saveHubAndWait(user?.tenantId, form)
+        if (r === 'ok') {
+          const salvo = { ...form, lastUpdatedAt: new Date().toISOString() }
+          setForm(salvo)
+          setSalvoJson(JSON.stringify(salvo))
+        } else {
+          erros.push(r === 'forbidden' ? 'Só administradores podem alterar o contexto da empresa.' : 'O contexto da empresa não foi salvo.')
+        }
+      }
+      if (instrucoesMudaram && instrucoes !== null) {
+        if (!basePronta) {
+          erros.push('As instruções do Copilot não foram salvas: a base do Copilot não carregou.')
+        } else {
+          const r = await base.setInstructions(instrucoes)
+          if (r.ok) setInstrucoes(null)
+          else erros.push(`Instruções do Copilot: ${r.erro}`)
+        }
+      }
+      if (erros.length === 0) toast('Contexto salvo. Copilot, agentes e CRM já usam as novas informações.', 'success')
+      else toast(erros.join(' '), 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  const hasContent = !!(form.companyName.trim() || form.industry || form.description.trim())
   const lastUpdated = form.lastUpdatedAt
     ? new Date(form.lastUpdatedAt).toLocaleDateString('pt-BR', {
         day: '2-digit', month: 'short', year: 'numeric',
@@ -411,38 +447,8 @@ export function CompanyBrain() {
       })
     : null
 
-  return (
-    <div className="w-full">
-      <SectionHeader
-        title="Contexto da IA"
-        description="Configure uma vez. Copilot, Agent Builder e o setup do CRM usam essas informações automaticamente."
-      />
-
-      {/* Status banner */}
-      <div className={`flex items-center gap-3 rounded-xl px-4 py-3 mb-4 border ${
-        hasContent ? 'bg-status-active-bg border-status-active-border' : 'bg-brand-950/50 border-brand-500/20'
-      }`}>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-          hasContent ? 'bg-status-active-bg' : 'bg-brand-500/20'
-        }`}>
-          <Brain className={`w-3.5 h-3.5 ${hasContent ? 'text-status-active' : 'text-brand-400'}`} />
-        </div>
-        <div className="flex-1 min-w-0 flex items-center gap-4 flex-wrap">
-          <div>
-            <span className="text-xs font-semibold text-surface-100">
-              {hasContent ? 'Contexto configurado' : 'Preencha o contexto da sua empresa'}
-            </span>
-            {hasContent && lastUpdated && (
-              <span className="text-xs text-surface-500 ml-2">· Atualizado {lastUpdated}</span>
-            )}
-            {!hasContent && (
-              <span className="text-xs text-surface-500 ml-2">· Injetado automaticamente no Copilot, agentes e CRM</span>
-            )}
-          </div>
-          <UsedByBadges />
-        </div>
-      </div>
-
+  const secoes = (
+    <>
       {/* Identidade */}
       <SettingsSection
         title="Identidade"
@@ -458,10 +464,10 @@ export function CompanyBrain() {
             </FormField>
 
             <FormField label="Setor / Indústria">
-              <Select value={form.industry} onChange={e => patch({ industry: e.target.value })}>
+              <SelectMenu value={form.industry} onChange={e => patch({ industry: e.target.value })}>
                 <option value="">Selecione...</option>
                 {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-              </Select>
+              </SelectMenu>
             </FormField>
 
             <FormField label="Modelo de negócio">
@@ -492,12 +498,12 @@ export function CompanyBrain() {
               label="O que você faz?"
               hint="Missão, público-alvo e principais diferenciais."
             >
-              <textarea
+              <Textarea
                 value={form.description}
                 onChange={e => patch({ description: e.target.value })}
                 placeholder="Ex: Plataforma de atendimento via WhatsApp para PMEs. Centralizamos conversas, automatizamos follow-ups e ajudamos equipes a fechar mais negócios..."
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+                className="resize-none"
               />
             </FormField>
 
@@ -505,12 +511,12 @@ export function CompanyBrain() {
               label="Produtos e serviços"
               hint="Liste o que você vende, com preços e detalhes para atendimento."
             >
-              <textarea
+              <Textarea
                 value={form.productsServices}
                 onChange={e => patch({ productsServices: e.target.value })}
                 placeholder={`Plano Starter — R$199/mês (até 3 usuários)\nPlano Pro — R$499/mês (usuários ilimitados)\nImplementação — a partir de R$2.000`}
                 rows={4}
-                className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+                className="resize-none"
               />
             </FormField>
         </div>
@@ -531,11 +537,11 @@ export function CompanyBrain() {
               { key: 'twitter',   label: 'Twitter / X',         icon: Twitter,    placeholder: '@handle ou link' },
             ] as const).map(({ key, label, icon: Icon, placeholder }) => (
               <div key={key} className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-[6px] bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0">
                   <Icon className="w-3 h-3 text-surface-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-surface-600 mb-0.5">{label}</p>
+                  <p className="text-xs text-surface-600 mb-0.5">{label}</p>
                   <Input value={form[key]} onChange={e => patch({ [key]: e.target.value })} placeholder={placeholder} aria-label={label} />
                 </div>
               </div>
@@ -549,7 +555,7 @@ export function CompanyBrain() {
         description="PDFs, DOCX, imagens e textos são lidos pela IA e o conteúdo alimenta o Copilot e os agentes."
       >
         <div className="flex justify-end mb-2">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 font-medium">Analisado por IA</span>
+          <span className="color-chip-soft text-xs px-2 py-0.5 rounded-[6px] border font-medium" style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}>Analisado por IA</span>
         </div>
         <BrandFilesSection
           files={form.brandFiles ?? []}
@@ -557,30 +563,135 @@ export function CompanyBrain() {
         />
       </SettingsSection>
 
-      <div className="flex justify-end gap-3 mt-6">
-        <Button
-          variant="secondary"
-          onClick={async () => {
-            setSyncing(true)
-            try {
-              const result = await syncBrainToRag()
-              toast(`${result.synced} documento(s) sincronizado(s) com a base de conhecimento.`, 'success')
-            } catch {
-              toast('Erro ao sincronizar com a base de conhecimento.', 'error')
-            } finally {
-              setSyncing(false)
-            }
-          }}
-          disabled={!(form.brandFiles?.length)}
-          loading={syncing}
-          leftIcon={<RefreshCw className="w-4 h-4" />}
+      {(
+        <SettingsSection
+          title="Instruções para o Copilot"
+          description="Como o Copilot deve responder a você e à equipe: tom, formato e o que priorizar. Os agentes que atendem clientes seguem a configuração de cada agente."
         >
-          Sincronizar com IA
-        </Button>
-        <Button onClick={save} loading={loading} disabled={fetching}>Salvar contexto</Button>
-      </div>
+          {base.carga === 'erro' ? (
+            <div role="alert" className="flex items-center gap-3 rounded-[10px] border border-danger/30 bg-danger/5 px-4 py-3 text-xs text-danger">
+              <span className="flex-1">{base.erroCarga ?? 'Não foi possível carregar as instruções do Copilot.'} Para não apagar o que está salvo, a edição fica bloqueada.</span>
+              <button type="button" onClick={base.recarregar} className="font-semibold underline underline-offset-2 hover:opacity-80">Tentar de novo</button>
+            </div>
+          ) : (
+            <Textarea
+              value={instrucoesValor}
+              onChange={(e) => setInstrucoes(e.target.value)}
+              disabled={!basePronta}
+              rows={5}
+              placeholder={basePronta ? 'Ex.: responda de forma objetiva, em tópicos; quando falar de vendas, traga os números da semana.' : 'Carregando…'}
+              aria-label="Instruções para o Copilot"
+            />
+          )}
+        </SettingsSection>
+      )}
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
-    </div>
+      <SettingsSection
+        title="Base do Copilot"
+        description="Campos e documentos que o Copilot usa ao responder você e a equipe. Os agentes que atendem clientes usam Sobre o negócio e Arquivos da marca. Cada alteração aqui é salva na hora."
+      >
+        <ItensDaBaseDoCopilot base={base} />
+      </SettingsSection>
+    </>
   )
+
+  const sincronizar = async () => {
+    setSyncing(true)
+    try {
+      const result = await syncBrainToRag()
+      toast(`${result.synced} documento(s) sincronizado(s) com a base de conhecimento.`, 'success')
+    } catch {
+      toast('Erro ao sincronizar com a base de conhecimento.', 'error')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  // ── SCRUM-1253 (PO, 07/10): o formulário à esquerda; à direita, o
+  // que a IA já sabe (o quanto está preenchido, item a item, e quem usa) — no
+  // lugar do banner verde. Salvar no cabeçalho fixo, com o estado ao lado.
+  {
+    const sujo = (!!salvoJson && JSON.stringify(form) !== salvoJson) || instrucoesMudaram
+    useAvisoAoSair(sujo)
+    const redes = [form.website, form.instagram, form.facebook, form.linkedin, form.twitter, form.whatsapp].filter((x) => x?.trim()).length
+    const arquivos = form.brandFiles?.length ?? 0
+    const itens = [
+      { rotulo: 'Nome da empresa', feito: !!form.companyName.trim(), ancora: 'identidade' },
+      { rotulo: 'Setor', feito: !!form.industry, ancora: 'identidade' },
+      { rotulo: 'O que a empresa faz', feito: !!form.description.trim(), ancora: 'sobre-o-negocio' },
+      { rotulo: 'Produtos e preços', feito: !!form.productsServices.trim(), ancora: 'sobre-o-negocio' },
+      { rotulo: redes ? `Site e redes (${redes})` : 'Site e redes', feito: redes > 0, ancora: 'presenca-online' },
+      { rotulo: arquivos ? `Arquivos da marca (${arquivos})` : 'Arquivos da marca', feito: arquivos > 0, ancora: 'arquivos-da-marca' },
+      ...([{ rotulo: 'Instruções para o Copilot', feito: !!instrucoesValor.trim(), ancora: 'instrucoes-para-o-copilot' }]),
+    ]
+    const pct = Math.round((itens.filter((i) => i.feito).length / itens.length) * 100)
+    return (
+      <div className="w-full">
+        <SectionHeader
+          title="Contexto da IA"
+          description="Configure uma vez: o Copilot, os agentes de IA e a configuração do CRM usam estas informações."
+          className={CABECALHO_FIXO}
+          action={
+            <div className="flex items-center gap-3">
+              {erroHub ? (
+                <span role="alert" className="inline-flex items-center gap-1.5 text-xs text-danger">
+                  <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+                  <span className="hidden sm:inline">O contexto não carregou.</span>
+                  <button type="button" onClick={() => setTentativaHub((n) => n + 1)} className="font-semibold underline underline-offset-2">Tentar de novo</button>
+                </span>
+              ) : (
+                <span className={cn('hidden items-center gap-1.5 text-xs sm:inline-flex', sujo ? 'text-status-pending' : 'text-surface-500')}>
+                  <span className={cn('h-1.5 w-1.5 rounded-full', sujo ? 'bg-status-pending' : 'bg-surface-500')} aria-hidden />
+                  {sujo ? 'Alterações não salvas' : lastUpdated ? `Salvo · ${lastUpdated}` : 'Nada salvo ainda'}
+                </span>
+              )}
+              <Button onClick={() => void save()} loading={loading} disabled={fetching || erroHub || !sujo}>Salvar contexto</Button>
+            </div>
+          }
+        />
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_248px] lg:gap-8">
+          {/* Provider próprio: o índice "Nesta página" do layout não duplica o painel ao lado. */}
+          <SettingsSectionsProvider>
+            <div className="min-w-0">{secoes}</div>
+          </SettingsSectionsProvider>
+          <aside className="mt-6 lg:mt-0">
+            <div className="rounded-[10px] border border-surface-700 bg-surface-800 p-4 lg:sticky lg:top-[132px]">
+              <div className="flex items-baseline justify-between">
+                <p className="text-sm font-semibold text-surface-100">O que a IA já sabe</p>
+                <span className="text-xs font-semibold tabular-nums text-surface-300">{pct}%</span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#EAEEF3] [:root:not([data-theme=light])_&]:bg-surface-700" aria-hidden>
+                <div className="h-full rounded-full bg-[var(--color-btn-primary-bg)]" style={{ width: `${pct}%` }} />
+              </div>
+              <ul className="mt-3 flex flex-col gap-1.5">
+                {itens.map((i) => (
+                  <li key={i.rotulo}>
+                    <a href={`#${i.ancora}`} className="flex items-center gap-2 text-xs hover:underline">
+                      {i.feito
+                        ? <Check className="h-3.5 w-3.5 flex-shrink-0 text-accent-dark" aria-hidden />
+                        : <Circle className="h-3.5 w-3.5 flex-shrink-0 text-surface-500" aria-hidden />}
+                      <span className={i.feito ? 'text-surface-200' : 'text-surface-400'}>{i.rotulo}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 border-t border-surface-700 pt-3">
+                <p className="text-2xs text-surface-500">Quem usa este contexto</p>
+                <ul className="mt-1.5 flex flex-col gap-1 text-xs text-surface-300">
+                  <li className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-surface-400" aria-hidden />Copilot</li>
+                  <li className="flex items-center gap-1.5"><Bot className="h-3.5 w-3.5 text-surface-400" aria-hidden />Agentes de IA</li>
+                  <li className="flex items-center gap-1.5"><BarChart2 className="h-3.5 w-3.5 text-surface-400" aria-hidden />Configuração do CRM</li>
+                </ul>
+              </div>
+              {arquivos > 0 && (
+                <Button variant="secondary" size="sm" className="mt-4 w-full" onClick={() => void sincronizar()} loading={syncing} leftIcon=<RefreshCw className="h-3.5 w-3.5" />>
+                  Sincronizar arquivos com a IA
+                </Button>
+              )}
+            </div>
+          </aside>
+        </div>
+      </div>
+    )
+  }
 }

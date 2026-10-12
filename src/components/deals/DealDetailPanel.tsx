@@ -10,7 +10,7 @@
 // resolve isso no cliente (pipeline do `CRMConfigContext`, histórico próprio).
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Loader2, AlertTriangle, Lock } from 'lucide-react'
-import { dealsApi, usersApi } from '@/services/api'
+import { dealsApi, usersApi, contactsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useToast } from '@/hooks/useToast'
@@ -24,7 +24,8 @@ import { DealActivityTab } from './tabs/DealActivityTab'
 import { DealConversationsTab } from './tabs/DealConversationsTab'
 import type { Deal, DealStageHistoryEntry, PipelineStage, User } from '@/types'
 
-type TabId = 'summary' | 'activity' | 'conversations'
+export type DealPanelTabId = 'summary' | 'activity' | 'conversations'
+type TabId = DealPanelTabId
 
 interface DealDetailPanelProps {
   dealId: string
@@ -42,6 +43,15 @@ interface DealDetailPanelProps {
    * painel. Quem tem a rota é quem abre o painel.
    */
   rotaAtual?: string
+  /**
+   * Aba aberta, CONTROLADA por quem mostra a ficha (o painel global a guarda
+   * na URL — R6 · SCRUM-1161). Ausente = estado local, como antes (testes e a
+   * página /deals/:id, que não passam por lá).
+   */
+  aba?: DealPanelTabId
+  onAbaChange?: (aba: DealPanelTabId) => void
+  /** Abre a ficha do contato do negócio (o nome no cabeçalho vira link). */
+  onOpenContact?: (contactId: string) => void
 }
 
 function statusFromError(err: unknown): 404 | 403 | 'other' {
@@ -51,14 +61,22 @@ function statusFromError(err: unknown): 404 | 403 | 'other' {
   return 'other'
 }
 
-export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: DealDetailPanelProps) {
+export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual, aba, onAbaChange, onOpenContact }: DealDetailPanelProps) {
   const { pipelines } = useCRMConfig()
   const { toast } = useToast()
   const [deal, setDeal] = useState<Deal | null>(null)
   const [loadState, setLoadState] = useState<'loading' | 'ok' | 404 | 403 | 'error'>('loading')
   const [history, setHistory] = useState<DealStageHistoryEntry[] | 'loading' | 'error'>('loading')
   const [users, setUsers] = useState<User[]>([])
-  const [activeTab, setActiveTab] = useState<TabId>('summary')
+  const [abaLocal, setAbaLocal] = useState<TabId>('summary')
+  const activeTab: TabId = aba ?? abaLocal
+  const setActiveTab = (next: TabId) => { if (onAbaChange) onAbaChange(next); else setAbaLocal(next) }
+  /**
+   * Quem é o contato do negócio. A ficha não dizia — nem nome, nem telefone —,
+   * só pela aba Conversas (auditoria de Funis, 27/09). `GET /deals/:id` não
+   * traz o contato; até o backend incluí-lo, uma leitura leve à parte.
+   */
+  const [contato, setContato] = useState<{ id: string; name: string; phone: string | null } | null>(null)
   const [closeTarget, setCloseTarget] = useState<{ deal: Deal; stage: PipelineStage } | null>(null)
   const bodyRef = useRef<HTMLDivElement | null>(null)
 
@@ -73,22 +91,36 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
     setDeal(null)
     setLoadState('loading')
     setHistory('loading')
-    setActiveTab('summary')
+    setAbaLocal('summary')
+    setContato(null)
   }
 
+  // Revisão 02/10: o painel troca de negócio sem desmontar. Resposta que chega
+  // depois da troca (carga, histórico, salvar, mover) é do negócio ANTERIOR e
+  // não pode ocupar a ficha — senão a edição seguinte ia para o negócio errado.
+  // (Atualizado em efeito declarado ANTES do que busca: roda primeiro.)
+  const dealAtual = useRef(dealId)
+  useEffect(() => { dealAtual.current = dealId }, [dealId])
+  const gravarSeAtual = useCallback((d: Deal | null | undefined) => {
+    if (d && d.id === dealAtual.current) setDeal(d)
+  }, [])
+
   const loadDeal = useCallback(() => {
-    dealsApi.get(dealId)
-      .then((res) => { setDeal(res.data); setLoadState('ok') })
+    const id = dealId
+    dealsApi.get(id)
+      .then((res) => { if (id !== dealAtual.current) return; setDeal(res.data); setLoadState('ok') })
       .catch((err) => {
+        if (id !== dealAtual.current) return
         const status = statusFromError(err)
         setLoadState(status === 'other' ? 'error' : status)
       })
   }, [dealId])
 
   const loadHistory = useCallback(() => {
-    dealsApi.history(dealId)
-      .then((res) => setHistory(res.data))
-      .catch(() => setHistory('error'))
+    const id = dealId
+    dealsApi.history(id)
+      .then((res) => { if (id === dealAtual.current) setHistory(res.data) })
+      .catch(() => { if (id === dealAtual.current) setHistory('error') })
   }, [dealId])
 
   // Busca os dados do negócio (e o scroll ao topo, que é DOM — legitimamente
@@ -99,6 +131,22 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
     loadHistory()
     usersApi.list().then((res) => setUsers(res.data)).catch(() => setUsers([]))
   }, [dealId, loadDeal, loadHistory])
+
+  const contactId = deal?.contactId
+  useEffect(() => {
+    if (!contactId) return
+    let vivo = true
+    contactsApi.get(contactId)
+      .then((res) => {
+        if (!vivo) return
+        // A API devolve `phone`; o tipo do frontend só conhece `waId` (o
+        // número do WhatsApp) — vale o que vier.
+        const c = res.data as typeof res.data & { phone?: string | null }
+        setContato({ id: c.id, name: c.displayName, phone: c.phone ?? c.waId ?? null })
+      })
+      .catch(() => { /* sem o contato, o cabeçalho só não mostra a linha */ })
+    return () => { vivo = false }
+  }, [contactId])
 
   // Realtime — mesmo contrato dos outros consumidores (`{ contactId }`, ver
   // useContactPipelines/ConversationDealIndicator): sem `dealId` no payload,
@@ -134,12 +182,12 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
     setDeal({ ...deal, ...patch } as Deal)
     try {
       const res = await dealsApi.update(deal.id, patch)
-      setDeal(res.data)
+      gravarSeAtual(res.data)
     } catch (err: unknown) {
-      setDeal(previous)
+      gravarSeAtual(previous)
       toast(getApiErrorMessage(err, 'Não foi possível salvar.'), 'error')
     }
-  }, [deal, toast])
+  }, [deal, toast, gravarSeAtual])
 
   const handleMoveToStage = useCallback((stage: PipelineStage) => {
     if (!deal) return
@@ -164,12 +212,12 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
      * o backend exige `closeReason` e devolveria 400 `close_reason_required`.
      */
     dealsApi.moveStage(deal.id, stage.id)
-      .then((res) => setDeal(res.data))
+      .then((res) => gravarSeAtual(res.data))
       .catch((err: unknown) => {
-        setDeal((d) => (d ? { ...d, stageId: previousStageId } : d))
+        setDeal((d) => (d && d.id === deal.id ? { ...d, stageId: previousStageId } : d))
         toast(getApiErrorMessage(err, `Não foi possível mover o ${noun}.`), 'error')
       })
-  }, [deal, toast, noun])
+  }, [deal, toast, noun, gravarSeAtual])
 
   const handleCloseWithReason = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return
@@ -187,16 +235,16 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
   const handleTransferPipeline = useCallback((pipelineId: string) => {
     if (!deal) return
     dealsApi.movePipeline(deal.id, pipelineId)
-      .then((res) => { setDeal(res.data); toast(`${Noun} transferido de funil.`, 'success') })
+      .then((res) => { gravarSeAtual(res.data); toast(`${Noun} transferido de funil.`, 'success') })
       .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível transferir o ${noun}.`), 'error'))
-  }, [deal, toast])
+  }, [deal, toast, Noun, noun, gravarSeAtual])
 
   const handleDelete = useCallback(() => {
     if (!deal) return
     dealsApi.remove(deal.id)
       .then(() => { toast(`${Noun} excluído.`, 'success'); onClose?.() })
       .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível excluir o ${noun}.`), 'error'))
-  }, [deal, toast, onClose])
+  }, [deal, toast, onClose, Noun, noun])
 
   const lastEntry = Array.isArray(history) ? history[history.length - 1] : null
   const lastMovedLabel = lastEntry
@@ -285,6 +333,8 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
         onTransferPipeline={handleTransferPipeline}
         onDelete={handleDelete}
         onClose={onClose}
+        contato={contato}
+        onOpenContact={onOpenContact}
         /* Some quando a ficha já está aberta SOBRE o quadro daquele negócio —
            ali o botão levaria para onde já se está. Compara o funil do NEGÓCIO,
            não só "estou em /pipelines": aberta a ficha de um negócio de outro
@@ -292,20 +342,27 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
         onOpenBoard={onOpenBoard && deal && rotaAtual !== `/pipelines/${deal.pipelineId}` ? () => onOpenBoard(deal) : undefined}
       />
 
-      <div className="flex px-5 flex-shrink-0 border-b border-surface-800">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            data-testid={`deal-tab-${tab.id}`}
-            className="relative pb-3 pt-3 mr-5 text-sm font-medium transition-colors"
-            style={{ color: activeTab === tab.id ? 'var(--color-brand-400, #818cf8)' : 'var(--color-surface-400, #94a3b8)' }}
-          >
-            {tab.label}
-            {activeTab === tab.id && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-400 rounded-full" />}
-          </button>
-        ))}
+      {/* R2-1E-PANEL-01: abas no padrão do primitivo Tabs (13/500 --tx2, gap
+          18, ativa --tx 600 + sublinhado 2px em currentColor) — antes eram
+          brand-400 com sublinhado próprio, diferente do drawer de contato. Os
+          data-testid seguem, por isso não uso o <Tabs> direto. */}
+      <div role="tablist" aria-label="Seções do negócio" className="flex items-center gap-[18px] px-[18px] pt-3.5 flex-shrink-0 border-b border-surface-700 text-[13px] font-medium text-surface-400">
+        {TABS.map((tab) => {
+          const active = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setActiveTab(tab.id)}
+              data-testid={`deal-tab-${tab.id}`}
+              className={`whitespace-nowrap pb-2 transition-colors cursor-pointer ${active ? 'font-semibold text-surface-100 shadow-[inset_0_-2px_0_currentColor]' : 'hover:text-surface-100'}`}
+            >
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       <div ref={bodyRef} className="flex-1 overflow-y-auto">

@@ -184,3 +184,44 @@ describe('useResolveWithOutcome — ambiguidade de N abertos (C2)', () => {
     expect(onResolve).not.toHaveBeenCalled()
   })
 })
+
+// Revisão 02/10: trocar de conversa com o popover aberto (ou com a consulta do
+// alvo em andamento) não pode levar o desfecho para a conversa nova.
+function HarnessTroca({ id, onResolve }: { id: string; onResolve: (o?: unknown) => Promise<void> | void }) {
+  const r = useResolveWithOutcome({ conversationId: id, contactId: 'c1', onResolve })
+  return (
+    <>
+      <button onClick={() => void r.requestResolve()}>resolver</button>
+      <span data-testid="state">{r.target ? 'target' : r.loading ? 'loading' : 'idle'}</span>
+      <button onClick={() => void r.confirm({ dealOutcome: { outcome: 'won', reason: 'fechou' } })}>confirmar</button>
+    </>
+  )
+}
+
+describe('useResolveWithOutcome · troca de conversa', () => {
+  it('popover aberto em A some ao trocar para B; confirmar não resolve B', async () => {
+    api.conversationTarget.mockResolvedValue({ data: TARGET })
+    const onResolve = vi.fn()
+    const { rerender } = render(<HarnessTroca id="A" onResolve={onResolve} />)
+    fireEvent.click(screen.getByText('resolver'))
+    await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('target'))
+    rerender(<HarnessTroca id="B" onResolve={onResolve} />)
+    expect(screen.getByTestId('state')).toHaveTextContent('idle')
+    fireEvent.click(screen.getByText('confirmar'))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(onResolve).not.toHaveBeenCalled()
+  })
+
+  it('consulta do alvo de A que volta depois da troca não abre popover nem resolve B', async () => {
+    let soltar: (v: unknown) => void = () => {}
+    api.conversationTarget.mockReturnValue(new Promise((r) => { soltar = r }))
+    const onResolve = vi.fn()
+    const { rerender } = render(<HarnessTroca id="A" onResolve={onResolve} />)
+    fireEvent.click(screen.getByText('resolver'))
+    rerender(<HarnessTroca id="B" onResolve={onResolve} />)
+    soltar({ data: { target: 'no_target', stages: [] } })
+    await new Promise((r) => setTimeout(r, 10))
+    expect(onResolve).not.toHaveBeenCalled()
+    expect(screen.getByTestId('state')).toHaveTextContent('idle')
+  })
+})

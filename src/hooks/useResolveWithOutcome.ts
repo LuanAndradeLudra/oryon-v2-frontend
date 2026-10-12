@@ -7,7 +7,7 @@
 // abre o popover; "Só resolver" / "Sem decisão" resolvem sem `dealOutcome`
 // (registro segue aberto); "fechou" / "não fechou" mandam `dealOutcome` e, em
 // venda com valor informado, gravam o valor no registro antes de resolver.
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { dealsApi } from '@/services/api'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { selectableDeals } from '@/lib/dealIndicator'
@@ -21,7 +21,8 @@ export interface UseResolveWithOutcomeOptions {
   conversationId: string
   contactId: string
   /** Resolve a conversa (com ou sem desfecho) — a mesma ação do dropdown de status. */
-  onResolve: (dealOutcome?: DealOutcomeInput) => void | Promise<void>
+  /** `false` = não resolveu (o popover fica aberto para tentar de novo). */
+  onResolve: (dealOutcome?: DealOutcomeInput) => void | boolean | Promise<void | boolean>
 }
 
 export interface ResolveWithOutcomeState {
@@ -61,8 +62,18 @@ export function useResolveWithOutcome({ conversationId, contactId, onResolve }: 
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  // Revisão 02/10: o cabeçalho não remonta ao trocar de conversa (J/K). O
+  // popover aberto (ou a consulta em andamento) da conversa anterior passava
+  // para a nova — e "fechou" resolvia a conversa errada com o desfecho dela.
+  const conversaAtual = useRef(conversationId)
+  conversaAtual.current = conversationId
+  useEffect(() => {
+    setTarget(null); setCandidates(null); setCurrentAmountCents(null); setHasLineItems(false)
+    setLoading(false); setBusy(false)
+  }, [conversationId])
+
   /** Carrega valor/itens do alvo e abre o popover de desfecho nele. */
-  const adoptTarget = useCallback(async (data: AiDealTargetView) => {
+  const adoptTarget = useCallback(async (data: AiDealTargetView, vale: () => boolean) => {
     let amount: number | null = null
     let lineItems = false
     if ((data.pipelineKind ?? 'sales') === 'sales' && data.dealId) {
@@ -72,6 +83,7 @@ export function useResolveWithOutcome({ conversationId, contactId, onResolve }: 
         lineItems = (deal?.lineItems?.length ?? 0) > 0
       } catch { amount = null }
     }
+    if (!vale()) return
     setCurrentAmountCents(amount)
     setHasLineItems(lineItems)
     setCandidates(null)
@@ -80,9 +92,11 @@ export function useResolveWithOutcome({ conversationId, contactId, onResolve }: 
 
   const requestResolve = useCallback(async () => {
     if (!multiPipeline) { await onResolve(); return }
+    const vale = () => conversaAtual.current === conversationId
     setLoading(true)
     try {
       const { data } = await dealsApi.conversationTarget(conversationId)
+      if (!vale()) return
       if (!data || data.target === 'no_target' || !data.dealId) {
         // C2 (SCRUM-933): `no_target` tem duas causas MUITO diferentes — "este
         // contato não tem negócio nenhum" (resolver como sempre) e "tem vários
@@ -91,37 +105,40 @@ export function useResolveWithOutcome({ conversationId, contactId, onResolve }: 
         // destino, que é exatamente o que o `no_target` do backend evita.
         try {
           const all = (await dealsApi.list(contactId)).data
+          if (!vale()) return
           const open = selectableDeals(Array.isArray(all) ? all : [], conversationId)
           if (open.length > 1) { setCandidates(open); return }
         } catch {
           // Sem a lista não há pergunta a fazer — cai no caminho de sempre.
         }
-        await onResolve()
+        if (vale()) await onResolve()
         return
       }
-      await adoptTarget(data)
+      await adoptTarget(data, vale)
     } catch {
       // Sem como saber o alvo (backend antigo / erro): resolver como sempre.
-      await onResolve()
+      if (vale()) await onResolve()
     } finally {
-      setLoading(false)
+      if (vale()) setLoading(false)
     }
   }, [conversationId, contactId, multiPipeline, onResolve, adoptTarget])
 
   const pickCandidate = useCallback(async (dealId: string) => {
+    const vale = () => conversaAtual.current === conversationId
     setBusy(true)
     try {
       // Mesmo endpoint do seletor do cabeçalho: uma única forma de dizer "é
       // este o negócio desta conversa" no produto inteiro.
       await dealsApi.linkConversation(dealId, conversationId)
       const { data } = await dealsApi.conversationTarget(conversationId)
-      if (data?.dealId) { await adoptTarget(data); return }
+      if (!vale()) return
+      if (data?.dealId) { await adoptTarget(data, vale); return }
       // O vínculo foi gravado mas o alvo não voltou (corrida rara): resolver
       // sem desfecho é melhor que travar o operador no popover.
       await onResolve()
       setCandidates(null)
     } finally {
-      setBusy(false)
+      if (vale()) setBusy(false)
     }
   }, [conversationId, adoptTarget, onResolve])
 
@@ -136,7 +153,8 @@ export function useResolveWithOutcome({ conversationId, contactId, onResolve }: 
       if (payload.amountCents !== undefined && target.dealId) {
         await dealsApi.update(target.dealId, { amountCents: payload.amountCents })
       }
-      await onResolve(payload.dealOutcome)
+      const ok = await onResolve(payload.dealOutcome)
+      if (ok === false) return
       window.dispatchEvent(new CustomEvent(DEALS_INVALIDATE_EVENT, { detail: { contactId } }))
       close()
     } finally {

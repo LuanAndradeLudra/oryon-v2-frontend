@@ -85,6 +85,26 @@ function copyFor(outcome: string | null | undefined, claimType: string | null | 
       }
     case 'vg_action_blocked':
       return actionCopy(claimType)
+    // Onda 2 da auditoria dos agentes: a IA não chegou a responder. Nada foi
+    // alegado — mandar o operador procurar "uma ação" seria mentir.
+    case 'chat_deadline_exceeded':
+    case 'chat_failed':
+    case 'chat_unavailable':
+      return {
+        long: 'não conseguiu responder e a conversa foi passada para a equipe',
+        short: 'sem resposta',
+        guidance: 'Leia as últimas mensagens do cliente e responda. Se a IA chamou alguma ferramenta antes da falha (agendamento, CRM), confira se a operação foi registrada.',
+        typeLabel: 'Falha ao responder',
+      }
+    case 'agent_max_turns':
+    case 'agent_loop_aborted':
+    case 'agent_empty_reply':
+      return {
+        long: 'não chegou a uma resposta e a conversa foi passada para a equipe',
+        short: 'sem resposta',
+        guidance: 'Leia a pergunta do cliente e responda. Vale revisar as instruções ou ferramentas do agente se isso se repetir.',
+        typeLabel: 'Sem resposta',
+      }
     default:
       // Um outcome do GATEWAY que ainda não tem texto próprio precisa cair em
       // algo neutro. Devolver a cópia de ação aqui reproduziria exatamente o

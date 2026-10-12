@@ -5,6 +5,8 @@ import { TypingIndicator } from './TypingIndicator'
 import { format, isToday, isYesterday, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Message } from '@/types'
+import { LinhaDeEventos } from './LinhaDeEventos'
+import { contarRotina, intercalar, type EventoDaConversa } from '@/lib/eventosDaConversa'
 
 interface MessageListProps {
   messages: Message[]
@@ -14,6 +16,14 @@ interface MessageListProps {
   onLoadMore: () => void
   /** Start an outbound quoted reply to this message (button/swipe in the bubble). */
   onReply?: (message: Message) => void
+  /** CONV-CHAT-16/21 (spec/1d-conversas.GAPS.md): avatar do contato na 1ª
+   *  bolha de cada grupo inbound. */
+  contact: { displayName: string; profilePicUrl?: string | null }
+  /** T4 fase 1 — eventos entre as mensagens (D10). */
+  eventos?: EventoDaConversa[]
+  /** Rotina visível (padrão; `eventos-ocultos=1` na URL esconde — SCRUM-1253). */
+  mostrarEventos?: boolean
+  onAlternarEventos?: () => void
 }
 
 /** Identity key for grouping consecutive messages by the SAME sender, so the
@@ -40,17 +50,21 @@ function DateSeparator({ date }: { date: string }) {
   else label = format(d, "d 'de' MMMM 'de' yyyy", { locale: ptBR })
 
   return (
-    <div className="flex items-center gap-3 my-4 px-4">
-      <div className="flex-1 h-px bg-surface-800" />
-      <span className="text-[11px] text-surface-500 font-medium px-2 py-0.5 bg-surface-900 rounded-full border border-surface-800">
+    // canvas 1d: só o chip centrado (10.5/600 tx3, padding 2/8, borda, raio 6, mb 8) — sem as linhas laterais.
+    <div className="flex justify-center mt-2 mb-2">
+      <span className="text-[11px] text-surface-500 font-semibold px-2 py-0.5 bg-surface-800 rounded-[6px] border border-surface-700">
         {label}
       </span>
-      <div className="flex-1 h-px bg-surface-800" />
     </div>
   )
 }
 
-export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, onReply }: MessageListProps) {
+export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, onReply, contact, eventos = [], mostrarEventos = false, onAlternarEventos }: MessageListProps) {
+  const itens = useMemo(
+    () => intercalar(messages, eventos, { mostrarRotina: mostrarEventos, temMais: hasMore }),
+    [messages, eventos, mostrarEventos, hasMore],
+  )
+  const rotina = contarRotina(eventos, messages, hasMore)
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(0)
@@ -76,9 +90,21 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
     if (el) el.scrollTop = el.scrollHeight
   }, [])
 
-  // Smooth scroll to bottom — used when new messages arrive in real-time
+  // Smooth scroll to bottom — used when new messages arrive in real-time.
+  //
+  // Rola o PRÓPRIO contêiner, não `bottomRef.scrollIntoView()`. O resultado
+  // visual é o mesmo, mas `scrollIntoView` rola todos os ancestrais roláveis
+  // junto — e isso tem efeito colateral fora do `AppShell` (onde a página não
+  // rola). Medido em 24/09 no Hero da landing: a chegada da resposta da IA
+  // arrastava a página inteira 470px para baixo, tirando o palco da viewport.
+  // Dentro do app a troca é inócua; fora dele, é a diferença entre funcionar e
+  // dar um salto de scroll.
+  /** Quando a lista pediu, por último, para ir ao fim (ver re-âncora abaixo). */
+  const pediuFimEmRef = useRef(0)
   const smoothScrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = containerRef.current
+    pediuFimEmRef.current = performance.now()
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [])
 
   // SCRUM-1158 — WhatsApp-style "pular para a mensagem citada": rola até a
@@ -143,17 +169,64 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
     prevLengthRef.current = messages.length
   }, [messages, smoothScrollToBottom])
 
+  // Re-ancora no fim quando o CONTÊINER muda de tamanho.
+  //
+  // Ao estreitar (abrir o painel do contato, arrastar o divisor, girar o
+  // celular) as bolhas rebrem, `scrollHeight` cresce e o `scrollTop` fica onde
+  // estava: quem lia a última mensagem passa a olhar o meio da conversa. Nada
+  // reposicionava, porque os dois efeitos acima só agem quando a LISTA muda.
+  //
+  // Medido em 24/09 no palco do Hero: no momento em que o painel abre, a
+  // resposta do agente — a mensagem que a legenda está anunciando — saía por
+  // baixo do contêiner. Só re-ancora quem já estava perto do fim; quem subiu
+  // para ler o histórico não é arrastado de volta.
+  //
+  // Também re-ancora se o redimensionamento chega NO MEIO da rolagem suave até
+  // uma mensagem nova (25/09): quando a atendente assume, a mensagem dela e a
+  // área de digitação maior chegam juntas; a rolagem suave terminava no fim
+  // ANTIGO e a mensagem nova ficava escondida atrás da área de digitação.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    let atBottom = true
+    const medir = () => {
+      atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    }
+    el.addEventListener('scroll', medir, { passive: true })
+    const ro = new ResizeObserver(() => {
+      if (atBottom || performance.now() - pediuFimEmRef.current < 1200) el.scrollTop = el.scrollHeight
+    })
+    ro.observe(el)
+    return () => { el.removeEventListener('scroll', medir); ro.disconnect() }
+  }, [])
+
+  // SCRUM-1253 (PO, 11/10): o dia da primeira mensagem visível vai para a
+  // faixa presa no topo.
+  const [diaVisivel, setDiaVisivel] = useState<string | null>(null)
+  const avisarDia = useCallback(() => {
+    const el = containerRef.current
+    if (!el) return
+    const topo = el.getBoundingClientRect().top + 44
+    const alvo = [...el.querySelectorAll<HTMLElement>('[data-message-id]')].find((n) => n.getBoundingClientRect().bottom > topo)
+    setDiaVisivel(alvo?.dataset.sentAt ?? null)
+  }, [])
+  useEffect(() => {
+    const id = requestAnimationFrame(avisarDia)
+    return () => cancelAnimationFrame(id)
+  }, [avisarDia, messages])
+
   // Lazy load older messages when scrolling to top
   const handleScroll = useCallback(() => {
+    avisarDia()
     const el = containerRef.current
     if (!el || loading || !hasMore) return
     if (el.scrollTop < 80) onLoadMore()
-  }, [loading, hasMore, onLoadMore])
+  }, [loading, hasMore, onLoadMore, avisarDia])
 
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto px-4 py-2"
+      className="flex-1 overflow-y-auto px-5 py-4"
       onScroll={handleScroll}
       style={{ contain: 'layout style', willChange: 'transform' }}
     >
@@ -173,9 +246,46 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
         </div>
       )}
 
-      {/* Messages grouped by date */}
-      {messages.map((msg, idx) => {
-        const prev = messages[idx - 1]
+      {/* D10 — rotina (pausa, atribuição, ações no CRM…) atrás deste botão;
+          transferências, falhas e bloqueios aparecem sempre. */}
+      {/* PO 01/10: os eventos chegam ~400 ms DEPOIS das mensagens; o espaço
+          da faixa fica SEMPRE reservado para o botão não empurrar a conversa.
+          SCRUM-1253 (PO, 11/10): a faixa fica PRESA ao rolar — o dia que você
+          está lendo e o "Ocultar eventos" (antes só no topo do histórico).
+          Tem o fundo do próprio chat e esmaece na borda de baixo: as mensagens
+          passam POR BAIXO dela, nunca ficam cobertas por um selo solto. Os
+          separadores de data continuam na conversa. */}
+      {onAlternarEventos && (
+        <div className="sticky -top-4 z-10 -mx-5 -mt-4 px-5 pt-2 pb-3 mb-1 min-h-10 flex justify-center items-center gap-2 chat-shell-bg [mask-image:linear-gradient(to_bottom,#000_70%,transparent)]">
+          {diaVisivel && (
+            <span className="text-xs font-semibold text-surface-400 px-2 h-6 inline-flex items-center bg-surface-800 rounded-[6px] border border-surface-700">
+              {rotuloDoDiaFixo(diaVisivel)}
+            </span>
+          )}
+          {onAlternarEventos && rotina > 0 && (
+            <button
+              type="button"
+              onClick={onAlternarEventos}
+              aria-pressed={mostrarEventos}
+              className={mostrarEventos
+                ? 'h-6 px-2 rounded-[6px] border border-surface-700 bg-surface-800 text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)]'
+                : 'h-6 px-2 rounded-[6px] border border-[color:var(--ink-bd)] bg-[var(--ink-bg)] bg-(image:--ink-grad) text-[var(--ink-fg)] text-xs font-medium'}
+            >
+              {mostrarEventos ? 'Ocultar eventos' : `Mostrar eventos (${rotina})`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Messages grouped by date, com os eventos intercalados */}
+      {itens.map((item, idx) => {
+        if (item.kind === 'eventos') return <LinhaDeEventos key={item.id} grupos={item.grupos} />
+        const msg = item.mensagem
+        let prev: Message | undefined
+        for (let j = idx - 1; j >= 0; j--) {
+          const it = itens[j]
+          if (it.kind === 'mensagem') { prev = it.mensagem; break }
+        }
         const showDate =
           !prev || !isSameDay(new Date(msg.sentAt), new Date(prev.sentAt))
         const isNew = newMsgIds.has(msg.id)
@@ -189,6 +299,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
           <div
             key={msg.id}
             data-message-id={msg.id}
+            data-sent-at={msg.sentAt}
             className={isNew ? (msg.direction === 'outbound' ? 'animate-msg-in-right' : 'animate-msg-in-left') : undefined}
           >
             {showDate && <DateSeparator date={msg.sentAt} />}
@@ -198,6 +309,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
               showAvatar={showAvatar}
               quotedMessage={msg.contextWamid ? byWamid.get(msg.contextWamid) ?? null : null}
               onReply={onReply}
+              contact={contact}
               onJumpToMessage={scrollToMessage}
               highlighted={highlightedId === msg.id}
             />
@@ -209,4 +321,11 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
       <div ref={bottomRef} className="h-2" />
     </div>
   )
+}
+
+function rotuloDoDiaFixo(iso: string): string {
+  const d = new Date(iso)
+  if (isToday(d)) return 'Hoje'
+  if (isYesterday(d)) return 'Ontem'
+  return format(d, "d 'de' MMMM", { locale: ptBR })
 }

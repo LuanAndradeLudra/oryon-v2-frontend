@@ -57,7 +57,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
 
   return (
     <>
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-4 flex flex-col gap-4 overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-[10px] p-4 flex flex-col gap-4 overflow-hidden">
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -77,10 +77,10 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
             onClick={() => setModalOpen(true)}
             disabled={stages.length === 0}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition-colors',
+              'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-[6px] transition-colors',
               stages.length === 0
                 ? 'text-surface-600 cursor-not-allowed'
-                : 'text-brand-400 hover:text-brand-300 hover:bg-brand-500/10',
+                : 'text-accent-dark hover:bg-accent-soft',
             )}
           >
             {/* SCRUM-929 (F-FICHA-08): "Mudar situação" — ícone e verbo
@@ -104,14 +104,14 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
         ) : !current ? (
           /* Contact has no stage — likely a new lead. Make the empty state
              actionable instead of just "—". */
-          <div className="flex flex-col gap-2 rounded-xl border border-dashed border-surface-700 bg-surface-800/40 p-4">
+          <div className="flex flex-col gap-2 rounded-[10px] border border-dashed border-[var(--bd2)] bg-surface-800/40 p-4">
             <p className="text-xs text-surface-400">
               Este contato ainda não está em nenhuma situação.
             </p>
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-brand-300 hover:text-brand-200 bg-brand-600/15 hover:bg-brand-600/25 border border-brand-500/30 px-3 py-1.5 rounded-lg transition-colors"
+              className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-accent-dark hover:brightness-110 bg-accent-soft border border-brand-500/40 px-3 py-1.5 rounded-[6px] transition-colors"
             >
               <Flag className="w-3 h-3" />
               Definir situação inicial
@@ -121,7 +121,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
           <>
             {/* ── Current stage spotlight ─────────────────────────────── */}
             <div
-              className="color-chip rounded-xl border p-4 flex items-start gap-3"
+              className="color-chip rounded-[10px] border p-4 flex items-start gap-3"
               style={{
                 ['--chip']: current.color,
                 // Levemente translúcido: mesmo fundo escurecido do .color-chip, mas
@@ -137,13 +137,13 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
                     {current.label}
                   </p>
                   {isTerminal && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25">
                       <Flag className="w-2.5 h-2.5" />
                       Situação final
                     </span>
                   )}
                   {isFirst && !isTerminal && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25">
                       Situação inicial
                     </span>
                   )}
@@ -158,7 +158,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
 
             {/* ── Mini horizontal timeline ────────────────────────────── */}
             <div className="flex flex-col gap-1.5">
-              <p className="text-[11px] text-surface-400 uppercase tracking-wide font-semibold">
+              <p className="text-xs text-surface-400 font-semibold">
                 Situações
               </p>
               <div className="flex gap-1 overflow-x-auto scroll-thin pb-1">
@@ -173,7 +173,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
                       disabled={isCurr || !!quickMovePending}
                       title={s.label}
                       className={cn(
-                        'flex-shrink-0 min-w-0 flex flex-col items-stretch gap-1 transition-all rounded-md',
+                        'flex-shrink-0 min-w-0 flex flex-col items-stretch gap-1 transition-all rounded-[6px]',
                         !isCurr && !quickMovePending && 'hover:opacity-100 cursor-pointer',
                         isCurr ? 'cursor-default' : 'opacity-70 hover:opacity-100',
                       )}
@@ -202,13 +202,13 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
 
             {/* ── Quick adjacent navigation ───────────────────────────── */}
             {(previous || next) && (
-              <div className="flex items-center gap-2 pt-1 border-t border-surface-800">
+              <div className="flex items-center gap-2 pt-1 border-t border-surface-700">
                 <button
                   type="button"
                   onClick={() => previous && quickMove(previous.key)}
                   disabled={!previous || !!quickMovePending}
                   className={cn(
-                    'flex-1 min-w-0 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors',
+                    'flex-1 min-w-0 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-[6px] transition-colors',
                     !previous
                       ? 'text-surface-500 cursor-not-allowed bg-surface-800/30'
                       : 'text-surface-300 bg-surface-800 hover:bg-surface-700',
@@ -229,7 +229,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
                   onClick={() => next && quickMove(next.key)}
                   disabled={!next || !!quickMovePending}
                   className={cn(
-                    'flex-1 min-w-0 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors',
+                    'flex-1 min-w-0 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-[6px] transition-colors',
                     !next
                       ? 'text-surface-500 cursor-not-allowed bg-surface-800/30'
                       : 'text-surface-300 bg-surface-800 hover:bg-surface-700',

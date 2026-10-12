@@ -8,6 +8,7 @@
 //     visível e declarado (o registro legado não vira órfão)
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { valoresDasOpcoes } from '@/test/escolherOpcao'
 
 const mockTemplates = vi.fn()
 vi.mock('@/services/api', () => ({
@@ -66,8 +67,8 @@ describe('funil de processo fechado na criação', () => {
     expect(screen.queryByTestId('pipeline-kind-sales')).toBeNull()
 
     // E só os modelos de venda são oferecidos.
-    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLSelectElement
-    expect(Array.from(select.options).map((o) => o.value)).toEqual(['vendas-padrao', '__ai__'])
+    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLButtonElement
+    expect(valoresDasOpcoes(select)).toEqual(['vendas-padrao', '__ai__'])
 
     fireEvent.change(screen.getByPlaceholderText('Ex: Suporte, Renovação, Pós-venda'), { target: { value: 'Comercial' } })
     fireEvent.click(screen.getByTestId('create-pipeline-submit'))

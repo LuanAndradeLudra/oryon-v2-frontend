@@ -10,6 +10,9 @@ import type { Contact, Tag } from '@/types'
 
 interface BulkActionBarProps {
   count: number
+  /** Total do filtro atual (servidor). Deixa claro que a seleção cobre só o
+   *  que está carregado — P7: alcance honesto em ação de massa. */
+  total?: number
   selectedContacts: Contact[]
   tags: Tag[]
   onMoveStage: (stage: string) => void
@@ -18,12 +21,17 @@ interface BulkActionBarProps {
   onCreateCampaign?: () => void
   onDelete?: () => void
   onClear: () => void
+  /** CONT-FOOTER-02 (spec/1c-contatos.GAPS.md): renderiza como uma linha
+   *  dentro do rodapé da tabela (40px) em vez da pílula flutuante — mesmas
+   *  ações, só sem `fixed`/sombra/borda própria (o rodapé já tem as dele). */
+  inline?: boolean
 }
 
 type HoveredSub = 'addTag' | 'removeTag' | null
 
 export function BulkActionBar({
   count,
+  total,
   selectedContacts,
   tags,
   onMoveStage,
@@ -32,6 +40,7 @@ export function BulkActionBar({
   onCreateCampaign,
   onDelete,
   onClear,
+  inline = false,
 }: BulkActionBarProps) {
   const { stages } = useCRMConfig()
   const [stageMenuOpen, setStageMenuOpen] = useState(false)
@@ -129,20 +138,27 @@ export function BulkActionBar({
 
   return (
     <motion.div
-      initial={{ y: 60, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 60, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      initial={inline ? false : { y: 60, opacity: 0 }}
+      animate={inline ? false : { y: 0, opacity: 1 }}
+      exit={inline ? undefined : { y: 60, opacity: 0 }}
+      transition={inline ? undefined : { type: 'spring', stiffness: 400, damping: 30 }}
       className={cn(
-        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-        'overlay-surface border rounded-xl',
-        'flex items-center gap-2 pl-4 pr-2 py-2',
+        'flex items-center gap-2',
+        inline
+          ? 'text-xs text-surface-400'
+          : 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-[10px] pl-4 pr-2 py-2',
       )}
     >
-      <div className="text-sm text-surface-200">
-        <span className="font-semibold text-brand-300">{count}</span>
+      <div className={inline ? 'text-xs text-surface-100 font-semibold' : 'text-sm text-surface-200'}>
+        {!inline && <span className="font-semibold text-brand-300">{count}</span>}
+        {inline && <>{count}</>}
         {' '}
         {count === 1 ? 'selecionado' : 'selecionados'}
+        {/* PL-2-2 (P7): "selecionar todos" marca só o que está carregado. Dizer o
+            total do filtro evita a ação em massa parecer maior do que é. */}
+        {typeof total === 'number' && total > count && (
+          <span className="text-surface-500"> de {total.toLocaleString('pt-BR')} no filtro</span>
+        )}
       </div>
 
       <div className="h-5 w-px bg-surface-700" />
@@ -152,7 +168,7 @@ export function BulkActionBar({
         <button
           type="button"
           onClick={() => { setStageMenuOpen((v) => !v); setActionsMenuOpen(false) }}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-surface-100 rounded-lg hover:bg-surface-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-surface-100 rounded-[6px] hover:bg-surface-700 transition-colors"
         >
           Mover para
           <ChevronUp className={cn('w-3.5 h-3.5 transition-transform', stageMenuOpen ? '' : 'rotate-180')} />
@@ -162,7 +178,7 @@ export function BulkActionBar({
             className={cn(
               'absolute bottom-full mb-2 left-0',
               'min-w-[220px] max-h-64 overflow-y-auto',
-              'overlay-surface border rounded-xl py-1',
+              'overlay-surface border rounded-[10px] py-1',
             )}
           >
             {stages.length === 0 && (
@@ -190,7 +206,7 @@ export function BulkActionBar({
             type="button"
             onClick={() => { setActionsMenuOpen((v) => !v); setStageMenuOpen(false) }}
             title="Mais ações"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-surface-100 rounded-lg hover:bg-surface-700 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-surface-100 rounded-[6px] hover:bg-surface-700 transition-colors"
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
@@ -200,7 +216,7 @@ export function BulkActionBar({
                 'absolute bottom-full mb-2 left-1/2 -translate-x-1/2',
                 // No overflow here so tag submenus can fly out to the side.
                 'min-w-[240px]',
-                'overlay-surface border rounded-xl py-1',
+                'overlay-surface border rounded-[10px] py-1',
               )}
             >
               {onAddTag && (
@@ -304,7 +320,7 @@ export function BulkActionBar({
           <button
             type="button"
             onClick={onDelete}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-danger rounded-lg hover:bg-danger/10 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-danger rounded-[6px] hover:bg-danger/10 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Excluir
@@ -316,7 +332,7 @@ export function BulkActionBar({
         type="button"
         onClick={onClear}
         aria-label="Limpar seleção"
-        className="p-1.5 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-lg transition-colors"
+        className="p-1.5 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-[6px] transition-colors"
       >
         <X className="w-4 h-4" />
       </button>
@@ -371,7 +387,7 @@ function SubmenuRow({
           className={cn(
             'absolute left-full top-0 ml-1 z-10',
             'min-w-[200px] max-h-64 overflow-y-auto',
-            'overlay-surface border rounded-xl py-1',
+            'overlay-surface border rounded-[10px] py-1',
           )}
         >
           {children}

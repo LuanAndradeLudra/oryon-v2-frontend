@@ -7,10 +7,14 @@ import './lib/cryptoPolyfill'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './styles/contraste.css' // auditoria de contraste 01/10 — depois do index.css
+// PRÉVIA fundo do chat A/B (SCRUM-1253) — inerte fora do iframe da prévia.
 import './lib/emojiText' // registers <em-emoji> web component globally
 import App from './App.tsx'
 // Registra interceptors 401→refresh→/login antes de qualquer request axios.
 import '@/services/api'
+// SCRUM-1253 (desempenho): lista/conversa da URL saem já no boot.
+import { preBuscarConversasDaUrl } from '@/lib/preBuscaConversas'
 import { hydrateAuthStorage } from './services/auth-storage'
 import { isNativePlatform } from './config/env'
 import { initCapacitor } from './lib/capacitor-init'
@@ -19,6 +23,7 @@ import { initCapacitor } from './lib/capacitor-init'
 // WebView para o cache em memoria antes de qualquer request HTTP. No-op em
 // web (cookies httpOnly cuidam disso transparentemente).
 hydrateAuthStorage()
+preBuscarConversasDaUrl()
 
 // Inicializa StatusBar / Keyboard / SplashScreen apos o boot do React.
 // Roda async em paralelo — nao bloqueia o render inicial.

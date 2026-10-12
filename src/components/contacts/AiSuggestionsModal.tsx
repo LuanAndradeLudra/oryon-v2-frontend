@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, Sparkles, BarChart3, User, Settings2 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { Spinner } from '@/components/ui/Spinner'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 
 type Suggestions = {
   qualification: Record<string, unknown>
@@ -105,7 +106,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-[var(--color-scrim-soft)] z-50 flex items-center justify-center p-4"
         onClick={onClose}
       >
         <motion.div
@@ -113,13 +114,13 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          className="bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
+          className="bg-surface-900 overlay-frame border rounded-[10px] w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
+          <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-brand-600/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-[6px] bg-brand-600/20 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-brand-400" />
               </div>
               <div>
@@ -127,7 +128,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                 <p className="text-[11px] text-surface-500">{totalSuggestions} sugestões · Edite e revise antes de aplicar</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+            <button onClick={onClose} className="p-1.5 rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -144,15 +145,16 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                     enabled={!!enabled['q.stage']}
                     onToggle={() => toggle('q.stage')}
                     editor={
-                      <select
+                      <SelectMenu
                         value={values['q.stage'] ?? ''}
                         onChange={(e) => updateValue('q.stage', e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                        aria-label="Situação"
+                        className="h-auto w-full px-2.5 py-1.5 pr-8 rounded-[10px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
                       >
                         {stages.map((s) => (
                           <option key={s.key} value={s.key}>{s.label}</option>
                         ))}
-                      </select>
+                      </SelectMenu>
                     }
                   />
                 )}
@@ -167,7 +169,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                         type="number" min={0} max={100}
                         value={values['q.leadScore'] ?? ''}
                         onChange={(e) => updateValue('q.leadScore', e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                        className="w-full px-2.5 py-1.5 rounded-[6px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
                       />
                     }
                   />
@@ -179,15 +181,16 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                     enabled={!!enabled['q.intent']}
                     onToggle={() => toggle('q.intent')}
                     editor={
-                      <select
+                      <SelectMenu
                         value={values['q.intent'] ?? ''}
                         onChange={(e) => updateValue('q.intent', e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                        aria-label="Intenção de compra"
+                        className="h-auto w-full px-2.5 py-1.5 pr-8 rounded-[10px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
                       >
                         {INTENT_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>{o.label}</option>
                         ))}
-                      </select>
+                      </SelectMenu>
                     }
                   />
                 )}
@@ -209,7 +212,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                         type={key === 'email' ? 'email' : 'text'}
                         value={values[`i.${key}`] ?? ''}
                         onChange={(e) => updateValue(`i.${key}`, e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                        className="w-full px-2.5 py-1.5 rounded-[6px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
                       />
                     }
                   />
@@ -227,16 +230,17 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                   let editor: React.ReactNode
                   if (def?.type === 'select' && def.options?.length) {
                     editor = (
-                      <select
+                      <SelectMenu
                         value={values[`cf.${key}`] ?? ''}
                         onChange={(e) => updateValue(`cf.${key}`, e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                        aria-label={fieldLabel}
+                        className="h-auto w-full px-2.5 py-1.5 pr-8 rounded-[10px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
                       >
                         <option value="">— Selecione —</option>
                         {def.options.map((o) => (
                           <option key={o} value={o}>{o}</option>
                         ))}
-                      </select>
+                      </SelectMenu>
                     )
                   } else if (def?.type === 'multiselect' && def.options?.length) {
                     const selected = (values[`cf.${key}`] ?? '').split('|').filter(Boolean)
@@ -270,7 +274,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                         type="number"
                         value={values[`cf.${key}`] ?? ''}
                         onChange={(e) => updateValue(`cf.${key}`, e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                        className="w-full px-2.5 py-1.5 rounded-[6px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
                       />
                     )
                   } else if (def?.type === 'textarea') {
@@ -279,7 +283,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                         rows={2}
                         value={values[`cf.${key}`] ?? ''}
                         onChange={(e) => updateValue(`cf.${key}`, e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 resize-none transition-colors"
+                        className="w-full px-2.5 py-1.5 rounded-[6px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 resize-none transition-colors"
                       />
                     )
                   } else {
@@ -288,7 +292,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                         type="text"
                         value={values[`cf.${key}`] ?? ''}
                         onChange={(e) => updateValue(`cf.${key}`, e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                        className="w-full px-2.5 py-1.5 rounded-[6px] bg-surface-800 border border-surface-700 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
                       />
                     )
                   }
@@ -309,7 +313,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-surface-800 bg-surface-900/80">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-surface-700 bg-surface-900/80">
             <button
               onClick={() => onApplied()}
               className="text-xs text-surface-500 hover:text-surface-300 transition-colors"
@@ -321,7 +325,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
               <button
                 onClick={handleApply}
                 disabled={applying || enabledCount === 0}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-surface-950 hover:bg-brand-500 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-[6px] text-xs font-semibold bg-brand-600 text-surface-950 hover:bg-brand-500 disabled:opacity-50 transition-colors"
               >
                 {applying ? <Spinner className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
                 {applying ? 'Aplicando...' : 'Aplicar selecionadas'}
@@ -350,8 +354,8 @@ function EditableRow({ id, label, enabled, onToggle, editor }: {
   id: string; label: string; enabled: boolean; onToggle: () => void; editor: React.ReactNode
 }) {
   return (
-    <div className={`flex items-start gap-3 px-3 py-2.5 rounded-lg border transition-all ${
-      enabled ? 'border-brand-500/30 bg-brand-600/5' : 'border-surface-800 bg-surface-800/30 opacity-50'
+    <div className={`flex items-start gap-3 px-3 py-2.5 rounded-[10px] border transition-all ${
+      enabled ? 'border-brand-500/30 bg-brand-600/5' : 'border-surface-700 bg-surface-800/30 opacity-50'
     }`}>
       <button
         onClick={onToggle}

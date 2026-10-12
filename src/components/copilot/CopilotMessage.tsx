@@ -7,6 +7,7 @@ import {
   Trash2, Layers, Megaphone, Rocket, CheckCheck, Pencil, Workflow, BarChart3, Bot, Wrench,
   Phone, CornerDownLeft, ImageIcon, AlertTriangle, Clock, Users, Palette, Mail, Building2, Hash,
   BookOpen, HelpCircle, Shield, Plus, Minus, FilePlus, FilePenLine, FileMinus, PlayCircle, PauseCircle, RefreshCw,
+  ListChecks as ListChecksBancada, ChevronRight as ChevronRightBancada,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -17,6 +18,7 @@ import type { ArtifactType } from '@/contexts/ArtifactContext'
 import type { CopilotAttachment, CopilotMessage, ToolCallRecord } from '@/contexts/CopilotContext'
 import { PlanCard } from './PlanCard'
 import { WhatsappLineRow } from './WhatsappLineRow'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import {
   parseContent,
   stripInline,
@@ -37,7 +39,8 @@ import {
   AgentToolHttpApprovalPreview,
   CompanyBrainApprovalPreview,
 } from './AgentBuilderApprovalPreviews'
-import { InChatApprovalChip } from './PendingApprovalBar'
+import { RegistroDeAprovacao } from './RegistroDeAprovacao'
+import { Link } from 'react-router-dom'
 
 // ─── Shared Copilot icon (used in header + thinking indicator) ────────────────
 
@@ -45,7 +48,7 @@ export function CopilotIcon({ spinning = false, size = 'sm' }: { spinning?: bool
   const dims = size === 'md' ? 'w-9 h-9' : 'w-6 h-6'
   const icon = size === 'md' ? 'w-4 h-4' : 'w-3 h-3'
   return (
-    <div className={`${dims} rounded-full copilot-icon flex items-center justify-center flex-shrink-0 shadow-sm shadow-brand-900/40`}>
+    <div className={`${dims} rounded-full copilot-icon flex items-center justify-center flex-shrink-0`}>
       <div
         style={spinning
           ? { animation: 'copilot-spin 3s linear infinite' }
@@ -147,7 +150,7 @@ function ThinkingLabel({ toolCalls, messageStatusLabel, agentLabel, toolLabel }:
         <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-3xs text-surface-600 ml-0.5 flex items-center gap-1"
+          className="text-xs text-surface-600 ml-0.5 flex items-center gap-1"
         >
           <CheckCircle2 className="w-2.5 h-2.5 text-status-active" />
           {completedCount} {completedCount === 1 ? 'etapa concluída' : 'etapas concluídas'}
@@ -190,7 +193,7 @@ function RenderProse({ lines }: { lines: string[] }) {
     const t = line.trim()
     if (!t) { nodes.push(<div key={key++} className="h-2" />); continue }
     if (t === '---' || t === '***' || t === '___') {
-      nodes.push(<hr key={key++} className="border-surface-800 my-2" />)
+      nodes.push(<hr key={key++} className="border-surface-700 my-2" />)
       continue
     }
     if (isHeadingLine(t)) {
@@ -247,7 +250,7 @@ function isErrorLine(t: string): boolean {
 
 function ErrorCard({ text }: { text: string }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 my-1">
+    <div className="flex items-start gap-2 rounded-[10px] border border-danger/30 bg-danger/10 px-3 py-2 my-1">
       <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-danger" />
       <p className="text-sm leading-relaxed text-danger">{text}</p>
     </div>
@@ -259,7 +262,7 @@ function CitationChip({ tool }: { tool: string }) {
   return (
     <span
       title={`Fonte: ${tool}`}
-      className="inline-flex items-center gap-1 rounded bg-surface-800/70 px-1.5 py-0.5 text-3xs font-medium text-surface-400 align-middle"
+      className="inline-flex items-center gap-1 rounded bg-surface-800/70 px-1.5 py-0.5 text-xs font-medium text-surface-400 align-middle"
     >
       <Search className="w-2.5 h-2.5" />
       {tool}
@@ -275,11 +278,11 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="rounded-xl overflow-hidden border border-surface-700/40 bg-surface-900/50 my-1.5">
+    <div className="rounded-[10px] overflow-hidden border border-surface-700/40 bg-surface-900/50 my-1.5">
       <div className="flex items-center gap-3 px-4 py-3">
         <Code2 className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">{lang}</span>
-        <span className="text-3xs text-surface-500 font-mono">{lines.length} linhas</span>
+        <span className="text-xs text-surface-500 font-mono">{lines.length} linhas</span>
         <button
           onClick={() => navigator.clipboard.writeText(content).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })}
           className="p-1 rounded text-surface-500 hover:text-surface-300 transition-colors"
@@ -288,9 +291,9 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
         </button>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
         >
-          <span className="text-2xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
+          <span className="text-xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
           {open ? <ChevronDown className="w-3 h-3 text-surface-500" /> : <ChevronRight className="w-3 h-3 text-surface-500" />}
         </button>
       </div>
@@ -304,7 +307,7 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/50">
+            <div className="border-t border-surface-700">
               <pre className="text-xs font-mono text-surface-300 px-4 py-4 overflow-x-auto leading-relaxed">
                 <code>{content}</code>
               </pre>
@@ -319,16 +322,16 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
 function InlinePlan({ title, items }: { title: string; items: string[] }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl overflow-hidden border border-brand-500/15 bg-surface-900/50 my-1.5">
+    <div className="rounded-[10px] overflow-hidden border border-brand-500/15 bg-surface-900/50 my-1.5">
       <div className="flex items-center gap-3 px-4 py-3">
         <ListOrdered className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">{title}</span>
-        <span className="text-3xs text-surface-500">{items.length} etapas</span>
+        <span className="text-xs text-surface-500">{items.length} etapas</span>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
         >
-          <span className="text-2xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
+          <span className="text-xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
           {open ? <ChevronDown className="w-3 h-3 text-surface-500" /> : <ChevronRight className="w-3 h-3 text-surface-500" />}
         </button>
       </div>
@@ -342,10 +345,10 @@ function InlinePlan({ title, items }: { title: string; items: string[] }) {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/50 px-4 py-4 flex flex-col gap-3">
+            <div className="border-t border-surface-700 px-4 py-4 flex flex-col gap-3">
               {items.map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-3xs font-bold text-brand-400 mt-0.5">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-xs font-semibold text-brand-400 mt-0.5">
                     {i + 1}
                   </span>
                   <span className="text-sm text-surface-200 leading-snug flex-1">{stripInline(item)}</span>
@@ -362,16 +365,16 @@ function InlinePlan({ title, items }: { title: string; items: string[] }) {
 function InlineTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl overflow-hidden border border-surface-700/40 bg-surface-900/50 my-1.5">
+    <div className="rounded-[10px] overflow-hidden border border-surface-700/40 bg-surface-900/50 my-1.5">
       <div className="flex items-center gap-3 px-4 py-3">
         <Table2 className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">Tabela</span>
-        <span className="text-3xs text-surface-500">{rows.length} linhas</span>
+        <span className="text-xs text-surface-500">{rows.length} linhas</span>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
         >
-          <span className="text-2xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
+          <span className="text-xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
           {open ? <ChevronDown className="w-3 h-3 text-surface-500" /> : <ChevronRight className="w-3 h-3 text-surface-500" />}
         </button>
       </div>
@@ -385,10 +388,10 @@ function InlineTable({ headers, rows }: { headers: string[]; rows: string[][] })
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/50 overflow-x-auto">
+            <div className="border-t border-surface-700 overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-surface-800">
+                  <tr className="border-b border-surface-700">
                     {headers.map((h, i) => (
                       <th key={i} className="px-4 py-2.5 text-left font-semibold text-surface-300 whitespace-nowrap">
                         {stripInline(h)}
@@ -398,7 +401,7 @@ function InlineTable({ headers, rows }: { headers: string[]; rows: string[][] })
                 </thead>
                 <tbody>
                   {rows.map((row, ri) => (
-                    <tr key={ri} className={cn('border-b border-surface-800/40 last:border-0', ri % 2 === 1 && 'bg-surface-800/20')}>
+                    <tr key={ri} className={cn('border-b border-surface-700 last:border-0', ri % 2 === 1 && 'bg-surface-800/20')}>
                       {row.map((cell, ci) => (
                         <td key={ci} className="px-4 py-2.5 text-surface-300 leading-snug">{stripInline(cell)}</td>
                       ))}
@@ -455,7 +458,7 @@ function ArtifactBuilding({ content, type }: { content: string; type: ArtifactTy
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-surface-700/40 bg-surface-900/50 overflow-hidden"
+      className="rounded-[10px] border border-surface-700/40 bg-surface-900/50 overflow-hidden"
     >
       {/* Header row — clickable to expand */}
       <button
@@ -477,7 +480,7 @@ function ArtifactBuilding({ content, type }: { content: string; type: ArtifactTy
           {/* Animated progress bar */}
           <div className="h-1 bg-surface-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-brand-600 to-violet-600 rounded-full"
+              className="h-full bg-brand-500 rounded-full"
               animate={{ x: ['-100%', '100%'] }}
               transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
               style={{ width: '60%' }}
@@ -502,12 +505,12 @@ function ArtifactBuilding({ content, type }: { content: string; type: ArtifactTy
             transition={{ duration: 0.22, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/50">
+            <div className="border-t border-surface-700">
               <div
                 ref={previewRef}
                 className="max-h-72 overflow-y-auto px-4 py-3 scroll-smooth"
               >
-                <pre className="text-2xs font-mono text-surface-400 leading-relaxed whitespace-pre-wrap break-words">
+                <pre className="text-xs font-mono text-surface-400 leading-relaxed whitespace-pre-wrap break-words">
                   {content || ' '}
                   <span
                     className="inline-block w-[2px] h-[0.9em] bg-brand-400 ml-[1px] align-[-0.05em]"
@@ -570,27 +573,27 @@ function ArtifactCard({ content, title, type }: { content: string; title: string
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
       onClick={handleOpen}
-      className="w-full text-left rounded-xl border border-surface-700/40 bg-surface-900/50 hover:border-surface-600/60 hover:bg-surface-900/80 transition-all overflow-hidden group"
+      className="w-full text-left rounded-[10px] border border-surface-700/40 bg-surface-900/50 hover:border-surface-600/60 hover:bg-surface-900/80 transition-all overflow-hidden group"
     >
       <div className="flex items-center gap-3 px-4 py-4">
-        <div className="w-9 h-9 rounded-xl bg-surface-800 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
+        <div className="w-9 h-9 rounded-[6px] bg-surface-800 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
           <ArtifactTypeIcon type={type} className="w-4 h-4 text-surface-400" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium text-surface-200 truncate">{title}</p>
             {showVersionBadge && (
-              <span className="flex-shrink-0 rounded bg-brand-500/15 border border-brand-500/30 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-brand-300">
+              <span className="flex-shrink-0 rounded bg-brand-500/15 border border-brand-500/30 px-1.5 py-0.5 text-xs font-semibold text-brand-300">
                 v{currentVersion}
               </span>
             )}
           </div>
-          <p className="text-2xs text-surface-500 mt-0.5">
+          <p className="text-xs text-surface-500 mt-0.5">
             {wordCount} palavras · {artifactTypeLabel(type)}
             {showVersionBadge && <> · <span className="text-brand-400">versão {currentVersion} de {totalVersions}</span></>}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-700/50 group-hover:border-brand-500/40 group-hover:bg-brand-600/10 transition-all flex-shrink-0">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-surface-700/50 group-hover:border-brand-500/40 group-hover:bg-brand-600/10 transition-all flex-shrink-0">
           <ExternalLink className="w-3 h-3 text-surface-400 group-hover:text-brand-400 transition-colors" />
           <span className="text-xs font-medium text-surface-400 group-hover:text-brand-400 transition-colors">Abrir</span>
         </div>
@@ -615,7 +618,7 @@ function AnimatedStreamLine({ line }: { line: string }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="border-surface-800 my-2"
+        className="border-surface-700 my-2"
       />
     )
   }
@@ -719,100 +722,100 @@ function StreamingText({ content }: { content: string }) {
 
 export const TOOL_LABEL: Record<string, string> = {
   // CRM
-  create_contact:          'Criar Contato',
-  update_contact:          'Atualizar Contato',
+  create_contact:          'Criar contato',
+  update_contact:          'Atualizar contato',
   // Conversations
-  assign_conversation:     'Atribuir Conversa',
-  set_conversation_status: 'Alterar Status da Conversa',
-  add_tag_to_conversation: 'Adicionar Etiqueta à Conversa',
-  remove_tag_from_conversation: 'Remover Etiqueta da Conversa',
-  transfer_conversation:   'Transferir Conversa',
-  send_message:            'Enviar Mensagem',
+  assign_conversation:     'Atribuir conversa',
+  set_conversation_status: 'Alterar status da conversa',
+  add_tag_to_conversation: 'Adicionar etiqueta à conversa',
+  remove_tag_from_conversation: 'Remover etiqueta da conversa',
+  transfer_conversation:   'Transferir conversa',
+  send_message:            'Enviar mensagem',
   // Tags
-  create_tag:              'Criar Etiqueta',
-  update_tag:              'Atualizar Etiqueta',
-  delete_tag:              'Excluir Etiqueta',
+  create_tag:              'Criar etiqueta',
+  update_tag:              'Atualizar etiqueta',
+  delete_tag:              'Excluir etiqueta',
   // Stages
-  create_stage:            'Criar Estágio',
-  update_stage:            'Atualizar Estágio',
-  delete_stage:            'Excluir Estágio',
+  create_stage:            'Criar estágio',
+  update_stage:            'Atualizar estágio',
+  delete_stage:            'Excluir estágio',
   // Templates
-  create_template:         'Criar Template WhatsApp',
-  update_template:         'Atualizar Template WhatsApp',
-  delete_template:         'Excluir Template WhatsApp',
+  create_template:         'Criar template WhatsApp',
+  update_template:         'Atualizar template WhatsApp',
+  delete_template:         'Excluir template WhatsApp',
   // Campaigns
-  create_campaign:         'Criar Campanha',
-  update_campaign:         'Atualizar Campanha',
-  delete_campaign:         'Excluir Campanha',
-  send_campaign:           'Disparar Campanha',
-  get_campaign_report:     'Relatório da Campanha',
+  create_campaign:         'Criar campanha',
+  update_campaign:         'Atualizar campanha',
+  delete_campaign:         'Excluir campanha',
+  send_campaign:           'Disparar campanha',
+  get_campaign_report:     'Relatório da campanha',
   // Custom fields
-  create_custom_field:     'Criar Campo Personalizado',
-  update_custom_field:     'Atualizar Campo Personalizado',
-  delete_custom_field:     'Excluir Campo Personalizado',
+  create_custom_field:     'Criar campo personalizado',
+  update_custom_field:     'Atualizar campo personalizado',
+  delete_custom_field:     'Excluir campo personalizado',
   // Automations
-  create_automation:       'Criar Automação',
-  update_automation:       'Atualizar Automação',
-  delete_automation:       'Excluir Automação',
-  toggle_automation:       'Ativar/Desativar Automação',
+  create_automation:       'Criar automação',
+  update_automation:       'Atualizar automação',
+  delete_automation:       'Excluir automação',
+  toggle_automation:       'Ativar/Desativar automação',
   // Canned responses
-  create_canned_response:  'Criar Resposta Rápida',
-  update_canned_response:  'Atualizar Resposta Rápida',
-  delete_canned_response:  'Excluir Resposta Rápida',
+  create_canned_response:  'Criar resposta rápida',
+  update_canned_response:  'Atualizar resposta rápida',
+  delete_canned_response:  'Excluir resposta rápida',
   // Sprint 1 — bulk + internal chat + compliance
-  bulk_update_contacts_tags:    'Atualizar Tags em Lote',
-  bulk_update_contacts_opt_in:  'Alterar Opt-in em Lote',
-  list_internal_channels:       'Listar Canais Internos',
-  send_internal_message:        'Enviar Mensagem Interna',
-  get_compliance_consent_report:'Relatório de Consentimento LGPD',
+  bulk_update_contacts_tags:    'Atualizar tags em lote',
+  bulk_update_contacts_opt_in:  'Alterar Opt-in em lote',
+  list_internal_channels:       'Listar canais internos',
+  send_internal_message:        'Enviar mensagem interna',
+  get_compliance_consent_report:'Relatório de consentimento LGPD',
   // Sprint 2 — AI-native
-  summarize_conversation:         'Resumir Conversa',
-  suggest_next_action:            'Sugerir Próxima Ação',
-  draft_personalized_message:     'Redigir Mensagem Personalizada',
-  analyze_conversation_sentiment: 'Analisar Sentimento da Conversa',
+  summarize_conversation:         'Resumir conversa',
+  suggest_next_action:            'Sugerir próxima ação',
+  draft_personalized_message:     'Redigir mensagem personalizada',
+  analyze_conversation_sentiment: 'Analisar sentimento da conversa',
   // Agent Builder — Agent configs
-  get_agent_config:                'Verificar Agente',
-  get_agent_by_name:               'Buscar Agente por Nome',
-  get_agent_system_prompt:         'Ler System Prompt',
-  list_agents:                     'Listar Agentes',
-  create_agent:                    'Criar Agente',
-  delete_agent:                    'Excluir Agente',
-  set_agent_status:                'Alterar Status do Agente',
-  update_agent_metadata:           'Atualizar Metadados do Agente',
+  get_agent_config:                'Verificar agente',
+  get_agent_by_name:               'Buscar agente por nome',
+  get_agent_system_prompt:         'Ler system prompt',
+  list_agents:                     'Listar agentes',
+  create_agent:                    'Criar agente',
+  delete_agent:                    'Excluir agente',
+  set_agent_status:                'Alterar status do agente',
+  update_agent_metadata:           'Atualizar metadados do agente',
   // System prompt edits
-  update_agent_system_prompt:      'Reescrever System Prompt',
-  append_to_agent_system_prompt:   'Adicionar ao System Prompt',
-  replace_in_agent_system_prompt:  'Editar Trecho do System Prompt',
+  update_agent_system_prompt:      'Reescrever system prompt',
+  append_to_agent_system_prompt:   'Adicionar ao system prompt',
+  replace_in_agent_system_prompt:  'Editar trecho do system prompt',
   // Handoff rules
-  update_agent_handoff_rules:      'Reescrever Regras de Handoff',
-  add_agent_handoff_rule:          'Adicionar Regra de Handoff',
-  remove_agent_handoff_rule:       'Remover Regra de Handoff',
+  update_agent_handoff_rules:      'Reescrever regras de handoff',
+  add_agent_handoff_rule:          'Adicionar regra de handoff',
+  remove_agent_handoff_rule:       'Remover regra de handoff',
   // AI helpers
-  generate_system_prompt:          'Gerar Rascunho de Prompt',
-  generate_handoff_rule:           'Gerar Regra de Handoff',
+  generate_system_prompt:          'Gerar rascunho de prompt',
+  generate_handoff_rule:           'Gerar regra de handoff',
   // Custom HTTP tools
-  list_agent_tools:                'Listar Ferramentas do Agente',
-  create_agent_tool:               'Criar Ferramenta HTTP',
-  update_agent_tool:               'Atualizar Ferramenta HTTP',
-  delete_agent_tool:               'Excluir Ferramenta HTTP',
+  list_agent_tools:                'Listar ferramentas do agente',
+  create_agent_tool:               'Criar ferramenta HTTP',
+  update_agent_tool:               'Atualizar ferramenta HTTP',
+  delete_agent_tool:               'Excluir ferramenta HTTP',
   // Knowledge base
-  list_agent_knowledge_docs:       'Listar Documentos da KB',
-  get_agent_knowledge_doc:         'Ler Documento da KB',
-  add_agent_knowledge_doc:         'Adicionar Documento à KB',
-  update_agent_knowledge_doc:      'Reescrever Documento da KB',
-  append_to_agent_knowledge_doc:   'Adicionar ao Documento da KB',
-  replace_in_agent_knowledge_doc:  'Editar Trecho do Documento',
-  delete_agent_knowledge_doc:      'Excluir Documento da KB',
+  list_agent_knowledge_docs:       'Listar documentos da KB',
+  get_agent_knowledge_doc:         'Ler documento da KB',
+  add_agent_knowledge_doc:         'Adicionar documento à KB',
+  update_agent_knowledge_doc:      'Reescrever documento da KB',
+  append_to_agent_knowledge_doc:   'Adicionar ao documento da KB',
+  replace_in_agent_knowledge_doc:  'Editar trecho do documento',
+  delete_agent_knowledge_doc:      'Excluir documento da KB',
   // FAQ rules
-  list_agent_faqs:                 'Listar FAQs do Agente',
+  list_agent_faqs:                 'Listar FAQs do agente',
   create_agent_faq:                'Criar FAQ',
   update_agent_faq:                'Atualizar FAQ',
   delete_agent_faq:                'Excluir FAQ',
   // Company Brain / Org KB
-  update_company_brain:            'Atualizar Company Brain',
-  get_company_knowledge_base:      'Ler Knowledge Base da Empresa',
-  update_company_knowledge_base:   'Atualizar Knowledge Base da Empresa',
-  sync_brain_to_rag:               'Sincronizar Brand Files com RAG',
+  update_company_brain:            'Atualizar company brain',
+  get_company_knowledge_base:      'Ler knowledge base da empresa',
+  update_company_knowledge_base:   'Atualizar knowledge base da empresa',
+  sync_brain_to_rag:               'Sincronizar brand files com RAG',
 }
 
 export const TOOL_ICON: Record<string, React.ElementType> = {
@@ -1028,14 +1031,14 @@ function EditableField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-medium text-surface-500">{label}</label>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(fieldKey, e.target.value)}
           placeholder={placeholder}
           rows={3}
-          className="w-full px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 resize-none"
+          className="w-full px-2.5 py-1.5 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 resize-none"
         />
       ) : (
         <input
@@ -1043,7 +1046,7 @@ function EditableField({
           value={value}
           onChange={(e) => onChange(fieldKey, e.target.value)}
           placeholder={placeholder}
-          className="w-full px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50"
+          className="w-full px-2.5 py-1.5 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50"
         />
       )}
     </div>
@@ -1061,16 +1064,18 @@ function SelectField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">{label}</label>
-      <select
+      <label className="text-xs font-medium text-surface-500">{label}</label>
+      <SelectMenu
         value={value}
         onChange={(e) => onChange(fieldKey, e.target.value)}
-        className="w-full px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 focus:outline-none focus:border-brand-500/50 appearance-none cursor-pointer"
+        aria-label={label || undefined}
+        chevronClassName="right-2 h-3 w-3"
+        className="h-auto w-full px-2.5 py-1.5 pr-7 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 focus:outline-none focus:border-brand-500/50 cursor-pointer"
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value} className="bg-surface-900 text-surface-200">{o.label}</option>
+          <option key={o.value} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </SelectMenu>
     </div>
   )
 }
@@ -1166,7 +1171,7 @@ function TemplateApprovalPreview({
 
       {/* Header media preview */}
       {headerType && headerType !== 'UNDEFINED' && headerType !== '' && (
-        <div className="rounded-lg border border-surface-700/40 bg-surface-800/40 overflow-hidden">
+        <div className="rounded-[10px] border border-surface-700/40 bg-surface-800/40 overflow-hidden">
           {headerType === 'IMAGE' && mediaUrl ? (
             <div>
               <div className="flex items-center justify-center p-2 bg-surface-900/40">
@@ -1179,7 +1184,7 @@ function TemplateApprovalPreview({
               </div>
               <div className="flex items-center gap-2 px-2.5 py-1">
                 <ImageIcon className="w-3 h-3 text-brand-400" />
-                <span className="text-3xs text-surface-400">Header: Imagem</span>
+                <span className="text-xs text-surface-400">Header: Imagem</span>
               </div>
             </div>
           ) : headerType === 'DOCUMENT' && mediaUrl ? (
@@ -1196,10 +1201,10 @@ function TemplateApprovalPreview({
                   <FileText className="w-3 h-3 text-accent-rose" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-3xs font-medium text-surface-300 truncate">Documento PDF</p>
-                  <p className="text-[9px] text-surface-500 truncate">{mediaUrl.split('/').pop()}</p>
+                  <p className="text-xs font-medium text-surface-300 truncate">Documento PDF</p>
+                  <p className="text-[11px] text-surface-500 truncate">{mediaUrl.split('/').pop()}</p>
                 </div>
-                <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-3xs text-brand-400 hover:text-brand-300 transition-colors flex-shrink-0">
+                <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-accent-dark hover:opacity-80 transition-colors flex-shrink-0">
                   Abrir
                 </a>
               </div>
@@ -1210,22 +1215,22 @@ function TemplateApprovalPreview({
               {headerType === 'VIDEO' && <FileText className="w-3 h-3 text-brand-400" />}
               {headerType === 'TEXT' && <FileText className="w-3 h-3 text-brand-400" />}
               {headerType === 'DOCUMENT' && <FileText className="w-3 h-3 text-brand-400" />}
-              <span className="text-3xs text-surface-400">Header: {headerType}</span>
+              <span className="text-xs text-surface-400">Header: {headerType}</span>
             </div>
           )}
         </div>
       )}
 
       {/* Body + footer */}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
+      <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
         <div className="flex flex-col gap-1">
-          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mensagem</label>
+          <label className="text-xs font-medium text-surface-500">Mensagem</label>
           <textarea
             value={body}
             onChange={(e) => onChange('body', e.target.value)}
             placeholder="Corpo do template..."
             rows={6}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 resize-y min-h-[80px]"
+            className="w-full px-2.5 py-1.5 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 resize-y min-h-[80px]"
           />
         </div>
         <EditableField label="Rodapé" value={footer} fieldKey="footer" onChange={onChange} placeholder="Rodapé opcional" />
@@ -1234,12 +1239,12 @@ function TemplateApprovalPreview({
       {/* Editable buttons */}
       {buttons.length > 0 && (
         <div className="space-y-1.5">
-          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Botões</label>
+          <label className="text-xs font-medium text-surface-500">Botões</label>
           <div className="flex flex-wrap gap-1.5">
             {buttons.map((btn, i) => (
               <div
                 key={i}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-surface-800/60 border border-surface-700/40 px-1 py-0.5"
+                className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-800/60 border border-surface-700/40 px-1 py-0.5"
               >
                 {btn.type === 'URL' && <ExternalLink className="w-2.5 h-2.5 text-surface-500 flex-shrink-0 ml-1.5" />}
                 {btn.type === 'PHONE_NUMBER' && <Phone className="w-2.5 h-2.5 text-surface-500 flex-shrink-0 ml-1.5" />}
@@ -1248,7 +1253,7 @@ function TemplateApprovalPreview({
                   type="text"
                   value={btnTexts[i] ?? btn.text}
                   onChange={(e) => handleBtnChange(i, e.target.value)}
-                  className="bg-transparent border-none text-3xs text-surface-300 focus:outline-none w-28 py-1 pr-1.5"
+                  className="bg-transparent border-none text-xs text-surface-300 focus:outline-none w-28 py-1 pr-1.5"
                 />
               </div>
             ))}
@@ -1261,29 +1266,29 @@ function TemplateApprovalPreview({
           Surfaced explicitly so the operator can tell what the reviewer
           will see (and tweak it) before approving. */}
       {placeholderCount > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
+        <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
           <div>
-            <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">
+            <label className="text-xs font-medium text-surface-500">
               Exemplos das variáveis
             </label>
-            <p className="text-3xs text-surface-500 mt-0.5">
+            <p className="text-xs text-surface-500 mt-0.5">
               Estes valores vão para a Meta como exemplo de aprovação. Troque por algo real antes de enviar.
             </p>
           </div>
           {variableSlots.map((value, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="text-2xs font-mono text-brand-400 w-9 flex-shrink-0">{`{{${i + 1}}}`}</span>
+              <span className="text-xs font-mono text-brand-400 w-9 flex-shrink-0">{`{{${i + 1}}}`}</span>
               <input
                 type="text"
                 value={value}
                 onChange={(e) => handleVariableChange(i, e.target.value)}
                 placeholder={`Exemplo para {{${i + 1}}} (ex.: "João")`}
-                className="flex-1 px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50"
+                className="flex-1 px-2.5 py-1.5 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50"
               />
             </div>
           ))}
           {hasVariableMismatch && (
-            <p className="text-3xs text-status-pending flex items-start gap-1 mt-1">
+            <p className="text-xs text-status-pending flex items-start gap-1 mt-1">
               <AlertTriangle className="w-2.5 h-2.5 flex-shrink-0 mt-0.5" />
               O corpo tem {placeholderCount} variável(is) mas foram preenchidos {currentVariables.length} exemplo(s).
               A Meta rejeita se não baterem.
@@ -1332,19 +1337,19 @@ function CampaignApprovalPreview({
 
       {/* Template */}
       {!!(input.templateName || input.templateId) && (
-        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-surface-800/40 border border-surface-700/40">
-          <div className="w-7 h-7 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-[10px] bg-surface-800/40 border border-surface-700/40">
+          <div className="w-7 h-7 rounded-[6px] bg-brand-500/10 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
             <FileText className="w-3.5 h-3.5 text-brand-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-3xs text-surface-500">Template vinculado</p>
+            <p className="text-xs text-surface-500">Template vinculado</p>
             <p className="text-xs text-surface-200 font-medium truncate">{String(input.templateName ?? input.templateId ?? '')}</p>
           </div>
         </div>
       )}
 
       {/* Segmentação */}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2.5">
+      <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3 space-y-2.5">
         <SelectField
           label="Segmentação"
           value={String(segment?.type ?? 'all')}
@@ -1355,28 +1360,28 @@ function CampaignApprovalPreview({
         {(segment?.tagIds as string[] | undefined)?.length ? (
           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-800/40">
             <Tag className="w-3 h-3 text-brand-400" />
-            <span className="text-3xs text-surface-300">{(segment!.tagIds as string[]).length} tags selecionadas</span>
+            <span className="text-xs text-surface-300">{(segment!.tagIds as string[]).length} tags selecionadas</span>
           </div>
         ) : null}
         {(segment?.stages as string[] | undefined)?.length ? (
           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-800/40">
             <Layers className="w-3 h-3 text-brand-400" />
-            <span className="text-3xs text-surface-300">{(segment!.stages as string[]).length} estágios selecionados</span>
+            <span className="text-xs text-surface-300">{(segment!.stages as string[]).length} estágios selecionados</span>
           </div>
         ) : null}
       </div>
 
       {/* Variáveis */}
       {mappings && mappings.length > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
-          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mapeamento de variáveis</label>
+        <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3">
+          <label className="text-xs font-medium text-surface-500">Mapeamento de variáveis</label>
           <div className="mt-1.5 space-y-1">
             {mappings.map((m, i) => (
               <div key={i} className="flex items-center gap-2 px-2 py-1 rounded bg-surface-900/40 text-xs">
-                <span className="text-brand-400 font-mono text-3xs flex-shrink-0">{'{{' + String(m.position) + '}}'}</span>
+                <span className="text-brand-400 font-mono text-xs flex-shrink-0">{'{{' + String(m.position) + '}}'}</span>
                 <span className="text-surface-600">→</span>
                 <span className="text-surface-300">{String(m.contactField ?? m.literal ?? m.customFieldKey ?? '—')}</span>
-                <span className="text-[9px] text-surface-500 ml-auto">({String(m.source ?? '')})</span>
+                <span className="text-[11px] text-surface-500 ml-auto">({String(m.source ?? '')})</span>
               </div>
             ))}
           </div>
@@ -1384,10 +1389,10 @@ function CampaignApprovalPreview({
       )}
 
       {/* Agendamento */}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+      <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3">
         <div className="flex items-center gap-2 mb-1.5">
           <Clock className="w-3 h-3 text-surface-500" />
-          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agendamento</label>
+          <label className="text-xs font-medium text-surface-500">Agendamento</label>
         </div>
         <EditableField label="" value={String(input.scheduledAt ?? '')} fieldKey="scheduledAt" onChange={onChange} placeholder="Imediato (deixe vazio) ou data ISO (2026-04-10T10:00:00)" />
       </div>
@@ -1426,12 +1431,12 @@ function ContactApprovalPreview({
     <div className="space-y-2.5">
       {/* ID do contato se update */}
       {!isCreate && !!input.contactId && (
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-800/40 border border-surface-700/40">
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-[10px] bg-surface-800/40 border border-surface-700/40">
           <UserCog className="w-3 h-3 text-surface-500 flex-shrink-0" />
-          <span className="text-3xs text-surface-400">Contato: <span className="text-surface-300 font-mono">{String(input.contactId).slice(0, 12)}...</span></span>
+          <span className="text-xs text-surface-400">Contato: <span className="text-surface-300 font-mono">{String(input.contactId).slice(0, 12)}...</span></span>
         </div>
       )}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
+      <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <EditableField label="Nome" value={String(input.displayName ?? '')} fieldKey="displayName" onChange={onChange} placeholder="Nome do contato" />
           <EditableField label="WhatsApp" value={String(input.waId ?? '')} fieldKey="waId" onChange={onChange} placeholder="5511999998888" />
@@ -1465,26 +1470,26 @@ function MessageApprovalPreview({
   const text = String(input.text ?? '')
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-800/40 border border-surface-700/40">
+      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-[10px] bg-surface-800/40 border border-surface-700/40">
         <MessageSquare className="w-3 h-3 text-surface-500 flex-shrink-0" />
-        <span className="text-3xs text-surface-400">Conversa: <span className="text-surface-300 font-mono">{String(input.conversationId ?? '').slice(0, 12)}...</span></span>
+        <span className="text-xs text-surface-400">Conversa: <span className="text-surface-300 font-mono">{String(input.conversationId ?? '').slice(0, 12)}...</span></span>
       </div>
       {/* WhatsApp-style bubble preview */}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
-        <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mensagem que será enviada</label>
+      <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
+        <label className="text-xs font-medium text-surface-500">Mensagem que será enviada</label>
         <textarea
           value={text}
           onChange={(e) => onChange('text', e.target.value)}
           placeholder="Texto da mensagem..."
           rows={5}
-          className="w-full px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 resize-y"
+          className="w-full px-2.5 py-1.5 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 resize-y"
         />
         {/* Live preview */}
         {text && (
           <div className="mt-2 flex justify-end">
-            <div className="max-w-[85%] px-3 py-2 rounded-xl rounded-br-sm bg-brand-600/20 border border-brand-500/20">
+            <div className="max-w-[85%] px-3 py-2 rounded-[10px] rounded-br-sm bg-brand-600/20 border border-brand-500/20">
               <p className="text-xs text-surface-200 whitespace-pre-wrap">{text}</p>
-              <p className="text-[9px] text-surface-500 text-right mt-1">{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-[11px] text-surface-500 text-right mt-1">{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </div>
         )}
@@ -1506,21 +1511,21 @@ function TagApprovalPreview({
     <div className="space-y-2.5">
       <EditableField label="Nome da etiqueta" value={String(input.name ?? '')} fieldKey="name" onChange={onChange} placeholder="Nome da tag" />
       <div className="flex flex-col gap-1">
-        <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Cor</label>
+        <label className="text-xs font-medium text-surface-500">Cor</label>
         <div className="flex items-center gap-2">
           <input
             type="color"
             value={color}
             onChange={(e) => onChange('color', e.target.value)}
-            className="w-8 h-8 rounded-lg border border-surface-700/60 bg-transparent cursor-pointer"
+            className="w-8 h-8 rounded-[6px] border border-surface-700/60 bg-transparent cursor-pointer"
           />
           <input
             type="text"
             value={color}
             onChange={(e) => onChange('color', e.target.value)}
-            className="flex-1 px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 font-mono focus:outline-none focus:border-brand-500/50"
+            className="flex-1 px-2.5 py-1.5 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 font-mono focus:outline-none focus:border-brand-500/50"
           />
-          <div className="px-3 py-1 rounded-full text-3xs font-medium" style={{ backgroundColor: color, color: getReadableTextColor(color) }}>
+          <div className="px-3 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: color, color: getReadableTextColor(color) }}>
             {String(input.name ?? 'Preview')}
           </div>
         </div>
@@ -1543,19 +1548,19 @@ function StageApprovalPreview({
     <div className="space-y-2.5">
       <EditableField label="Nome do estágio" value={String(input.label ?? '')} fieldKey="label" onChange={onChange} placeholder="Ex: Qualificado" />
       <div className="flex flex-col gap-1">
-        <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Cor</label>
+        <label className="text-xs font-medium text-surface-500">Cor</label>
         <div className="flex items-center gap-2">
           <input
             type="color"
             value={color}
             onChange={(e) => onChange('color', e.target.value)}
-            className="w-8 h-8 rounded-lg border border-surface-700/60 bg-transparent cursor-pointer"
+            className="w-8 h-8 rounded-[6px] border border-surface-700/60 bg-transparent cursor-pointer"
           />
           <input
             type="text"
             value={color}
             onChange={(e) => onChange('color', e.target.value)}
-            className="flex-1 px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 font-mono focus:outline-none focus:border-brand-500/50"
+            className="flex-1 px-2.5 py-1.5 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 font-mono focus:outline-none focus:border-brand-500/50"
           />
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
@@ -1627,8 +1632,8 @@ function AutomationApprovalPreview({
 
       {/* Trigger */}
       {trigger && Object.keys(trigger).length > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
-          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Gatilho</label>
+        <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3">
+          <label className="text-xs font-medium text-surface-500">Gatilho</label>
           <div className="mt-1.5 space-y-1.5">
             {!!trigger.stageKey && (
               <div className="flex items-center gap-2">
@@ -1667,17 +1672,17 @@ function AutomationApprovalPreview({
 
       {/* Conditions */}
       {conditions.length > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+        <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3">
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Condições</label>
+            <label className="text-xs font-medium text-surface-500">Condições</label>
             <div className="w-32">
               <SelectField label="" value={String(input.conditionsLogic ?? 'and')} fieldKey="conditionsLogic" options={CONDITIONS_LOGIC} onChange={onChange} />
             </div>
           </div>
           <div className="space-y-1">
             {conditions.map((c, i) => (
-              <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-surface-900/40 text-xs">
-                <span className="text-brand-400 font-mono text-3xs flex-shrink-0">{i + 1}.</span>
+              <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-[10px] bg-surface-900/40 text-xs">
+                <span className="text-brand-400 font-mono text-xs flex-shrink-0">{i + 1}.</span>
                 <span className="text-surface-300">
                   {String(c.field ?? '')} <span className="text-surface-500">{String(c.operator ?? '')}</span> <span className="text-surface-200 font-medium">{String(c.value ?? '')}</span>
                 </span>
@@ -1689,13 +1694,13 @@ function AutomationApprovalPreview({
 
       {/* Actions */}
       {actions.length > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
-          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Ações</label>
+        <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3">
+          <label className="text-xs font-medium text-surface-500">Ações</label>
           <div className="mt-1.5 space-y-1.5">
             {actions.map((a, i) => {
               const actionType = String(a.type ?? a.action ?? '')
               return (
-                <div key={i} className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-surface-900/40 border border-surface-700/30">
+                <div key={i} className="flex items-start gap-2 px-2.5 py-2 rounded-[10px] bg-surface-900/40 border border-surface-700/30">
                   {actionType.includes('template') || actionType.includes('message') ? (
                     <Send className="w-3 h-3 text-brand-400 flex-shrink-0 mt-0.5" />
                   ) : actionType.includes('tag') ? (
@@ -1710,20 +1715,20 @@ function AutomationApprovalPreview({
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-surface-200 font-medium">{actionType || 'Ação'}</p>
                     {!!a.templateId && (
-                      <p className="text-3xs text-surface-400 mt-0.5">
+                      <p className="text-xs text-surface-400 mt-0.5">
                         Template: <span className="text-surface-300 font-mono">{String(a.templateId).slice(0, 12)}...</span>
                         {!!a.templateName && <span className="text-surface-300 ml-1">({String(a.templateName)})</span>}
                       </p>
                     )}
                     {!!a.message && (
-                      <p className="text-3xs text-surface-400 mt-0.5">
+                      <p className="text-xs text-surface-400 mt-0.5">
                         Mensagem: <span className="text-surface-300">"{String(a.message).slice(0, 80)}{String(a.message).length > 80 ? '...' : ''}"</span>
                       </p>
                     )}
-                    {!!a.tagId && <p className="text-3xs text-surface-400 mt-0.5">Tag: <span className="font-mono text-surface-300">{String(a.tagId).slice(0, 8)}...</span></p>}
-                    {!!a.stageKey && <p className="text-3xs text-surface-400 mt-0.5">Estágio: <span className="text-surface-300">{String(a.stageKey)}</span></p>}
-                    {!!a.userId && <p className="text-3xs text-surface-400 mt-0.5">Atendente: <span className="font-mono text-surface-300">{String(a.userId).slice(0, 8)}...</span></p>}
-                    {!!a.delay && <p className="text-3xs text-surface-400 mt-0.5">Atraso: <span className="text-surface-300">{String(a.delay)}</span></p>}
+                    {!!a.tagId && <p className="text-xs text-surface-400 mt-0.5">Tag: <span className="font-mono text-surface-300">{String(a.tagId).slice(0, 8)}...</span></p>}
+                    {!!a.stageKey && <p className="text-xs text-surface-400 mt-0.5">Estágio: <span className="text-surface-300">{String(a.stageKey)}</span></p>}
+                    {!!a.userId && <p className="text-xs text-surface-400 mt-0.5">Atendente: <span className="font-mono text-surface-300">{String(a.userId).slice(0, 8)}...</span></p>}
+                    {!!a.delay && <p className="text-xs text-surface-400 mt-0.5">Atraso: <span className="text-surface-300">{String(a.delay)}</span></p>}
                   </div>
                 </div>
               )
@@ -1734,8 +1739,8 @@ function AutomationApprovalPreview({
 
       {/* No trigger/conditions/actions — show hint */}
       {!trigger && conditions.length === 0 && actions.length === 0 && (
-        <div className="px-2.5 py-2 rounded-lg bg-surface-800/30 border border-dashed border-surface-700/40">
-          <span className="text-3xs text-surface-500">Gatilho, condições e ações serão configurados com valores padrão para o tipo selecionado.</span>
+        <div className="px-2.5 py-2 rounded-[10px] bg-surface-800/30 border border-dashed border-surface-700/40">
+          <span className="text-xs text-surface-500">Gatilho, condições e ações serão configurados com valores padrão para o tipo selecionado.</span>
         </div>
       )}
     </div>
@@ -1767,17 +1772,17 @@ function ConversationApprovalPreview({
 }) {
   return (
     <div className="space-y-2.5">
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2.5">
+      <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3 space-y-2.5">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
           <div>
-            <p className="text-3xs text-surface-500">Conversa</p>
+            <p className="text-xs text-surface-500">Conversa</p>
             <p className="text-xs text-surface-200 font-mono">{String(input.conversationId ?? '').slice(0, 16)}...</p>
           </div>
         </div>
 
         <div className="border-t border-surface-700/30 pt-2.5">
-          <p className="text-3xs font-medium text-surface-500 uppercase tracking-wider mb-1.5">
+          <p className="text-xs font-medium text-surface-500 mb-1.5">
             {CONV_ACTION_LABELS[toolName] ?? toolName}
           </p>
 
@@ -1818,15 +1823,15 @@ function CannedResponseApprovalPreview({
         <EditableField label="Atalho" value={String(input.shortcut ?? '')} fieldKey="shortcut" onChange={onChange} placeholder="/atalho" />
         <EditableField label="Título" value={String(input.title ?? '')} fieldKey="title" onChange={onChange} placeholder="Título da resposta" />
       </div>
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+      <div className="rounded-[10px] border border-surface-700/50 bg-surface-800/50 p-3">
         <div className="flex flex-col gap-1">
-          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Conteúdo da resposta</label>
+          <label className="text-xs font-medium text-surface-500">Conteúdo da resposta</label>
           <textarea
             value={String(input.content ?? '')}
             onChange={(e) => onChange('content', e.target.value)}
             placeholder="Texto que será enviado..."
             rows={4}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 resize-y"
+            className="w-full px-2.5 py-1.5 rounded-[6px] border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 resize-y"
           />
         </div>
       </div>
@@ -1858,20 +1863,15 @@ function DestructiveApprovalPreview({
   const { type: itemType, icon: Icon } = labelMap[toolName] ?? { type: 'Item', icon: Trash2 }
 
   return (
-    <div className="rounded-xl border border-danger/20 bg-danger/5 overflow-hidden">
+    <div className="rounded-[10px] border border-danger/20 bg-danger/5 overflow-hidden">
       <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <div className="w-8 h-8 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-[6px] bg-danger/10 border border-danger/20 flex items-center justify-center flex-shrink-0">
           <Icon className="w-4 h-4 text-danger" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-danger font-medium">Excluir {itemType}</p>
-          {targetName && <p className="text-xs text-surface-300 mt-0.5">{targetName}</p>}
-          <p className="text-3xs text-danger/60 font-mono mt-0.5">{targetId}</p>
+          <p className="text-xs text-danger font-medium">Excluir {itemType.toLowerCase().replace('whatsapp', 'WhatsApp')}</p>
+          {targetName && <p className="text-[13px] font-semibold text-surface-100 mt-0.5">{targetName}</p>}
         </div>
-      </div>
-      <div className="flex items-center gap-1.5 px-3 py-2 bg-danger/5 border-t border-danger/15">
-        <AlertTriangle className="w-3 h-3 text-danger/70 flex-shrink-0" />
-        <span className="text-3xs text-danger/70">Esta ação não pode ser desfeita.</span>
       </div>
     </div>
   )
@@ -1885,20 +1885,20 @@ function SendCampaignApprovalPreview({
   input: Record<string, unknown>
 }) {
   return (
-    <div className="rounded-xl border border-status-pending-border bg-status-pending-bg overflow-hidden">
+    <div className="rounded-[10px] border border-status-pending-border bg-status-pending-bg overflow-hidden">
       <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <div className="w-8 h-8 rounded-lg bg-status-pending-bg border border-status-pending-border flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-[6px] bg-status-pending-bg border border-status-pending-border flex items-center justify-center flex-shrink-0">
           <Rocket className="w-4 h-4 text-status-pending" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs text-status-pending font-medium">Disparar campanha</p>
           {!!input.campaignName && <p className="text-xs text-surface-300 mt-0.5">{String(input.campaignName)}</p>}
-          <p className="text-3xs text-status-pending/60 font-mono mt-0.5">{String(input.campaignId ?? '')}</p>
+          <p className="text-xs text-status-pending/60 font-mono mt-0.5">{String(input.campaignId ?? '')}</p>
         </div>
       </div>
       <div className="flex items-center gap-1.5 px-3 py-2 bg-status-pending-bg border-t border-status-pending-border">
         <AlertTriangle className="w-3 h-3 text-status-pending/70 flex-shrink-0" />
-        <span className="text-3xs text-status-pending/70">As mensagens serão enviadas imediatamente para todos os contatos do segmento.</span>
+        <span className="text-xs text-status-pending/70">As mensagens serão enviadas imediatamente para todos os contatos do segmento.</span>
       </div>
     </div>
   )
@@ -1928,8 +1928,8 @@ function CustomFieldApprovalPreview({
       <div className="grid grid-cols-2 gap-2">
         <SelectField label="Tipo do campo" value={fieldType} fieldKey="type" options={FIELD_TYPES} onChange={onChange} />
         <div className="flex flex-col gap-1">
-          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Obrigatório</label>
-          <label className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 cursor-pointer h-[30px]">
+          <label className="text-xs font-medium text-surface-500">Obrigatório</label>
+          <label className="flex items-center gap-2 px-2.5 py-1.5 rounded-[10px] border border-surface-700/60 bg-surface-800/60 cursor-pointer h-8">
             <input
               type="checkbox"
               checked={input.required === true || input.required === 'true'}
@@ -1950,10 +1950,10 @@ function CustomFieldApprovalPreview({
         />
       )}
       {/* Preview do campo */}
-      <div className="rounded-lg border border-dashed border-surface-700/40 bg-surface-800/20 px-3 py-2">
-        <span className="text-3xs text-surface-500">Preview: </span>
+      <div className="rounded-[10px] border border-dashed border-surface-700/40 bg-surface-800/20 px-3 py-2">
+        <span className="text-xs text-surface-500">Preview: </span>
         <span className="text-xs text-surface-300">{String(input.label ?? 'Campo')}</span>
-        <span className="text-3xs text-surface-500 ml-1">({fieldType}{(input.required === true || input.required === 'true') ? ', obrigatório' : ''})</span>
+        <span className="text-xs text-surface-500 ml-1">({fieldType}{(input.required === true || input.required === 'true') ? ', obrigatório' : ''})</span>
       </div>
     </div>
   )
@@ -2056,7 +2056,7 @@ export function ApprovalItemPreview({
   // sync_brain_to_rag has no editable fields — just a confirmation
   if (item.name === 'sync_brain_to_rag')
     return (
-      <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
+      <div className="rounded-[10px] border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
         Reindexa todos os brand files do Company Brain no RAG. Afeta todos os agentes.
       </div>
     )
@@ -2100,9 +2100,9 @@ function SetupRequiredCard({
   setup: { reason: string; message: string; cta: { href: string; label: string } }
 }) {
   return (
-    <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+    <div className="rounded-[10px] border border-warning/30 bg-warning/5 px-4 py-3">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-warning/20 text-warning">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[6px] bg-warning/20 text-warning">
           <AlertTriangle className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
@@ -2111,7 +2111,7 @@ function SetupRequiredCard({
         </div>
         <a
           href={setup.cta.href}
-          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-warning/20 px-3 py-1.5 text-xs font-semibold text-warning transition-colors hover:bg-warning/30"
+          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-[6px] bg-warning/20 px-3 py-1.5 text-xs font-semibold text-warning transition-colors hover:bg-warning/30"
         >
           {setup.cta.label}
         </a>
@@ -2131,9 +2131,9 @@ function RequiresSetupCard({ tc }: { tc: ToolCallRecord }) {
   const message = result.message ?? 'Uma configuração prévia é necessária para concluir esta operação.'
 
   return (
-    <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+    <div className="rounded-[10px] border border-warning/30 bg-warning/5 px-4 py-3">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-warning/20 text-warning">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[6px] bg-warning/20 text-warning">
           <AlertTriangle className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
@@ -2142,7 +2142,7 @@ function RequiresSetupCard({ tc }: { tc: ToolCallRecord }) {
         </div>
         <a
           href={href}
-          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-warning/20 px-3 py-1.5 text-xs font-semibold text-warning transition-colors hover:bg-warning/30"
+          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-[6px] bg-warning/20 px-3 py-1.5 text-xs font-semibold text-warning transition-colors hover:bg-warning/30"
         >
           {label}
         </a>
@@ -2192,7 +2192,7 @@ function ChooseLineCard({
   if (lines.length === 0) {
     // Degenerate response — show the plain message and let the user type.
     return (
-      <div className="rounded-xl border border-status-pending-border bg-status-pending-bg/30 px-3 py-2.5">
+      <div className="rounded-[10px] border border-status-pending-border bg-status-pending-bg/30 px-3 py-2.5">
         <p className="text-xs text-status-pending">{result.message ?? 'Escolha uma linha WhatsApp.'}</p>
       </div>
     )
@@ -2202,12 +2202,12 @@ function ChooseLineCard({
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-surface-700/60 bg-surface-800/60 overflow-hidden"
+      className="rounded-[10px] border border-surface-700/60 bg-surface-800/60 overflow-hidden"
     >
-      <div className="px-3 py-2.5 border-b border-surface-800/60">
+      <div className="px-3 py-2.5 border-b border-surface-700">
         <p className="text-xs text-surface-200 font-medium">Qual linha WhatsApp?</p>
-        <p className="text-3xs text-surface-500 mt-0.5">
-          {result.message ?? 'Este tenant tem mais de uma linha ativa. Escolha para continuar.'}
+        <p className="text-xs text-surface-500 mt-0.5">
+          {result.message ?? 'Sua empresa tem mais de uma linha de WhatsApp ativa. Escolha qual usar para continuar.'}
         </p>
       </div>
       <div className="flex flex-wrap gap-1.5 p-2.5">
@@ -2221,7 +2221,7 @@ function ChooseLineCard({
               onClick={() => handlePick(line)}
               disabled={!!submitted}
               className={cn(
-                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors',
+                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] border text-xs transition-colors',
                 isPicked
                   ? 'bg-brand-500/15 border-brand-500/40 text-brand-300'
                   : submitted
@@ -2235,15 +2235,15 @@ function ChooseLineCard({
                 <span className="text-surface-500">({formatPhone(line.displayPhoneNumber)})</span>
               )}
               {line.isPrimary && !line.label && (
-                <span className="text-[9px] text-brand-cta">★</span>
+                <span className="text-[11px] text-brand-cta">★</span>
               )}
             </button>
           )
         })}
       </div>
       {submitted && (
-        <div className="px-3 py-1.5 bg-surface-800/40 border-t border-surface-800/60">
-          <p className="text-3xs text-surface-500">Escolhida: <span className="text-surface-300">{submitted}</span></p>
+        <div className="px-3 py-1.5 bg-surface-800/40 border-t border-surface-700">
+          <p className="text-xs text-surface-500">Escolhida: <span className="text-surface-300">{submitted}</span></p>
         </div>
       )}
     </motion.div>
@@ -2272,7 +2272,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
       <motion.div
         initial={{ opacity: 0, y: 2 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-status-pending-border bg-status-pending-bg text-xs"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] border border-status-pending-border bg-status-pending-bg text-xs"
       >
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
           <Globe className="w-3 h-3 text-status-pending/80" />
@@ -2311,7 +2311,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
     <motion.div
       initial={{ opacity: 0, y: 2 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-lg border border-surface-700/40 bg-surface-900/50 overflow-hidden text-xs"
+      className="rounded-[10px] border border-surface-700/40 bg-surface-900/50 overflow-hidden text-xs"
     >
       <button
         onClick={() => hasDetails && setExpanded((v) => !v)}
@@ -2339,7 +2339,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
             transition={{ duration: 0.18, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/40 px-3 py-2 flex flex-col gap-1.5">
+            <div className="border-t border-surface-700 px-3 py-2 flex flex-col gap-1.5">
               {isFetch && fetchUrl && (
                 <div className="flex items-start gap-1.5">
                   <Link2 className="w-3 h-3 text-surface-500 flex-shrink-0 mt-0.5" />
@@ -2347,7 +2347,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                     href={fetchUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-3xs text-accent-amber/80 hover:text-accent-amber break-all hover:underline leading-relaxed"
+                    className="text-xs text-accent-amber/80 hover:text-accent-amber break-all hover:underline leading-relaxed"
                   >
                     {fetchUrl}
                   </a>
@@ -2360,7 +2360,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                     href={`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-3xs text-accent-amber/80 hover:text-accent-amber italic hover:underline"
+                    className="text-xs text-accent-amber/80 hover:text-accent-amber italic hover:underline"
                   >
                     "{searchQuery}" ↗
                   </a>
@@ -2368,7 +2368,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
               )}
               {sources.length > 0 && (
                 <div className="flex flex-col gap-1 mt-1">
-                  <span className="text-[9px] text-surface-600 uppercase tracking-wide">Fontes encontradas:</span>
+                  <span className="text-[11px] text-surface-600">Fontes encontradas:</span>
                   {sources.slice(0, 8).map((s, i) => (
                     <motion.div
                       key={i}
@@ -2382,7 +2382,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                         href={s.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-3xs text-surface-400 hover:text-accent-amber truncate hover:underline"
+                        className="text-xs text-surface-400 hover:text-accent-amber truncate hover:underline"
                       >
                         {s.title ?? getDomain(s.url)}
                       </a>
@@ -2392,7 +2392,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                 </div>
               )}
               {!isFetch && sources.length === 0 && searchQuery && (
-                <div className="text-[9px] text-surface-600 mt-0.5">
+                <div className="text-[11px] text-surface-600 mt-0.5">
                   Fontes processadas pela IA internamente. Clique na query acima para ver os resultados.
                 </div>
               )}
@@ -2489,7 +2489,7 @@ function getResultLabel(tc: ToolCallRecord): string {
     case 'list_canned_responses':   return `${countItems(tc.result)} resposta(s) rápida(s)`
     case 'get_recent_messages':     return `${countItems(tc.result)} mensagem(ns) recente(s)`
     case 'get_activity_feed':       return `${countItems(tc.result)} evento(s) de atividade`
-    case 'get_dashboard_snapshot':  return 'Snapshot do dashboard obtido'
+    case 'get_dashboard_snapshot':  return 'Resumo do Dashboard lido'
     case 'get_unread_count':        return `${(r as { count?: number })?.count ?? 0} conversa(s) não-lida(s)`
     case 'get_company_brain':       return 'Contexto da empresa obtido'
     case 'search_knowledge_base':   return `${countItems(tc.result)} trecho(s) da base de conhecimento`
@@ -2551,24 +2551,19 @@ export function ToolCallChip({
     return <RequiresSetupCard tc={tc} />
   }
 
-  // ── Batch approval: compact chip (Claude Code-style UX) ────────────────
-  // The full review happens in PendingApprovalBar + ApprovalModal, mounted
-  // above the composer. Inline we render only a compact chip so the chat
-  // flow isn't disrupted by a giant card. Three visual states:
-  //   pending/submitting → blue "Aguardando aprovação ↑ na barra acima"
-  //   approved           → green "<tool> aprovado" (expandable)
-  //   denied             → gray  "<tool> cancelado" (expandable)
+  // ── Lote de aprovação: só o registro (a revisão é na bancada) ──────────
   if (tc.name === '__approval_batch__') {
-    return <InChatApprovalChip tc={tc} />
+    return <RegistroDeAprovacao tc={tc} />
   }
 
   // ── Normal running / done ─────────────────────────────────────────────────
   const isRunning = tc.status === 'running'
+  const destino = !isRunning ? destinoDoResultado(tc) : null
 
   return (
     <div className={cn(
-      'text-xs rounded-lg border overflow-hidden transition-all',
-      isRunning ? 'border-surface-700/50 bg-surface-900/40' : 'border-surface-700/50 bg-surface-900/60',
+      'text-xs rounded-[8px] border overflow-hidden transition-all',
+      isRunning ? 'border-surface-700 bg-surface-800' : 'border-surface-700 bg-surface-800',
     )}>
       <button
         onClick={() => !isRunning && setExpanded((v) => !v)}
@@ -2579,20 +2574,29 @@ export function ToolCallChip({
         )}
       >
         {isRunning
-          ? <Loader2 className="w-3 h-3 text-surface-500 animate-spin flex-shrink-0" />
-          : <CheckCircle2 className="w-3 h-3 text-surface-500 flex-shrink-0" />}
-        <span className="text-surface-500">
-          {isRunning ? 'Executando...' : getResultLabel(tc)}
+          ? <Loader2 className="w-3.5 h-3.5 text-surface-400 animate-spin flex-shrink-0" />
+          : <CheckCircle2 className="w-3.5 h-3.5 text-success flex-shrink-0" />}
+        <span className="text-surface-200">
+          {isRunning ? 'Executando…' : getResultLabel(tc)}
         </span>
         {!isRunning && (
-          <span className="ml-auto text-surface-600">
-            {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          <span className="ml-auto text-surface-400">
+            {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
           </span>
         )}
       </button>
+      {/* Fim com prova (SCRUM-1253): o que foi criado ou alterado abre direto. */}
+      {destino && (
+        <div className="px-3 pb-2">
+          <Link to={destino.para} className="inline-flex items-center gap-1 text-xs font-semibold text-accent-dark hover:underline underline-offset-2">
+            {destino.rotulo} <ChevronRight className="w-3 h-3" aria-hidden />
+          </Link>
+        </div>
+      )}
       {expanded && tc.result != null && (
-        <div className="px-3 pb-2 border-t border-surface-700/30">
-          <pre className="text-3xs text-surface-500 overflow-x-auto mt-1.5 leading-relaxed whitespace-pre-wrap">
+        <div className="px-3 pb-2 border-t border-surface-700">
+          <p className="mt-1.5 text-xs text-surface-400">Detalhes técnicos</p>
+          <pre className="text-xs text-surface-300 overflow-x-auto mt-1 leading-relaxed whitespace-pre-wrap">
             {JSON.stringify(tc.result, null, 2)}
           </pre>
         </div>
@@ -2614,16 +2618,16 @@ function UserAttachments({ attachments }: { attachments: CopilotAttachment[] }) 
           key={att.id}
           src={att.previewUrl}
           alt={att.name}
-          className="h-24 max-w-[160px] rounded-xl object-cover border border-white/10 shadow-md"
+          className="h-24 max-w-[160px] rounded-[10px] object-cover border border-white/10"
         />
       ))}
       {pdfs.map((att) => (
         <div
           key={att.id}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-700/60 border border-brand-500/30 max-w-[180px]"
+          className="flex items-center gap-2 px-3 py-2 rounded-[6px] bg-surface-800 border border-surface-700 max-w-[180px]"
         >
           <FileText className="w-4 h-4 text-accent-rose flex-shrink-0" />
-          <span className="text-xs text-white truncate">{att.name}</span>
+          <span className="text-xs text-surface-100 truncate">{att.name}</span>
         </div>
       ))}
     </div>
@@ -2680,7 +2684,7 @@ function UserMessageBubble({
               if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleEditSave()
               if (e.key === 'Escape') handleEditCancel()
             }}
-            className="w-full bg-surface-800 border border-brand-500/50 rounded-2xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-brand-400/70 min-h-[80px] leading-relaxed"
+            className="w-full bg-surface-800 border border-brand-500/50 rounded-[6px] px-4 py-3 text-sm text-surface-100 resize-none outline-none focus:border-brand-400/70 min-h-[80px] leading-relaxed"
             rows={3}
           />
           <div className="flex justify-end gap-2">
@@ -2693,7 +2697,7 @@ function UserMessageBubble({
             <button
               onClick={handleEditSave}
               disabled={!editText.trim()}
-              className="px-3 py-1.5 text-xs bg-brand-600 text-surface-950 rounded-lg hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs bg-brand-600 text-surface-950 rounded-[6px] hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Enviar
             </button>
@@ -2714,7 +2718,7 @@ function UserMessageBubble({
           <UserAttachments attachments={message.attachments} />
         )}
         {message.content && (
-          <div className="bg-bubble-out text-bubble-out-fg text-sm px-4 py-3 rounded-2xl rounded-tr-sm leading-relaxed shadow-md shadow-black/10">
+          <div className="bg-bubble-out text-bubble-out-fg text-sm px-4 py-3 rounded-[10px] rounded-tr-sm leading-relaxed">
             {message.content}
           </div>
         )}
@@ -2735,7 +2739,7 @@ function UserMessageBubble({
               >
                 <ChevronLeft className="w-3 h-3" />
               </button>
-              <span className="text-2xs text-surface-500 tabular-nums px-0.5">
+              <span className="text-xs text-surface-500 tabular-nums px-0.5">
                 {(message.branchIndex ?? 0) + 1}/{message.totalBranches}
               </span>
               <button
@@ -2771,6 +2775,7 @@ export const CopilotMessageBubble = memo(function CopilotMessageBubble({
   onSwitchBranch,
   activeAgentLabel,
   activeToolName,
+  naBancada,
 }: {
   message: CopilotMessage
   onResolveBatch?: (batchTcId: string, approvedIds: string[], editedInputs?: Record<string, Record<string, unknown>>) => void
@@ -2782,6 +2787,9 @@ export const CopilotMessageBubble = memo(function CopilotMessageBubble({
   onSwitchBranch?: (direction: 'prev' | 'next') => void
   activeAgentLabel?: string | null
   activeToolName?: string | null
+  /** Proposta "Conversa + bancada": plano e ações vão para a bancada; aqui
+   *  ficam só atalhos que levam até lá. */
+  naBancada?: (aba: 'aprovacoes' | 'resultados' | 'artefatos', alvoId?: string) => void
 }) {
   // ── User: delegate to stateful sub-component ──────────────────────────────
   if (message.role === 'user') {
@@ -2838,16 +2846,18 @@ export const CopilotMessageBubble = memo(function CopilotMessageBubble({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="text-xs font-semibold text-surface-500"
+            className="text-xs font-semibold text-surface-300"
           >
-            Oryon AI
+            {'Copilot'}
           </motion.span>
         </AnimatePresence>
       </div>
 
       {/* Phase 9: live task plan. Tool calls tagged with a stepId are shown
           nested inside the corresponding step; untagged ones appear below. */}
-      {message.plan && (
+      {naBancada && <AtalhosDaBancada message={message} ir={naBancada} />}
+
+      {!naBancada && message.plan && (
         <div className="ml-8">
           <PlanCard plan={message.plan} toolCalls={message.toolCalls} />
         </div>
@@ -2864,7 +2874,7 @@ export const CopilotMessageBubble = memo(function CopilotMessageBubble({
 
       {/* Tool chips. When a plan exists, only show orphan chips (no stepId) —
           the tagged ones are already rendered inline inside the PlanCard. */}
-      {message.toolCalls && message.toolCalls.length > 0 && (() => {
+      {!naBancada && message.toolCalls && message.toolCalls.length > 0 && (() => {
         const visible = message.plan
           ? message.toolCalls.filter((tc) => !tc.stepId)
           : message.toolCalls
@@ -2890,10 +2900,10 @@ export const CopilotMessageBubble = memo(function CopilotMessageBubble({
             <Loader2 className="w-3 h-3 text-status-pending animate-spin flex-shrink-0" />
             <div className="flex flex-col">
               {activeAgentLabel && (
-                <span className="text-2xs text-status-pending/70">{activeAgentLabel}</span>
+                <span className="text-xs text-status-pending">{activeAgentLabel}</span>
               )}
               {activeToolName && (
-                <span className="text-2xs text-status-pending">{activeToolName}</span>
+                <span className="text-xs text-status-pending">{activeToolName}</span>
               )}
             </div>
           </motion.div>
@@ -2902,7 +2912,7 @@ export const CopilotMessageBubble = memo(function CopilotMessageBubble({
 
       {/* Body */}
       {body && (
-        <div className="ml-8">
+        <div className="ml-8 rounded-[10px] bg-surface-800 border border-surface-700/70 px-4 py-3 text-surface-100">
           <AnimatePresence mode="wait">
             <motion.div
               key={message.isStreaming ? 'streaming' : 'done'}
@@ -2919,3 +2929,81 @@ export const CopilotMessageBubble = memo(function CopilotMessageBubble({
     </motion.div>
   )
 })
+
+// ─── Atalhos para a bancada (proposta SCRUM-1253) ───────────────────────────
+// Na estrutura "Conversa + bancada" a conversa não carrega o plano nem os
+// formulários de aprovação: mostra uma linha por assunto que leva ao item na
+// bancada. O que já foi decidido continua como registro (aprovado/recusado).
+function AtalhosDaBancada({ message, ir }: {
+  message: CopilotMessage
+  ir: (aba: 'aprovacoes' | 'resultados' | 'artefatos', alvoId?: string) => void
+}) {
+  const calls = message.toolCalls ?? []
+  const lotes = calls.filter((tc) => tc.name === '__approval_batch__')
+  const pendentes = lotes.filter((tc) => tc.approvalStatus === 'pending' || tc.approvalStatus === 'submitting')
+  const decididos = lotes.filter((tc) => tc.approvalStatus === 'approved' || tc.approvalStatus === 'denied' || tc.approvalStatus === 'expired')
+  const consultas = calls.filter((tc) => tc.name !== '__approval_batch__')
+  const plano = message.plan
+  const feitas = plano ? plano.steps.filter((st) => st.status === 'done').length : 0
+  if (!plano && consultas.length === 0 && lotes.length === 0) return null
+
+  const linha = 'group w-full flex items-center gap-2.5 h-9 px-3 rounded-[8px] border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500'
+  return (
+    <div className="ml-8 flex flex-col gap-1.5">
+      {pendentes.map((tc) => {
+        const n = tc.batchItems?.length ?? 0
+        const irreversivel = (tc.batchItems ?? []).some((i) => DESTRUCTIVE_TOOLS.has(i.name))
+        return (
+          <button key={tc.id} type="button" onClick={() => ir('aprovacoes', tc.id)}
+            className={cn(linha, '!h-auto py-2 bg-status-pending-bg border-status-pending/30 text-status-pending hover:brightness-[0.98]')}>
+            <ShieldAlert className="w-4 h-4 flex-shrink-0" aria-hidden />
+            <span className="flex-1 min-w-0">
+              <span className="block text-[13px] font-semibold">{n === 1 ? '1 ação espera sua aprovação' : `${n} ações esperam sua aprovação`}</span>
+              {irreversivel && <span className="block text-xs">Inclui uma exclusão que não dá para desfazer</span>}
+            </span>
+            <span className="text-xs font-semibold">Revisar</span>
+            <ChevronRightBancada className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />
+          </button>
+        )
+      })}
+      {(plano || consultas.length > 0) && (
+        <button type="button" onClick={() => ir('resultados', message.id)}
+          className={cn(linha, 'bg-surface-800 border-surface-700 text-surface-200 hover:bg-[var(--rowhover)]')}>
+          <ListChecksBancada className="w-4 h-4 flex-shrink-0 text-surface-400" aria-hidden />
+          <span className="flex-1 min-w-0 truncate text-[13px]">
+            {plano
+              ? <>Plano · <span className="tabular-nums">{feitas} de {plano.steps.length}</span> etapas</>
+              : consultas.length === 1 ? '1 consulta aos seus dados' : `${consultas.length} consultas aos seus dados`}
+          </span>
+          <span className="text-xs text-surface-400 group-hover:text-surface-100">Ver resultados</span>
+          <ChevronRightBancada className="w-3.5 h-3.5 flex-shrink-0 text-surface-400" aria-hidden />
+        </button>
+      )}
+      {decididos.map((tc) => <RegistroDeAprovacao key={tc.id} tc={tc} />)}
+    </div>
+  )
+}
+
+/** Para onde levar depois que a ação aconteceu (SCRUM-1253: "fim com prova"). */
+function destinoDoResultado(tc: ToolCallRecord): { rotulo: string; para: string } | null {
+  if (tc.status !== 'done' || !tc.result || typeof tc.result !== 'object') return null
+  const r = tc.result as Record<string, unknown>
+  const id = typeof r.id === 'string' ? r.id : null
+  switch (tc.name) {
+    case 'create_contact':
+    case 'update_contact':
+      return id ? { rotulo: 'Abrir contato', para: `/contacts/${id}` } : null
+    case 'create_campaign':
+    case 'update_campaign':
+    case 'send_campaign':
+      return { rotulo: 'Ver em Disparos', para: '/campaigns' }
+    case 'create_template':
+    case 'update_template':
+      return { rotulo: 'Ver modelos', para: '/campaigns?tab=templates' }
+    case 'create_tag':
+    case 'update_tag':
+      return { rotulo: 'Ver etiquetas', para: '/settings/tags' }
+    default:
+      return null
+  }
+}

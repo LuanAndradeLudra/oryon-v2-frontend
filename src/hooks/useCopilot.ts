@@ -4,8 +4,6 @@ import type { BatchApprovalItem, CopilotAttachment, CopilotMessage, ToolCallReco
 import { runCopilotTurnBackend, sendApprovalDecision } from '@/services/copilotServiceBackend'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
-import { loadKB, DEFAULT_KB } from '@/hooks/useKnowledgeBase'
-import { loadHub, loadHubAsync } from '@/services/companyContextService'
 // Agent Server is always used — no local agent execution
 
 // Parse raw Anthropic SDK error messages into user-friendly Portuguese strings
@@ -157,8 +155,6 @@ export function useCopilot(
   // Phase 9 UX: id of the plan step that is currently "running", so onToolCall
   // can tag new ToolCallRecords with the step they belong to.
   const currentStepIdRef = useRef<string | null>(null)
-  // KB cache — avoid re-parsing localStorage on every send
-  const kbCacheRef = useRef<{ tenantId: string; kb: ReturnType<typeof loadKB>; hub: ReturnType<typeof loadHub>; ts: number } | null>(null)
 
   // Tracks which batches have a POST /approve in flight so a second click
   // (or a race between two rapid clicks) becomes a no-op. This matches the
@@ -176,7 +172,21 @@ export function useCopilot(
     if (submittingBatchesRef.current.has(batchTcId)) return
 
     const turnId = batchTurnIdMapRef.current.get(batchTcId)
-    if (!turnId) return
+    if (!turnId) {
+      // Lote sem turno vivo (veio do histórico): não há para onde mandar a
+      // decisão. Marca como expirado em vez de um "Aprovar" que não faz nada.
+      setMessages((prev) =>
+        prev.map((m) => ({
+          ...m,
+          toolCalls: m.toolCalls?.map((tc) =>
+            tc.id === batchTcId && (tc.approvalStatus === 'pending' || tc.approvalStatus === 'submitting')
+              ? { ...tc, approvalStatus: 'expired' as const }
+              : tc,
+          ),
+        })),
+      )
+      return
+    }
 
     submittingBatchesRef.current.add(batchTcId)
 
@@ -200,7 +210,7 @@ export function useCopilot(
             ...m,
             toolCalls: m.toolCalls?.map((tc) =>
               tc.id === batchTcId
-                ? { ...tc, approvalStatus: approvedIds.length > 0 ? 'approved' as const : 'denied' as const }
+                ? { ...tc, approvalStatus: approvedIds.length > 0 ? 'approved' as const : 'denied' as const, approvedIds: [...approvedIds] }
                 : tc,
             ),
           })),
@@ -415,34 +425,13 @@ export function useCopilot(
       setMessages((prev) => [...prev, userMsg, assistantMsg])
       setStatus('streaming')
 
-      // Read KB and Hub — cached in memory for 30s
-      const now = Date.now()
-      const cached = kbCacheRef.current
-      let kb: ReturnType<typeof loadKB>
-      let hub: ReturnType<typeof loadHub>
-      if (cached && cached.tenantId === user.tenantId && now - cached.ts < 30_000) {
-        kb = cached.kb
-        hub = cached.hub
-      } else {
-        kb = loadKB(user.tenantId)
-        hub = await loadHubAsync(user.tenantId)
-        kbCacheRef.current = { tenantId: user.tenantId, kb, hub, ts: now }
-      }
-
       const historySnapshot = messages
 
-      // KB PDF documents as attachments
-      const kbPdfAtts: CopilotAttachment[] = kb.documents
-        .filter((d) => d.kind === 'pdf' && d.content)
-        .map((d) => ({
-          id: `kb_${d.id}`,
-          name: d.name,
-          kind: 'pdf' as const,
-          mediaType: 'application/pdf' as const,
-          data: d.content,
-          previewUrl: '',
-        }))
-      const mergedAttachments = [...kbPdfAtts, ...(attachments ?? [])]
+      // SCRUM-1253 (PO, 11/10): a base do Copilot (instruções, campos e
+      // documentos) é lida pelo servidor no próprio turno — PDFs anexados e
+      // textos no contexto. O navegador manda só os anexos da pessoa (antes
+      // mandava os PDFs da base a cada turno, até ~4 MB).
+      const mergedAttachments = attachments ?? []
 
       const { onToolCall, onToolResult } = makeToolCallbacks(assistantId)
       const { onPlanCreated, onPlanStepUpdate } = makePlanCallbacks(assistantId)
@@ -565,20 +554,8 @@ export function useCopilot(
       setMessages([...historyBefore, userMsg, assistantMsg])
       setStatus('streaming')
 
-      const kb  = user ? loadKB(user.tenantId)  : DEFAULT_KB
-      const hub = user ? loadHub(user.tenantId) : null
-
-      const kbPdfAtts: CopilotAttachment[] = kb.documents
-        .filter((d) => d.kind === 'pdf' && d.content)
-        .map((d) => ({
-          id: `kb_${d.id}`,
-          name: d.name,
-          kind: 'pdf' as const,
-          mediaType: 'application/pdf' as const,
-          data: d.content,
-          previewUrl: '',
-        }))
-      const mergedAttachments = [...kbPdfAtts, ...(userMsg.attachments ?? [])]
+      // A base do Copilot é lida pelo servidor (ver sendMessage).
+      const mergedAttachments = userMsg.attachments ?? []
 
       const { onToolCall, onToolResult } = makeToolCallbacks(assistantId)
       const { onPlanCreated, onPlanStepUpdate } = makePlanCallbacks(assistantId)

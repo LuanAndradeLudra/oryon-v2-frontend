@@ -7,6 +7,7 @@
 //   * edição: só nome/cor, tipo travado
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { escolherOpcao, valoresDasOpcoes } from '@/test/escolherOpcao'
 
 // A flag `processPipelines` sai `false` no produto (a criação de funil de
 // processo está fechada). Aqui ela é ligada de propósito: este arquivo cobre o
@@ -91,10 +92,10 @@ describe('CreatePipelineModal — criação (F7)', () => {
     expect(mockTemplates).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId('pipeline-kind-sales')).toHaveAttribute('aria-checked', 'true')
     expect(stageInputs().map((i) => i.value)).toEqual(['Novo', 'Em negociação', 'Ganho', 'Perdido'])
-    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLSelectElement
+    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLButtonElement
     expect(select.value).toBe('vendas-padrao')
     // F-FUNIL-17: "Sugerir com IA" é uma opção do MESMO select, sempre por último.
-    expect(Array.from(select.options).map((o) => o.value)).toEqual(['vendas-padrao', 'vendas-em-branco', '__ai__'])
+    expect(valoresDasOpcoes(select)).toEqual(['vendas-padrao', 'vendas-em-branco', '__ai__'])
   })
 
   it('o rótulo "Nome do funil" está associado ao campo (onda 1 da auditoria de interface)', async () => {
@@ -112,8 +113,8 @@ describe('CreatePipelineModal — criação (F7)', () => {
     fireEvent.click(screen.getByTestId('pipeline-kind-process'))
     expect(screen.getByTestId('pipeline-kind-process')).toHaveAttribute('aria-checked', 'true')
     expect(stageInputs().map((i) => i.value)).toEqual(['Novo', 'Em atendimento', 'Aguardando cliente', 'Concluído', 'Cancelado'])
-    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLSelectElement
-    expect(Array.from(select.options).map((o) => o.value)).toEqual(['suporte', 'onboarding', '__ai__'])
+    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLButtonElement
+    expect(valoresDasOpcoes(select)).toEqual(['suporte', 'onboarding', '__ai__'])
     // Terminais: fixos (sem botão de remover) e renomeáveis
     expect(screen.getAllByText('fixo · renomeável')).toHaveLength(2)
     expect(screen.queryByRole('button', { name: /Remover etapa Concluído/ })).toBeNull()
@@ -182,8 +183,8 @@ describe('CreatePipelineModal — criação (F7)', () => {
     const { onSave } = await renderOpen()
     expect(stageInputs().map((i) => i.value)).toEqual(['Novo', 'Ganho', 'Perdido'])
     // O select continua existindo mesmo sem templates — "Sugerir com IA" não depende deles.
-    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLSelectElement
-    expect(Array.from(select.options).map((o) => o.value)).toEqual(['__ai__'])
+    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLButtonElement
+    expect(valoresDasOpcoes(select)).toEqual(['__ai__'])
     expect(screen.getByText(/Modelos indisponíveis neste ambiente/)).toBeInTheDocument()
     fireEvent.change(screen.getByPlaceholderText('Ex: Suporte, Renovação, Pós-venda'), { target: { value: 'X' } })
     fireEvent.click(screen.getByTestId('create-pipeline-submit'))
@@ -223,7 +224,7 @@ describe('CreatePipelineModal — sugerir etapas com IA (F13-904)', () => {
     }
     await renderOpen()
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Modelo de etapas' }), { target: { value: '__ai__' } })
+    escolherOpcao(screen.getByRole('combobox', { name: 'Modelo de etapas' }), '__ai__')
 
     await waitFor(() => expect(stageInputs()[0].value).toBe('Triagem'))
     const labels = stageInputs().map((i) => i.value)
@@ -237,7 +238,7 @@ describe('CreatePipelineModal — sugerir etapas com IA (F13-904)', () => {
     fireEvent.change(screen.getByPlaceholderText(/Ex: Suporte/), { target: { value: 'Suporte' } })
     const antes = stageInputs().map((i) => i.value)
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Modelo de etapas' }), { target: { value: '__ai__' } })
+    escolherOpcao(screen.getByRole('combobox', { name: 'Modelo de etapas' }), '__ai__')
 
     await waitFor(() => expect(screen.getByText(/Não foi possível sugerir etapas/)).toBeInTheDocument())
     expect(stageInputs().map((i) => i.value)).toEqual(antes)
@@ -253,12 +254,13 @@ describe('CreatePipelineModal — sugerir etapas com IA (F13-904)', () => {
   it('escolher um modelo depois de usar a IA volta o campo para o modelo (não fica preso em "Sugerir com IA")', async () => {
     suggestionResult = { stages: [{ label: 'Triagem' }], customFields: [] }
     await renderOpen()
-    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLSelectElement
+    const select = screen.getByRole('combobox', { name: 'Modelo de etapas' }) as HTMLButtonElement
 
-    fireEvent.change(select, { target: { value: '__ai__' } })
+    escolherOpcao(select, '__ai__')
     await waitFor(() => expect(select.value).toBe('__ai__'))
+    await waitFor(() => expect(select).toBeEnabled())
 
-    fireEvent.change(select, { target: { value: 'vendas-em-branco' } })
+    escolherOpcao(select, 'vendas-em-branco')
     expect(select.value).toBe('vendas-em-branco')
     expect(stageInputs().map((i) => i.value)).toEqual(['Novo', 'Ganho', 'Perdido'])
   })

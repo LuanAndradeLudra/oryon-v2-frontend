@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useEstadoNaUrl, lerUmDe } from '@/hooks/useEstadoNaUrl'
 import { History, StickyNote, Pin } from 'lucide-react'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/Skeleton'
@@ -50,6 +51,8 @@ function dayKey(ms: number): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 }
 
+const lerTipoTimeline = lerUmDe(['all', 'pipeline', 'conversas', 'notas'] as const, 'all')
+
 /**
  * Timeline unificada do perfil (padrão Kommo "feed"): 3 fontes reais
  * (via timelineSources) + notas locais, agrupadas por dia, filtráveis por
@@ -59,7 +62,8 @@ export function ContactTimeline({ contactId, notes, fillHeight = false }: Contac
   const { vocab } = useTenantVocab()
   const [remote, setRemote] = useState<TimelineEvent[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<TimelineFilter>('all')
+  // Filtro da linha do tempo na URL (`?tipo=`).
+  const [filter, setFilter] = useEstadoNaUrl<TimelineFilter>('tipo', { padrao: 'all', ler: lerTipoTimeline })
 
   // Rótulo da seção respeitando o vocabulário por vertical (Funil/Agenda...).
   const sectionLabel: Record<TimelineSection, string> = {

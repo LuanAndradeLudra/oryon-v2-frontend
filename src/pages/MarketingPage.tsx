@@ -63,11 +63,11 @@ function FrequencyBar({ frequency }: { frequency: number }) {
       <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden min-w-[48px]">
         <div className="h-full rounded-full transition-colors" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span className="text-3xs font-medium tabular-nums" style={{ color }}>
+      <span className="text-2xs font-medium tabular-nums" style={{ color }}>
         {frequency.toFixed(1)}×
       </span>
       {frequency >= 3.5 && <AlertTriangle className="w-3 h-3 text-danger flex-shrink-0" />}
-      <span className="text-[9px]" style={{ color }}>{label}</span>
+      <span className="text-[11px]" style={{ color }}>{label}</span>
     </div>
   )
 }
@@ -93,7 +93,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 p-4">
         {[1, 2].map((i) => (
-          <div key={i} className="h-40 bg-surface-800/60 rounded-xl animate-pulse" />
+          <div key={i} className="h-40 bg-[var(--sf2)] rounded-[10px] animate-pulse" />
         ))}
       </div>
     )
@@ -112,7 +112,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4 bg-surface-900/40">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4 bg-[var(--sf2)]">
       {creatives.map((cr) => {
         const fmt  = FORMAT_CFG[cr.format]
         const isHighFreq   = cr.frequency >= 3.5
@@ -121,7 +121,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
           <div
             key={cr.id}
             className={cn(
-              'bg-surface-800 rounded-xl border overflow-hidden flex flex-col',
+              'bg-surface-800 rounded-[10px] border overflow-hidden flex flex-col',
               isHighFreq  ? 'border-danger/40'    :
               isWatchFreq ? 'border-warning/30'   : 'border-surface-700',
             )}
@@ -130,7 +130,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
             <div className="flex items-start gap-2.5 px-3.5 pt-3 pb-2">
               {/* Format badge */}
               <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center flex-shrink-0 mt-0.5"
                 style={{ backgroundColor: fmt.color + '1a', color: fmt.color }}
               >
                 {fmt.icon}
@@ -138,14 +138,14 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span
-                    className="color-chip inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide"
+                    className="color-chip inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide"
                     style={{ ['--chip']: fmt.color } as React.CSSProperties}
                   >
                     {fmt.icon}
                     {fmt.label}
                   </span>
                   {isHighFreq && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-danger/15 text-danger">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-danger/15 text-danger">
                       <AlertTriangle className="w-2.5 h-2.5" /> Fadiga
                     </span>
                   )}
@@ -163,22 +163,22 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
 
             {/* CTA */}
             <div className="px-3.5 pb-3">
-              <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#1877f2]/15 text-[#1877f2]">
+              <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#1877f2]/15 text-[#1877f2]">
                 {cr.callToAction}
               </span>
             </div>
 
             {/* Divider */}
-            <div className="mx-3.5 border-t border-surface-700/50" />
+            <div className="mx-3.5 border-t border-surface-700" />
 
             {/* Frequency */}
             <div className="px-3.5 pt-2.5 pb-1.5">
-              <p className="text-[9px] text-surface-600 mb-1 uppercase tracking-wide">Frequência</p>
+              <p className="text-[11px] text-surface-600 mb-1 uppercase tracking-wide">Frequência</p>
               <FrequencyBar frequency={cr.frequency} />
             </div>
 
             {/* Metrics grid */}
-            <div className="grid grid-cols-4 gap-px bg-surface-700/30 mt-auto border-t border-surface-700/30">
+            <div className="grid grid-cols-4 gap-px bg-surface-700 mt-auto border-t border-surface-700">
               {[
                 { label: 'Impressões', value: cr.impressions.toLocaleString('pt-BR') },
                 { label: 'CTR',        value: `${cr.ctr.toFixed(2)}%` },
@@ -186,10 +186,10 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
                 { label: 'ROAS',       value: cr.roas ? `${cr.roas.toFixed(1)}x` : '—', good: (cr.roas ?? 0) > 5 },
               ].map((m) => (
                 <div key={m.label} className="bg-surface-800 px-2 py-2 text-center">
-                  <p className={cn('text-xs font-bold tabular-nums', m.good ? 'text-online' : 'text-surface-200')}>
+                  <p className={cn('text-xs font-semibold tabular-nums', m.good ? 'text-online' : 'text-surface-200')}>
                     {m.value}
                   </p>
-                  <p className="text-[9px] text-surface-600 mt-0.5">{m.label}</p>
+                  <p className="text-[11px] text-surface-600 mt-0.5">{m.label}</p>
                 </div>
               ))}
             </div>
@@ -221,7 +221,7 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
   if (loading) {
     return (
       <div className="space-y-2 p-4">
-        {[1, 2].map((i) => <div key={i} className="h-10 bg-surface-800/60 rounded-lg animate-pulse" />)}
+        {[1, 2].map((i) => <div key={i} className="h-10 bg-[var(--sf2)] rounded-[10px] animate-pulse" />)}
       </div>
     )
   }
@@ -242,16 +242,16 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-surface-700/60">
-            <th className="text-left px-4 py-2.5 text-surface-500 font-medium text-3xs uppercase tracking-wide">
+          <tr className="border-b border-surface-700">
+            <th className="text-left px-4 py-2.5 text-surface-500 font-medium text-2xs uppercase tracking-wide">
               Conjunto
             </th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">Alcance</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">Freq.</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">Investimento</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">Leads</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">CPL</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">ROAS</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-2xs">Alcance</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-2xs">Freq.</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-2xs">Investimento</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-2xs">Leads</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-2xs">CPL</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-2xs">ROAS</th>
             <th className="w-8" />
           </tr>
         </thead>
@@ -264,8 +264,8 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
                 <tr
                   key={as.id}
                   className={cn(
-                    'border-b border-surface-700/40 cursor-pointer transition-colors',
-                    isOpen ? 'bg-surface-700/30' : 'hover:bg-surface-700/15',
+                    'border-b border-surface-700 cursor-pointer transition-colors',
+                    isOpen ? 'bg-[var(--sf2)]' : 'hover:bg-[var(--rowhover)]',
                   )}
                   onClick={() => setOpenSet(isOpen ? null : as.id)}
                 >
@@ -273,12 +273,12 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
                     <div className="flex items-center gap-1.5">
                       <p className="text-surface-200 font-medium">{as.name}</p>
                       {highFreq && (
-                        <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded text-[9px] font-semibold bg-danger/15 text-danger">
+                        <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded text-[11px] font-semibold bg-danger/15 text-danger">
                           <AlertTriangle className="w-2.5 h-2.5" />Fadiga
                         </span>
                       )}
                     </div>
-                    <p className="text-3xs text-surface-500 mt-0.5 tabular-nums">
+                    <p className="text-2xs text-surface-500 mt-0.5 tabular-nums">
                       {as.impressions.toLocaleString('pt-BR')} imp · CTR {as.ctr.toFixed(2)}%
                     </p>
                   </td>
@@ -315,10 +315,10 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
                 </tr>
 
                 {isOpen && (
-                  <tr key={`${as.id}-cr`} className="border-b border-surface-700/30">
+                  <tr key={`${as.id}-cr`} className="border-b border-surface-700">
                     <td colSpan={8}>
-                      <div className="border-t border-surface-700/40">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-surface-800/30">
+                      <div className="border-t border-surface-700">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-[var(--sf2)]">
                           <LayoutGrid className="w-3.5 h-3.5 text-surface-500" />
                           <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wide">
                             Criativos deste conjunto
@@ -370,8 +370,8 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
         <div
           key={kpi.label}
           className={cn(
-            'relative bg-surface-900 border rounded-xl px-3 py-3',
-            kpi.crm ? 'border-surface-700' : 'border-surface-800',
+            'relative bg-surface-900 border rounded-[10px] px-3 py-3',
+            kpi.crm ? 'border-surface-700' : 'border-surface-700',
           )}
         >
           {kpi.crm && (
@@ -380,10 +380,10 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
           <div className="flex items-center gap-1.5 mb-1.5 text-surface-500">
             {kpi.icon}
           </div>
-          <p className={cn('text-sm font-bold tabular-nums', kpi.highlight ? 'text-online' : 'text-surface-100')}>
+          <p className={cn('text-sm font-semibold tabular-nums', kpi.highlight ? 'text-online' : 'text-surface-100')}>
             {kpi.value}
           </p>
-          <p className="text-3xs text-surface-500 mt-0.5">{kpi.label}</p>
+          <p className="text-2xs text-surface-500 mt-0.5">{kpi.label}</p>
         </div>
       ))}
     </div>
@@ -396,7 +396,7 @@ function PerformanceChart({ data, metric }: { data: PerfPoint[]; metric: ChartMe
   const C = useChartColors()
   const dataKey = metric === 'spend' ? 'meta_spend' : 'meta_leads'
 
-  if (!data.length) return <div className="h-48 bg-surface-800 rounded-xl animate-pulse" />
+  if (!data.length) return <div className="h-48 bg-surface-800 rounded-[10px] animate-pulse" />
 
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -420,7 +420,7 @@ function PerformanceChart({ data, metric }: { data: PerfPoint[]; metric: ChartMe
             if (!active || !payload?.length) return null
             const val = payload[0]?.value
             return (
-              <div className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs shadow-lg">
+              <div className="bg-surface-800 border border-surface-700 rounded-[10px] px-3 py-2 text-xs shadow-lg">
                 <p className="text-surface-400 mb-1">{label}</p>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#1877f2]" />
@@ -456,7 +456,7 @@ function CrmPipelineMini({ campaign }: { campaign: AdCampaignMetrics }) {
       {campaign.funnelBreakdown.map((stage, i) => (
         <div key={stage.stageKey} className="flex items-end gap-0.5">
           <div
-            className="w-4 rounded-sm"
+            className="w-4 rounded-[6px]"
             style={{
               height: Math.max(3, (stage.count / max) * 18),
               backgroundColor: stage.stageColor,
@@ -481,7 +481,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
   const [activeTab, setActiveTab] = useState<'funnel' | 'adsets'>('adsets')
 
   return (
-    <div className="bg-surface-800/20 border-t border-surface-800/60">
+    <div className="bg-[var(--sf2)] border-t border-surface-700">
 
       {/* Sub-tabs */}
       <div className="flex items-center gap-1 px-5 pt-4 pb-0">
@@ -493,9 +493,9 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
             key={t.id}
             onClick={() => setActiveTab(t.id)}
             className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              'px-3 py-1.5 rounded-[6px] text-xs font-medium transition-colors',
               activeTab === t.id
-                ? 'bg-surface-700 text-surface-100'
+                ? 'bg-[var(--sf2)] text-surface-100'
                 : 'text-surface-500 hover:text-surface-300',
             )}
           >
@@ -521,16 +521,16 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
                     {i > 0 && (
                       <div className="flex flex-col items-center self-center mb-5">
                         <ArrowRight className="w-3 h-3 text-surface-700" />
-                        {convPct && <span className="text-[9px] text-surface-600 mt-0.5">{convPct}%</span>}
+                        {convPct && <span className="text-[11px] text-surface-600 mt-0.5">{convPct}%</span>}
                       </div>
                     )}
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs font-bold text-surface-200 tabular-nums">{stage.count}</span>
+                      <span className="text-xs font-semibold text-surface-200 tabular-nums">{stage.count}</span>
                       <div
                         className="w-14 rounded-t transition-colors"
                         style={{ height: Math.max(8, pct * 0.5), backgroundColor: stage.stageColor, opacity: 0.85 }}
                       />
-                      <span className="text-3xs text-surface-500 text-center leading-tight max-w-[56px]">
+                      <span className="text-2xs text-surface-500 text-center leading-tight max-w-[56px]">
                         {stage.stageLabel}
                       </span>
                     </div>
@@ -556,8 +556,8 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
               { label: 'ROAS',       value: campaign.roas ? `${campaign.roas.toFixed(1)}x` : '—', good: (campaign.roas ?? 0) > 5 },
               { label: 'Conv. %',    value: `${campaign.conversionRate.toFixed(1)}%` },
             ].map((s) => (
-              <div key={s.label} className="bg-surface-800 rounded-lg px-3 py-2">
-                <p className="text-3xs text-surface-500">{s.label}</p>
+              <div key={s.label} className="bg-surface-800 rounded-[10px] px-3 py-2">
+                <p className="text-2xs text-surface-500">{s.label}</p>
                 <p className={cn('text-sm font-semibold tabular-nums', s.good ? 'text-online' : 'text-surface-100')}>
                   {s.value}
                 </p>
@@ -574,7 +574,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
                 style={{ width: `${Math.min(100, campaign.conversionRate)}%`, backgroundColor: META_BLUE }}
               />
             </div>
-            <span className="text-xs font-bold tabular-nums text-[#1877f2]">
+            <span className="text-xs font-semibold tabular-nums text-[#1877f2]">
               {campaign.conversionRate.toFixed(1)}%
             </span>
           </div>
@@ -585,7 +585,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
             <p className="text-xs text-surface-400">
               Clique em um conjunto para ver os criativos individuais
             </p>
-            <span className="text-3xs text-surface-600 flex items-center gap-1">
+            <span className="text-2xs text-surface-600 flex items-center gap-1">
               <span className="w-2.5 h-2.5 rounded-full bg-danger/70 inline-block" />
               Frequência {'>'} 3.5× = fatiga criativa
             </span>
@@ -658,8 +658,8 @@ function CampaignTable({
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-surface-800 flex items-center justify-between">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-surface-100">Campanhas</p>
           <p className="text-xs text-surface-400 mt-0.5">
@@ -675,7 +675,7 @@ function CampaignTable({
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-surface-800">
+            <tr className="border-b border-surface-700">
               <th className="text-left px-5 py-3 text-surface-400 font-medium text-2xs">Campanha</th>
               {cols.map((c) => <Th key={c.key} c={c} />)}
               <th className="w-8" />
@@ -689,8 +689,8 @@ function CampaignTable({
                   <tr
                     key={camp.platformCampaignId}
                     className={cn(
-                      'border-b border-surface-800/50 transition-colors cursor-pointer',
-                      isOpen ? 'bg-surface-800/40' : 'hover:bg-surface-800/20',
+                      'border-b border-surface-700 transition-colors cursor-pointer',
+                      isOpen ? 'bg-[var(--sf2)]' : 'hover:bg-[var(--rowhover)]',
                     )}
                     onClick={() => setSelected(isOpen ? null : camp.platformCampaignId)}
                   >
@@ -714,12 +714,12 @@ function CampaignTable({
                         title="Ver leads no CRM"
                       >
                         <span className="flex items-center gap-1">
-                          <span className="font-bold text-[#1877f2] tabular-nums group-hover/leads:scale-110 transition-transform origin-right inline-block">
+                          <span className="font-semibold text-[#1877f2] tabular-nums group-hover/leads:scale-110 transition-transform origin-right inline-block">
                             {camp.leadsGenerated}
                           </span>
                           <Users className="w-3 h-3 text-[#1877f2] opacity-0 group-hover/leads:opacity-100 transition-opacity" />
                         </span>
-                        <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-[#1877f2]/10 text-[#1877f2]/60 group-hover/leads:bg-[#1877f2]/20 group-hover/leads:text-[#1877f2] transition-colors leading-none tracking-wide uppercase">
+                        <span className="text-[11px] font-semibold px-1 py-0.5 rounded bg-[#1877f2]/10 text-[#1877f2]/60 group-hover/leads:bg-[#1877f2]/20 group-hover/leads:text-[#1877f2] transition-colors leading-none tracking-wide uppercase">
                           Ver CRM
                         </span>
                       </button>
@@ -751,7 +751,7 @@ function CampaignTable({
                   </tr>
 
                   {isOpen && (
-                    <tr key={`${camp.platformCampaignId}-detail`} className="border-b border-surface-800/40">
+                    <tr key={`${camp.platformCampaignId}-detail`} className="border-b border-surface-700">
                       <td colSpan={11}>
                         <CampaignDetail campaign={camp} />
                       </td>
@@ -780,7 +780,7 @@ function ConversionFunnel({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const max = stages[0].value || 1
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
       <p className="text-sm font-semibold text-surface-100 mb-0.5">Funil de Conversão</p>
       <p className="text-xs text-surface-400 mb-4">Do clique no anúncio ao cliente no CRM</p>
       <div className="space-y-2.5">
@@ -795,7 +795,7 @@ function ConversionFunnel({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
                 <span className="text-surface-300 font-medium">{stage.label}</span>
                 <span className="tabular-nums text-surface-400">
                   {stage.value.toLocaleString('pt-BR')}
-                  <span className="text-surface-600 text-3xs">{prevConv}</span>
+                  <span className="text-surface-600 text-2xs">{prevConv}</span>
                 </span>
               </div>
               <div className="h-3 bg-surface-800 rounded-full overflow-hidden">
@@ -831,25 +831,25 @@ function SummaryPanel({ campaigns, totals }: { campaigns: AdCampaignMetrics[]; t
   ]
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 space-y-3">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5 space-y-3">
       <p className="text-sm font-semibold text-surface-100">Resumo do Período</p>
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-2.5">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            className="w-7 h-7 rounded-[6px] flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: item.color + '1a', color: item.color }}
           >
             {item.icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-3xs text-surface-500">{item.label}</p>
-            <p className="text-sm font-bold text-surface-100 tabular-nums leading-tight">{item.value}</p>
+            <p className="text-2xs text-surface-500">{item.label}</p>
+            <p className="text-sm font-semibold text-surface-100 tabular-nums leading-tight">{item.value}</p>
           </div>
         </div>
       ))}
       {totals && (
-        <div className="pt-2 border-t border-surface-800">
-          <p className="text-3xs text-surface-600 mb-1">Conv. Lead → Cliente</p>
+        <div className="pt-2 border-t border-surface-700">
+          <p className="text-2xs text-surface-600 mb-1">Conv. Lead → Cliente</p>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden">
               <div
@@ -857,7 +857,7 @@ function SummaryPanel({ campaigns, totals }: { campaigns: AdCampaignMetrics[]; t
                 style={{ width: `${Math.min(100, leads > 0 ? (customers / leads * 100) : 0)}%` }}
               />
             </div>
-            <span className="text-xs font-bold tabular-nums text-surface-300">
+            <span className="text-xs font-semibold tabular-nums text-surface-300">
               {leads > 0 ? (customers / leads * 100).toFixed(1) : '0'}%
             </span>
           </div>
@@ -902,10 +902,10 @@ function CapiEventsSection() {
   const failedCount  = events.filter((e) => e.status === 'failed').length
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-[10px] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800">
-        <div className="w-8 h-8 rounded-lg bg-[#1877f2]/15 flex items-center justify-center flex-shrink-0">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700">
+        <div className="w-8 h-8 rounded-[6px] bg-[#1877f2]/15 flex items-center justify-center flex-shrink-0">
           <Send className="w-4 h-4 text-[#1877f2]" />
         </div>
         <div className="flex-1">
@@ -916,19 +916,19 @@ function CapiEventsSection() {
         </div>
         <div className="flex items-center gap-3 text-xs">
           <div className="text-right">
-            <p className="text-3xs text-surface-500">Enviados</p>
-            <p className="text-sm font-bold text-online tabular-nums">{sentCount}</p>
+            <p className="text-2xs text-surface-500">Enviados</p>
+            <p className="text-sm font-semibold text-online tabular-nums">{sentCount}</p>
           </div>
           <div className="text-right">
-            <p className="text-3xs text-surface-500">Receita reportada</p>
-            <p className="text-sm font-bold text-surface-100 tabular-nums">
+            <p className="text-2xs text-surface-500">Receita reportada</p>
+            <p className="text-sm font-semibold text-surface-100 tabular-nums">
               R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
           </div>
           {failedCount > 0 && (
             <div className="text-right">
-              <p className="text-3xs text-surface-500">Falhas</p>
-              <p className="text-sm font-bold text-danger tabular-nums">{failedCount}</p>
+              <p className="text-2xs text-surface-500">Falhas</p>
+              <p className="text-sm font-semibold text-danger tabular-nums">{failedCount}</p>
             </div>
           )}
         </div>
@@ -940,7 +940,7 @@ function CapiEventsSection() {
         <p className="text-2xs text-surface-400 leading-relaxed">
           Quando um lead CTWA é confirmado como convertido pela IA, a plataforma envia um evento{' '}
           <strong className="text-surface-300">Purchase</strong> ao Meta usando o{' '}
-          <code className="bg-surface-800 px-1 rounded text-3xs font-mono text-brand-300">ctwa_click_id</code>
+          <code className="bg-surface-800 px-1 rounded text-2xs font-mono text-brand-300">ctwa_click_id</code>
           {' '}capturado no webhook. O Meta passa a otimizar para perfis similares, reduzindo o CPL ao longo do tempo.
         </p>
       </div>
@@ -967,7 +967,7 @@ function CapiEventsSection() {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-surface-800">
+              <tr className="border-b border-surface-700">
                 <th className="text-left px-5 py-3 text-surface-500 font-medium text-2xs">Contato</th>
                 <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">Campanha</th>
                 <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">Evento</th>
@@ -981,16 +981,16 @@ function CapiEventsSection() {
               {events.map((evt) => {
                 const stCfg = STATUS_CFG[evt.status]
                 return (
-                  <tr key={evt.id} className="border-b border-surface-800/50 hover:bg-surface-800/20">
+                  <tr key={evt.id} className="border-b border-surface-700 hover:bg-[var(--rowhover)]">
                     <td className="px-5 py-3">
                       <p className="text-surface-200 font-medium">{evt.contactName}</p>
-                      <p className="text-3xs text-surface-500 font-mono">{evt.contactId}</p>
+                      <p className="text-2xs text-surface-500 font-mono">{evt.contactId}</p>
                     </td>
                     <td className="px-3 py-3 max-w-[180px]">
                       <p className="text-surface-300 truncate">{evt.campaignName ?? '—'}</p>
                     </td>
                     <td className="px-3 py-3">
-                      <span className="px-2 py-0.5 rounded-md text-3xs font-semibold bg-[#1877f2]/15 text-[#1877f2]">
+                      <span className="px-2 py-0.5 rounded-[6px] text-2xs font-semibold bg-[#1877f2]/15 text-[#1877f2]">
                         {EVENT_LABEL[evt.eventName]}
                       </span>
                     </td>
@@ -1000,7 +1000,7 @@ function CapiEventsSection() {
                         : <span className="text-surface-600">—</span>}
                     </td>
                     <td className="px-3 py-3">
-                      <code className="text-3xs font-mono text-surface-500 bg-surface-800 px-1.5 py-0.5 rounded">
+                      <code className="text-2xs font-mono text-surface-500 bg-surface-800 px-1.5 py-0.5 rounded">
                         {evt.ctwaClickId.slice(0, 20)}…
                       </code>
                     </td>
@@ -1015,7 +1015,7 @@ function CapiEventsSection() {
                         <span className="font-medium">{stCfg.label}</span>
                       </div>
                       {evt.errorMessage && (
-                        <p className="text-3xs text-danger/70 mt-0.5">{evt.errorMessage}</p>
+                        <p className="text-2xs text-danger/70 mt-0.5">{evt.errorMessage}</p>
                       )}
                     </td>
                   </tr>
@@ -1085,7 +1085,7 @@ function MarketingPageDesktop() {
   useRegisterTopBarActions(
     <button
       onClick={() => void load(true)}
-      className="p-1.5 rounded-lg border border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-colors"
+      className="p-1.5 rounded-[6px] border border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-colors"
       title="Atualizar dados"
     >
       <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
@@ -1116,15 +1116,15 @@ function MarketingPageDesktop() {
               <div className="col-span-12 xl:col-span-8 space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-16 bg-surface-900 border border-surface-800 rounded-xl" />
+                    <div key={i} className="h-16 bg-surface-800 border border-surface-700 rounded-[10px]" />
                   ))}
                 </div>
-                <div className="h-72 bg-surface-900 border border-surface-800 rounded-xl" />
-                <div className="h-48 bg-surface-900 border border-surface-800 rounded-xl" />
+                <div className="h-72 bg-surface-800 border border-surface-700 rounded-[10px]" />
+                <div className="h-48 bg-surface-800 border border-surface-700 rounded-[10px]" />
               </div>
               <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
-                <div className="h-28 bg-surface-900 border border-surface-800 rounded-xl" />
-                <div className="h-56 bg-surface-900 border border-surface-800 rounded-xl" />
+                <div className="h-28 bg-surface-800 border border-surface-700 rounded-[10px]" />
+                <div className="h-56 bg-surface-800 border border-surface-700 rounded-[10px]" />
               </div>
             </div>
           ) : error ? (
@@ -1144,20 +1144,20 @@ function MarketingPageDesktop() {
               <KpiStrip campaigns={campaigns} />
 
               {/* Performance chart */}
-              <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+              <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm font-semibold text-surface-100">Desempenho — Últimos 30 dias</p>
                     <p className="text-xs text-surface-400 mt-0.5">Evolução diária das campanhas Meta Ads</p>
                   </div>
-                  <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-lg p-0.5">
+                  <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-[10px] p-0.5">
                     {(['leads', 'spend'] as ChartMetric[]).map((m) => (
                       <button
                         key={m}
                         onClick={() => setChartMetric(m)}
                         className={cn(
-                          'px-3 py-1 rounded-md text-xs font-medium transition-colors',
-                          chartMetric === m ? 'bg-surface-700 text-surface-100' : 'text-surface-500 hover:text-surface-300',
+                          'px-3 py-1 rounded-[6px] text-xs font-medium transition-colors',
+                          chartMetric === m ? 'bg-[var(--sf2)] text-surface-100' : 'text-surface-500 hover:text-surface-300',
                         )}
                       >
                         {m === 'leads' ? 'Leads' : 'Investimento'}
@@ -1182,15 +1182,15 @@ function MarketingPageDesktop() {
               <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
                 {/* Conta conectada — status vivo da integração Meta */}
                 {account && (
-                  <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+                  <div className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="relative flex w-2 h-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-online opacity-60" />
                         <span className="relative inline-flex rounded-full w-2 h-2 bg-online" />
                       </span>
-                      <p className="text-3xs font-bold uppercase tracking-widest text-surface-500">Conta conectada</p>
+                      <p className="text-2xs font-semibold uppercase tracking-widest text-surface-500">Conta conectada</p>
                     </div>
-                    <p className="text-sm font-display font-bold text-surface-50 truncate">{account.accountName}</p>
+                    <p className="text-sm font-display font-semibold text-surface-50 truncate">{account.accountName}</p>
                     <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">{account.accountId}</p>
                     <p className="text-2xs text-surface-500 mt-2">
                       Sincronizado:{' '}

@@ -61,6 +61,14 @@ describe('dealProbability', () => {
     expect(result.weightedAmountCents).toBe(0)
   })
 
+  it('linha do QUADRO: o override vem em probabilityOverride e vence a etapa (R2 · SCRUM-1161)', () => {
+    // O backend remove `probability` da listagem do quadro e manda o ajuste
+    // como `probabilityOverride`; antes o ponderado da coluna usava a etapa.
+    const result = dealProbability({ status: 'open', probabilityOverride: 80, amountCents: 10_000 }, stage({ probability: 40 }))
+    expect(result.effective).toBe(80)
+    expect(result.weightedAmountCents).toBe(8_000)
+  })
+
   it('negócio ganho pondera o valor cheio', () => {
     const result = dealProbability({ status: 'won', probability: null, amountCents: 10_000 }, stage({ isWon: true }))
     expect(result.weightedAmountCents).toBe(10_000)

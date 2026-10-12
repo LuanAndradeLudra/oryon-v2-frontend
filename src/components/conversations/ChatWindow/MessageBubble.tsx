@@ -1,10 +1,12 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, AlertTriangle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, Workflow, UserRound,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, MoreHorizontal, Workflow,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
+import { failureReason } from '@/lib/messageStatus'
 import { useContextMenu } from '@/hooks/useContextMenu'
+import { Avatar } from '@/components/ui/Avatar'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Message } from '@/types'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
@@ -41,6 +43,9 @@ interface MessageBubbleProps {
   quotedMessage?: Message | null
   /** Start a quoted reply to this message (desktop hover button + mobile swipe). */
   onReply?: (message: Message) => void
+  /** CONV-CHAT-16/21 (spec/1d-conversas.GAPS.md): dados do contato — avatar
+   *  inbound na 1ª bolha do grupo. */
+  contact: { displayName: string; profilePicUrl?: string | null }
   /** SCRUM-1158 — jump to (scroll + flash) another message already in the
    *  loaded window, by id. Wired to the reply quote bar, WhatsApp-style. */
   onJumpToMessage?: (messageId: string) => void
@@ -49,23 +54,34 @@ interface MessageBubbleProps {
   highlighted?: boolean
 }
 
-/** Inline sender indicator for OUTBOUND messages, pinned to the LEFT of the
- *  meta row. Distinguishes AI / human operator / campaign / rule by glyph — the
- *  useful signal in an omnichannel inbox — at full bubble-foreground contrast.
- *  The sender's name is NOT inline (it's in the bubble's hover tooltip). Inbound
- *  needs none: the customer is identified by the header + left alignment. */
-function SenderInlineIcon({ message }: { message: Message }) {
-  // Icon only, pinned to the left of the meta row — the sender's NAME lives in
-  // the bubble's hover tooltip (senderLabelOf), not inline, so short messages
-  // never widen.
-  const icon = 'w-3 h-3 shrink-0 text-bubble-out-fg'
-  if (message.senderKind === 'campaign') return <Megaphone className={icon} />
-  if (message.senderKind === 'rule') return <Workflow className={icon} />
-  const isAi =
-    message.senderKind === 'ai' ||
-    (message.senderKind == null && !message.sentByUser && !message.sentByUserId)
-  if (!isAi) return <UserRound className={icon} />
-  return <Bot className={icon} />
+/** Avatar/tile de 24px na 1ª bolha de cada grupo (CONV-CHAT-16/21). Inbound =
+ *  avatar do contato; outbound = SEMPRE o círculo teal da casa (operador,
+ *  IA, campanha, regra — a cor diz "nosso lado", o ícone diz quem; PO 07/10) — mesma classificação de `senderKey` (MessageList) e
+ *  `SenderInlineIcon`/`senderLabelOf` abaixo, pra nunca discordarem sobre
+ *  QUEM é o remetente. */
+function SenderAvatar({ message, contact }: { message: Message; contact: { displayName: string; profilePicUrl?: string | null } }) {
+  if (message.direction === 'inbound') {
+    return <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl ?? undefined} size="xs" />
+  }
+  if (message.senderKind === 'campaign' || message.senderKind === 'rule') {
+    const Icon = message.senderKind === 'campaign' ? Megaphone : Workflow
+    return (
+      <div className="w-6 h-6 rounded-full avatar-operador flex items-center justify-center flex-shrink-0">
+        <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
+      </div>
+    )
+  }
+  if (message.sentByUser) {
+    return <Avatar name={`${message.sentByUser.firstName} ${message.sentByUser.lastName ?? ''}`} size="xs" kind="operator" />
+  }
+  // IA (senderKind === 'ai', ou ausência de senderKind/sentByUserId).
+  return (
+    // Mesmo gradiente teal do operador (`.avatar-operador`): IA e gente da
+    // casa compartilham a identidade; o contato fica monocromático.
+    <div className="w-6 h-6 rounded-full avatar-operador flex items-center justify-center flex-shrink-0">
+      <Bot className="w-3.5 h-3.5" strokeWidth={1.75} />
+    </div>
+  )
 }
 
 /** Sender label for the bubble's hover tooltip (outbound only). Operator → full
@@ -400,7 +416,7 @@ function MediaContent({
           alt={message.mediaCaption || 'Imagem'}
           loading="lazy"
           decoding="async"
-          className="rounded-lg max-w-[280px] max-h-[320px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+          className="rounded-[10px] max-w-[280px] max-h-[320px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
           onError={() => setImageError(true)}
           onClick={() => openViewer(message)}
         />
@@ -431,7 +447,7 @@ function MediaContent({
             <div className="flex items-center gap-2 mb-1">
               <Mic className="w-4 h-4 opacity-70" />
               <span className="text-xs font-medium">Áudio</span>
-              <span className="text-[10px] opacity-60 tabular-nums ml-auto">
+              <span className="text-[11px] opacity-60 tabular-nums ml-auto">
                 {formatAudioTime(isPlaying || audioCurrentTime > 0 ? audioCurrentTime : audioDuration)}
                 {audioDuration !== null && (
                   <>
@@ -485,7 +501,7 @@ function MediaContent({
             the browser paints the whole thing in a single reflow. */}
         {hasTranscription && showTranscription && (
           <div className="mt-2 pt-2 border-t border-current/15">
-            <p className="text-[10px] uppercase tracking-wide opacity-50 mb-1 font-medium">
+            <p className="text-2xs opacity-50 mb-1 font-medium">
               Transcrição automática
             </p>
             <p className="text-sm opacity-90 leading-relaxed italic">
@@ -522,7 +538,7 @@ function MediaContent({
         <video
           src={authMediaSrc}
           controls
-          className="rounded-lg max-w-[280px] max-h-[320px]"
+          className="rounded-[10px] max-w-[280px] max-h-[320px]"
           preload="metadata"
         >
           Seu navegador não suporta o elemento de vídeo.
@@ -542,7 +558,7 @@ function MediaContent({
           alt="Figurinha"
           loading="lazy"
           decoding="async"
-          className="rounded-lg max-w-[150px] max-h-[150px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+          className="rounded-[10px] max-w-[150px] max-h-[150px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
           onError={() => setImageError(true)}
           onClick={() => openViewer(message)}
         />
@@ -596,17 +612,17 @@ export function TextContent({ message }: { message: Message }) {
   // que MediaContent já desenha embaixo da mídia.
   if (STRUCTURED_TYPES.has(message.type)) return null
   return message.body ? (
-    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+    <p className="text-sm leading-[1.45] whitespace-pre-wrap break-words">
       <WhatsAppText text={message.body} />
     </p>
   ) : null
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply, onJumpToMessage, highlighted }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply, contact, onJumpToMessage, highlighted }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
   // Extra top spacing when a new sender run starts (the avatar sits above).
-  const gap = showAvatar ? 'mt-3' : isSameDirection ? 'mt-0.5' : 'mt-3'
+  const gap = showAvatar ? 'mt-3' : isSameDirection ? 'mt-1' : 'mt-3'
   // "Abrir imagem/vídeo/documento" no menu de contexto — mesmo visualizador
   // in-app usado pelo clique direto na mídia (MediaContent).
   const { open: openViewer } = useMediaViewer()
@@ -640,6 +656,11 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = []
+    // Responder é a ação nº 1 do chat: primeira do menu (clique direito, "⋯"
+    // e toque longo caem aqui). Mantém a regra do botão: nunca em falha.
+    if (onReply && message.status !== 'failed') {
+      items.push({ label: 'Responder', icon: CornerUpLeft, onClick: () => onReply(message) })
+    }
     if (message.body) {
       items.push({
         label: 'Copiar mensagem',
@@ -671,7 +692,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       }
     }
     return items
-  }, [message, openViewer])
+  }, [message, onReply, openViewer])
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
@@ -680,10 +701,11 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   // scrolling is never hijacked. No preventDefault → native scroll preserved.
   const [dragX, setDragX] = useState(0)
   const touchStart = useRef<{ x: number; y: number } | null>(null)
-  // `sending` é o eco otimista local (useMessages.sendMessage) — ainda não
-  // tem wamid real pra uma resposta citar, então não oferece o atalho até
-  // ela virar a mensagem definitiva.
-  const canReply = !!onReply && message.status !== 'failed' && message.status !== 'sending'
+  // `sending` (eco otimista local) e `queued` (linha gravada antes da Meta) ainda
+  // não têm wamid real pra uma resposta citar, então não oferecem o atalho até
+  // virarem a mensagem definitiva.
+  const canReply =
+    !!onReply && message.status !== 'failed' && message.status !== 'sending' && message.status !== 'queued'
 
   // Mensagens recebidas ficam coladas à borda esquerda — exatamente onde o
   // gesto nativo de "voltar" do iOS/Android intercepta o toque. Um gesto que
@@ -727,37 +749,70 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       }}
       title={bubbleTitle}
     >
-      {/* Desktop reply affordance — appears on hover, beside the bubble. */}
-      {canReply && (
-        <button
-          type="button"
-          onClick={() => onReply!(message)}
-          title="Responder"
-          aria-label="Responder"
-          className="hidden md:flex self-center w-7 h-7 rounded-full items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-700/60 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-        >
-          <CornerUpLeft className="w-3.5 h-3.5" />
-        </button>
-      )}
+      {/* CONV-CHAT-16/21: avatar/tile de 24px só na 1ª bolha do grupo; nas
+          continuações fica um espaçador do mesmo tamanho, pra bolha não
+          "andar" quando o avatar some. */}
+      {showAvatar ? <SenderAvatar message={message} contact={contact} /> : <div className="w-6 h-6 flex-shrink-0" aria-hidden />}
 
-      {/* Column wrapper — keeps the bubble at max 72% width, aligned to the
-          sender's side. */}
-      <div className={cn('flex flex-col max-w-[72%] min-w-0', isOutbound ? 'items-end' : 'items-start')}>
+      {/* Column wrapper — keeps the bubble at max 65% width (WhatsApp Web),
+          aligned to the sender's side. As ações da mensagem NÃO ficam mais no
+          fluxo da linha: o antigo botão Responder (28px + gap, opacity 0) fazia
+          toda bolha começar a 68px da borda mesmo invisível — PO, 23/09. */}
+      <div className={cn('flex flex-col max-w-[65%] min-w-0', isOutbound ? 'items-end' : 'items-start')}>
         {/* Bubble — soft drop shadow only in light theme (invisible token in
             dark). The sender (AI / operator / campaign / rule) is conveyed by a
             discreet inline icon in the meta row below, outbound only. */}
         <div
           className={cn(
-            'relative px-3 py-2 rounded-md',
+            // CONV-CHAT-18/23 (spec/1d-conversas.GAPS.md): raio 10px, com o
+            // canto "de cauda" em 3px só na PRIMEIRA bolha do grupo
+            // (showAvatar) — geometria corrigida: o canto de cauda é o
+            // INFERIOR (perto do avatar), não o superior; continuações ficam
+            // uniformes, sem nenhum canto cortado. Nenhum --radius-* token
+            // cobre 3px, então fica em valor arbitrário aqui mesmo (não é
+            // mudança de token, é uso local).
+            'relative px-3 py-2 rounded-[10px]',
             isOutbound
-              ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg rounded-br-xs'
-              : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-xs',
-            showAvatar && isOutbound && 'rounded-br-md rounded-tr-xs',
-            showAvatar && !isOutbound && 'rounded-bl-md rounded-tl-xs',
-            highlighted && 'animate-msg-highlight'
+              ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg'
+              : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)]',
+            showAvatar && isOutbound && 'rounded-br-[3px]',
+            showAvatar && !isOutbound && 'rounded-bl-[3px]',
+            highlighted && 'animate-msg-highlight',
           )}
           style={isOutbound ? { boxShadow: 'var(--bubble-shadow-soft)' } : undefined}
         >
+        {/* Ações flutuantes (Slack/Front): sobrepostas ao lado EXTERNO da
+            bolha, só no hover/foco, sem reservar largura. Responder a um
+            clique; "⋯" abre o mesmo menu do clique direito. Desktop only —
+            no toque, arrastar responde e o toque longo abre o menu. */}
+          <div
+            className={cn(
+              'hidden md:flex absolute top-1/2 -translate-y-1/2 items-center gap-0.5',
+              isOutbound ? 'right-full mr-1.5' : 'left-full ml-1.5',
+              'opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity',
+            )}
+          >
+            {canReply && (
+              <button
+                type="button"
+                onClick={() => onReply!(message)}
+                title="Responder"
+                aria-label="Responder"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              >
+                <CornerUpLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
+              title="Mais ações"
+              aria-label="Mais ações"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </button>
+          </div>
         {message.contextWamid && (
           <ReplyQuoteBar
             message={message}
@@ -772,7 +827,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         {/* Footer: [Ver transcrição (audio com texto Whisper)] … [hora] [status]
             Control only shows when Whisper text exists
             and is still collapsed; expanding is one-way until remount. */}
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-[3px]">
           {audioTranscription && !showTranscription && (
             <button
               type="button"
@@ -784,7 +839,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                 setShowTranscription(true)
               }}
               className={cn(
-                'inline-flex items-center gap-1 text-[10px] font-medium transition-opacity',
+                'inline-flex items-center gap-1 text-[11px] font-medium transition-opacity',
                 isOutbound ? 'text-bubble-out-time hover:opacity-100 opacity-80' : 'text-surface-400 hover:text-surface-200',
               )}
             >
@@ -796,9 +851,11 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           {/* Sender attribution pinned to the LEFT of the meta row; the
               timestamp + delivery status sit on the RIGHT (ml-auto). Two
               semantic groups at opposite ends read cleaner than one cluster. */}
-          {isOutbound && <SenderInlineIcon message={message} />}
+          {/* O glifo do remetente (IA / operador / campanha / regra) saiu do
+              rodapé da bolha (PO, 23/09): o avatar em gradiente na 1ª bolha
+              da sequência já diz quem enviou; dentro da bolha era ruído. */}
           <div className="flex items-center gap-1 ml-auto">
-            <span className={cn('text-[10px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-400')}>
+            <span className={cn('text-[11px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-500')}>
               {timeStr}
             </span>
             {isOutbound && <StatusIcon status={message.status} />}
@@ -807,7 +864,9 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
 
         {/* Failed indicator */}
         {message.status === 'failed' && (
-          <p className="text-[10px] text-danger mt-1">Falha no envio</p>
+          <p className="text-[11px] text-danger mt-1" title={failureReason(message) ?? undefined}>
+            Falha no envio{failureReason(message) ? `: ${failureReason(message)}` : ''}
+          </p>
         )}
 
         {/* Phase 33c — phantom-confirmation flag: the anti-claim guard caught
@@ -844,7 +903,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                   which would collapse around this absolutely-positioned button). */}
               <span
                 role="tooltip"
-                className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-max max-w-[220px] px-2.5 py-1.5 rounded-lg bg-surface-800 text-surface-100 text-[11px] leading-snug text-center shadow-lg ring-1 ring-surface-700 opacity-0 translate-y-1 transition-all duration-150 group-hover/anom:opacity-100 group-hover/anom:translate-y-0"
+                className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-max max-w-[220px] px-2.5 py-1.5 rounded-[10px] bg-surface-800 text-surface-100 text-[11px] leading-snug text-center shadow-lg ring-1 ring-surface-700 opacity-0 translate-y-1 transition-all duration-150 group-hover/anom:opacity-100 group-hover/anom:translate-y-0"
               >
                 {anomalyReviewed ? reviewedLabel(anomalyReviewedAt, message.anomaly.reviewedBy) : guardReasonLabel(message.anomaly)}
               </span>

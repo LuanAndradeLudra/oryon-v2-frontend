@@ -2,11 +2,13 @@ import { forwardRef, type InputHTMLAttributes } from 'react'
 import { Input } from './Input'
 import { maskPhoneInput, phoneDigits } from '@/lib/phone'
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'> & {
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type' | 'size'> & {
   /** Número em dígitos (E.164 sem símbolos), como o backend guarda: `5511999887766`. */
   value: string
   /** Recebe **dígitos**, nunca a máscara — o componente não vaza formatação para o estado. */
   onChange: (digits: string) => void
+  /** SCRUM-1097: repassado ao `Input` — régua canônica sm/md/lg. */
+  size?: 'sm' | 'md' | 'lg'
 }
 
 /**

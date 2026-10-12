@@ -16,6 +16,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Link2, AlertCircle, CheckCircle2, ShieldAlert, X } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { Input } from '@/components/ui/Input'
@@ -28,10 +29,11 @@ import {
   listAvailableTemplates,
   type BatchAttachResult,
 } from '@/services/agentSkillsApi'
-import { DynamicSchemaFormFields } from '@/components/admin/DynamicSchemaFormFields'
+import { DynamicSchemaFormFields } from '@/components/shared/DynamicSchemaFormFields'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import type { SkillTemplate, JsonSchemaObject } from '@/types/skills'
 import { cn } from '@/lib/utils'
+import { Checkbox } from '@/components/ui/Checkbox'
 
 export function AssignSkillPage() {
   const navigate = useNavigate()
@@ -283,12 +285,15 @@ export function AssignSkillPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 py-8">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => navigate('/admin/skill-templates')}
-          className="inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-200 mb-4 transition-colors"
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+          className="mb-4 -ml-3"
         >
-          <ArrowLeft className="w-4 h-4" /> Voltar para o catálogo
-        </button>
+          Voltar para o catálogo
+        </Button>
 
         <header className="mb-6">
           <h1 className="text-xl font-semibold text-surface-100 flex items-center gap-2">
@@ -303,7 +308,7 @@ export function AssignSkillPage() {
         </header>
 
         {error && (
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-danger/10 border border-danger/30 text-sm mb-5">
+          <div className="flex items-start gap-3 p-3 rounded-[10px] bg-danger/10 border border-danger/30 text-sm mb-5">
             <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-danger">{error}</p>
           </div>
@@ -345,22 +350,18 @@ export function AssignSkillPage() {
                       )}
                     </span>
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={selectAllAgents}
                         disabled={agentIds.length === agents.length}
-                        className="text-brand-400 hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-default"
                       >
                         Selecionar todos
-                      </button>
+                      </Button>
                       {agentIds.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={clearAgents}
-                          className="text-surface-400 hover:text-surface-200"
-                        >
+                        <Button variant="ghost" size="sm" onClick={clearAgents}>
                           Limpar
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -371,18 +372,13 @@ export function AssignSkillPage() {
                         <label
                           key={a.id}
                           className={cn(
-                            'flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors',
+                            'flex items-center gap-3 p-2.5 rounded-[10px] border cursor-pointer transition-colors',
                             checked
-                              ? 'bg-brand-600/10 border-brand-600/40'
-                              : 'bg-surface-900 border-surface-700 hover:border-surface-600',
+                              ? 'bg-accent-soft border-brand-500/40'
+                              : 'bg-surface-800 border-surface-700 hover:border-surface-600',
                           )}
                         >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleAgent(a.id)}
-                            className="w-4 h-4 accent-brand-500"
-                          />
+                          <Checkbox checked={checked} onChange={() => toggleAgent(a.id)} />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm text-surface-100 truncate">{a.name}</p>
                             <p className="text-[11px] text-surface-500 font-mono truncate">
@@ -419,7 +415,7 @@ export function AssignSkillPage() {
                     ))}
                   </Select>
                   {template && (
-                    <div className="mt-3 flex items-start gap-3 p-3 rounded-lg bg-surface-900 border border-surface-700">
+                    <div className="mt-3 flex items-start gap-3 p-3 rounded-[10px] bg-surface-900 border border-surface-700">
                       <CategoryIcon category={template.category} tone="active" size={36} />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-surface-100">{template.name}</p>
@@ -440,7 +436,7 @@ export function AssignSkillPage() {
               complete={allValid}
             >
               {template.mutates && (
-                <div className="flex items-start gap-2 p-3 mb-3 rounded-lg bg-status-pending-bg/40 border border-status-pending-border text-sm">
+                <div className="flex items-start gap-2 p-3 mb-3 rounded-[10px] bg-status-pending-bg/40 border border-status-pending-border text-sm">
                   <ShieldAlert className="w-4 h-4 text-status-pending flex-shrink-0 mt-0.5" />
                   <p className="text-status-pending">
                     Operação destrutiva — esta skill altera dados externos quando chamada.
@@ -479,7 +475,7 @@ export function AssignSkillPage() {
 
           {/* ── Batch results banner ───────────────────────────────────── */}
           {batchResults && batchResults.some((r) => !r.success) && (
-            <div className="p-3 rounded-lg bg-status-pending-bg/40 border border-status-pending-border text-sm">
+            <div className="p-3 rounded-[10px] bg-status-pending-bg/40 border border-status-pending-border text-sm">
               <p className="text-status-pending font-medium mb-1">
                 {batchResults.filter((r) => r.success).length}/{batchResults.length} atribuídas com sucesso
               </p>
@@ -493,24 +489,10 @@ export function AssignSkillPage() {
           {/* ── Footer actions ──────────────────────────────────────────── */}
           {tenantId && agentIds.length > 0 && template && (
             <div className="flex items-center justify-between gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => navigate('/admin/skill-templates')}
-                className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-colors"
-              >
+              <Button variant="ghost" onClick={() => navigate('/admin/skill-templates')}>
                 Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleAttach}
-                disabled={!canSubmit}
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-                  canSubmit
-                    ? 'bg-brand-600 text-surface-950 hover:bg-brand-500 active:scale-[0.98]'
-                    : 'bg-surface-800 text-surface-500 cursor-not-allowed',
-                )}
-              >
+              </Button>
+              <Button variant="primary" onClick={handleAttach} disabled={!canSubmit}>
                 {submitting
                   ? <><Spinner className="w-4 h-4" /> Atribuindo…</>
                   : <>
@@ -519,7 +501,7 @@ export function AssignSkillPage() {
                         ? `Atribuir a ${agentIds.length} agentes`
                         : 'Atribuir skill'}
                     </>}
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -564,12 +546,12 @@ function AgentConfigCard({
   return (
     <div
       className={cn(
-        'rounded-lg border p-4',
+        'rounded-[10px] border p-4',
         success
           ? 'border-status-active-border bg-status-active-bg/30'
           : failed
             ? 'border-danger/40 bg-danger/5'
-            : 'border-surface-700 bg-surface-900/70',
+            : 'border-surface-700 bg-[var(--sf2)]',
       )}
     >
       <header className="flex items-center justify-between gap-3 mb-3">
@@ -591,14 +573,9 @@ function AgentConfigCard({
             </span>
           )}
           {onRemove && !success && (
-            <button
-              type="button"
-              onClick={onRemove}
-              className="w-6 h-6 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
-              title="Remover deste lote"
-            >
+            <Button variant="ghost" size="sm" iconOnly onClick={onRemove} title="Remover deste lote" aria-label="Remover deste lote">
               <X className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -619,7 +596,7 @@ function AgentConfigCard({
         </p>
       )}
 
-      <details className="mt-4 pt-3 border-t border-surface-800 group">
+      <details className="mt-4 pt-3 border-t border-surface-700 group">
         <summary className="text-[11px] text-surface-400 cursor-pointer select-none hover:text-surface-200">
           Customizar nome/descrição para a IA (opcional)
         </summary>
@@ -669,13 +646,13 @@ function Step({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+    <section className="bg-surface-800 border border-surface-700 rounded-[10px] p-5">
       <header className="flex items-center gap-3 mb-3">
         <span
           className={cn(
             'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0',
             complete
-              ? 'bg-brand-600 text-surface-950'
+              ? 'bg-accent-soft text-accent-dark'
               : 'bg-surface-800 text-surface-300 border border-surface-700',
           )}
         >

@@ -4,6 +4,7 @@ import { connectSocket } from '@/services/socket'
 import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
 import { withRetry } from '@/lib/utils'
 import type { Contact, ContactFilters, Tag } from '@/types'
+import { aplicarNaLista, aplicarNoContato, useMudancaDeEtiqueta } from '@/lib/etiquetasAoVivo'
 
 export interface UseContactsOpts {
   /** When false, no fetches happen and the hook returns its initial state.
@@ -20,6 +21,11 @@ export interface UseContactsOpts {
    *  substitui `filters` por inteiro a cada mudança (busca/origem/etc.), o
    *  que apagaria este valor se ele morasse ali. Mudar este opt refaz o fetch. */
   commercial?: 'no_deal' | 'open_deal' | 'customer'
+  /** Modo controlado: os filtros vêm de fora (ex.: da URL, na tela de Leads)
+   *  e `setFilters` só avisa `aoMudarFiltros`. Passe um objeto ESTÁVEL
+   *  (memoizado) — cada objeto novo refaz a busca. Omitido = estado interno. */
+  filtros?: ContactFilters
+  aoMudarFiltros?: (f: ContactFilters) => void
 }
 
 /** Tamanho de página da lista de contatos — mesmo valor usado no backend
@@ -31,12 +37,25 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
   const withDealsSummary = opts.withDealsSummary !== false
   const commercial = opts.commercial
   const [contacts, setContacts] = useState<Contact[]>([])
+  // SCRUM-1253: etiqueta excluída/alterada some/muda em Leads sem F5.
+  useMudancaDeEtiqueta((m) => setContacts((l) => aplicarNaLista(l, m, aplicarNoContato)))
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
-  const [filters, setFilters] = useState<ContactFilters>(initialFilters)
+  const [filtrosInternos, setFiltrosInternos] = useState<ContactFilters>(initialFilters)
+  const controlado = opts.filtros !== undefined
+  const filters = controlado ? (opts.filtros as ContactFilters) : filtrosInternos
+  const filtersRef = useRef(filters)
+  filtersRef.current = filters
+  const aoMudarRef = useRef(opts.aoMudarFiltros)
+  aoMudarRef.current = opts.aoMudarFiltros
+  const setFilters = useCallback((proximo: ContactFilters | ((atual: ContactFilters) => ContactFilters)) => {
+    const valor = typeof proximo === 'function' ? proximo(filtersRef.current) : proximo
+    if (controlado) aoMudarRef.current?.(valor)
+    else setFiltrosInternos(valor)
+  }, [controlado])
   // Guarda contra corrida: uma resposta de negócios de uma busca antiga (o
   // filtro trocou no meio) é descartada em vez de fundida por cima da atual.
   const generationRef = useRef(0)

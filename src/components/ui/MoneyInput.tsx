@@ -1,6 +1,7 @@
 import type { FocusEvent } from 'react'
 import { Input } from '@/components/ui/Input'
 import { formatCents } from '@/utils/money'
+import { cn } from '@/lib/utils'
 
 /** Teto do `integer` do Postgres em centavos (~R$ 21,4 mi por preço). */
 const MAX_CENTS = 2_147_483_647
@@ -30,6 +31,14 @@ interface MoneyInputProps {
    */
   onFocus?: (e: FocusEvent<HTMLInputElement>) => void
   onBlur?: (e: FocusEvent<HTMLInputElement>) => void
+  /** SCRUM-1097: repassado ao `Input` — régua canônica sm/md/lg. */
+  size?: 'sm' | 'md' | 'lg'
+}
+
+const prefixPad: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'pl-7',
+  md: 'pl-9',
+  lg: 'pl-9',
 }
 
 /**
@@ -51,6 +60,7 @@ export function MoneyInput({
   disabled,
   onFocus,
   onBlur,
+  size = 'md',
 }: MoneyInputProps) {
   const handleChange = (raw: string) => {
     const digits = raw.replace(/\D/g, '')
@@ -67,6 +77,7 @@ export function MoneyInput({
         id={id}
         aria-label={ariaLabel}
         disabled={disabled}
+        size={size}
         value={formatCents(value)}
         onChange={(e) => handleChange(e.target.value)}
         onFocus={(e) => {
@@ -77,7 +88,7 @@ export function MoneyInput({
         placeholder={placeholder ?? '0,00'}
         autoFocus={autoFocus}
         inputMode="numeric"
-        className={`pl-9 text-right tabular-nums ${className ?? ''}`}
+        className={cn(prefixPad[size], 'text-right tabular-nums', className)}
       />
     </div>
   )

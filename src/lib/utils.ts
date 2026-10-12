@@ -93,6 +93,22 @@ export function formatFullTime(date: string | Date): string {
   return format(new Date(date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
 }
 
+/** Telefone BR em "+55 11 98765-4321" — `waId` chega cru (só dígitos, com
+ *  DDI). Formatos que não batem com o padrão BR de 12/13 dígitos (DDI 55 +
+ *  DDD + número) voltam como vieram, sem inventar separador. */
+export function formatPhoneBR(waId: string | undefined | null): string {
+  if (!waId) return '—'
+  const digits = waId.replace(/\D/g, '')
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    const ddd = digits.slice(2, 4)
+    const rest = digits.slice(4)
+    const mid = rest.length === 9 ? rest.slice(0, 5) : rest.slice(0, 4)
+    const end = rest.length === 9 ? rest.slice(5) : rest.slice(4)
+    return `+55 ${ddd} ${mid}-${end}`
+  }
+  return waId
+}
+
 export function getInitials(name: string): string {
   return name
     .split(' ')
@@ -134,7 +150,8 @@ export function tintaDaEtapa(hex: string | null | undefined, alpha?: number): st
   const base = /^#[0-9a-f]{6}$/i.test(hex ?? '') ? (hex as string) : '#6B8080'
   const tinta = `color-mix(in srgb, ${base}, var(--ink-target) var(--ink-amount))`
   if (alpha === undefined) return tinta
-  return `color-mix(in srgb, ${tinta} ${Math.round(alpha * 100)}%, transparent)`
+  // --tinta-k: multiplicador das tintas (1 no escuro; o claro sobe a régua).
+  return `color-mix(in srgb, ${tinta} calc(${Math.round(alpha * 100)}% * var(--tinta-k, 1)), transparent)`
 }
 
 export function hexToRgba(hex: string, alpha: number): string {

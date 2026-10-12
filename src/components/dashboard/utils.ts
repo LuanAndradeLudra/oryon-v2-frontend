@@ -1,13 +1,24 @@
 import type { KpiUnit } from '@/types/dashboard'
 
-export function formatKpiValue(value: number, unit: KpiUnit): string {
+export function formatKpiValue(value: number | null, unit: KpiUnit): string {
+  if (value === null || !Number.isFinite(value)) return '—'
   switch (unit) {
     case 'count':
       return value.toLocaleString('pt-BR')
     case 'percent':
-      return `${value.toFixed(1)}%`
+      return `${value.toFixed(1).replace('.', ',')}%` // pt-BR: 71,0%
     case 'seconds': {
-      if (value === 0) return '—'
+      // R4: 0 ou negativo (dado inconsistente) é "sem dado", nunca "-222102s".
+      if (value <= 0) return '—'
+      // Resposta instantânea (o backend manda 0 s com resposta registrada).
+      if (value < 1) return '<1s'
+      if (value >= 86400) {
+        // Arredonda em horas ANTES de separar (senão 1,99 dia vira "1d 24h").
+        const horas = Math.round(value / 3600)
+        const d = Math.floor(horas / 24)
+        const h = horas % 24
+        return h > 0 ? `${d}d ${h}h` : `${d}d`
+      }
       if (value < 60) return `${Math.round(value)}s`
       if (value < 3600) {
         const m = Math.floor(value / 60)
@@ -19,7 +30,7 @@ export function formatKpiValue(value: number, unit: KpiUnit): string {
       return m > 0 ? `${h}h ${m}m` : `${h}h`
     }
     case 'csat_score':
-      return value === 0 ? '—' : `${value.toFixed(1)}`
+      return value === 0 ? '—' : value.toFixed(1).replace('.', ',')
     case 'nps_score':
       return value > 0 ? `+${Math.round(value)}` : `${Math.round(value)}`
     case 'currency':

@@ -32,16 +32,20 @@ function authorOf(m: Message): string {
  * mirroring WhatsApp. Only clickable when `quoted` was actually resolved:
  * `onClick` is undefined otherwise, and there's nothing sensible to jump to.
  */
-export const ReplyQuoteBar: FC<{ message: Message; quoted?: Message | null; onClick?: () => void }> = ({ quoted, onClick }) => {
+export const ReplyQuoteBar: FC<{ message: Message; quoted?: Message | null; onClick?: () => void }> = ({ message, quoted, onClick }) => {
   const clickable = !!onClick
   return (
     <div
       role={clickable ? 'button' : undefined}
       tabIndex={clickable ? 0 : undefined}
+      // Quem escreveu a original e em que bolha está — o tema claro pinta a
+      // citação pela autoria (index.css, SCRUM-1253).
+      data-autor={quoted ? (quoted.direction === 'outbound' ? 'nos' : 'cliente') : undefined}
+      data-bolha={message.direction}
       onClick={clickable ? (e) => { e.stopPropagation(); onClick!() } : undefined}
       onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onClick!() } } : undefined}
       className={cn(
-        'mb-1 rounded-md bg-current/10 border-l-2 border-current/40 px-2 py-1 max-w-full',
+        'mb-1 rounded-[6px] bg-current/10 border-l-2 border-current/40 px-2 py-1 max-w-full',
         clickable && 'cursor-pointer hover:bg-current/15 transition-colors'
       )}
     >

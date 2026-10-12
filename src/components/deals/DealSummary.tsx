@@ -118,7 +118,7 @@ function Stepper({ steps }: { steps: StepperStep[] }) {
           <li key={s.id} className="flex items-center gap-1" title={s.label} aria-current={current ? 'step' : undefined}>
             <span
               className={cn(
-                'inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap',
+                'inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap',
                 current ? 'ring-2 ring-offset-1 ring-offset-surface-900' : '',
                 s.state === 'todo' && 'text-surface-500 border-surface-700',
               )}
@@ -172,13 +172,13 @@ function StageMenu({
         <>
           <div
             role="presentation"
-            className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-surface-800 border-l-2"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-[6px] bg-surface-800 border-l-2"
             style={{ borderLeftColor: current.color }}
             data-testid={testId}
           >
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: current.color }} />
             <span className="text-xs font-medium text-surface-100 truncate">{current.label}</span>
-            <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider text-surface-400 flex-shrink-0">
+            <span className="ml-auto text-[11px] font-semibold uppercase tracking-wider text-surface-400 flex-shrink-0">
               atual
             </span>
           </div>
@@ -212,7 +212,7 @@ function ChipDensity({ pipeline, stageLabel, busy, onOpen, testId }: ChipProps) 
       onClick={() => void onOpen()}
       title={`${pipeline.name}${stageLabel ? ` · ${stageLabel}` : ''} — abrir negócio`}
       data-testid={testId}
-      className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 disabled:opacity-60 transition-all"
+      className="flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 disabled:opacity-60 transition-all"
       style={{ color: pipeline.color, borderColor: `${pipeline.color}40`, backgroundColor: `${pipeline.color}18` }}
     >
       {busy
@@ -249,7 +249,8 @@ function OpenDensity(props: OpenDealProps) {
     return (
       <article
         key={deal.id}
-        className="relative flex flex-col gap-1 -mx-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-surface-800/40 focus-within:bg-surface-800/40"
+        // canvas 1d (Negócios do painel): mini-card com borda --bd, raio 6, padding 8/10.
+        className="relative flex flex-col gap-1 px-2.5 py-2 rounded-[6px] border border-surface-700 transition-colors hover:bg-[var(--rowhover)] focus-within:bg-[var(--rowhover)]"
         data-testid={`${testIdPrefix}-${testIdKey}`}
       >
         {/* Alvo esticado: um botão de verdade cobrindo o bloco, ATRÁS dos
@@ -262,16 +263,24 @@ function OpenDensity(props: OpenDealProps) {
           type="button"
           onClick={onOpen}
           aria-label={`Abrir ${pipeline!.name}${stage ? ` · ${stage.label}` : ''}`}
-          className="absolute inset-0 z-0 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+          className="absolute inset-0 z-0 rounded-[6px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
           data-testid={`${testIdPrefix}-board-${testIdKey}`}
         />
-        <div className="relative z-10 flex items-center gap-1.5 min-w-0 pointer-events-none">
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline!.color }} />
-          <span className="text-xs text-surface-200 truncate">{pipeline!.name}</span>
-          <KindIcon className="w-3 h-3 text-surface-500 flex-shrink-0" aria-label={kind.label} />
+        {/* Linha 1 do mini-card: título do negócio (600) + valor à direita. O funil
+            (nome + tipo) desce para a linha de meta, abaixo. */}
+        <div className="relative z-10 flex items-start justify-between gap-2 min-w-0 pointer-events-none">
+          <span className="text-xs font-semibold text-surface-100 truncate" title={`${pipeline!.name} · ${kind.label}`}>
+            {title || pipeline!.name}
+          </span>
+          {showsMoney && (
+            <span className="text-xs font-semibold text-surface-100 tabular-nums flex-shrink-0">{formatBRL(deal.amountCents)}</span>
+          )}
         </div>
-        {meta && <p className="relative z-10 text-[10px] text-surface-600 truncate pl-3.5 pointer-events-none">{meta}</p>}
-        <div className="relative z-10 flex items-center gap-1 pl-3.5 w-fit">
+        <p className="relative z-10 text-[11px] text-surface-500 truncate pointer-events-none">
+          <span className="w-1.5 h-1.5 rounded-full inline-block mr-1 align-middle" style={{ backgroundColor: pipeline!.color }} />
+          {pipeline!.name}{meta ? ` · ${meta}` : ''}
+        </p>
+        <div className="relative z-10 flex items-center gap-1 w-fit">
           {targets && (
             <Dropdown
               open={moveOpen}
@@ -283,16 +292,19 @@ function OpenDensity(props: OpenDealProps) {
                   type="button"
                   onClick={onToggleMove}
                   disabled={busy}
-                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 h-6 px-1.5 -ml-1.5 rounded-[6px] text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 transition-colors"
                   data-testid={`${testIdPrefix}-move-${testIdKey}`}
                   aria-haspopup="menu"
                   aria-expanded={moveOpen}
                   aria-label={stage ? `Mover etapa — atual: ${stage.label}` : undefined}
                 >
                   {stage ? (
-                    <span className="truncate max-w-[9rem]" data-testid={`${testIdPrefix}-stage-${testIdKey}`}>
-                      {stage.label}
-                    </span>
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} aria-hidden />
+                      <span className="truncate max-w-[9rem]" data-testid={`${testIdPrefix}-stage-${testIdKey}`}>
+                        {stage.label}
+                      </span>
+                    </>
                   ) : (
                     'Mover etapa'
                   )}
@@ -314,7 +326,7 @@ function OpenDensity(props: OpenDealProps) {
               type="button"
               onClick={onOpenBoard}
               title="Abrir o quadro deste funil com a ficha em cima — sai desta tela"
-              className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+              className="inline-flex items-center gap-1 h-6 px-1.5 rounded-[6px] text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               data-testid={`${testIdPrefix}-goboard-${testIdKey}`}
             >
               <ExternalLink className="w-3 h-3" /> No funil
@@ -329,7 +341,7 @@ function OpenDensity(props: OpenDealProps) {
   return (
     <article
       key={deal.id}
-      className="bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex flex-col gap-2"
+      className="bg-surface-900 border border-surface-700 rounded-[10px] px-4 py-3 flex flex-col gap-2"
       data-testid={`${testIdPrefix}-open-${testIdKey}`}
     >
       <div className="flex items-center gap-2 min-w-0">
@@ -370,7 +382,7 @@ function OpenDensity(props: OpenDealProps) {
                 type="button"
                 onClick={onToggleMove}
                 disabled={busy}
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[6px] text-xs font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
                 data-testid={`${testIdPrefix}-move-${testIdKey}`}
                 aria-haspopup="menu"
                 aria-expanded={moveOpen}
@@ -389,7 +401,7 @@ function OpenDensity(props: OpenDealProps) {
           <button
             type="button"
             onClick={onOpen}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[6px] text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
             data-testid={`${testIdPrefix}-board-${testIdKey}`}
           >
             <KanbanSquare className="w-3.5 h-3.5" /> Abrir negócio
@@ -401,7 +413,7 @@ function OpenDensity(props: OpenDealProps) {
             onClick={onEdit}
             title={`Editar ${kind.noun}`}
             aria-label={`Editar ${kind.noun}`}
-            className="ml-auto p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
+            className="ml-auto p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
             data-testid={`${testIdPrefix}-edit-${testIdKey}`}
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -413,7 +425,7 @@ function OpenDensity(props: OpenDealProps) {
             onClick={onDelete}
             title={`Excluir ${kind.noun}`}
             aria-label={`Excluir ${kind.noun}`}
-            className={cn('p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all', !onEdit && 'ml-auto')}
+            className={cn('p-1.5 rounded-[6px] text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all', !onEdit && 'ml-auto')}
             data-testid={`${testIdPrefix}-delete-${testIdKey}`}
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -430,7 +442,7 @@ function ClosedDensity({ density, deal, pipeline, busy, onReopen, history, onTog
   const labels = terminalLabelsOf(pipeline)
   const reasonLabel = pipeline?.closeReasons?.find((r) => r.key === deal.closeReason)?.label ?? deal.closeReason ?? null
   const card = density === 'card'
-  const rowText = card ? 'text-[11px]' : 'text-[10px]'
+  const rowText = card ? 'text-[11px]' : 'text-[11px]'
   const actionIcon = card ? 'w-3 h-3' : 'w-2.5 h-2.5'
   return (
     <div className="flex flex-col gap-1">

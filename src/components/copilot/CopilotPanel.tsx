@@ -62,7 +62,7 @@ function AttachmentChip({
   onRemove: () => void
 }) {
   return (
-    <div className="relative flex items-center gap-1.5 pr-1 pl-1.5 py-1 rounded-lg border border-surface-600/50 bg-surface-800/70 max-w-[160px] group">
+    <div className="relative flex items-center gap-1.5 pr-1 pl-1.5 py-1 rounded-[10px] border border-surface-600/50 bg-surface-800/70 max-w-[160px] group">
       {att.kind === 'image' ? (
         <img
           src={att.previewUrl}
@@ -72,7 +72,7 @@ function AttachmentChip({
       ) : (
         <FileText className="w-4 h-4 text-accent-rose flex-shrink-0" />
       )}
-      <span className="text-[10px] text-surface-300 truncate leading-none">{att.name}</span>
+      <span className="text-[11px] text-surface-300 truncate leading-none">{att.name}</span>
       <button
         type="button"
         onClick={onRemove}
@@ -97,12 +97,12 @@ function WelcomeState() {
       className="flex flex-col items-center justify-center h-full px-5 text-center gap-5"
     >
       <motion.div variants={messageVariants}>
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-600 to-violet-600 flex items-center justify-center shadow-lg shadow-brand-900/40">
+        <div className="w-14 h-14 rounded-[10px] bg-brand-600 flex items-center justify-center">
           <CopilotMark className="w-7 h-7 text-white" />
         </div>
       </motion.div>
       <motion.div variants={messageVariants}>
-        <p className="text-sm font-semibold text-surface-50">Olá, sou a Oryon AI</p>
+        <p className="text-sm font-semibold text-surface-50">Olá, sou o Copilot</p>
         <p className="text-xs text-surface-400 mt-1 leading-relaxed max-w-[220px]">
           Analiso seus leads, verifico métricas e ajo no CRM por você.
         </p>
@@ -130,9 +130,9 @@ function PresetPicker({
       transition={{ duration: 0.15 }}
       className="absolute bottom-full left-0 right-0 mb-2 z-50 mx-3"
     >
-      <div className="rounded-2xl border border-surface-700/60 bg-surface-900/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden">
+      <div className="rounded-[10px] border border-surface-700/60 bg-surface-900/95 shadow-2xl shadow-black/40 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800/60">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700">
           <div className="flex items-center gap-2">
             <Palette className="w-3.5 h-3.5 text-brand-400" />
             <span className="text-xs font-semibold text-surface-200">Design Preset para Slides</span>
@@ -153,7 +153,7 @@ function PresetPicker({
               key={preset.id}
               onClick={() => { onSelect(selected === preset.id ? null : preset.id); onClose() }}
               className={cn(
-                'flex items-start gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all',
+                'flex items-start gap-2.5 px-3 py-2.5 rounded-[6px] border text-left transition-all',
                 selected === preset.id
                   ? 'bg-brand-600/15 border-brand-500/40 ring-1 ring-brand-500/20'
                   : 'border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/60',
@@ -167,7 +167,7 @@ function PresetPicker({
                 )}>
                   {preset.name}
                 </p>
-                <p className="text-[10px] text-surface-500 mt-0.5 leading-snug">{preset.description}</p>
+                <p className="text-[11px] text-surface-500 mt-0.5 leading-snug">{preset.description}</p>
               </div>
               {selected === preset.id && (
                 <span className="ml-auto flex-shrink-0 w-1.5 h-1.5 rounded-full bg-brand-400 mt-1" />
@@ -181,7 +181,7 @@ function PresetPicker({
           <div className="px-3 pb-3">
             <button
               onClick={() => { onSelect(null); onClose() }}
-              className="w-full text-center text-[11px] text-surface-500 hover:text-surface-300 py-1.5 rounded-lg hover:bg-surface-800/40 transition-colors"
+              className="w-full text-center text-[11px] text-surface-500 hover:text-surface-300 py-1.5 rounded-[6px] hover:bg-surface-800/40 transition-colors"
             >
               Remover preset
             </button>
@@ -276,23 +276,23 @@ function ChatWindow() {
 
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-surface-700/50 bg-surface-950/80 shadow-2xl backdrop-blur-xl ring-1 ring-white/5" style={{ width: 400, maxHeight: '88vh' }}>
+    <div className="flex flex-col overflow-hidden rounded-[10px] border border-surface-700/50 bg-surface-950/80 shadow-2xl ring-1 ring-white/5" style={{ width: 400, maxHeight: '88vh' }}>
 
       {/* Header */}
-      <div className="relative border-b border-surface-800/60 bg-surface-900/60 px-4 py-3.5 overflow-hidden flex-shrink-0">
+      <div className="relative border-b border-surface-700 bg-surface-900/60 px-4 py-3.5 overflow-hidden flex-shrink-0">
         {/* Gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-600/15 to-violet-600/15 pointer-events-none" />
         <div className="relative flex items-center gap-3 z-10">
           {/* Avatar with status dot */}
           <div className="relative flex-shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 flex items-center justify-center shadow-md shadow-brand-900/40">
+            <div className="w-9 h-9 rounded-[10px] bg-brand-600 flex items-center justify-center">
               <CopilotMark className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-surface-950 bg-online" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-surface-50 leading-none">Oryon AI</p>
-            <p className="text-[10px] text-surface-400 mt-0.5">
+            <p className="text-sm font-semibold text-surface-50 leading-none">Copilot</p>
+            <p className="text-[11px] text-surface-400 mt-0.5">
               {isBusy ? 'Processando...' : 'Online · Copiloto de negócios'}
             </p>
           </div>
@@ -308,7 +308,7 @@ function ChatWindow() {
 
       {/* Messages */}
       <div
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-surface-950/30 to-surface-950/60"
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-surface-950/40"
         onScroll={handleScroll}
         style={{ minHeight: 340, maxHeight: 520 }}
       >
@@ -336,7 +336,7 @@ function ChatWindow() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="px-4 py-2 border-t border-surface-800/50 flex items-center gap-2 flex-shrink-0 bg-surface-900/40"
+            className="px-4 py-2 border-t border-surface-700 flex items-center gap-2 flex-shrink-0 bg-surface-900/40"
           >
             <Loader2 className="w-3 h-3 text-status-pending animate-spin flex-shrink-0" />
             <div className="flex flex-col gap-0.5">
@@ -366,7 +366,7 @@ function ChatWindow() {
       </AnimatePresence>
 
       {/* Input */}
-      <div className="border-t border-surface-800/60 bg-surface-900/60 backdrop-blur-md flex-shrink-0">
+      <div className="border-t border-surface-700 bg-surface-900/60 flex-shrink-0">
 
         {/* Attachment chips */}
         <AnimatePresence initial={false}>
@@ -394,7 +394,7 @@ function ChatWindow() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="px-3 pt-1.5 text-[10px] text-danger"
+              className="px-3 pt-1.5 text-[11px] text-danger"
             >
               {attachError}
             </motion.p>
@@ -504,7 +504,7 @@ function ChatWindow() {
             <button
               type="button"
               onClick={abort}
-              className="w-9 h-9 rounded-full bg-surface-700 hover:bg-surface-600 text-surface-300 transition-colors flex items-center justify-center flex-shrink-0"
+              className="w-9 h-9 rounded-full bg-[var(--sf2)] hover:bg-surface-600 text-surface-300 transition-colors flex items-center justify-center flex-shrink-0"
               title="Interromper"
               aria-label="Interromper resposta"
             >

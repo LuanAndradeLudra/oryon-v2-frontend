@@ -8,8 +8,11 @@ import { pipelinesApi } from '@/services/api'
 import type { Pipeline } from '@/types'
 
 vi.mock('@/services/api', () => ({
-  pipelinesApi: { list: vi.fn() },
+  pipelinesApi: { list: vi.fn(), create: vi.fn() },
 }))
+const { papel } = vi.hoisted(() => ({ papel: { atual: 'admin' } }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { role: papel.atual, tenantId: 't' } }) }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
 
 const pipeline = (over: Partial<Pipeline>): Pipeline => ({
   id: 'p1', tenantId: 't', name: 'Vendas', color: '#14b8a6', order: 0, isDefault: false, isArchived: false, stages: [], openDealsCount: 0,
@@ -28,7 +31,7 @@ function renderAt(path: string) {
   )
 }
 
-beforeEach(() => { vi.mocked(pipelinesApi.list).mockReset() })
+beforeEach(() => { vi.mocked(pipelinesApi.list).mockReset(); papel.atual = 'admin' })
 
 describe('PipelinesIndexPage', () => {
   it('redireciona pro funil PADRÃO do tenant', async () => {
@@ -39,9 +42,21 @@ describe('PipelinesIndexPage', () => {
     await waitFor(() => expect(screen.getByTestId('pipeline-page')).toBeInTheDocument())
   })
 
-  it('sem nenhum funil disponível, cai para /contacts em vez de travar', async () => {
+  // PO 02/10: sem funil, a página não redireciona mais para Contatos — mostra
+  // o estado vazio e deixa criar ali mesmo.
+  it('sem nenhum funil, fica na página com "Criar funil" (admin)', async () => {
     vi.mocked(pipelinesApi.list).mockResolvedValue({ data: [] } as never)
     renderAt('/pipelines')
-    await waitFor(() => expect(screen.getByTestId('contacts-page')).toBeInTheDocument())
+    expect(await screen.findByText('Nenhum funil ainda')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Criar funil/ })).toBeInTheDocument()
+    expect(screen.queryByTestId('contacts-page')).toBeNull()
+  })
+
+  it('sem nenhum funil, quem não é admin vê a orientação e não o botão', async () => {
+    papel.atual = 'agent'
+    vi.mocked(pipelinesApi.list).mockResolvedValue({ data: [] } as never)
+    renderAt('/pipelines')
+    expect(await screen.findByText(/Peça a um administrador/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Criar funil/ })).toBeNull()
   })
 })

@@ -102,16 +102,16 @@ export function PipelineStageModal({ open, onClose, onSave, editStage, terminalL
           <p className="text-xs text-surface-500 mb-2">
             {terminalLabels.won}/{terminalLabels.lost} são terminais — fecham o registro ao entrar neles.
           </p>
-          <div className="flex items-center bg-surface-800 border border-surface-700 rounded-xl p-1 w-fit">
+          <div className="flex items-center bg-[var(--sf2)] border border-surface-700 rounded-[6px] p-0.5 w-fit">
             {KIND_OPTIONS.map((opt) => (
               <button
                 key={opt.key}
                 type="button"
                 onClick={() => setKind(opt.key)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  'px-3 py-1.5 rounded-[6px] text-xs font-medium transition-all',
                   kind === opt.key
-                    ? 'bg-surface-700 text-surface-50 shadow-sm'
+                    ? 'bg-surface-800 border border-surface-700 text-surface-50'
                     : 'text-surface-400 hover:text-surface-200',
                 )}
               >
@@ -131,7 +131,7 @@ export function PipelineStageModal({ open, onClose, onSave, editStage, terminalL
               onChange={(e) => { setProbability(e.target.value); setError('') }}
               placeholder="Ex: 40"
             />
-            <p className="text-[11px] text-surface-500 mt-1">
+            <p className="text-2xs text-surface-500 mt-1">
               Herdada por todo negócio nesta etapa, salvo override individual. Deixe em branco para "não configurada".
             </p>
           </FormField>

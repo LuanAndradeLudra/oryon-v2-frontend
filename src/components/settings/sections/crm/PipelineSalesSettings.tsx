@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FormField } from '@/components/ui/FormField'
-import { Select } from '@/components/ui/Select'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Switch } from '@/components/ui/Switch'
 import { useToast } from '@/hooks/useToast'
 import { pipelinesApi, usersApi } from '@/services/api'
@@ -70,7 +70,7 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
         label="Dono padrão do negócio"
         hint="Aplicado quando o negócio nasce sem dono escolhido — 'Novo negócio', a leitura de negócios e a IA respeitam este default."
       >
-        <Select
+        <SelectMenu
           value={ruleSelectValue}
           onChange={(e) => handleOwnerRuleChange(e.target.value)}
           disabled={!canManage || savingOwnerRule}
@@ -80,7 +80,7 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
           {users.map((u) => (
             <option key={u.id} value={`user:${u.id}`}>{u.firstName} {u.lastName}</option>
           ))}
-        </Select>
+        </SelectMenu>
       </FormField>
 
       <div className="flex items-center justify-between gap-3">
@@ -93,7 +93,7 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
               trava por funil no backend) e a C2 (SCRUM-933, seletor de negócio
               da conversa e "Criar outro" no conflito): ligar isto passou a
               mudar o comportamento de verdade. */}
-          <p className="text-[11px] text-surface-500 mt-1">
+          <p className="text-2xs text-surface-500 mt-1">
             Ligado: o mesmo contato pode ter várias propostas abertas aqui, e a conversa passa a pedir
             a qual delas ela se refere.
           </p>
@@ -102,6 +102,7 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
           checked={!!pipeline.allowMultipleOpen}
           onChange={handleMultipleChange}
           disabled={!canManage || savingMultiple}
+          aria-label="Várias propostas abertas por contato"
         />
       </div>
 

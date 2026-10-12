@@ -22,6 +22,35 @@ export interface BillingSnapshot {
   remaining: number | null
   planResetsAt: string | null
   status: string
+  contract?: {
+    id: string
+    term: string
+    status: string
+    startsAt: string | null
+    endsAt: string | null
+    planSnapshot: Record<string, unknown>
+  } | null
+  cycle?: {
+    startsAt: string | null
+    resetsAt: string | null
+    creditsRolledOver: number
+    rolloverExpiresAt: string | null
+    overageCredits: number
+  }
+}
+
+export interface BillingInvoiceRow {
+  id: string
+  number: string | null
+  kind: string
+  amount: string
+  currency: string
+  status: string
+  dueAt: string | null
+  paidAt: string | null
+  competenceMonth: string | null
+  description: string | null
+  createdAt: string
 }
 
 export type CreditTransactionType = 'debit' | 'grant' | 'reset' | 'refund' | 'adjustment'
@@ -122,6 +151,10 @@ export const billingApi = {
   },
   async getCreditPacks(): Promise<CreditPack[]> {
     const res = await api.get<CreditPack[]>('/settings/billing/credit-packs')
+    return res.data
+  },
+  async getInvoices(): Promise<BillingInvoiceRow[]> {
+    const res = await api.get<BillingInvoiceRow[]>('/settings/billing/invoices')
     return res.data
   },
   async subscribe(input: {

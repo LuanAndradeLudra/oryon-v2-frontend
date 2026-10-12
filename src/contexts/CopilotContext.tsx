@@ -28,7 +28,12 @@ export interface ToolCallRecord {
   // card can disable the button + show a spinner instead of letting a
   // double-click fire two POSTs (the bug that hit
   // UQ_whatsapp_templates_name in prod).
-  approvalStatus?: 'pending' | 'submitting' | 'approved' | 'denied'
+  // 'expired' (SCRUM-1253, 11/10): lote que ficou pendente mas não pode mais
+  // ser aprovado (recarregou a página / trocou de conversa — o turno que
+  // esperava a decisão não existe mais). Não conta como pendente.
+  approvalStatus?: 'pending' | 'submitting' | 'approved' | 'denied' | 'expired'
+  /** Ids dos itens do lote que o operador aprovou (aprovação parcial). */
+  approvedIds?: string[]
   batchItems?: BatchApprovalItem[]  // present when name === '__approval_batch__'
   /** Unix ms — when the ApprovalGate will auto-deny this batch. Streamed
    *  from the backend on the approval_request event so the UI can render
