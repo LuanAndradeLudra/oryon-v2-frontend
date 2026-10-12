@@ -9,6 +9,7 @@ import { isRouteVisible, isFeatureVisible } from '@/config/featureFlags'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { isOwnerTier } from '@/lib/roleHelpers'
+import { useCobrancaOculta } from '@/hooks/useCobrancaOculta'
 
 interface SettingsLayoutProps {
   children: ReactNode
@@ -28,6 +29,8 @@ interface SettingsLayoutProps {
 /** Opções de visibilidade além do papel — flags por tenant vindas do backend. */
 export interface SettingsNavOptions {
   multiPipeline?: boolean
+  /** FF_OCULTAR_COBRANCA (PO 12/10): tira "Plano & faturamento" do menu. */
+  cobrancaOculta?: boolean
 }
 
 // Sinônimos por seção — a busca encontra "etiquetas" mesmo com a seção
@@ -194,6 +197,7 @@ export function visibleSettingsNav(currentRole: string, opts: SettingsNavOptions
     if (item.ownerOnly && !isOwnerTier(currentRole)) return false
     if (item.supervisorOnly && currentRole === 'agent') return false
     if (item.multiPipelineOnly && !opts.multiPipeline) return false
+    if (item.section === 'billing' && opts.cobrancaOculta) return false
     return isRouteVisible(`/settings/${item.section}`)
   }
   return SETTINGS_NAV
@@ -271,6 +275,7 @@ function NavClusterGroup({ cluster, activeSection, searching, currentRole }: {
 
 export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false, fullWidth = false }: SettingsLayoutProps) {
   const isMobile = useIsMobile()
+  const cobrancaOculta = useCobrancaOculta()
   const { section: activeSection } = useParams()
   // Canvas 5b: Conectores usa a coluna inteira (padding 26/32/24, sem max-width).
   const wide = fullWidth || activeSection === 'connectors'
@@ -287,7 +292,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
     if (normalize(item.label).includes(query)) return true
     return (SEARCH_KEYWORDS[item.section] ?? []).some((kw) => normalize(kw).includes(query))
   }
-  const nav = visibleSettingsNav(currentRole, { multiPipeline })
+  const nav = visibleSettingsNav(currentRole, { multiPipeline, cobrancaOculta })
     .map((d) => ({
       ...d,
       clusters: d.clusters

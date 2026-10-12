@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 import { SettingsLayout, firstVisibleSection, MULTI_PIPELINE_SECTIONS, papelAlcancaSecao } from '@/components/settings/SettingsLayout'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useCobrancaOculta } from '@/hooks/useCobrancaOculta'
 import { destinoDeVolta, preservarVolta } from '@/lib/voltarPara'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
@@ -128,6 +129,7 @@ export function SettingsPage() {
   // 'super_admin' arrived and re-filtered the menu.
   const { user } = useAuth()
   const multiPipeline = useMultiPipeline()
+  const cobrancaOculta = useCobrancaOculta()
   const banner = useDesktopRecommendedBanner(`settings/${section}`)
   const isMobile = useIsMobile()
   const navigate = useNavigate()
@@ -154,7 +156,8 @@ export function SettingsPage() {
   // e quem ja tinha a tela salva continuaria entrando. Como a tela nao deveria
   // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
   // o comentario do featureFlags.ts cita para campaigns.
-  if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
+  // FF_OCULTAR_COBRANCA (PO 12/10): tenant com cobrança fora do Oryon também não abre.
+  if (section === 'billing' && (!isFeatureVisible('settingsBilling') || cobrancaOculta)) {
     return <NavegarSePresente to={preservarVolta('/settings/account', searchParams)} replace />
   }
   // D12 — Conectores escondidos: a URL direta também fecha.

@@ -29,6 +29,7 @@ import { conversationsApi } from '@/services/api'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { AiCreditsIndicator } from './AiCreditsIndicator'
+import { useCobrancaOculta } from '@/hooks/useCobrancaOculta'
 import { OryonLogo } from '@/components/brand/OryonLogo'
 import { rotaPermitida } from '@/lib/rotasPorPapel'
 
@@ -145,6 +146,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
   // o consumo de créditos de IA) — `useAuth` aqui só precisa do usuário/flags
   // que ainda decidem quais itens de navegação aparecem.
   const { user, organizationConfigured } = useAuth()
+  const cobrancaOculta = useCobrancaOculta()
   const { isRouteVisible, isFeatureVisible } = useFeatureVisibility()
   const { checklist } = useSetupChecklist(user?.id)
   const { vocab } = useTenantVocab()
@@ -380,8 +382,9 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
         </div>
 
         {/* Rodapé: só o consumo de créditos de IA (SCRUM-1100 · 3.12).
-            Configurações e avatar saíram para o menu do usuário na TopBar. */}
-        <AiCreditsIndicator />
+            Configurações e avatar saíram para o menu do usuário na TopBar.
+            Some para tenant com cobrança fora do Oryon (FF_OCULTAR_COBRANCA). */}
+        {!cobrancaOculta && <AiCreditsIndicator />}
       </SidebarBody>
     </Sidebar>
   )
