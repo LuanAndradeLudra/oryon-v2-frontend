@@ -34,9 +34,36 @@ describe('ConversationItem — selos (revisão 11/10)', () => {
 
   it('pendente com dono: "Aguardando <nome>" e nada de "IA respondendo"', () => {
     render(<ConversationItem conversation={conv({ status: 'pending', assignedUser: { id: 'u2', firstName: 'Beto', lastName: null } })} isActive={false} onSelect={vi.fn()} />)
-    expect(screen.getByText('Aguardando Beto')).toBeInTheDocument()
+    // Auditoria 12/10: o selo tem duas partes — "Aguardando " fixo e o nome, que encurta.
+    expect(screen.getByText('Beto').parentElement?.textContent).toBe('Aguardando Beto')
     expect(screen.queryByText('Na fila')).toBeNull()
     expect(screen.queryByTitle('IA respondendo nesta conversa')).toBeNull()
+  })
+
+  // Auditoria 12/10 — selos que se sobrepunham ("Aguardando você" + verificação + espera).
+  it('verificação pendente é só o ícone: frase no tooltip e no leitor de tela, sem texto visível', () => {
+    const { container } = render(<ConversationItem conversation={conv({ hasRecentAnomaly: true })} isActive={false} onSelect={vi.fn()} />)
+    const selo = screen.getByText('Verificação pendente')
+    expect(selo).toHaveClass('sr-only')
+    expect(container.querySelector('.text-danger')).toBeTruthy()
+  })
+
+  it('o grupo da esquerda corta em vez de vazar por baixo do da direita', () => {
+    render(<ConversationItem conversation={conv({ status: 'pending', assignedUser: { id: 'u2', firstName: 'Maximilianoo', lastName: null } })} isActive={false} onSelect={vi.fn()} />)
+    const grupo = screen.getByText('Maximilianoo').closest('.overflow-hidden')
+    expect(grupo).toBeTruthy()
+    expect(screen.getByText('Maximilianoo')).toHaveClass('truncate')
+  })
+
+  it('mais de 2 etiquetas mostram "+N"', () => {
+    const tags = ['a', 'b', 'c', 'd'].map((id) => ({ id, name: id, color: '#000' }))
+    render(<ConversationItem conversation={conv({ tags } as Partial<Conversation>)} isActive={false} onSelect={vi.fn()} />)
+    expect(screen.getByText('+2')).toBeInTheDocument()
+  })
+
+  it('fora do filtro: selo compacto (só o olho), frase para o leitor de tela', () => {
+    render(<ConversationItem conversation={conv()} isActive offFilter onSelect={vi.fn()} />)
+    expect(screen.getByText('Fora deste filtro')).toHaveClass('sr-only')
   })
 
   it('C2: com lastMessageType "text", "📍 Rua X" do cliente fica como texto', () => {
