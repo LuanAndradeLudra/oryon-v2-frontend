@@ -1,8 +1,10 @@
 import { Check } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useContext } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
-import { SettingsBreadcrumbCtx } from './settingsBreadcrumb'
+import { SettingsBreadcrumbCtx, FaixaDoTopoCtx } from './settingsBreadcrumb'
+import { CABECALHO_FIXO } from './barraDeSalvar'
 import { emFrase } from '@/lib/emFrase'
 
 interface SectionHeaderProps {
@@ -14,16 +16,21 @@ interface SectionHeaderProps {
   breadcrumb?: string[]
   /** Mostra "✓ Salvo" à direita do breadcrumb — feedback de autosave, não um botão. */
   saved?: boolean
+  /** Página que é um formulário só: o cabeçalho fica preso no alto, com o
+   *  Salvar à mão, na faixa do topo do layout (largura inteira). Fora do
+   *  layout (testes), cai na faixa presa no próprio lugar. */
+  fixo?: boolean
 }
 
 // Título de PÁGINA das Configurações (nível acima do SettingsSection):
 // display font, SEM hairline abaixo (medido no PNG 2e: só as seções se
 // separam por hairline). Um só por aba.
-export function SectionHeader({ title, description, action, className, breadcrumb: breadcrumbProp, saved }: SectionHeaderProps) {
+export function SectionHeader({ title, description, action, className, breadcrumb: breadcrumbProp, saved, fixo }: SectionHeaderProps) {
   const ctxBreadcrumb = useContext(SettingsBreadcrumbCtx)
+  const faixa = useContext(FaixaDoTopoCtx)
   const breadcrumb = breadcrumbProp ?? ctxBreadcrumb
-  return (
-    <div className={cn('pb-3.5', className)}>
+  const cabecalho = (
+    <div className={cn('pb-3.5', fixo && !faixa && CABECALHO_FIXO, className)}>
       {(breadcrumb?.length || saved) && (
         <div className="flex items-center justify-between gap-3">
           {breadcrumb && breadcrumb.length > 0 && (
@@ -47,4 +54,5 @@ export function SectionHeader({ title, description, action, className, breadcrum
       </div>
     </div>
   )
+  return fixo && faixa ? createPortal(cabecalho, faixa) : cabecalho
 }

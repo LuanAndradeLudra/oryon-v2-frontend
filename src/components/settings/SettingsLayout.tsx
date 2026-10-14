@@ -3,7 +3,7 @@ import { Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { SettingsSectionsProvider, SettingsOutline } from './SettingsSection'
-import { SettingsBreadcrumbCtx } from './settingsBreadcrumb'
+import { SettingsBreadcrumbCtx, FaixaDoTopoCtx } from './settingsBreadcrumb'
 import { useParams } from 'react-router-dom'
 import { isRouteVisible, isFeatureVisible } from '@/config/featureFlags'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -286,6 +286,8 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
     return undefined
   })()
   const [search, setSearch] = useState('')
+  // Elemento da faixa do topo (via callback ref): o SectionHeader `fixo` desenha nele.
+  const [faixa, setFaixa] = useState<HTMLDivElement | null>(null)
   const query = normalize(search.trim())
   const matches = (item: NavItem) => {
     if (!query) return true
@@ -370,17 +372,29 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
           outline "Nesta página" (dir., 2xl+). O outline é gerado sozinho
           pelas SettingsSection registradas — em telas largas o espaço que
           sobrava vira navegação intra-página (padrão Stripe/docs). */}
-      <main className={cn('flex-1 overflow-y-auto py-6 px-4 md:pt-[26px]', wide ? 'md:pb-6 md:px-8' : 'md:pb-8 md:px-10')}>
-        <SettingsSectionsProvider>
-          <SettingsBreadcrumbCtx.Provider value={breadcrumb}>
-            <div className="flex justify-start gap-10">
-              <div className={cn('w-full min-w-0', !wide && 'max-w-4xl')}>
-                {children}
-              </div>
-              <SettingsOutline />
-            </div>
-          </SettingsBreadcrumbCtx.Provider>
-        </SettingsSectionsProvider>
+      <main className="flex-1 min-w-0 min-h-0 flex flex-col">
+        {/* Faixa do topo: o cabeçalho fixo das páginas-formulário (título +
+            Salvar) entra aqui por portal, de borda a borda — fora da coluna de
+            leitura, senão parava no índice "Nesta página" (PO 13/10). Vazia,
+            some; o conteúdo rola por baixo dela. */}
+        <div
+          ref={setFaixa}
+          className={cn('peer flex-shrink-0 empty:hidden bg-surface-800 border-b border-surface-700 px-4 pt-6 md:pt-[26px]', wide ? 'md:px-8' : 'md:px-10')}
+        />
+        <div className={cn('flex-1 min-h-0 overflow-y-auto pt-4 pb-6 px-4 peer-empty:pt-6 md:peer-empty:pt-[26px]', wide ? 'md:pb-6 md:px-8' : 'md:pb-8 md:px-10')}>
+          <FaixaDoTopoCtx.Provider value={faixa}>
+            <SettingsSectionsProvider>
+              <SettingsBreadcrumbCtx.Provider value={breadcrumb}>
+                <div className="flex justify-start gap-10">
+                  <div className={cn('w-full min-w-0', !wide && 'max-w-4xl')}>
+                    {children}
+                  </div>
+                  <SettingsOutline />
+                </div>
+              </SettingsBreadcrumbCtx.Provider>
+            </SettingsSectionsProvider>
+          </FaixaDoTopoCtx.Provider>
+        </div>
       </main>
       </div>
     </div>

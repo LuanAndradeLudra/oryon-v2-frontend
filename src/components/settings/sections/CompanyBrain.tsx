@@ -20,7 +20,6 @@ import {
 import { extractBrandFile } from '@/services/agentsApi'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
-import { CABECALHO_FIXO } from '../barraDeSalvar'
 import { cn } from '@/lib/utils'
 import { SettingsSectionsProvider } from '../SettingsSection'
 import { Check, Circle } from 'lucide-react'
@@ -630,7 +629,7 @@ export function CompanyBrain() {
         <SectionHeader
           title="Contexto da IA"
           description="Configure uma vez: o Copilot, os agentes de IA e a configuração do CRM usam estas informações."
-          className={CABECALHO_FIXO}
+          fixo
           action={
             <div className="flex items-center gap-3">
               {erroHub ? (
@@ -655,7 +654,7 @@ export function CompanyBrain() {
             <div className="min-w-0">{secoes}</div>
           </SettingsSectionsProvider>
           <aside className="mt-6 lg:mt-0">
-            <div className="rounded-[10px] border border-surface-700 bg-surface-800 p-4 lg:sticky lg:top-[132px]">
+            <div className="rounded-[10px] border border-surface-700 bg-surface-800 p-4 lg:sticky lg:top-4">
               <div className="flex items-baseline justify-between">
                 <p className="text-sm font-semibold text-surface-100">O que a IA já sabe</p>
                 <span className="text-xs font-semibold tabular-nums text-surface-300">{pct}%</span>

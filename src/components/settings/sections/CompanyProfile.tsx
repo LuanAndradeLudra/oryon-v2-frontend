@@ -15,7 +15,6 @@ import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { TipCard } from '@/components/ui/TipCard'
 import type { Tenant } from '@/types'
 import { api } from '@/services/api'
-import { CABECALHO_FIXO } from '../barraDeSalvar'
 import { CompanyFiscal } from './CompanyFiscal'
 
 
@@ -134,7 +133,7 @@ export function CompanyProfile() {
       <SectionHeader
         title="Perfil da Empresa"
         description="Informações da sua organização na plataforma Oryon."
-        className={CABECALHO_FIXO}
+        fixo
         action={podeEditar ? (
           <Button onClick={save} loading={loading} disabled={nomeInvalido || emailInvalido}>Salvar alterações</Button>
         ) : undefined}

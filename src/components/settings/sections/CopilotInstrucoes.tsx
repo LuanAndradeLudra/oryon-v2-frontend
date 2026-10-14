@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { AlertCircle, Lock } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
-import { CABECALHO_FIXO } from '../barraDeSalvar'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
@@ -60,7 +59,7 @@ export function CopilotInstrucoes() {
       <SectionHeader
         title="Copilot"
         description="Como o Copilot responde a você e à equipe. Vale para todas as pessoas da empresa."
-        className={CABECALHO_FIXO}
+        fixo
         action={podeAlterar ? (
           <div className="flex items-center gap-3">
             <span className={cn('hidden items-center gap-1.5 text-xs sm:inline-flex', sujo ? 'text-status-pending' : 'text-surface-500')}>

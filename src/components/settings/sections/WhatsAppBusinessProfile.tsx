@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/useToast'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { api } from '@/services/api'
 import { formatWaSelectLabel } from '@/lib/utils'
-import { CABECALHO_FIXO } from '../barraDeSalvar'
 
 /** NestJS's ValidationPipe returns `message` as a string[] when class-validator
  *  rejects multiple fields — normalize to one readable string either way. */
@@ -194,7 +193,7 @@ export function WhatsAppBusinessProfile() {
       <SectionHeader
         title="Perfil do WhatsApp"
         description="Edite o perfil do WhatsApp Business de cada número — foto, endereço, e-mail, descrição, sites e categoria."
-        className={CABECALHO_FIXO}
+        fixo
         action={numbers.length > 0 ? (
           <Button variant="primary" onClick={save} loading={saving} disabled={!original}>Salvar alterações</Button>
         ) : undefined}
