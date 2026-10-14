@@ -1,3 +1,10 @@
+// Etapas conferidas (PO 13/10): o "Continuar" dos passos de WhatsApp e de
+// setores só libera com a etapa feita, pela mesma conta de pendências da Home
+// (/workspace/readiness); "Conectar depois"/"Criar depois" é a saída explícita
+// (botão secundário); o rodapé descreve o estado, sem ordem que contradiga o
+// "depois"; a tela final lista o que ficou para depois. O "concluído" do
+// onboarding continua o mesmo; as pendências seguem na Home até serem feitas.
+
 import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -14,6 +21,7 @@ import { showToast } from '@/hooks/useToast'
 import { saveHub, loadHub, type CompanyHubData, type BrandFile, DEFAULT_HUB } from '@/services/companyContextService'
 import { extractBrandFile } from '@/services/agentsApi'
 import { onboardingApi } from '@/services/api'
+import { useWorkspaceReadiness, type WorkspaceCheck } from '@/hooks/useWorkspaceReadiness'
 import { Textarea } from '@/components/ui/Textarea'
 import { SelectMenu } from '@/components/ui/SelectMenu'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
@@ -196,6 +204,7 @@ function StepChrome({
   continueLabel = 'Continuar',
   optionalLabel,
   onSkip,
+  status,
 }: {
   step: SetupStep
   icon: ReactNode
@@ -208,19 +217,24 @@ function StepChrome({
   continueLabel?: string
   optionalLabel?: string
   onSkip?: () => void
+  /** Estado da etapa, descrito (não uma ordem: "depois" também é saída).
+   *  `feito=false` desabilita o "Continuar" e mostra o botão de deixar para depois. */
+  status?: { feito: boolean; texto: string }
 }) {
+  const bloqueio = status && !status.feito
   return (
     <div className="h-full flex overflow-hidden">
       <div className="w-80 flex-shrink-0 border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-start gap-2.5 mb-8">
           <motion.span
             animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
             className="flex flex-shrink-0 select-none"
           >
-            <OryonLogo variant="symbol" decorativa className="h-11" />
+            <OryonLogo variant="symbol" decorativa className="h-[30px]" />
           </motion.span>
-          <OryonLogo variant="wordmark" className="h-5 text-surface-50" />
+          {/* Proporção do kit da marca (a mesma da landing: símbolo 26 : palavra 22). */}
+          <OryonLogo variant="wordmark" className="mt-[6px] h-[25px] text-surface-50" />
         </div>
 
         <StepCounter step={step} />
@@ -264,13 +278,19 @@ function StepChrome({
               <ArrowLeft className="w-4 h-4" /> Voltar
             </button>
           ) : <span />}
-          <div className="flex items-center gap-5">
-            {onSkip && (
+          <div className="flex items-center gap-3">
+            {status && (
+              <span id="setup-status" aria-live="polite" className={'inline-flex items-center gap-1.5 text-xs mr-2 ' + (status.feito ? 'text-surface-300' : 'text-surface-500')}>
+                {status.feito && <CheckCircle2 className="w-3.5 h-3.5 text-status-active" aria-hidden />}
+                {status.texto}
+              </span>
+            )}
+            {onSkip && bloqueio && (
               <button
                 type="button"
                 onClick={onSkip}
                 data-testid="setup-skip-step"
-                className="text-sm text-surface-600 hover:text-surface-400 transition-colors"
+                className="inline-flex items-center px-4 py-2.5 rounded-[6px] border border-surface-700 text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] hover:border-surface-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 transition-colors"
               >
                 {optionalLabel ?? 'Deixar para depois'}
               </button>
@@ -278,8 +298,10 @@ function StepChrome({
             <button
               type="button"
               onClick={onContinue}
+              disabled={!!bloqueio}
+              aria-describedby={status ? 'setup-status' : undefined}
               data-testid="setup-continue"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-[6px] bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) hover:bg-[#115E59] hover:bg-(image:--primario-img-hover) text-white text-sm font-semibold transition-all"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-[6px] bg-[#0F766E] bg-(image:--primario-img) shadow-(--primario-realce) hover:bg-[#115E59] hover:bg-(image:--primario-img-hover) disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#0F766E] text-white text-sm font-semibold transition-all"
             >
               {continueLabel} <ArrowRight className="w-4 h-4" />
             </button>
@@ -317,7 +339,7 @@ function StepCounter({ step }: { step: SetupStep }) {
 
 /** Reaproveita a seção de Configurações — a tela de conectar linha é a mesma,
  *  e manter duas versões dela era garantia de divergirem. */
-function WhatsAppStep({ onContinue }: { onContinue: () => void }) {
+function WhatsAppStep({ onContinue, feito }: { onContinue: () => void; feito: boolean }) {
   return (
     <StepChrome
       step="whatsapp"
@@ -331,6 +353,7 @@ function WhatsAppStep({ onContinue }: { onContinue: () => void }) {
       onContinue={onContinue}
       onSkip={onContinue}
       optionalLabel="Conectar depois"
+      status={{ feito, texto: feito ? 'Linha conectada.' : 'Nenhuma linha conectada ainda.' }}
     >
       <WhatsAppNumbers />
     </StepChrome>
@@ -339,13 +362,13 @@ function WhatsAppStep({ onContinue }: { onContinue: () => void }) {
 
 // ─── Step: Time e setores ─────────────────────────────────────────────────────
 
-function TeamStep({ onBack, onContinue }: { onBack: () => void; onContinue: () => void }) {
+function TeamStep({ onBack, onContinue, feito }: { onBack: () => void; onContinue: () => void; feito: boolean }) {
   return (
     <StepChrome
       step="team"
       icon={<Users className="w-4 h-4 text-brand-400" />}
       title="Time e setores"
-      subtitle="Setores organizam quem atende o quê. Opcional agora — dá para criar depois, em Configurações."
+      subtitle="Setores organizam quem atende o quê. É obrigatório ter ao menos um: atendentes precisam estar num setor para enviar mensagens. Dá para criar agora ou depois, em Configurações."
       benefits={[
         { icon: Users,     label: 'Atendimento', desc: 'Conversas chegam ao setor certo' },
         { icon: GitBranch, label: 'Acesso',      desc: 'Cada setor enxerga os funis que usa' },
@@ -353,6 +376,8 @@ function TeamStep({ onBack, onContinue }: { onBack: () => void; onContinue: () =
       onBack={onBack}
       onContinue={onContinue}
       onSkip={onContinue}
+      optionalLabel="Criar depois"
+      status={{ feito, texto: feito ? 'Setor criado.' : 'Nenhum setor criado ainda.' }}
     >
       <Departments />
     </StepChrome>
@@ -395,15 +420,16 @@ function HubStep({
       {/* Left panel */}
       <div className="w-80 flex-shrink-0 border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
         {/* Brand */}
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-start gap-2.5 mb-8">
           <motion.span
             animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
             className="flex flex-shrink-0 select-none"
           >
-            <OryonLogo variant="symbol" decorativa className="h-11" />
+            <OryonLogo variant="symbol" decorativa className="h-[30px]" />
           </motion.span>
-          <OryonLogo variant="wordmark" className="h-5 text-surface-50" />
+          {/* Proporção do kit da marca (a mesma da landing: símbolo 26 : palavra 22). */}
+          <OryonLogo variant="wordmark" className="mt-[6px] h-[25px] text-surface-50" />
         </div>
 
         <StepCounter step="hub" />
@@ -606,12 +632,12 @@ function HubStep({
           >
             <ArrowLeft className="w-4 h-4" /> Voltar
           </button>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onSkip}
               data-testid="setup-skip-step"
-              className="text-sm text-surface-600 hover:text-surface-400 transition-colors"
+              className="inline-flex items-center px-4 py-2.5 rounded-[6px] border border-surface-700 text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] hover:border-surface-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 transition-colors"
             >
               Deixar para depois
             </button>
@@ -633,7 +659,7 @@ function HubStep({
 
 // ─── Step: Done ───────────────────────────────────────────────────────────────
 
-function DoneStep({ onComplete }: { onComplete: () => void }) {
+function DoneStep({ onComplete, pendencias }: { onComplete: () => void; pendencias: WorkspaceCheck[] }) {
   const navigate = useNavigate()
   // SCRUM-498: sem o flag de múltiplos funis, a frase sobre o funil não
   // aparece — o tenant não tem a tela para onde ela apontaria.
@@ -663,10 +689,30 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
         </motion.div>
 
         <div>
-          <h1 className="text-2xl font-semibold text-surface-50 mb-2">Plataforma pronta!</h1>
+          <h1 className="text-2xl font-semibold text-surface-50 mb-2">{pendencias.length ? 'Configuração inicial concluída' : 'Plataforma pronta!'}</h1>
           <p className="text-sm text-surface-400 leading-relaxed">
-            Copilot, agentes e CRM já conhecem sua empresa. Você pode atualizar o contexto a qualquer momento em Configurações.
+            {pendencias.length
+              ? 'Falta pouco para a plataforma atender. O que ficou para depois também aparece na Home até ser feito.'
+              : 'Copilot, agentes e CRM já conhecem sua empresa. Você pode atualizar o contexto a qualquer momento em Configurações.'}
           </p>
+          {pendencias.length > 0 && (
+            <ul className="mt-4 space-y-2 text-left" data-testid="setup-done-pendencias">
+              {pendencias.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 rounded-[10px] border border-surface-700 bg-surface-900 px-3.5 py-2.5">
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-medium text-surface-100">{c.label}</span>
+                    <span className="block text-xs text-surface-500">Ficou para depois · obrigatório</span>
+                  </span>
+                  {c.cta && (
+                    <button type="button" onClick={() => goTo(c.cta!.href)}
+                      className="flex-shrink-0 text-xs font-semibold text-accent-dark hover:opacity-80">
+                      {c.cta.label}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
           {multiPipeline && (
             <p
               data-testid="setup-done-pipeline"
@@ -714,6 +760,25 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
     setStep(next)
     saveSetupStep(user?.tenantId, next)
   }, [user?.tenantId])
+
+  // Etapas conferidas pela mesma conta da Home. Sem a conta (falha de rede),
+  // não trava: o item ausente conta como feito e a Home segue avisando.
+  const { snapshot, refresh } = useWorkspaceReadiness()
+  const ok = (id: WorkspaceCheck['id']) => snapshot.checks.find((c) => c.id === id)?.ok ?? true
+  const linhaOk = ok('whatsapp_number')
+  const setorOk = ok('departments')
+  useEffect(() => {
+    if (step !== 'whatsapp' && step !== 'team') return
+    // A conexão termina na janela da Meta e o setor nasce num modal da seção:
+    // refaz a conta ao voltar para a aba e a cada poucos segundos na etapa.
+    refresh()
+    const onFocus = () => refresh()
+    window.addEventListener('focus', onFocus)
+    const t = window.setInterval(refresh, 4000)
+    return () => { window.removeEventListener('focus', onFocus); window.clearInterval(t) }
+  }, [step, refresh])
+  useEffect(() => { if (step === 'done') refresh() }, [step, refresh])
+  const pendencias = snapshot.checks.filter((c) => !c.ok && (c.id === 'whatsapp_number' || c.id === 'departments'))
 
   const patchHub = (partial: Partial<CompanyHubData>) =>
     setHubForm(prev => ({ ...prev, ...partial }))
@@ -770,7 +835,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
             transition={{ duration: 0.25 }}
             className="h-full"
           >
-            <WhatsAppStep onContinue={() => advance('whatsapp')} />
+            <WhatsAppStep feito={linhaOk} onContinue={() => advance('whatsapp')} />
           </motion.div>
         )}
 
@@ -783,7 +848,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
             transition={{ duration: 0.25 }}
             className="h-full"
           >
-            <TeamStep onBack={() => back('team')} onContinue={() => advance('team')} />
+            <TeamStep feito={setorOk} onBack={() => back('team')} onContinue={() => advance('team')} />
           </motion.div>
         )}
 
@@ -814,7 +879,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
             transition={{ duration: 0.3 }}
             className="h-full"
           >
-            <DoneStep onComplete={onComplete} />
+            <DoneStep onComplete={onComplete} pendencias={pendencias} />
           </motion.div>
         )}
       </AnimatePresence>

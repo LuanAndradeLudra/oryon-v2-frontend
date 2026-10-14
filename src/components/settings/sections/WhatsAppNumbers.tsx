@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X, Star, RefreshCw, Smartphone, FileText, Send, Users, ArrowRight, CheckCircle2, Copy, AlertTriangle } from 'lucide-react'
+import { abrirJanelaCentralizada } from '@/lib/janelaCentralizada'
 import { Link } from 'react-router-dom'
 import { diagnosticar, veredito, VEREDITO, ICONE_ACHADO, COR_ACHADO } from './diagnosticoDaLinha'
 import { SetoresDoNumero } from './SetoresDoNumero'
@@ -146,7 +147,8 @@ export function WhatsAppNumbers() {
   }
 
   const openOAuth = (oauthUrl: string) => {
-    const janela = window.open(oauthUrl, '_blank', 'width=600,height=700')
+    // Centralizada sobre o app (sem posição, o navegador a jogava no canto).
+    const janela = abrirJanelaCentralizada(oauthUrl, '_blank', 600, 700)
     // Popup bloqueado: antes nada acontecia e o clique parecia morto.
     if (!janela) toast('O navegador bloqueou a janela da Meta. Libere pop-ups para este site e tente de novo.', 'error')
   }

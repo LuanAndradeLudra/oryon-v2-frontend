@@ -13,6 +13,20 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: { tenantId: 't1' }, completeOnboarding }),
 }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => multiPipeline }))
+// Pendências do workspace (a mesma conta da Home). Padrão: tudo feito.
+let linhaOk = true
+let setorOk = true
+const refreshProntidao = vi.fn()
+vi.mock('@/hooks/useWorkspaceReadiness', () => ({
+  useWorkspaceReadiness: () => ({
+    snapshot: { allBlockersOk: linhaOk && setorOk, checks: [
+      { id: 'whatsapp_number', ok: linhaOk, severity: 'blocker', label: 'Linha WhatsApp conectada', cta: { href: '/settings/numbers', label: 'Conectar linha' } },
+      { id: 'departments', ok: setorOk, severity: 'blocker', label: 'Pelo menos um setor cadastrado', cta: { href: '/settings/departments', label: 'Criar setor' } },
+    ] },
+    loading: false,
+    refresh: refreshProntidao,
+  }),
+}))
 vi.mock('@/services/api', () => ({ onboardingApi: { complete: () => complete() } }))
 vi.mock('@/services/agentsApi', () => ({ extractBrandFile: vi.fn() }))
 vi.mock('@/components/settings/sections/WhatsAppNumbers', () => ({
@@ -40,6 +54,8 @@ describe('SetupWizard — primeiro uso em 3 passos (F13)', () => {
   beforeEach(() => {
     localStorage.clear()
     multiPipeline = true
+    linhaOk = true
+    setorOk = true
     vi.clearAllMocks()
   })
 
@@ -129,5 +145,34 @@ describe('SetupWizard — primeiro uso em 3 passos (F13)', () => {
     fireEvent.click(screen.getByTestId('setup-continue'))
     await waitFor(() => expect(screen.getByText('Contexto da IA')).toBeInTheDocument())
     expect(textOf()).not.toMatch(proibidos)
+  })
+
+  it('sem linha conectada, "Continuar" fica desabilitado e "Conectar depois" avança (PO 13/10)', async () => {
+    linhaOk = false
+    render(<SetupWizard onComplete={onComplete} />)
+    expect(screen.getByTestId('setup-continue')).toBeDisabled()
+    expect(screen.getByText('Nenhuma linha conectada ainda.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Conectar depois' }))
+    await waitFor(() => expect(screen.getByTestId('departments-section')).toBeInTheDocument())
+  })
+
+  it('com a etapa feita, mostra o estado e esconde o "depois"', () => {
+    render(<SetupWizard onComplete={onComplete} />)
+    expect(screen.getByTestId('setup-continue')).not.toBeDisabled()
+    expect(screen.getByText('Linha conectada.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Conectar depois' })).toBeNull()
+  })
+
+  it('setor é obrigatório: sem setor, só "Criar depois" avança; a tela final lista a pendência', async () => {
+    setorOk = false
+    localStorage.setItem('oryon.setup.step.t1', 'team')
+    render(<SetupWizard onComplete={onComplete} />)
+    expect(screen.getByTestId('setup-continue')).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Criar depois' }))
+    await waitFor(() => expect(screen.getByTestId('setup-step-counter')).toHaveTextContent('Passo 3 de 3'))
+    fireEvent.click(screen.getByTestId('setup-skip-step'))
+    expect(await screen.findByText('Configuração inicial concluída')).toBeInTheDocument()
+    expect(screen.getByTestId('setup-done-pendencias')).toHaveTextContent('Pelo menos um setor cadastrado')
+    expect(complete).toHaveBeenCalled()
   })
 })
