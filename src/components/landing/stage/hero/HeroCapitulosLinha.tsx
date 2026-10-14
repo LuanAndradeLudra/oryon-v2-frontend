@@ -27,7 +27,9 @@ export function HeroCapitulosLinha({
   return (
     <nav aria-label="Capítulos da demonstração" className={cn('flex justify-center', className)}>
       <style>{'@keyframes hero-linha-progresso{from{transform:scaleX(0)}to{transform:scaleX(1)}}'}</style>
-      <ol className="grid w-full grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-1">
+      {/* No celular, cada capítulo numa linha só e quebrando entre capítulos
+          (antes uma grade de 2 colunas quebrava "De onde veio a conversa"). */}
+      <ol className="flex w-full flex-wrap justify-center gap-x-3 gap-y-2.5 sm:w-auto sm:items-center sm:gap-x-1">
         {capitulos.map((c, i) => {
           const eAtivo = i === iAtivo
           return (
@@ -39,7 +41,7 @@ export function HeroCapitulosLinha({
                 aria-current={eAtivo ? 'step' : undefined}
                 title={c.valor}
                 className={cn(
-                  'relative rounded-md px-1.5 py-1 text-left text-[12px] font-medium leading-tight tracking-[-0.005em] transition-colors duration-300 sm:text-[12.5px]',
+                  'relative whitespace-nowrap rounded-md px-1.5 py-1 text-left text-[12px] font-medium leading-tight tracking-[-0.005em] transition-colors duration-300 sm:text-[12.5px]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)]',
                   eAtivo ? 'text-surface-50' : 'text-surface-500 hover:text-surface-300',
                 )}

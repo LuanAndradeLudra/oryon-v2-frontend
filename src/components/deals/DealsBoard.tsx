@@ -355,7 +355,7 @@ export function DealsBoard({
                 onClick={() => alternar(stage.id)}
                 aria-label={`Recolher a coluna ${stage.label}`}
                 title={`Recolher ${stage.label}`}
-                className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-[6px] text-surface-500 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
+                className="relative w-7 h-7 after:absolute after:-inset-2 after:content-[''] md:after:hidden flex items-center justify-center rounded-[6px] text-surface-500 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
               >
                 <ChevronsLeft className="w-3.5 h-3.5" />
               </button>
@@ -368,7 +368,7 @@ export function DealsBoard({
                 onClick={() => onNewDeal(stage.id)}
                 aria-label={`Novo ${noun} em ${stage.label}`}
                 title={`Novo ${noun} em ${stage.label}`}
-                className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-[6px] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
+                className="relative w-7 h-7 after:absolute after:-inset-2 after:content-[''] md:after:hidden flex items-center justify-center rounded-[6px] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -538,7 +538,10 @@ export function DealsBoard({
                             // segue a mesma variável que já decide a opacidade
                             // logo abaixo, não um breakpoint novo.
                             'flex items-center gap-1 rounded-[6px] border border-[var(--bd2)] font-medium text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
-                            isDesktop ? 'h-8 px-[7px] text-2xs' : 'min-h-11 px-3 text-xs',
+                            // No toque: desenho de 32px e área de toque de 44px numa camada
+                            // invisível (after:) — com 44px desenhados ele descia sobre a
+                            // linha "1 dia na etapa" do card (auditoria de layout 13/10).
+                            isDesktop ? 'h-8 px-[7px] text-2xs' : "relative h-8 px-3 text-xs after:absolute after:-inset-1.5 after:content-['']",
                             stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
                           aria-label={`Mover ${noun} para outra etapa`}
@@ -573,7 +576,7 @@ export function DealsBoard({
                           className={cn(
                             // PL-C2-CAR-4: mesmo ajuste do "Mover ▾" ao lado — 22px → 32/44.
                             'flex items-center justify-center rounded-[6px] text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
-                            isDesktop ? 'w-8 h-8' : 'w-11 h-11',
+                            isDesktop ? 'w-8 h-8' : "relative w-8 h-8 after:absolute after:-inset-1.5 after:content-['']",
                             pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
                           aria-label="Mais ações"

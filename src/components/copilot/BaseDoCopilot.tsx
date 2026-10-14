@@ -450,10 +450,10 @@ function DocumentsSection({ kb, addDocument, replaceDocument, deleteDocument, to
 
       {/* Add buttons */}
       {mode === 'none' && kb.documents.length < KB_MAX_DOCS && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <button
             onClick={() => setMode('text')}
-            className="flex items-center gap-1.5 text-xs text-surface-500 hover:text-brand-400 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-surface-500 hover:text-brand-400 transition-colors whitespace-nowrap"
           >
             <FileText className="w-3 h-3" />
             Texto
@@ -461,7 +461,7 @@ function DocumentsSection({ kb, addDocument, replaceDocument, deleteDocument, to
           <span className="text-surface-700">·</span>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 text-xs text-surface-500 hover:text-brand-400 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-surface-500 hover:text-brand-400 transition-colors whitespace-nowrap"
           >
             <Upload className="w-3 h-3" />
             Upload (PDF / Word / MD)

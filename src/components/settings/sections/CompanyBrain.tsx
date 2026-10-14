@@ -648,13 +648,15 @@ export function CompanyBrain() {
             </div>
           }
         />
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_248px] lg:gap-8">
+        {/* Painel ao lado só a partir de 1280px: em 1024 ele espremia as seções
+            (coluna de títulos com ~100px e o botão de upload quebrando). */}
+        <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_248px] xl:gap-8">
           {/* Provider próprio: o índice "Nesta página" do layout não duplica o painel ao lado. */}
           <SettingsSectionsProvider>
             <div className="min-w-0">{secoes}</div>
           </SettingsSectionsProvider>
-          <aside className="mt-6 lg:mt-0">
-            <div className="rounded-[10px] border border-surface-700 bg-surface-800 p-4 lg:sticky lg:top-4">
+          <aside className="mt-6 xl:mt-0">
+            <div className="rounded-[10px] border border-surface-700 bg-surface-800 p-4 xl:sticky xl:top-4">
               <div className="flex items-baseline justify-between">
                 <p className="text-sm font-semibold text-surface-100">O que a IA já sabe</p>
                 <span className="text-xs font-semibold tabular-nums text-surface-300">{pct}%</span>
