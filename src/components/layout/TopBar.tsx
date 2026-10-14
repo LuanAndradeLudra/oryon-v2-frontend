@@ -60,6 +60,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/copilot': 'Copilot AI',
   '/team': 'Nexus',
   '/settings': 'Configurações',
+  // Rotas de admin resolvem pelo caminho completo (o segmento é sempre /admin).
+  '/admin/billing': 'Cobrança',
 }
 
 /** Page subtitles — short noun phrases (2-4 words) rendered next to the
@@ -81,6 +83,7 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/copilot': 'Assistente Oryon',
   '/team': 'Habilidades dos agentes',
   '/settings': 'Central do workspace',
+  '/admin/billing': 'Console do operador',
 }
 
 // ── Search index ───────────────────────────────────────────────────────────────
@@ -1322,10 +1325,10 @@ export function TopBar() {
 
   // Derived
   const segment      = '/' + location.pathname.split('/')[1]
-  const pageTitle    = PAGE_TITLES[segment] ?? ''
+  const pageTitle    = PAGE_TITLES[location.pathname] ?? PAGE_TITLES[segment] ?? ''
   // Subtítulo dinâmico registrado pela página (useRegisterTopBarSubtitle)
   // vence o fixo da rota — TOPBAR-02 / DASH-HEADER-01.
-  const pageSubtitle = dynamicSubtitle ?? PAGE_SUBTITLES[segment] ?? ''
+  const pageSubtitle = dynamicSubtitle ?? PAGE_SUBTITLES[location.pathname] ?? PAGE_SUBTITLES[segment] ?? ''
 
   // Global "/" shortcut to pop the search palette open. Skip while the user
   // is typing in any input/textarea so the slash stays usable as a literal

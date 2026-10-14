@@ -2,11 +2,16 @@
 // SCRUM-1205: criar conta a partir da Proposta e acompanhar ativações.
 // SCRUM-1211: catálogo de planos-modelo e carteira.
 // Só super_admin (rota envolvida por RequireSuperAdmin; backend @Roles).
+//
+// Onda C (13/10, PO): título e subtítulo na barra do topo ("Cobrança · Console
+// do operador", TopBar resolve /admin/billing pela rota completa) — o bloco de
+// cabeçalho saiu para dar altura ao conteúdo. Aba na URL (?aba=), como pede a
+// regra de estado de tela; "Nova conta" virou o ProvisionWizard em 4 passos.
 
 import { useState } from 'react'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { useSearchParams } from 'react-router-dom'
 import { Tabs } from '@/components/ui/Tabs'
-import { ProvisionForm } from '@/components/admin/billing/ProvisionForm'
+import { ProvisionWizard } from '@/components/admin/billing/ProvisionWizard'
 import { PendingActivations } from '@/components/admin/billing/PendingActivations'
 import { AdminInvoices } from '@/components/admin/billing/AdminInvoices'
 import { Portfolio } from '@/components/admin/billing/Portfolio'
@@ -14,34 +19,38 @@ import { CatalogManager } from '@/components/admin/billing/CatalogManager'
 
 type BillingTab = 'provision' | 'pending' | 'invoices' | 'portfolio' | 'catalog'
 
-const TABS: Array<{ id: BillingTab; label: string; hint: string }> = [
-  { id: 'provision', label: 'Nova conta', hint: 'Cria a conta do cliente com as condições da Proposta assinada' },
-  { id: 'pending', label: 'Pendentes de ativação', hint: 'Contas cujo administrador ainda não fez o primeiro acesso' },
-  { id: 'invoices', label: 'Faturas', hint: 'Baixa manual, nota de crédito, contestações e índice de correção' },
-  { id: 'portfolio', label: 'Carteira', hint: 'Contratos, renovações, inadimplência, troca de plano e conciliação' },
-  { id: 'catalog', label: 'Catálogo', hint: 'Planos-modelo e pacotes — valem só para contas novas' },
+const TABS: Array<{ id: BillingTab; label: string }> = [
+  { id: 'provision', label: 'Nova conta' },
+  { id: 'pending', label: 'Pendentes de ativação' },
+  { id: 'invoices', label: 'Faturas' },
+  { id: 'portfolio', label: 'Carteira' },
+  { id: 'catalog', label: 'Catálogo' },
 ]
 
 export function AdminBillingPage() {
-  const [tab, setTab] = useState<BillingTab>('provision')
+  const [params, setParams] = useSearchParams()
+  const tab = TABS.find((t) => t.id === params.get('aba'))?.id ?? 'provision'
   const [reloadKey, setReloadKey] = useState(0)
+  const mudar = (id: BillingTab) => setParams((p) => {
+    const q = new URLSearchParams(p)
+    q.set('aba', id)
+    if (id !== 'provision') q.delete('passo')
+    return q
+  })
 
   return (
-    <div className="flex flex-col h-full bg-surface-950">
-      <PageHeader title="Cobrança — console do operador" subtitle={TABS.find((t) => t.id === tab)?.hint} />
-      <Tabs
-        label="Seções do console de cobrança"
-        tabs={TABS.map(({ id, label }) => ({ id, label }))}
-        value={tab}
-        onChange={setTab}
-        className="px-6"
-      />
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        {tab === 'provision' && <ProvisionForm onProvisioned={() => setReloadKey((k) => k + 1)} />}
-        {tab === 'pending' && <PendingActivations reloadKey={reloadKey} />}
-        {tab === 'invoices' && <AdminInvoices />}
-        {tab === 'portfolio' && <Portfolio />}
-        {tab === 'catalog' && <CatalogManager />}
+    <div className="flex-1 min-w-0 flex flex-col h-full bg-surface-950">
+      <Tabs label="Seções do console de cobrança" tabs={TABS} value={tab} onChange={mudar} className="px-6 pt-3" />
+      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-6">
+        {/* Coluna centralizada: formulário e tabelas têm largura própria e
+            ficavam presos à esquerda em monitor grande. */}
+        <div className="mx-auto w-full max-w-6xl">
+          {tab === 'provision' && <ProvisionWizard onProvisioned={() => setReloadKey((k) => k + 1)} />}
+          {tab === 'pending' && <PendingActivations reloadKey={reloadKey} />}
+          {tab === 'invoices' && <AdminInvoices />}
+          {tab === 'portfolio' && <Portfolio />}
+          {tab === 'catalog' && <CatalogManager />}
+        </div>
       </div>
     </div>
   )

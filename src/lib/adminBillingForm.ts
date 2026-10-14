@@ -1,5 +1,5 @@
 // ─── Regras puras do console de cobrança (SCRUM-1205/1209) ────────────────────
-// Funções sem React usadas pelo ProvisionForm e pelas Faturas do operador, para
+// Funções sem React usadas pelo ProvisionWizard e pelas Faturas do operador, para
 // poderem ser testadas com datas injetadas (2ª revisão do SCRUM-1200, itens AD).
 
 import type { CompanyLookup } from './brDocuments'
