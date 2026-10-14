@@ -116,7 +116,7 @@ export function NotificationsPage() {
   const empty = emptyStateFor('all', filter, showArchived)
 
   return (
-    <div className="flex flex-col h-full bg-surface-950">
+    <div className="flex-1 min-w-0 flex flex-col h-full bg-surface-950">
       <MobilePageHeader
         title="Notificações"
         onBack={() => navigate(-1)}

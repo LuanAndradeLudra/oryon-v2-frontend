@@ -65,7 +65,7 @@ export function AuditPage() {
   const banner = useDesktopRecommendedBanner('admin/audit')
 
   return (
-    <div className="flex flex-col h-full bg-surface-950">
+    <div className="flex-1 min-w-0 flex flex-col h-full bg-surface-950">
       <DesktopRecommendedBanner
         visible={banner.visible}
         onDismiss={banner.dismiss}

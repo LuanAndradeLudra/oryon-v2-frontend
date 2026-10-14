@@ -99,7 +99,7 @@ export function AiObservabilityPage() {
   }, [rollup])
 
   return (
-    <div className="flex flex-col h-full bg-surface-950">
+    <div className="flex-1 min-w-0 flex flex-col h-full bg-surface-950">
       <div className="border-r border-surface-700">
       <PageHeader
         title="AI Observability — custo e métricas por agent"

@@ -122,7 +122,7 @@ export function MorePage() {
     .filter((section) => section.items.length > 0)
 
   return (
-    <div className="flex flex-col h-full bg-surface-950">
+    <div className="flex-1 min-w-0 flex flex-col h-full bg-surface-950">
       <MobilePageHeader title="Mais" titleLogo />
       <div className="flex-1 overflow-y-auto">
         {/* User card */}

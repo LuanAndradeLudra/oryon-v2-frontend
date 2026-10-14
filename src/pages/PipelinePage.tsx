@@ -271,7 +271,7 @@ export function PipelinePage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
+      <div className="flex-1 min-w-0 flex flex-col items-center justify-center h-full gap-3 text-surface-400">
         <AlertTriangle className="w-8 h-8 text-red-400" />
         <p className="text-sm">Não foi possível carregar os funis.</p>
         <button onClick={fetchPipelines} className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2">

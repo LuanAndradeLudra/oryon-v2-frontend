@@ -12,7 +12,7 @@ export function ModuleNotContracted({ module, isOwner }: { module: PlanModuleId;
   // CL5 — sem a tela de cobrança no build, o link cairia em "Minha conta".
   const contractHref = billingHref()
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="flex-1 min-w-0 h-full overflow-y-auto">
       <div className="max-w-lg mx-auto px-4 py-16">
         <div className="flex flex-col items-center text-center rounded-2xl border border-dashed border-surface-700 bg-surface-900/40 px-6 py-12">
           <PackageX className="w-10 h-10 text-surface-600 mb-3" strokeWidth={1.5} />

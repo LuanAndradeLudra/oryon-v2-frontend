@@ -33,7 +33,7 @@ export function SuspendedScreen({ isOwner }: { isOwner: boolean }) {
   }, [isOwner, reloadKey])
 
   return (
-    <div className="h-full overflow-y-auto bg-surface-950">
+    <div className="flex-1 min-w-0 h-full overflow-y-auto bg-surface-950">
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="flex items-start gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-danger/15 flex items-center justify-center flex-shrink-0">
@@ -42,14 +42,14 @@ export function SuspendedScreen({ isOwner }: { isOwner: boolean }) {
           <div>
             <h1 className="text-xl font-bold text-surface-50">Conta suspensa por pendência financeira</h1>
             <p className="text-sm text-surface-400 mt-1">
-              A IA de atendimento, o Copilot e a criação de recursos estão pausados. Os seus dados continuam preservados.
+              O uso da plataforma está bloqueado até a regularização, inclusive conversas, contatos, a IA de atendimento e o Copilot. Os seus dados continuam preservados.
             </p>
           </div>
         </div>
 
         {!isOwner ? (
           <div className="rounded-2xl border border-surface-800 bg-surface-900/40 p-5 text-sm text-surface-300">
-            Procure o administrador da conta na sua empresa para regularizar a situação. Assim que o pagamento for confirmado, tudo volta a funcionar.
+            Procure o dono da conta na sua empresa para regularizar o pagamento. Assim que ele for confirmado, o acesso volta para toda a equipe.
           </div>
         ) : failed ? (
           <div className="rounded-2xl border border-surface-800 p-5 text-sm text-surface-300 space-y-3">
