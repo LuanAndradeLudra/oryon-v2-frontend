@@ -411,7 +411,10 @@ function TemplateRow({ template, selecionado, onSelect }: {
           fixas passava de 300px antes mesmo do nome). Nome + resumo +
           chip de status continuam sempre visíveis (o essencial). */}
       <span className="hidden sm:block text-2xs text-surface-500 tabular-nums flex-none w-12 text-right">{template.language}</span>
-      <span className={cn('inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-none w-[74px] justify-center', cfg.chip)}>
+      {/* Selo numa linha só: com a bolinha, "Em recurso" pede 84px e "Em
+          análise" 81px (medido ao vivo) — os 74px fixos quebravam o texto.
+          Largura mínima mantém a coluna alinhada; status desconhecido cresce. */}
+      <span className={cn('inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-none min-w-[88px] whitespace-nowrap justify-center', cfg.chip)}>
         {cfg.label}
       </span>
       <span className="hidden sm:block text-2xs text-surface-600 tabular-nums flex-none w-[62px] text-right">
@@ -464,7 +467,7 @@ function TemplateDetail({ template, canEdit, onEdit, onDelete, onAssignWaba, onD
           <p className="text-sm font-semibold text-surface-50 truncate">{template.name}</p>
           <p className="text-2xs text-surface-500">{cat.label} · {template.language}</p>
         </div>
-        <span className={cn('inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-none', cfg.chip)}>
+        <span className={cn('inline-flex items-center h-5 px-1.5 rounded-[6px] text-2xs font-semibold flex-none whitespace-nowrap', cfg.chip)}>
           {cfg.label}
         </span>
       </div>
