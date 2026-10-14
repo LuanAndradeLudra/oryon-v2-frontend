@@ -53,16 +53,20 @@ export function BottomTabBar() {
 
   useEffect(() => {
     let socket: ReturnType<typeof import('@/services/socket').connectSocket> | null = null
+    let alive = true
+    const onUnread = (payload: { total: number }) => setUnreadConversations(payload.total)
+    const onConversationUpdated = () => refresh()
     import('@/services/socket').then(({ connectSocket }) => {
+      if (!alive) return
       socket = connectSocket()
-      socket.on('unread:update', (payload: { total: number }) => {
-        setUnreadConversations(payload.total)
-      })
-      socket.on('conversation:updated', () => refresh())
+      socket.on('unread:update', onUnread)
+      socket.on('conversation:updated', onConversationUpdated)
     })
     return () => {
-      socket?.off('unread:update')
-      socket?.off('conversation:updated')
+      alive = false
+      // Só os handlers deste componente: o socket é compartilhado (SCRUM-1210).
+      socket?.off('unread:update', onUnread)
+      socket?.off('conversation:updated', onConversationUpdated)
     }
   }, [refresh])
 

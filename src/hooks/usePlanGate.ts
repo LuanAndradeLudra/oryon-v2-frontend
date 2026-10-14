@@ -1,6 +1,11 @@
 // ─── usePlanGate ──────────────────────────────────────────────────────────────
 // Hook to check if a feature / module is available on the current tenant plan.
 // Returns { allowed, upgrade } — upgrade is the minimum tier that unlocks it.
+//
+// Integração SCRUM-1200 (13/10): o épico tirava este hook (SCRUM-1210 — os
+// módulos vêm do CONTRATO, via useAccountState/moduleEnabled), mas os
+// Conectores da master (SCRUM-1071, escondidos por flag) ainda dependem dele.
+// Fica até os Conectores passarem para useModuleAccess.
 
 import { useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'

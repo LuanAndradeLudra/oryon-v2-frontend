@@ -16,6 +16,7 @@ import { TipCard } from '@/components/ui/TipCard'
 import type { Tenant } from '@/types'
 import { api } from '@/services/api'
 import { CABECALHO_FIXO } from '../barraDeSalvar'
+import { CompanyFiscal } from './CompanyFiscal'
 
 
 const TIMEZONES = [
@@ -77,9 +78,11 @@ export function CompanyProfile() {
     setLoading(true)
     try {
       // Map frontend field names to NestJS DTO field names
+      // E-mail vazio não vai: o DTO valida @IsEmail e '' seria recusado.
       await api.patch('/settings/company', {
         businessName: form.name.trim(),
-        businessEmail: form.email.trim(),
+        // SCRUM-1212: e-mail em branco não vai como "" (o DTO recusa).
+        businessEmail: form.email.trim() || undefined,
       })
       // O cabeçalho da seção (iniciais + nome) lê de `tenant`: atualiza já.
       setTenant((t) => (t ? { ...t, name: form.name.trim(), email: form.email.trim() } : t))
@@ -233,6 +236,8 @@ export function CompanyProfile() {
 
         {!podeEditar && <p className="mt-4 text-xs text-surface-500">Só um administrador da empresa altera estes dados.</p>}
       </SettingsSection>
+
+      <CompanyFiscal />
     </div>
   )
 }

@@ -22,6 +22,40 @@ import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { Department, WhatsAppNumberDetailed } from '@/types'
 import { qualidadeDoNumero, limiteDoNumero } from '@/lib/metaRotulos'
 
+/** Parâmetros com que o callback da Meta volta para esta tela. */
+const OAUTH_RESULT_PARAMS = ['connected', 'phones', 'skippedByPlanLimit', 'error']
+
+/** Tira só os parâmetros do OAuth da URL (a tela pode ter outros, ex.: passo do /setup). */
+function stripOAuthParams() {
+  const url = new URL(window.location.href)
+  OAUTH_RESULT_PARAMS.forEach((p) => url.searchParams.delete(p))
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
+/**
+ * No popup do OAuth: devolve o resultado para a janela principal e fecha.
+ * Antes o popup mostrava os toasts (inclusive o aviso de números cortados pelo
+ * limite do plano), recarregava a principal e fechava — o aviso se perdia.
+ * Agora a principal recebe os mesmos parâmetros na URL e mostra ela mesma.
+ */
+function forwardOAuthResultToOpener(params: URLSearchParams): boolean {
+  const opener = window.opener as Window | null
+  if (!opener) return false
+  const result = OAUTH_RESULT_PARAMS.filter((p) => params.has(p))
+  try {
+    const target = new URL(opener.location.href)
+    result.forEach((p) => target.searchParams.set(p, params.get(p) ?? ''))
+    opener.location.href = target.toString()
+  } catch {
+    // Janela principal fora do nosso domínio (não deveria): cai na tela de números.
+    const qs = new URLSearchParams()
+    result.forEach((p) => qs.set(p, params.get(p) ?? ''))
+    opener.location.href = `/settings/numbers?${qs.toString()}`
+  }
+  window.close()
+  return true
+}
+
 // Wifi/WifiOff/Clock não existem no set da casa (traço 2 do lucide real) —
 // strokeWidth explícito pra bater com os botões de ação (Star/RefreshCw/
 // Trash2, traço 1.75) na mesma linha.
@@ -91,6 +125,7 @@ export function WhatsAppNumbers() {
     whatsappNumbersApi.health().then((r) => { if (vivo) setSaude(r.data) }).catch(() => {})
     return () => { vivo = false }
   }, [numbers])
+  const [limitWarning, setLimitWarning] = useState<{ url: string; message: string } | null>(null)
 
   const fetchNumbers = () => {
     setLoading(true)
@@ -110,15 +145,24 @@ export function WhatsAppNumbers() {
     })
   }
 
+  const openOAuth = (oauthUrl: string) => {
+    const janela = window.open(oauthUrl, '_blank', 'width=600,height=700')
+    // Popup bloqueado: antes nada acontecia e o clique parecia morto.
+    if (!janela) toast('O navegador bloqueou a janela da Meta. Libere pop-ups para este site e tente de novo.', 'error')
+  }
+
   const startConnect = async () => {
     try {
       const { data } = await api.get<Record<string, unknown>>('/meta/oauth/start')
       // Backend returns { redirectUrl: "https://facebook.com/dialog/oauth?..." }
       const oauthUrl = (data.redirectUrl ?? data.url ?? '') as string
-      if (oauthUrl) {
-        const janela = window.open(oauthUrl, '_blank', 'width=600,height=700')
-        // Popup bloqueado: antes nada acontecia e o clique parecia morto.
-        if (!janela) toast('O navegador bloqueou a janela da Meta. Libere pop-ups para este site e tente de novo.', 'error')
+      const planLimit = data.planLimit as { atLimit?: boolean; message?: string | null } | undefined
+      if (oauthUrl && planLimit?.atLimit) {
+        // SCRUM-1207: avisar ANTES do login na Meta que número novo não entra
+        // (reconectar os atuais continua possível, por isso não bloqueia).
+        setLimitWarning({ url: oauthUrl, message: planLimit.message ?? '' })
+      } else if (oauthUrl) {
+        openOAuth(oauthUrl)
       } else {
         toast('Não foi possível iniciar a conexão com a Meta. Tente de novo.', 'error')
       }
@@ -176,22 +220,23 @@ export function WhatsAppNumbers() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const isOAuthReturn = params.get('connected') === 'true' || !!params.get('error')
+    if (isOAuthReturn && forwardOAuthResultToOpener(params)) return
     if (params.get('connected') === 'true') {
       const phones = params.get('phones') ?? '0'
       toast(`WhatsApp conectado com sucesso! ${phones} número(s) encontrado(s).`, 'success')
-      window.history.replaceState({}, '', window.location.pathname)
-      if (window.opener) {
-        window.opener.location.reload()
-        window.close()
-        return
+      // SCRUM-1207: números novos além do limite do plano não são conectados.
+      const skipped = Number(params.get('skippedByPlanLimit') ?? '0')
+      if (skipped > 0) {
+        toast(`${skipped} número(s) não foram conectados porque o seu plano atingiu o limite de números de WhatsApp. Para ampliar, fale com a equipe Oryon.`, 'warning')
       }
+      stripOAuthParams()
     }
     if (params.get('error')) {
       // O texto do `?error=` não entra no toast: qualquer link poderia exibir
       // uma mensagem arbitrária dentro da plataforma.
       toast('A conexão com a Meta não foi concluída. Tente de novo.', 'error')
-      window.history.replaceState({}, '', window.location.pathname)
-      if (window.opener) { window.close(); return }
+      stripOAuthParams()
     }
     fetchNumbers()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -488,6 +533,15 @@ export function WhatsAppNumbers() {
           })}
         </div>
         <ConfirmModal open={!!disconnectTarget} onClose={() => { setDisconnectTarget(null); setDependencies(null) }} onConfirm={handleDisconnect} loading={disconnecting} title="Desconectar número" impact={disconnectImpact} description={disconnectDescription} confirmLabel="Desconectar" danger />
+        {/* SCRUM-1207 — aviso do limite de números ANTES do login na Meta. */}
+        <ConfirmModal
+          open={!!limitWarning}
+          onClose={() => setLimitWarning(null)}
+          onConfirm={() => { if (limitWarning) openOAuth(limitWarning.url); setLimitWarning(null) }}
+          title="Limite de números do plano"
+          description={limitWarning?.message ?? ''}
+          confirmLabel="Reconectar mesmo assim"
+        />
       </div>
     )
   }

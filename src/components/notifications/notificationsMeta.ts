@@ -1,7 +1,7 @@
 import type React from 'react'
 import {
   Bell, MessageSquare, UserCheck, Bot, Sparkles, Clock, MessagesSquare, AtSign, Send, AlertCircle,
-  Workflow, Zap, Plug, ShieldAlert,
+  Workflow, Zap, Plug, ShieldAlert, AlertTriangle, Receipt,
 } from 'lucide-react'
 
 /** Metadados de notificação compartilhados pelo popover do sino (TopBar) e
@@ -22,6 +22,9 @@ export const TYPE_ICON: Record<string, React.ComponentType<{ className?: string;
   automation_note: Zap,
   whatsapp_integration_error: Plug,
   security_alert: ShieldAlert,
+  // SCRUM-1206 — avisos de cobrança (fatura, vencimento, suspensão, franquia).
+  billing_alert: AlertTriangle,
+  billing_update: Receipt,
 }
 
 export function iconFor(type: string): React.ComponentType<{ className?: string; strokeWidth?: number }> {
@@ -35,4 +38,5 @@ export const CATEGORY_CHIPS: Array<{ key: string; label: string; types: string[]
   { key: 'campaigns', label: 'Campanhas', types: ['campaign_complete', 'campaign_failed'] },
   { key: 'automations', label: 'Automações', types: ['automation_executed', 'automation_note'] },
   { key: 'security', label: 'Segurança', types: ['whatsapp_integration_error', 'security_alert'] },
+  { key: 'billing', label: 'Cobrança', types: ['billing_alert', 'billing_update'] },
 ]

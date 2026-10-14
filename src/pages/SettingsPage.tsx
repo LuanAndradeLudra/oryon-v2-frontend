@@ -13,6 +13,7 @@ import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { billingSettingsEnabled } from '@/lib/billingLinks'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 
 // Sections
@@ -156,8 +157,10 @@ export function SettingsPage() {
   // e quem ja tinha a tela salva continuaria entrando. Como a tela nao deveria
   // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
   // o comentario do featureFlags.ts cita para campaigns.
+  // CL5 (SCRUM-1200) — mesma fonte dos links de cobrança (billingLinks): com a
+  // tela desligada nenhum atalho aponta para cá; a guarda cobre a URL digitada.
   // FF_OCULTAR_COBRANCA (PO 12/10): tenant com cobrança fora do Oryon também não abre.
-  if (section === 'billing' && (!isFeatureVisible('settingsBilling') || cobrancaOculta)) {
+  if (section === 'billing' && (!billingSettingsEnabled(user?.email) || cobrancaOculta)) {
     return <NavegarSePresente to={preservarVolta('/settings/account', searchParams)} replace />
   }
   // D12 — Conectores escondidos: a URL direta também fecha.

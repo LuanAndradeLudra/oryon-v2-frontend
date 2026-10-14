@@ -186,6 +186,13 @@ export function instalarBackendDemo() {
     },
   }))
 
+  // ── Estado da conta (SCRUM-1210) ──────────────────────────────────────────
+  // Conta ativa, sem suspensão e sem módulo cortado: os portões de conta
+  // suspensa e de módulo não contratado ficam abertos na demonstração.
+  rota('account/state', eq('get', '/account/state'), () => ({
+    data: { status: 'active', suspended: false, canCreateResources: true, isOwner: false, modules: {} },
+  }))
+
   // ── Perfil da empresa ─────────────────────────────────────────────────────
   // O menu de perfil da TopBar mostra o nome da empresa (linha "Perfil da
   // empresa"); sem esta rota a landing chamava a API real.

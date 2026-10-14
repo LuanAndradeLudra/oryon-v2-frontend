@@ -15,6 +15,7 @@ import {
   PanelLeft,
   Handshake,
   Inbox,
+  Receipt,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -32,6 +33,8 @@ import { AiCreditsIndicator } from './AiCreditsIndicator'
 import { useCobrancaOculta } from '@/hooks/useCobrancaOculta'
 import { OryonLogo } from '@/components/brand/OryonLogo'
 import { rotaPermitida } from '@/lib/rotasPorPapel'
+import { useModuleAccess } from '@/hooks/useAccountState'
+import { MODULE_BY_ROUTE } from '@/lib/billingModules'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -147,6 +150,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
   // que ainda decidem quais itens de navegação aparecem.
   const { user, organizationConfigured } = useAuth()
   const cobrancaOculta = useCobrancaOculta()
+  const moduleAllowed = useModuleAccess()
   const { isRouteVisible, isFeatureVisible } = useFeatureVisibility()
   const { checklist } = useSetupChecklist(user?.id)
   const { vocab } = useTenantVocab()
@@ -167,22 +171,30 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
   // Listen for real-time unread updates via socket
   useEffect(() => {
     let socket: ReturnType<typeof import('@/services/socket').connectSocket> | null = null
+    let alive = true
+    const onUnread = (payload: { total: number }) => setWhatsappUnread(payload.total)
+    // Update unread count when new messages come in (via conversation:updated)
+    const onConversationUpdated = () => refreshUnread()
     import('@/services/socket').then(({ connectSocket }) => {
+      if (!alive) return
       socket = connectSocket()
-      socket.on('unread:update', (payload: { total: number }) => {
-        setWhatsappUnread(payload.total)
-      })
-      // Update unread count when new messages come in (via conversation:updated)
-      socket.on('conversation:updated', () => {
-        refreshUnread()
-      })
+      socket.on('unread:update', onUnread)
+      socket.on('conversation:updated', onConversationUpdated)
     })
     return () => {
-      socket?.off('unread:update')
-      socket?.off('conversation:updated')
+      alive = false
+      // Só os handlers deste componente: o socket é compartilhado (SCRUM-1210).
+      socket?.off('unread:update', onUnread)
+      socket?.off('conversation:updated', onConversationUpdated)
     }
   }, [refreshUnread])
 
+  // SCRUM-1210 — módulo não contratado some do menu (só `false` explícito no
+  // contrato; contratos antigos sem a lista continuam vendo tudo).
+  const moduleVisible = (href: string) => {
+    const key = MODULE_BY_ROUTE[href]
+    return !key || moduleAllowed(key)
+  }
   const geralItems = [
     { icon: <Home className="w-[16.5px] h-[16.5px]" />,          label: 'Home',       href: '/home' },
     {
@@ -231,7 +243,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
     { icon: <CopilotMark className="w-[16.5px] h-[16.5px]" />,   label: 'Copilot AI', href: '/copilot',
       nudge: !checklist.copilot ? 'Setup' : undefined },
-  ].filter((item) => isRouteVisible(item.href) && rotaPermitida(item.href, { role: user?.role, multiPipeline }))
+  ].filter((item) => isRouteVisible(item.href) && rotaPermitida(item.href, { role: user?.role, multiPipeline }) && moduleVisible(item.href))
 
   const internalChatItem = {
     icon: <MessagesSquare className="w-[16.5px] h-[16.5px]" />,
@@ -239,7 +251,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     href: '/team',
     badge: internalUnread > 0 ? internalUnread : undefined,
   }
-  const internalChatVisible = isRouteVisible(internalChatItem.href)
+  const internalChatVisible = isRouteVisible(internalChatItem.href) && moduleVisible(internalChatItem.href)
   // Oryon staff only — never shown to a customer's business_admin even if
   // they discover the URL (the route guard + agent-server gate also block them).
   const isOryonStaff = isOryonStaffHelper(user?.role)
@@ -354,6 +366,12 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
                     active={activeHref === '/admin/connector-requests'}
                   />
                 )}
+                <SidebarLink
+                  href="/admin/billing"
+                  icon={<Receipt className="w-[16.5px] h-[16.5px]" />}
+                  label="Cobrança"
+                  active={activeHref.startsWith('/admin/billing')}
+                />
                 <SidebarLink
                   href="/admin/audit"
                   icon={<Activity className="w-[16.5px] h-[16.5px]" />}

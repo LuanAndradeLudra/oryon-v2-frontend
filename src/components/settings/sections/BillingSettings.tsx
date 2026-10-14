@@ -1,72 +1,82 @@
 // ─── BillingSettings ─────────────────────────────────────────────────────────
-// Settings section: plano, uso de créditos e extrato — ledger + gateway mock.
+// Settings section: o que o cliente contratou, quanto consumiu, por que foi
+// cobrado e o que deve (SCRUM-1210, Termos 7.2.6 / 7.2.8).
+// Fonte: o CONTRATO (GET /settings/billing/contract) — preço contratado,
+// franquia, limites e módulos da Proposta, não a tabela fixa do plans.ts.
+// Sem autoatendimento (SCRUM-1204, Termos 4.1 c): contratar, trocar de plano e
+// comprar créditos passam pela equipe Oryon a partir da Proposta.
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
-  Zap, TrendingUp, Users, Smartphone, Bot, RefreshCw,
-  AlertTriangle, Receipt, Loader2,
+  Zap, Users, Smartphone, Bot, RefreshCw, Handshake, ListChecks, Send,
+  AlertTriangle, Receipt, Loader2, MessageCircle, FileText, CheckCircle2, XCircle,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { SettingsSection } from '../SettingsSection'
 import { Banner } from '@/components/ui/Banner'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { cn } from '@/lib/utils'
-import {
-  PLANS, formatCredits, mapBackendTier,
-} from '@/config/plans'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { useBilling } from '@/hooks/useBilling'
-import { billingApi, type BillingInvoiceRow } from '@/services/billingApi'
+import { billingApi, PAYMENT_METHOD_LABEL } from '@/services/billingApi'
 import type {
-  CreditTransaction, PlanOption, PaymentStatus, BackendPlanTier, CreditPack,
+  BillingInvoiceRow, ClientContract, CreditTransaction, EntitlementKeyId, PaymentStatus,
 } from '@/services/billingApi'
-import { CheckoutModal, type CheckoutIntent } from '@/components/settings/modals/CheckoutModal'
-import { ConfirmModal } from '@/components/ui/Modal'
+import { ORYON_CONTACT } from '@/lib/copilotBlock'
+import { InvoiceDetailModal } from '@/components/billing/InvoiceDetailModal'
+import { invoiceStatusText, isCreditNote, signedAmount } from '@/lib/invoiceDisplay'
 
-// Tiers contratáveis do backend, em ordem. enterprise é "sob consulta" (não
-// self-serve). O próximo tier de upgrade sai daqui, não do PLAN_ORDER do front.
-const BACKEND_ORDER: BackendPlanTier[] = ['start', 'professional', 'scale', 'enterprise']
+const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const fmtDate = (d: string | null | undefined, long = false) =>
+  d ? new Date(d).toLocaleDateString('pt-BR', long ? { day: '2-digit', month: 'long', year: 'numeric' } : undefined) : '—'
 
-/** "01 out" / "30 set" — formato curto do mock 6a (sem "de" nem ponto). */
-function formatDayMonth(iso: string): string {
-  const parts = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).formatToParts(new Date(iso))
-  const day = parts.find((x) => x.type === 'day')?.value ?? ''
-  const month = (parts.find((x) => x.type === 'month')?.value ?? '').replace('.', '')
-  return `${day} ${month}`
+const TERM_LABEL: Record<string, string> = { annual: 'Anual', semiannual: 'Semestral', monthly: 'Mensal' }
+
+const LIMITS: Array<{ key: EntitlementKeyId; label: string; icon: React.ReactNode }> = [
+  { key: 'users', label: 'Usuários', icon: <Users className="w-4 h-4" /> },
+  { key: 'waNumbers', label: 'Números de WhatsApp', icon: <Smartphone className="w-4 h-4" /> },
+  { key: 'agents', label: 'Agentes de IA', icon: <Bot className="w-4 h-4" /> },
+  { key: 'automations', label: 'Automações ativas', icon: <RefreshCw className="w-4 h-4" /> },
+  { key: 'pipelines', label: 'Funis', icon: <Handshake className="w-4 h-4" /> },
+  { key: 'customFields', label: 'Campos customizados', icon: <ListChecks className="w-4 h-4" /> },
+  { key: 'campaignsPerMonth', label: 'Campanhas por mês', icon: <Send className="w-4 h-4" /> },
+]
+
+const MODULE_LABEL: Record<string, string> = {
+  copilot: 'Copilot',
+  agentBuilder: 'Construtor de agentes de IA',
+  marketing: 'Marketing e atribuição',
+  campaigns: 'Disparos',
+  automations: 'Automações',
+  nexus: 'Nexus (chat interno)',
+  apiAccess: 'Acesso à API',
+  advancedAnalytics: 'Relatórios avançados',
 }
 
-function nextBackendTier(current: BackendPlanTier): BackendPlanTier | null {
-  const i = BACKEND_ORDER.indexOf(current)
-  const next = BACKEND_ORDER[i + 1]
-  return next && next !== 'enterprise' ? next : null
+const INVOICE_STATUS: Record<string, string> = {
+  pending: 'Em aberto', past_due: 'Vencida', paid: 'Paga', disputed: 'Em contestação', refunded: 'Estornada', canceled: 'Cancelada', failed: 'Falhou',
 }
-
-// Pacotes de crédito vêm do backend (GET /settings/billing/credit-packs) —
-// preço/quantidade são fonte de verdade server-side (SCRUM-154). O front só
-// exibe; o backend valida o valor no buy-credits.
+const INVOICE_KIND: Record<string, string> = {
+  subscription: 'Mensalidade/parcela', setup: 'Implantação', overage: 'Excedente', credit_pack: 'Pacote',
+  upgrade_difference: 'Diferença de upgrade', credit_note: 'Nota de crédito',
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function CreditBar({ used, total }: { used: number; total: number | null }) {
   const pct = total ? Math.min((used / total) * 100, 100) : 0
   const warning = pct >= 80 && pct < 100
-  const danger  = pct >= 100
-  const numCls = danger ? 'text-red-400' : warning ? 'text-status-pending' : 'text-surface-200'
-
+  const danger = pct >= 100
   return (
-    <div>
-      <div className="flex items-baseline justify-between text-xs">
-        <span className="font-semibold text-surface-100">Créditos de IA utilizados</span>
-        <span className="text-surface-400">
-          <span className={cn('font-semibold', numCls)}>{used.toLocaleString('pt-BR')}</span>
-          {' / '}
-          <span className={cn('font-semibold', numCls)}>{total ? total.toLocaleString('pt-BR') : '∞'}</span>
-          {total ? <> · <span className={cn('font-semibold', numCls)}>{Math.round(pct)}</span>%</> : null}
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-surface-400">Créditos de IA usados no ciclo</span>
+        <span className={`font-semibold ${danger ? 'text-red-400' : warning ? 'text-status-pending' : 'text-surface-200'}`}>
+          {used.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} / {total != null ? total.toLocaleString('pt-BR') : '∞'}
         </span>
       </div>
-      <div className="h-1.5 bg-[var(--sf2)] border border-surface-700 rounded-[3px] overflow-hidden mt-1.5">
+      <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
         <motion.div
-          className={`h-full ${danger ? 'bg-red-500' : warning ? 'bg-status-pending' : 'bg-brand-500'}`}
+          className={`h-full rounded-full ${danger ? 'bg-red-500' : warning ? 'bg-status-pending' : 'bg-brand-500'}`}
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -75,135 +85,49 @@ function CreditBar({ used, total }: { used: number; total: number | null }) {
       {warning && (
         <p className="text-xs text-status-pending flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5" />
-          Você usou {Math.round(pct)}% dos créditos. Considere fazer upgrade.
+          Você usou {Math.round(pct)}% da franquia do mês.
         </p>
       )}
       {danger && (
         <p className="text-xs text-red-400 flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5" />
-          Créditos esgotados — o Copilot é bloqueado e o atendimento sinaliza recarga.
+          Franquia do mês esgotada. O atendimento continua e o consumo extra entra como excedente, conforme o seu contrato.
         </p>
       )}
     </div>
   )
 }
 
-// SCRUM-1109 (Leva 11): o mock (tela `6a`) desenha uma mini-barra de uso por
-// linha, mas hoje só existe uso real para créditos (`billing.creditsUsed`) —
-// não há endpoint de "usuários ativos", "números conectados" etc. por tenant
-// nesta tela. Fabricar esses números seria "sabidamente falso" (mesmo
-// problema já sinalizado no Dashboard, DESIGN-SYSTEM.md §19) — a linha de
-// créditos ganha a barra real; as demais mostram só o limite incluído.
-function LimitRow({
-  icon,
-  label,
-  limit,
-  used,
-}: {
-  icon: React.ReactNode
-  label: string
-  limit: number | null
-  /** Só a linha de créditos tem uso real hoje — ver comentário acima. */
-  used?: number
-}) {
-  const hasUsage = used !== undefined && limit !== null
-  const pct = hasUsage ? Math.min((used / limit) * 100, 100) : 0
-  const atCeiling = hasUsage && used >= limit
-
+function LimitRow({ icon, label, limit, usage }: { icon: React.ReactNode; label: string; limit: number | null | undefined; usage: number | null | undefined }) {
+  const unlimited = limit == null
+  const over = !unlimited && usage != null && usage >= (limit as number)
   return (
-    <div className="grid grid-cols-[1fr_160px_90px] items-center h-9 border-b border-surface-700 last:border-b-0">
-      <span className="flex items-center gap-2 text-sm text-surface-100 min-w-0">
-        <span className="text-surface-500 flex-shrink-0">{icon}</span>
-        <span className="truncate">{label}</span>
-      </span>
-      <span className="h-1 rounded-[2px] bg-[var(--sf2)] overflow-hidden">
-        {hasUsage && (
-          <span
-            className={cn('block h-full rounded-full', atCeiling ? 'bg-warning' : 'bg-brand-500')}
-            style={{ width: `${pct}%` }}
-          />
-        )}
-      </span>
-      <span className={cn('text-sm text-right tabular-nums', atCeiling ? 'font-semibold text-warning' : 'text-surface-400')}>
-        {hasUsage ? `${used.toLocaleString('pt-BR')}/${limit.toLocaleString('pt-BR')}` : formatCredits(limit)}
+    <div className="flex items-center gap-3 py-2.5 border-b border-surface-800/50 last:border-0">
+      <span className="text-surface-500 flex-shrink-0">{icon}</span>
+      <span className="text-sm text-surface-300 flex-1">{label}</span>
+      <span className={`text-sm font-medium ${over ? 'text-status-pending' : 'text-surface-200'}`}>
+        {unlimited
+          ? (usage != null ? `${usage.toLocaleString('pt-BR')} · ilimitado` : 'Ilimitado')
+          : `${usage != null ? usage.toLocaleString('pt-BR') : '—'} de ${(limit as number).toLocaleString('pt-BR')}`}
       </span>
     </div>
   )
 }
 
 const TX_TYPE_LABEL: Record<CreditTransaction['type'], string> = {
-  debit:      'Consumo',
-  grant:      'Crédito',
-  reset:      'Renovação',
-  refund:     'Estorno',
-  adjustment: 'Ajuste',
-}
-
-// Rótulos das faturas — os valores vêm de InvoiceKind/InvoiceStatus
-// (backend, billing-invoice.entity.ts). Valor desconhecido aparece cru.
-const INVOICE_KIND_LABEL: Record<string, string> = {
-  subscription: 'Assinatura',
-  setup: 'Implantação',
-  overage: 'Excedente',
-  credit_pack: 'Pacote de créditos',
-}
-const INVOICE_STATUS: Record<string, { label: string; variant: 'pending' | 'resolved' | 'danger' | 'abandoned' }> = {
-  pending: { label: 'Em aberto', variant: 'pending' },
-  paid: { label: 'Paga', variant: 'resolved' },
-  past_due: { label: 'Vencida', variant: 'danger' },
-  failed: { label: 'Falhou', variant: 'danger' },
-  canceled: { label: 'Cancelada', variant: 'abandoned' },
-}
-
-function formatMoney(amount: string, currency: string): string {
-  const n = Number(amount)
-  if (!Number.isFinite(n)) return amount
-  try {
-    return n.toLocaleString('pt-BR', { style: 'currency', currency: currency || 'BRL' })
-  } catch {
-    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-  }
-}
-
-const dia = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
-
-/** Uma fatura na mesma gramática do extrato: descrição · metadados · valor e situação à direita. */
-function InvoiceRow({ inv }: { inv: BillingInvoiceRow }) {
-  const kind = INVOICE_KIND_LABEL[inv.kind] ?? inv.kind
-  const status = INVOICE_STATUS[inv.status]
-  const quando = inv.status === 'paid' && inv.paidAt
-    ? `paga em ${dia(inv.paidAt)}`
-    : inv.dueAt ? `vence em ${dia(inv.dueAt)}` : null
-  return (
-    <div className="flex items-center gap-4 py-3 border-b border-surface-700 last:border-0">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-surface-200 truncate">{inv.description || kind}</p>
-        <p className="text-xs text-surface-500 mt-0.5 truncate">
-          {[kind, inv.number ? `nº ${inv.number}` : null, quando].filter(Boolean).join(' · ')}
-        </p>
-      </div>
-      <div className="flex flex-shrink-0 items-center gap-3">
-        <span className="text-sm font-semibold text-surface-100 tabular-nums">{formatMoney(inv.amount, inv.currency)}</span>
-        {status ? <Badge variant={status.variant}>{status.label}</Badge> : <Badge>{inv.status}</Badge>}
-      </div>
-    </div>
-  )
+  debit: 'Consumo', grant: 'Crédito', reset: 'Renovação', refund: 'Estorno', adjustment: 'Ajuste',
 }
 
 function TransactionRow({ tx }: { tx: CreditTransaction }) {
   const credits = Number(tx.credits)
   const isDebit = credits < 0
   const label = TX_TYPE_LABEL[tx.type] ?? tx.type
-  const desc = tx.feature ?? tx.source ?? label
-
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-surface-700 last:border-0">
+    <div className="flex items-center gap-4 py-3 border-b border-surface-800/50 last:border-0">
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-surface-200 truncate">{desc}</p>
+        <p className="text-sm text-surface-200 truncate">{tx.feature ?? tx.source ?? label}</p>
         <p className="text-xs text-surface-500 mt-0.5">
-          {label}
-          {' · '}
-          {new Date(tx.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          {label} · {new Date(tx.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
           {tx.model ? ` · ${tx.model}` : ''}
         </p>
       </div>
@@ -215,142 +139,62 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
   )
 }
 
-// README §3.11: "uma tabela de 3 colunas dentro de UMA borda (não três
-// cards)". Colunas = tier atual + até 2 próximos da cadeia backend; a
-// coluna imediatamente seguinte ao atual é a recomendada (inset accent +
-// chip). Preço/nome vêm de `plans` (API, autoritativo); os "recursos
-// incluídos" de cada coluna vêm da config estática do front
-// (`PLANS[...].limits`) — mesma fonte que o resto da página já usa para a
-// grade de limites, não é dado novo.
-function UpgradeTable({
-  currentTier,
-  billingDisplayName,
-  billingPriceMonthly,
-  plans,
-  isSubscribed,
-  onUpgrade,
-  disabled,
-}: {
-  currentTier: BackendPlanTier
-  billingDisplayName: string
-  billingPriceMonthly: number
-  plans: PlanOption[]
-  isSubscribed: boolean
-  onUpgrade: (intent: CheckoutIntent) => void
-  disabled?: boolean
-}) {
-  const chain = BACKEND_ORDER.slice(BACKEND_ORDER.indexOf(currentTier)).slice(0, 3)
-  if (chain.length < 2) return null
-
-  return (
-    <div className="border border-surface-700 rounded-[6px] overflow-hidden flex flex-col sm:flex-row">
-      {chain.map((tier, i) => {
-        const isCurrent = tier === currentTier
-        const isRecommended = i === 1
-        const opt = plans.find((p) => p.tier === tier) ?? null
-        const front = mapBackendTier(tier)
-        const limits = PLANS[front].limits
-        const name = isCurrent ? billingDisplayName : (opt?.displayName ?? PLANS[front].name)
-        const priceLabel = isCurrent
-          ? `R$ ${billingPriceMonthly.toLocaleString('pt-BR')}`
-          : opt
-            ? `R$ ${Math.round(opt.priceMonthlyCents / 100).toLocaleString('pt-BR')}`
-            : 'Consultar'
-        const credits = isCurrent ? undefined : (opt?.monthlyCredits ?? limits.creditsPerMonth)
-        const resourceLine = [
-          credits != null ? `${formatCredits(credits)} créditos` : null,
-          limits.users != null ? `${limits.users} usuários` : null,
-          limits.waNumbers != null ? `${limits.waNumbers} números` : null,
-          limits.agents != null ? `${limits.agents} agentes` : null,
-        ].filter(Boolean).join(' · ')
-
-        return (
-          <div
-            key={tier}
-            style={isRecommended ? { boxShadow: 'inset 0 2px 0 var(--color-brand-500)' } : undefined}
-            className={cn(
-              'flex-1 p-3.5 border-t sm:border-t-0 sm:border-l first:border-l-0 first:border-t-0 border-surface-700',
-              isCurrent && 'bg-[var(--sf2)]',
-            )}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-surface-100">{name}</span>
-              {isCurrent && <span className="text-2xs font-medium text-surface-500">· atual</span>}
-              {isRecommended && (
-                <span className="inline-flex items-center h-4 bg-accent-soft text-accent-dark text-2xs font-semibold px-[5px] rounded-[6px]">
-                  Recomendado
-                </span>
-              )}
-            </div>
-            <p className="text-lg font-semibold text-surface-50 tabular-nums mt-1" style={{ letterSpacing: '-.02em' }}>
-              {priceLabel}<span className="text-2xs text-surface-500 font-medium" style={{ letterSpacing: 0 }}>/mês</span>
-            </p>
-            <p className="text-xs text-surface-400 mt-2 leading-[1.6]">{resourceLine}</p>
-            {!isCurrent && (
-              <Button
-                size="sm"
-                variant={isRecommended ? 'primary' : 'neutral'}
-                className="mt-2.5"
-                disabled={disabled || !opt}
-                onClick={() => opt && onUpgrade({ kind: isSubscribed ? 'change' : 'subscribe', tier, plan: opt })}
-                title={!opt ? 'Sob consulta' : undefined}
-              >
-                {opt ? `Mudar para ${name}` : 'Falar com vendas'}
-              </Button>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BillingSettings() {
-  const { billing, transactions, loading, error, refetch } = useBilling({ transactions: true })
-  const [plans, setPlans] = useState<PlanOption[]>([])
+  const { billing, transactions, loading, error } = useBilling({ transactions: true })
   const [status, setStatus] = useState<PaymentStatus | null>(null)
-  // Falha ao carregar payment-status NÃO assume "novo cliente" (evita cobrança duplicada).
   const [statusError, setStatusError] = useState(false)
-  const [packs, setPacks] = useState<CreditPack[]>([])
+  const [contract, setContract] = useState<ClientContract | null>(null)
   const [invoices, setInvoices] = useState<BillingInvoiceRow[]>([])
-  const [intent, setIntent] = useState<CheckoutIntent | null>(null)
-  const [cancelOpen, setCancelOpen] = useState(false)
-  const [canceling, setCanceling] = useState(false)
+  // CL6 — falha de rede não pode virar "nenhuma fatura" nem "sem contrato".
+  const [contractError, setContractError] = useState(false)
+  const [invoicesError, setInvoicesError] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openInvoiceId = searchParams.get('invoice')
+
+  const loadContract = useCallback(() => {
+    billingApi.getContract()
+      .then((r) => { setContract(r); setContractError(false) })
+      .catch(() => setContractError(true))
+    billingApi.getInvoices()
+      .then((r) => { setInvoices(r); setInvoicesError(false) })
+      .catch(() => setInvoicesError(true))
+  }, [])
 
   useEffect(() => {
     let alive = true
-    // Planos e pacotes são independentes do status — carregam à parte.
-    billingApi.getPlans().then((p) => { if (alive) setPlans(p) }).catch(() => {})
-    billingApi.getCreditPacks().then((cp) => { if (alive) setPacks(cp) }).catch(() => {})
-    billingApi.getInvoices().then((inv) => { if (alive) setInvoices(inv) }).catch(() => {})
-    billingApi.getPaymentStatus()
-      .then((s) => { if (alive) { setStatus(s); setStatusError(false) } })
-      .catch(() => { if (alive) { setStatus(null); setStatusError(true) } })
-    return () => { alive = false }
-  }, [])
-
-  function openCredits(pack: CreditPack) {
-    setIntent({ kind: 'credits', packCredits: pack.credits, valueCents: pack.valueCents })
-  }
-
-  function onCheckoutDone() {
-    void refetch()
-    billingApi.getPaymentStatus()
-      .then((s) => { setStatus(s); setStatusError(false) })
-      .catch(() => setStatusError(true))
-  }
-
-  async function confirmCancel() {
-    setCanceling(true)
-    try {
-      await billingApi.cancel()
-      onCheckoutDone()
-      setCancelOpen(false)
-    } finally {
-      setCanceling(false)
+    const loadStatus = () => {
+      billingApi.getPaymentStatus()
+        .then((s) => { if (alive) { setStatus(s); setStatusError(false) } })
+        .catch(() => { if (alive) { setStatus(null); setStatusError(true) } })
     }
+    loadContract()
+    loadStatus()
+    // Saldo ao vivo (SCRUM-805/1210): o socket avisa, a tela refaz o fetch.
+    // O saldo já vem do useBilling; o contrato (consumo do ciclo, limites) é
+    // mais caro — um fetch só ao fim de cada rajada de débitos.
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const onBalance = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => { if (alive) loadContract() }, 5000)
+    }
+    // CL6 — suspensão/reativação/baixa (socket `billing:account-state`): a
+    // tela recarrega contrato, faturas e status na hora, sem F5.
+    const onAccountState = () => { if (alive) { loadContract(); loadStatus() } }
+    window.addEventListener('billing:balance-updated', onBalance)
+    window.addEventListener('billing:account-state', onAccountState)
+    return () => {
+      alive = false; clearTimeout(timer)
+      window.removeEventListener('billing:balance-updated', onBalance)
+      window.removeEventListener('billing:account-state', onAccountState)
+    }
+  }, [loadContract])
+
+  function openInvoice(id: string | null) {
+    const next = new URLSearchParams(searchParams)
+    if (id) next.set('invoice', id); else next.delete('invoice')
+    setSearchParams(next, { replace: true })
   }
 
   if (loading && !billing) {
@@ -372,233 +216,216 @@ export function BillingSettings() {
 
   if (!billing) return null
 
-  const frontTier = mapBackendTier(billing.plan.tier)
-  const plan = PLANS[frontTier]
-  const priceMonthly = Math.round(billing.plan.priceMonthlyCents / 100)
-  const atendimentos = billing.plan.monthlyCredits
-  const backendTier = billing.plan.tier as BackendPlanTier
+  const c = contract?.contract ?? null
+  const cycle = contract?.cycle ?? null
+  const suspended = !!contract?.state?.suspended
   const isCanceled = billing.status === 'canceled' || status?.status === 'canceled'
   const isSubscribed = (status?.subscribed ?? false) && !isCanceled
-  const nextTier = nextBackendTier(backendTier)
-  const nextPlan = nextTier ? plans.find((p) => p.tier === nextTier) ?? null : null
-  const isPastDue = billing.status === 'past_due' || status?.status === 'past_due'
-  const accessUntil = billing.planResetsAt
-    ? new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-    : null
-  const canCancel = isSubscribed && !isCanceled
-  // PLAN-04/PLAN-14 (spec/6a-faturamento.GAPS.md): "Avaliação · N dias
-  // restantes" e "Renova em N dias" vêm do mesmo dado real (planResetsAt),
-  // não é número inventado.
-  const daysUntilReset = billing.planResetsAt
-    ? Math.max(0, Math.ceil((new Date(billing.planResetsAt).getTime() - Date.now()) / 86_400_000))
-    : null
+  // "Vencida" é decisão do backend (calendário de Brasília, já descontadas as
+  // notas de crédito) — comparar dueAt com o relógio local errava perto da meia-noite.
+  const overdue = invoices.filter((i) => i.overdue)
+  const overdueCents = overdue.reduce((a, i) => a + (i.netDueCents ?? 0), 0)
+  const accessUntil = c?.endsAt ?? billing.planResetsAt
+  const monthlyCents = c?.contractedMonthlyCents ?? billing.plan.priceMonthlyCents
+  const planName = c?.displayName ?? billing.plan.displayName
+  // Mesma fonte (assinatura): o useBilling revalida a cada débito, o contrato não.
+  const used = billing.creditsUsed ?? cycle?.creditsUsed
+  const total = cycle ? cycle.creditsTotal : billing.creditsTotal
+  const overageCredits = (cycle?.overageCredits ?? 0) + (cycle?.pendingOverageCredits ?? 0)
 
   return (
     <div>
+      {(statusError || contractError || suspended || overdue.length > 0 || isCanceled) && (
+        <div className="space-y-3 pt-2">
+          {contractError && (
+            <ErrorState
+              compact
+              title="Não foi possível carregar o seu contrato"
+              hint="Preço contratado, limites e situação da conta podem estar desatualizados."
+              onRetry={loadContract}
+            />
+          )}
 
-      {/* Alertas de cobrança (nível de página) — Banner compartilhado para os
-          3 estados de status/erro; a ativação é a ÚNICA exceção "sem cards"
-          do README §3.11 (borda acento + fundo acento suave), porque é CTA
-          positivo de conversão, não um status de warning/danger/neutral. */}
-      {statusError && (
-        <Banner variant="danger" className="mt-2">
-          <p className="font-medium">Status de cobrança indisponível</p>
-          <p className="text-xs opacity-80 mt-0.5">
-            Não foi possível confirmar sua assinatura agora. Contratar, trocar de
-            plano e comprar créditos estão temporariamente desabilitados para
-            evitar cobrança duplicada. Tente novamente em instantes.
-          </p>
-        </Banner>
-      )}
-
-      {isPastDue && (
-        <Banner variant="warning" className="mt-2">
-          <p className="font-medium">Pagamento em atraso</p>
-          <p className="text-xs opacity-80 mt-0.5">
-            Regularize a cobrança para manter o plano ativo. O acesso é restabelecido na confirmação do pagamento.
-          </p>
-        </Banner>
-      )}
-
-      {isCanceled && (
-        <Banner variant="neutral" className="mt-2">
-          <p className="font-medium">Assinatura cancelada</p>
-          <p className="text-xs opacity-80 mt-0.5">
-            {accessUntil
-              ? <>Você mantém o acesso até {accessUntil}. Não haverá nova cobrança.</>
-              : <>O acesso foi encerrado. Contrate um plano para reativar.</>}
-          </p>
-        </Banner>
-      )}
-
-      {status && !statusError && !isSubscribed && !isCanceled && (
-        <div className="mt-0 mb-1 flex items-center justify-between gap-3 rounded-[10px] border border-brand-500 bg-accent-soft px-3.5 py-2.5">
-          <div className="flex items-start gap-2.5">
-            <Zap className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-surface-100">Ative sua assinatura</p>
-              <p className="text-xs text-surface-400 mt-0.5">
-                Você está no período de avaliação. Contrate o plano {billing.plan.displayName} para manter os agentes ativos
-                {billing.planResetsAt && <> após {formatDayMonth(billing.planResetsAt)}</>}.
-              </p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            variant="primary"
-            className="flex-shrink-0 h-8 px-3.5 text-xs"
-            onClick={() => setIntent({
-              kind: 'subscribe', tier: backendTier,
-              plan: plans.find((p) => p.tier === backendTier) ?? {
-                tier: backendTier, displayName: billing.plan.displayName,
-                priceMonthlyCents: billing.plan.priceMonthlyCents, currency: billing.plan.currency,
-                monthlyCredits: billing.plan.monthlyCredits, tokensPerCredit: billing.plan.tokensPerCredit,
-                features: billing.plan.features,
-              },
-            })}
-          >
-            Contratar {billing.plan.displayName}
-          </Button>
-        </div>
-      )}
-
-      {/* Current plan */}
-      <SettingsSection
-        labelWidth={220}
-        dense
-        title="Plano atual"
-        description="Sua assinatura, ciclo de cobrança e consumo de créditos de IA."
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-[6px] bg-accent-soft flex items-center justify-center flex-shrink-0">
-              <Zap className="w-4 h-4 text-accent-dark" fill="currentColor" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-surface-50" style={{ letterSpacing: '-.01em' }}>Oryon {billing.plan.displayName}</h2>
-                {!isSubscribed && !isCanceled && daysUntilReset != null && (
-                  <span
-                    className="color-chip-soft inline-flex items-center h-5 px-[7px] rounded-[6px] border text-2xs font-semibold"
-                    style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
-                  >
-                    Avaliação · {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'} restante{daysUntilReset === 1 ? '' : 's'}
-                  </span>
-                )}
+          {statusError && (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-surface-200">
+                <p className="font-medium">Status de cobrança indisponível</p>
+                <p className="text-surface-400 text-xs mt-0.5">
+                  Não foi possível confirmar a situação da sua assinatura agora. Tente
+                  novamente em instantes.
+                </p>
               </div>
-              <p className="text-xs text-surface-400 mt-0.5">
-                Cobrança mensal
-                {atendimentos != null && <> · ≈ {atendimentos.toLocaleString('pt-BR')} atendimentos/mês</>}
-                {billing.planResetsAt && <> · próximo ciclo {formatDayMonth(billing.planResetsAt)}</>}
-              </p>
             </div>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-2xl font-semibold text-surface-50 tabular-nums leading-[1.1]" style={{ letterSpacing: '-.02em' }}>
-              R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}<span className="text-xs text-surface-500 font-normal">/mês</span>
-            </p>
-          </div>
-        </div>
+          )}
 
-        {/* Credit usage */}
-        <div className="mt-3.5">
-          <CreditBar used={billing.creditsUsed} total={billing.creditsTotal} />
-        </div>
+          {(suspended || overdue.length > 0) && (
+            <div className={`rounded-2xl border p-4 flex items-start gap-3 ${suspended ? 'border-red-500/30 bg-red-500/5' : 'border-status-pending/40 bg-status-pending/5'}`}>
+              <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${suspended ? 'text-red-400' : 'text-status-pending'}`} />
+              <div className="text-sm text-surface-200">
+                <p className="font-medium">{suspended ? 'Conta suspensa por pendência financeira' : 'Pagamento em atraso'}</p>
+                <p className="text-surface-400 text-xs mt-0.5">
+                  {overdue.length} fatura(s) vencida(s){overdueCents > 0 ? ` — ${brl(overdueCents)} em aberto, sem encargos` : ''}. {suspended
+                    ? 'IA e Copilot estão pausados. A conta volta quando todas as faturas vencidas forem pagas.'
+                    : 'Regularize para evitar a suspensão; o acesso segue normal até lá.'}
+                </p>
+              </div>
+            </div>
+          )}
 
-        <div className="flex items-center justify-between gap-3 mt-[5px]">
-          <p className="text-xs text-surface-500">
-            1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
-          </p>
-          {daysUntilReset != null && (
-            <span className="text-xs text-surface-500 flex-shrink-0">
-              Renova em {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'}
-            </span>
+          {isCanceled && (
+            <div className="rounded-2xl border border-surface-700 bg-surface-800/40 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-surface-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-surface-200">
+                <p className="font-medium">Assinatura cancelada</p>
+                <p className="text-surface-400 text-xs mt-0.5">
+                  {accessUntil
+                    ? <>O contrato não será renovado. Acesso e franquia até {fmtDate(accessUntil, true)}.</>
+                    : <>O acesso foi encerrado. Fale com a equipe Oryon para reativar.</>}
+                </p>
+              </div>
+            </div>
           )}
         </div>
-      </SettingsSection>
-
-      {/* Limits */}
-      <SettingsSection
-        labelWidth={220}
-        dense
-        title="Limites do plano"
-        description="Recursos incluídos na sua assinatura atual."
-      >
-        <LimitRow icon={<TrendingUp className="w-3.5 h-3.5" />}  label="Créditos de IA / mês"    limit={billing.creditsTotal} used={billing.creditsUsed} />
-        <LimitRow icon={<Users className="w-3.5 h-3.5" />}       label="Usuários"                 limit={plan.limits.users} />
-        <LimitRow icon={<Smartphone className="w-3.5 h-3.5" />}  label="Números WhatsApp"         limit={plan.limits.waNumbers} />
-        <LimitRow icon={<Bot className="w-3.5 h-3.5" />}         label="Agentes de IA"            limit={plan.limits.agents} />
-        <LimitRow icon={<RefreshCw className="w-3.5 h-3.5" />}   label="Automações ativas"        limit={plan.limits.automations} />
-        <LimitRow icon={<Zap className="w-3.5 h-3.5" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
-
-        {canCancel && (
-          <div className="border-t border-surface-700 pt-3 mt-2 text-right">
-            <button
-              onClick={() => setCancelOpen(true)}
-              className="text-xs text-surface-500 hover:text-red-400 transition-colors"
-            >
-              Cancelar assinatura
-            </button>
-          </div>
-        )}
-      </SettingsSection>
-
-      {/* Upgrade CTA */}
-      {nextPlan && (
-        <SettingsSection
-          labelWidth={220}
-        dense
-        title="Upgrade"
-          description="O próximo plano libera mais usuários, números e agentes."
-        >
-          <UpgradeTable
-            currentTier={backendTier}
-            billingDisplayName={billing.plan.displayName}
-            billingPriceMonthly={priceMonthly}
-            plans={plans}
-            isSubscribed={isSubscribed}
-            onUpgrade={setIntent}
-            disabled={statusError}
-          />
-        </SettingsSection>
       )}
 
-      {/* Pacotes de crédito */}
-      <SettingsSection
-        labelWidth={220}
-        dense
-        title="Comprar créditos avulsos"
-        description="Pacotes não renovam — somam ao saldo atual. Ideal para picos de atendimento."
-      >
-        {packs.length === 0 ? (
-          <p className="text-sm text-surface-500 py-2">Pacotes indisponíveis no momento.</p>
-        ) : (
-          <div className="grid grid-cols-3 gap-2">
-            {packs.map((pack) => (
-              <button
-                key={pack.credits}
-                onClick={() => openCredits(pack)}
-                disabled={statusError}
-                className="rounded-[6px] border border-surface-700 hover:border-brand-500 hover:bg-[var(--rowhover)] transition-colors p-3 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-surface-700 disabled:hover:bg-transparent"
-              >
-                <p className="text-sm font-semibold text-surface-100">{pack.credits.toLocaleString('pt-BR')}</p>
-                <p className="text-2xs text-surface-500">créditos</p>
-                <p className="text-xs text-brand-400 font-semibold mt-1">
-                  R$ {(pack.valueCents / 100).toLocaleString('pt-BR')}
-                </p>
-              </button>
+      {/* Plano atual — preço CONTRATADO */}
+      <SettingsSection title="Plano atual" description="O que está no seu contrato com a Oryon.">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-brand-600 flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5 text-surface-950" fill="currentColor" />
+              </div>
+              <h2 className="text-xl font-bold text-surface-50">Oryon {planName}</h2>
+            </div>
+            <p className="text-sm text-surface-400 mt-1">
+              {c ? <>{TERM_LABEL[c.term] ?? c.term} · {PAYMENT_METHOD_LABEL[c.paymentMethod] ?? c.paymentMethod}</> : 'Cobrança mensal'}
+              {c?.monthlyCredits != null && <> · {c.monthlyCredits.toLocaleString('pt-BR')} créditos/mês</>}
+            </p>
+            {contract?.nextInvoice && (
+              <p className="text-xs text-surface-500 mt-1">
+                Próximo vencimento: {fmtDate(contract.nextInvoice.dueAt, true)} — {brl(contract.nextInvoice.amountCents)}
+              </p>
+            )}
+            {c?.endsAt && <p className="text-xs text-surface-500 mt-0.5">Vigência até {fmtDate(c.endsAt, true)}{c.autoRenew ? ' (renovação automática)' : ' (sem renovação)'}</p>}
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-surface-50">{brl(monthlyCents)}</p>
+            <p className="text-xs text-surface-500">/mês contratado</p>
+          </div>
+        </div>
+      </SettingsSection>
+
+      {/* Consumo do ciclo — atualiza sem recarregar (socket) */}
+      <SettingsSection title="Consumo do mês" description="Franquia do contrato e excedente do ciclo atual.">
+        <CreditBar used={used} total={total} />
+        {overageCredits > 0 && c && (
+          <p className="text-xs text-surface-400 mt-3">
+            Excedente acumulado: <span className="text-surface-200 font-medium">{overageCredits.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} créditos</span>
+            {' '}× {brl(c.overage.priceCents)} — {c.overage.onNextInvoice ? 'entra na sua próxima fatura' : 'cobrado em fatura à parte no fechamento do ciclo'}.
+          </p>
+        )}
+        <p className="text-xs text-surface-500 mt-3">
+          {cycle?.resetsAt ? <>A franquia renova em {fmtDate(cycle.resetsAt, true)}. </> : null}
+          Créditos não usados não acumulam para o mês seguinte, salvo previsão no contrato (Termos 7.3.5).
+        </p>
+      </SettingsSection>
+
+      {/* Limites e módulos — do contrato */}
+      <SettingsSection title="Limites do plano" description="Quantidades contratadas e o que você usa hoje.">
+        {LIMITS.map((l) => (
+          <LimitRow key={l.key} icon={l.icon} label={l.label} limit={c?.entitlements?.[l.key]} usage={contract?.usage?.[l.key]} />
+        ))}
+        {c && Object.keys(c.modules ?? {}).length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {Object.entries(c.modules).map(([k, on]) => (
+              <span key={k} className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg ${on ? 'bg-status-active/10 text-status-active' : 'bg-surface-800 text-surface-500'}`}>
+                {on ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                {MODULE_LABEL[k] ?? k}
+              </span>
             ))}
           </div>
         )}
+        {/* A5/A18 — cancelamento só pela equipe Oryon (sem botão na plataforma). */}
+        {contract?.contract?.cancellation ? (
+          <div className="border-t border-surface-800/50 pt-3 mt-3 text-xs text-surface-400">
+            {contract.contract.cancellation.afterRenewal
+              ? <>Cancelamento registrado fora do prazo de 30 dias (Termos 18.1.2): o contrato renova em {fmtDate(contract.contract.endsAt, true)} e se encerra em {fmtDate(contract.contract.cancellation.effectiveAt, true)}.</>
+              : <>Cancelamento registrado: acesso e franquia até {fmtDate(contract.contract.cancellation.effectiveAt, true)}, sem renovação.</>}
+          </div>
+        ) : isSubscribed && (
+          <div className="border-t border-surface-800/50 pt-3 mt-3 text-xs text-surface-500 text-right">
+            Para cancelar ou não renovar, fale com a equipe Oryon em{' '}
+            <a className="text-brand-400 hover:underline" href={`mailto:${ORYON_CONTACT}?subject=${encodeURIComponent('Cancelamento do contrato')}`}>{ORYON_CONTACT}</a>
+            {contract?.contract?.term && contract.contract.term !== 'monthly' && <> — até 30 dias antes do fim da vigência (Termos 18.1.2)</>}.
+          </div>
+        )}
+      </SettingsSection>
+
+      {/* Faturas */}
+      <SettingsSection title="Faturas" description="Mensalidades, parcelas, implantação e excedente. Clique para ver a composição, o PDF e a segunda via.">
+        {invoicesError ? (
+          <ErrorState compact title="Não foi possível carregar as faturas" onRetry={loadContract} />
+        ) : invoices.length === 0 ? (
+          <p className="text-sm text-surface-500 py-2">Nenhuma fatura emitida ainda.</p>
+        ) : (
+          <ul className="divide-y divide-surface-800">
+            {invoices.map((inv) => {
+              const late = inv.overdue
+              const creditNote = isCreditNote(inv.kind)
+              const ref = creditNote && inv.referenceInvoiceId ? invoices.find((x) => x.id === inv.referenceInvoiceId) : null
+              return (
+                <li key={inv.id}>
+                  <button onClick={() => openInvoice(inv.id)} className="w-full py-2.5 flex items-center justify-between gap-3 text-sm text-left hover:bg-surface-800/40 rounded-lg px-1">
+                    <div className="min-w-0 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-surface-500 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-surface-100 font-medium truncate">
+                          {inv.number ?? inv.id.slice(0, 8)} · {INVOICE_KIND[inv.kind] ?? inv.kind}
+                        </p>
+                        <p className="text-xs text-surface-500 truncate">
+                          {creditNote
+                            ? <>Estorno{inv.referenceInvoiceId ? ` da fatura ${ref?.number ?? inv.referenceInvoiceId.slice(0, 8)}` : ''} · {fmtDate(inv.createdAt)}</>
+                            : <>
+                                {inv.competenceMonth ? `Competência ${inv.competenceMonth.slice(5, 7)}/${inv.competenceMonth.slice(0, 4)} · ` : ''}
+                                vence {fmtDate(inv.dueAt)}
+                              </>}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`font-semibold ${creditNote ? 'text-status-active' : 'text-surface-100'}`}>
+                        {signedAmount(inv.kind, Number(inv.amount)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
+                      <p className={`text-[11px] uppercase tracking-wide ${late ? 'text-danger' : inv.status === 'paid' && !creditNote ? 'text-status-active' : 'text-surface-500'}`}>
+                        {invoiceStatusText(inv, INVOICE_STATUS, late)}
+                      </p>
+                    </div>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </SettingsSection>
+
+      {/* Mudanças no contrato passam pela equipe (Termos 4.1 c) */}
+      <SettingsSection
+        title="Mudar de plano ou comprar créditos"
+        description="Upgrade, pacotes de créditos e mudanças no contrato são feitos pela equipe Oryon, com uma nova Proposta."
+      >
+        <div className="flex items-start gap-3 text-sm text-surface-300">
+          <MessageCircle className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
+          <p>
+            Fale com o seu gerente de conta ou com o suporte Oryon. As condições novas
+            valem a partir da assinatura da Proposta.
+          </p>
+        </div>
       </SettingsSection>
 
       {/* Extrato de créditos */}
-      <SettingsSection
-        labelWidth={220}
-        dense
-        title="Extrato de créditos"
-        description="Consumo e recargas de crédito, mais recentes primeiro."
-      >
+      <SettingsSection title="Extrato de créditos" description="Consumo e recargas de crédito, mais recentes primeiro.">
         <div className="flex items-center gap-2 mb-2 text-surface-400">
           <Receipt className="w-3.5 h-3.5" />
         </div>
@@ -609,48 +436,8 @@ export function BillingSettings() {
         )}
       </SettingsSection>
 
-      {/* Faturas (F3) — fonte: GET /settings/billing/invoices. Mesma gramática
-          do extrato de créditos logo acima (linha com borda, valor à direita). */}
-      <SettingsSection
-        labelWidth={220}
-        dense
-        title="Faturas"
-        description="Assinatura, implantação, excedente e pacotes de créditos."
-      >
-        {invoices.length > 0 ? (
-          invoices.map((inv) => <InvoiceRow key={inv.id} inv={inv} />)
-        ) : (
-          <p className="text-sm text-surface-500 py-2">Nenhuma fatura emitida ainda.</p>
-        )}
-      </SettingsSection>
+      <InvoiceDetailModal invoiceId={openInvoiceId} onClose={() => openInvoice(null)} onChanged={loadContract} onOpenInvoice={openInvoice} />
 
-      {/* Checkout (Pix / cartão) */}
-      {intent && (
-        <CheckoutModal
-          open
-          intent={intent}
-          onClose={() => setIntent(null)}
-          onDone={onCheckoutDone}
-        />
-      )}
-
-      {/* Cancelamento (fim do ciclo) */}
-      <ConfirmModal
-        open={cancelOpen}
-        onClose={() => setCancelOpen(false)}
-        onConfirm={confirmCancel}
-        title="Cancelar assinatura"
-        impact={{
-          label: accessUntil ? `Acesso mantido até ${accessUntil}` : 'Acesso encerrado imediatamente',
-          tone: accessUntil ? 'warning' : 'danger',
-        }}
-        description={accessUntil
-          ? 'Sua assinatura será cancelada. Não haverá nova cobrança e os créditos não são reembolsados.'
-          : 'Sua assinatura será cancelada. Não haverá nova cobrança.'}
-        confirmLabel="Cancelar assinatura"
-        danger
-        loading={canceling}
-      />
     </div>
   )
 }

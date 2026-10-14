@@ -10,6 +10,7 @@ import { SKIP_AUTH_REFRESH, renovarSessao } from '@/services/api'
 import { resetBillingState } from '@/hooks/useBilling'
 import { resetLinhasComIA } from '@/hooks/useLinhasComIA'
 import { limparSessao } from '@/lib/limpezaDaSessao'
+import { resetAccountState } from '@/hooks/useAccountState'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -219,6 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resetBillingState()
     resetLinhasComIA()
     limparSessao()
+    resetAccountState()
     try {
       const body = isNativePlatform() ? { refreshToken: refreshToken ?? undefined } : {}
       await axios.post(`${API}/auth/logout`, body, {

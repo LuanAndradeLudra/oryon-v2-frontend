@@ -25,6 +25,9 @@ import { cn, getInitials } from '@/lib/utils'
 import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
 import { isRouteVisible } from '@/config/featureFlags'
 import { papelAlcancaSecao } from '@/components/settings/SettingsLayout'
+import { useModuleAccess } from '@/hooks/useAccountState'
+import { moduleForPath } from '@/lib/billingModules'
+import { notificationLinkAllowed } from '@/lib/billingLinks'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useTheme, type Theme } from '@/hooks/useTheme'
 import { Avatar } from '@/components/ui/Avatar'
@@ -794,7 +797,8 @@ function isValidLink(link: string | null | undefined): boolean {
   const trimmed = link.trim()
   if (!trimmed.startsWith('/')) return false
   if (trimmed.includes('/undefined') || trimmed.includes('/null')) return false
-  return true
+  // CL5 — aviso de cobrança com a tela de cobrança desligada cairia em "Minha conta".
+  return notificationLinkAllowed(trimmed)
 }
 
 type NotifFilter = 'all' | 'unread'
@@ -1287,14 +1291,21 @@ export function TopBar() {
   const multiPipeline = useMultiPipeline()
   const cobrancaOculta = useCobrancaOculta()
 
+  // SCRUM-1210: módulo não contratado também some da busca/paleta.
+  const moduleAllowed = useModuleAccess()
   const visibleSearchIndex = useMemo(
-    () => SEARCH_INDEX.filter((item) => isRouteVisible(item.href, userEmail)
-      && rotaPermitida(item.href, { role: user?.role, multiPipeline })
-      // Revisão 02/10: a busca não oferece seção de Configurações que o papel não abre.
-      && (item.type !== 'settings' || !user?.role || papelAlcancaSecao(item.href.replace('/settings/', ''), user.role))
-      // FF_OCULTAR_COBRANCA (PO 12/10): sem atalho para "Plano e cobrança".
-      && !(cobrancaOculta && item.href === '/settings/billing')),
-    [userEmail, user?.role, multiPipeline, cobrancaOculta],
+    () => SEARCH_INDEX.filter((item) => {
+      // SCRUM-1210 — módulo não contratado não aparece na busca.
+      const moduleKey = moduleForPath(item.href)
+      if (moduleKey && !moduleAllowed(moduleKey)) return false
+      return isRouteVisible(item.href, userEmail)
+        && rotaPermitida(item.href, { role: user?.role, multiPipeline })
+        // Revisão 02/10: a busca não oferece seção de Configurações que o papel não abre.
+        && (item.type !== 'settings' || !user?.role || papelAlcancaSecao(item.href.replace('/settings/', ''), user.role))
+        // FF_OCULTAR_COBRANCA (PO 12/10): sem atalho para "Plano e cobrança".
+        && !(cobrancaOculta && item.href === '/settings/billing')
+    }),
+    [userEmail, user?.role, multiPipeline, cobrancaOculta, moduleAllowed],
   )
   const { open: openCopilot } = useCopilotContext()
   const { pageActions, pageSubtitle: dynamicSubtitle } = useTopBarActions()
@@ -1503,7 +1514,7 @@ export function TopBar() {
         {/* Copilot drawer shortcut — mirrors the admin + route gate used by
              the CopilotPanel itself, so the button only shows where the drawer
              can actually render. */}
-        {isFeatureVisibleForUser('copilot') && isAdminTier(user?.role) && !location.pathname.startsWith('/copilot') && (
+        {isFeatureVisibleForUser('copilot') && isAdminTier(user?.role) && moduleAllowed('copilot') && !location.pathname.startsWith('/copilot') && (
           <motion.button
             {...topBarHoverProps}
             onClick={() => openCopilot()}

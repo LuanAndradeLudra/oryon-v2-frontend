@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { isFeatureVisible } from '@/config/featureFlags'
-import { useEffect, Component, Suspense } from 'react'
+import { useEffect, useState, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
 import * as Sentry from '@sentry/react'
@@ -76,6 +76,7 @@ const DemonstracaoPage  = lazyRoute(() => import('@/pages/landing/PaginasPublica
 const ForgotPasswordPage = lazyRoute(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
+const FirstAccessPage     = lazyRoute(() => import('@/pages/FirstAccessPage').then(m => ({ default: m.FirstAccessPage })))
 const RegisterPage       = lazyRoute(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
 const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
 const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
@@ -104,9 +105,19 @@ const AuditPage                = lazyRoute(() => import('@/pages/admin/AuditPage
 const AiObservabilityPage      = lazyRoute(() => import('@/pages/admin/AiObservabilityPage').then(m => ({ default: m.AiObservabilityPage })))
 const AiExecutionsPage         = lazyRoute(() => import('@/pages/admin/AiExecutionsPage').then(m => ({ default: m.AiExecutionsPage })))
 const AdminAgentEditorPage     = lazyRoute(() => import('@/pages/admin/AdminAgentEditorPage').then(m => ({ default: m.AdminAgentEditorPage })))
+const AdminBillingPage         = lazyRoute(() => import('@/pages/admin/AdminBillingPage').then(m => ({ default: m.AdminBillingPage })))
 
 import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
 import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
+import { TermsAcceptanceModal } from '@/components/terms/TermsAcceptanceModal'
+import { firstAccessRequired } from '@/lib/firstAccessGate'
+import { isOwnerTier } from '@/lib/roleHelpers'
+import { useAccountState, moduleEnabled } from '@/hooks/useAccountState'
+import { useAppSocketBridge } from '@/hooks/useAppSocketBridge'
+import { SuspendedScreen } from '@/components/billing/SuspendedScreen'
+import { ModuleNotContracted } from '@/components/billing/ModuleNotContracted'
+import { isPathUnder, moduleForPath } from '@/lib/billingModules'
+import { ErrorState } from '@/components/ui/ErrorState'
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
@@ -123,8 +134,97 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+/**
+ * SCRUM-1212 — "cliente não entra na plataforma sem concluir as etapas".
+ * Enquanto o contrato do tenant está pendente, o DONO vai para
+ * /first-access (termos + dados da empresa). Staff Oryon e demais papéis
+ * passam direto. Falha ao consultar NÃO libera: tela de erro com
+ * "Tentar de novo" (a falha não fica em cache).
+ */
+function FirstAccessGate({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const [state, setState] = useState<'checking' | 'required' | 'ok' | 'error'>('checking')
+  const [attempt, setAttempt] = useState(0)
+  const mustCheck = !!user && isOwnerTier(user.role) && !isOryonStaff(user.role)
+
+  useEffect(() => {
+    if (!mustCheck || !user) { setState('ok'); return }
+    let alive = true
+    firstAccessRequired(user.id)
+      .then((req) => { if (alive) setState(req ? 'required' : 'ok') })
+      .catch(() => { if (alive) setState('error') })
+    return () => { alive = false }
+  }, [mustCheck, user, attempt])
+
+  if (state === 'checking') return null
+  if (state === 'error') {
+    return (
+      <div className="flex items-center justify-center h-screen w-screen bg-surface-950 px-4">
+        <ErrorState
+          className="max-w-md w-full"
+          title="Não foi possível verificar o seu acesso"
+          hint="Confira a sua conexão. Assim que a verificação responder, você segue para a plataforma."
+          retryLabel="Tentar de novo"
+          onRetry={() => { setState('checking'); setAttempt((n) => n + 1) }}
+        />
+      </div>
+    )
+  }
+  if (state === 'required') return <Navigate to="/first-access" replace />
+  return <>{children}</>
+}
+
+/**
+ * SCRUM-1210 — conta suspensa por inadimplência: login liberado, mas as telas
+ * mostram a dívida (dono) ou o aviso para procurar o administrador (demais).
+ * Cobrança e dados da empresa continuam acessíveis para o dono regularizar.
+ * Staff Oryon não é afetado. Falha ao consultar não bloqueia.
+ */
+const SUSPENDED_ALLOWED = ['/settings/billing', '/settings/company', '/settings/account']
+function SuspendedGate({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  const { state } = useAccountState()
+  if (!state?.suspended || isOryonStaff(user?.role)) return <>{children}</>
+  // Segmento exato: `startsWith` liberava /settings/company-brain.
+  if (SUSPENDED_ALLOWED.some((p) => isPathUnder(location.pathname, p))) return <>{children}</>
+  return <SuspendedScreen isOwner={state.isOwner} />
+}
+
+/**
+ * SCRUM-1210 — módulo não contratado: some do menu, do "Mais" e da busca, e a
+ * URL direta cai no aviso (só `false` explícito no contrato; contratos antigos
+ * sem a lista veem tudo). Staff Oryon não é afetado.
+ */
+function ModuleGate({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  const { state } = useAccountState()
+  const key = moduleForPath(location.pathname)
+  if (!key || isOryonStaff(user?.role) || moduleEnabled(state, key)) return <>{children}</>
+  return <ModuleNotContracted module={key} isOwner={!!state?.isOwner} />
+}
+
+/** Sinais do socket que valem no app inteiro (cobrança, estado da conta, token) — SCRUM-1210. */
+function AppSocketBridge() {
+  const { isAuthenticated, user } = useAuth()
+  useAppSocketBridge(isAuthenticated, user?.id)
+  return null
+}
+
+/** Pedido de re-aceite de termos (SCRUM-777) — montado uma vez, fora das telas de entrada. */
+function GlobalTermsPrompt() {
+  const { isAuthenticated, user } = useAuth()
+  const location = useLocation()
+  const excluded = ['/login', '/activate', '/first-access', '/register', '/forgot-password', '/reset-password', '/set-password']
+  // Staff Oryon não é parte do contrato do cliente — não aceita termos por ele.
+  if (!isAuthenticated || isOryonStaff(user?.role) || excluded.some((p) => location.pathname.startsWith(p))) return null
+  return <TermsAcceptanceModal />
+}
+
 function OnboardingGate({ children }: { children: ReactNode }) {
   const { organizationConfigured, user } = useAuth()
+  const { state: account, loaded: accountLoaded } = useAccountState()
   // Oryon staff (super_admin) must always reach the app shell — they may
   // be inspecting a half-configured tenant precisely to debug what the
   // wizard left undone. Without this bypass, super_admin gets trapped in
@@ -141,8 +241,21 @@ function OnboardingGate({ children }: { children: ReactNode }) {
   // F13-899: o wizard virou rota (`/setup`) — retomável e linkável. O gate só
   // redireciona; o bloqueio de mobile e o provider de linha WhatsApp moram na
   // página. `/setup` fica FORA deste gate, senão o redirect entraria em loop.
+  // Conta suspensa passa direto: o SuspendedGate decide (cobrança e 2ª via
+  // precisam abrir mesmo sem o /setup concluído — as faturas correm desde a
+  // data da Proposta, com ou sem primeiro acesso).
+  // Na carga a frio o estado da conta ainda não chegou: esperar (loader) em
+  // vez de mandar para /setup uma conta que pode estar suspensa. O fetch já
+  // começou no efeito do useAccountState; falha conta como carregado.
   if (!organizationConfigured) {
-    return <Navigate to="/setup" replace />
+    if (!accountLoaded) {
+      return (
+        <div className="flex items-center justify-center h-screen w-screen bg-surface-950">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )
+    }
+    if (!account?.suspended) return <Navigate to="/setup" replace />
   }
   return <>{children}</>
 }
@@ -157,11 +270,17 @@ function SoAdminNoSetup({ children }: { children: ReactNode }) {
 function ProtectedRoute({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
-      <OnboardingGate>
-        <AppShell>
-          <PageTransition>{children}</PageTransition>
-        </AppShell>
-      </OnboardingGate>
+      <FirstAccessGate>
+        <OnboardingGate>
+          <AppShell>
+            <PageTransition>
+              <SuspendedGate>
+                <ModuleGate>{children}</ModuleGate>
+              </SuspendedGate>
+            </PageTransition>
+          </AppShell>
+        </OnboardingGate>
+      </FirstAccessGate>
     </RequireAuth>
   )
 }
@@ -180,6 +299,8 @@ function RequireGuest({ children }: { children: ReactNode }) {
 const SHELL_LESS_SECTIONS = new Set([
   '/', '/login', '/register', '/forgot-password', '/reset-password', '/activate',
   '/set-password', '/setup', '/canva',
+  // SCRUM-1212: primeiro acesso do dono (termos + dados da empresa), sem o app.
+  '/first-access',
   // Páginas públicas da landing (30/09: home de venda + páginas de produto).
   '/plataforma', '/solucoes', '/perguntas', '/demonstracao',
 ])
@@ -217,15 +338,23 @@ function AnimatedRoutes() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/activate" element={<ActivateAccountPage />} />
 
+          {/* Primeiro acesso do cliente (SCRUM-1212): termos + dados da
+              empresa → ativa o contrato. Tela cheia, fora do AppShell. */}
+          <Route path="/first-access" element={
+            <RequireAuth><FirstAccessPage /></RequireAuth>
+          } />
+
           {/* Password setup gate */}
           <Route path="/set-password" element={
             <RequireAuth><SetPasswordPage /></RequireAuth>
           } />
 
           {/* Primeiro uso — protegido por login, mas FORA do OnboardingGate
-              (é o destino dele) e fora do AppShell (é tela cheia). */}
+              (é o destino dele) e fora do AppShell (é tela cheia). Fica
+              DENTRO do FirstAccessGate: sem termos e dados fiscais o dono não
+              chega ao wizard (sem loop: /first-access está fora do portão). */}
           <Route path="/setup" element={
-            <RequireAuth><SoAdminNoSetup><SetupPage /></SoAdminNoSetup></RequireAuth>
+            <RequireAuth><FirstAccessGate><SoAdminNoSetup><SetupPage /></SoAdminNoSetup></FirstAccessGate></RequireAuth>
           } />
 
           {/* Protected */}
@@ -325,10 +454,17 @@ function AnimatedRoutes() {
           <Route path="/admin/ai-executions" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="AI Executions"><AiExecutionsPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
+          <Route path="/admin/billing" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Console de cobrança"><AdminBillingPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
           <Route path="/admin/agents" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de agentes"><AdminAgentEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
 
+          {/* /pricing fora do ar (SCRUM-1204, Termos 4.1 c): o que a página
+              comercial exibe vale como Proposta, e a contratação passa pela
+              equipe. Links antigos caem na página inicial. */}
+          <Route path="/pricing" element={<Navigate to="/" replace />} />
 
           {/* Canva OAuth callback — public, opened as popup */}
           <Route path="/canva/callback" element={<CanvaCallbackPage />} />
@@ -383,6 +519,8 @@ export default function App() {
                     <CopilotPanel />
                   </Suspense>
                   <GlobalToastContainer />
+                  <GlobalTermsPrompt />
+                  <AppSocketBridge />
                 </div>
               </DealPanelProvider>
               </MediaViewerProvider>

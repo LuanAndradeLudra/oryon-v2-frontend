@@ -10,6 +10,7 @@ import { Banner } from '@/components/ui/Banner'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { planLimitMessage } from '@/lib/planLimit'
 import { flowSummary, triggerChipLabel, actionLabel } from './automationText'
 import {
   Step1, Step2, Step3, AgentBehaviorSelector, EMPTY_DRAFT, type WizardDraft,
@@ -175,8 +176,9 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
       dirtyRef.current = false
       onSaved(res.data)
       onClose()
-    } catch {
-      setError('Erro ao salvar. Tente novamente.')
+    } catch (err) {
+      // SCRUM-1207: 403 de limite do plano / conta suspensa traz a mensagem pronta.
+      setError(planLimitMessage(err) ?? 'Erro ao salvar. Tente novamente.')
     } finally {
       setSaving(false)
     }

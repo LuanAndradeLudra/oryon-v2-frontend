@@ -5,6 +5,7 @@ import {
   useCallback,
   type SetStateAction,
 } from 'react'
+import { CopilotBlockNotice } from './CopilotBlockNotice'
 
 import { useCopilot } from '@/hooks/useCopilot'
 import { generateSessionTitle } from '@/services/copilotService'
@@ -76,7 +77,7 @@ export function SessionChat({
     onMessagesChange(sessionId, prox)
   }, [onMessagesChange, sessionId])
 
-  const { status, error, sendMessage, rerunFromMessage, abort, resolveBatch } = useCopilot(messages, setMessages, tools as Array<{ name: string; description?: string; input_schema: Record<string, unknown> }>, sessionId)
+  const { status, error, blocked, sendMessage, rerunFromMessage, abort, resolveBatch } = useCopilot(messages, setMessages, tools as Array<{ name: string; description?: string; input_schema: Record<string, unknown> }>, sessionId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isNearBottomRef = useRef(true)
   const titleGeneratedRef = useRef(false)
@@ -267,6 +268,12 @@ const ctx: ContextoDaBancada = { messages, resolveBatch, enviar: (t) => { void s
             <div ref={messagesEndRef} />
           </div>
         </div>
+        {/* Bloqueio de cobrança (SCRUM-1210) — antes do erro: é condição da conta, não falha do turno */}
+        {blocked && (
+          <div className="px-4 pb-2">
+            <CopilotBlockNotice notice={blocked} />
+          </div>
+        )}
         {error && (
           <div className="px-4 pb-2">
             <Banner variant="danger">{error}</Banner>

@@ -13,6 +13,7 @@ import { emptyStateFor, normalizeNotificationLink } from '@/lib/notificationsUx'
 import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { CATEGORY_CHIPS } from '@/components/notifications/notificationsMeta'
 import { cn } from '@/lib/utils'
+import { notificationLinkAllowed } from '@/lib/billingLinks'
 
 // SCRUM-1097 (23/09) — paridade com o popover do sino (TopBar.tsx): mesmo
 // NotificationItem, mesmo hook completo e, desde a direção A do painel, as
@@ -105,7 +106,8 @@ export function NotificationsPage() {
         // silencioso — UI ja foi marcada como lida e proximo reload corrige
       }
     }
-    if (isValidLink(n.link)) navigate(normalizeNotificationLink(n.link!))
+    // CL5 (SCRUM-1200) — sem a tela de cobrança, o link de cobrança cairia em "Minha conta".
+    if (isValidLink(n.link) && notificationLinkAllowed(n.link!)) navigate(normalizeNotificationLink(n.link!))
     // Notificações agrupadas sem link próprio (metadata rico, ex. vários
     // contatos) abrem um modal de detalhe no popover — essa peça é local ao
     // TopBar.tsx, não foi extraída. Aqui elas só marcam como lida por ora.
