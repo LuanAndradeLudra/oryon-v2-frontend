@@ -8,12 +8,15 @@ import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { Input } from '@/components/ui/Input'
 import { OryonLogo } from '@/components/brand/OryonLogo'
+import { useSomenteEscuro } from '@/hooks/useSomenteEscuro'
 
 export function ActivateAccountPage() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') || ''
   const navigate = useNavigate()
   const { activateAccount } = useAuth()
+  // Porta de entrada: só escuro, como o login e o primeiro acesso (13/10, PO).
+  useSomenteEscuro()
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')

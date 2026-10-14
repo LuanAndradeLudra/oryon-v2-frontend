@@ -16,6 +16,7 @@ vi.mock('@/services/firstAccessApi', async (importOriginal) => ({
   },
 }))
 vi.mock('@/lib/firstAccessGate', () => ({ invalidateFirstAccessStatus: vi.fn() }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { firstName: 'Ana', email: 'ana@acme.com' } }) }))
 vi.mock('@/services/termsApi', () => ({ termsApi: { accept: vi.fn() }, DOCUMENT_LABEL: {} }))
 
 import { firstAccessApi } from '@/services/firstAccessApi'
@@ -70,13 +71,14 @@ describe('FirstAccessPage — CL3', () => {
     renderPage()
 
     const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
-    expect(screen.queryByRole('button', { name: 'Está correto' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Está correto/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Corrigir' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /salvar e continuar/i })).not.toBeInTheDocument()
 
     fireEvent.click(retry)
-    await screen.findByRole('button', { name: 'Está correto' })
-    expect(screen.getByText('ACME LTDA')).toBeInTheDocument()
+    await screen.findByRole('button', { name: /Está correto/ })
+    // No resumo e no bloco "Conta" da lateral.
+    expect(screen.getAllByText('ACME LTDA')).toHaveLength(2)
     expect(fa.getFiscal).toHaveBeenCalledTimes(2)
     expect(fa.confirmFiscal).not.toHaveBeenCalled()
   })
@@ -90,5 +92,56 @@ describe('FirstAccessPage — CL3', () => {
     await waitFor(() => expect(screen.getByDisplayValue('ACME LTDA')).toBeInTheDocument())
     expect(screen.getByDisplayValue('123')).toBeInTheDocument() // inscrição estadual (opcional)
     expect(screen.getByDisplayValue('Ana')).toBeInTheDocument()
+  })
+})
+
+describe('FirstAccessPage — termos', () => {
+  it('"Aceitar e continuar" só libera com o checkbox do rodapé e registra cada versão', async () => {
+    const { termsApi } = await import('@/services/termsApi')
+    const accept = termsApi.accept as unknown as ReturnType<typeof vi.fn>
+    accept.mockReset().mockResolvedValue(undefined)
+    fa.status.mockResolvedValue({
+      required: true, isOwner: true,
+      steps: {
+        terms: { done: false, unpublished: [], pending: [{ id: 't1', document: 'terms_of_use', version: 'V3', contentUrl: null, content: 'TERMOS' }] },
+        company: { done: false, complete: true, confirmedAt: null },
+      },
+    })
+    fa.getFiscal.mockResolvedValue(FISCAL)
+    renderPage()
+
+    // Documento único e curto (no jsdom não há rolagem): já conta como lido.
+    const botao = await screen.findByRole('button', { name: /aceitar e continuar/i })
+    expect(botao).toBeDisabled()
+    fireEvent.click(screen.getByRole('checkbox', { name: /li e aceito/i }))
+    expect(botao).not.toBeDisabled()
+    fireEvent.click(botao)
+    await waitFor(() => expect(accept).toHaveBeenCalledWith('t1', { readToEnd: true }))
+    expect(await screen.findByRole('button', { name: /Está correto/ })).toBeInTheDocument()
+  })
+})
+
+describe('FirstAccessPage — leitura exigida (PO 13/10)', () => {
+  it('o checkbox só libera depois de ler os dois documentos; a dica leva ao que falta', async () => {
+    fa.status.mockResolvedValue({
+      required: true, isOwner: true,
+      steps: {
+        terms: { done: false, unpublished: [], pending: [
+          { id: 't1', document: 'terms_of_use', version: 'V3', contentUrl: null, content: 'TERMOS' },
+          { id: 'p1', document: 'privacy_policy', version: 'V1', contentUrl: null, content: 'POLÍTICA' },
+        ] },
+        company: { done: false, complete: true, confirmedAt: null },
+      },
+    })
+    fa.getFiscal.mockResolvedValue(FISCAL)
+    renderPage()
+
+    const checkbox = await screen.findByRole('checkbox', { name: /li e aceito/i })
+    expect(checkbox).toBeDisabled()
+    expect(screen.getByText(/Falta ler/)).toBeInTheDocument()
+
+    // A dica abre o documento que falta; aberto e visível até o fim, conta como lido.
+    fireEvent.click(screen.getByRole('button', { name: 'privacy_policy' }))
+    await waitFor(() => expect(checkbox).not.toBeDisabled())
   })
 })

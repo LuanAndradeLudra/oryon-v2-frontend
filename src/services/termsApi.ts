@@ -12,6 +12,8 @@ export interface TermsVersionInfo {
   version: string
   contentUrl: string | null
   effectiveAt: string
+  /** Texto publicado da versão; nulo quando o documento é só por URL. */
+  content?: string | null
 }
 
 /** Rótulo humano do documento. */
@@ -31,7 +33,8 @@ export const termsApi = {
     return res.data?.upcoming ?? []
   },
 
-  async accept(termsVersionId: string): Promise<void> {
-    await api.post('/terms/accept', { termsVersionId })
+  /** `readToEnd`: a tela mediu a rolagem do texto até o fim (SCRUM-1200). */
+  async accept(termsVersionId: string, opts?: { readToEnd?: boolean }): Promise<void> {
+    await api.post('/terms/accept', { termsVersionId, ...(opts?.readToEnd !== undefined && { readToEnd: opts.readToEnd }) })
   },
 }

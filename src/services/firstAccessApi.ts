@@ -8,7 +8,7 @@ export interface FirstAccessStatus {
   steps: {
     terms: {
       done: boolean
-      pending: Array<{ id: string; document: string; version: string; contentUrl: string | null }>
+      pending: Array<{ id: string; document: string; version: string; contentUrl: string | null; content?: string | null; effectiveAt?: string | null }>
       /** Documento obrigatório sem versão publicada: o primeiro acesso não conclui. */
       unpublished?: string[]
     }

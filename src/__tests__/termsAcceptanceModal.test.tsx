@@ -68,18 +68,49 @@ describe('quando há pendência', () => {
     mock.pending.mockResolvedValue([versao('v1')])
     render(<TermsAcceptanceModal />)
     expect(await screen.findByText('Termos de Uso')).toBeTruthy()
-    expect(screen.getByText(/versão 2026-08-10/)).toBeTruthy()
+    expect(screen.getByText(/Versão 2026-08-10/)).toBeTruthy()
+  })
+
+  it('o ícone de PDF só aparece quando a versão tem link', async () => {
+    mock.pending.mockResolvedValue([versao('v1'), { ...versao('v2', 'privacy_policy'), contentUrl: null, content: 'POLÍTICA' }])
+    render(<TermsAcceptanceModal />)
+    const pdf = await screen.findByRole('link', { name: 'Abrir PDF: Termos de Uso' })
+    expect(pdf.getAttribute('href')).toBe('https://oryon/termos/v1')
+    fireEvent.click(screen.getByRole('tab', { name: /Política de Privacidade/ }))
+    expect(screen.queryByRole('link', { name: /Abrir PDF/ })).toBeNull()
+  })
+
+  it('o título diz o que mudou (um ou os dois documentos)', async () => {
+    mock.pending.mockResolvedValue([versao('v1'), versao('v2', 'privacy_policy')])
+    render(<TermsAcceptanceModal />)
+    expect(await screen.findByText('Atualizamos os Termos de Uso e a Política de Privacidade')).toBeTruthy()
+  })
+
+  it('mostra o texto publicado aberto, sem depender do link (SCRUM-1200)', async () => {
+    mock.pending.mockResolvedValue([{ ...versao('v1'), content: ['TERMOS', '1. OBJETO', '1.1. Cláusula de teste.'].join(String.fromCharCode(10, 10)) }])
+    render(<TermsAcceptanceModal />)
+    expect(await screen.findByText('Cláusula de teste.')).toBeTruthy()
+  })
+
+  it('"Aceitar" só libera depois do checkbox (aceite explícito)', async () => {
+    mock.pending.mockResolvedValue([versao('v1')])
+    render(<TermsAcceptanceModal />)
+    const botao = await screen.findByRole('button', { name: /^aceitar$/i })
+    expect((botao as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByRole('checkbox'))
+    expect((botao as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('aceitar registra CADA versão pendente e fecha', async () => {
     mock.pending.mockResolvedValue([versao('v1'), versao('v2', 'privacy_policy')])
     render(<TermsAcceptanceModal />)
 
-    fireEvent.click(await screen.findByRole('button', { name: /li e concordo/i }))
+    fireEvent.click(await screen.findByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: /^aceitar$/i }))
 
     await waitFor(() => expect(mock.accept).toHaveBeenCalledTimes(2))
-    expect(mock.accept).toHaveBeenCalledWith('v1')
-    expect(mock.accept).toHaveBeenCalledWith('v2')
+    expect(mock.accept).toHaveBeenCalledWith('v1', expect.objectContaining({ readToEnd: expect.any(Boolean) }))
+    expect(mock.accept).toHaveBeenCalledWith('v2', expect.objectContaining({ readToEnd: expect.any(Boolean) }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
@@ -88,7 +119,8 @@ describe('quando há pendência', () => {
     mock.pending.mockResolvedValue([versao('v1')])
     render(<TermsAcceptanceModal />)
 
-    fireEvent.click(await screen.findByRole('button', { name: /li e concordo/i }))
+    fireEvent.click(await screen.findByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: /^aceitar$/i }))
 
     expect(await screen.findByText(/não foi possível registrar/i)).toBeTruthy()
     expect(screen.getByRole('dialog')).toBeTruthy()

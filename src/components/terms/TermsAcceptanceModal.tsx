@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FileText, Loader2, X } from 'lucide-react'
-
-import { termsApi, DOCUMENT_LABEL, type TermsVersionInfo } from '@/services/termsApi'
+import { OryonLogo } from '@/components/brand/OryonLogo'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { Banner } from '@/components/ui/Banner'
+import { Checkbox } from '@/components/ui/Checkbox'
+import { termsApi, DOCUMENT_LABEL, type TermsDocument, type TermsVersionInfo } from '@/services/termsApi'
+import { LeitorDeDocumentos, paraDocumentos } from './LeitorDeDocumentos'
 
 /**
  * Pedido de aceite dos termos (SCRUM-777 / H3).
@@ -20,10 +24,31 @@ import { termsApi, DOCUMENT_LABEL, type TermsVersionInfo } from '@/services/term
  * aceitar") é do fluxo de ATIVAÇÃO de conta nova — que é o console de
  * provisionamento, SCRUM-656, e não existe. Confundir os dois transformaria
  * uma regra de entrada numa punição para quem já é cliente.
+ *
+ * ── Apresentação (SCRUM-1200, 13/10, PO) ────────────────────────────────────
+ *
+ * O mesmo leitor do primeiro acesso, com o texto aberto, e o aceite explícito
+ * por checkbox antes do botão. Segue o tema do usuário (está dentro do app).
+ * No topo, o símbolo da Oryon e um título que diz o que mudou: quem vê o
+ * pedido é funcionário do cliente, e a marca deixa claro que o aceite é com a
+ * Oryon, não com a empresa dele (padrão Google/Microsoft para termos). O
+ * cartão do checkbox é neutro nos dois estados — o teal fica no "Aceitar".
  */
+
+/** "os Termos de Uso" · "os Termos de Uso e a Política de Privacidade". */
+function nomes(pendentes: TermsVersionInfo[]) {
+  const n = pendentes.map((v) => DOCUMENT_LABEL[v.document as TermsDocument] ?? v.document)
+  const artigo = (s: string) => (s.startsWith('Política') ? `a ${s}` : `os ${s}`)
+  if (n.length <= 1) return n[0] ? artigo(n[0]) : 'os documentos'
+  return `${n.slice(0, -1).map(artigo).join(', ')} e ${artigo(n[n.length - 1])}`
+}
+
 export function TermsAcceptanceModal() {
   const [pendentes, setPendentes] = useState<TermsVersionInfo[]>([])
   const [dispensado, setDispensado] = useState(false)
+  const [concordo, setConcordo] = useState(false)
+  // Não exige leitura (re-aceite de quem já é cliente), mas informa o que foi lido.
+  const [lidos, setLidos] = useState<string[]>([])
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -39,100 +64,51 @@ export function TermsAcceptanceModal() {
   }, [])
 
   const aceitar = useCallback(async () => {
-    setEnviando(true)
-    setErro(null)
+    setEnviando(true); setErro(null)
     try {
       // Um por vez, na ordem: cada versão é um registro próprio.
-      for (const versao of pendentes) {
-        await termsApi.accept(versao.id)
-      }
+      for (const v of pendentes) await termsApi.accept(v.id, { readToEnd: lidos.includes(v.id) })
       setPendentes([])
     } catch {
       setErro('Não foi possível registrar o aceite. Tente novamente.')
-    } finally {
-      setEnviando(false)
-    }
-  }, [pendentes])
+    } finally { setEnviando(false) }
+  }, [pendentes, lidos])
 
-  if (dispensado || pendentes.length === 0) return null
+  const varios = pendentes.length > 1
+  const documentos = paraDocumentos(pendentes)
+  const titulo = `Atualizamos ${nomes(pendentes)}`
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="termos-titulo"
+    <Modal
+      open={!dispensado && pendentes.length > 0}
+      onClose={() => setDispensado(true)}
+      aria-label={titulo}
+      className="max-w-2xl"
+      title={
+        <span className="block min-w-0">
+          <OryonLogo variant="symbol" decorativa className="h-8 mb-3.5" />
+          <span className="block text-base font-semibold text-surface-50">{titulo}</span>
+          <span className="block text-[13px] font-normal text-surface-400 mt-1">Leia e confirme para continuar usando a plataforma. O aceite vale para a sua conta e fica registrado com data, hora, IP e versão.</span>
+        </span>
+      }
+      footer={
+        // Como no primeiro acesso: o aceite ao lado dos botões (marca e clica).
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <label className="flex items-center gap-2.5 cursor-pointer min-w-0">
+            <Checkbox checked={concordo} onChange={(e) => setConcordo(e.target.checked)} />
+            <span className="text-[13px] font-medium text-surface-100">Li e aceito {varios ? 'as novas versões' : 'a nova versão'}</span>
+          </label>
+          <span className="flex gap-2 ml-auto">
+            <Button variant="ghost" onClick={() => setDispensado(true)}>Agora não</Button>
+            <Button onClick={aceitar} loading={enviando} disabled={!concordo}>Aceitar</Button>
+          </span>
+        </div>
+      }
     >
-      <div className="w-full max-w-md bg-surface-900 border border-surface-700 rounded-2xl shadow-xl overflow-hidden">
-        <div className="flex items-start gap-3 px-5 pt-5">
-          <div className="mt-0.5 w-9 h-9 rounded-xl bg-brand-600/10 flex items-center justify-center flex-shrink-0">
-            <FileText className="w-4 h-4 text-brand-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 id="termos-titulo" className="text-sm font-semibold text-surface-100">
-              {pendentes.length > 1 ? 'Documentos atualizados' : 'Documento atualizado'}
-            </h2>
-            <p className="mt-1 text-xs text-surface-400">
-              Revise e confirme para continuar usando a plataforma.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setDispensado(true)}
-            aria-label="Fechar"
-            className="p-1 rounded-lg text-surface-500 hover:text-surface-300 hover:bg-surface-800 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <ul className="mt-4 px-5 flex flex-col gap-2">
-          {pendentes.map((v) => (
-            <li
-              key={v.id}
-              className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-surface-800/60 border border-surface-700/60"
-            >
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-surface-200 truncate">
-                  {DOCUMENT_LABEL[v.document] ?? v.document}
-                </p>
-                <p className="text-[11px] text-surface-500">versão {v.version}</p>
-              </div>
-              {v.contentUrl && (
-                <a
-                  href={v.contentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] text-brand-400 hover:text-brand-300 underline underline-offset-2 flex-shrink-0 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500 rounded-sm"
-                >
-                  Ler
-                </a>
-              )}
-            </li>
-          ))}
-        </ul>
-
-        {erro && <p className="mt-3 px-5 text-[11px] text-danger">{erro}</p>}
-
-        <div className="mt-5 px-5 pb-5 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={aceitar}
-            disabled={enviando}
-            className="flex-1 h-9 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white text-xs font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-400"
-          >
-            {enviando && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Li e concordo
-          </button>
-          <button
-            type="button"
-            onClick={() => setDispensado(true)}
-            className="h-9 px-3 rounded-xl text-xs text-surface-400 hover:text-surface-200 hover:bg-surface-800 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
-          >
-            Agora não
-          </button>
-        </div>
+      <div className="space-y-4">
+        <LeitorDeDocumentos documentos={documentos} onLidos={setLidos} altura="h-[clamp(200px,calc(100dvh-400px),440px)]" />
+        {erro && <Banner variant="danger">{erro}</Banner>}
       </div>
-    </div>
+    </Modal>
   )
 }
