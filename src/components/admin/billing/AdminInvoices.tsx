@@ -255,7 +255,7 @@ export function AdminInvoices() {
               <tr>
                 <th className="text-left px-3 py-2.5 font-medium">Fatura</th>
                 <th className="text-left px-3 py-2.5 font-medium">Cliente</th>
-                <th className="text-left px-3 py-2.5 font-medium">Tipo</th>
+                <th className="text-left px-3 py-2.5 font-medium">Fatura</th>
                 <th className="text-left px-3 py-2.5 font-medium">Competência</th>
                 <th className="text-left px-3 py-2.5 font-medium">Vencimento</th>
                 <th className="text-right px-3 py-2.5 font-medium">Valor</th>
@@ -273,11 +273,13 @@ export function AdminInvoices() {
                   <tr key={r.id}>
                     <td className="px-3 py-2.5 text-surface-100 font-mono text-xs whitespace-nowrap">{r.number ?? r.id.slice(0, 8)}</td>
                     <td className="px-3 py-2.5 text-surface-200">{r.companyName ?? r.tenantId.slice(0, 8)}</td>
+                    {/* O título que o cliente vê, com o tipo embaixo (PO 13/10). */}
                     <td className="px-3 py-2.5 text-surface-400">
-                      {INVOICE_KIND_LABEL[r.kind] ?? r.kind}
-                      {creditNote && r.referenceInvoiceId && (
-                        <p className="text-[11px] text-surface-500">ref. fatura {ref?.number ?? r.referenceInvoiceId.slice(0, 8)}</p>
-                      )}
+                      {r.title && <span className="text-surface-100">{r.title}</span>}
+                      <p className={r.title ? 'text-[11px] text-surface-500' : undefined}>
+                        {INVOICE_KIND_LABEL[r.kind] ?? r.kind}
+                        {creditNote && r.referenceInvoiceId && <> · ref. {ref?.number ?? r.referenceInvoiceId.slice(0, 8)}</>}
+                      </p>
                     </td>
                     <td className="px-3 py-2.5 text-surface-400">{fmtComp(r.competenceMonth)}</td>
                     <td className={cn('px-3 py-2.5', overdue ? 'text-danger' : 'text-surface-400')}>{fmtDate(r.dueAt)}</td>

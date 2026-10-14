@@ -179,6 +179,8 @@ export interface AdminInvoiceRow {
   companyName: string | null
   contractId: string | null
   number: string | null
+  /** Título para o cliente ("Mensalidade de outubro/2026") — calculado no backend. */
+  title?: string
   kind: string
   status: string
   amountCents: number

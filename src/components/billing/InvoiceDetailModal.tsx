@@ -76,7 +76,19 @@ export function InvoiceDetailModal({ invoiceId, onClose, onChanged, onOpenInvoic
   }
 
   return (
-    <Modal open={!!invoiceId} onClose={onClose} title={inv ? `Fatura ${inv.number ?? ''}` : 'Fatura'} className="max-w-2xl">
+    <Modal
+      open={!!invoiceId}
+      onClose={onClose}
+      className="max-w-2xl"
+      aria-label={inv?.title ?? (inv ? `Fatura ${inv.number ?? ''}` : 'Fatura')}
+      title={inv?.title ? (
+        // Título humano em destaque; o número como referência (PO 13/10).
+        <span className="block min-w-0">
+          <span className="block text-base font-display font-semibold tracking-[-0.01em] text-surface-50">{inv.title}</span>
+          <span className="block text-xs text-surface-500 mt-0.5">{creditNote ? 'Nota de crédito' : 'Fatura'} {(inv.numberLabel ?? '').replace('Nº', 'nº')}</span>
+        </span>
+      ) : inv ? `Fatura ${inv.number ?? ''}` : 'Fatura'}
+    >
       {!d || !inv ? <p className="text-sm text-surface-400">Carregando…</p> : (
         <div className="space-y-5 text-sm">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

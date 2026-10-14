@@ -45,6 +45,10 @@ export interface BillingSnapshot {
 export interface BillingInvoiceRow {
   id: string
   number: string | null
+  /** Título para o cliente ("Mensalidade de outubro/2026") — calculado no backend (PO 13/10). */
+  title?: string
+  /** "Nº 2026-000123": o número como referência. */
+  numberLabel?: string
   kind: string
   amount: string
   currency: string

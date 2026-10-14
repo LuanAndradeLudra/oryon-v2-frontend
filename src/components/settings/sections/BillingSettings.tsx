@@ -265,8 +265,8 @@ export function BillingSettings() {
               <div className="text-sm text-surface-200">
                 <p className="font-medium">{suspended ? 'Conta suspensa por pendência financeira' : 'Pagamento em atraso'}</p>
                 <p className="text-surface-400 text-xs mt-0.5">
-                  {overdue.length} fatura(s) vencida(s){overdueCents > 0 ? ` — ${brl(overdueCents)} em aberto, sem encargos` : ''}. {suspended
-                    ? 'IA e Copilot estão pausados. A conta volta quando todas as faturas vencidas forem pagas.'
+                  {overdue.length} fatura(s) vencida(s){overdueCents > 0 ? ` — ${brl(overdueCents)} em aberto (valor original, sem os encargos de atraso)` : ''}. {suspended
+                    ? 'O uso da plataforma está bloqueado; aqui você ainda vê e paga as faturas. A conta volta quando todas as faturas vencidas forem pagas.'
                     : 'Regularize para evitar a suspensão; o acesso segue normal até lá.'}
                 </p>
               </div>
@@ -381,16 +381,20 @@ export function BillingSettings() {
                     <div className="min-w-0 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-surface-500 flex-shrink-0" />
                       <div className="min-w-0">
+                        {/* O título diz o que é a cobrança; o número vira referência (PO 13/10).
+                            Backend antigo, sem `title`: cai no formato anterior. */}
                         <p className="text-surface-100 font-medium truncate">
-                          {inv.number ?? inv.id.slice(0, 8)} · {INVOICE_KIND[inv.kind] ?? inv.kind}
+                          {inv.title ?? `${inv.number ?? inv.id.slice(0, 8)} · ${INVOICE_KIND[inv.kind] ?? inv.kind}`}
                         </p>
                         <p className="text-xs text-surface-500 truncate">
-                          {creditNote
-                            ? <>Estorno{inv.referenceInvoiceId ? ` da fatura ${ref?.number ?? inv.referenceInvoiceId.slice(0, 8)}` : ''} · {fmtDate(inv.createdAt)}</>
-                            : <>
-                                {inv.competenceMonth ? `Competência ${inv.competenceMonth.slice(5, 7)}/${inv.competenceMonth.slice(0, 4)} · ` : ''}
-                                vence {fmtDate(inv.dueAt)}
-                              </>}
+                          {inv.title
+                            ? <>{inv.numberLabel || inv.id.slice(0, 8)} · {creditNote ? `emitida em ${fmtDate(inv.createdAt)}` : `vence ${fmtDate(inv.dueAt)}`}</>
+                            : creditNote
+                              ? <>Estorno{inv.referenceInvoiceId ? ` da fatura ${ref?.number ?? inv.referenceInvoiceId.slice(0, 8)}` : ''} · {fmtDate(inv.createdAt)}</>
+                              : <>
+                                  {inv.competenceMonth ? `Competência ${inv.competenceMonth.slice(5, 7)}/${inv.competenceMonth.slice(0, 4)} · ` : ''}
+                                  vence {fmtDate(inv.dueAt)}
+                                </>}
                         </p>
                       </div>
                     </div>
