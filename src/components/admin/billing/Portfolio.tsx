@@ -192,13 +192,13 @@ export function Portfolio() {
           <table className="w-full text-sm">
             <thead className="bg-surface-900/60 text-surface-400 text-xs">
               <tr>
-                <th className="text-left px-3 py-2.5 font-medium">Cliente</th>
-                <th className="text-left px-3 py-2.5 font-medium">Plano</th>
-                <th className="text-left px-3 py-2.5 font-medium">Pagamento</th>
-                <th className="text-right px-3 py-2.5 font-medium">Mensal</th>
-                <th className="text-left px-3 py-2.5 font-medium">Vigência</th>
-                <th className="text-right px-3 py-2.5 font-medium">Em atraso</th>
-                <th className="px-3 py-2.5" />
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap">Cliente</th>
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap">Plano</th>
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap">Pagamento</th>
+                <th className="text-right px-3 py-2.5 font-medium whitespace-nowrap">Mensal</th>
+                <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap">Vigência</th>
+                <th className="text-right px-3 py-2.5 font-medium whitespace-nowrap">Em atraso</th>
+                <th className="px-3 py-2.5 whitespace-nowrap" />
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-800">

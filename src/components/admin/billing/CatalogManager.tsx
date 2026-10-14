@@ -207,7 +207,7 @@ export function CatalogManager() {
       <section className="rounded-2xl border border-surface-800 p-4 space-y-3 max-w-2xl">
         <h3 className="text-sm font-semibold text-surface-100">Pacotes de créditos</h3>
         <table className="w-full text-sm">
-          <thead className="text-xs text-surface-500"><tr><th className="text-left py-1">Créditos</th><th className="text-left py-1">Valor</th><th className="text-left py-1">Por crédito</th><th className="text-left py-1">Ativo</th><th /></tr></thead>
+          <thead className="text-xs text-surface-500"><tr><th className="text-left py-1 whitespace-nowrap">Créditos</th><th className="text-left py-1 whitespace-nowrap">Valor</th><th className="text-left py-1 whitespace-nowrap">Por crédito</th><th className="text-left py-1 whitespace-nowrap">Ativo</th><th /></tr></thead>
           <tbody className="divide-y divide-surface-800">
             {packs.map((pk) => (
               // A key inclui o updatedAt: depois de recarregar (ex.: 409) a linha

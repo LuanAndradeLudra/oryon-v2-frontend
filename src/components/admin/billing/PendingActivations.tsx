@@ -57,12 +57,12 @@ export function PendingActivations({ reloadKey = 0 }: { reloadKey?: number }) {
         <table className="w-full text-sm">
           <thead className="bg-surface-900/60 text-surface-400 text-xs">
             <tr>
-              <th className="text-left px-4 py-2.5 font-medium">Empresa</th>
-              <th className="text-left px-4 py-2.5 font-medium">Administrador</th>
-              <th className="text-left px-4 py-2.5 font-medium">Plano</th>
-              <th className="text-left px-4 py-2.5 font-medium">Pendente há</th>
-              <th className="text-left px-4 py-2.5 font-medium">Link</th>
-              <th className="px-4 py-2.5" />
+              <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Empresa</th>
+              <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Administrador</th>
+              <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Plano</th>
+              <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Pendente há</th>
+              <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">Link</th>
+              <th className="px-4 py-2.5 whitespace-nowrap" />
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-800">
