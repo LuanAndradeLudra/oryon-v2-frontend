@@ -11,6 +11,9 @@ import {
 } from '@/hooks/useNotificationPreferences'
 import { useNotificationSound } from '@/hooks/useNotificationSound'
 import { CATEGORY_CHIPS, TYPE_ICON } from '@/components/notifications/notificationsMeta'
+import { useAuth } from '@/contexts/AuthContext'
+import { suporteLigadoPara } from '@/config/featureFlags'
+import { ehEquipeDeSuporte } from '@/lib/roleHelpers'
 
 /**
  * Phase 19: dedicated Settings page for notification preferences. Groups
@@ -31,12 +34,16 @@ const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
   team: 'Convites, entradas e mudanças na sua equipe.',
   campaigns: 'Andamento e resultado dos envios em massa.',
   automations: 'Execuções e falhas das suas automações.',
+  support: 'Andamento dos chamados com a equipe Oryon. Vale também para os avisos por e-mail e WhatsApp.',
   security: 'Alertas críticos e erros de integração. Alguns são obrigatórios e não podem ser desativados.',
 }
 
 export function Notifications() {
   const { preferences, loading, saving, error, update, reset, reload } = useNotificationPreferences()
   const { enabled: soundEnabled, toggle: toggleSound } = useNotificationSound()
+  const { user, featureFlags } = useAuth()
+  // Suporte (SCRUM-1386): só para quem usa — empresa com a flag ou a equipe Oryon.
+  const verSuporte = suporteLigadoPara(featureFlags) || ehEquipeDeSuporte(user?.role) || user?.role === 'super_admin'
 
   if (loading) {
     return (
@@ -101,7 +108,7 @@ export function Notifications() {
       </SettingsSection>
 
       {/* Per-type preferences grouped by category */}
-      {CATEGORY_ORDER.map((cat) => {
+      {CATEGORY_ORDER.filter((cat) => cat !== 'support' || verSuporte).map((cat) => {
         const items = byCategory.get(cat)
         if (!items || items.length === 0) return null
         return (

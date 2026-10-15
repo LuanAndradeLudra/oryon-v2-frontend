@@ -804,7 +804,9 @@ type NotifFilter = 'all' | 'unread'
 // Phase 19: category chips — maps UI label to the set of notification
 // types the backend filters on.
 
-function NotificationsPanel() {
+/** Painel do sino. Exportado para o shell da equipe de suporte (SCRUM-1386),
+ *  que não tem a tela de preferências (`semPreferencias`). */
+export function NotificationsPanel({ semPreferencias = false }: { semPreferencias?: boolean }) {
   // Localização do roteador: as preferências voltam para a tela de onde o sino foi aberto.
   const location = useLocation()
   const {
@@ -1003,15 +1005,17 @@ function NotificationsPanel() {
             >
               <Archive className="w-3.5 h-3.5" />
             </button>
-            <button
-              type="button"
-              onClick={() => navigate(comVolta('/settings/notifications', `${location.pathname}${location.search}`))}
-              title="Preferências de notificação"
-              aria-label="Preferências de notificação"
-              className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-            </button>
+            {!semPreferencias && (
+              <button
+                type="button"
+                onClick={() => navigate(comVolta('/settings/notifications', `${location.pathname}${location.search}`))}
+                title="Preferências de notificação"
+                aria-label="Preferências de notificação"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
         <div ref={panelRef} className="max-h-[28rem] overflow-y-auto py-1" role="list">

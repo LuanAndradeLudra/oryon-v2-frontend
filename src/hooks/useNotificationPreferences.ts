@@ -10,6 +10,7 @@ export type NotificationCategory =
   | 'team'
   | 'campaigns'
   | 'automations'
+  | 'support'
   | 'security'
 
 /**
