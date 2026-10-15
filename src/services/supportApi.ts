@@ -3,7 +3,7 @@ import type { ModeloDoFormulario, OrigemDoProblema, TipoDePedido } from '@/compo
 import type {
   AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, ContextoDaConversaDeSuporte, ConversaDoChamado, ConversaoParaChamado, EmpresaParaChamado,
   EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados, ProblemaCompleto, ResultadoDaConversao, ResumoDaFila,
-  ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado,
+  ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado, VisaoDaCalibracao,
 } from '@/types/support'
 import type { CausaRaiz, Prioridade } from '@/components/support/fila/modeloDaFila'
 import type { StatusChamado } from '@/components/support/supportModel'
@@ -137,6 +137,14 @@ export const adminSupportApi = {
   },
   sugestoes(id: string) {
     return api.get<SugestoesDoChamado>(`/admin/support/tickets/${id}/suggestions`).then((r) => r.data)
+  },
+  /** SCRUM-1392 — a medida de cada empresa e a simulação antes/depois (só a equipe). */
+  calibracao() {
+    return api.get<VisaoDaCalibracao>('/admin/support/calibracao').then((r) => r.data)
+  },
+  /** Configuração do suporte, com motivo (fica no histórico). A equipe muda prazos e limiares. */
+  definirConfiguracao(chave: string, valor: unknown, motivo: string) {
+    return api.put<{ chave: string; valor: unknown }>(`/admin/support/settings/${chave}`, { valor, motivo }).then((r) => r.data)
   },
   /** Problemas (SCRUM-1387): vincular ao problema (ou desvincular, com null). Manual, no histórico; devolve o chamado. */
   vincularProblema(id: string, problemaId: string | null, version: number) {

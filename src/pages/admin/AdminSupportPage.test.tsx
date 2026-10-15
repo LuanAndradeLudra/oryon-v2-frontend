@@ -19,7 +19,7 @@ vi.mock('@/services/supportApi', () => ({
   adminSupportApi: {
     resumo: vi.fn(), listar: vi.fn(), obter: vi.fn(), atualizar: vi.fn(), anotar: vi.fn(), perguntar: vi.fn(), responder: vi.fn(),
     sugestoes: vi.fn(async () => ({ problemas: [], parecidos: [] })), evidencia: vi.fn(), baixarDossie: vi.fn(), baixarAnexo: vi.fn(),
-    conversa: vi.fn(), liberarConversa: vi.fn(), abrirParaEmpresa: vi.fn(), encerrarOcorrencia: vi.fn(),
+    conversa: vi.fn(), liberarConversa: vi.fn(), abrirParaEmpresa: vi.fn(), encerrarOcorrencia: vi.fn(), calibracao: vi.fn(), definirConfiguracao: vi.fn(),
   },
 }))
 vi.mock('@/hooks/useToast', async (original) => ({ ...(await original<typeof import('@/hooks/useToast')>()), showToast: vi.fn() }))
@@ -267,5 +267,15 @@ describe('Problema na fila (SCRUM-1387)', () => {
     expect(within(problema).getByLabelText('Card do Jira do problema')).toHaveValue('SCRUM-1400')
     expect(screen.queryByLabelText('Card no Jira')).toBeNull()
     expect(screen.queryByRole('button', { name: /^Causa: / })).toBeNull()
+  })
+})
+
+describe('Calibração na fila (SCRUM-1392)', () => {
+  it('as propriedades do chamado mostram quanto o relato da empresa se confirma (só a equipe)', async () => {
+    api.obter.mockImplementation(async (id: string) => (id === T1
+      ? chamado(A, { calibracao: { triados: 10, confirmados: 3, taxa: 30, situacao: 'inflado', janelaDias: 90, ajusteLigado: false } })
+      : chamado(B)))
+    render(<Tela rota={`/admin/support?chamado=${T1}`} />)
+    expect(await screen.findByText(/30% confirmados \(3 de 10 · 90 dias\) · relato inflado/)).toBeInTheDocument()
   })
 })

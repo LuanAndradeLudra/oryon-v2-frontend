@@ -1,5 +1,5 @@
 import type { StatusChamado } from '@/components/support/supportModel'
-import type { ResumoDoProblema, StatusDoProblema } from '@/types/support'
+import type { ResumoDaCalibracao, ResumoDoProblema, StatusDoProblema } from '@/types/support'
 
 /**
  * Vocabulário da FILA da Oryon (SCRUM-1384) — o lado da equipe, espelho de
@@ -72,6 +72,14 @@ export function resumoDoProblema(p: ResumoDoProblema): ResumoDoProblema {
     id: p.id, numero: p.numero, titulo: p.titulo, status: p.status, nomeDoStatus: p.nomeDoStatus, causaRaiz: p.causaRaiz, jiraRef: p.jiraRef,
     chamados: p.chamados, empresas: p.empresas, temFixture: p.temFixture,
   }
+}
+
+/** SCRUM-1392 — "40% confirmados (4 de 10 · 90 dias)": numerador, denominador e período sempre à vista. */
+export function textoDaCalibracao(c: ResumoDaCalibracao): string {
+  if (c.situacao === 'poucos_dados' || c.taxa === null) {
+    return `poucos dados (${c.triados} ${c.triados === 1 ? 'relato de urgência triado' : 'relatos de urgência triados'} · ${c.janelaDias} dias)`
+  }
+  return `${c.taxa}% confirmados (${c.confirmados} de ${c.triados} · ${c.janelaDias} dias)`
 }
 
 /** 409: alguém mexeu no chamado entre a leitura e o envio (a tela recarrega o chamado). */
