@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { showToast } from '@/hooks/useToast'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import { adminSupportApi } from '@/services/supportApi'
@@ -52,7 +53,7 @@ export function CalibracaoDaRegra({ onFechar }: { onFechar: () => void }) {
 
   return (
     <Modal open onClose={onFechar} title="Calibração da regra por empresa" className="w-full max-w-[820px]">
-      {erro ? <p className="text-sm text-danger">{erro}</p>
+      {erro ? <ErrorState title="Não foi possível carregar a calibração" hint={erro} onRetry={() => { setErro(null); setPedido((v) => v + 1) }} />
         : !visao ? <p className="text-sm text-surface-400">Carregando…</p>
           : (
             <div className="flex flex-col gap-5">

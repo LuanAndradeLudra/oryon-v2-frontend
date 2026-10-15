@@ -234,6 +234,15 @@ const CONFIANCA: Record<string, string> = { baixa: 'baixa', media: 'média', alt
 function SugestaoDeCausa({ c, usar }: { c: ChamadoDaEquipe; usar: (causa: CausaRaiz) => Promise<boolean> }) {
   const [pedindo, setPedindo] = useState(false)
   const [sugestao, setSugestao] = useState<{ causa: CausaRaiz; nome: string; motivo: string; confianca: string } | null>(null)
+  // O botão e o cartão se trocam: o foco vai junto (revisão do Portão 5), nunca fica no vazio.
+  const botaoRef = useRef<HTMLButtonElement>(null)
+  const cartaoRef = useRef<HTMLDivElement>(null)
+  const voltarAoBotao = useRef(false)
+  useEffect(() => {
+    if (sugestao) cartaoRef.current?.focus()
+    else if (voltarAoBotao.current) { voltarAoBotao.current = false; botaoRef.current?.focus() }
+  }, [sugestao])
+  const fechar = () => { voltarAoBotao.current = true; setSugestao(null) }
   const pedir = async () => {
     setPedindo(true)
     try {
@@ -246,7 +255,7 @@ function SugestaoDeCausa({ c, usar }: { c: ChamadoDaEquipe; usar: (causa: CausaR
   }
   if (!sugestao) {
     return (
-      <button type="button" onClick={() => void pedir()} disabled={pedindo}
+      <button ref={botaoRef} type="button" onClick={() => void pedir()} disabled={pedindo}
         className="inline-flex items-center gap-1 text-[12px] text-accent-dark hover:underline disabled:opacity-60 rounded-[4px] focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500">
         <Sparkles className="w-3 h-3" aria-hidden />{pedindo ? 'Analisando a evidência…' : 'Sugerir causa (IA)'}
       </button>
@@ -254,17 +263,18 @@ function SugestaoDeCausa({ c, usar }: { c: ChamadoDaEquipe; usar: (causa: CausaR
   }
   const jaE = c.causaRaiz === sugestao.causa
   return (
-    <div className="sup-cartao px-3 py-2.5 flex flex-col gap-1.5" role="region" aria-label="Sugestão de causa da IA">
+    <div ref={cartaoRef} tabIndex={-1} className="sup-cartao px-3 py-2.5 flex flex-col gap-1.5 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+      role="region" aria-label="Sugestão de causa da IA">
       <p className="flex items-center gap-1.5 text-[12px] text-surface-100">
         <Sparkles className="w-3 h-3 text-accent-dark flex-shrink-0" aria-hidden />
         <span>Sugestão da IA: <b className="font-semibold">{sugestao.nome}</b> <span className="text-surface-400">(confiança {CONFIANCA[sugestao.confianca] ?? sugestao.confianca})</span></span>
       </p>
       <p className="text-[12px] text-surface-300">{sugestao.motivo}</p>
       <div className="flex gap-1.5">
-        <Button size="sm" variant="neutral" disabled={jaE} onClick={() => void usar(sugestao.causa).then((ok) => { if (ok) setSugestao(null) })}>
+        <Button size="sm" variant="neutral" disabled={jaE} onClick={() => void usar(sugestao.causa).then((ok) => { if (ok) fechar() })}>
           {jaE ? 'Já é a causa' : 'Usar esta causa'}
         </Button>
-        <Button size="sm" variant="neutral" onClick={() => setSugestao(null)}>Fechar</Button>
+        <Button size="sm" variant="neutral" onClick={fechar}>Fechar</Button>
       </div>
       <p className="text-[11px] text-surface-400">Só sugestão: fica no histórico interno; a causa muda só se você escolher.</p>
     </div>

@@ -236,6 +236,7 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
     if (variante === 'folha' && !oculto) document.getElementById('painel-relato')?.focus()
   }, [variante, oculto])
 
+  const focarRelato = () => requestAnimationFrame(() => document.getElementById('painel-relato')?.focus())
   // Em "Mensagens" sem nada marcado a origem interna ainda é "conversa": a cor e o conteúdo seguem a escolha.
   const familia = f.aguardandoMarcacao ? 'mensagem' : f.origem === 'conversa' ? 'conversa' : f.origem === 'plataforma' ? 'plataforma' : 'mensagem'
   const Icone = ICONE[f.origem]
@@ -398,23 +399,25 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
           </span>
           <Textarea id="painel-relato" data-autofocus rows={f.semConversa ? 3 : 4} maxLength={2000} value={f.relato} onChange={(e) => f.setRelato(e.target.value)} onPaste={f.colar} autoFocus={!f.semConversa}
             aria-required placeholder={textosDoTipo?.exemplo ?? (f.aguardandoMarcacao ? 'Conte o que deu errado. Dá para escrever enquanto marca as mensagens.' : f.modelo?.exemplos[f.origem] ?? '')} />
-          {f.rascunhoDaIa && (f.rascunhoDaIa.aplicado ? (
+          {f.rascunhoAplicado && !f.sugestaoDaIa && (
             <p className="flex items-start gap-1.5 text-[11px] text-surface-400" role="status">
               <Sparkles className="w-3 h-3 mt-0.5 flex-shrink-0 text-accent-dark" aria-hidden />
               <span>Rascunho da IA: confira e ajuste antes de enviar. O que você escrever vale mais que o texto da IA.</span>
             </p>
-          ) : (
+          )}
+          {f.sugestaoDaIa && (
             <div className="sup-cartao px-3 py-2.5 flex flex-col gap-2" role="region" aria-label="Rascunho da IA">
               <p className="flex items-center gap-1.5 text-[11px] font-semibold text-surface-300">
                 <Sparkles className="w-3 h-3 text-accent-dark" aria-hidden />Rascunho da IA — o seu texto continua como está
               </p>
-              <p className="text-[13px] text-surface-100 whitespace-pre-wrap break-words">{f.rascunhoDaIa.texto}</p>
+              <p className="text-[13px] text-surface-100 whitespace-pre-wrap break-words">{f.sugestaoDaIa}</p>
               <div className="flex gap-1.5">
-                <Button size="sm" variant="neutral" onClick={f.acrescentarRascunho}>Acrescentar ao meu relato</Button>
-                <Button size="sm" variant="neutral" onClick={f.descartarRascunho}>Descartar</Button>
+                {/* O cartão some no clique: o foco volta ao relato, nunca ao vazio (revisão do Portão 5). */}
+                <Button size="sm" variant="neutral" onClick={() => { f.acrescentarRascunho(); focarRelato() }}>Acrescentar ao meu relato</Button>
+                <Button size="sm" variant="neutral" onClick={() => { f.descartarRascunho(); focarRelato() }}>Descartar</Button>
               </div>
             </div>
-          ))}
+          )}
           <div className="flex flex-wrap items-center gap-1.5">
             {f.anexos.map((a) => (
               <span key={a.chave} title={a.erro}
