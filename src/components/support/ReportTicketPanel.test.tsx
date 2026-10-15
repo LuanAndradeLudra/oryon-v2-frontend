@@ -260,8 +260,20 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
     expect(painel()).toHaveAttribute('aria-modal', 'true')
     expect(painel()).toHaveAccessibleName('Reportar resposta da IA')
+    relatar()
+    // "Mensagens" volta ao chat para marcar mais: a folha só se esconde (não é mais diálogo)…
+    fireEvent.click(within(painel()!).getByRole('radio', { name: /Mensagens/ }))
+    expect(painel()).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'marcar m1' }))
+    expect(screen.getByText('2 mensagens marcadas')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    // …e reaparece com o relato e as duas mensagens, com o foco no relato.
+    expect(screen.getByLabelText(/O que aconteceu/)).toHaveValue('A IA informou o valor errado da consulta')
+    expect(document.activeElement).toBe(screen.getByLabelText(/O que aconteceu/))
+    expect(within(painel()!).getByRole('radio', { name: /Mensagens · 2/ })).toBeChecked()
     fireEvent.click(within(painel()!).getByRole('button', { name: 'Cancelar' }))
     expect(painel()).toBeNull()
+    expect(screen.queryByLabelText(/O que aconteceu/)).toBeNull()
     expect(screen.getByLabelText('Mensagem')).toHaveValue('rascunho da resposta')
   })
 

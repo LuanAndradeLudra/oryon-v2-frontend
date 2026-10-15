@@ -1,4 +1,4 @@
-import { Fragment, useId, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertCircle, Check, ChevronDown, ChevronRight, CircleHelp, CopyPlus, Flag, Loader2, MessageSquare, MessagesSquare, MousePointerClick, Paperclip, Plus, ShieldCheck, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -203,14 +203,22 @@ export function EscolhaEmLinha<T extends string>({ valor, opcoes, onChange, rotu
  * diálogo (não modal no computador), o painel também pausa os atalhos J/K/E/R
  * da página de Conversas (ver lib/sobreposicaoAberta.ts) — trocar de
  * conversa ou resolver com o chamado pela metade perderia o relato.
+ *
+ * `oculto` (só a folha): a pessoa voltou ao chat para marcar mais mensagens.
+ * A folha fica montada e escondida — o relato e as respostas continuam — e,
+ * escondida, sai da pilha de camadas e deixa de ser diálogo.
  */
-export function ReportTicketPanel(props: PropsDoFormulario & { className?: string; variante?: 'painel' | 'folha' | 'modal' }) {
-  const { onClose, conversationId, contatoNome, mensagens, todasAsMensagens = [], className, variante = 'painel' } = props
+export function ReportTicketPanel(props: PropsDoFormulario & { className?: string; variante?: 'painel' | 'folha' | 'modal'; oculto?: boolean }) {
+  const { onClose, conversationId, contatoNome, mensagens, todasAsMensagens = [], className, variante = 'painel', oculto = false } = props
   const f = useFormularioDoChamado(props)
   const s = useSuporte()
   const [verAfetadas, setVerAfetadas] = useState(false)
   const tituloId = useId()
-  const { zIndex } = useLayer(variante !== 'modal', onClose)
+  const { zIndex } = useLayer(variante !== 'modal' && !oculto, onClose)
+  // A folha reaparece (voltou da marcação): o foco volta ao relato.
+  useEffect(() => {
+    if (variante === 'folha' && !oculto) document.getElementById('painel-relato')?.focus()
+  }, [variante, oculto])
 
   // Em "Mensagens" sem nada marcado a origem interna ainda é "conversa": a cor e o conteúdo seguem a escolha.
   const familia = f.aguardandoMarcacao ? 'mensagem' : f.origem === 'conversa' ? 'conversa' : f.origem === 'plataforma' ? 'plataforma' : 'mensagem'
@@ -548,7 +556,7 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
 
   // Mesma largura do painel do contato (308px): o chat não muda de tamanho ao abrir o chamado.
   const painel = (
-    <aside role="dialog" aria-modal={variante === 'folha'} aria-labelledby={tituloId}
+    <aside role={oculto ? undefined : 'dialog'} aria-modal={oculto ? undefined : variante === 'folha'} aria-labelledby={tituloId}
       className={cn('conv-surface sup-painel-topo w-[308px] flex-shrink-0 flex flex-col h-full min-h-0 bg-surface-800 border-l border-surface-700', `sup-familia-${familia}`, className)}>
       <header className="flex items-center gap-2 pl-4 pr-2 h-[52px] pt-[3px] border-b border-surface-700 flex-shrink-0">
         <div className="min-w-0 flex-1">
@@ -572,19 +580,21 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
   if (variante !== 'folha') return painel
   // Celular: o mesmo painel em tela cheia, na altura da pilha de camadas (um menu aberto dentro fica por cima).
   return createPortal(
-    <div className="fixed inset-0 flex bg-surface-800" style={{ zIndex }}>{painel}</div>,
+    <div className={cn('fixed inset-0 flex bg-surface-800', oculto && 'hidden')} style={{ zIndex }}>{painel}</div>,
     document.body,
   )
 }
 
 /**
  * As props do formulário do painel, montadas do store da marcação e dos dados
- * da conversa. `null` com o painel fechado (ou o recurso desligado).
+ * da conversa. `null` fora do chamado (ou com o recurso desligado). `sessao`:
+ * vale enquanto o chamado está sendo montado — marcando no chat OU com o
+ * formulário aberto (a folha do celular sobrevive à volta para a marcação).
  */
-function usePropsDoPainel(aoCriar?: () => void): PropsDoFormulario | null {
+function usePropsDoPainel(aoCriar?: () => void, sessao = false): PropsDoFormulario | null {
   const s = useSuporte()
   const d = useDadosDoSuporte()
-  const aberto = useMarcacao(s.store, (e) => e.painelAberto)
+  const aberto = useMarcacao(s.store, (e) => e.painelAberto || (sessao && e.marcando))
   const marcadas = useMarcacao(s.store, (e) => e.marcadas)
   const sobre = useMarcacao(s.store, (e) => e.sobre)
   const todas = useMarcacao(s.store, (e) => e.mensagens)
@@ -624,11 +634,13 @@ function PainelDoChamado({ aoCriar }: { aoCriar?: () => void }) {
 /**
  * CELULAR: não há espaço para o painel ao lado do chat. A pessoa marca as
  * mensagens primeiro (barra do rodapé com "Continuar") e o mesmo painel abre
- * em tela cheia por cima.
+ * em tela cheia por cima. "Mensagens" na folha volta ao chat para marcar mais:
+ * a folha só se esconde, e o que já foi escrito continua lá.
  */
 export function FolhaDoChamadoNoCelular() {
   const s = useSuporte()
-  const props = usePropsDoPainel()
+  const props = usePropsDoPainel(undefined, true)
+  const aberta = useMarcacao(s.store, (e) => e.painelAberto)
   if (!props || s.emPainel) return null
-  return <ReportTicketPanel key={props.conversationId ?? 'sem'} {...props} variante="folha" className="w-full border-l-0" />
+  return <ReportTicketPanel key={props.conversationId ?? 'sem'} {...props} variante="folha" oculto={!aberta} className="w-full border-l-0" />
 }

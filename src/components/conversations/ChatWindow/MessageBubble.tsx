@@ -908,7 +908,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                 onClick={(e) => { e.stopPropagation(); suporte.irParaChamado(chamado.id) }}
                 title={`Reportada no chamado ${chamado.numero} · ver andamento`}
                 aria-label={`Reportada no chamado ${chamado.numero}. Ver andamento`}
-                className="sup-bandeira inline-flex items-center rounded-[4px] p-0.5 opacity-90 hover:opacity-100 transition-opacity"
+                className={cn('sup-bandeira inline-flex items-center rounded-[4px] p-0.5', isOutbound && 'sup-bandeira-saida')}
               >
                 <Flag className="w-3 h-3" fill="currentColor" aria-hidden />
               </button>
