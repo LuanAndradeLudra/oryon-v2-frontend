@@ -19,7 +19,7 @@ vi.mock('@/services/supportApi', () => ({
   adminSupportApi: {
     resumo: vi.fn(), listar: vi.fn(), obter: vi.fn(), atualizar: vi.fn(), anotar: vi.fn(), perguntar: vi.fn(), responder: vi.fn(),
     sugestoes: vi.fn(async () => ({ problemas: [], parecidos: [] })), evidencia: vi.fn(), baixarDossie: vi.fn(), baixarAnexo: vi.fn(),
-    conversa: vi.fn(), liberarConversa: vi.fn(),
+    conversa: vi.fn(), liberarConversa: vi.fn(), abrirParaEmpresa: vi.fn(), encerrarOcorrencia: vi.fn(),
   },
 }))
 vi.mock('@/hooks/useToast', async (original) => ({ ...(await original<typeof import('@/hooks/useToast')>()), showToast: vi.fn() }))
@@ -214,5 +214,41 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     await waitFor(() => expect(api.atualizar).toHaveBeenCalledTimes(2))
     expect(api.atualizar.mock.calls[0]).toEqual([T1, 3, { jiraRef: 'SCRUM-9' }])
     expect(api.atualizar.mock.calls[1]).toEqual([T1, 4, { assumir: true }])
+  })
+  it('ocorrência interna (1389): abrir o chamado da empresa leva a ele; encerrar pede o motivo', async () => {
+    const OCO = item(T1, 'OCO-0007', { kind: 'oco', visivelParaEmpresa: false })
+    const SUP = '13890000-0000-4000-8000-000000000099'
+    api.listar.mockResolvedValue({ itens: [OCO], proximoCursor: null })
+    api.obter.mockImplementation(async (id: string) => (id === SUP
+      ? chamado(item(SUP, 'SUP-0042'), { ocorrencia: { id: T1, numero: 'OCO-0007' } })
+      : chamado(OCO, { chamadoDaEmpresa: null })))
+    api.abrirParaEmpresa.mockResolvedValue(chamado(item(SUP, 'SUP-0042'), { ocorrencia: { id: T1, numero: 'OCO-0007' } }))
+    render(<Tela />)
+    await screen.findByRole('region', { name: 'Chamado OCO-0007' })
+    expect(screen.getByText(/Ocorrência interna — a empresa não vê/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir chamado para a empresa' }))
+    const abrir = screen.getByRole('button', { name: 'Abrir chamado' })
+    expect(abrir).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('O que a empresa vai ler'), { target: { value: 'Notamos respostas erradas da IA; já estamos corrigindo.' } })
+    fireEvent.click(abrir)
+    await waitFor(() => expect(api.abrirParaEmpresa).toHaveBeenCalledWith(T1, 'Notamos respostas erradas da IA; já estamos corrigindo.', 3))
+    // Vai para o chamado novo, que mostra de onde veio.
+    expect(await screen.findByRole('region', { name: 'Chamado SUP-0042' })).toBeInTheDocument()
+    expect(screen.getByText(/Aberto a partir da ocorrência interna/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'OCO-0007' })).toBeInTheDocument()
+  })
+
+  it('ocorrência interna (1389): encerrar com motivo', async () => {
+    const OCO = item(T1, 'OCO-0008', { kind: 'oco', visivelParaEmpresa: false })
+    api.listar.mockResolvedValue({ itens: [OCO], proximoCursor: null })
+    api.obter.mockResolvedValue(chamado(OCO, { chamadoDaEmpresa: null }))
+    api.encerrarOcorrencia.mockResolvedValue(chamado({ ...OCO, status: 'closed', version: 4 }, { chamadoDaEmpresa: null }))
+    render(<Tela />)
+    await screen.findByRole('region', { name: 'Chamado OCO-0008' })
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar ocorrência' }))
+    fireEvent.change(screen.getByLabelText('Motivo do encerramento'), { target: { value: 'Falso positivo' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar' }))
+    await waitFor(() => expect(api.encerrarOcorrencia).toHaveBeenCalledWith(T1, 'Falso positivo', 3))
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Encerrar ocorrência' })).toBeNull())
   })
 })

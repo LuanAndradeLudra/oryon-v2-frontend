@@ -115,7 +115,7 @@ export function ListaDaFila({
                   <span aria-hidden className={cn('absolute left-0 top-0 bottom-0 w-[3px]', PRIORIDADES[c.prioridade].faixa)} />
                   <span className="flex items-center gap-1.5 min-w-0">
                     <PrioridadeNaFila prioridade={c.prioridade} />
-                    <span className="font-mono text-[11px] text-surface-400">{c.numero}</span>
+                    <span className="font-mono text-[11px] text-surface-400 whitespace-nowrap flex-shrink-0">{c.numero}</span>
                     <span className="text-[11px] text-surface-300 truncate">{c.tenantNome}{c.kind === 'oco' ? ' · interno' : ''}</span>
                     <span className="ml-auto text-[11px] text-surface-400 tabular-nums flex-shrink-0">{dataCurta(c.atualizadoEm)}</span>
                   </span>
