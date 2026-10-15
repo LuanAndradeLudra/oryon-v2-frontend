@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
-import { isAdminTier, isOryonStaff } from '@/lib/roleHelpers'
+import { ehEquipeDeSuporte, isAdminTier, isOryonStaff } from '@/lib/roleHelpers'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TagsProvider }         from '@/contexts/TagsContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
@@ -102,11 +102,13 @@ const AssignSkillPage          = lazyRoute(() => import('@/pages/admin/AssignSki
 const ConnectorRequestsPage    = lazyRoute(() => import('@/pages/admin/ConnectorRequestsPage').then(m => ({ default: m.ConnectorRequestsPage })))
 const ConnectorAdminPage       = lazyRoute(() => import('@/pages/admin/ConnectorAdminPage').then(m => ({ default: m.ConnectorAdminPage })))
 const AuditPage                = lazyRoute(() => import('@/pages/admin/AuditPage').then(m => ({ default: m.AuditPage })))
+const AdminSupportPage         = lazyRoute(() => import('@/pages/admin/AdminSupportPage').then(m => ({ default: m.AdminSupportPage })))
 const AiObservabilityPage      = lazyRoute(() => import('@/pages/admin/AiObservabilityPage').then(m => ({ default: m.AiObservabilityPage })))
 const AiExecutionsPage         = lazyRoute(() => import('@/pages/admin/AiExecutionsPage').then(m => ({ default: m.AiExecutionsPage })))
 const AdminAgentEditorPage     = lazyRoute(() => import('@/pages/admin/AdminAgentEditorPage').then(m => ({ default: m.AdminAgentEditorPage })))
 
 import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
+import { ShellDaEquipeDeSuporte } from '@/components/support/fila/ShellDaEquipeDeSuporte'
 import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
 
 // ── Route guards ──────────────────────────────────────────────────────────────
@@ -156,6 +158,9 @@ function SoAdminNoSetup({ children }: { children: ReactNode }) {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  // A equipe de suporte da Oryon só usa a fila (o app da empresa responde 403 para ela).
+  if (ehEquipeDeSuporte(user?.role)) return <Navigate to="/admin/support" replace />
   return (
     <RequireAuth>
       <OnboardingGate>
@@ -165,6 +170,18 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
       </OnboardingGate>
     </RequireAuth>
   )
+}
+
+/**
+ * Fila de suporte da Oryon (SCRUM-1384): a equipe de suporte usa um shell só
+ * dela (não carrega nada de empresa); o super_admin abre dentro do app.
+ */
+function RotaDaFilaDeSuporte() {
+  const { user } = useAuth()
+  if (ehEquipeDeSuporte(user?.role)) {
+    return <RequireAuth><ShellDaEquipeDeSuporte><AdminSupportPage /></ShellDaEquipeDeSuporte></RequireAuth>
+  }
+  return <ProtectedRoute><RequireSuperAdmin><AdminSupportPage /></RequireSuperAdmin></ProtectedRoute>
 }
 
 function RequireGuest({ children }: { children: ReactNode }) {
@@ -321,6 +338,7 @@ function AnimatedRoutes() {
           <Route path="/admin/connectors" element={isFeatureVisible('connectorsSelfService') ? (
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Conectores"><ConnectorAdminPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           ) : <Navigate to="/admin/skill-templates" replace />} />
+          <Route path="/admin/support" element={<RotaDaFilaDeSuporte />} />
           <Route path="/admin/audit" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Auditoria"><AuditPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />

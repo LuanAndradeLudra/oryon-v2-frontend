@@ -1,13 +1,18 @@
 import { api } from './api'
 import type { ModeloDoFormulario, OrigemDoProblema, TipoDePedido } from '@/components/support/supportModel'
-import type { AnexoEnviado, ChamadoDaEmpresa, NovoChamado, PaginaDeChamados, ResumoDoChamado, ResumoPorVez, VezDoChamado } from '@/types/support'
+import type {
+  AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados,
+  ResumoDaFila, ResumoDoChamado, ResumoPorVez, SugestoesDoChamado, VezDoChamado,
+} from '@/types/support'
+import type { CausaRaiz, Prioridade } from '@/components/support/fila/modeloDaFila'
+import type { StatusChamado } from '@/components/support/supportModel'
 
 /**
  * Cliente do módulo `support` do backend (épico SCRUM-1376) — o lado da
  * EMPRESA (`/support/*`): o backend aplica o tenant e o escopo do papel
  * (atendente vê os próprios; supervisor, o setor; gestão, a empresa). Sem a
  * flag do tenant as rotas respondem 404 — quem chama só chama com o recurso
- * ligado. A fila da equipe Oryon (`/admin/support/*`) entra na SCRUM-1384.
+ * ligado. A fila da equipe Oryon (`/admin/support/*`) está em `adminSupportApi`.
  */
 export const supportApi = {
   criar(dto: NovoChamado) {
@@ -73,6 +78,67 @@ export const supportApi = {
    */
   async baixarAnexo(chamadoId: string, anexoId: string, nome: string) {
     const r = await api.get<Blob>(`/support/tickets/${chamadoId}/attachments/${anexoId}`, { responseType: 'blob' })
+    salvarArquivo(r.data, nome)
+  },
+}
+
+/** Uma mudança por vez no PATCH da fila, sempre com a versão que a tela tem (409 se alguém mexeu antes). */
+export type MudancaNaFila =
+  | { assumir: boolean }
+  | { status: StatusChamado }
+  | { prioridade: Prioridade; motivo: string }
+  | { causaRaiz: CausaRaiz | null }
+  | { jiraRef: string | null }
+
+/**
+ * Fila da EQUIPE ORYON (`/admin/support/*`, SCRUM-1384): todos os clientes.
+ * Só `oryon_support` e super_admin (o backend devolve 403 para a empresa).
+ * Leitura de evidência, dossiê e anexo fica registrada no backend.
+ */
+export const adminSupportApi = {
+  listar(filtros: FiltrosDaFila = {}) {
+    const params = Object.fromEntries(Object.entries(filtros).filter(([, v]) => v !== undefined && v !== null && v !== '' && v !== false))
+    return api.get<PaginaDaFila>('/admin/support/tickets', { params }).then((r) => r.data)
+  },
+  resumo() {
+    return api.get<ResumoDaFila>('/admin/support/tickets/resumo').then((r) => r.data)
+  },
+  obter(id: string) {
+    return api.get<ChamadoDaEquipe>(`/admin/support/tickets/${id}`).then((r) => r.data)
+  },
+  atualizar(id: string, version: number, mudanca: MudancaNaFila) {
+    return api.patch<ChamadoDaEquipe>(`/admin/support/tickets/${id}`, { version, ...mudanca }).then((r) => r.data)
+  },
+  /** Nota interna: fica no histórico da equipe; a empresa nunca vê. */
+  anotar(id: string, corpo: string) {
+    return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/notes`, { corpo }).then((r) => r.data)
+  },
+  /** Pergunta à empresa: o chamado passa a esperar por ela. */
+  perguntar(id: string, pergunta: string, version: number) {
+    return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/question`, { pergunta, version }).then((r) => r.data)
+  },
+  /** Resposta ao cliente com o status escolhido — o único caminho para Resolvido. */
+  responder(id: string, dto: { resumo: string; dependeDaClinica: string | null; deixarComo: StatusChamado; version: number }) {
+    return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/reply`, dto).then((r) => r.data)
+  },
+  sugestoes(id: string) {
+    return api.get<SugestoesDoChamado>(`/admin/support/tickets/${id}/suggestions`).then((r) => r.data)
+  },
+  /** A evidência do chamado (o acesso fica registrado). */
+  evidencia(id: string) {
+    return api.get<EvidenciasDoChamado>(`/admin/support/tickets/${id}/evidence`).then((r) => r.data)
+  },
+  /** Repete o turno com as ferramentas gravadas (custa IA; desligado por padrão). */
+  repetirTurno(id: string, evidenciaId: string, motivo: string) {
+    return api.post<Record<string, unknown>>(`/admin/support/tickets/${id}/evidence/${evidenciaId}/replay`, { motivo }).then((r) => r.data)
+  },
+  /** Dossiê de auditoria em JSON (o acesso fica registrado). */
+  async baixarDossie(id: string, numero: string) {
+    const r = await api.get<unknown>(`/admin/support/tickets/${id}/dossie`)
+    salvarArquivo(new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' }), `dossie-${numero}.json`)
+  },
+  async baixarAnexo(id: string, anexoId: string, nome: string) {
+    const r = await api.get<Blob>(`/admin/support/tickets/${id}/attachments/${anexoId}`, { responseType: 'blob' })
     salvarArquivo(r.data, nome)
   },
 }
