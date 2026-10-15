@@ -87,7 +87,8 @@ export type MessageType =
  *  mensagem real do servidor (ou por `failed`) assim que ela resolve. */
 export type MessageStatus = 'queued' | 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
 
-export type UserRole = 'super_admin' | 'business_admin' | 'admin' | 'agent' | 'supervisor'
+/** `oryon_support`: equipe de suporte da Oryon (épico SCRUM-1376) — só a fila de suporte, de todos os clientes; nunca atribuível pela empresa. */
+export type UserRole = 'super_admin' | 'business_admin' | 'admin' | 'agent' | 'supervisor' | 'oryon_support'
 
 export type UserStatus = 'active' | 'pending' | 'inactive'
 
