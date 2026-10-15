@@ -18,6 +18,12 @@ export const supportApi = {
   criar(dto: NovoChamado) {
     return api.post<ChamadoDaEmpresa>('/support/tickets', dto).then((r) => r.data)
   },
+  /** Promover a chamado (SCRUM-1389): o sinal da fila "Verificar" vira chamado — uma vez só (`jaPromovido`). */
+  promoverAnomalia(activityLogId: string, descricao?: string) {
+    return api.post<ChamadoDaEmpresa & { jaPromovido: boolean }>(
+      `/support/tickets/from-anomaly/${encodeURIComponent(activityLogId)}`, { descricao: descricao ?? null },
+    ).then((r) => r.data)
+  },
   /** Modelo neutro do formulário + campos cadastrados pela empresa. */
   modelo() {
     return api.get<ModeloDoFormulario>('/support/form-config').then((r) => r.data)
@@ -123,6 +129,14 @@ export const adminSupportApi = {
   },
   sugestoes(id: string) {
     return api.get<SugestoesDoChamado>(`/admin/support/tickets/${id}/suggestions`).then((r) => r.data)
+  },
+  /** Ocorrência interna → chamado da empresa (SCRUM-1389), com o texto que ela vai ler. */
+  abrirParaEmpresa(id: string, resumo: string, version: number) {
+    return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/para-a-empresa`, { resumo, version }).then((r) => r.data)
+  },
+  /** Encerrar a ocorrência interna, com motivo (SCRUM-1389). */
+  encerrarOcorrencia(id: string, motivo: string, version: number) {
+    return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/encerrar-ocorrencia`, { motivo, version }).then((r) => r.data)
   },
   /** Acesso auditado (SCRUM-1385): libera a conversa do chamado por 24 h, para quem pediu, com motivo. */
   liberarConversa(id: string, motivo: string) {

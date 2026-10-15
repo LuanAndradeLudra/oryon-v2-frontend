@@ -267,6 +267,10 @@ export interface ChamadoDaEquipe extends Omit<ChamadoDaEmpresa, 'prioridade' | '
   alteradoEm: string
   version: number
   eventos: EventoDaEquipe[]
+  /** SCRUM-1389 — chamado da empresa aberto a partir de uma ocorrência interna: a ocorrência. */
+  ocorrencia?: { id: string; numero: string } | null
+  /** SCRUM-1389 — na ocorrência interna: o chamado da empresa aberto a partir dela. */
+  chamadoDaEmpresa?: { id: string; numero: string } | null
 }
 
 /** Parecidos de qualquer empresa (o problema com assinatura chega na SCRUM-1387). */

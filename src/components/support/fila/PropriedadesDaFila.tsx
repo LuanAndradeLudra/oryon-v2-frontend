@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Layers, Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { AcoesDaOcorrencia } from './AcoesDaOcorrencia'
 import { Input } from '@/components/ui/Input'
 import { useAuth } from '@/contexts/AuthContext'
 import { showToast } from '@/hooks/useToast'
@@ -95,6 +96,7 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
 
   return (
     <div className="flex flex-col gap-4">
+      <AcoesDaOcorrencia c={c} onAtualizar={onAtualizar} onRecarregar={onRecarregar} onAbrir={onAbrir} />
       <div className="flex flex-col">
         <Linha rotulo="Responsável">
           <span className="flex items-center gap-2 text-[13px] min-w-0">
