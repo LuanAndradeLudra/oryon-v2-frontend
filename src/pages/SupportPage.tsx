@@ -1,12 +1,14 @@
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, ChevronDown, CircleHelp, LifeBuoy, MessageSquare, Paperclip, Plus, RotateCcw, Search } from 'lucide-react'
+import { ArrowLeft, BarChart3, CheckCircle2, ChevronDown, CircleHelp, LifeBuoy, MessageSquare, Paperclip, Plus, RotateCcw, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useEstadoNaUrl, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
 import { showToast } from '@/hooks/useToast'
@@ -65,6 +67,8 @@ interface Lista { chave: string; itens: ResumoDoChamado[]; proximo: string | nul
 
 export function SupportPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const gestao = isAdminTier(user?.role)
   const isMobile = useIsMobile()
   const colunaCabe = useMediaQuery('(min-width: 1280px)')
   const [abaUrl, setAba] = useEstadoNaUrl<VezDoChamado | null>('aba', { padrao: null, ler: lerAba, escrever: texto, resetar: ['chamado'] })
@@ -299,9 +303,18 @@ export function SupportPage() {
           </button>
         )}
         <span className="hidden lg:inline text-xs text-surface-400 truncate">Chamados da sua empresa com a equipe Oryon</span>
-        <Button className="ml-auto flex-shrink-0" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setNovo(true)} aria-label="Novo chamado">
-          <span className="hidden sm:inline">Novo chamado</span><span className="sm:hidden">Novo</span>
-        </Button>
+        <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+          {/* SCRUM-1391: os números do mês, só para a gestão. */}
+          {gestao && (
+            <Button size="sm" variant="neutral" leftIcon={<BarChart3 className="w-4 h-4" />} onClick={() => navigate('/support/qualidade')}
+              aria-label="Qualidade do atendimento" title="Qualidade do atendimento">
+              <span className="hidden sm:inline">Qualidade</span>
+            </Button>
+          )}
+          <Button size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setNovo(true)} aria-label="Novo chamado">
+            <span className="hidden sm:inline">Novo chamado</span><span className="sm:hidden">Novo</span>
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 min-h-0 flex">

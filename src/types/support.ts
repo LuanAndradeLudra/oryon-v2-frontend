@@ -314,6 +314,47 @@ export interface VisaoDaCalibracao {
   simulacao: { chamados: number; antes: DistribuicaoDePrioridade; depois: DistribuicaoDePrioridade; mudariam: number }
 }
 
+/** SCRUM-1391 — um indicador da qualidade: sempre numerador, denominador e período (o texto traz os dois). */
+export interface IndicadorDaQualidade {
+  chave: string
+  titulo: string
+  numerador: number | null
+  denominador: number | null
+  percentual: number | null
+  texto: string
+  nota: string | null
+}
+
+/** A qualidade de uma empresa num mês. Mês fechado com retrato: os mesmos números do e-mail. */
+export interface QualidadeDaEmpresa {
+  tenantId: string
+  empresa: string
+  periodo: string
+  nomeDoPeriodo: string
+  fechado: boolean
+  retrato: { geradoEm: string; enviadoEm: string | null; destinatarios: number } | null
+  indicadores: IndicadorDaQualidade[]
+  /** Sem a amostra revisada (SCRUM-1365), a taxa de erro não aparece: só este aviso. */
+  avisoDaTaxaDeErro: string
+  periodos: string[]
+}
+
+/** A visão da equipe: todas as empresas com o suporte, no mês ou nos últimos 7 dias. */
+export interface VisaoDaQualidade {
+  periodo: string
+  nomeDoPeriodo: string
+  fechado: boolean
+  empresas: Array<{ tenantId: string; empresa: string; retrato: boolean; indicadores: IndicadorDaQualidade[] }>
+  avisoDaTaxaDeErro: string
+  periodos: string[]
+}
+
+export interface PreviaDoEmailDaQualidade {
+  assunto: string
+  html: string
+  retrato: boolean
+}
+
 /** SCRUM-1387 — status do problema. "Corrigido" exige o candidato a teste de regressão. */
 export type StatusDoProblema = 'aberto' | 'investigando' | 'corrigido' | 'nao_corrigir'
 

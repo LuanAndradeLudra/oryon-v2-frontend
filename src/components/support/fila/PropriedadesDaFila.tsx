@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Layers, Paperclip } from 'lucide-react'
+import { BarChart3, Layers, Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { AcoesDaOcorrencia } from './AcoesDaOcorrencia'
 import { ProblemaDoChamado } from './ProblemaDoChamado'
+import { QualidadeDasEmpresas } from './QualidadeDasEmpresas'
 import { Input } from '@/components/ui/Input'
 import { useAuth } from '@/contexts/AuthContext'
 import { showToast } from '@/hooks/useToast'
@@ -219,9 +220,24 @@ function Prazo({ c, relogio, agora }: { c: ChamadoDaEquipe; relogio: Relogio; ag
   )
 }
 
+/** A empresa do chamado, com o atalho para a qualidade dela (SCRUM-1391). */
+function EmpresaDoChamado({ c }: { c: ChamadoDaEquipe }) {
+  const [aberta, setAberta] = useState(false)
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-2">
+      <span>{c.tenantNome}</span>
+      <button type="button" onClick={() => setAberta(true)} aria-label={`Qualidade de ${c.tenantNome}`}
+        className="inline-flex items-center gap-1 text-[12px] text-accent-dark hover:underline">
+        <BarChart3 className="w-3 h-3" aria-hidden />Qualidade
+      </button>
+      {aberta && <QualidadeDasEmpresas inicial={{ tenantId: c.tenantId, empresa: c.tenantNome }} onFechar={() => setAberta(false)} />}
+    </span>
+  )
+}
+
 /** O que quem reportou disse (fatos, nunca gravidade) e o contexto do chamado. */
 function DadosDoChamado({ c }: { c: ChamadoDaEquipe }) {
-  const linhas: Array<[string, ReactNode]> = [['Empresa', c.tenantNome]]
+  const linhas: Array<[string, ReactNode]> = [['Empresa', <EmpresaDoChamado key="empresa" c={c} />]]
   // SCRUM-1392 — quanto o relato desta empresa se confirma na triagem (só a equipe vê).
   if (c.calibracao) {
     linhas.push(['Relatos', (
