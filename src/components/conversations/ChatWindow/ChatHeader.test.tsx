@@ -16,6 +16,12 @@ vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1' } 
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
 vi.mock('@/hooks/useAddToPipeline', () => ({ useAddToPipeline: () => ({ requestAdd: vi.fn(), dialogs: null }) }))
 vi.mock('@/services/api', () => ({ dealsApi: { conversationTarget: vi.fn(), get: vi.fn() } }))
+// SCRUM-1388: o "Converter em chamado" só no número de suporte da Oryon.
+let numeroDeSuporte = false
+vi.mock('@/components/support/whatsappDeSuporte', () => ({ useWhatsappDeSuporte: () => numeroDeSuporte }))
+vi.mock('@/components/support/ConverterEmChamado', () => ({
+  ConverterEmChamado: ({ conversationId }: { conversationId: string }) => <div role="dialog" aria-label={`Converter ${conversationId}`} />,
+}))
 
 const BASE: Conversation = {
   id: 'conv-1',
@@ -48,7 +54,26 @@ function baseProps(overrides: Partial<Conversation> = {}) {
   }
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  numeroDeSuporte = false
+})
+
+describe('ChatHeader — WhatsApp de suporte (SCRUM-1388)', () => {
+  it('fora do número de suporte não há "Converter em chamado"', () => {
+    render(<ChatHeader {...baseProps()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
+    expect(screen.queryByRole('menuitem', { name: /Converter em chamado/ })).toBeNull()
+  })
+
+  it('no número de suporte, o menu ⋯ abre a conversão desta conversa', () => {
+    numeroDeSuporte = true
+    render(<ChatHeader {...baseProps()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Converter em chamado/ }))
+    expect(screen.getByRole('dialog', { name: 'Converter conv-1' })).toBeInTheDocument()
+  })
+})
 
 describe('ChatHeader — controle · Assumir · Resolver · ··· (mock 1d, R2-1D-HDR)', () => {
   // SCRUM-1253 (PO, 06/10): o controle é o RESPONSÁVEL nomeado ("IA ▾" com a
