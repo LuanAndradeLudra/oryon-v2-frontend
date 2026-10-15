@@ -18,7 +18,10 @@ vi.mock('@/hooks/useAddToPipeline', () => ({ useAddToPipeline: () => ({ requestA
 vi.mock('@/services/api', () => ({ dealsApi: { conversationTarget: vi.fn(), get: vi.fn() } }))
 // SCRUM-1388: o "Converter em chamado" só no número de suporte da Oryon.
 let numeroDeSuporte = false
-vi.mock('@/components/support/whatsappDeSuporte', () => ({ useWhatsappDeSuporte: () => numeroDeSuporte }))
+const linhaPerguntada = vi.fn()
+vi.mock('@/components/support/whatsappDeSuporte', () => ({
+  useWhatsappDeSuporte: (linha: string | null) => { linhaPerguntada(linha); return numeroDeSuporte },
+}))
 vi.mock('@/components/support/ConverterEmChamado', () => ({
   ConverterEmChamado: ({ conversationId }: { conversationId: string }) => <div role="dialog" aria-label={`Converter ${conversationId}`} />,
 }))
@@ -72,6 +75,8 @@ describe('ChatHeader — WhatsApp de suporte (SCRUM-1388)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
     fireEvent.click(screen.getByRole('menuitem', { name: /Converter em chamado/ }))
     expect(screen.getByRole('dialog', { name: 'Converter conv-1' })).toBeInTheDocument()
+    // A pergunta vai com a linha da conversa: a ação só na linha de suporte.
+    expect(linhaPerguntada).toHaveBeenCalledWith('wn1')
   })
 })
 

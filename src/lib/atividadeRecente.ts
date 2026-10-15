@@ -40,20 +40,25 @@ export function rotaSemDados(url: string): string {
   return caminho.replace(UUID, ':id').replace(/\/\d{3,}(?=\/|$)/g, '/:id') || '/'
 }
 
-/** Máscara simples do navegador: e-mail, CPF e números longos (o backend mascara de novo). */
+/**
+ * Máscara simples do navegador: e-mail, CPF e números longos (o backend mascara
+ * de novo). Corta ANTES e usa regex com teto: sem isso, uma mensagem de erro
+ * longa numa linha só (40 KB) travava a aba (revisão do Portão 4).
+ */
 export function mascararNoNavegador(texto: string): string {
-  return texto
-    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[e-mail]')
+  return texto.slice(0, 400)
+    .replace(/[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8}/g, '[e-mail]')
     .replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[cpf]')
-    .replace(/\+?\(?\d[\d\s().-]{7,}\d/g, '[número]')
+    .replace(/\+?\(?\d[\d\s().-]{7,30}\d/g, '[número]')
 }
 
 /** A tela atual (chamado a cada troca de rota). Repetida, não conta. */
 export function registrarTela(rota: string, tela: string): void {
-  telaAtual = tela
-  const r = rotaSemDados(rota)
+  // Os tetos do backend (DTO): passar deles fazia o chamado voltar 400 (revisão do Portão 4).
+  telaAtual = tela.slice(0, 120)
+  const r = rotaSemDados(rota).slice(0, 200)
   if (telas.at(-1)?.rota === r) return
-  telas = acrescentar(telas, { em: new Date().toISOString(), tela, rota: r }, LIMITE.telas)
+  telas = acrescentar(telas, { em: new Date().toISOString(), tela: telaAtual, rota: r }, LIMITE.telas)
 }
 
 /** Chamada ao servidor que falhou (5xx, sem resposta, 408, 429). */

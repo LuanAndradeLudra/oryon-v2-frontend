@@ -305,8 +305,8 @@ export interface ProblemaCompleto extends ResumoDoProblema {
 export interface ContextoDaConversaDeSuporte {
   /** O nome como está no contato e só o final do telefone. */
   contato: { nome: string | null; telefone: string | null }
-  /** As últimas mensagens, mascaradas (o que vai para o chamado é exatamente isto). */
-  mensagens: Array<{ id: string; de: 'contato' | 'equipe'; texto: string; em: string }>
+  /** As últimas mensagens, mascaradas (o que vai para o chamado é exatamente isto). `noChamado`: já copiada para o chamado aberto. */
+  mensagens: Array<{ id: string; de: 'contato' | 'equipe'; texto: string; em: string; noChamado?: boolean }>
   /** Usuários de empresa com o mesmo telefone do contato: a sugestão de empresa e de quem abre. */
   sugestoes: Array<{ tenantId: string; empresa: string; userId: string; nome: string; papel: string }>
   /** Chamado ainda aberto desta conversa: converter de novo oferece juntar. */

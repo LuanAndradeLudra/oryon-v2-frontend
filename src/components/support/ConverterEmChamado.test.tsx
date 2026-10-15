@@ -44,6 +44,11 @@ describe('mensagensSugeridas', () => {
     expect([...mensagensSugeridas([msg('a', 'contato', 'x'), msg('b', 'equipe', 'y')])]).toEqual(['a'])
     expect([...mensagensSugeridas([])]).toEqual([])
   })
+
+  it('o que já está no chamado aberto não volta como sugestão (revisão do Portão 4)', () => {
+    const ja = { ...msg('m3', 'contato', 'O funil não carrega.'), noChamado: true }
+    expect([...mensagensSugeridas([msg('m1', 'contato', 'Oi'), msg('m2', 'equipe', 'Olá'), ja, msg('m4', 'contato', 'E agora isto.')])]).toEqual(['m4'])
+  })
 })
 
 describe('Converter em chamado (SCRUM-1388)', () => {
@@ -57,6 +62,8 @@ describe('Converter em chamado (SCRUM-1388)', () => {
     expect(screen.getByRole('radio', { name: /Gabi Gestora · Clínica Serra/ })).toBeChecked()
     expect(screen.getByLabelText('Relato do chamado')).toHaveValue('O funil não carrega.\nDesde ontem.')
 
+    // Rádios nativos: o tipo vem marcado e as setas trocam (revisão do Portão 4).
+    expect(screen.getByRole('radio', { name: 'Algo não funciona' })).toBeChecked()
     fireEvent.click(screen.getByRole('radio', { name: 'Está lento' }))
     fireEvent.click(screen.getByRole('button', { name: 'Converter em chamado' }))
     await waitFor(() => expect(api.converter).toHaveBeenCalledWith('conv-s', {
@@ -100,7 +107,8 @@ describe('Converter em chamado (SCRUM-1388)', () => {
     api.converter.mockResolvedValue({ chamado: { id: 't2', numero: 'SUP-0001', empresa: 'Clínica Sem Suporte' }, juntado: false, respostaEnviada: false })
     montar()
     const botao = await screen.findByRole('button', { name: 'Converter em chamado' })
-    expect(botao).toBeDisabled() // sem empresa escolhida
+    expect(botao).toBeDisabled() // sem empresa escolhida — e a tela diz o que falta
+    expect(screen.getByText('Escolha a empresa do contato.')).toBeInTheDocument()
     fireEvent.click(await screen.findByRole('radio', { name: /Clínica Sem Suporte/ }))
     expect(api.empresas).toHaveBeenCalledWith('')
     expect(screen.getByText(/não tem a página Suporte ligada/)).toBeInTheDocument()
@@ -116,5 +124,6 @@ describe('Converter em chamado (SCRUM-1388)', () => {
     fireEvent.click(await screen.findByRole('checkbox', { name: /O funil não carrega/ }))
     fireEvent.click(screen.getByRole('checkbox', { name: /Desde ontem/ }))
     expect(screen.getByRole('button', { name: 'Converter em chamado' })).toBeDisabled()
+    expect(screen.getByText('Escolha ao menos uma mensagem.')).toBeInTheDocument()
   })
 })

@@ -353,6 +353,11 @@ export function instalarBackendDemo() {
     return { data: { data: lista, unreadCount: lista.filter((n) => !n.isRead).length, nextCursor: null } }
   })
 
+  // ── WhatsApp de suporte da Oryon (SCRUM-1388) ─────────────────────────────
+  // O cabeçalho da conversa pergunta, uma vez por sessão, se o tenant opera o
+  // número de suporte. A empresa da demonstração não opera.
+  rota('support/whatsapp-suporte/estado', eq('get', '/support/whatsapp-suporte/estado'), () => ({ data: { ativo: false, linha: null } }))
+
   // ── Contexto da empresa (hub que a tela de Agentes lê) ────────────────────
   rota('context/brain', eq('get', '/context/brain'), () => ({
     data: { companyName: TENANT.nome, segment: 'Software de gestão', lastUpdatedAt: daysAgoIso(30) },

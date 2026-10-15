@@ -115,7 +115,7 @@ export function ChatHeader({
   const marcando = useMarcacao(suporte.store, (e) => suporte.ligado && e.marcando)
   const temChamadoAberto = useDadosDoSuporte()?.temChamadoAberto ?? false
   // SCRUM-1388: no número de suporte da Oryon, a conversa vira chamado da empresa do contato.
-  const whatsappDeSuporte = useWhatsappDeSuporte()
+  const whatsappDeSuporte = useWhatsappDeSuporte(conversation.whatsappNumber?.id ?? null)
   const [converter, setConverter] = useState(false)
   const linhasDaIA = useLinhasDaIA()
   const estadoIA = estadoDaIA(conversation, linhasDaIA)
