@@ -38,6 +38,10 @@ export interface ResumoDoChamado {
   mensagensMarcadas?: string[]
 }
 
+/** De quem é a vez (página Suporte): da empresa (a Oryon perguntou ou pede confirmação), da Oryon ou encerrado. */
+export type VezDoChamado = 'empresa' | 'oryon' | 'encerrados'
+export type ResumoPorVez = Record<VezDoChamado, number>
+
 export interface PaginaDeChamados {
   itens: ResumoDoChamado[]
   /** `null` = não há mais páginas. */
