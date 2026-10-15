@@ -68,6 +68,16 @@ export function isOryonStaff(role: UserRole | string | undefined | null): boolea
 }
 
 /**
+ * Equipe de suporte da Oryon (épico SCRUM-1376): só a fila de suporte, de
+ * todos os clientes. Não é staff das ferramentas `/admin/*` (isso é
+ * `isOryonStaff`), e o app da empresa — dados, conversas, chat interno — não
+ * carrega para ela (o backend responde 403 fora da fila).
+ */
+export function ehEquipeDeSuporte(role: UserRole | string | undefined | null): boolean {
+  return role === 'oryon_support'
+}
+
+/**
  * Human-readable label for a role. Used by user pickers, profile cards,
  * member lists. Falls back to the raw role string when the value isn't
  * recognized so the UI never shows blank — but new roles should be added

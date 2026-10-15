@@ -358,6 +358,13 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
                     active={activeHref === '/admin/connector-requests'}
                   />
                 )}
+                {/* Fila de suporte de todos os clientes (SCRUM-1384). */}
+                <SidebarLink
+                  href="/admin/support"
+                  icon={<LifeBuoy className="w-[16.5px] h-[16.5px]" />}
+                  label="Fila de suporte"
+                  active={activeHref === '/admin/support'}
+                />
                 <SidebarLink
                   href="/admin/audit"
                   icon={<Activity className="w-[16.5px] h-[16.5px]" />}

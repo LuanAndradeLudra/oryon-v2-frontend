@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
 import { tagsApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { ehEquipeDeSuporte } from '@/lib/roleHelpers'
 import type { Tag } from '@/types'
 import { avisarMudancaDeEtiqueta, avisarNestaAba, useMudancaDeEtiqueta } from '@/lib/etiquetasAoVivo'
 import { getSocket } from '@/services/socket'
@@ -41,7 +42,9 @@ const TagsContext = createContext<TagsConfig>({
 })
 
 export function TagsProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated: logado, user } = useAuth()
+  // A equipe de suporte da Oryon não tem etiquetas de empresa (nem socket: o backend recusa).
+  const isAuthenticated = logado && !ehEquipeDeSuporte(user?.role)
   const [tags, setTags] = useState<Tag[]>([])
   const [loadingTags, setLoadingTags] = useState(true)
 

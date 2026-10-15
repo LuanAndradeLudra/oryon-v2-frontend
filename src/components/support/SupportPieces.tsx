@@ -1,10 +1,11 @@
-import { Bell, CircleDot, CircleHelp, Eye, Flag, Layers, Lock, MessageSquare, RotateCcw, ThumbsUp, UserCheck } from 'lucide-react'
+import { Bell, CheckCircle2, CircleDot, CircleHelp, Eye, Flag, Layers, Lock, MessageSquare, RotateCcw, ThumbsUp, UserCheck } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChamadoDaEmpresa, EventoDoChamado, MensagemDoChamado } from '@/types/support'
 import './suporte.css'
 import { ORIGENS_DA_MENSAGEM } from './origemDaMensagem'
-import { dataCurta } from './supportModel'
+import { dataCurta, type StatusChamado } from './supportModel'
+import { STATUS_NA_FILA } from './fila/modeloDaFila'
 
 /**
  * Peças da página Suporte (SCRUM-1383) que a fila da Oryon (SCRUM-1384) vai
@@ -41,18 +42,23 @@ export function MensagensMarcadas({ mensagens, moldura = true }: { mensagens: Me
 
 const ICONE_DO_EVENTO: Record<string, LucideIcon> = {
   aberto: Flag, comentario: MessageSquare, resposta: MessageSquare, status: CircleDot, acesso: Eye, pergunta: CircleHelp,
-  avaliacao: ThumbsUp, reaberto: RotateCcw, aviso: Bell, nota: Lock, responsavel: UserCheck, problema: Layers,
+  avaliacao: ThumbsUp, reaberto: RotateCcw, aviso: Bell, nota: Lock, responsavel: UserCheck, problema: Layers, retorno: CheckCircle2,
 }
 /** Falas da EMPRESA (cartão claro); o resto é da Oryon ou do sistema. */
 const DA_EMPRESA = new Set(['aberto', 'comentario', 'resposta'])
 
+/** O que o fio usa do chamado — o da empresa ou o da equipe (que traz a visibilidade e os detalhes do evento). */
+type EventoNoFio = EventoDoChamado & { visivelParaEmpresa?: boolean; dados?: Record<string, unknown> | null }
+type ChamadoNoFio = Pick<ChamadoDaEmpresa, 'complemento' | 'tipoDePedido' | 'descricao' | 'oQueSeriaCerto' | 'origemDoProblema'> & { eventos: EventoNoFio[] }
+
 /**
  * Um fio só: o relato (1º item), andamento, comentários, perguntas e acessos
  * à conversa. A empresa recebe só o que é visível para ela (o backend filtra:
- * nota interna nunca chega aqui). `interno`, na fila da Oryon, marca as notas.
+ * nota interna nunca chega aqui). `interno`, na fila da Oryon, marca as notas
+ * e mostra o status com o nome da equipe (triado ≠ investigando).
  */
 export function FioDoChamado({ c, interno = false, titulo = 'Conversa com a Oryon' }: {
-  c: ChamadoDaEmpresa
+  c: ChamadoNoFio
   interno?: boolean
   titulo?: string | null
 }) {
@@ -67,10 +73,12 @@ export function FioDoChamado({ c, interno = false, titulo = 'Conversa com a Oryo
   )
 }
 
-function ItemDoFio({ c, e, ultimo, interno }: { c: ChamadoDaEmpresa; e: EventoDoChamado & { visivelParaEmpresa?: boolean }; ultimo: boolean; interno: boolean }) {
+function ItemDoFio({ c, e, ultimo, interno }: { c: ChamadoNoFio; e: EventoNoFio; ultimo: boolean; interno: boolean }) {
   const Icone = ICONE_DO_EVENTO[e.tipo] ?? CircleDot
   const nota = e.visivelParaEmpresa === false
   const corpo = e.tipo === 'aberto' ? <RelatoNoFio c={c} /> : e.corpo
+  const para = interno && e.tipo === 'status' && typeof e.dados?.para === 'string' ? e.dados.para as StatusChamado : null
+  const texto = para && STATUS_NA_FILA[para] ? `Status: ${STATUS_NA_FILA[para]}` : e.texto
   return (
     <li className="grid grid-cols-[28px_1fr] gap-3 relative pb-4 last:pb-0">
       {!ultimo && <span aria-hidden className="absolute left-[13px] top-7 bottom-0 w-px bg-surface-700" />}
@@ -80,7 +88,7 @@ function ItemDoFio({ c, e, ultimo, interno }: { c: ChamadoDaEmpresa; e: EventoDo
       </span>
       <div className="min-w-0 pt-0.5">
         <p className="text-[13px] text-surface-100 flex flex-wrap items-center gap-x-2">
-          <b className="font-semibold">{e.texto}</b>
+          <b className="font-semibold">{texto}</b>
           {interno && nota && <span className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-surface-400">só Oryon</span>}
         </p>
         <p className="text-[11px] text-surface-400">{e.autor} · {dataCurta(e.em)}</p>
@@ -96,7 +104,7 @@ function ItemDoFio({ c, e, ultimo, interno }: { c: ChamadoDaEmpresa; e: EventoDo
 }
 
 /** O relato de quem abriu, como primeira fala do fio. */
-function RelatoNoFio({ c }: { c: ChamadoDaEmpresa }) {
+function RelatoNoFio({ c }: { c: ChamadoNoFio }) {
   return (
     <div className="flex flex-col gap-2">
       {c.complemento && c.tipoDePedido === 'defeito' && (

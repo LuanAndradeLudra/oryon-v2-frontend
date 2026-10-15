@@ -11,6 +11,7 @@ import type {
   Alcance, Categoria, ContextoTecnico, DesdeQuando, EntradaDoChamado, FatosDoImpacto, OrigemDoProblema, StatusChamado, TipoDePedido,
 } from '@/components/support/supportModel'
 import type { OrigemDaMensagem } from '@/components/support/origemDaMensagem'
+import type { CausaRaiz, Prioridade, Relogio } from '@/components/support/fila/modeloDaFila'
 
 export type PrioridadeParaEmpresa = 'P0' | 'P1' | null
 export type Avaliacao = 'resolveu' | 'nao_resolveu' | null
@@ -148,4 +149,151 @@ export interface NovoChamado {
   entrada?: EntradaDoChamado
   /** Quem reporta viu o aviso de repetido e disse que é OUTRO problema: não agrupa nem conta. */
   ehOutro?: boolean
+}
+
+// ─── Fila da EQUIPE ORYON (`/admin/support/*`, SCRUM-1384) ──────────────────
+// Espelho de `paraEquipe` e `resumoParaEquipe` (backend): a equipe vê tudo,
+// com a marcação do que é interno.
+
+/** O prazo ainda aberto que vence primeiro (a fila destaca quando está perto). */
+export interface ProximoPrazo {
+  relogio: Relogio
+  ate: string
+  vencido: boolean
+  perto: boolean
+}
+
+/** Item da fila (todos os clientes). */
+export interface ItemDaFila {
+  id: string
+  numero: string
+  kind: 'sup' | 'oco'
+  tenantId: string
+  tenantNome: string
+  visivelParaEmpresa: boolean
+  origem: string
+  entrada: EntradaDoChamado | null
+  origemDoProblema: OrigemDoProblema
+  origemNome: string | null
+  tipoDePedido: TipoDePedido | null
+  categoria: Categoria
+  assunto: { id: string; titulo: string } | null
+  ondeAconteceu: string | null
+  descricao: string
+  status: StatusChamado
+  prioridade: Prioridade
+  prioridadeManual: boolean
+  responsavelId: string | null
+  responsavel: string | null
+  perguntaPendente: string | null
+  avaliacao: Avaliacao
+  contatoNome: string | null
+  abertoPor: string
+  abertoEm: string
+  atualizadoEm: string
+  alteradoEm: string
+  primeiraRespostaEm: string | null
+  proximoPrazo: ProximoPrazo | null
+  version: number
+}
+
+export interface PaginaDaFila {
+  itens: ItemDaFila[]
+  proximoCursor: string | null
+}
+
+export interface ResumoDaFila {
+  contadores: { urgentes: number; semResposta: number; comCliente: number; minha: number; semDono: number; todos: number }
+  empresas: Array<{ id: string; nome: string; abertos: number }>
+}
+
+export type FilaDaEquipe = 'minha' | 'sem_dono' | 'todos'
+export type AtalhoDaFila = 'urgentes' | 'sem_resposta' | 'com_cliente'
+export type SituacaoDaFila = 'abertos' | 'encerrados' | 'todos'
+
+export interface FiltrosDaFila {
+  fila?: FilaDaEquipe
+  situacao?: SituacaoDaFila
+  atalho?: AtalhoDaFila
+  empresa?: string
+  origemDoProblema?: OrigemDoProblema
+  soSinais?: boolean
+  busca?: string
+  cursor?: string
+  limite?: number
+}
+
+/** Evento como a equipe vê: com a visibilidade e os detalhes (de/para, motivo). */
+export interface EventoDaEquipe extends EventoDoChamado {
+  visivelParaEmpresa: boolean
+  dados: Record<string, unknown> | null
+}
+
+/** Prazos (…Ate) e quando cada relógio foi cumprido (…Em). */
+export interface SlaDoChamado {
+  primeiraRespostaAte: string | null
+  triagemAte: string | null
+  contornoAte: string | null
+  solucaoAte: string | null
+  pausadoDesde: string | null
+  pausadoMinutos: number
+  primeiraRespostaEm: string | null
+  triagemEm: string | null
+  contornoEm: string | null
+  solucaoEm: string | null
+  encerradoEm: string | null
+}
+
+/** O chamado completo, como a equipe Oryon vê. */
+export interface ChamadoDaEquipe extends Omit<ChamadoDaEmpresa, 'prioridade' | 'eventos'> {
+  kind: 'sup' | 'oco'
+  tenantId: string
+  tenantNome: string
+  visivelParaEmpresa: boolean
+  prioridade: Prioridade
+  prioridadeDaRegra: Prioridade
+  motivosDaPrioridade: string[]
+  prioridadeManual: boolean
+  regraVersao: string
+  relatores: number
+  sla: SlaDoChamado
+  proximoPrazo: ProximoPrazo | null
+  causaRaiz: CausaRaiz | null
+  responsavelId: string | null
+  responsavel: string | null
+  problemaId: string | null
+  jiraRef: string | null
+  acessoAteEm: string | null
+  alteradoEm: string
+  version: number
+  eventos: EventoDaEquipe[]
+}
+
+/** Parecidos de qualquer empresa (o problema com assinatura chega na SCRUM-1387). */
+export interface SugestoesDoChamado {
+  problemas: never[]
+  parecidos: ItemDaFila[]
+}
+
+export type StatusDaEvidencia = 'coletando' | 'pronta' | 'parcial' | 'indisponivel' | 'expirada' | 'removida'
+
+/** Uma parte da evidência (coletor). `secoes` é o retrato gravado, mascarado. */
+export interface EvidenciaDoChamado {
+  id: string
+  coletor: string
+  chave: string
+  status: StatusDaEvidencia
+  refs: Record<string, unknown>
+  secoes: Record<string, unknown> | null
+  disponibilidade: Record<string, string> | null
+  classificacao: string[]
+  erro: string | null
+  bytes: number
+  coletadaEm: string | null
+  expiraEm: string
+}
+
+export interface EvidenciasDoChamado {
+  chamado: { id: string; numero: string; tenantId: string; status: StatusChamado }
+  evidencias: EvidenciaDoChamado[]
 }
