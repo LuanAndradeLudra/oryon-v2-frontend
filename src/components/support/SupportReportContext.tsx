@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { showToast } from '@/hooks/useToast'
 import { supportApi } from '@/services/supportApi'
 import type { Message } from '@/types'
 import type { ChamadoDaEmpresa, ResumoDoChamado } from '@/types/support'
 import { emAberto } from './supportModel'
-import { criarStoreDaMarcacao, type ChamadoDaMensagem, type SobreOChamado } from './marcacaoDoChamado'
+import { criarStoreDaMarcacao, MAX_MARCADAS, type ChamadoDaMensagem, type SobreOChamado } from './marcacaoDoChamado'
 import { AcoesCtx, DadosCtx, DESLIGADO, resumoDe, useSuporteLigado, type AcoesDoSuporte, type DadosDoSuporte } from './suporteDaConversa'
 
 /** Chamados de UMA conversa, com o pedido que os trouxe (trocar de conversa esvazia na hora, sem efeito). */
@@ -32,12 +33,14 @@ export function SupportReportProvider({ conversationId, contatoNome, children }:
   const ligado = flag && !!conversationId
   const emPainel = !useIsMobile()
   const navigate = useNavigate()
-  const store = useMemo(() => criarStoreDaMarcacao(), [])
+  // Uma marcação por conversa: a conversa nova já nasce sem nada marcado, sem
+  // um quadro com o estado da anterior (revisão do Portão 2). É o padrão do
+  // React para ajustar o estado quando a prop muda: o render recomeça na hora.
+  const [marcacao, setMarcacao] = useState(() => ({ conversa: conversationId, store: criarStoreDaMarcacao() }))
+  if (marcacao.conversa !== conversationId) setMarcacao({ conversa: conversationId, store: criarStoreDaMarcacao() })
+  const store = marcacao.store
   const [lista, setLista] = useState<ListaDaConversa | null>(null)
   const [pedido, setPedido] = useState(0)
-
-  // Troca de conversa: a marcação começa do zero.
-  useEffect(() => { store.zerar() }, [conversationId, store])
 
   // Chamados desta conversa (a lista já traz as mensagens marcadas de cada um).
   useEffect(() => {
@@ -67,7 +70,9 @@ export function SupportReportProvider({ conversationId, contatoNome, children }:
   const iniciarMarcacao = useCallback((primeira?: string) => {
     store.mudar({ marcando: true, marcadas: new Set(primeira ? [primeira] : []), sobre: 'mensagens', painelAberto: emPainel })
   }, [store, emPainel])
-  const alternar = useCallback((id: string) => store.alternar(id), [store])
+  const alternar = useCallback((id: string) => {
+    if (!store.alternar(id)) showToast(`Até ${MAX_MARCADAS} mensagens por chamado.`, 'error')
+  }, [store])
   const cancelarMarcacao = useCallback(() => store.zerar(true), [store])
   const reportar = useCallback((ids: string[]) => {
     const conversa = ids.length === 0
@@ -87,12 +92,24 @@ export function SupportReportProvider({ conversationId, contatoNome, children }:
     : DESLIGADO), [ligado, emPainel, store, iniciarMarcacao, alternar, cancelarMarcacao, reportar, definirSobre, irParaChamado, registrarMensagens])
 
   const recarregar = useCallback(() => setPedido((v) => v + 1), [])
+  // O pós-envio chega com a resposta do servidor: a pessoa pode já estar em
+  // outra conversa. As refs dão a conversa e a lista de AGORA, não as do clique.
+  const conversaAtual = useRef(conversationId)
+  const listaAtual = useRef(lista)
+  useEffect(() => {
+    conversaAtual.current = conversationId
+    listaAtual.current = lista
+  })
   // Criou ou juntou: a lista desta conversa já mostra o chamado (e a bandeira nas bolhas), sem esperar o servidor.
   const aoCriar = useCallback((c: ChamadoDaEmpresa, novo: boolean) => {
-    if (!lista || lista.conversa !== c.conversationId) { setPedido((v) => v + 1); return }
+    if (c.conversationId !== conversaAtual.current) return false
+    if (listaAtual.current?.conversa !== c.conversationId) { setPedido((v) => v + 1); return true }
     const r = resumoDe(c)
-    setLista({ ...lista, chamados: novo ? [r, ...lista.chamados.filter((x) => x.id !== r.id)] : lista.chamados.map((x) => (x.id === r.id ? r : x)) })
-  }, [lista])
+    setLista((l) => (l && l.conversa === c.conversationId
+      ? { ...l, chamados: novo ? [r, ...l.chamados.filter((x) => x.id !== r.id)] : l.chamados.map((x) => (x.id === r.id ? r : x)) }
+      : l))
+    return true
+  }, [])
   const dados = useMemo<DadosDoSuporte | null>(() => (ligado ? {
     conversationId, contatoNome, chamados, temChamadoAberto: chamados.some(emAberto), carregando, erro, recarregar, aoCriar,
   } : null), [ligado, conversationId, contatoNome, chamados, carregando, erro, recarregar, aoCriar])

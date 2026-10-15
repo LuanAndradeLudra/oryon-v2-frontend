@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
+import { lazyRoute } from '@/lib/lazyRoute'
+import { LimiteDoSuporte } from '@/components/support/LimiteDoSuporte'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { comVolta } from '@/lib/voltarPara'
@@ -1131,7 +1133,8 @@ function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: 
 
 // Épico de suporte (SCRUM-1382): o modal do chamado sem conversa só é baixado
 // quando a pessoa abre "Falar com o suporte" (o menu está em todas as telas).
-const ChamadoSemConversa = lazy(() => import('@/components/support/ChamadoSemConversa'))
+// lazyRoute: um arquivo antigo depois de uma atualização recarrega a página em vez de quebrar.
+const ChamadoSemConversa = lazyRoute(() => import('@/components/support/ChamadoSemConversa'))
 
 function UserMenu() {
   const { user, logout, featureFlags } = useAuth()
@@ -1187,7 +1190,7 @@ function UserMenu() {
   const [falarComSuporte, setFalarComSuporte] = useState(false)
   // Menu aberto: já baixa o modal, para o clique em "Falar com o suporte" não esperar.
   useEffect(() => {
-    if (open && falarComSuporteVisivel) void import('@/components/support/ChamadoSemConversa')
+    if (open && falarComSuporteVisivel) import('@/components/support/ChamadoSemConversa').catch(() => undefined)
   }, [open, falarComSuporteVisivel])
 
   return (
@@ -1295,9 +1298,11 @@ function UserMenu() {
       </DropdownItem>
     </Dropdown>
     {falarComSuporte && (
-      <Suspense fallback={null}>
-        <ChamadoSemConversa entrada="menu_do_usuario" onClose={() => setFalarComSuporte(false)} />
-      </Suspense>
+      <LimiteDoSuporte aoFalhar={() => setFalarComSuporte(false)}>
+        <Suspense fallback={null}>
+          <ChamadoSemConversa entrada="menu_do_usuario" onClose={() => setFalarComSuporte(false)} />
+        </Suspense>
+      </LimiteDoSuporte>
     )}
     </>
   )

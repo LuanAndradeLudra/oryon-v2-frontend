@@ -760,7 +760,9 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
 
   // Marcando: a linha inteira marca (clique ou toque); a caixa de seleção é o
   // controle de verdade (teclado: Tab + Espaço) e não deixa o clique contar duas vezes.
-  const alternarMarcacao = () => suporte.alternar(message.id)
+  // A bolha que ainda não saiu (ou falhou) não tem id no servidor: não entra no chamado.
+  const marcavel = !message.id.startsWith('pending-')
+  const alternarMarcacao = () => { if (marcavel) suporte.alternar(message.id) }
 
   return (
     <div
@@ -782,7 +784,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       }}
       title={bubbleTitle}
     >
-      {marcando && (
+      {marcando && marcavel && (
         <Checkbox
           checked={marcada}
           onChange={alternarMarcacao}
@@ -800,7 +802,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           aligned to the sender's side. As ações da mensagem NÃO ficam mais no
           fluxo da linha: o antigo botão Responder (28px + gap, opacity 0) fazia
           toda bolha começar a 68px da borda mesmo invisível — PO, 23/09. */}
-      <div className={cn('flex flex-col max-w-[65%] min-w-0', isOutbound ? 'items-end' : 'items-start', marcando && 'pointer-events-none select-none')}>
+      <div inert={marcando || undefined} className={cn('flex flex-col max-w-[65%] min-w-0', isOutbound ? 'items-end' : 'items-start', marcando && 'pointer-events-none select-none')}>
         {/* Bubble — soft drop shadow only in light theme (invisible token in
             dark). The sender (AI / operator / campaign / rule) is conveyed by a
             discreet inline icon in the meta row below, outbound only. */}

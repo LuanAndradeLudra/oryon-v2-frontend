@@ -29,20 +29,48 @@ function tipoAceito(f: File): boolean {
   return TIPOS_DO_ANEXO.includes(f.type) || (f.type === 'application/vnd.ms-excel' && /\.csv$/i.test(f.name))
 }
 
-/** O modelo muda raramente: uma busca por sessão basta. Tem os campos da EMPRESA: sai no logout. */
-let modeloEmCache: Promise<ModeloDoFormulario> | null = null
-aoSairDaSessao(() => { modeloEmCache = null })
+/**
+ * O modelo tem os campos da EMPRESA, que a gestão muda quando quer (revisão do
+ * Portão 2): mostra na hora o último que veio e busca de novo a cada abertura.
+ * Sai no logout.
+ */
+let ultimoModelo: ModeloDoFormulario | null = null
+aoSairDaSessao(() => { ultimoModelo = null })
 function useModelo(open: boolean) {
-  const [modelo, setModelo] = useState<ModeloDoFormulario | null>(null)
+  const [modelo, setModelo] = useState<ModeloDoFormulario | null>(ultimoModelo)
   useEffect(() => {
     if (!open) return
     let vivo = true
-    modeloEmCache ??= supportApi.modelo()
-    modeloEmCache.then((m) => { if (vivo) setModelo(m) }).catch(() => { modeloEmCache = null })
+    supportApi.modelo()
+      .then((m) => { ultimoModelo = m; if (vivo) setModelo(m) })
+      .catch(() => { /* fica o último modelo; sem nenhum, o formulário segue com o neutro */ })
     return () => { vivo = false }
   }, [open])
   return modelo
 }
+
+/**
+ * RASCUNHO do relato POR conversa (revisão do Portão 2): trocar de conversa com
+ * o painel aberto não perde o que foi escrito — ao reabrir o chamado naquela
+ * conversa, volta. Só o que a pessoa escreveu ou escolheu (e os anexos já
+ * enviados); a marcação das mensagens recomeça. Sai ao enviar, ao descartar e no logout.
+ */
+interface RascunhoDoRelato {
+  origemEscolhida: OrigemDoProblema | null
+  relato: string
+  esperado: string
+  alcance: Alcance
+  desde: DesdeQuando | null
+  dadosDeTerceiros: boolean
+  assuntoEscolhido: { origem: OrigemDoProblema; id: string } | null
+  campos: Record<string, string>
+  anexos: AnexoDoFormulario[]
+  afetadas: ConversaAfetada[]
+  contatoViu: ContatoViu | null
+  jaCorrigiram: JaCorrigiram | null
+}
+const rascunhosDoRelato = new Map<string, RascunhoDoRelato>()
+aoSairDaSessao(() => rascunhosDoRelato.clear())
 
 export const TITULO: Record<OrigemDoProblema, string> = {
   ia: 'Reportar resposta da IA',
@@ -128,21 +156,24 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
     return semContato.length ? semContato : resumo.presentes
   }, [resumo, conversationId, mensagens.length])
 
-  const [origemEscolhida, setOrigem] = useState<OrigemDoProblema | null>(null)
+  // O rascunho desta conversa, se a pessoa saiu dela no meio do relato.
+  const [inicial] = useState(() => (conversationId ? rascunhosDoRelato.get(conversationId) ?? null : null))
+  const [origemEscolhida, setOrigem] = useState<OrigemDoProblema | null>(inicial?.origemEscolhida ?? null)
   const origem = origemEscolhida && candidatas.includes(origemEscolhida) ? origemEscolhida : candidatas[0]
-  const [relato, setRelato] = useState('')
-  const [esperado, setEsperado] = useState('')
-  const [alcance, setAlcance] = useState<Alcance>('esta_conversa')
-  const [desde, setDesde] = useState<DesdeQuando | null>(null)
+  const [relato, setRelato] = useState(inicial?.relato ?? '')
+  const [esperado, setEsperado] = useState(inicial?.esperado ?? '')
+  const [alcance, setAlcance] = useState<Alcance>(inicial?.alcance ?? 'esta_conversa')
+  const [desde, setDesde] = useState<DesdeQuando | null>(inicial?.desde ?? null)
   const [onde, setOnde] = useState<string>(telaInicial ?? '')
-  const [dadosDeTerceiros, setDadosDeTerceiros] = useState(false)
+  const [dadosDeTerceiros, setDadosDeTerceiros] = useState(inicial?.dadosDeTerceiros ?? false)
   // O assunto vale para a origem em que foi escolhido: trocar a origem o descarta.
-  const [assuntoEscolhido, setAssuntoEscolhido] = useState<{ origem: OrigemDoProblema; id: string } | null>(null)
+  const [assuntoEscolhido, setAssuntoEscolhido] = useState<{ origem: OrigemDoProblema; id: string } | null>(inicial?.assuntoEscolhido ?? null)
   const assuntoId = assuntoEscolhido?.origem === origem ? assuntoEscolhido.id : null
   const setAssuntoId = (id: string | null) => setAssuntoEscolhido(id ? { origem, id } : null)
-  const [campos, setCampos] = useState<Record<string, string>>({})
-  const [anexos, setAnexos] = useState<AnexoDoFormulario[]>([])
-  const [afetadas, setAfetadas] = useState<ConversaAfetada[]>([])
+  const [campos, setCampos] = useState<Record<string, string>>(inicial?.campos ?? {})
+  // Anexos do rascunho com outra chave: não colidem com os que subirem agora.
+  const [anexos, setAnexos] = useState<AnexoDoFormulario[]>(() => inicial?.anexos.map((a, i) => ({ ...a, chave: `r${i}` })) ?? [])
+  const [afetadas, setAfetadas] = useState<ConversaAfetada[]>(inicial?.afetadas ?? [])
   const [juntarEm, setJuntarEm] = useState<ResumoDoChamado | null>(null)
   /** "É outro problema": some o aviso, e o backend não agrupa nem conta este relato. */
   const [ehOutro, setEhOutro] = useState(false)
@@ -153,13 +184,31 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
   const [contornou, setContornou] = useState<Contornou | null>(null)
   const [quemMais, setQuemMais] = useState<QuemMais | null>(null)
   const [impede, setImpede] = useState<ImpedeAgora[]>([])
-  const [contatoViu, setContatoViu] = useState<ContatoViu | null>(null)
-  const [jaCorrigiram, setJaCorrigiram] = useState<JaCorrigiram | null>(null)
+  const [contatoViu, setContatoViu] = useState<ContatoViu | null>(inicial?.contatoViu ?? null)
+  const [jaCorrigiram, setJaCorrigiram] = useState<JaCorrigiram | null>(inicial?.jaCorrigiram ?? null)
   const [complemento, setComplemento] = useState('')
   // O contexto técnico é o do momento em que o formulário abre (endereço sem `?…`).
   const [contexto] = useState<ContextoTecnico | null>(() => (conversationId ? null : capturarContextoTecnico(`${pathname}${search}`, telaInicial)))
   const [enviando, setEnviando] = useState(false)
   const contadorDeAnexos = useRef(0)
+
+  // Algo que se perderia ao fechar: o painel pede confirmação, e a conversa guarda o rascunho.
+  const temConteudo = !!(relato.trim() || esperado.trim() || complemento.trim() || anexos.length || afetadas.length
+    || contatoViu || jaCorrigiram || Object.values(campos).some((v) => v.trim()))
+  // Enviado ou descartado: o rascunho não volta.
+  const encerrado = useRef(false)
+  useEffect(() => {
+    if (!conversationId || encerrado.current) return
+    if (!temConteudo) { rascunhosDoRelato.delete(conversationId); return }
+    rascunhosDoRelato.set(conversationId, {
+      origemEscolhida, relato, esperado, alcance, desde, dadosDeTerceiros, assuntoEscolhido, campos,
+      anexos: anexos.filter((a) => a.estado === 'pronto'), afetadas, contatoViu, jaCorrigiram,
+    })
+  }, [conversationId, temConteudo, origemEscolhida, relato, esperado, alcance, desde, dadosDeTerceiros, assuntoEscolhido, campos, anexos, afetadas, contatoViu, jaCorrigiram])
+  const descartar = () => {
+    encerrado.current = true
+    if (conversationId) rascunhosDoRelato.delete(conversationId)
+  }
 
   const nomeDaOrigem = (origem === 'automacao' || origem === 'regra') ? [...(resumo.porOrigem.get(origem)?.nomes ?? [])][0] ?? null : null
 
@@ -195,6 +244,9 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
         : nomeDaOrigem ? `sobre “${nomeDaOrigem}”` : onde ? `em ${onde}` : 'sobre o mesmo problema',
     }
     : null
+  // "Adicionar" leva as mensagens DESTA conversa: só junta num chamado da mesma
+  // conversa (o backend recusa mensagem de outra). De outra conversa, "Ver".
+  const podeJuntar = !!duplicado && (duplicado.c.conversationId ?? null) === (conversationId ?? null)
   const camposFaltando = (modelo?.camposDaEmpresa ?? []).some((c) => c.obrigatorio && !campos[c.id]?.trim())
   // Painel em "Mensagens" sem nenhuma marcada: falta escolher no chat.
   const aguardandoMarcacao = sobre === 'mensagens' && !!conversationId && mensagens.length === 0
@@ -242,6 +294,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
     try {
       if (juntarEm) {
         const c = await supportApi.adicionar(juntarEm.id, { messageIds: mensagens.map((m) => m.id), descricao: relato.trim() })
+        descartar()
         onCriado(c, false)
         onClose()
         showToast(`Adicionado ao ${c.numero}. A equipe Oryon já foi avisada.`, 'success', acaoVerChamado(c.id), 6000)
@@ -269,6 +322,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
           contextoTecnico: contexto, entrada: entrada ?? 'pagina_suporte',
         } : { entrada: 'conversa' as const, fatos: { contatoViu, jaCorrigiram: perguntaCorrigiram ? jaCorrigiram : null } }),
       })
+      descartar()
       onCriado(c, true)
       onClose()
       showToast(`Chamado ${c.numero} aberto. A equipe Oryon responde por aqui.`, 'success', acaoVerChamado(c.id), 8000)
@@ -281,7 +335,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
 
   return {
     modelo, resumo, candidatas, nomeDaOrigem, semConversa, assuntos, perguntaEsperado, perguntaDesde, perguntaAfetadas, duplicado, pronto,
-    aguardandoMarcacao, anexosEnviando,
+    aguardandoMarcacao, anexosEnviando, podeJuntar, temConteudo, descartar, rascunhoRecuperado: !!inicial,
     titulo: juntarEm ? `Adicionar ao ${juntarEm.numero}` : aguardandoMarcacao ? 'Reportar mensagens' : TITULO[origem],
     rotuloAlcance: (a: Alcance) => (semConversa ? ALCANCES[a].plataforma : ALCANCES[a].conversa),
     origem, setOrigem, relato, setRelato, esperado, setEsperado, alcance, setAlcance, desde, setDesde,

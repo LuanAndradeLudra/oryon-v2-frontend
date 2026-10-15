@@ -2,9 +2,11 @@
 // chamado não aparece em outro; "Isso resolveu?" (sim encerra; não reabre);
 // abas por de quem é a vez (o backend filtra e conta); agent não vê
 // prioridade (o backend manda null; a tela só mostra o que vier).
+// Revisão do Portão 2: a atualização não troca de aba nem de chamado; Ctrl+Enter
+// repetido não duplica; a busca não vai para a URL.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { LayerProvider } from '@/contexts/LayerContext'
 import { supportApi } from '@/services/supportApi'
 import type { ChamadoDaEmpresa, ResumoDoChamado } from '@/types/support'
@@ -14,7 +16,7 @@ vi.mock('@/hooks/useIsMobile', () => ({ useIsMobile: () => false }))
 vi.mock('@/hooks/useMediaQuery', () => ({ useMediaQuery: () => true }))
 vi.mock('@/services/supportApi', () => ({
   supportApi: {
-    resumo: vi.fn(), listar: vi.fn(), obter: vi.fn(), comentar: vi.fn(), avaliar: vi.fn(), reabrir: vi.fn(), enderecoDoAnexo: vi.fn(() => '#'),
+    resumo: vi.fn(), listar: vi.fn(), obter: vi.fn(), comentar: vi.fn(), avaliar: vi.fn(), reabrir: vi.fn(), baixarAnexo: vi.fn(),
     modelo: vi.fn(async () => ({ assuntos: {}, exemplos: {}, esperado: {}, camposDaEmpresa: [] })), parecidos: vi.fn(async () => []),
   },
 }))
@@ -45,10 +47,15 @@ const RESOLVIDO = item('t2', 'SUP-0002', 'resolved')
 /** A lista (o detalhe repete número e selo do chamado aberto). */
 const lista = () => screen.getByRole('complementary', { name: 'Chamados' })
 
+/** Mostra o endereço atual (a busca não pode ir para ele). */
+function Endereco() {
+  return <output data-testid="endereco">{useLocation().search}</output>
+}
+
 function Tela({ rota = '/support' }: { rota?: string }) {
   return (
     <MemoryRouter initialEntries={[rota]}>
-      <LayerProvider><SupportPage /></LayerProvider>
+      <LayerProvider><SupportPage /><Endereco /></LayerProvider>
     </MemoryRouter>
   )
 }
@@ -99,15 +106,55 @@ describe('Página Suporte (SCRUM-1383)', () => {
     expect(await screen.findByLabelText('Mensagem para a equipe Oryon')).toHaveValue('')
   })
 
-  it('"Isso resolveu?": sim encerra; não reabre — e o campo só escreve com o chamado aberto', async () => {
+  it('"Isso resolveu?": sim encerra; não reabre — e resolvido ainda aceita comentário (o backend aceita)', async () => {
     api.avaliar.mockImplementation(async (_id: string, resolveu: boolean) => completo({ ...RESOLVIDO, status: resolveu ? 'closed' : 'triaged' }))
     render(<Tela rota="/support?chamado=t2" />)
     const card = (await screen.findByText('A Oryon resolveu este chamado')).closest('[role="status"]') as HTMLElement
-    expect(screen.getByLabelText('Mensagem para a equipe Oryon')).toBeDisabled()
+    expect(screen.getByLabelText('Mensagem para a equipe Oryon')).toBeEnabled()
     fireEvent.click(within(card).getByRole('button', { name: 'Não, continua' }))
     await waitFor(() => expect(api.avaliar).toHaveBeenCalledWith('t2', false))
-    await waitFor(() => expect(screen.getByLabelText('Mensagem para a equipe Oryon')).toBeEnabled())
+    await waitFor(() => expect(screen.queryByText('A Oryon resolveu este chamado')).toBeNull())
     expect(api.resumo).toHaveBeenCalledTimes(2) // as abas recontam
+  })
+
+  it('a atualização periódica não troca de aba nem de chamado sozinha (revisão do Portão 2)', async () => {
+    const A = item('ta', 'SUP-0010', 'triaged')
+    const B = item('tb', 'SUP-0011', 'investigating')
+    api.resumo.mockResolvedValue({ empresa: 0, oryon: 2, encerrados: 0 })
+    api.listar.mockResolvedValue({ itens: [A, B], proximoCursor: null })
+    api.obter.mockImplementation(async (id: string) => completo(id === 'ta' ? A : B))
+    render(<Tela />)
+    expect(await screen.findByRole('region', { name: 'Chamado SUP-0010' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Com a Oryon/ })).toHaveAttribute('aria-selected', 'true')
+    // A Oryon perguntou no outro: o resumo muda e a lista reordena.
+    api.resumo.mockResolvedValue({ empresa: 1, oryon: 1, encerrados: 0 })
+    api.listar.mockResolvedValue({ itens: [B, A], proximoCursor: null })
+    act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+    await waitFor(() => expect(api.listar).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(within(lista()).getAllByRole('button')[0]).toHaveTextContent('SUP-0011'))
+    expect(screen.getByRole('tab', { name: /Com a Oryon/ })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('region', { name: 'Chamado SUP-0010' })).toBeInTheDocument()
+  })
+
+  it('Ctrl+Enter repetido manda o comentário uma vez só (revisão do Portão 2)', async () => {
+    let responder: (c: ChamadoDaEmpresa) => void = () => {}
+    api.comentar.mockImplementation(() => new Promise<ChamadoDaEmpresa>((r) => { responder = r }))
+    render(<Tela rota="/support?chamado=t1" />)
+    const campo = await screen.findByLabelText('Resposta à pergunta da Oryon')
+    fireEvent.change(campo, { target: { value: 'Foi às 18h15.' } })
+    fireEvent.keyDown(campo, { key: 'Enter', ctrlKey: true })
+    fireEvent.keyDown(campo, { key: 'Enter', ctrlKey: true })
+    fireEvent.keyDown(campo, { key: 'Enter', ctrlKey: true })
+    expect(api.comentar).toHaveBeenCalledTimes(1)
+    await act(async () => { responder(completo({ ...PERGUNTOU, status: 'triaged', perguntaPendente: null })) })
+  })
+
+  it('a busca filtra a lista sem ir para o endereço (nome e telefone de contato)', async () => {
+    render(<Tela />)
+    await within(lista()).findByText('SUP-0001')
+    fireEvent.change(screen.getByPlaceholderText('Buscar por número, contato ou texto'), { target: { value: 'Maria 21998765432' } })
+    await waitFor(() => expect(api.listar).toHaveBeenCalledWith(expect.objectContaining({ busca: 'Maria 21998765432' })))
+    expect(screen.getByTestId('endereco').textContent).not.toMatch(/Maria|2199/)
   })
 
   it('encerrado: o campo fica fechado e aparece "Reabrir"', async () => {

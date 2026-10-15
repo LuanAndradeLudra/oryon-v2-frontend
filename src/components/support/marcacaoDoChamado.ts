@@ -34,12 +34,16 @@ export interface EstadoDaMarcacao {
   mensagens: readonly Message[]
 }
 
+/** Teto do backend: até 50 mensagens marcadas por chamado. */
+export const MAX_MARCADAS = 50
+
 export interface StoreDaMarcacao {
   ler(): EstadoDaMarcacao
   assinar(ouvinte: () => void): () => void
   mudar(parcial: Partial<EstadoDaMarcacao>): void
-  alternar(messageId: string): void
-  /** Volta ao estado inicial (troca de conversa, cancelar). Mantém o mapa só se pedido; as mensagens, sempre (quem as registra é o chat). */
+  /** Marca ou desmarca. `false`: chegou ao teto e não marcou. */
+  alternar(messageId: string): boolean
+  /** Volta ao estado inicial (cancelar). Mantém o mapa só se pedido; as mensagens, sempre (quem as registra é o chat). */
   zerar(manterChamados?: boolean): void
 }
 
@@ -64,9 +68,11 @@ export function criarStoreDaMarcacao(): StoreDaMarcacao {
     alternar(id) {
       const marcadas = new Set(estado.marcadas)
       if (marcadas.has(id)) marcadas.delete(id)
+      else if (marcadas.size >= MAX_MARCADAS) return false
       else marcadas.add(id)
       estado = { ...estado, marcadas }
       avisar()
+      return true
     },
     zerar(manterChamados = false) {
       estado = {

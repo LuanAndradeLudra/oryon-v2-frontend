@@ -23,7 +23,9 @@ const base: Message = {
   body: 'Qual o valor da consulta?', sentAt: '2026-10-15T10:00:00Z', createdAt: '2026-10-15T10:00:00Z',
 }
 const daIA: Message = { ...base, id: 'm2', direction: 'outbound', senderKind: 'ai', body: 'A consulta custa R$ 50', sentAt: '2026-10-15T10:01:00Z' }
-const MENSAGENS = [base, daIA]
+// Bolha que ainda não saiu (ou falhou): id local, sem par no servidor.
+const pendente: Message = { ...base, id: 'pending-123', direction: 'outbound', senderKind: 'operator', body: 'Já te respondo', sentAt: '2026-10-15T10:02:00Z' }
+const MENSAGENS = [base, daIA, pendente]
 
 function Tela() {
   return (
@@ -71,6 +73,10 @@ describe('MessageBubble — chamado de suporte (SCRUM-1381)', () => {
     const doContato = screen.getByRole('checkbox', { name: /Incluir no chamado: Mensagem do contato/ })
     expect(daIa).toBeChecked()
     expect(doContato).not.toBeChecked()
+    // A bolha que ainda não saiu não entra no chamado (o backend só aceita mensagem com id do servidor).
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2)
+    fireEvent.click(screen.getByText('Já te respondo'))
+    expect(screen.getAllByRole('checkbox').filter((c) => (c as HTMLInputElement).checked)).toHaveLength(1)
     // Clique na bolha (a linha inteira marca)…
     fireEvent.click(screen.getByText('Qual o valor da consulta?'))
     expect(doContato).toBeChecked()

@@ -68,13 +68,13 @@ export function ConversasAfetadas({ atual, selecionadas, onChange }: {
             aria-label="Buscar conversa afetada"
           />
         </label>
+        {lista === null && <p className="px-3 py-2.5 text-xs text-surface-400" role="status">Carregando conversas…</p>}
+        {lista !== null && visiveis.length === 0 && <p className="px-3 py-2.5 text-xs text-surface-400" role="status">Nenhuma conversa encontrada.</p>}
         <ul className="max-h-[184px] overflow-y-auto" role="listbox" aria-multiselectable="true" aria-label="Conversas">
-          {lista === null && <li className="px-3 py-2.5 text-xs text-surface-400">Carregando conversas…</li>}
-          {lista !== null && visiveis.length === 0 && <li className="px-3 py-2.5 text-xs text-surface-400">Nenhuma conversa encontrada.</li>}
           {visiveis.map((c) => {
             const on = marcada(c.id)
             return (
-              <li key={c.id}>
+              <li key={c.id} role="presentation">
                 <button type="button" role="option" aria-selected={on} onClick={() => alternar(c)}
                   className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 text-left transition-colors', on ? 'bg-[var(--sel)]' : 'hover:bg-[var(--rowhover)]')}>
                   <span className={cn('w-4 h-4 rounded-[5px] border-[1.5px] flex items-center justify-center flex-shrink-0', on ? 'bg-brand-500 border-brand-500 text-[#04201D]' : 'border-surface-600')}>

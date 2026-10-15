@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { LayerProvider } from '@/contexts/LayerContext'
+import { limparSessao } from '@/lib/limpezaDaSessao'
 import { supportApi } from '@/services/supportApi'
 import type { Message } from '@/types'
 import type { ChamadoDaEmpresa, ResumoDoChamado } from '@/types/support'
@@ -96,6 +97,8 @@ function relatar(texto = 'A IA informou o valor errado da consulta') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // Rascunhos do relato e o último modelo moram no módulo (por sessão): um teste não herda do outro.
+  limparSessao()
   // jsdom não implementa scrollIntoView (a lista do campo rola até ele ao abrir).
   Element.prototype.scrollIntoView = vi.fn()
   h.flags = ['FF_SUPPORT_TICKETS']
@@ -271,10 +274,58 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     expect(screen.getByLabelText(/O que aconteceu/)).toHaveValue('A IA informou o valor errado da consulta')
     expect(document.activeElement).toBe(screen.getByLabelText(/O que aconteceu/))
     expect(within(painel()!).getByRole('radio', { name: /Mensagens · 2/ })).toBeChecked()
+    // Com relato escrito, Cancelar pergunta antes (revisão do Portão 2).
     fireEvent.click(within(painel()!).getByRole('button', { name: 'Cancelar' }))
+    fireEvent.click(within(painel()!).getByRole('button', { name: 'Descartar' }))
     expect(painel()).toBeNull()
     expect(screen.queryByLabelText(/O que aconteceu/)).toBeNull()
     expect(screen.getByLabelText('Mensagem')).toHaveValue('rascunho da resposta')
+  })
+
+  it('fechar com relato pede confirmação; Esc com o foco fora do painel não é para ele (revisão do Portão 2)', async () => {
+    render(<Tela />)
+    fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))
+    relatar()
+    // Esc com o foco no campo do chat (ex.: fechando o seletor de respostas rápidas): o painel fica.
+    act(() => { screen.getByLabelText('Mensagem').focus() })
+    act(() => { fireEvent.keyDown(window, { key: 'Escape' }) })
+    expect(painel()).not.toBeNull()
+    // No painel, com relato: pergunta; Esc de novo continua escrevendo.
+    act(() => { within(painel()!).getByLabelText(/O que aconteceu/).focus() })
+    act(() => { fireEvent.keyDown(window, { key: 'Escape' }) })
+    expect(within(painel()!).getByRole('alert')).toHaveTextContent('Descartar o relato?')
+    act(() => { fireEvent.keyDown(window, { key: 'Escape' }) })
+    expect(within(painel()!).queryByRole('alert')).toBeNull()
+    expect(within(painel()!).getByLabelText(/O que aconteceu/)).toHaveValue('A IA informou o valor errado da consulta')
+    // O X também pergunta; Descartar fecha e o rascunho não volta.
+    fireEvent.click(within(painel()!).getByRole('button', { name: 'Fechar' }))
+    fireEvent.click(within(painel()!).getByRole('button', { name: 'Descartar' }))
+    expect(painel()).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))
+    expect(within(painel()!).getByLabelText(/O que aconteceu/)).toHaveValue('')
+  })
+
+  it('trocar de conversa no meio do relato guarda o rascunho; reabrindo nela, ele volta (revisão do Portão 2)', async () => {
+    const { rerender } = render(<Tela />)
+    fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))
+    relatar('Relato que não pode se perder')
+    rerender(<Tela conversationId="conv-2" />)
+    expect(painel()).toBeNull()
+    rerender(<Tela conversationId="conv-1" />)
+    expect(painel()).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))
+    expect(within(painel()!).getByLabelText(/O que aconteceu/)).toHaveValue('Relato que não pode se perder')
+    expect(within(painel()!).getByText(/Continuando o rascunho desta conversa/)).toBeInTheDocument()
+  })
+
+  it('repetido em OUTRA conversa: "Ver o SUP-…" no lugar de "Adicionar" (o backend recusaria as mensagens desta)', async () => {
+    api.parecidos.mockResolvedValue([resumo({ id: 't9', numero: 'SUP-0009', conversationId: 'conv-outra' })])
+    render(<Tela />)
+    fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))
+    const ver = await within(painel()!).findByRole('button', { name: 'Ver o SUP-0009' })
+    expect(within(painel()!).queryByRole('button', { name: /Adicionar ao/ })).toBeNull()
+    fireEvent.click(ver)
+    expect(h.navigate).toHaveBeenCalledWith('/support?chamado=t9')
   })
 
   it('sem a flag do tenant nada aparece e nada é buscado', async () => {

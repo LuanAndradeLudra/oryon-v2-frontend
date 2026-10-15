@@ -13,8 +13,9 @@ import { criarStoreDaMarcacao, type SobreOChamado, type StoreDaMarcacao } from '
 
 /** `true` com a flag do tenant `FF_SUPPORT_TICKETS` (lida do `/auth/me`). */
 export function useSuporteLigado(): boolean {
-  const { featureFlags } = useAuth()
-  return suporteLigadoPara(featureFlags)
+  const { featureFlags, user } = useAuth()
+  // A equipe de suporte da Oryon não abre chamado de empresa: a API responde 403 para ela.
+  return suporteLigadoPara(featureFlags) && user?.role !== 'oryon_support'
 }
 
 /**
@@ -48,7 +49,8 @@ export interface DadosDoSuporte {
   carregando: boolean
   erro: boolean
   recarregar: () => void
-  aoCriar: (c: ChamadoDaEmpresa, novo: boolean) => void
+  /** `false`: a pessoa já está em outra conversa (o pós-envio não mexe em nada dela). */
+  aoCriar: (c: ChamadoDaEmpresa, novo: boolean) => boolean
 }
 
 const nada = () => {}
