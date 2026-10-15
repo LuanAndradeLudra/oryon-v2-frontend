@@ -1,0 +1,151 @@
+/*
+ * SUPORTE — tokens próprios das três famílias de chamado (mensagem, conversa,
+ * plataforma) e do aviso de duplicado.
+ *
+ * Por que não usar --color-accent-soft: no tema claro ele é #EEF0F4, um cinza
+ * neutro (princípio 90/10 do design system). Para o chamado, a cor É a
+ * informação (o tipo precisa ser reconhecido antes da leitura), então cada
+ * família tem fundo, borda, cor de texto e cor sólida próprios, medidos:
+ *  • claro: texto da família ≥ 5:1 sobre o fundo dela; borda ≥ 1,4:1 e barra
+ *    lateral sólida ≥ 4,5:1 contra o branco do formulário;
+ *  • escuro: fundo 9–12% sobre surface-800, texto da família ≥ 8:1.
+ * Escuro é o padrão do app; o claro vem por [data-theme="light"].
+ */
+:root {
+  --sup-msg-solid: #14B8A6;
+  --sup-msg-on-solid: #04201D;
+  --sup-msg-bg: rgba(45, 212, 191, 0.09);
+  --sup-msg-bd: rgba(45, 212, 191, 0.30);
+  --sup-msg-fg: #5EEAD4;
+
+  --sup-conv-solid: #3B82F6;
+  --sup-conv-on-solid: #FFFFFF;
+  --sup-conv-bg: rgba(59, 130, 246, 0.11);
+  --sup-conv-bd: rgba(96, 165, 250, 0.34);
+  --sup-conv-fg: #93C5FD;
+
+  --sup-plat-solid: #3A4D4D;
+  --sup-plat-on-solid: #ECF1F1;
+  --sup-plat-bg: rgba(255, 255, 255, 0.035);
+  --sup-plat-bd: #2E4040;
+  --sup-plat-fg: #B5C8C8;
+
+  --sup-warn-bg: rgba(249, 115, 22, 0.10);
+  --sup-warn-bd: rgba(249, 115, 22, 0.36);
+  --sup-warn-fg: #FDBA74;
+  --sup-warn-solid: #F97316;
+  --sup-warn-grad: linear-gradient(135deg, #EA580C 0%, #9A3412 100%);
+  --sup-cartao-bg: var(--color-surface-900);
+  /* Degradês escuros o bastante para o ícone branco passar de 3:1 nas duas pontas. */
+  --sup-msg-grad: linear-gradient(135deg, #0D9488 0%, #115E59 100%);
+  --sup-conv-grad: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+  --sup-plat-grad: linear-gradient(135deg, #6B8080 0%, #2E4040 100%);
+}
+
+[data-theme="light"] {
+  --sup-msg-solid: #0F766E;
+  --sup-msg-on-solid: #FFFFFF;
+  --sup-msg-bg: #E9FAF6;
+  --sup-msg-bd: #5EEAD4;
+  --sup-msg-fg: #0F766E;
+
+  --sup-conv-solid: #2563EB;
+  --sup-conv-on-solid: #FFFFFF;
+  --sup-conv-bg: #EAF2FF;
+  --sup-conv-bd: #93C5FD;
+  --sup-conv-fg: #1D4ED8;
+
+  --sup-plat-solid: #4B5263;
+  --sup-plat-on-solid: #FFFFFF;
+  --sup-plat-bg: #F1F3F7;
+  --sup-plat-bd: #A3ACBD;
+  --sup-plat-fg: #374151;
+
+  --sup-warn-bg: #FFF7ED;
+  --sup-warn-bd: #FDBA74;
+  --sup-warn-fg: #9A3412;
+  --sup-warn-solid: #EA580C;
+  --sup-warn-grad: linear-gradient(135deg, #EA580C 0%, #9A3412 100%);
+  --sup-cartao-bg: #FFFFFF;
+
+  --sup-msg-grad: linear-gradient(135deg, #0D9488 0%, #115E59 100%);
+  --sup-conv-grad: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+  --sup-plat-grad: linear-gradient(135deg, #6B7385 0%, #374151 100%);
+}
+
+/* Família: escolhe o conjunto de tokens. */
+.sup-familia-mensagem { --sup-solid: var(--sup-msg-solid); --sup-fg: var(--sup-msg-fg); --sup-grad: var(--sup-msg-grad); }
+.sup-familia-conversa { --sup-solid: var(--sup-conv-solid); --sup-fg: var(--sup-conv-fg); --sup-grad: var(--sup-conv-grad); }
+.sup-familia-plataforma { --sup-solid: var(--sup-plat-solid); --sup-fg: var(--sup-plat-fg); --sup-grad: var(--sup-plat-grad); }
+
+/* Citação de mensagem marcada (cartão do painel). */
+.sup-faixa-citacao { border-left: 2px solid var(--sup-solid); }
+
+/* CARTÕES DO PAINEL (14/10, 2ª rodada) — mesma regra da faixa C: superfície
+   neutra + borda fina; a cor fica no bloco do ícone e no título. Fundo pastel
+   em área grande lava no claro e vira lama no escuro, então nenhum cartão do
+   suporte usa fundo tingido. Claro: cartão branco sobre o painel #F5F6F8
+   (elevado); escuro: surface-900 sobre o painel surface-800 (rebaixado). */
+.sup-cartao {
+  background: var(--sup-cartao-bg);
+  border: 1px solid var(--bd2);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.sup-cartao-icone { background: var(--sup-grad); color: #FFFFFF; }
+.sup-familia-aviso { --sup-solid: var(--sup-warn-solid); --sup-fg: var(--sup-warn-fg); --sup-grad: var(--sup-warn-grad); }
+.sup-aviso-titulo { color: var(--sup-warn-fg); }
+
+/* Barra do rodapé do chat (marcação / conversa inteira): neutra como o campo
+   de texto que ela substitui; a família aparece só na linha de 2px no topo e
+   no ícone. */
+.sup-barra {
+  background: var(--sup-cartao-bg);
+  border-top: 1px solid var(--bd2);
+  box-shadow: inset 0 2px 0 var(--sup-solid);
+}
+
+/* Estado do chamado no cabeçalho do chat (opção B, 14/10): ocupa o lugar
+   das ações da direita enquanto o painel do chamado está aberto. */
+.sup-cabecalho-estado { color: var(--color-surface-100); }
+
+/* Pulso leve das caixas de seleção ao entrarem (mostra onde clicar). */
+@keyframes sup-pulso {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.07); box-shadow: 0 0 0 2px color-mix(in srgb, var(--sup-msg-solid) 40%, transparent); }
+}
+.sup-caixa-pulso { animation: sup-pulso 900ms ease-in-out 2; }
+@media (prefers-reduced-motion: reduce) { .sup-caixa-pulso { animation: none; } }
+
+/* Faixa de 3px no topo do painel do chamado, na cor do tipo. */
+.sup-painel-topo { box-shadow: inset 0 3px 0 var(--sup-solid); }
+
+/* Controle "Mensagens | Conversa inteira" do painel. */
+.sup-tipo { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--bd2); border-radius: 8px; padding: 2px; gap: 2px; }
+.sup-tipo button { height: 30px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--color-surface-300); }
+.sup-tipo button:hover { background: var(--rowhover); }
+.sup-tipo button[aria-checked="true"].sup-tipo-msg { background: var(--sup-msg-bg); color: var(--sup-msg-fg); box-shadow: inset 0 0 0 1px var(--sup-msg-bd); }
+.sup-tipo button[aria-checked="true"].sup-tipo-conv { background: var(--sup-conv-bg); color: var(--sup-conv-fg); box-shadow: inset 0 0 0 1px var(--sup-conv-bd); }
+
+
+/* Selo "accent" dos chamados (responsável, contorno…). */
+.sup-selo-acento { background: var(--sup-msg-bg); color: var(--sup-msg-fg); box-shadow: inset 0 0 0 1px var(--sup-msg-bd); }
+
+/* Conversa afetada escolhida. */
+.sup-chip-escolhido { background: var(--sup-msg-bg); color: var(--sup-msg-fg); box-shadow: inset 0 0 0 1px var(--sup-msg-bd); }
+
+/* Caixa de seleção da bolha (marcação do chamado): o Checkbox do kit, maior —
+   numa conversa a caixa de 14px some ao lado da bolha. A linha inteira também
+   marca; a caixa é o sinal visual e o alvo do teclado (Espaço). A borda do kit
+   (--bd2) fica em 1,8:1 sobre o fundo do chat; surface-500 passa de 3:1 nos
+   dois temas (escuro 5,6:1, claro 6,8:1 — medido em 15/10). Marcada, vale a
+   cor do kit. */
+.ui-checkbox.sup-caixa { width: 18px; height: 18px; border-radius: 5px; border-width: 1.5px; background-size: 12px 12px; }
+.ui-checkbox.sup-caixa:not(:checked) { border-color: var(--color-surface-500); }
+
+/* Bandeira "reportada" na linha da hora da bolha. Na bolha recebida, o laranja
+   do aviso (claro #9A3412 7,3:1; escuro #FDBA74 10:1). Na bolha enviada — verde
+   nos dois temas — o laranja escuro sumia (1,3:1 no claro): lá vale o laranja
+   claro nos dois temas (claro 3,3:1, escuro 6,5:1). */
+.sup-bandeira { color: var(--sup-warn-fg); }
+.sup-bandeira.sup-bandeira-saida { color: #FDBA74; }

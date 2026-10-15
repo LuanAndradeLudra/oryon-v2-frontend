@@ -16,6 +16,7 @@ import { useLinhasDaIA } from '@/hooks/useLinhasComIA'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
 import { ConversationActivitySection } from './ConversationActivitySection'
 import { ContactPanelDeals } from './ContactPanelDeals'
+import { SupportPanelSection } from '@/components/support/SupportPanelSection'
 import { roleLabel } from '@/lib/roleHelpers'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { MoveStageModal } from '@/components/contacts/MoveStageModal'
@@ -310,6 +311,10 @@ export function ContactPanel({
             <p className="text-xs text-surface-500">Nenhuma etiqueta. Clique em "Editar" para adicionar.</p>
           )}
         </CollapsibleSection>
+
+        {/* CHAMADOS · N (épico de suporte, SCRUM-1381; some sem a flag do tenant).
+            No celular este painel cobre o chat: ao começar a marcar, ele fecha. */}
+        <SupportPanelSection aoAbrirNoCelular={onClose} />
 
         {/* NEGÓCIOS · N (só aparece quando há registro — ver ContactPanelDeals) */}
         {isFeatureVisible('contactPanelDeals') && (

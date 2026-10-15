@@ -196,3 +196,15 @@ export const TENANT_FLAG_OCULTAR_COBRANCA = 'FF_OCULTAR_COBRANCA'
 export function cobrancaOcultaPara(featureFlags?: readonly string[] | null): boolean {
   return featureFlags?.includes(TENANT_FLAG_OCULTAR_COBRANCA) ?? false
 }
+
+/**
+ * Suporte integrado (épico SCRUM-1376): chamados dentro do Oryon — painel na
+ * conversa, página Suporte, "Falar com o suporte". Sem a chave, nada do
+ * recurso aparece (o backend responde 404 nas rotas `/support`).
+ */
+export const TENANT_FLAG_SUPPORT_TICKETS = 'FF_SUPPORT_TICKETS'
+
+/** `true` só quando o backend listou `FF_SUPPORT_TICKETS` para o tenant. */
+export function suporteLigadoPara(featureFlags?: readonly string[] | null): boolean {
+  return featureFlags?.includes(TENANT_FLAG_SUPPORT_TICKETS) ?? false
+}

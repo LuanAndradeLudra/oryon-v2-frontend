@@ -22,6 +22,7 @@ import { api } from '@/services/api'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Oryon',
+  oryon_support:  'Suporte Oryon',
   business_admin: 'Dono',
   admin:          'Admin',
   supervisor:     'Supervisor',
@@ -30,6 +31,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 
 const ROLE_COLORS: Record<UserRole, string> = {
   super_admin:    'var(--color-brand-500)',
+  oryon_support:  'var(--color-brand-500)',
   business_admin: 'var(--color-status-active)',
   admin:          'var(--color-brand-500)',
   supervisor:     'var(--color-status-pending)',

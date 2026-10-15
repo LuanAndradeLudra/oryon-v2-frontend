@@ -75,6 +75,7 @@ export function isOryonStaff(role: UserRole | string | undefined | null): boolea
  */
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Equipe Oryon',
+  oryon_support: 'Suporte Oryon',
   business_admin: 'Dono',
   admin: 'Administrador',
   supervisor: 'Supervisor',

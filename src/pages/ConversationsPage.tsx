@@ -37,6 +37,8 @@ import type {
   SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew,
   Tag, User, DealOutcomeInput } from '@/types'
 import { useEstadoNaUrl, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
+import { SupportReportProvider } from '@/components/support/SupportReportContext'
+import { FolhaDoChamadoNoCelular, PainelDoContatoOuChamado } from '@/components/support/ReportTicketPanel'
 
 // SCRUM-1253 (PO, 06/10): abaixo de 1280 px o painel do contato nasce
 // recolhido (abre pelo botão de informações) — com lista e painel fixos o chat
@@ -698,7 +700,10 @@ export function ConversationsPage() {
   const showChat = !isMobile || !!activeConversation
 
   return (
-    <>
+    // Épico de suporte (SCRUM-1381): chat, cabeçalho e painel do contato
+    // compartilham o estado do chamado. Sempre montado: sem a flag do tenant
+    // (ou sem conversa aberta) ele só desliga o recurso — a árvore não muda.
+    <SupportReportProvider conversationId={activeConversation?.id ?? null} contatoNome={activeConversation?.contact.displayName || null}>
       {/* CONV-HDR (spec 1d): contagens + chip da linha + "Nova conversa" na TopBar do Shell. */}
       {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} pendingCounts={pendingCounts} whatsappNumberId={filters.whatsappNumberId} />}
 
@@ -839,19 +844,27 @@ export function ConversationsPage() {
             </AnimatePresence>,
             document.body,
           )
-        : infoOpen && activeConversation && (
-            <ContactPanel
-              conversation={activeConversation}
-              allTags={allTags}
-              allUsers={allUsers}
-              onClose={() => { setInfoOpen(false); setContatoFechado(true) }}
-              onAddTag={(tag) => handleAddTag(activeConversation.id, tag)}
-              onRemoveTag={(tagId) => handleRemoveTag(activeConversation.id, tagId)}
-              onCreateTag={createTag}
-              onDeleteTag={deleteTag}
-              onAssign={(user) => handleAssign(activeConversation.id, user)}
-              onTransfer={(user) => handleTransfer(activeConversation.id, user)}
-              onArchive={() => handleArchive(activeConversation.id)}
+        : activeConversation && (
+            // Épico de suporte: o chamado aberto em painel ocupa o lugar do
+            // painel do contato; criado o chamado, o painel do contato volta
+            // aberto, com o chamado novo na seção Chamados.
+            <PainelDoContatoOuChamado
+              aoCriar={() => { setInfoOpen(true); setContatoFechado(false) }}
+              contato={infoOpen && (
+                <ContactPanel
+                  conversation={activeConversation}
+                  allTags={allTags}
+                  allUsers={allUsers}
+                  onClose={() => { setInfoOpen(false); setContatoFechado(true) }}
+                  onAddTag={(tag) => handleAddTag(activeConversation.id, tag)}
+                  onRemoveTag={(tagId) => handleRemoveTag(activeConversation.id, tagId)}
+                  onCreateTag={createTag}
+                  onDeleteTag={deleteTag}
+                  onAssign={(user) => handleAssign(activeConversation.id, user)}
+                  onTransfer={(user) => handleTransfer(activeConversation.id, user)}
+                  onArchive={() => handleArchive(activeConversation.id)}
+                />
+              )}
             />
           )}
 
@@ -867,7 +880,10 @@ export function ConversationsPage() {
         />
       )}
 
+      {/* Épico de suporte: no celular o painel do chamado abre em tela cheia. */}
+      {isMobile && <FolhaDoChamadoNoCelular />}
+
       <NewConversationModal open={newConversationOpen} onClose={() => setNewConversationOpen(false)} />
-    </>
+    </SupportReportProvider>
   )
 }
