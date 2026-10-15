@@ -15,7 +15,9 @@ import {
   PanelLeft,
   Handshake,
   Inbox,
+  LifeBuoy,
 } from 'lucide-react'
+import { suporteLigadoPara } from '@/config/featureFlags'
 import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
@@ -145,7 +147,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
   // Configurações e logout saíram da sidebar (SCRUM-1100 · rodapé agora é só
   // o consumo de créditos de IA) — `useAuth` aqui só precisa do usuário/flags
   // que ainda decidem quais itens de navegação aparecem.
-  const { user, organizationConfigured } = useAuth()
+  const { user, organizationConfigured, featureFlags } = useAuth()
   const cobrancaOculta = useCobrancaOculta()
   const { isRouteVisible, isFeatureVisible } = useFeatureVisibility()
   const { checklist } = useSetupChecklist(user?.id)
@@ -231,7 +233,9 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
     { icon: <CopilotMark className="w-[16.5px] h-[16.5px]" />,   label: 'Copilot AI', href: '/copilot',
       nudge: !checklist.copilot ? 'Setup' : undefined },
-  ].filter((item) => isRouteVisible(item.href) && rotaPermitida(item.href, { role: user?.role, multiPipeline }))
+    // Épico de suporte (SCRUM-1383): chamados da empresa com a Oryon (flag do tenant; regra em rotaPermitida).
+    { icon: <LifeBuoy className="w-[16.5px] h-[16.5px]" />,   label: 'Suporte',     href: '/support', nudge: undefined as string | undefined },
+  ].filter((item) => isRouteVisible(item.href) && rotaPermitida(item.href, { role: user?.role, multiPipeline, suporte: suporteLigadoPara(featureFlags) }))
 
   const internalChatItem = {
     icon: <MessagesSquare className="w-[16.5px] h-[16.5px]" />,

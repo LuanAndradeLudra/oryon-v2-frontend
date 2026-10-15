@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { rotaPermitida } from '@/lib/rotasPorPapel'
-import { isRouteVisible } from '@/config/featureFlags'
+import { isRouteVisible, suporteLigadoPara } from '@/config/featureFlags'
 import { NavegarSePresente } from './NavegarSePresente'
 
 /**
@@ -12,7 +12,7 @@ import { NavegarSePresente } from './NavegarSePresente'
  * vazia ou de erro gerada por um 403/erro do backend.
  */
 export function RotaPorPapel({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
+  const { user, featureFlags } = useAuth()
   const multiPipeline = useMultiPipeline()
   const { pathname } = useLocation()
   // Também a flag global da rota (build): tela desligada não abre pela URL —
@@ -20,7 +20,7 @@ export function RotaPorPapel({ children }: { children: ReactNode }) {
   if (!isRouteVisible(pathname, user?.email ?? null)) {
     return <NavegarSePresente to="/home" replace />
   }
-  if (user && !rotaPermitida(pathname, { role: user.role, multiPipeline })) {
+  if (user && !rotaPermitida(pathname, { role: user.role, multiPipeline, suporte: suporteLigadoPara(featureFlags) })) {
     return <NavegarSePresente to="/home" replace />
   }
   return <>{children}</>

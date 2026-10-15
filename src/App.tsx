@@ -60,6 +60,7 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
+const SupportPage = lazyRoute(() => import('@/pages/SupportPage').then(m => ({ default: m.SupportPage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
 const PipelinePage      = lazyRoute(() => import('@/pages/PipelinePage').then(m => ({ default: m.PipelinePage })))
@@ -237,6 +238,10 @@ function AnimatedRoutes() {
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute><DashboardPage /></ProtectedRoute>
+          } />
+          {/* Suporte da empresa (SCRUM-1383): flag do tenant e papel em rotaPermitida. */}
+          <Route path="/support" element={
+            <ProtectedRoute><RotaPorPapel><SupportPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/contacts" element={
             <ProtectedRoute><ContactsPage /></ProtectedRoute>

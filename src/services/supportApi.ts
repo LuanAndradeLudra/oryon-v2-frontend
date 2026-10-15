@@ -1,6 +1,6 @@
 import { api } from './api'
 import type { ModeloDoFormulario, OrigemDoProblema, TipoDePedido } from '@/components/support/supportModel'
-import type { AnexoEnviado, ChamadoDaEmpresa, NovoChamado, PaginaDeChamados, ResumoDoChamado } from '@/types/support'
+import type { AnexoEnviado, ChamadoDaEmpresa, NovoChamado, PaginaDeChamados, ResumoDoChamado, ResumoPorVez, VezDoChamado } from '@/types/support'
 
 /**
  * Cliente do módulo `support` do backend (épico SCRUM-1376) — o lado da
@@ -37,8 +37,12 @@ export const supportApi = {
     return api.post<ChamadoDaEmpresa>(`/support/tickets/${id}/additions`, dto).then((r) => r.data)
   },
   /** Lista paginada por cursor. Com `conversationId`, cada item traz as mensagens marcadas. */
-  listar(params: { conversationId?: string; situacao?: 'abertos' | 'encerrados' | 'todos'; busca?: string; cursor?: string; limite?: number } = {}) {
+  listar(params: { conversationId?: string; situacao?: 'abertos' | 'encerrados' | 'todos'; vez?: VezDoChamado; busca?: string; cursor?: string; limite?: number } = {}) {
     return api.get<PaginaDeChamados>('/support/tickets', { params }).then((r) => r.data)
+  },
+  /** Quantos chamados em cada aba da página Suporte, no escopo do papel. */
+  resumo() {
+    return api.get<ResumoPorVez>('/support/tickets/resumo').then((r) => r.data)
   },
   obter(id: string) {
     return api.get<ChamadoDaEmpresa>(`/support/tickets/${id}`).then((r) => r.data)
