@@ -149,6 +149,19 @@ export interface NovoChamado {
   entrada?: EntradaDoChamado
   /** Quem reporta viu o aviso de repetido e disse que é OUTRO problema: não agrupa nem conta. */
   ehOutro?: boolean
+  /** SCRUM-1393: o relato nasceu do rascunho da IA, sem mudar ('usado') ou editado ('editado'). */
+  rascunhoDaIa?: 'usado' | 'editado' | null
+}
+
+/** SCRUM-1393 — o que vai para o rascunho do relato (o backend lê as mensagens marcadas, nunca o texto daqui). */
+export interface PedidoDeRascunho {
+  origemDoProblema: string
+  categoria?: string
+  conversationId?: string | null
+  messageIds: string[]
+  ondeAconteceu?: string | null
+  textoAtual?: string | null
+  contextoTecnico?: unknown
 }
 
 // ─── Fila da EQUIPE ORYON (`/admin/support/*`, SCRUM-1384) ──────────────────
@@ -275,6 +288,10 @@ export interface ChamadoDaEquipe extends Omit<ChamadoDaEmpresa, 'prioridade' | '
   problema?: ResumoDoProblema | null
   /** SCRUM-1392 — quanto o relato desta empresa se confirma na triagem (só a equipe). */
   calibracao?: ResumoDaCalibracao | null
+  /** SCRUM-1393: o relato nasceu do rascunho da IA ('usado' sem mudança, 'editado' pela pessoa). */
+  rascunhoDaIa?: 'usado' | 'editado' | null
+  /** SCRUM-1393: o "Sugerir causa" só com a sugestão ligada (custa modelo). */
+  assistente?: { causa: boolean }
 }
 
 /** SCRUM-1392 — dos chamados que a regra pôs em P2 pelos fatos e que a equipe triou, quantos ela confirmou. */
@@ -371,6 +388,10 @@ export interface ResumoDoProblema {
   empresas: number
   /** Tem o candidato a teste de regressão (libera o "corrigido"). */
   temFixture: boolean
+  /** Na sugestão (SCRUM-1393): por que parece o mesmo erro — assinatura e/ou relato parecido, de qualquer empresa. */
+  motivo?: string
+  mesmaAssinatura?: boolean
+  parecido?: { percentual: number; chamado: string; empresa: string } | null
 }
 
 /** O problema aberto: assinatura, o candidato a teste (sem o conteúdo) e os chamados. */

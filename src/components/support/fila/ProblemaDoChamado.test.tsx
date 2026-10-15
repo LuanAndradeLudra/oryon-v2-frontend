@@ -57,6 +57,12 @@ describe('Problema do chamado (SCRUM-1387)', () => {
     expect(showToast).toHaveBeenCalledWith('Vinculado ao PRB-0007.', 'success')
   })
 
+  it('SCRUM-1393: a sugestão diz por que parece o mesmo erro (assinatura e/ou relato parecido, de outra empresa)', () => {
+    montar(chamado(), [{ ...P, motivo: 'Relato 56% parecido com SUP-0042 (Clínica Serra) — já em 2 empresas.', mesmaAssinatura: false }])
+    expect(screen.getByText('Relato 56% parecido com SUP-0042 (Clínica Serra) — já em 2 empresas.')).toBeInTheDocument()
+    expect(api.vincularProblema).not.toHaveBeenCalled()
+  })
+
   it('problema novo a partir do chamado: título opcional (vazio, o backend dá o padrão)', async () => {
     api.criarProblema.mockResolvedValue(chamado({ problema: P }))
     const { onAtualizar } = montar(chamado(), null)

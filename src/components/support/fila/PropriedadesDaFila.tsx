@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
-import { BarChart3, Layers, Paperclip } from 'lucide-react'
+import { BarChart3, Layers, Paperclip, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { AcoesDaOcorrencia } from './AcoesDaOcorrencia'
 import { ProblemaDoChamado } from './ProblemaDoChamado'
@@ -181,6 +181,11 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
               onChange={(v) => void mudar({ causaRaiz: v }, v ? 'Causa registrada.' : 'Causa retirada.')}
               opcoes={(Object.keys(CAUSAS) as CausaRaiz[]).map((k) => [k, CAUSAS[k]])} />
           </Linha>
+          {c.assistente?.causa && (
+            <Linha rotulo="" alinhar="start">
+              <SugestaoDeCausa key={c.id} c={c} usar={(causa) => mudar({ causaRaiz: causa }, 'Causa registrada.')} />
+            </Linha>
+          )}
           <Linha rotulo="Jira">
             <input value={jira} onChange={(e) => setJira(e.target.value)} onBlur={salvarJira} maxLength={40}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
@@ -220,6 +225,52 @@ function Prazo({ c, relogio, agora }: { c: ChamadoDaEquipe; relogio: Relogio; ag
   )
 }
 
+/**
+ * Sugestão de causa pela IA (SCRUM-1393): só sugere. A sugestão fica no
+ * histórico interno; a causa só muda quando alguém da equipe escolhe "Usar".
+ */
+const CONFIANCA: Record<string, string> = { baixa: 'baixa', media: 'média', alta: 'alta' }
+
+function SugestaoDeCausa({ c, usar }: { c: ChamadoDaEquipe; usar: (causa: CausaRaiz) => Promise<boolean> }) {
+  const [pedindo, setPedindo] = useState(false)
+  const [sugestao, setSugestao] = useState<{ causa: CausaRaiz; nome: string; motivo: string; confianca: string } | null>(null)
+  const pedir = async () => {
+    setPedindo(true)
+    try {
+      setSugestao(await adminSupportApi.sugerirCausa(c.id))
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Não foi possível sugerir a causa agora.'), 'error')
+    } finally {
+      setPedindo(false)
+    }
+  }
+  if (!sugestao) {
+    return (
+      <button type="button" onClick={() => void pedir()} disabled={pedindo}
+        className="inline-flex items-center gap-1 text-[12px] text-accent-dark hover:underline disabled:opacity-60 rounded-[4px] focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500">
+        <Sparkles className="w-3 h-3" aria-hidden />{pedindo ? 'Analisando a evidência…' : 'Sugerir causa (IA)'}
+      </button>
+    )
+  }
+  const jaE = c.causaRaiz === sugestao.causa
+  return (
+    <div className="sup-cartao px-3 py-2.5 flex flex-col gap-1.5" role="region" aria-label="Sugestão de causa da IA">
+      <p className="flex items-center gap-1.5 text-[12px] text-surface-100">
+        <Sparkles className="w-3 h-3 text-accent-dark flex-shrink-0" aria-hidden />
+        <span>Sugestão da IA: <b className="font-semibold">{sugestao.nome}</b> <span className="text-surface-400">(confiança {CONFIANCA[sugestao.confianca] ?? sugestao.confianca})</span></span>
+      </p>
+      <p className="text-[12px] text-surface-300">{sugestao.motivo}</p>
+      <div className="flex gap-1.5">
+        <Button size="sm" variant="neutral" disabled={jaE} onClick={() => void usar(sugestao.causa).then((ok) => { if (ok) setSugestao(null) })}>
+          {jaE ? 'Já é a causa' : 'Usar esta causa'}
+        </Button>
+        <Button size="sm" variant="neutral" onClick={() => setSugestao(null)}>Fechar</Button>
+      </div>
+      <p className="text-[11px] text-surface-400">Só sugestão: fica no histórico interno; a causa muda só se você escolher.</p>
+    </div>
+  )
+}
+
 /** A empresa do chamado, com o atalho para a qualidade dela (SCRUM-1391). */
 function EmpresaDoChamado({ c }: { c: ChamadoDaEquipe }) {
   const [aberta, setAberta] = useState(false)
@@ -246,6 +297,8 @@ function DadosDoChamado({ c }: { c: ChamadoDaEquipe }) {
       </span>
     )])
   }
+  // SCRUM-1393 — de onde veio o relato (só a equipe vê).
+  if (c.rascunhoDaIa) linhas.push(['Relato', c.rascunhoDaIa === 'usado' ? 'rascunho da IA, sem mudança' : 'rascunho da IA, editado pela pessoa'])
   if (c.contatoNome) linhas.push(['Contato', c.contatoNome])
   linhas.push(['Aberto por', c.relatores > 1 ? `${c.abertoPor} (+${c.relatores - 1} relataram)` : c.abertoPor], ['Canal', canalDe(c)])
   if (c.tipoDePedido) {

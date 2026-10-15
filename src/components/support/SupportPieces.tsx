@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, CircleDot, CircleHelp, Eye, Flag, Layers, Lock, MessageSquare, RotateCcw, ThumbsUp, UserCheck } from 'lucide-react'
+import { Bell, CheckCircle2, CircleDot, CircleHelp, Eye, Flag, Layers, Lock, MessageSquare, RotateCcw, Sparkles, ThumbsUp, UserCheck } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChamadoDaEmpresa, EventoDoChamado, MensagemDoChamado } from '@/types/support'
@@ -53,6 +53,8 @@ export function MensagensMarcadas({ mensagens, moldura = true, destacar }: {
 const ICONE_DO_EVENTO: Record<string, LucideIcon> = {
   aberto: Flag, comentario: MessageSquare, resposta: MessageSquare, status: CircleDot, acesso: Eye, pergunta: CircleHelp,
   avaliacao: ThumbsUp, reaberto: RotateCcw, aviso: Bell, nota: Lock, responsavel: UserCheck, problema: Layers, retorno: CheckCircle2,
+  // SCRUM-1393: sugestão da IA para a equipe (só a Oryon vê).
+  sugestao: Sparkles,
 }
 /** Falas da EMPRESA (cartão claro); o resto é da Oryon ou do sistema. */
 const DA_EMPRESA = new Set(['aberto', 'comentario', 'resposta'])

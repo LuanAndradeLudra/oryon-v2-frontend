@@ -22,7 +22,7 @@ vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ featureFlags: h.fla
 vi.mock('@/hooks/useIsMobile', () => ({ useIsMobile: () => h.mobile }))
 vi.mock('react-router-dom', async (original) => ({ ...(await original<typeof import('react-router-dom')>()), useNavigate: () => h.navigate }))
 vi.mock('@/services/supportApi', () => ({
-  supportApi: { listar: vi.fn(), modelo: vi.fn(), parecidos: vi.fn(), criar: vi.fn(), adicionar: vi.fn(), enviarAnexo: vi.fn() },
+  supportApi: { listar: vi.fn(), modelo: vi.fn(), parecidos: vi.fn(), criar: vi.fn(), adicionar: vi.fn(), enviarAnexo: vi.fn(), rascunho: vi.fn() },
 }))
 vi.mock('@/hooks/useToast', async (original) => ({ ...(await original<typeof import('@/hooks/useToast')>()), showToast: vi.fn() }))
 
@@ -344,5 +344,65 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Tentar de novo' }))
     expect(await screen.findByText('Chamados · 1')).toBeInTheDocument()
     expect(api.listar).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('Rascunho da IA no relato (SCRUM-1393)', () => {
+  const RASCUNHO = 'Na conversa, a IA respondeu: "A consulta custa R$ 50". Pedimos que a equipe confira essa resposta.'
+  const ligado = () => api.modelo.mockResolvedValue({ assuntos: {}, exemplos: {}, esperado: {}, camposDaEmpresa: [], assistente: { rascunho: true } })
+  async function abrir() {
+    render(<Tela />)
+    await screen.findByText('Chamados · 1')
+    fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))
+    await waitFor(() => expect(api.modelo).toHaveBeenCalled())
+  }
+
+  it('desligado na Oryon: o botão não aparece', async () => {
+    await abrir()
+    expect(within(painel()!).queryByRole('button', { name: /Rascunho da IA/ })).toBeNull()
+  })
+
+  it('relato vazio: o rascunho entra no campo com o aviso; enviar sem mudar marca "usado"', async () => {
+    ligado()
+    api.rascunho.mockResolvedValue({ rascunho: RASCUNHO, aviso: 'Rascunho da IA' })
+    await abrir()
+    fireEvent.click(await within(painel()!).findByRole('button', { name: /Rascunho da IA/ }))
+    await waitFor(() => expect(within(painel()!).getByLabelText(/O que aconteceu/)).toHaveValue(RASCUNHO))
+    expect(api.rascunho).toHaveBeenCalledWith(expect.objectContaining({ conversationId: 'conv-1', messageIds: ['m2'], origemDoProblema: 'ia', textoAtual: null }))
+    expect(within(painel()!).getByText(/Rascunho da IA: confira e ajuste antes de enviar/)).toBeInTheDocument()
+    await escolher(/O contato chegou a ver/, 'Não chegou a ver')
+    fireEvent.click(enviar())
+    await waitFor(() => expect(api.criar).toHaveBeenCalledWith(expect.objectContaining({ rascunhoDaIa: 'usado', descricao: RASCUNHO })))
+  })
+
+  it('com texto da pessoa: o rascunho fica ao lado, nunca por cima; acrescentar junta e marca "editado"', async () => {
+    ligado()
+    api.rascunho.mockResolvedValue({ rascunho: RASCUNHO, aviso: 'Rascunho da IA' })
+    await abrir()
+    relatar('O valor está errado.')
+    fireEvent.click(await within(painel()!).findByRole('button', { name: /Rascunho da IA/ }))
+    const sugestao = await within(painel()!).findByRole('region', { name: 'Rascunho da IA' })
+    expect(within(painel()!).getByLabelText(/O que aconteceu/)).toHaveValue('O valor está errado.')
+    expect(api.rascunho).toHaveBeenCalledWith(expect.objectContaining({ textoAtual: 'O valor está errado.' }))
+    fireEvent.click(within(sugestao).getByRole('button', { name: 'Acrescentar ao meu relato' }))
+    expect(within(painel()!).getByLabelText(/O que aconteceu/)).toHaveValue(`O valor está errado.
+
+${RASCUNHO}`)
+    await escolher(/O contato chegou a ver/, 'Não chegou a ver')
+    fireEvent.click(enviar())
+    await waitFor(() => expect(api.criar).toHaveBeenCalledWith(expect.objectContaining({ rascunhoDaIa: 'editado' })))
+  })
+
+  it('descartar some com a sugestão; sem usar o rascunho, nada é marcado', async () => {
+    ligado()
+    api.rascunho.mockResolvedValue({ rascunho: RASCUNHO, aviso: 'Rascunho da IA' })
+    await abrir()
+    relatar('A IA informou o valor errado da consulta')
+    fireEvent.click(await within(painel()!).findByRole('button', { name: /Rascunho da IA/ }))
+    fireEvent.click(within(await within(painel()!).findByRole('region', { name: 'Rascunho da IA' })).getByRole('button', { name: 'Descartar' }))
+    expect(within(painel()!).queryByRole('region', { name: 'Rascunho da IA' })).toBeNull()
+    await escolher(/O contato chegou a ver/, 'Não chegou a ver')
+    fireEvent.click(enviar())
+    await waitFor(() => expect(api.criar).toHaveBeenCalledWith(expect.objectContaining({ rascunhoDaIa: null })))
   })
 })
