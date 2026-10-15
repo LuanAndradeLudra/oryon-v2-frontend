@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, AlertTriangle, MapPin, Mic, Download, Play, Pause,
   Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, MoreHorizontal, Workflow,
+  Flag, LifeBuoy,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { failureReason } from '@/lib/messageStatus'
@@ -19,6 +20,11 @@ import { DocumentCard } from './messageRenderers/DocumentCard'
 import { useMediaViewer } from '@/components/ui/MediaViewer'
 import { AnomalyDetailModal } from './AnomalyDetailModal'
 import { guardReasonLabel } from '@/lib/guardReason'
+import { Checkbox } from '@/components/ui/Checkbox'
+import { useSuporte } from '@/components/support/suporteDaConversa'
+import { useMarcacao } from '@/components/support/marcacaoDoChamado'
+import { ORIGENS_DA_MENSAGEM, classificarMensagem } from '@/components/support/origemDaMensagem'
+import '@/components/support/suporte.css'
 
 /** SCRUM-806 — tooltip do check verde: quem verificou e quando. */
 function reviewedLabel(at: string | null, by?: string | null): string {
@@ -654,6 +660,19 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
     return name ? `${name} · ${when}` : when
   }, [message])
 
+  // Épico de suporte (SCRUM-1381): marcar a mensagem para o chamado, reportar
+  // pelo menu e a bandeira de "reportada". Sem a flag do tenant (ou fora da
+  // página de Conversas) `suporte.ligado` é false e a bolha fica como sempre.
+  // Cada bolha assina só o próprio pedaço do store: marcar uma mensagem
+  // re-renderiza uma bolha, não a conversa inteira.
+  const suporte = useSuporte()
+  const marcando = useMarcacao(suporte.store, (e) => suporte.ligado && e.marcando)
+  const marcada = useMarcacao(suporte.store, (e) => suporte.ligado && e.marcando && e.marcadas.has(message.id))
+  const chamado = useMarcacao(suporte.store, (e) => (suporte.ligado ? e.chamadoPorMensagem.get(message.id) ?? null : null))
+  // Pulso das caixas só com o painel aberto ao lado (mostra onde clicar); no celular a barra do rodapé já explica.
+  const pulso = useMarcacao(suporte.store, (e) => e.painelAberto && suporte.emPainel)
+  const origemDaMensagem = ORIGENS_DA_MENSAGEM[classificarMensagem(message).origem]
+
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = []
     // Responder é a ação nº 1 do chat: primeira do menu (clique direito, "⋯"
@@ -691,8 +710,15 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         })
       }
     }
+    if (suporte.ligado && !marcando) {
+      items.push({ separator: true })
+      // O rótulo segue a ORIGEM da mensagem (IA, automação, regra, equipe, contato).
+      items.push({ label: origemDaMensagem.reportar, icon: Flag, onClick: () => suporte.reportar([message.id]) })
+      // No painel lateral a marcação continua com o formulário aberto: o item acima já basta.
+      if (!suporte.emPainel) items.push({ label: 'Abrir chamado com esta e outras', icon: LifeBuoy, onClick: () => suporte.iniciarMarcacao(message.id) })
+    }
     return items
-  }, [message, onReply, openViewer])
+  }, [message, onReply, openViewer, suporte, marcando, origemDaMensagem])
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
@@ -732,16 +758,23 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
     touchStart.current = null
   }
 
+  // Marcando: a linha inteira marca (clique ou toque); a caixa de seleção é o
+  // controle de verdade (teclado: Tab + Espaço) e não deixa o clique contar duas vezes.
+  const alternarMarcacao = () => suporte.alternar(message.id)
+
   return (
     <div
-      onContextMenu={onContextMenu}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onContextMenu={marcando ? undefined : onContextMenu}
+      onTouchStart={marcando ? undefined : handleTouchStart}
+      onTouchMove={marcando ? undefined : handleTouchMove}
+      onTouchEnd={marcando ? undefined : handleTouchEnd}
+      onClick={marcando ? alternarMarcacao : undefined}
       className={cn(
         'group flex items-end gap-2',
         isOutbound ? 'flex-row-reverse' : 'flex-row',
-        gap
+        gap,
+        marcando && 'cursor-pointer rounded-[10px] px-1 py-1 transition-colors hover:bg-[var(--rowhover)]',
+        marcada && 'bg-[var(--sel)] hover:bg-[var(--sel)]',
       )}
       style={{
         transform: dragX ? `translateX(${dragX}px)` : undefined,
@@ -749,6 +782,15 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       }}
       title={bubbleTitle}
     >
+      {marcando && (
+        <Checkbox
+          checked={marcada}
+          onChange={alternarMarcacao}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Incluir no chamado: ${origemDaMensagem.nome}, ${timeStr}`}
+          className={cn('sup-caixa self-center', pulso && 'sup-caixa-pulso', isOutbound ? 'ml-1' : 'mr-1')}
+        />
+      )}
       {/* CONV-CHAT-16/21: avatar/tile de 24px só na 1ª bolha do grupo; nas
           continuações fica um espaçador do mesmo tamanho, pra bolha não
           "andar" quando o avatar some. */}
@@ -758,7 +800,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           aligned to the sender's side. As ações da mensagem NÃO ficam mais no
           fluxo da linha: o antigo botão Responder (28px + gap, opacity 0) fazia
           toda bolha começar a 68px da borda mesmo invisível — PO, 23/09. */}
-      <div className={cn('flex flex-col max-w-[65%] min-w-0', isOutbound ? 'items-end' : 'items-start')}>
+      <div className={cn('flex flex-col max-w-[65%] min-w-0', isOutbound ? 'items-end' : 'items-start', marcando && 'pointer-events-none select-none')}>
         {/* Bubble — soft drop shadow only in light theme (invisible token in
             dark). The sender (AI / operator / campaign / rule) is conveyed by a
             discreet inline icon in the meta row below, outbound only. */}
@@ -787,7 +829,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
             no toque, arrastar responde e o toque longo abre o menu. */}
           <div
             className={cn(
-              'hidden md:flex absolute top-1/2 -translate-y-1/2 items-center gap-0.5',
+              marcando ? 'hidden' : 'hidden md:flex absolute top-1/2 -translate-y-1/2 items-center gap-0.5',
               isOutbound ? 'right-full mr-1.5' : 'left-full ml-1.5',
               'opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity',
             )}
@@ -855,6 +897,22 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               rodapé da bolha (PO, 23/09): o avatar em gradiente na 1ª bolha
               da sequência já diz quem enviou; dentro da bolha era ruído. */}
           <div className="flex items-center gap-1 ml-auto">
+            {/* Épico de suporte: bandeira discreta na linha da hora (não no
+                texto) — numa conversa longa com vários reportes, um selo
+                dentro da bolha viraria ruído na leitura. Leva ao chamado. */}
+            {chamado && (
+              <button
+                type="button"
+                // Marcando, a bolha é inerte: um Enter aqui levaria para a página Suporte e perderia o relato.
+                disabled={marcando}
+                onClick={(e) => { e.stopPropagation(); suporte.irParaChamado(chamado.id) }}
+                title={`Reportada no chamado ${chamado.numero} · ver andamento`}
+                aria-label={`Reportada no chamado ${chamado.numero}. Ver andamento`}
+                className="sup-bandeira inline-flex items-center rounded-[4px] p-0.5 opacity-90 hover:opacity-100 transition-opacity"
+              >
+                <Flag className="w-3 h-3" fill="currentColor" aria-hidden />
+              </button>
+            )}
             <span className={cn('text-[11px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-500')}>
               {timeStr}
             </span>

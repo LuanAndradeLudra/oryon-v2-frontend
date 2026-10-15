@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   ChevronDown, Info, MoreHorizontal, Bot,
-  Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare,
+  Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare, LifeBuoy,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -27,6 +27,9 @@ import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { useResolveWithOutcome } from '@/hooks/useResolveWithOutcome'
 import { ResolveOutcomePopover } from './ResolveOutcomePopover'
+import { useDadosDoSuporte, useSuporte } from '@/components/support/suporteDaConversa'
+import { useMarcacao } from '@/components/support/marcacaoDoChamado'
+import { EstadoDoChamadoNoCabecalho } from '@/components/support/EstadoDoChamadoNoCabecalho'
 import type { Conversation, DealOutcomeInput, Tag as TagType, User } from '@/types'
 
 const STATUS_OPTIONS = [
@@ -101,6 +104,12 @@ export function ChatHeader({
   // F10 (SCRUM-880): "Resolvida" com registro-alvo aberto → popover de desfecho
   // (prancheta 5); sem alvo, resolve como sempre.
   const { user: eu } = useAuth()
+  // Épico de suporte (SCRUM-1381): "Reportar problema…" nos menus ⋯; com o
+  // painel do chamado aberto (computador), as ações da direita viram o estado
+  // do chamado. Sem a flag do tenant, `ligado` é false e nada muda aqui.
+  const suporte = useSuporte()
+  const painelDoChamado = useMarcacao(suporte.store, (e) => suporte.ligado && suporte.emPainel && e.painelAberto)
+  const temChamadoAberto = useDadosDoSuporte()?.temChamadoAberto ?? false
   const linhasDaIA = useLinhasDaIA()
   const estadoIA = estadoDaIA(conversation, linhasDaIA)
   const ehMinha = !!eu && conversation.assignedUser?.id === eu.id
@@ -380,6 +389,11 @@ export function ChatHeader({
             >
               Detalhes do contato
             </DropdownItem>
+            {suporte.ligado && (
+              <DropdownItem icon={LifeBuoy} onClick={() => { setMoreOpen(false); suporte.iniciarMarcacao() }}>
+                Reportar problema…
+              </DropdownItem>
+            )}
             {salesPipeline && (
               <DropdownItem
                 icon={Handshake}
@@ -476,6 +490,15 @@ export function ChatHeader({
       </div>
 
       {/* ── Right: actions ────────────────────────────────────── */}
+      {/* Épico de suporte (opção B): com o painel do chamado aberto, o estado do
+          chamado ocupa o lugar das ações; elas voltam ao enviar ou cancelar. Os
+          diálogos do "Adicionar ao funil" continuam montados. */}
+      {painelDoChamado ? (
+        <>
+          {addToPipeline.dialogs}
+          <EstadoDoChamadoNoCabecalho />
+        </>
+      ) : (
       <div className="flex items-center gap-1.5 @[420px]:gap-2 flex-shrink-0">
         {/* "Novo negócio" NÃO mora mais aqui. A A3 (SCRUM-925) o trouxe para o
             cabeçalho quando criar negócio só existia escondido dentro do menu
@@ -601,13 +624,18 @@ export function ChatHeader({
             >
               <Handshake className="w-3.5 h-3.5" /> Adicionar ao funil…
             </DropdownItem>
+            {suporte.ligado && (
+              <DropdownItem onClick={() => { setMoreOpen(false); suporte.iniciarMarcacao() }}>
+                <LifeBuoy className="w-3.5 h-3.5" /> Reportar problema…
+              </DropdownItem>
+            )}
             <DropdownItem danger onClick={() => { setMoreOpen(false); setArchiveOpen(true) }}>
               <Archive className="w-3.5 h-3.5" /> Arquivar conversa
             </DropdownItem>
           </div>
         </Dropdown>
 
-        <Tooltip content="Informações do contato" side="bottom">
+        <Tooltip content={temChamadoAberto && !infoOpen ? 'Informações do contato · chamado de suporte aberto' : 'Informações do contato'} side="bottom">
           <button
             onClick={onToggleInfo}
             aria-label="Informações do contato"
@@ -619,13 +647,17 @@ export function ChatHeader({
           >
             <div className="relative">
               <Info className="w-4 h-4" />
-              {(contact.metaAdsReferral || contact.googleAdsAttribution || tags.length > 0) && !infoOpen && (
+              {/* Ponto âmbar: há chamado de suporte aberto nesta conversa (a lista mora no painel do contato). */}
+              {temChamadoAberto && !infoOpen ? (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-warning border border-surface-900" />
+              ) : (contact.metaAdsReferral || contact.googleAdsAttribution || tags.length > 0) && !infoOpen && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-surface-400 border border-surface-900" />
               )}
             </div>
           </button>
         </Tooltip>
       </div>
+      )}
 
       {sharedOverlays}
     </div>
