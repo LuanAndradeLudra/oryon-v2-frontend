@@ -66,8 +66,25 @@ export const supportApi = {
     corpo.append('file', arquivo)
     return api.post<AnexoEnviado>('/support/attachments', corpo, { headers: { 'Content-Type': undefined } }).then((r) => r.data)
   },
-  /** Endereço do download (o backend confere o escopo do chamado). */
-  enderecoDoAnexo(chamadoId: string, anexoId: string) {
-    return `${api.defaults.baseURL ?? ''}/support/tickets/${chamadoId}/attachments/${anexoId}`
+  /**
+   * Baixa o anexo pelo cliente da API (cookie no navegador, Bearer no app
+   * nativo — um link direto dava 401 no app) e entrega o arquivo. O backend
+   * confere o escopo do chamado.
+   */
+  async baixarAnexo(chamadoId: string, anexoId: string, nome: string) {
+    const r = await api.get<Blob>(`/support/tickets/${chamadoId}/attachments/${anexoId}`, { responseType: 'blob' })
+    salvarArquivo(r.data, nome)
   },
+}
+
+/** Entrega um arquivo baixado: link temporário com `download`, liberado logo depois. */
+export function salvarArquivo(blob: Blob, nome: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nome
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

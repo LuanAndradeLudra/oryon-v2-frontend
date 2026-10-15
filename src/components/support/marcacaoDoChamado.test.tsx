@@ -26,6 +26,15 @@ describe('criarStoreDaMarcacao', () => {
     expect(avisos).toBe(3)
   })
 
+  it('marca até 50 mensagens, o teto do backend: a 51ª é recusada; desmarcar sempre pode (revisão do Portão 2)', () => {
+    const s = criarStoreDaMarcacao()
+    for (let i = 0; i < 50; i++) expect(s.alternar(`m${i}`)).toBe(true)
+    expect(s.alternar('m50')).toBe(false)
+    expect(s.ler().marcadas.size).toBe(50)
+    expect(s.alternar('m0')).toBe(true)
+    expect(s.ler().marcadas.has('m0')).toBe(false)
+  })
+
   it('zerar volta ao início, mas mantém as mensagens do chat (quem as registra é o chat)', () => {
     const store = criarStoreDaMarcacao()
     const mensagens = [msg('m1')]

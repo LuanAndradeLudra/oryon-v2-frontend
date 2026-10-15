@@ -109,6 +109,8 @@ export function ChatHeader({
   // do chamado. Sem a flag do tenant, `ligado` é false e nada muda aqui.
   const suporte = useSuporte()
   const painelDoChamado = useMarcacao(suporte.store, (e) => suporte.ligado && suporte.emPainel && e.painelAberto)
+  // Marcando (celular): o item zeraria as mensagens já marcadas — a barra do rodapé continua o chamado.
+  const marcando = useMarcacao(suporte.store, (e) => suporte.ligado && e.marcando)
   const temChamadoAberto = useDadosDoSuporte()?.temChamadoAberto ?? false
   const linhasDaIA = useLinhasDaIA()
   const estadoIA = estadoDaIA(conversation, linhasDaIA)
@@ -389,7 +391,7 @@ export function ChatHeader({
             >
               Detalhes do contato
             </DropdownItem>
-            {suporte.ligado && (
+            {suporte.ligado && !marcando && (
               <DropdownItem icon={LifeBuoy} onClick={() => { setMoreOpen(false); suporte.iniciarMarcacao() }}>
                 Reportar problema…
               </DropdownItem>
@@ -624,7 +626,7 @@ export function ChatHeader({
             >
               <Handshake className="w-3.5 h-3.5" /> Adicionar ao funil…
             </DropdownItem>
-            {suporte.ligado && (
+            {suporte.ligado && !marcando && (
               <DropdownItem onClick={() => { setMoreOpen(false); suporte.iniciarMarcacao() }}>
                 <LifeBuoy className="w-3.5 h-3.5" /> Reportar problema…
               </DropdownItem>
@@ -638,7 +640,7 @@ export function ChatHeader({
         <Tooltip content={temChamadoAberto && !infoOpen ? 'Informações do contato · chamado de suporte aberto' : 'Informações do contato'} side="bottom">
           <button
             onClick={onToggleInfo}
-            aria-label="Informações do contato"
+            aria-label={temChamadoAberto && !infoOpen ? 'Informações do contato · chamado de suporte aberto' : 'Informações do contato'}
             aria-expanded={infoOpen}
             className={cn(
               'w-7 h-7 rounded-[6px] flex items-center justify-center transition-all',

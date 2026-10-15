@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertCircle, Check, ChevronDown, ChevronRight, CircleHelp, CopyPlus, Flag, Loader2, MessageSquare, MessagesSquare, MousePointerClick, Paperclip, Plus, ShieldCheck, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -214,7 +214,23 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
   const s = useSuporte()
   const [verAfetadas, setVerAfetadas] = useState(false)
   const tituloId = useId()
-  const { zIndex } = useLayer(variante !== 'modal' && !oculto, onClose)
+  const painelRef = useRef<HTMLElement>(null)
+  // Fechar com algo escrito pede confirmação: um Esc ou um clique não leva o relato (revisão do Portão 2).
+  const [confirmarDescarte, setConfirmarDescarte] = useState(false)
+  const pedirFechar = () => {
+    if (f.temConteudo) setConfirmarDescarte(true)
+    else onClose()
+  }
+  const descartar = () => { f.descartar(); onClose() }
+  // Esc com a confirmação aberta: continua escrevendo. Fora do painel (o seletor
+  // de respostas do chat, por exemplo), o Esc não é para ele.
+  const aoEsc = () => {
+    if (confirmarDescarte) { setConfirmarDescarte(false); return }
+    const foco = document.activeElement
+    if (variante !== 'modal' && foco && foco !== document.body && !painelRef.current?.contains(foco)) return
+    pedirFechar()
+  }
+  const { zIndex } = useLayer(variante !== 'modal' && !oculto, aoEsc)
   // A folha reaparece (voltou da marcação): o foco volta ao relato.
   useEffect(() => {
     if (variante === 'folha' && !oculto) document.getElementById('painel-relato')?.focus()
@@ -239,17 +255,27 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
     </div>
   ) : null
 
-  const botoes = (
+  const botoes = confirmarDescarte ? (
     <>
-      <Button variant="neutral" size="sm" onClick={onClose}>Cancelar</Button>
+      <Button variant="neutral" size="sm" onClick={() => setConfirmarDescarte(false)} autoFocus>Continuar</Button>
+      <Button variant="danger" size="sm" onClick={descartar}>Descartar</Button>
+    </>
+  ) : (
+    <>
+      <Button variant="neutral" size="sm" onClick={pedirFechar}>Cancelar</Button>
       <Button size="sm" onClick={f.enviar} loading={f.enviando} disabled={!f.pronto} leftIcon={<Flag className="w-3.5 h-3.5" />}>
         {f.juntarEm ? 'Adicionar' : 'Enviar'}
       </Button>
     </>
   )
-  const avisoDosAnexos = f.anexosEnviando ? <span className="text-[11px] text-surface-400" role="status">Enviando anexos…</span> : null
+  const avisoDosAnexos = confirmarDescarte
+    ? <span className="text-xs font-semibold text-surface-100" role="alert">Descartar o relato?</span>
+    : f.anexosEnviando ? <span className="text-[11px] text-surface-400" role="status">Enviando anexos…</span> : null
   const corpo = (
       <div className={cn('flex flex-col gap-4', variante === 'modal' ? 'sup-modal px-5 py-4' : 'flex-1 min-h-0 overflow-y-auto px-4 py-4')}>
+        {f.rascunhoRecuperado && (
+          <p className="text-[11px] text-surface-400" role="status">Continuando o rascunho desta conversa. As mensagens precisam ser marcadas de novo.</p>
+        )}
         {/* Sobre o quê: escolha EXPLÍCITA entre mensagens marcadas e a conversa inteira. */}
         {!f.juntarEm && conversationId && sobre && onSobre && (
           <div className="flex items-center gap-1.5">
@@ -337,10 +363,12 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
             <div className="min-w-0 flex-1 flex flex-col gap-2">
               <p className="text-xs text-surface-200 leading-snug">
                 <b className="sup-aviso-titulo block text-[13px]">Já existe o {f.duplicado.c.numero} aberto {f.duplicado.motivo}</b>
-                {tituloDoChamado(f.duplicado.c)} · {dataCurta(f.duplicado.c.abertoEm)}. Se for o mesmo problema, junte a ele.
+                {tituloDoChamado(f.duplicado.c)} · {dataCurta(f.duplicado.c.abertoEm)}. {f.podeJuntar ? 'Se for o mesmo problema, junte a ele.' : 'Se for o mesmo problema, acompanhe por ele.'}
               </p>
               <div className="flex flex-wrap gap-1.5">
-                <Button size="sm" onClick={() => f.setJuntarEm(f.duplicado!.c)}>Adicionar ao {f.duplicado.c.numero}</Button>
+                {f.podeJuntar
+                  ? <Button size="sm" onClick={() => f.setJuntarEm(f.duplicado!.c)}>Adicionar ao {f.duplicado.c.numero}</Button>
+                  : props.verChamado && <Button size="sm" onClick={() => props.verChamado!(f.duplicado!.c.id)}>Ver o {f.duplicado.c.numero}</Button>}
                 <Button size="sm" variant="neutral" onClick={() => f.setEhOutro(true)}>É outro</Button>
               </div>
             </div>
@@ -540,7 +568,7 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
     return (
       <Modal
         open
-        onClose={onClose}
+        onClose={aoEsc}
         aria-label={f.titulo}
         className={cn('max-w-[520px]', `sup-familia-${familia}`)}
         bodyClassName="p-0"
@@ -556,14 +584,14 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
 
   // Mesma largura do painel do contato (308px): o chat não muda de tamanho ao abrir o chamado.
   const painel = (
-    <aside role={oculto ? undefined : 'dialog'} aria-modal={oculto ? undefined : variante === 'folha'} aria-labelledby={tituloId}
+    <aside ref={painelRef} role={oculto ? undefined : 'dialog'} aria-modal={oculto ? undefined : variante === 'folha'} aria-labelledby={tituloId}
       className={cn('conv-surface sup-painel-topo w-[308px] flex-shrink-0 flex flex-col h-full min-h-0 bg-surface-800 border-l border-surface-700', `sup-familia-${familia}`, className)}>
       <header className="flex items-center gap-2 pl-4 pr-2 h-[52px] pt-[3px] border-b border-surface-700 flex-shrink-0">
         <div className="min-w-0 flex-1">
           <h2 id={tituloId} className="text-[14px] font-semibold text-surface-50 truncate">{f.titulo}</h2>
           <p className="text-[11px] text-surface-400 truncate">{conversationId ? (contatoNome ?? 'Conversa') : 'Para algo que não está ligado a uma conversa'}</p>
         </div>
-        <button type="button" onClick={onClose} aria-label="Fechar" title="Fechar (Esc)"
+        <button type="button" onClick={pedirFechar} aria-label="Fechar" title="Fechar (Esc)"
           className="w-8 h-8 rounded-[6px] flex items-center justify-center text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100">
           <X className="w-4 h-4" />
         </button>
@@ -580,9 +608,21 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
   if (variante !== 'folha') return painel
   // Celular: o mesmo painel em tela cheia, na altura da pilha de camadas (um menu aberto dentro fica por cima).
   return createPortal(
-    <div className={cn('fixed inset-0 flex bg-surface-800', oculto && 'hidden')} style={{ zIndex }}>{painel}</div>,
+    <div className={cn('fixed inset-0 flex bg-surface-800', oculto && 'hidden')} style={{ zIndex }} onKeyDown={oculto ? undefined : prenderFoco}>{painel}</div>,
     document.body,
   )
+}
+
+const FOCAVEIS = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+/** Folha do celular (aria-modal): Tab e Shift+Tab circulam dentro dela, como no Modal. */
+function prenderFoco(e: KeyboardEvent<HTMLDivElement>) {
+  if (e.key !== 'Tab') return
+  const itens = Array.from(e.currentTarget.querySelectorAll<HTMLElement>(FOCAVEIS))
+  if (!itens.length) { e.preventDefault(); return }
+  const primeiro = itens[0]
+  const ultimo = itens[itens.length - 1]
+  if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus() }
+  else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus() }
 }
 
 /**
@@ -607,7 +647,7 @@ function usePropsDoPainel(aoCriar?: () => void, sessao = false): PropsDoFormular
     contatoNome: d.contatoNome,
     mensagens: noPainel,
     todasAsMensagens: todas,
-    onCriado: (c, novo) => { d.aoCriar(c, novo); aoCriar?.() },
+    onCriado: (c, novo) => { if (d.aoCriar(c, novo)) aoCriar?.() },
     sobre,
     onSobre: s.definirSobre,
     verChamado: s.irParaChamado,

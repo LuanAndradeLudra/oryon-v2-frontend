@@ -1,4 +1,4 @@
-import { Fragment, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, ChevronDown, CircleHelp, LifeBuoy, MessageSquare, Paperclip, Plus, RotateCcw, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -11,12 +11,14 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useEstadoNaUrl, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
 import { showToast } from '@/hooks/useToast'
 import { aoSairDaSessao } from '@/lib/limpezaDaSessao'
+import { lazyRoute } from '@/lib/lazyRoute'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import { supportApi } from '@/services/supportApi'
 import type { ChamadoDaEmpresa, ResumoDoChamado, ResumoPorVez, VezDoChamado } from '@/types/support'
 import { PrioridadeDaEmpresaChip, StatusChip, SupportChip } from '@/components/support/SupportChip'
 import { FioDoChamado, MensagensMarcadas } from '@/components/support/SupportPieces'
 import { useAtualizacaoPeriodica } from '@/components/support/useAtualizacaoPeriodica'
+import { LimiteDoSuporte } from '@/components/support/LimiteDoSuporte'
 import {
   CONTATO_VIU, CONTORNOU, DESDE_QUANDO, IMPEDE_AGORA, JA_CORRIGIRAM, ORIGENS_DO_PROBLEMA, QUEM_MAIS, TIPOS_DE_PEDIDO,
   areaValida, dataCurta, tituloDoChamado, type StatusChamado,
@@ -35,17 +37,18 @@ import '@/components/support/suporte.css'
  *    escrever fixo no pé, com rascunho POR chamado;
  *  • detalhes em "rótulo · valor" numa coluna a partir de 1280 px (abaixo,
  *    dobráveis). Prioridade só vem para a gestão, e só quando alta.
- * Estado na URL (`aba`, `chamado`, `busca`, `novo`, `tela`): F5 e link colado
- * voltam ao mesmo lugar. Atualiza a cada 30 s com a aba visível.
+ * Estado na URL (`aba`, `chamado`, `novo`, `tela`): F5 e link colado voltam
+ * ao mesmo lugar. A busca NÃO vai para a URL: é nome e telefone de contato
+ * (histórico do navegador, Sentry). Atualiza a cada 30 s com a aba visível —
+ * sem trocar de aba nem de chamado sozinha.
  */
 
-const ChamadoSemConversa = lazy(() => import('@/components/support/ChamadoSemConversa'))
+const ChamadoSemConversa = lazyRoute(() => import('@/components/support/ChamadoSemConversa'))
 
 const ABAS: Array<[VezDoChamado, string]> = [['empresa', 'Com vocês'], ['oryon', 'Com a Oryon'], ['encerrados', 'Encerrados']]
 const LIMITE = 30
 const lerAba = (v: string | null): VezDoChamado | null => (v === 'empresa' || v === 'oryon' || v === 'encerrados' ? v : null)
 const texto = (v: string | null) => v
-const naoVazio = (v: string | null) => v || null
 
 /** Rascunho POR chamado, na sessão: trocar de chamado ou de tela não leva o texto junto nem o perde. Sai no logout. */
 const rascunhos = new Map<string, string>()
@@ -66,32 +69,45 @@ export function SupportPage() {
   const colunaCabe = useMediaQuery('(min-width: 1280px)')
   const [abaUrl, setAba] = useEstadoNaUrl<VezDoChamado | null>('aba', { padrao: null, ler: lerAba, escrever: texto, resetar: ['chamado'] })
   const [chamadoId, setChamadoId] = useEstadoNaUrl<string | null>('chamado', { padrao: null, ler: texto, escrever: texto, historico: 'push' })
-  const [busca, setBusca] = useEstadoNaUrl<string>('busca', { padrao: '', ler: (v) => v ?? '', escrever: naoVazio, resetar: ['chamado'] })
+  const [busca, setBusca] = useState('')
   const [novo, setNovo] = useEstadoNaUrl('novo', { padrao: false, ler: lerBool, escrever: escreverBool, resetar: ['tela'] })
   const [telaDoNovo] = useEstadoNaUrl<string | null>('tela', { padrao: null, ler: areaValida, escrever: texto })
 
   // Contagem por aba (cabeçalho e abas).
   const [resumo, setResumo] = useState<ResumoPorVez | null>(null)
-  const [resumoFalhou, setResumoFalhou] = useState(false)
+  // Sem aba na URL: abre na que tem algo para a empresa fazer; senão, com a Oryon.
+  // Decidida UMA vez, pelo primeiro resumo: as atualizações não trocam de aba.
+  const [abaInicial, setAbaInicial] = useState<VezDoChamado | null>(null)
   const carregarResumo = useCallback(() => {
-    supportApi.resumo().then((r) => { setResumo(r); setResumoFalhou(false) }).catch(() => setResumoFalhou(true)) // as abas ficam sem número
+    supportApi.resumo()
+      .then((r) => {
+        setResumo(r)
+        setAbaInicial((a) => a ?? (r.empresa > 0 ? 'empresa' : r.oryon > 0 ? 'oryon' : 'encerrados'))
+      })
+      .catch(() => setAbaInicial((a) => a ?? 'empresa')) // as abas ficam sem número
   }, [])
   useEffect(() => { carregarResumo() }, [carregarResumo])
-  // Sem aba na URL: abre na que tem algo para a empresa fazer; senão, com a Oryon.
-  const aba: VezDoChamado = abaUrl ?? (!resumo || resumo.empresa > 0 ? 'empresa' : resumo.oryon > 0 ? 'oryon' : 'encerrados')
+  const aba: VezDoChamado = abaUrl ?? abaInicial ?? 'empresa'
   // A lista espera o resumo só para escolher a aba; se ele falhar, abre em "Com vocês".
-  const pronta = !!abaUrl || !!resumo || resumoFalhou
+  const pronta = !!abaUrl || !!abaInicial
 
   // Lista da aba (por cursor). A resposta guarda a CHAVE que a trouxe: trocar de aba ou de busca esvazia na hora.
   const chave = `${aba}|${busca.trim()}`
   const [lista, setLista] = useState<Lista | null>(null)
   const [pedido, setPedido] = useState(0)
+  // O chamado aberto sozinho (computador): o primeiro da aba — e FICA nele, porque
+  // a lista reordena a cada atualização (revisão do Portão 2).
+  const [automatico, setAutomatico] = useState<{ chave: string; id: string | null } | null>(null)
   useEffect(() => {
     if (!pronta) return
     let vivo = true
     const t = setTimeout(() => {
       supportApi.listar({ vez: aba, busca: busca.trim() || undefined, limite: LIMITE })
-        .then((p) => { if (vivo) setLista({ chave, itens: p.itens, proximo: p.proximoCursor, erro: false }) })
+        .then((p) => {
+          if (!vivo) return
+          setLista({ chave, itens: p.itens, proximo: p.proximoCursor, erro: false })
+          setAutomatico((a) => (a?.chave === chave && a.id ? a : { chave, id: p.itens[0]?.id ?? null }))
+        })
         .catch(() => { if (vivo) setLista((l) => ({ chave, itens: l?.chave === chave ? l.itens : [], proximo: null, erro: true })) })
     }, busca ? 250 : 0)
     return () => { vivo = false; clearTimeout(t) }
@@ -112,8 +128,8 @@ export function SupportPage() {
     }
   }
 
-  // No computador abre o primeiro da aba; no celular a lista vem primeiro.
-  const selecionadoId = chamadoId ?? (isMobile ? null : itens?.[0]?.id ?? null)
+  // No computador abre o primeiro da aba (e fica nele); no celular a lista vem primeiro.
+  const selecionadoId = chamadoId ?? (isMobile ? null : automatico?.chave === chave ? automatico.id : null)
   const [detalhe, setDetalhe] = useState<{ id: string; c: ChamadoDaEmpresa | null; erro: boolean } | null>(null)
   const [pedidoDoDetalhe, setPedidoDoDetalhe] = useState(0)
   useEffect(() => {
@@ -133,10 +149,22 @@ export function SupportPage() {
     if (selecionadoId) setPedidoDoDetalhe((v) => v + 1)
   })
 
+  // A resposta de uma ação chega depois: as refs dizem qual chamado está aberto AGORA.
+  const selecionadoAtual = useRef(selecionadoId)
+  const chamadoIdAtual = useRef(chamadoId)
+  useEffect(() => {
+    selecionadoAtual.current = selecionadoId
+    chamadoIdAtual.current = chamadoId
+  })
   /** Depois de agir no chamado: ele pode ter mudado de aba — a seleção fica presa a ele. */
   const aoAtualizar = (c: ChamadoDaEmpresa) => {
-    setDetalhe({ id: c.id, c, erro: false })
-    if (!chamadoId) setChamadoId(c.id)
+    // A pessoa já abriu outro chamado enquanto a resposta vinha: só as listas mudam.
+    if (c.id === selecionadoAtual.current) {
+      setDetalhe({ id: c.id, c, erro: false })
+      // Uma atualização periódica que saiu antes da ação não traz o estado velho de volta.
+      setPedidoDoDetalhe((v) => v + 1)
+      if (!chamadoIdAtual.current) setChamadoId(c.id)
+    }
     carregarResumo()
     setPedido((v) => v + 1)
   }
@@ -145,6 +173,25 @@ export function SupportPage() {
     setChamadoId(c.id)
     carregarResumo()
     setPedido((v) => v + 1)
+  }
+
+  // Celular: abrir pela lista empilha no histórico, e o Voltar da tela volta por
+  // ele — senão o "voltar" do Android reabria o chamado.
+  const abriuPelaLista = useRef(false)
+  const abrir = (id: string) => { abriuPelaLista.current = true; setChamadoId(id) }
+  const voltar = () => {
+    if (abriuPelaLista.current) { abriuPelaLista.current = false; navigate(-1) }
+    else setChamadoId(null)
+  }
+  // Setas, Home e End entre as abas (padrão de abas da WAI-ARIA).
+  const moverEntreAbas = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = ABAS.findIndex(([k]) => k === aba)
+    const alvo = e.key === 'ArrowRight' ? (i + 1) % ABAS.length : e.key === 'ArrowLeft' ? (i - 1 + ABAS.length) % ABAS.length
+      : e.key === 'Home' ? 0 : e.key === 'End' ? ABAS.length - 1 : -1
+    if (alvo < 0) return
+    e.preventDefault()
+    setAba(ABAS[alvo][0])
+    document.getElementById(`aba-${ABAS[alvo][0]}`)?.focus()
   }
 
   const precisam = resumo?.empresa ?? 0
@@ -157,11 +204,12 @@ export function SupportPage() {
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por número, contato ou texto" maxLength={80}
             className="w-full h-8 pl-8 pr-2.5 rounded-[7px] bg-surface-800 border border-[var(--bd2)] text-[13px] text-surface-100 placeholder:text-surface-400 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500" />
         </label>
-        <div className="flex" role="tablist" aria-label="De quem é a vez">
+        <div className="flex" role="tablist" aria-label="De quem é a vez" onKeyDown={moverEntreAbas}>
           {ABAS.map(([k, rotulo]) => {
             const n = resumo?.[k]
             return (
-              <button key={k} type="button" role="tab" aria-selected={aba === k} onClick={() => setAba(k)}
+              <button key={k} id={`aba-${k}`} type="button" role="tab" aria-selected={aba === k} aria-controls="lista-de-chamados"
+                tabIndex={aba === k ? 0 : -1} onClick={() => setAba(k)}
                 className={cn('flex-auto h-8 px-1 inline-flex items-center justify-center gap-1 whitespace-nowrap text-xs font-semibold border-b-2 transition-colors',
                   aba === k ? 'border-brand-500 text-surface-100' : 'border-transparent text-surface-400 hover:text-surface-200')}>
                 {rotulo}
@@ -174,7 +222,7 @@ export function SupportPage() {
           })}
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div id="lista-de-chamados" role="tabpanel" aria-labelledby={`aba-${aba}`} className="flex-1 overflow-y-auto">
         {daChave?.erro && itens?.length === 0 ? (
           <ErrorState compact onRetry={() => setPedido((v) => v + 1)} />
         ) : itens === null ? (
@@ -190,7 +238,7 @@ export function SupportPage() {
             {itens.map((c) => {
               const ativo = selecionadoId === c.id
               return (
-                <button key={c.id} type="button" onClick={() => setChamadoId(c.id)} aria-current={ativo ? 'true' : undefined}
+                <button key={c.id} type="button" onClick={() => abrir(c.id)} aria-current={ativo ? 'true' : undefined}
                   className={cn('w-full text-left px-3.5 py-2.5 border-b border-surface-800 flex flex-col gap-0.5 transition-colors',
                     ativo ? 'bg-[var(--sel)]' : 'hover:bg-[var(--rowhover)]')}>
                   <span className="flex items-center gap-2 min-w-0">
@@ -224,7 +272,7 @@ export function SupportPage() {
         c={doSelecionado.c}
         mostrarColuna={colunaCabe}
         onAtualizar={aoAtualizar}
-        onVoltar={isMobile ? () => setChamadoId(null) : undefined}
+        onVoltar={isMobile ? voltar : undefined}
         onAbrirConversa={doSelecionado.c.conversationId ? () => navigate(`/conversations?id=${encodeURIComponent(doSelecionado.c!.conversationId!)}`) : undefined}
       />
     ) : doSelecionado?.erro ? (
@@ -261,10 +309,12 @@ export function SupportPage() {
       </div>
 
       {novo && (
-        <Suspense fallback={null}>
-          {/* "Onde" só vem de um link com ?tela= (área conhecida); a página Suporte não é a tela do problema. */}
-          <ChamadoSemConversa entrada="pagina_suporte" telaInicial={telaDoNovo} onClose={() => setNovo(false)} onCriado={aoCriar} />
-        </Suspense>
+        <LimiteDoSuporte aoFalhar={() => setNovo(false)}>
+          <Suspense fallback={null}>
+            {/* "Onde" só vem de um link com ?tela= (área conhecida); a página Suporte não é a tela do problema. */}
+            <ChamadoSemConversa entrada="pagina_suporte" telaInicial={telaDoNovo} onClose={() => setNovo(false)} onCriado={aoCriar} />
+          </Suspense>
+        </LimiteDoSuporte>
       )}
     </div>
   )
@@ -289,8 +339,10 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
   const [agindo, setAgindo] = useState<null | 'texto' | 'sim' | 'nao' | 'reabrir'>(null)
   const esperandoConfirmacao = c.status === 'resolved'
   const encerrado = c.status === 'closed'
-  // O backend recusa comentário em chamado resolvido ou encerrado: a vez é do "Isso resolveu?" ou do Reabrir.
-  const podeEscrever = !esperandoConfirmacao && !encerrado
+  // Resolvido ainda aceita comentário ("ainda falta um detalhe"); encerrado, só reabrindo.
+  const podeEscrever = !encerrado
+  // Ctrl+Enter repetido (ou segurado) não manda o mesmo comentário duas vezes.
+  const enviandoAgora = useRef(false)
 
   const agir = async (qual: NonNullable<typeof agindo>, fazer: () => Promise<ChamadoDaEmpresa>, aviso: string) => {
     setAgindo(qual)
@@ -307,9 +359,16 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
   }
   const enviar = async () => {
     const corpo = rascunho.trim()
-    if (!corpo || !podeEscrever) return
+    if (!corpo || !podeEscrever || enviandoAgora.current) return
+    enviandoAgora.current = true
     const respondendo = !!c.perguntaPendente
-    if (await agir('texto', () => supportApi.comentar(c.id, corpo), respondendo ? 'Resposta enviada para a equipe Oryon.' : 'Comentário enviado para a equipe Oryon.')) escrever('')
+    try {
+      const ok = await agir('texto', () => supportApi.comentar(c.id, corpo), respondendo ? 'Resposta enviada para a equipe Oryon.' : 'Comentário enviado para a equipe Oryon.')
+      // Só limpa se nada foi escrito enquanto enviava.
+      if (ok && (rascunhos.get(c.id) ?? '').trim() === corpo) escrever('')
+    } finally {
+      enviandoAgora.current = false
+    }
   }
 
   return (
@@ -375,7 +434,7 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
             <Textarea ref={campo} rows={2} value={rascunho} onChange={(e) => escrever(e.target.value)} maxLength={4000} disabled={!podeEscrever}
               aria-label={c.perguntaPendente ? 'Resposta à pergunta da Oryon' : 'Mensagem para a equipe Oryon'}
               placeholder={encerrado ? 'Chamado encerrado. Reabra para escrever.'
-                : esperandoConfirmacao ? 'Responda acima se resolveu. Se não resolveu, o chamado reabre e você pode escrever.'
+                : esperandoConfirmacao ? 'Algo ainda não está certo? Escreva para a equipe Oryon (ou responda acima se resolveu).'
                 : c.perguntaPendente ? 'Responda à pergunta da Oryon' : 'Escreva para a equipe Oryon. Só a sua empresa e a Oryon veem.'}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void enviar() } }} />
             <div className="flex items-center gap-2">
@@ -447,10 +506,12 @@ function ListaDeDetalhes({ c }: { c: ChamadoDaEmpresa }) {
     linhas.push(['Anexos', (
       <span key="a" className="flex flex-col gap-1">
         {c.anexos.map((a) => (
-          <a key={a.id} href={supportApi.enderecoDoAnexo(c.id, a.id)} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-accent-dark hover:underline break-all">
+          // Pelo cliente da API: o link direto dava 401 no app nativo (sessão por Bearer).
+          <button key={a.id} type="button"
+            onClick={() => { supportApi.baixarAnexo(c.id, a.id, a.nome).catch((err) => showToast(getApiErrorMessage(err, 'Não foi possível baixar o anexo.'), 'error')) }}
+            className="inline-flex items-center gap-1 text-left text-accent-dark hover:underline break-all">
             <Paperclip className="w-3 h-3 flex-shrink-0" aria-hidden />{a.nome}
-          </a>
+          </button>
         ))}
       </span>
     )])
