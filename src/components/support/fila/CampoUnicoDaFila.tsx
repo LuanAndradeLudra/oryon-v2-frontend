@@ -147,7 +147,11 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
             </span>
           )}
           <span className="text-[11px] text-surface-400 mr-auto">
-            {modo === 'responder' ? 'A empresa vê na página Suporte' : modo === 'perguntar' ? 'O chamado fica aguardando a empresa; os prazos param' : 'Ctrl+Enter registra'}
+            {bloqueado || perguntaAberta ? null : modo === 'responder'
+              ? 'A empresa vê na página Suporte e é avisada no produto, por e-mail e WhatsApp'
+              : modo === 'perguntar'
+                ? 'A empresa é avisada no produto, por e-mail e WhatsApp; os prazos param até ela responder'
+                : 'Ctrl+Enter registra · não avisa a empresa'}
           </span>
           {!bloqueado && !perguntaAberta && (
             <Button size="sm" variant={modo === 'nota' ? 'neutral' : 'primary'} disabled={!pronto} loading={enviando} onClick={() => void enviar()}>

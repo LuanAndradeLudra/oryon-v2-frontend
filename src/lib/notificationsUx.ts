@@ -10,7 +10,7 @@ import type { AppNotification, NotificationMetaKnown } from '@/hooks/useNotifica
 
 // ── Category / visual mapping ──────────────────────────────────────────────
 
-export type Category = 'conversations' | 'team' | 'campaigns' | 'automations' | 'security' | 'unknown'
+export type Category = 'conversations' | 'team' | 'campaigns' | 'automations' | 'support' | 'security' | 'unknown'
 
 /** Maps the 14 backend notification types to the 5 UI categories. The left
  *  accent strip color comes from here. */
@@ -29,6 +29,11 @@ export const TYPE_TO_CATEGORY: Record<string, Category> = {
   automation_note: 'automations',
   whatsapp_integration_error: 'security',
   security_alert: 'security',
+  support_ticket_created: 'support',
+  support_ticket_updated: 'support',
+  support_ticket_question: 'support',
+  support_ticket_resolved: 'support',
+  support_ticket_client_comment: 'support',
 }
 
 /** Single source of truth for the per-category visual palette. Used by the
@@ -50,6 +55,7 @@ export const CATEGORY_STYLE: Record<Category, {
   team:          { stripClass: 'border-l-success',    iconBg: 'bg-success/15',    iconText: 'text-success',    label: 'Equipe',     chip: 'var(--color-success)' },
   campaigns:     { stripClass: 'border-l-info',       iconBg: 'bg-info/15',       iconText: 'text-info',       label: 'Campanhas',  chip: 'var(--color-info)' },
   automations:   { stripClass: 'border-l-warning',    iconBg: 'bg-warning/15',    iconText: 'text-warning',    label: 'Automações', chip: 'var(--color-warning)' },
+  support:       { stripClass: 'border-l-accent-violet', iconBg: 'bg-accent-violet/15', iconText: 'text-accent-violet', label: 'Suporte', chip: 'var(--color-accent-violet)' },
   security:      { stripClass: 'border-l-danger',     iconBg: 'bg-danger/15',     iconText: 'text-danger',     label: 'Segurança',  chip: 'var(--color-danger)' },
   unknown:       { stripClass: 'border-l-surface-600', iconBg: 'bg-surface-700/40', iconText: 'text-surface-400', label: '—',        chip: 'var(--color-status-muted)' },
 }
@@ -212,6 +218,16 @@ export function inlineActionFor(n: AppNotification): InlineAction | null {
       return { label: 'Ver integração', href: '/settings/numbers', variant: 'primary' }
     case 'security_alert':
       return { label: 'Minha conta', href: '/settings/account' }
+    // Suporte (SCRUM-1386): o link do servidor já leva ao chamado certo
+    // (`/support?chamado=` para a empresa, `/admin/support?chamado=` para a equipe).
+    case 'support_ticket_created':
+    case 'support_ticket_updated':
+    case 'support_ticket_question':
+    case 'support_ticket_resolved':
+    case 'support_ticket_client_comment':
+      return n.link && /^\/(admin\/)?support\?chamado=/.test(n.link)
+        ? { label: 'Ver chamado', href: n.link, variant: 'primary' }
+        : null
     default:
       return null
   }
@@ -241,6 +257,9 @@ export function emptyStateFor(
   }
   if (category === 'security') {
     return { title: 'Tudo seguro ✓', hint: 'Nenhum alerta de segurança pendente.' }
+  }
+  if (category === 'support') {
+    return { title: 'Nenhum aviso de suporte', hint: 'O andamento dos chamados com a equipe Oryon aparece aqui.' }
   }
   return filter === 'unread'
     ? { title: 'Você está em dia ✨', hint: 'Sem notificações não lidas.' }
