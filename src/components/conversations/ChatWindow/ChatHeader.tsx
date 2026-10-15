@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   ChevronDown, Info, MoreHorizontal, Bot,
-  Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare, LifeBuoy,
+  Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare, LifeBuoy, Ticket,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -28,6 +28,8 @@ import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { useResolveWithOutcome } from '@/hooks/useResolveWithOutcome'
 import { ResolveOutcomePopover } from './ResolveOutcomePopover'
 import { useDadosDoSuporte, useSuporte } from '@/components/support/suporteDaConversa'
+import { useWhatsappDeSuporte } from '@/components/support/whatsappDeSuporte'
+import { ConverterEmChamado } from '@/components/support/ConverterEmChamado'
 import { useMarcacao } from '@/components/support/marcacaoDoChamado'
 import { EstadoDoChamadoNoCabecalho } from '@/components/support/EstadoDoChamadoNoCabecalho'
 import type { Conversation, DealOutcomeInput, Tag as TagType, User } from '@/types'
@@ -112,6 +114,9 @@ export function ChatHeader({
   // Marcando (celular): o item zeraria as mensagens já marcadas — a barra do rodapé continua o chamado.
   const marcando = useMarcacao(suporte.store, (e) => suporte.ligado && e.marcando)
   const temChamadoAberto = useDadosDoSuporte()?.temChamadoAberto ?? false
+  // SCRUM-1388: no número de suporte da Oryon, a conversa vira chamado da empresa do contato.
+  const whatsappDeSuporte = useWhatsappDeSuporte()
+  const [converter, setConverter] = useState(false)
   const linhasDaIA = useLinhasDaIA()
   const estadoIA = estadoDaIA(conversation, linhasDaIA)
   const ehMinha = !!eu && conversation.assignedUser?.id === eu.id
@@ -197,6 +202,7 @@ export function ChatHeader({
         confirmLabel="Arquivar"
         danger
       />
+      {converter && <ConverterEmChamado key={conversation.id} conversationId={conversation.id} onFechar={() => setConverter(false)} />}
     </>
   )
 
@@ -394,6 +400,11 @@ export function ChatHeader({
             {suporte.ligado && !marcando && (
               <DropdownItem icon={LifeBuoy} onClick={() => { setMoreOpen(false); suporte.iniciarMarcacao() }}>
                 Reportar problema…
+              </DropdownItem>
+            )}
+            {whatsappDeSuporte && (
+              <DropdownItem icon={Ticket} onClick={() => { setMoreOpen(false); setConverter(true) }}>
+                Converter em chamado…
               </DropdownItem>
             )}
             {salesPipeline && (
@@ -629,6 +640,11 @@ export function ChatHeader({
             {suporte.ligado && !marcando && (
               <DropdownItem onClick={() => { setMoreOpen(false); suporte.iniciarMarcacao() }}>
                 <LifeBuoy className="w-3.5 h-3.5" /> Reportar problema…
+              </DropdownItem>
+            )}
+            {whatsappDeSuporte && (
+              <DropdownItem onClick={() => { setMoreOpen(false); setConverter(true) }}>
+                <Ticket className="w-3.5 h-3.5" /> Converter em chamado…
               </DropdownItem>
             )}
             <DropdownItem danger onClick={() => { setMoreOpen(false); setArchiveOpen(true) }}>

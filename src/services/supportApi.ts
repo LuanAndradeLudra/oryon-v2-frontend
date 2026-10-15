@@ -1,8 +1,9 @@
 import { api } from './api'
 import type { ModeloDoFormulario, OrigemDoProblema, TipoDePedido } from '@/components/support/supportModel'
 import type {
-  AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, ConversaDoChamado, EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados,
-  ProblemaCompleto, ResumoDaFila, ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado,
+  AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, ContextoDaConversaDeSuporte, ConversaDoChamado, ConversaoParaChamado, EmpresaParaChamado,
+  EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados, ProblemaCompleto, ResultadoDaConversao, ResumoDaFila,
+  ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado,
 } from '@/types/support'
 import type { CausaRaiz, Prioridade } from '@/components/support/fila/modeloDaFila'
 import type { StatusChamado } from '@/components/support/supportModel'
@@ -193,6 +194,27 @@ export const adminSupportApi = {
   async baixarAnexo(id: string, anexoId: string, nome: string) {
     const r = await api.get<Blob>(`/admin/support/tickets/${id}/attachments/${anexoId}`, { responseType: 'blob' })
     salvarArquivo(r.data, nome)
+  },
+}
+
+/**
+ * WHATSAPP DE SUPORTE (SCRUM-1388): só para quem opera o número de suporte da
+ * Oryon (o tenant configurado). Fora dele, `estado` diz `ativo: false` e o
+ * resto responde 404.
+ */
+export const whatsappSuporteApi = {
+  estado() {
+    return api.get<{ ativo: boolean }>('/support/whatsapp-suporte/estado').then((r) => r.data)
+  },
+  contexto(conversationId: string) {
+    return api.get<ContextoDaConversaDeSuporte>(`/support/whatsapp-suporte/conversas/${conversationId}`).then((r) => r.data)
+  },
+  empresas(busca: string) {
+    return api.get<EmpresaParaChamado[]>('/support/whatsapp-suporte/empresas', { params: busca ? { busca } : {} }).then((r) => r.data)
+  },
+  /** Converter em chamado (ou juntar ao aberto). 409 traz `existente` quando a conversa já tem chamado aberto. */
+  converter(conversationId: string, dto: ConversaoParaChamado) {
+    return api.post<ResultadoDaConversao>(`/support/whatsapp-suporte/conversas/${conversationId}/chamado`, dto).then((r) => r.data)
   },
 }
 

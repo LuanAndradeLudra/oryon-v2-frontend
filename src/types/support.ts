@@ -301,6 +301,50 @@ export interface ProblemaCompleto extends ResumoDoProblema {
   lista: Array<{ id: string; numero: string; status: StatusChamado; prioridade: Prioridade; origem: OrigemDoProblema; empresa: string; abertoEm: string }>
 }
 
+/** SCRUM-1388 — a conversa do número de suporte da Oryon, para converter em chamado da empresa do contato. */
+export interface ContextoDaConversaDeSuporte {
+  /** O nome como está no contato e só o final do telefone. */
+  contato: { nome: string | null; telefone: string | null }
+  /** As últimas mensagens, mascaradas (o que vai para o chamado é exatamente isto). */
+  mensagens: Array<{ id: string; de: 'contato' | 'equipe'; texto: string; em: string }>
+  /** Usuários de empresa com o mesmo telefone do contato: a sugestão de empresa e de quem abre. */
+  sugestoes: Array<{ tenantId: string; empresa: string; userId: string; nome: string; papel: string }>
+  /** Chamado ainda aberto desta conversa: converter de novo oferece juntar. */
+  existente: ChamadoDaConversaDeSuporte | null
+}
+
+export interface ChamadoDaConversaDeSuporte {
+  id: string
+  numero: string
+  status: StatusChamado
+  tenantId: string
+  empresa: string
+}
+
+export interface EmpresaParaChamado {
+  id: string
+  nome: string
+  /** Sem o suporte ligado, a empresa não vê a página Suporte (a resposta ao contato vai sem link). */
+  suporteLigado: boolean
+}
+
+export interface ConversaoParaChamado {
+  messageIds: string[]
+  tenantId?: string
+  tipoDePedido?: TipoDePedido
+  relato?: string
+  abertoPorUserId?: string | null
+  juntarA?: string | null
+  abrirOutro?: boolean
+}
+
+export interface ResultadoDaConversao {
+  chamado: { id: string; numero: string; empresa: string }
+  juntado: boolean
+  /** A resposta automática (número e link) saiu pela conversa? */
+  respostaEnviada: boolean
+}
+
 /** Parecidos de qualquer empresa e problemas abertos com a mesma assinatura (SCRUM-1387). Só sugestão. */
 export interface SugestoesDoChamado {
   problemas: ResumoDoProblema[]

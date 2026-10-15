@@ -56,7 +56,6 @@ export function canalDe(c: { origem: string; entrada: string | null }): string {
   return `${CANAIS[c.origem] ?? c.origem}${c.origem === 'app' && c.entrada ? ` · ${ENTRADAS[c.entrada] ?? c.entrada}` : ''}`
 }
 
-/** 409: alguém mexeu no chamado entre a leitura e o envio (a tela recarrega o chamado). */
 /** SCRUM-1387 — como a equipe chama cada status do problema (os mesmos nomes do backend). */
 export const STATUS_DO_PROBLEMA: Record<StatusDoProblema, string> = {
   aberto: 'Aberto', investigando: 'Investigando', corrigido: 'Corrigido', nao_corrigir: 'Não será corrigido',
@@ -75,6 +74,7 @@ export function resumoDoProblema(p: ResumoDoProblema): ResumoDoProblema {
   }
 }
 
+/** 409: alguém mexeu no chamado entre a leitura e o envio (a tela recarrega o chamado). */
 export function ehConflito(err: unknown): boolean {
   return (err as { response?: { status?: number } } | null)?.response?.status === 409
 }
