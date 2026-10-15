@@ -405,6 +405,21 @@ ${RASCUNHO}`)
     await waitFor(() => expect(api.criar).toHaveBeenCalledWith(expect.objectContaining({ rascunhoDaIa: 'editado' })))
   })
 
+  it('revisão do Portão 5: o rascunho que entrou no relato continua marcado mesmo depois de descartar outra sugestão; o foco volta ao relato', async () => {
+    ligado()
+    api.rascunho.mockResolvedValueOnce({ rascunho: RASCUNHO, aviso: 'Rascunho da IA' }).mockResolvedValueOnce({ rascunho: 'Outra versão.', aviso: 'Rascunho da IA' })
+    await abrir()
+    fireEvent.click(await within(painel()!).findByRole('button', { name: /Rascunho da IA/ }))
+    await waitFor(() => expect(within(painel()!).getByLabelText(/O que aconteceu/)).toHaveValue(RASCUNHO))
+    fireEvent.click(within(painel()!).getByRole('button', { name: /Rascunho da IA/ }))
+    const sugestao = await within(painel()!).findByRole('region', { name: 'Rascunho da IA' })
+    fireEvent.click(within(sugestao).getByRole('button', { name: 'Descartar' }))
+    await waitFor(() => expect(document.activeElement).toBe(within(painel()!).getByLabelText(/O que aconteceu/)))
+    await escolher(/O contato chegou a ver/, 'Não chegou a ver')
+    fireEvent.click(enviar())
+    await waitFor(() => expect(api.criar).toHaveBeenCalledWith(expect.objectContaining({ rascunhoDaIa: 'usado', descricao: RASCUNHO })))
+  })
+
   it('descartar some com a sugestão; sem usar o rascunho, nada é marcado', async () => {
     ligado()
     api.rascunho.mockResolvedValue({ rascunho: RASCUNHO, aviso: 'Rascunho da IA' })

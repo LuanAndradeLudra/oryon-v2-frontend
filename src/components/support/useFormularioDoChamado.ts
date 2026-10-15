@@ -69,6 +69,8 @@ interface RascunhoDoRelato {
   afetadas: ConversaAfetada[]
   contatoViu: ContatoViu | null
   jaCorrigiram: JaCorrigiram | null
+  /** SCRUM-1393: o último rascunho da IA que entrou no relato (a marca do envio e o LGPD dependem dele). */
+  rascunhoAplicado: string | null
 }
 const rascunhosDoRelato = new Map<string, RascunhoDoRelato>()
 aoSairDaSessao(() => rascunhosDoRelato.clear())
@@ -196,8 +198,11 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
   const temRecentes = !!recentes && (recentes.falhas.length > 0 || recentes.erros.length > 0)
   const [enviando, setEnviando] = useState(false)
   const contadorDeAnexos = useRef(0)
-  // SCRUM-1393: rascunho da IA. Relato vazio: entra no campo; com texto, fica ao lado para a pessoa acrescentar ou descartar.
-  const [rascunhoDaIa, setRascunhoDaIa] = useState<{ texto: string; aplicado: boolean } | null>(null)
+  // SCRUM-1393: rascunho da IA. Relato vazio: entra no campo; com texto, fica ao lado (sugestão) para a pessoa
+  // acrescentar ou descartar. A marca (`rascunhoAplicado`) só nasce quando o texto da IA entra no relato e não
+  // some com uma nova sugestão descartada — revisão do Portão 5: o LGPD apaga o relato que veio da IA.
+  const [rascunhoAplicado, setRascunhoAplicado] = useState<string | null>(inicial?.rascunhoAplicado ?? null)
+  const [sugestaoDaIa, setSugestaoDaIa] = useState<string | null>(null)
   const [pedindoRascunho, setPedindoRascunho] = useState(false)
 
   // Algo que se perderia ao fechar: o painel pede confirmação, e a conversa guarda o rascunho.
@@ -210,9 +215,9 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
     if (!temConteudo) { rascunhosDoRelato.delete(conversationId); return }
     rascunhosDoRelato.set(conversationId, {
       origemEscolhida, relato, esperado, alcance, desde, dadosDeTerceiros, assuntoEscolhido, campos,
-      anexos: anexos.filter((a) => a.estado === 'pronto'), afetadas, contatoViu, jaCorrigiram,
+      anexos: anexos.filter((a) => a.estado === 'pronto'), afetadas, contatoViu, jaCorrigiram, rascunhoAplicado,
     })
-  }, [conversationId, temConteudo, origemEscolhida, relato, esperado, alcance, desde, dadosDeTerceiros, assuntoEscolhido, campos, anexos, afetadas, contatoViu, jaCorrigiram])
+  }, [conversationId, temConteudo, origemEscolhida, relato, esperado, alcance, desde, dadosDeTerceiros, assuntoEscolhido, campos, anexos, afetadas, contatoViu, jaCorrigiram, rascunhoAplicado])
   const descartar = () => {
     encerrado.current = true
     if (conversationId) rascunhosDoRelato.delete(conversationId)
@@ -309,7 +314,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
         return
       }
       const assunto = assuntos.find((a) => a.id === assuntoId)
-      const marcaDoRascunho = rascunhoDaIa?.aplicado ? (relato.trim() === rascunhoDaIa.texto.trim() ? 'usado' as const : 'editado' as const) : null
+      const marcaDoRascunho = rascunhoAplicado ? (relato.trim() === rascunhoAplicado.trim() ? 'usado' as const : 'editado' as const) : null
       const c = await supportApi.criar({
         rascunhoDaIa: marcaDoRascunho,
         origemDoProblema: origem, origemNome: nomeDaOrigem,
@@ -360,9 +365,10 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
       })
       if (!relato.trim()) {
         setRelato(r.rascunho)
-        setRascunhoDaIa({ texto: r.rascunho, aplicado: true })
+        setRascunhoAplicado(r.rascunho)
+        setSugestaoDaIa(null)
       } else {
-        setRascunhoDaIa({ texto: r.rascunho, aplicado: false })
+        setSugestaoDaIa(r.rascunho)
       }
     } catch (err) {
       showToast(getApiErrorMessage(err, 'Não foi possível escrever o rascunho agora. Escreva do seu jeito.'), 'error')
@@ -371,15 +377,16 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
     }
   }
   const acrescentarRascunho = () => {
-    if (!rascunhoDaIa) return
-    const novo = relato.trim() ? `${relato.trim()}\n\n${rascunhoDaIa.texto}` : rascunhoDaIa.texto
+    if (!sugestaoDaIa) return
+    const novo = relato.trim() ? `${relato.trim()}\n\n${sugestaoDaIa}` : sugestaoDaIa
     setRelato(novo.slice(0, 2000))
-    setRascunhoDaIa({ ...rascunhoDaIa, aplicado: true })
+    setRascunhoAplicado(sugestaoDaIa)
+    setSugestaoDaIa(null)
   }
-  const descartarRascunho = () => setRascunhoDaIa(null)
+  const descartarRascunho = () => setSugestaoDaIa(null)
 
   return {
-    podeRascunho, pedirRascunho, pedindoRascunho, rascunhoDaIa, acrescentarRascunho, descartarRascunho,
+    podeRascunho, pedirRascunho, pedindoRascunho, rascunhoAplicado, sugestaoDaIa, acrescentarRascunho, descartarRascunho,
     modelo, resumo, candidatas, nomeDaOrigem, semConversa, assuntos, perguntaEsperado, perguntaDesde, perguntaAfetadas, duplicado, pronto,
     aguardandoMarcacao, anexosEnviando, podeJuntar, temConteudo, descartar, rascunhoRecuperado: !!inicial,
     titulo: juntarEm ? `Adicionar ao ${juntarEm.numero}` : aguardandoMarcacao ? 'Reportar mensagens' : TITULO[origem],

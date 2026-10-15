@@ -42,6 +42,14 @@ describe('Calibração da regra (SCRUM-1392)', () => {
     expect(within(empresas).getByText('Clínica Serra').closest('tr')).toHaveTextContent('poucos dados (2 relatos de urgência triados · 90 dias)')
   })
 
+  it('erro ao carregar: alerta e "Tentar novamente" (revisão do Portão 5)', async () => {
+    api.calibracao.mockRejectedValueOnce(new Error('rede')).mockResolvedValueOnce(VISAO)
+    render(<LayerProvider><CalibracaoDaRegra onFechar={vi.fn()} /></LayerProvider>)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar a calibração')
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByRole('region', { name: 'Simulação com o histórico' })).toBeInTheDocument()
+  })
+
   it('ligar o ajuste pede motivo e recarrega', async () => {
     api.calibracao.mockResolvedValueOnce(VISAO).mockResolvedValueOnce({ ...VISAO, config: { ...VISAO.config, ligado: true } })
     api.definirConfiguracao.mockResolvedValue({ chave: 'calibracao', valor: { ...VISAO.config, ligado: true } })
