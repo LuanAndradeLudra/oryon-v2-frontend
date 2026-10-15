@@ -2,7 +2,7 @@ import { api } from './api'
 import type { ModeloDoFormulario, OrigemDoProblema, TipoDePedido } from '@/components/support/supportModel'
 import type {
   AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, ConversaDoChamado, EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados,
-  ResumoDaFila, ResumoDoChamado, ResumoPorVez, SugestoesDoChamado, VezDoChamado,
+  ProblemaCompleto, ResumoDaFila, ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado,
 } from '@/types/support'
 import type { CausaRaiz, Prioridade } from '@/components/support/fila/modeloDaFila'
 import type { StatusChamado } from '@/components/support/supportModel'
@@ -96,6 +96,13 @@ export type MudancaNaFila =
   | { causaRaiz: CausaRaiz | null }
   | { jiraRef: string | null }
 
+/** SCRUM-1387 — uma mudança por vez no problema. */
+export type MudancaNoProblema =
+  | { status: StatusDoProblema }
+  | { causaRaiz: CausaRaiz | null }
+  | { jiraRef: string | null }
+  | { titulo: string }
+
 /**
  * Fila da EQUIPE ORYON (`/admin/support/*`, SCRUM-1384): todos os clientes.
  * Só `oryon_support` e super_admin (o backend devolve 403 para a empresa).
@@ -129,6 +136,30 @@ export const adminSupportApi = {
   },
   sugestoes(id: string) {
     return api.get<SugestoesDoChamado>(`/admin/support/tickets/${id}/suggestions`).then((r) => r.data)
+  },
+  /** Problemas (SCRUM-1387): vincular ao problema (ou desvincular, com null). Manual, no histórico; devolve o chamado. */
+  vincularProblema(id: string, problemaId: string | null, version: number) {
+    return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/problem`, { problemaId, version }).then((r) => r.data)
+  },
+  /** Problema novo a partir do chamado, que já fica vinculado; devolve o chamado. */
+  criarProblema(ticketId: string, titulo: string | null, version: number) {
+    return api.post<ChamadoDaEquipe>('/admin/support/problems', { ticketId, titulo, version }).then((r) => r.data)
+  },
+  problema(id: string) {
+    return api.get<ProblemaCompleto>(`/admin/support/problems/${id}`).then((r) => r.data)
+  },
+  /** Status, causa, Jira ou título do problema; "corrigido" exige o candidato a teste. */
+  atualizarProblema(id: string, mudanca: MudancaNoProblema) {
+    return api.patch<ProblemaCompleto>(`/admin/support/problems/${id}`, mudanca).then((r) => r.data)
+  },
+  /** Candidato a teste de regressão a partir de um chamado de IA do problema (fica registrado). */
+  gerarFixture(problemaId: string, ticketId: string) {
+    return api.post<ProblemaCompleto>(`/admin/support/problems/${problemaId}/fixture`, { ticketId }).then((r) => r.data)
+  },
+  /** O candidato em JSON, para levar à bateria (a leitura fica registrada). */
+  async baixarFixture(problemaId: string, numero: string) {
+    const r = await api.get<unknown>(`/admin/support/problems/${problemaId}/fixture`)
+    salvarArquivo(new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' }), `fixture-${numero}.json`)
   },
   /** Ocorrência interna → chamado da empresa (SCRUM-1389), com o texto que ela vai ler. */
   abrirParaEmpresa(id: string, resumo: string, version: number) {

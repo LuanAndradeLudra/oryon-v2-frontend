@@ -2,12 +2,13 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Layers, Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { AcoesDaOcorrencia } from './AcoesDaOcorrencia'
+import { ProblemaDoChamado } from './ProblemaDoChamado'
 import { Input } from '@/components/ui/Input'
 import { useAuth } from '@/contexts/AuthContext'
 import { showToast } from '@/hooks/useToast'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import { adminSupportApi, type MudancaNaFila } from '@/services/supportApi'
-import type { ChamadoDaEquipe, ItemDaFila } from '@/types/support'
+import type { ChamadoDaEquipe, SugestoesDoChamado } from '@/types/support'
 import { EscolhaEmLinha, Linha } from '../ReportTicketPanel'
 import {
   ALCANCES, CONTATO_VIU, CONTORNOU, DESDE_QUANDO, IMPEDE_AGORA, JA_CORRIGIRAM, ORIGENS_DO_PROBLEMA, QUEM_MAIS, TIPOS_DE_PEDIDO,
@@ -24,7 +25,9 @@ function Titulo({ children }: { children: ReactNode }) {
 /**
  * PROPRIEDADES do chamado (coluna de 300 px; abaixo de 1280 px, dobráveis):
  * responsável, prioridade com os motivos da regra (mudar exige motivo), status
- * interno, prazos, o que foi relatado e o problema (parecidos, causa, Jira).
+ * interno, prazos, o que foi relatado e o problema (SCRUM-1387: problema
+ * vinculado ou sugerido, parecidos; causa e Jira do chamado quando ele não
+ * está num problema — vinculado, valem os do problema).
  * Toda mudança vai com a versão da tela; 409 recarrega o chamado.
  */
 export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbrir }: {
@@ -45,13 +48,17 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
   const [rascunhoJira, setRascunhoJira] = useState<{ de: string; texto: string } | null>(null)
   const jira = rascunhoJira?.de === (c.jiraRef ?? '') ? rascunhoJira.texto : (c.jiraRef ?? '')
   const setJira = (texto: string) => setRascunhoJira({ de: c.jiraRef ?? '', texto })
-  const [parecidos, setParecidos] = useState<{ id: string; lista: ItemDaFila[] } | null>(null)
+  // Sugestões (parecidos e problemas): de novo quando o vínculo muda — o problema atual não é sugerido.
+  const problemaAtual = c.problema?.id ?? null
+  const [sugestoes, setSugestoes] = useState<{ chave: string; s: SugestoesDoChamado } | null>(null)
+  const chaveDasSugestoes = `${c.id}:${problemaAtual}`
   useEffect(() => {
     let vivo = true
-    adminSupportApi.sugestoes(c.id).then((s) => { if (vivo) setParecidos({ id: c.id, lista: s.parecidos }) }).catch(() => {})
+    adminSupportApi.sugestoes(c.id).then((s) => { if (vivo) setSugestoes({ chave: `${c.id}:${problemaAtual}`, s }) }).catch(() => {})
     return () => { vivo = false }
-  }, [c.id])
-  const listaDeParecidos = parecidos?.id === c.id ? parecidos.lista : null
+  }, [c.id, problemaAtual])
+  const atuais = sugestoes?.chave === chaveDasSugestoes ? sugestoes.s : null
+  const listaDeParecidos = atuais?.parecidos ?? null
 
   // Revisão do Portão 3: as mudanças saem uma de cada vez, cada uma com a versão
   // devolvida pela anterior — o blur do Jira seguido de outra escolha dava 409
@@ -152,6 +159,7 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
 
       <div className="flex flex-col gap-2">
         <Titulo>Problema</Titulo>
+        <ProblemaDoChamado c={c} sugeridos={atuais?.problemas ?? null} onAtualizar={onAtualizar} onRecarregar={onRecarregar} onAbrir={onAbrir} />
         {listaDeParecidos && listaDeParecidos.length > 0 && (
           <div className="flex flex-col gap-1">
             <p className="text-[11px] text-surface-400 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" aria-hidden />Parecidos nos últimos 7 dias, em qualquer empresa</p>
@@ -165,20 +173,19 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
           </div>
         )}
         {listaDeParecidos && listaDeParecidos.length === 0 && <p className="text-[11px] text-surface-400">Nenhum parecido aberto nos últimos 7 dias.</p>}
-        <div className="flex flex-col">
+        {!c.problema && <div className="flex flex-col">
           <Linha rotulo="Causa">
             <EscolhaEmLinha<CausaRaiz> rotulo="Causa" valor={c.causaRaiz} limpar
               onChange={(v) => void mudar({ causaRaiz: v }, v ? 'Causa registrada.' : 'Causa retirada.')}
               opcoes={(Object.keys(CAUSAS) as CausaRaiz[]).map((k) => [k, CAUSAS[k]])} />
           </Linha>
           <Linha rotulo="Jira">
-            <input value={jira} onChange={(e) => setJira(e.target.value)} onBlur={salvarJira} maxLength={80}
+            <input value={jira} onChange={(e) => setJira(e.target.value)} onBlur={salvarJira} maxLength={40}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
               placeholder="SCRUM-1318" aria-label="Card no Jira"
               className="w-full h-8 -ml-2 px-2 rounded-[6px] bg-transparent text-[13px] text-surface-100 placeholder:text-surface-400 hover:bg-[var(--rowhover)] focus:bg-surface-800 focus:outline-none" />
           </Linha>
-        </div>
-        <p className="text-[11px] text-surface-500">Agrupar em problema e ligar ao teste de regressão chega na SCRUM-1387.</p>
+        </div>}
       </div>
     </div>
   )

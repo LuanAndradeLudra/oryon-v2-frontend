@@ -271,11 +271,39 @@ export interface ChamadoDaEquipe extends Omit<ChamadoDaEmpresa, 'prioridade' | '
   ocorrencia?: { id: string; numero: string } | null
   /** SCRUM-1389 — na ocorrência interna: o chamado da empresa aberto a partir dela. */
   chamadoDaEmpresa?: { id: string; numero: string } | null
+  /** SCRUM-1387 — o problema do chamado (vários chamados, o mesmo defeito). */
+  problema?: ResumoDoProblema | null
 }
 
-/** Parecidos de qualquer empresa (o problema com assinatura chega na SCRUM-1387). */
+/** SCRUM-1387 — status do problema. "Corrigido" exige o candidato a teste de regressão. */
+export type StatusDoProblema = 'aberto' | 'investigando' | 'corrigido' | 'nao_corrigir'
+
+/** O problema como a fila mostra (só a equipe). A contagem vem do banco: N chamados em M empresas. */
+export interface ResumoDoProblema {
+  id: string
+  numero: string
+  titulo: string
+  status: StatusDoProblema
+  nomeDoStatus: string
+  causaRaiz: CausaRaiz | null
+  jiraRef: string | null
+  chamados: number
+  empresas: number
+  /** Tem o candidato a teste de regressão (libera o "corrigido"). */
+  temFixture: boolean
+}
+
+/** O problema aberto: assinatura, o candidato a teste (sem o conteúdo) e os chamados. */
+export interface ProblemaCompleto extends ResumoDoProblema {
+  assinatura: string
+  /** null com `temFixture`: o conteúdo foi apagado por pedido do titular (LGPD); o id do caso fica. */
+  fixture: { id: string; deChamado: string; geradaEm: string } | null
+  lista: Array<{ id: string; numero: string; status: StatusChamado; prioridade: Prioridade; origem: OrigemDoProblema; empresa: string; abertoEm: string }>
+}
+
+/** Parecidos de qualquer empresa e problemas abertos com a mesma assinatura (SCRUM-1387). Só sugestão. */
 export interface SugestoesDoChamado {
-  problemas: never[]
+  problemas: ResumoDoProblema[]
   parecidos: ItemDaFila[]
 }
 
