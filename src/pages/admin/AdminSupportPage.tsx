@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LifeBuoy, Scale, Search } from 'lucide-react'
+import { BarChart3, LifeBuoy, Scale, Search } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,6 +20,7 @@ import { DetalheDaFila } from '@/components/support/fila/DetalheDaFila'
 import type { CampoDaFilaRef } from '@/components/support/fila/CampoUnicoDaFila'
 import { ehConflito } from '@/components/support/fila/modeloDaFila'
 import { CalibracaoDaRegra } from '@/components/support/fila/CalibracaoDaRegra'
+import { QualidadeDasEmpresas } from '@/components/support/fila/QualidadeDasEmpresas'
 import '@/components/support/suporte.css'
 
 /**
@@ -66,6 +67,7 @@ export function AdminSupportPage() {
   const [soSinais, setSoSinais] = useEstadoNaUrl('sinais', { padrao: false, ler: lerBool, escrever: escreverBool, resetar: ['chamado'] })
   const [busca, setBusca] = useState('')
   const [calibrando, setCalibrando] = useState(false)
+  const [vendoQualidade, setVendoQualidade] = useState(false)
   const campoRef = useRef<CampoDaFilaRef | null>(null)
 
   const [resumo, setResumo] = useState<ResumoDaFila | null>(null)
@@ -246,12 +248,18 @@ export function AdminSupportPage() {
           ))}
         </div>
         {/* SCRUM-1392: quanto o relato de cada empresa se confirma na triagem (só a equipe). */}
-        <button type="button" onClick={() => setCalibrando(true)} aria-label="Calibração da regra por empresa" title="Calibração da regra por empresa"
+        {/* SCRUM-1391: a qualidade de cada empresa (semana ao vivo ou o retrato do mês). */}
+        <button type="button" onClick={() => setVendoQualidade(true)} aria-label="Qualidade por empresa" title="Qualidade por empresa"
           className="ml-auto md:ml-0 h-8 px-2.5 rounded-[7px] inline-flex items-center gap-1.5 text-xs font-semibold text-surface-300 hover:bg-[var(--rowhover)] flex-shrink-0">
+          <BarChart3 className="w-3.5 h-3.5" aria-hidden /><span className="hidden lg:inline">Qualidade</span>
+        </button>
+        <button type="button" onClick={() => setCalibrando(true)} aria-label="Calibração da regra por empresa" title="Calibração da regra por empresa"
+          className="h-8 px-2.5 rounded-[7px] inline-flex items-center gap-1.5 text-xs font-semibold text-surface-300 hover:bg-[var(--rowhover)] flex-shrink-0">
           <Scale className="w-3.5 h-3.5" aria-hidden /><span className="hidden lg:inline">Calibração</span>
         </button>
       </header>
       {calibrando && <CalibracaoDaRegra onFechar={() => setCalibrando(false)} />}
+      {vendoQualidade && <QualidadeDasEmpresas onFechar={() => setVendoQualidade(false)} />}
       <div className="flex-1 min-h-0 flex">
         {isMobile ? (selecionadoId ? detalheEl : listaEl) : (<>{listaEl}{detalheEl}</>)}
       </div>

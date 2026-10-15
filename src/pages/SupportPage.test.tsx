@@ -21,6 +21,9 @@ vi.mock('@/services/supportApi', () => ({
   },
 }))
 vi.mock('@/hooks/useToast', async (original) => ({ ...(await original<typeof import('@/hooks/useToast')>()), showToast: vi.fn() }))
+// O papel decide o atalho da Qualidade (SCRUM-1391): só a gestão.
+let papel = 'agent'
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1', role: papel } }) }))
 
 const api = vi.mocked(supportApi)
 
@@ -49,7 +52,8 @@ const lista = () => screen.getByRole('complementary', { name: 'Chamados' })
 
 /** Mostra o endereço atual (a busca não pode ir para ele). */
 function Endereco() {
-  return <output data-testid="endereco">{useLocation().search}</output>
+  const { pathname, search } = useLocation()
+  return <output data-testid="endereco">{pathname}{search}</output>
 }
 
 function Tela({ rota = '/support' }: { rota?: string }) {
@@ -62,6 +66,7 @@ function Tela({ rota = '/support' }: { rota?: string }) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  papel = 'agent'
   api.resumo.mockResolvedValue({ empresa: 2, oryon: 5, encerrados: 9 })
   api.listar.mockResolvedValue({ itens: [PERGUNTOU, RESOLVIDO], proximoCursor: null })
   api.obter.mockImplementation(async (id: string) => (id === 't1'
@@ -174,6 +179,17 @@ describe('Página Suporte (SCRUM-1383)', () => {
     render(<Tela />)
     await within(lista()).findByText('A Oryon perguntou')
     expect(screen.queryByText(/Prioridade/)).toBeNull()
+  })
+
+  it('SCRUM-1391: o atalho "Qualidade" só aparece para a gestão e leva à página dela', async () => {
+    const { unmount } = render(<Tela />)
+    await screen.findByRole('tab', { name: /Com vocês\s*2/ })
+    expect(screen.queryByRole('button', { name: 'Qualidade do atendimento' })).toBeNull()
+    unmount()
+    papel = 'business_admin'
+    render(<Tela />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Qualidade do atendimento' }))
+    expect(screen.getByTestId('endereco')).toHaveTextContent('/support/qualidade')
   })
 
   it('"?novo=1&tela=Funis" abre o modal com a área; texto livre em "tela" não vira "onde"', async () => {

@@ -3,7 +3,8 @@ import type { ModeloDoFormulario, OrigemDoProblema, TipoDePedido } from '@/compo
 import type {
   AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, ContextoDaConversaDeSuporte, ConversaDoChamado, ConversaoParaChamado, EmpresaParaChamado,
   EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados, ProblemaCompleto, ResultadoDaConversao, ResumoDaFila,
-  ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado, VisaoDaCalibracao,
+  PreviaDoEmailDaQualidade, QualidadeDaEmpresa, ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado,
+  VisaoDaCalibracao, VisaoDaQualidade,
 } from '@/types/support'
 import type { CausaRaiz, Prioridade } from '@/components/support/fila/modeloDaFila'
 import type { StatusChamado } from '@/components/support/supportModel'
@@ -16,6 +17,10 @@ import type { StatusChamado } from '@/components/support/supportModel'
  * ligado. A fila da equipe Oryon (`/admin/support/*`) está em `adminSupportApi`.
  */
 export const supportApi = {
+  /** Qualidade (SCRUM-1391): os indicadores do mês da empresa. Só a gestão (admin e business_admin). */
+  qualidade(periodo?: string) {
+    return api.get<QualidadeDaEmpresa>('/support/qualidade', { params: periodo ? { periodo } : {} }).then((r) => r.data)
+  },
   criar(dto: NovoChamado) {
     return api.post<ChamadoDaEmpresa>('/support/tickets', dto).then((r) => r.data)
   },
@@ -141,6 +146,17 @@ export const adminSupportApi = {
   /** SCRUM-1392 — a medida de cada empresa e a simulação antes/depois (só a equipe). */
   calibracao() {
     return api.get<VisaoDaCalibracao>('/admin/support/calibracao').then((r) => r.data)
+  },
+  /** SCRUM-1391 — a qualidade de todas as empresas com o suporte: o mês (`AAAA-MM`) ou os últimos 7 dias (`7d`). */
+  qualidade(periodo: string) {
+    return api.get<VisaoDaQualidade>('/admin/support/qualidade', { params: { periodo } }).then((r) => r.data)
+  },
+  qualidadeDaEmpresa(tenantId: string, periodo?: string) {
+    return api.get<QualidadeDaEmpresa>(`/admin/support/qualidade/${tenantId}`, { params: periodo ? { periodo } : {} }).then((r) => r.data)
+  },
+  /** O e-mail do mês como sai para a gestão da empresa (prévia: nada é enviado). */
+  previaDoEmailDaQualidade(tenantId: string, periodo: string) {
+    return api.get<PreviaDoEmailDaQualidade>(`/admin/support/qualidade/${tenantId}/email`, { params: { periodo } }).then((r) => r.data)
   },
   /** Configuração do suporte, com motivo (fica no histórico). A equipe muda prazos e limiares. */
   definirConfiguracao(chave: string, valor: unknown, motivo: string) {

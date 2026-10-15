@@ -12,6 +12,8 @@ import { isAdminTier } from '@/lib/roleHelpers'
  */
 export function rotaPermitida(href: string, ctx: { role?: string | null; multiPipeline: boolean; suporte?: boolean }): boolean {
   const caminho = href.split('?')[0]
+  // Qualidade (SCRUM-1391): só a gestão da empresa (o backend recusa atendente e supervisor).
+  if (caminho === '/support/qualidade') return !!ctx.suporte && isAdminTier(ctx.role)
   // Suporte (SCRUM-1383): flag da empresa; a equipe de suporte da Oryon trabalha na fila, não aqui.
   if (caminho === '/support' || caminho.startsWith('/support/')) return !!ctx.suporte && ctx.role !== 'oryon_support'
   if (caminho === '/campaigns' || caminho.startsWith('/campaigns/')) return isAdminTier(ctx.role)
