@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Building2 } from 'lucide-react'
+import { Building2, AlertTriangle } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
@@ -68,8 +68,13 @@ export function ConverterEmChamado({ conversationId, onFechar }: { conversationI
     setEscolha(nova)
   }
 
-  const podeEnviar = !!ctx && marcadas.size > 0 && !enviando
-    && (modoAtual === 'juntar' ? !!existente : !!destinoAtual && relato.trim().length >= 5)
+  // O que falta para converter, em palavras (o botão desativado sozinho não dizia).
+  const falta = !ctx ? null
+    : marcadas.size === 0 ? 'Escolha ao menos uma mensagem.'
+      : modoAtual === 'juntar' ? (existente ? null : 'Escolha o chamado.')
+        : !destinoAtual ? 'Escolha a empresa do contato.'
+          : relato.trim().length < 5 ? 'Escreva o relato.' : null
+  const podeEnviar = !!ctx && !enviando && !falta
 
   const enviar = async () => {
     if (!podeEnviar || !ctx) return
@@ -107,9 +112,10 @@ export function ConverterEmChamado({ conversationId, onFechar }: { conversationI
       title="Converter em chamado"
       className="w-full max-w-[600px]"
       footer={(
-        <div className="flex justify-end gap-2">
+        <div className="flex items-center justify-end gap-2">
+          {falta && <span id="converter-falta" className="mr-auto text-[12px] text-surface-400">{falta}</span>}
           <Button variant="neutral" onClick={onFechar}>Cancelar</Button>
-          <Button onClick={() => void enviar()} disabled={!podeEnviar} loading={enviando}>
+          <Button onClick={() => void enviar()} disabled={!podeEnviar} loading={enviando} aria-describedby={falta ? 'converter-falta' : undefined}>
             {modoAtual === 'juntar' && existente ? `Juntar ao ${existente.numero}` : 'Converter em chamado'}
           </Button>
         </div>
@@ -125,9 +131,10 @@ export function ConverterEmChamado({ conversationId, onFechar }: { conversationI
               </p>
 
               {existente && (
-                <div role="group" aria-label="Chamado aberto desta conversa" className="rounded-[8px] border border-warning/40 bg-warning/10 px-3 py-2.5 flex flex-col gap-2">
-                  <p className="text-[13px] text-surface-100">
-                    Esta conversa já virou o <span className="font-mono font-semibold">{existente.numero}</span> ({existente.empresa}).
+                <div role="group" aria-label="Chamado aberto desta conversa" className="rounded-[8px] border border-surface-700 px-3 py-2.5 flex flex-col gap-2">
+                  <p className="text-[13px] text-surface-100 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-px" aria-hidden />
+                    <span>Esta conversa já virou o <span className="font-mono font-semibold">{existente.numero}</span> ({existente.empresa}).</span>
                   </p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px]">
                     <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -154,7 +161,9 @@ export function ConverterEmChamado({ conversationId, onFechar }: { conversationI
                         <Checkbox checked={marcadas.has(m.id)} onChange={() => alternar(m.id)} className="mt-0.5"
                           aria-label={`${m.de === 'contato' ? 'Contato' : 'Equipe'}, ${dataCurta(m.em)}: ${m.texto.slice(0, 60)}`} />
                         <span className="flex flex-col min-w-0">
-                          <span className="text-[11px] text-surface-400">{m.de === 'contato' ? 'Contato' : 'Equipe Oryon'} · {dataCurta(m.em)}</span>
+                          <span className="text-[11px] text-surface-400">
+                            {m.de === 'contato' ? 'Contato' : 'Equipe Oryon'} · {dataCurta(m.em)}{m.noChamado ? ' · já no chamado' : ''}
+                          </span>
                           <span className="text-[13px] text-surface-100 break-words whitespace-pre-wrap">{m.texto}</span>
                         </span>
                       </label>
@@ -169,13 +178,15 @@ export function ConverterEmChamado({ conversationId, onFechar }: { conversationI
                   <EscolhaDaEmpresa sugestoes={sugestoes} destino={destinoAtual} onEscolher={setDestino} />
                   <fieldset className="flex flex-col gap-1.5">
                     <legend className="text-xs font-semibold text-surface-300 mb-1">Do que se trata</legend>
-                    <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Tipo de pedido">
+                    {/* Rádios nativos (revisão do Portão 4): Tab entra no grupo e as setas trocam a opção. */}
+                    <div className="flex flex-wrap gap-1.5">
                       {(Object.keys(TIPOS_DE_PEDIDO) as TipoDePedido[]).map((t) => (
-                        <button key={t} type="button" role="radio" aria-checked={tipo === t} onClick={() => setTipo(t)}
-                          className={cn('h-8 px-3 rounded-full border text-[13px] transition-colors',
+                        <label key={t}
+                          className={cn('h-8 px-3 rounded-full border text-[13px] inline-flex items-center cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-brand-500',
                             tipo === t ? 'border-brand-500 bg-[var(--sel)] text-surface-100' : 'border-surface-700 text-surface-300 hover:bg-[var(--rowhover)]')}>
+                          <input type="radio" name="tipo-de-pedido" value={t} checked={tipo === t} onChange={() => setTipo(t)} className="sr-only" />
                           {TIPOS_DE_PEDIDO[t].nome}
-                        </button>
+                        </label>
                       ))}
                     </div>
                   </fieldset>

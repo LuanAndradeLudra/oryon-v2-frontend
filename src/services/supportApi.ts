@@ -203,8 +203,9 @@ export const adminSupportApi = {
  * resto responde 404.
  */
 export const whatsappSuporteApi = {
+  /** `linha`: o número de suporte (a ação só aparece nas conversas dele). */
   estado() {
-    return api.get<{ ativo: boolean }>('/support/whatsapp-suporte/estado').then((r) => r.data)
+    return api.get<{ ativo: boolean; linha: string | null }>('/support/whatsapp-suporte/estado').then((r) => r.data)
   },
   contexto(conversationId: string) {
     return api.get<ContextoDaConversaDeSuporte>(`/support/whatsapp-suporte/conversas/${conversationId}`).then((r) => r.data)
