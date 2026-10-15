@@ -6,14 +6,15 @@ import { PRIORIDADE_PARA_EMPRESA, STATUS, type StatusChamado } from './supportMo
 
 type Tom = 'neutral' | 'info' | 'amber' | 'accent' | 'success' | 'danger' | 'warning'
 
+/** O fundo é o tom a 12%; o texto vem dos tokens do suporte, medidos ≥ 4,5:1 nos dois temas (SCRUM-1394). */
 const TONS: Record<Tom, string> = {
   neutral: 'bg-[var(--rowhover)] text-surface-300',
-  info: 'bg-info/[.12] text-info',
-  amber: 'bg-accent-amber/[.12] text-accent-amber',
+  info: 'bg-info/[.12] text-[var(--sup-selo-info)]',
+  amber: 'bg-accent-amber/[.12] text-[var(--sup-selo-amber)]',
   accent: 'sup-selo-acento',
-  success: 'bg-success/[.12] text-success',
-  danger: 'bg-danger/[.12] text-danger',
-  warning: 'bg-warning/[.12] text-warning',
+  success: 'bg-success/[.12] text-[var(--sup-selo-success)]',
+  danger: 'bg-danger/[.12] text-[var(--sup-selo-danger)]',
+  warning: 'bg-warning/[.12] text-[var(--sup-selo-warning)]',
 }
 
 /** Selo de 22px da régua (chips 6px), no mesmo desenho do EstadoDaIAChip. */

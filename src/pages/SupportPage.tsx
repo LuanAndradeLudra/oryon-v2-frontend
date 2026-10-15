@@ -219,7 +219,7 @@ export function SupportPage() {
                 {rotulo}
                 {n !== undefined && (
                   <span className={cn('min-w-[18px] h-[18px] px-1 rounded-full text-[10.5px] inline-flex items-center justify-center tabular-nums',
-                    k === 'empresa' && n > 0 ? 'bg-accent-amber/[.16] text-accent-amber' : 'bg-[var(--rowhover)] text-surface-400')}>{n}</span>
+                    k === 'empresa' && n > 0 ? 'bg-accent-amber/[.16] text-[var(--sup-selo-amber)]' : 'bg-[var(--rowhover)] text-surface-400')}>{n}</span>
                 )}
               </button>
             )

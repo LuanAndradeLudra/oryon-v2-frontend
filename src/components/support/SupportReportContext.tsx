@@ -91,6 +91,39 @@ export function SupportReportProvider({ conversationId, contatoNome, children }:
     ? { ligado, emPainel, store, iniciarMarcacao, alternar, cancelarMarcacao, reportar, definirSobre, irParaChamado, registrarMensagens }
     : DESLIGADO), [ligado, emPainel, store, iniciarMarcacao, alternar, cancelarMarcacao, reportar, definirSobre, irParaChamado, registrarMensagens])
 
+  // SCRUM-1394 (achado 17 do Portão 2): fechar o painel devolve o foco a quem o
+  // abriu. Quem abriu pode ter sumido (item de menu, bolha que rolou): então o
+  // foco vai para o campo da mensagem — nunca fica no vazio (body).
+  const focoAntesDoPainel = useRef<{ el: HTMLElement; rotulo: string | null; noCabecalho: boolean } | null>(null)
+  useEffect(() => {
+    if (!ligado) return
+    const aoFocar = (e: FocusEvent) => {
+      const alvo = e.target as HTMLElement | null
+      // Item de menu some ao fechar o menu: vale o que tinha o foco antes dele (o botão que abriu o menu).
+      if (!alvo || alvo === document.body || alvo.closest('[data-painel-do-chamado], [role="menu"], [role="menuitem"]')) return
+      focoAntesDoPainel.current = { el: alvo, rotulo: alvo.getAttribute('aria-label'), noCabecalho: !!alvo.closest('header') }
+    }
+    document.addEventListener('focusin', aoFocar)
+    let aberto = store.ler().painelAberto
+    const parar = store.assinar(() => {
+      const agora = store.ler().painelAberto
+      if (aberto && !agora) {
+        const antes = focoAntesDoPainel.current
+        requestAnimationFrame(() => {
+          const atual = document.activeElement
+          // Alguém já levou o foco para outro lugar (ex.: o chamado criado): respeita.
+          if (atual && atual !== document.body && !atual.closest('[data-painel-do-chamado]')) return
+          // O botão pode ter sido recriado (o cabeçalho muda com o painel): acha pelo mesmo rótulo.
+          const mesmo = antes?.el.isConnected ? antes.el
+            : antes?.rotulo ? document.querySelector<HTMLElement>(`${antes.noCabecalho ? 'header ' : ''}[aria-label="${CSS.escape(antes.rotulo)}"]`) : null
+          ;(mesmo ?? document.querySelector<HTMLElement>('textarea[aria-label="Mensagem"]'))?.focus()
+        })
+      }
+      aberto = agora
+    })
+    return () => { document.removeEventListener('focusin', aoFocar); parar() }
+  }, [ligado, store])
+
   const recarregar = useCallback(() => setPedido((v) => v + 1), [])
   // O pós-envio chega com a resposta do servidor: a pessoa pode já estar em
   // outra conversa. As refs dão a conversa e a lista de AGORA, não as do clique.
