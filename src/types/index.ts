@@ -1102,6 +1102,8 @@ export interface Message {
    * `corrected` = the AI self-corrected before sending. Null/absent otherwise.
    */
   anomaly?: {
+    /** Id do registro do sinal (SCRUM-1389: "Promover a chamado"). Ausente em servidor antigo. */
+    logId?: string
     kind: 'handoff' | 'corrected'
     claimType: string | null
     /** The phrase the AI used that triggered detection. */
