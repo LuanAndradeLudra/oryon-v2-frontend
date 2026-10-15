@@ -8,8 +8,8 @@ import type { ContextoTecnico } from './supportModel'
  * SEM parâmetros de busca (podem levar nome ou telefone), navegador, sistema,
  * versão do app, tamanhos, idioma, fuso e hora.
  *
- * Próximo passo (não faz parte desta captura): os últimos erros do console e
- * as chamadas com falha, com o requestId da T-01.
+ * Próximo passo (SCRUM-1390, não faz parte desta captura): os últimos erros
+ * do console e as chamadas com falha, com o requestId da T-01.
  */
 export function capturarContextoTecnico(rota: string, tela: string | null): ContextoTecnico {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
@@ -18,7 +18,8 @@ export function capturarContextoTecnico(rota: string, tela: string | null): Cont
     endereco: rota.split('?')[0] || '/',
     navegador: navegador(ua),
     sistema: sistema(ua),
-    versaoDoApp: (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'prévia',
+    // Identificador do build (release do Sentry ou commit), definido em vite.config.ts.
+    versaoDoApp: (import.meta.env.VITE_VERSAO_DO_BUILD as string | undefined) || 'desconhecida',
     resolucao: typeof screen !== 'undefined' ? `${screen.width}×${screen.height}` : '—',
     janela: typeof window !== 'undefined' ? `${window.innerWidth}×${window.innerHeight}` : '—',
     idioma: typeof navigator !== 'undefined' ? navigator.language : '—',

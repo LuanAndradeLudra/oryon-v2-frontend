@@ -123,7 +123,7 @@ const TEXTOS_DO_TIPO: Record<TipoDePedido, { relato: string; exemplo: string; co
 export function Linha({ rotulo, obrigatorio, ajuda, children, alinhar = 'center' }: { rotulo: string; obrigatorio?: boolean; ajuda?: string; children: ReactNode; alinhar?: 'center' | 'start' }) {
   return (
     <div className={cn('flex gap-3 min-h-[34px]', alinhar === 'center' ? 'items-center' : 'items-start pt-1.5')}>
-      <span className="w-[100px] flex-shrink-0 text-xs text-surface-400 inline-flex items-center">
+      <span className="sup-rotulo w-[100px] flex-shrink-0 text-xs text-surface-400 inline-flex items-center">
         <span className="truncate">{rotulo}</span>{obrigatorio && <span className="text-danger" aria-hidden>&nbsp;*</span>}
         {ajuda && <Ajuda texto={ajuda} />}
       </span>
@@ -249,7 +249,7 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
   )
   const avisoDosAnexos = f.anexosEnviando ? <span className="text-[11px] text-surface-400" role="status">Enviando anexos…</span> : null
   const corpo = (
-      <div className={cn('flex flex-col gap-4', variante === 'modal' ? 'px-5 py-4' : 'flex-1 min-h-0 overflow-y-auto px-4 py-4')}>
+      <div className={cn('flex flex-col gap-4', variante === 'modal' ? 'sup-modal px-5 py-4' : 'flex-1 min-h-0 overflow-y-auto px-4 py-4')}>
         {/* Sobre o quê: escolha EXPLÍCITA entre mensagens marcadas e a conversa inteira. */}
         {!f.juntarEm && conversationId && sobre && onSobre && (
           <div className="flex items-center gap-1.5">
@@ -610,6 +610,7 @@ function usePropsDoPainel(aoCriar?: () => void, sessao = false): PropsDoFormular
     onCriado: (c, novo) => { d.aoCriar(c, novo); aoCriar?.() },
     sobre,
     onSobre: s.definirSobre,
+    verChamado: s.irParaChamado,
   }
 }
 

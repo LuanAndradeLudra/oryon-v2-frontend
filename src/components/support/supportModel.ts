@@ -104,8 +104,29 @@ export const ALCANCES: Record<Alcance, { conversa: string; plataforma: string }>
   parando_agora: { conversa: 'Está parando o atendimento agora', plataforma: 'Está parando o atendimento agora' },
 }
 export const DESDE_QUANDO: Record<DesdeQuando, string> = { hoje: 'Hoje', ontem: 'Ontem', dias: 'Há alguns dias', nao_sei: 'Não sei' }
-/** Áreas do produto para "Onde aconteceu?" (chamado sem conversa). */
-export const AREAS_DO_PRODUTO = ['Conversas', 'Contatos', 'Funis', 'Disparos', 'Automações', 'Agentes IA', 'Relatórios', 'Configurações', 'Outro']
+/**
+ * ÁREAS DO PRODUTO para "Onde aconteceu?" (chamado sem conversa) — derivadas
+ * das rotas do app, com os nomes do menu lateral. Um nome só por área: o
+ * backend compara "onde" para achar o mesmo problema (aviso de repetido).
+ * Rota nova no app: acrescente aqui.
+ */
+export const AREAS_POR_ROTA: ReadonlyArray<readonly [prefixo: string, area: string]> = [
+  ['/home', 'Home'], ['/dashboard', 'Dashboard'], ['/conversations', 'Conversas'], ['/contacts', 'Contatos'],
+  ['/pipelines', 'Funis'], ['/campaigns', 'Disparos'], ['/marketing', 'Marketing'], ['/automations', 'Automações'],
+  ['/agents', 'Agentes IA'], ['/copilot', 'Copilot'], ['/team', 'Nexus'], ['/notifications', 'Notificações'],
+  ['/settings', 'Configurações'], ['/support', 'Suporte'],
+]
+export const AREAS_DO_PRODUTO: readonly string[] = [...new Set(AREAS_POR_ROTA.map(([, area]) => area)), 'Outro']
+
+/** Área da tela atual (`null` fora das áreas conhecidas: a pessoa escolhe). */
+export function areaDaRota(pathname: string): string | null {
+  return AREAS_POR_ROTA.find(([p]) => pathname === p || pathname.startsWith(`${p}/`))?.[1] ?? null
+}
+
+/** Só aceita uma área conhecida (ex.: `?tela=` vindo de um link): texto livre na URL não vira "onde". */
+export function areaValida(valor: string | null | undefined): string | null {
+  return valor && AREAS_DO_PRODUTO.includes(valor) ? valor : null
+}
 
 /**
  * Título legível: origem (+ nome da automação/regra) + assunto ou categoria.
