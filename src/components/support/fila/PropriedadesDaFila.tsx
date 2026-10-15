@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Layers, Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -52,19 +52,34 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
   }, [c.id])
   const listaDeParecidos = parecidos?.id === c.id ? parecidos.lista : null
 
-  const mudar = async (mudanca: MudancaNaFila, aviso: string) => {
-    setSalvando(true)
-    try {
-      onAtualizar(await adminSupportApi.atualizar(c.id, c.version, mudanca))
-      showToast(aviso, 'success')
-      return true
-    } catch (err) {
-      showToast(getApiErrorMessage(err, 'Não foi possível salvar. Tente de novo.'), 'error')
-      if (ehConflito(err)) onRecarregar()
-      return false
-    } finally {
-      setSalvando(false)
+  // Revisão do Portão 3: as mudanças saem uma de cada vez, cada uma com a versão
+  // devolvida pela anterior — o blur do Jira seguido de outra escolha dava 409
+  // contra a própria pessoa (as duas iam com a mesma versão).
+  const fila = useRef<Promise<unknown>>(Promise.resolve())
+  const ultima = useRef<{ id: string; version: number } | null>(null)
+  const mudar = (mudanca: MudancaNaFila, aviso: string): Promise<boolean> => {
+    const id = c.id
+    const versaoDaTela = c.version
+    const executar = async () => {
+      setSalvando(true)
+      try {
+        const versao = ultima.current?.id === id ? Math.max(ultima.current.version, versaoDaTela) : versaoDaTela
+        const novo = await adminSupportApi.atualizar(id, versao, mudanca)
+        ultima.current = { id, version: novo.version }
+        onAtualizar(novo)
+        showToast(aviso, 'success')
+        return true
+      } catch (err) {
+        showToast(getApiErrorMessage(err, 'Não foi possível salvar. Tente de novo.'), 'error')
+        if (ehConflito(err)) onRecarregar()
+        return false
+      } finally {
+        setSalvando(false)
+      }
     }
+    const vez = fila.current.then(executar, executar)
+    fila.current = vez
+    return vez
   }
   const salvarPrioridade = async () => {
     if (await mudar({ prioridade, motivo: motivo.trim() }, `Prioridade ${prioridade}. O motivo ficou no histórico.`)) setMotivo('')

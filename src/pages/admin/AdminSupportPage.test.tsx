@@ -183,4 +183,36 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     act(() => { fireEvent.keyDown(window, { key: 'a' }) })
     await waitFor(() => expect(api.atualizar).toHaveBeenCalledWith(T1, 3, { assumir: true }))
   })
+
+  it('revisão do Portão 3: o que foi escrito durante o envio não se perde', async () => {
+    let soltar: (c: ChamadoDaEquipe) => void = () => {}
+    api.anotar.mockImplementation(() => new Promise((r) => { soltar = r }))
+    render(<Tela />)
+    await screen.findByRole('region', { name: 'Chamado SUP-0001' })
+    fireEvent.click(screen.getByRole('tab', { name: 'Nota interna' }))
+    const campo = screen.getByLabelText('Nota interna')
+    fireEvent.change(campo, { target: { value: 'Primeira hipótese.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar nota' }))
+    // Enquanto a nota vai, a pessoa continua escrevendo.
+    fireEvent.change(campo, { target: { value: 'Primeira hipótese. E mais um detalhe.' } })
+    await act(async () => { soltar(chamado(A, { version: 4 })) })
+    expect(screen.getByLabelText('Nota interna')).toHaveValue('Primeira hipótese. E mais um detalhe.')
+  })
+
+  it('revisão do Portão 3: duas mudanças seguidas saem uma de cada vez, cada uma com a versão da anterior', async () => {
+    api.atualizar
+      .mockResolvedValueOnce(chamado({ ...A, jiraRef: 'SCRUM-9', version: 4 }))
+      .mockResolvedValueOnce(chamado({ ...A, jiraRef: 'SCRUM-9', causaRaiz: 'ia_informacao', version: 5 } as never))
+    render(<Tela />)
+    await screen.findByRole('region', { name: 'Chamado SUP-0001' })
+    const jira = screen.getByLabelText('Card no Jira')
+    fireEvent.change(jira, { target: { value: 'SCRUM-9' } })
+    fireEvent.blur(jira)
+    fireEvent.change(screen.getByLabelText('Card no Jira'), { target: { value: 'SCRUM-9' } })
+    // A segunda mudança é disparada antes de a primeira voltar.
+    fireEvent.click(screen.getByRole('button', { name: 'Assumir (A)' }))
+    await waitFor(() => expect(api.atualizar).toHaveBeenCalledTimes(2))
+    expect(api.atualizar.mock.calls[0]).toEqual([T1, 3, { jiraRef: 'SCRUM-9' }])
+    expect(api.atualizar.mock.calls[1]).toEqual([T1, 4, { assumir: true }])
+  })
 })
