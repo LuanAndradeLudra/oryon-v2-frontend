@@ -273,6 +273,45 @@ export interface ChamadoDaEquipe extends Omit<ChamadoDaEmpresa, 'prioridade' | '
   chamadoDaEmpresa?: { id: string; numero: string } | null
   /** SCRUM-1387 — o problema do chamado (vários chamados, o mesmo defeito). */
   problema?: ResumoDoProblema | null
+  /** SCRUM-1392 — quanto o relato desta empresa se confirma na triagem (só a equipe). */
+  calibracao?: ResumoDaCalibracao | null
+}
+
+/** SCRUM-1392 — dos chamados que a regra pôs em P2 pelos fatos e que a equipe triou, quantos ela confirmou. */
+export interface ResumoDaCalibracao {
+  triados: number
+  confirmados: number
+  /** Em %, ou null sem chamado triado. */
+  taxa: number | null
+  situacao: 'poucos_dados' | 'confirma' | 'inflado'
+  janelaDias: number
+  ajusteLigado: boolean
+}
+
+export interface ConfigDaCalibracao {
+  ligado: boolean
+  janelaDias: number
+  minimo: number
+  /** Abaixo desta taxa (0–1), o relato é inflado. */
+  limiar: number
+}
+
+export type DistribuicaoDePrioridade = Record<Prioridade, number>
+
+export interface VisaoDaCalibracao {
+  config: ConfigDaCalibracao
+  empresas: Array<ResumoDaCalibracao & {
+    tenantId: string
+    empresa: string
+    rebaixados: number
+    elevados: number
+    /** Fatos "acontece com outras pessoas" com mais de 24 h. */
+    aConfirmar: number
+    /** ...em que ninguém mais relatou o mesmo problema. */
+    naoConfirmados: number
+  }>
+  /** A distribuição da prioridade sugerida na janela, antes e depois do ajuste (como se estivesse ligado). */
+  simulacao: { chamados: number; antes: DistribuicaoDePrioridade; depois: DistribuicaoDePrioridade; mudariam: number }
 }
 
 /** SCRUM-1387 — status do problema. "Corrigido" exige o candidato a teste de regressão. */

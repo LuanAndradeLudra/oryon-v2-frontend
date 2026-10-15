@@ -15,7 +15,8 @@ import {
   dataCurta, tituloDoChamado,
 } from '../supportModel'
 import {
-  CAUSAS, PRIORIDADES, RELOGIOS, STATUS_DA_EQUIPE, STATUS_NA_FILA, canalDe, ehConflito, relativo, type CausaRaiz, type Prioridade, type Relogio,
+  CAUSAS, PRIORIDADES, RELOGIOS, STATUS_DA_EQUIPE, STATUS_NA_FILA, canalDe, ehConflito, relativo, textoDaCalibracao, type CausaRaiz, type Prioridade,
+  type Relogio,
 } from './modeloDaFila'
 
 function Titulo({ children }: { children: ReactNode }) {
@@ -221,6 +222,14 @@ function Prazo({ c, relogio, agora }: { c: ChamadoDaEquipe; relogio: Relogio; ag
 /** O que quem reportou disse (fatos, nunca gravidade) e o contexto do chamado. */
 function DadosDoChamado({ c }: { c: ChamadoDaEquipe }) {
   const linhas: Array<[string, ReactNode]> = [['Empresa', c.tenantNome]]
+  // SCRUM-1392 — quanto o relato desta empresa se confirma na triagem (só a equipe vê).
+  if (c.calibracao) {
+    linhas.push(['Relatos', (
+      <span key="cal" className={cn(c.calibracao.situacao === 'inflado' && 'text-warning')}>
+        {textoDaCalibracao(c.calibracao)}{c.calibracao.situacao === 'inflado' ? ' · relato inflado' : ''}
+      </span>
+    )])
+  }
   if (c.contatoNome) linhas.push(['Contato', c.contatoNome])
   linhas.push(['Aberto por', c.relatores > 1 ? `${c.abertoPor} (+${c.relatores - 1} relataram)` : c.abertoPor], ['Canal', canalDe(c)])
   if (c.tipoDePedido) {

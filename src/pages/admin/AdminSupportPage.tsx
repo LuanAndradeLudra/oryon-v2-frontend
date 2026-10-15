@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LifeBuoy, Search } from 'lucide-react'
+import { LifeBuoy, Scale, Search } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { useAuth } from '@/contexts/AuthContext'
@@ -19,6 +19,7 @@ import { ListaDaFila, type FiltrosDaLista } from '@/components/support/fila/List
 import { DetalheDaFila } from '@/components/support/fila/DetalheDaFila'
 import type { CampoDaFilaRef } from '@/components/support/fila/CampoUnicoDaFila'
 import { ehConflito } from '@/components/support/fila/modeloDaFila'
+import { CalibracaoDaRegra } from '@/components/support/fila/CalibracaoDaRegra'
 import '@/components/support/suporte.css'
 
 /**
@@ -64,6 +65,7 @@ export function AdminSupportPage() {
   const [origem, setOrigem] = useEstadoNaUrl<OrigemDoProblema | null>('origem', { padrao: null, ler: lerOrigem, escrever: texto, resetar: ['chamado'] })
   const [soSinais, setSoSinais] = useEstadoNaUrl('sinais', { padrao: false, ler: lerBool, escrever: escreverBool, resetar: ['chamado'] })
   const [busca, setBusca] = useState('')
+  const [calibrando, setCalibrando] = useState(false)
   const campoRef = useRef<CampoDaFilaRef | null>(null)
 
   const [resumo, setResumo] = useState<ResumoDaFila | null>(null)
@@ -243,7 +245,13 @@ export function AdminSupportPage() {
             </button>
           ))}
         </div>
+        {/* SCRUM-1392: quanto o relato de cada empresa se confirma na triagem (só a equipe). */}
+        <button type="button" onClick={() => setCalibrando(true)} aria-label="Calibração da regra por empresa" title="Calibração da regra por empresa"
+          className="ml-auto md:ml-0 h-8 px-2.5 rounded-[7px] inline-flex items-center gap-1.5 text-xs font-semibold text-surface-300 hover:bg-[var(--rowhover)] flex-shrink-0">
+          <Scale className="w-3.5 h-3.5" aria-hidden /><span className="hidden lg:inline">Calibração</span>
+        </button>
       </header>
+      {calibrando && <CalibracaoDaRegra onFechar={() => setCalibrando(false)} />}
       <div className="flex-1 min-h-0 flex">
         {isMobile ? (selecionadoId ? detalheEl : listaEl) : (<>{listaEl}{detalheEl}</>)}
       </div>
