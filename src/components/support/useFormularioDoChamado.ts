@@ -196,6 +196,9 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
   const temRecentes = !!recentes && (recentes.falhas.length > 0 || recentes.erros.length > 0)
   const [enviando, setEnviando] = useState(false)
   const contadorDeAnexos = useRef(0)
+  // SCRUM-1393: rascunho da IA. Relato vazio: entra no campo; com texto, fica ao lado para a pessoa acrescentar ou descartar.
+  const [rascunhoDaIa, setRascunhoDaIa] = useState<{ texto: string; aplicado: boolean } | null>(null)
+  const [pedindoRascunho, setPedindoRascunho] = useState(false)
 
   // Algo que se perderia ao fechar: o painel pede confirmação, e a conversa guarda o rascunho.
   const temConteudo = !!(relato.trim() || esperado.trim() || complemento.trim() || anexos.length || afetadas.length
@@ -306,7 +309,9 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
         return
       }
       const assunto = assuntos.find((a) => a.id === assuntoId)
+      const marcaDoRascunho = rascunhoDaIa?.aplicado ? (relato.trim() === rascunhoDaIa.texto.trim() ? 'usado' as const : 'editado' as const) : null
       const c = await supportApi.criar({
+        rascunhoDaIa: marcaDoRascunho,
         origemDoProblema: origem, origemNome: nomeDaOrigem,
         categoria: semConversa && tipo ? TIPOS_DE_PEDIDO[tipo].categoria : assunto?.categoria ?? CATEGORIA_PADRAO[origem],
         assuntoId: semConversa ? null : assunto?.id ?? null,
@@ -339,7 +344,42 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
     }
   }
 
+  const podeRascunho = !!modelo?.assistente?.rascunho && !juntarEm && !aguardandoMarcacao
+  const pedirRascunho = async () => {
+    if (pedindoRascunho) return
+    setPedindoRascunho(true)
+    try {
+      const assunto = assuntos.find((a) => a.id === assuntoId)
+      const r = await supportApi.rascunho({
+        origemDoProblema: origem,
+        categoria: semConversa && tipo ? TIPOS_DE_PEDIDO[tipo].categoria : assunto?.categoria ?? CATEGORIA_PADRAO[origem],
+        conversationId: conversationId ?? null, messageIds: mensagens.map((m) => m.id),
+        ondeAconteceu: semConversa ? (onde || null) : null,
+        textoAtual: relato.trim() || null,
+        contextoTecnico: semConversa && contexto ? (temRecentes && incluirRecentes ? { ...contexto, recentes: recentes! } : contexto) : null,
+      })
+      if (!relato.trim()) {
+        setRelato(r.rascunho)
+        setRascunhoDaIa({ texto: r.rascunho, aplicado: true })
+      } else {
+        setRascunhoDaIa({ texto: r.rascunho, aplicado: false })
+      }
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Não foi possível escrever o rascunho agora. Escreva do seu jeito.'), 'error')
+    } finally {
+      setPedindoRascunho(false)
+    }
+  }
+  const acrescentarRascunho = () => {
+    if (!rascunhoDaIa) return
+    const novo = relato.trim() ? `${relato.trim()}\n\n${rascunhoDaIa.texto}` : rascunhoDaIa.texto
+    setRelato(novo.slice(0, 2000))
+    setRascunhoDaIa({ ...rascunhoDaIa, aplicado: true })
+  }
+  const descartarRascunho = () => setRascunhoDaIa(null)
+
   return {
+    podeRascunho, pedirRascunho, pedindoRascunho, rascunhoDaIa, acrescentarRascunho, descartarRascunho,
     modelo, resumo, candidatas, nomeDaOrigem, semConversa, assuntos, perguntaEsperado, perguntaDesde, perguntaAfetadas, duplicado, pronto,
     aguardandoMarcacao, anexosEnviando, podeJuntar, temConteudo, descartar, rascunhoRecuperado: !!inicial,
     titulo: juntarEm ? `Adicionar ao ${juntarEm.numero}` : aguardandoMarcacao ? 'Reportar mensagens' : TITULO[origem],

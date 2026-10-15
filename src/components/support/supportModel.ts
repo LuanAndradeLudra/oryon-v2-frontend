@@ -191,4 +191,6 @@ export interface ModeloDoFormulario {
   exemplos: Partial<Record<OrigemDoProblema, string>>
   esperado: Partial<Record<OrigemDoProblema, { rotulo: string; exemplo: string }>>
   camposDaEmpresa: CampoDaEmpresa[]
+  /** SCRUM-1393: o "Rascunho da IA" só existe com o rascunho ligado na Oryon (custa modelo). */
+  assistente?: { rascunho: boolean }
 }

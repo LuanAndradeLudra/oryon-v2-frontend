@@ -68,6 +68,7 @@ export function ProblemaDoChamado({ c, sugeridos, onAtualizar, onRecarregar, onA
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-surface-100 line-clamp-2 break-words">Parece com <span className="font-mono font-semibold">{s.numero}</span> · {s.titulo}</p>
                 <p className="text-[11px] text-surface-400">{alcanceDoProblema(s)} · {s.nomeDoStatus}</p>
+                {s.motivo && <p className="text-[11px] text-surface-300">{s.motivo}</p>}
               </div>
               <Button size="sm" variant="neutral" disabled={ocupado} onClick={() => void vincular(s.id, `Vinculado ao ${s.numero}.`)}
                 aria-label={`Vincular ao ${s.numero}`}>Vincular</Button>

@@ -3,7 +3,7 @@ import type { ModeloDoFormulario, OrigemDoProblema, TipoDePedido } from '@/compo
 import type {
   AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, ContextoDaConversaDeSuporte, ConversaDoChamado, ConversaoParaChamado, EmpresaParaChamado,
   EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados, ProblemaCompleto, ResultadoDaConversao, ResumoDaFila,
-  PreviaDoEmailDaQualidade, QualidadeDaEmpresa, ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado,
+  PedidoDeRascunho, PreviaDoEmailDaQualidade, QualidadeDaEmpresa, ResumoDoChamado, ResumoPorVez, StatusDoProblema, SugestoesDoChamado, VezDoChamado,
   VisaoDaCalibracao, VisaoDaQualidade,
 } from '@/types/support'
 import type { CausaRaiz, Prioridade } from '@/components/support/fila/modeloDaFila'
@@ -23,6 +23,10 @@ export const supportApi = {
   },
   criar(dto: NovoChamado) {
     return api.post<ChamadoDaEmpresa>('/support/tickets', dto).then((r) => r.data)
+  },
+  /** SCRUM-1393 — rascunho do relato pela IA (sempre rascunho: o texto da pessoa vale mais). */
+  rascunho(pedido: PedidoDeRascunho) {
+    return api.post<{ rascunho: string; aviso: string }>('/support/assistente/rascunho', pedido).then((r) => r.data)
   },
   /** Promover a chamado (SCRUM-1389): o sinal da fila "Verificar" vira chamado — uma vez só (`jaPromovido`). */
   promoverAnomalia(activityLogId: string, descricao?: string) {
@@ -142,6 +146,12 @@ export const adminSupportApi = {
   },
   sugestoes(id: string) {
     return api.get<SugestoesDoChamado>(`/admin/support/tickets/${id}/suggestions`).then((r) => r.data)
+  },
+  /** SCRUM-1393 — sugestão de causa raiz pela IA (fica no histórico interno; a causa só muda quando a equipe escolhe). */
+  sugerirCausa(id: string) {
+    return api.post<{ causa: CausaRaiz; nome: string; motivo: string; confianca: 'baixa' | 'media' | 'alta' }>(
+      `/admin/support/tickets/${id}/sugestao-de-causa`,
+    ).then((r) => r.data)
   },
   /** SCRUM-1392 — a medida de cada empresa e a simulação antes/depois (só a equipe). */
   calibracao() {
