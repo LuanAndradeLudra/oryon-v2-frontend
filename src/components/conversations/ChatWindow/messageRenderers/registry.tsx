@@ -434,7 +434,12 @@ const RENDERERS: Partial<Record<Message['type'], FC<{ message: Message }>>> = {
  *  `body = waMsg.image?.caption` etc., a mesma fonte de `mediaCaption`) —
  *  sem isto o TextContent desenhava a legenda de novo, num parágrafo à
  *  parte. Áudio/figurinha não entram: `body` fica sempre null pra eles
- *  (extractor.ts), então TextContent já não desenhava nada de qualquer forma. */
+ *  (extractor.ts), então TextContent já não desenhava nada de qualquer forma.
+ *
+ *  SCRUM-1161 (15/10): no ENVIO pelo operador, `body` é o texto digitado e
+ *  não era copiado para `mediaCaption` — o texto sumia do chat. Quem desenha
+ *  esse texto é o MediaContent (`legendaDaMidia` / `textoDoDocumento` em
+ *  MessageBubble.tsx), nunca o TextContent. */
 export const STRUCTURED_TYPES: ReadonlySet<Message['type']> = new Set<Message['type']>([
   ...(Object.keys(RENDERERS) as Message['type'][]),
   'location',

@@ -54,6 +54,10 @@ function fileIcon(file: File) {
 
 /** Limite de texto do WhatsApp Cloud API (mensagem de texto). */
 const WA_TEXT_LIMIT = 4096
+/** Legenda de imagem/vídeo/documento na Meta (SCRUM-1161). O backend manda
+ *  "Nome:
+<texto>", então o teto do texto desconta o prefixo. */
+const WA_CAPTION_LIMIT = 1024
 
 /**
  * SCRUM-1253 (PO, 07/10): janela de 24h fechada (aviso) e aberta (campo) ocupam
@@ -184,6 +188,11 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
   const [activeIndex, setActiveIndex] = useState(0)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [attachments, setAttachments] = useState<StagedAttachment[]>([])
+  // Com anexo, o texto vira legenda do 1º arquivo: o teto é o da legenda.
+  const limiteDoTexto = attachments.length > 0
+    ? WA_CAPTION_LIMIT - ((autor?.firstName ?? '').length + 2)
+    : WA_TEXT_LIMIT
+  const textoPassaDoLimite = text.trim().length > limiteDoTexto
   const [dragOver, setDragOver] = useState(false)
   // id do anexo cujo POST está em voo (envio sequencial) — dirige o spinner.
   const [uploadingId, setUploadingId] = useState<string | null>(null)
@@ -360,6 +369,8 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
     // voo ao mesmo tempo (eco otimista trata cada uma como sua própria bolha,
     // ver useMessages.sendMessage), então o campo não trava entre elas.
     if ((!trimmed && attachments.length === 0) || disabled) return
+    // O backend recusaria (400) — avisa aqui, sem limpar o campo.
+    if (textoPassaDoLimite) return
 
     // Snapshot para restaurar em caso de falha total do caminho com anexos.
     const previousText = text
@@ -903,15 +914,17 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
 
             {/* Contador de caracteres — só aparece perto do limite do WhatsApp
                 (4096); antes disso é ruído. Âmbar ao se aproximar, vermelho no teto. */}
-            {text.length >= WA_TEXT_LIMIT - 300 && (
+            {text.length >= limiteDoTexto - (attachments.length > 0 ? 100 : 300) && (
               <span
                 aria-live="polite"
+                data-testid="contador-de-caracteres"
+                title={attachments.length > 0 ? 'Com anexo, o texto vai como legenda do arquivo, que tem limite menor no WhatsApp' : undefined}
                 className={cn(
-                  'text-[11px] tabular-nums flex-shrink-0',
-                  text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
+                  'text-[11px] tabular-nums flex-shrink-0 whitespace-nowrap',
+                  text.length >= limiteDoTexto ? 'text-danger font-semibold' : 'text-warning',
                 )}
               >
-                {text.length}/{WA_TEXT_LIMIT}
+                {textoPassaDoLimite ? `Legenda até ${limiteDoTexto} caracteres · ` : ''}{text.length}/{limiteDoTexto}
               </span>
             )}
 
@@ -935,7 +948,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                   size="sm"
                   variant="primary"
                   onClick={handleSend}
-                  disabled={disabled}
+                  disabled={disabled || textoPassaDoLimite}
                   aria-label="Enviar mensagem"
                   leftIcon={<Send className="w-3.5 h-3.5" />}
                   className="[@media(pointer:coarse)]:h-11"

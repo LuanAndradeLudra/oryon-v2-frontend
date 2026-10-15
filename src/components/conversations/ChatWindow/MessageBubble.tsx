@@ -420,8 +420,8 @@ function MediaContent({
           onError={() => setImageError(true)}
           onClick={() => openViewer(message)}
         />
-        {message.mediaCaption && (
-          <p className="text-xs mt-1 text-current opacity-80">{message.mediaCaption}</p>
+        {legendaDaMidia(message) && (
+          <p className="text-xs mt-1 text-current opacity-80 whitespace-pre-wrap break-words">{legendaDaMidia(message)}</p>
         )}
       </div>
     )
@@ -529,7 +529,15 @@ function MediaContent({
   }
 
   if (message.type === 'document' && message.mediaUrl) {
-    return <DocumentCard message={message} onOpen={() => openViewer(message)} />
+    const texto = textoDoDocumento(message)
+    return (
+      <>
+        <DocumentCard message={message} onOpen={() => openViewer(message)} />
+        {texto && (
+          <p className="text-xs mt-1 text-current opacity-80 whitespace-pre-wrap break-words">{texto}</p>
+        )}
+      </>
+    )
   }
 
   if (message.type === 'video' && message.mediaUrl) {
@@ -543,8 +551,8 @@ function MediaContent({
         >
           Seu navegador não suporta o elemento de vídeo.
         </video>
-        {message.mediaCaption && (
-          <p className="text-xs mt-1 text-current opacity-80">{message.mediaCaption}</p>
+        {legendaDaMidia(message) && (
+          <p className="text-xs mt-1 text-current opacity-80 whitespace-pre-wrap break-words">{legendaDaMidia(message)}</p>
         )}
       </div>
     )
@@ -601,6 +609,23 @@ function MediaContent({
   if (extended) return extended
 
   return null
+}
+
+/** Legenda de imagem/vídeo (SCRUM-1161, produção 15/10). No recebimento,
+ *  `body` e `mediaCaption` são a mesma legenda; no envio pelo operador, o
+ *  texto digitado ia só em `body` e a linha ficava com `mediaCaption` NULL.
+ *  O backend agora grava os dois; o `|| body` cobre as linhas antigas. Sem
+ *  risco de duplicar: `TextContent` não desenha `body` desses tipos. */
+export function legendaDaMidia(message: Message): string | null {
+  return message.mediaCaption || message.body || null
+}
+
+/** Texto enviado junto com um documento: `mediaCaption` é o título do card
+ *  (nome do arquivo) e o texto digitado fica em `body`. No recebimento os
+ *  dois são a mesma legenda — aí o card já mostra e não repete. */
+export function textoDoDocumento(message: Message): string | null {
+  if (!message.body || message.body === message.mediaCaption) return null
+  return message.body
 }
 
 // Exportado só pra teste (src/.../MessageBubble.test.tsx) — sem hooks, dá pra
