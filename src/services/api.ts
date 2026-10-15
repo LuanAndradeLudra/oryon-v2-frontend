@@ -59,6 +59,7 @@ import type { PipelineOverview, PipelineSummaryItem } from '@/types/pipelineAnal
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth-storage'
 import { compartilharEmVoo } from '@/lib/preBusca'
+import { capturarErrosDaPagina, falhaQueImporta, registrarFalhaDeRede } from '@/lib/atividadeRecente'
 
 const api = axios.create({
   baseURL: apiBaseUrl(),
@@ -670,6 +671,26 @@ api.interceptors.response.use(undefined, async (error) => {
   const delay = 500 * Math.pow(2, retryCount) // 500ms, 1000ms
   await new Promise((r) => setTimeout(r, delay))
   return api.request(config)
+})
+
+// ─── Falhas recentes para o chamado de suporte (SCRUM-1390) ───────────────────
+// Só em memória (lib/atividadeRecente): nada sai daqui até alguém abrir um
+// chamado e decidir incluir. Depois das novas tentativas: uma falha só por
+// requisição (a tentativa repetida reaproveita o mesmo `config`).
+capturarErrosDaPagina()
+api.interceptors.response.use(undefined, (error) => {
+  const config = error?.config as (InternalAxiosRequestConfig & { _falhaRegistrada?: boolean }) | undefined
+  if (config && !config._falhaRegistrada && !axios.isCancel(error)) {
+    const status: number | null = error.response?.status ?? null
+    if (falhaQueImporta(status)) {
+      config._falhaRegistrada = true
+      const cid = error.response?.headers?.['x-correlation-id']
+      // Com o caminho do baseURL ("/api/…"), como sai nas chamadas por fetch.
+      const url = /^https?:\/\//i.test(config.url ?? '') ? config.url! : `${config.baseURL ?? ''}${config.url ?? ''}`
+      registrarFalhaDeRede({ metodo: config.method ?? 'get', url, status, requestId: typeof cid === 'string' ? cid : null })
+    }
+  }
+  return Promise.reject(error)
 })
 
 // ─── Response interceptor — log all write operations with semantic context ─────

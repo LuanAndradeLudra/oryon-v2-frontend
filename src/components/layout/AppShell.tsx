@@ -1,10 +1,13 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { NavSidebar } from './NavSidebar'
 import { TopBar } from './TopBar'
 import { AppShellMobile } from './AppShellMobile'
 import { TopBarActionsProvider } from '@/contexts/TopBarActionsContext'
 import { WorkspaceNumberProvider } from '@/contexts/WorkspaceNumberContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { registrarTela } from '@/lib/atividadeRecente'
+import { areaDaRota } from '@/components/support/supportModel'
 
 function ShellLayout({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile()
@@ -40,6 +43,9 @@ function ShellLayout({ children }: { children: ReactNode }) {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  // SCRUM-1390: a trilha de telas (só em memória) que um chamado de suporte pode levar junto.
+  const { pathname } = useLocation()
+  useEffect(() => { registrarTela(pathname, areaDaRota(pathname) ?? 'tela não identificada') }, [pathname])
   return (
     <WorkspaceNumberProvider>
       <TopBarActionsProvider>

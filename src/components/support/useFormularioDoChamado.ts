@@ -14,6 +14,7 @@ import {
 import { resumoDasMarcadas } from './origemDaMensagem'
 import type { ConversaAfetada } from './ConversasAfetadas'
 import { capturarContextoTecnico } from './contextoTecnico'
+import { atividadeRecente } from '@/lib/atividadeRecente'
 import type { SobreOChamado } from './marcacaoDoChamado'
 
 export const MIN_RELATO = 10
@@ -189,6 +190,10 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
   const [complemento, setComplemento] = useState('')
   // O contexto técnico é o do momento em que o formulário abre (endereço sem `?…`).
   const [contexto] = useState<ContextoTecnico | null>(() => (conversationId ? null : capturarContextoTecnico(`${pathname}${search}`, telaInicial)))
+  // SCRUM-1390: as falhas e os erros dos últimos 15 min, como estavam ao abrir (o que a pessoa vê é o que vai).
+  const [recentes] = useState(() => (conversationId ? null : atividadeRecente()))
+  const [incluirRecentes, setIncluirRecentes] = useState(true)
+  const temRecentes = !!recentes && (recentes.falhas.length > 0 || recentes.erros.length > 0)
   const [enviando, setEnviando] = useState(false)
   const contadorDeAnexos = useRef(0)
 
@@ -319,7 +324,8 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
           tipoDePedido: tipo,
           fatos: camposDoTipo?.fatos ? { contornou, quemMais, impede } : null,
           complemento: camposDoTipo?.complemento && complemento.trim() ? complemento.trim() : null,
-          contextoTecnico: contexto, entrada: entrada ?? 'pagina_suporte',
+          contextoTecnico: contexto && temRecentes && incluirRecentes ? { ...contexto, recentes: recentes! } : contexto,
+          entrada: entrada ?? 'pagina_suporte',
         } : { entrada: 'conversa' as const, fatos: { contatoViu, jaCorrigiram: perguntaCorrigiram ? jaCorrigiram : null } }),
       })
       descartar()
@@ -342,6 +348,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
     onde, setOnde, dadosDeTerceiros, setDadosDeTerceiros, assuntoId, setAssuntoId, campos, setCampos, anexos, removerAnexo,
     afetadas, setAfetadas, juntarEm, setJuntarEm, ehOutro, setEhOutro, verContexto, setVerContexto, enviando,
     tipo, setTipo, complemento, setComplemento, contexto, camposDoTipo,
+    recentes: temRecentes ? recentes : null, incluirRecentes, setIncluirRecentes,
     contornou, setContornou, quemMais, setQuemMais, impede, setImpede, contatoViu, setContatoViu, jaCorrigiram, setJaCorrigiram, perguntaCorrigiram,
     anexar, colar, soltar, enviar,
   }

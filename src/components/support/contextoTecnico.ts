@@ -1,4 +1,5 @@
 import type { ContextoTecnico } from './supportModel'
+import type { AtividadeRecente, FalhaDeRede } from '@/lib/atividadeRecente'
 
 /**
  * CONTEXTO TÉCNICO de um chamado SEM conversa (página Suporte e "Falar com o
@@ -8,8 +9,8 @@ import type { ContextoTecnico } from './supportModel'
  * SEM parâmetros de busca (podem levar nome ou telefone), navegador, sistema,
  * versão do app, tamanhos, idioma, fuso e hora.
  *
- * Próximo passo (SCRUM-1390, não faz parte desta captura): os últimos erros
- * do console e as chamadas com falha, com o requestId da T-01.
+ * Nível 1b (SCRUM-1390): as falhas, os erros e as telas dos últimos 15 min
+ * (lib/atividadeRecente) vão junto só se a pessoa deixar ("Incluir no chamado").
  */
 export function capturarContextoTecnico(rota: string, tela: string | null): ContextoTecnico {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
@@ -41,6 +42,27 @@ function sistema(ua: string): string {
   if (/Mac OS X/.test(ua)) return 'macOS'
   if (/Linux/.test(ua)) return 'Linux'
   return 'Sistema desconhecido'
+}
+
+const hora = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+const falhou = (f: FalhaDeRede) => `${f.tela} não carregou (${f.status ? `erro ${f.status}` : 'sem resposta do servidor'} às ${hora(f.em)})`
+
+/**
+ * A sugestão do formulário (SCRUM-1390): a falha mais recente NESTA tela
+ * ("Relatórios não carregou (erro 500 às 10:42)") ou, sem ela, a mais recente
+ * de outra; e quanto mais há. Null quando não há nada para sugerir.
+ */
+export function sugestaoDaAtividade(a: AtividadeRecente | null, tela: string): { principal: string; mais: string | null } | null {
+  if (!a || (!a.falhas.length && !a.erros.length)) return null
+  const daTela = [...a.falhas].reverse().find((f) => f.tela === tela)
+  const ultima = daTela ?? a.falhas.at(-1)
+  const principal = ultima
+    ? `${daTela ? 'nesta tela' : 'em outra tela'}: ${falhou(ultima)}`
+    : `um erro na página (${a.erros.at(-1)!.tipo} às ${hora(a.erros.at(-1)!.em)})`
+  const outras = a.falhas.length - (ultima ? 1 : 0)
+  const partes = [outras > 0 ? `${outras} outra(s) falha(s) de rede` : null, a.erros.length && ultima ? `${a.erros.length} erro(s) na página` : null]
+    .filter(Boolean)
+  return { principal, mais: partes.length ? `E mais: ${partes.join(' e ')} nos últimos 15 min.` : null }
 }
 
 /** Resumo de uma linha para o formulário: "Funis · Chrome 141 · Windows · 1440×900 · 17:28". */
