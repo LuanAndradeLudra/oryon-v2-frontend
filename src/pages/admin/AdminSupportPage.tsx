@@ -235,7 +235,7 @@ export function AdminSupportPage() {
         <label className="relative w-full max-w-[300px] min-w-0">
           <span className="sr-only">Buscar em todos os clientes</span>
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" aria-hidden />
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar em todos os clientes" maxLength={80}
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder={isMobile ? 'Buscar' : 'Buscar em todos os clientes'} maxLength={80}
             className="w-full h-8 pl-8 pr-2.5 rounded-[7px] bg-surface-800 border border-[var(--bd2)] text-[13px] text-surface-100 placeholder:text-surface-400 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500" />
         </label>
         <div className="hidden md:flex items-center gap-1 ml-auto" role="group" aria-label="Atalhos da fila">

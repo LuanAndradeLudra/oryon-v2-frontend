@@ -625,7 +625,7 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
 
   // Mesma largura do painel do contato (308px): o chat não muda de tamanho ao abrir o chamado.
   const painel = (
-    <aside ref={painelRef} role={oculto ? undefined : 'dialog'} aria-modal={oculto ? undefined : variante === 'folha'} aria-labelledby={tituloId}
+    <aside ref={painelRef} data-painel-do-chamado role={oculto ? undefined : 'dialog'} aria-modal={oculto ? undefined : variante === 'folha'} aria-labelledby={tituloId}
       className={cn('conv-surface sup-painel-topo w-[308px] flex-shrink-0 flex flex-col h-full min-h-0 bg-surface-800 border-l border-surface-700', `sup-familia-${familia}`, className)}>
       <header className="flex items-center gap-2 pl-4 pr-2 h-[52px] pt-[3px] border-b border-surface-700 flex-shrink-0">
         <div className="min-w-0 flex-1">

@@ -123,6 +123,18 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     expect(screen.getByText('Chamados · 1')).toBeInTheDocument()
   })
 
+  it('SCRUM-1394: fechar o painel devolve o foco a quem abriu (nunca fica no vazio)', async () => {
+    render(<Tela />)
+    await screen.findByText('Chamados · 1')
+    const abriu = screen.getByRole('button', { name: 'menu do cabeçalho' })
+    abriu.focus()
+    fireEvent.click(abriu)
+    expect(painel()).not.toBeNull()
+    act(() => { fireEvent.keyDown(window, { key: 'Escape' }) })
+    expect(painel()).toBeNull()
+    await waitFor(() => expect(document.activeElement).toBe(abriu))
+  })
+
   it('Esc com uma lista aberta fecha só a lista; o painel e o relato continuam', async () => {
     render(<Tela />)
     fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))

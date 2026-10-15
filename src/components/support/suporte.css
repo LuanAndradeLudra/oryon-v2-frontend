@@ -40,6 +40,15 @@
   --sup-msg-grad: linear-gradient(135deg, #0D9488 0%, #115E59 100%);
   --sup-conv-grad: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
   --sup-plat-grad: linear-gradient(135deg, #6B8080 0%, #2E4040 100%);
+
+  /* SCRUM-1394: texto dos selos (fundo do tom a 12%) medido ≥ 4,5:1 nos dois temas.
+     O azul-500 do app ficava em 4,4:1 no escuro; no claro, o verde e o azul do
+     app ficavam em 4,0:1 sobre o próprio tom. */
+  --sup-selo-info: #93C5FD;
+  --sup-selo-success: #4ADE80;
+  --sup-selo-amber: #FBBF24;
+  --sup-selo-danger: #FCA5A5;
+  --sup-selo-warning: #FDBA74;
 }
 
 [data-theme="light"] {
@@ -71,6 +80,12 @@
   --sup-msg-grad: linear-gradient(135deg, #0D9488 0%, #115E59 100%);
   --sup-conv-grad: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
   --sup-plat-grad: linear-gradient(135deg, #6B7385 0%, #374151 100%);
+
+  --sup-selo-info: #1D4ED8;
+  --sup-selo-success: #166534;
+  --sup-selo-amber: #92400E;
+  --sup-selo-danger: #991B1B;
+  --sup-selo-warning: #9A3412;
 }
 
 /* Família: escolhe o conjunto de tokens. */
