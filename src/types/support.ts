@@ -297,3 +297,12 @@ export interface EvidenciasDoChamado {
   chamado: { id: string; numero: string; tenantId: string; status: StatusChamado }
   evidencias: EvidenciaDoChamado[]
 }
+
+/** A conversa do chamado, para quem tem o acesso de suporte vigente (SCRUM-1385). Texto mascarado. */
+export interface ConversaDoChamado {
+  conversationId: string
+  contatoNome: string | null
+  /** Até quando vale o acesso de quem está lendo. */
+  ate: string
+  mensagens: Array<MensagemDoChamado & { tipo: string; marcada: boolean }>
+}

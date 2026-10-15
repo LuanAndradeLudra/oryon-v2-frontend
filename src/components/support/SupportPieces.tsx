@@ -13,12 +13,20 @@ import { STATUS_NA_FILA } from './fila/modeloDaFila'
  * chamado (relato, andamento, comentários, perguntas, acessos).
  */
 
-/** As mensagens marcadas no desenho das bolhas do chat, em tamanho de leitura. */
-export function MensagensMarcadas({ mensagens, moldura = true }: { mensagens: MensagemDoChamado[]; moldura?: boolean }) {
+/**
+ * As mensagens marcadas no desenho das bolhas do chat, em tamanho de leitura.
+ * `destacar` (conversa inteira, na fila da Oryon): as que foram marcadas no chamado.
+ */
+export function MensagensMarcadas({ mensagens, moldura = true, destacar }: {
+  mensagens: MensagemDoChamado[]
+  moldura?: boolean
+  destacar?: ReadonlySet<string>
+}) {
   return (
     <div className={cn('flex flex-col gap-1.5', moldura && 'chat-shell-bg rounded-[8px] border border-surface-800 p-3')}>
       {mensagens.map((m) => {
         const nossa = m.autor !== 'contato'
+        const destacada = !!destacar?.has(m.id)
         const quem = m.autor === 'contato' ? 'Contato'
           : m.autorNome ? `${m.autor === 'automacao' ? 'Automação · ' : m.autor === 'regra' ? 'Regra · ' : ''}${m.autorNome}`
           : ORIGENS_DA_MENSAGEM[m.autor]?.nome ?? m.autor
@@ -27,12 +35,14 @@ export function MensagensMarcadas({ mensagens, moldura = true }: { mensagens: Me
             <div className={cn(
               'px-2.5 py-1.5 rounded-[10px] text-xs leading-[1.45] break-words',
               nossa ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg' : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)]',
+              destacada && 'ring-2 ring-accent-amber ring-offset-1 ring-offset-surface-900',
             )}>
               <span className={cn('block text-[10.5px] font-semibold mb-0.5', nossa ? 'text-bubble-out-time' : 'text-surface-400')}>
                 {quem} · {new Date(m.enviadaEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </span>
               {m.texto}
             </div>
+            {destacada && <span className="mt-0.5 text-[10.5px] font-semibold text-accent-amber">marcada no chamado</span>}
           </div>
         )
       })}
