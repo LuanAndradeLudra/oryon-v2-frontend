@@ -252,3 +252,20 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Encerrar ocorrência' })).toBeNull())
   })
 })
+
+describe('Problema na fila (SCRUM-1387)', () => {
+  it('chamado num problema: causa e Jira são os do problema (os do chamado saem de cena); sem problema, os do chamado', async () => {
+    const P = {
+      id: 'p7', numero: 'PRB-0007', titulo: 'Valor sem confirmação', status: 'investigando' as const, nomeDoStatus: 'Investigando',
+      causaRaiz: 'generative_residual' as const, jiraRef: 'SCRUM-1400', chamados: 3, empresas: 2, temFixture: false,
+    }
+    api.obter.mockImplementation(async (id: string) => (id === T1 ? chamado(A, { problemaId: 'p7', problema: P }) : chamado(B)))
+    render(<Tela rota={`/admin/support?chamado=${T1}`} />)
+    const problema = await screen.findByRole('region', { name: 'Problema PRB-0007' })
+    expect(problema).toHaveTextContent('3 chamados em 2 empresas')
+    expect(within(problema).getByRole('button', { name: 'Causa do problema: Erro residual da IA' })).toBeInTheDocument()
+    expect(within(problema).getByLabelText('Card do Jira do problema')).toHaveValue('SCRUM-1400')
+    expect(screen.queryByLabelText('Card no Jira')).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Causa: / })).toBeNull()
+  })
+})

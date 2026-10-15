@@ -1,4 +1,5 @@
 import type { StatusChamado } from '@/components/support/supportModel'
+import type { ResumoDoProblema, StatusDoProblema } from '@/types/support'
 
 /**
  * Vocabulário da FILA da Oryon (SCRUM-1384) — o lado da equipe, espelho de
@@ -56,6 +57,24 @@ export function canalDe(c: { origem: string; entrada: string | null }): string {
 }
 
 /** 409: alguém mexeu no chamado entre a leitura e o envio (a tela recarrega o chamado). */
+/** SCRUM-1387 — como a equipe chama cada status do problema (os mesmos nomes do backend). */
+export const STATUS_DO_PROBLEMA: Record<StatusDoProblema, string> = {
+  aberto: 'Aberto', investigando: 'Investigando', corrigido: 'Corrigido', nao_corrigir: 'Não será corrigido',
+}
+
+/** "3 chamados em 2 empresas" — o alcance real do problema. */
+export function alcanceDoProblema(p: Pick<ResumoDoProblema, 'chamados' | 'empresas'>): string {
+  return `${p.chamados} ${p.chamados === 1 ? 'chamado' : 'chamados'} em ${p.empresas} ${p.empresas === 1 ? 'empresa' : 'empresas'}`
+}
+
+/** Só o resumo (o chamado guarda o resumo; o problema aberto traz a lista e o candidato). */
+export function resumoDoProblema(p: ResumoDoProblema): ResumoDoProblema {
+  return {
+    id: p.id, numero: p.numero, titulo: p.titulo, status: p.status, nomeDoStatus: p.nomeDoStatus, causaRaiz: p.causaRaiz, jiraRef: p.jiraRef,
+    chamados: p.chamados, empresas: p.empresas, temFixture: p.temFixture,
+  }
+}
+
 export function ehConflito(err: unknown): boolean {
   return (err as { response?: { status?: number } } | null)?.response?.status === 409
 }
