@@ -1,4 +1,5 @@
 import type { OrigemDaMensagem } from './origemDaMensagem'
+import type { AtividadeRecente } from '@/lib/atividadeRecente'
 /**
  * SUPORTE INTEGRADO — o vocabulário do chamado (épico SCRUM-1376; desenho v3
  * em docs/confiabilidade-suporte/DESENHO-SUPORTE-INTEGRADO-V3-2026-10-14.md).
@@ -73,6 +74,8 @@ export interface ContextoTecnico {
   idioma: string
   fusoHorario: string
   capturadoEm: string
+  /** SCRUM-1390 — falhas, erros e telas dos últimos 15 min (só se a pessoa incluiu). */
+  recentes?: AtividadeRecente
 }
 
 export const ORIGENS_DO_PROBLEMA: Record<OrigemDoProblema, string> = {

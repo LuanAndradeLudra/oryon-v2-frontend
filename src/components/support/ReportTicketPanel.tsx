@@ -17,7 +17,7 @@ import { ConversasAfetadas } from './ConversasAfetadas'
 import { useDadosDoSuporte, useSuporte } from './suporteDaConversa'
 import { useMarcacao } from './marcacaoDoChamado'
 import { TIPOS_DO_ANEXO, useFormularioDoChamado, type PropsDoFormulario } from './useFormularioDoChamado'
-import { linhasDoContexto, resumoDoContexto } from './contextoTecnico'
+import { linhasDoContexto, resumoDoContexto, sugestaoDaAtividade } from './contextoTecnico'
 import type { Message } from '@/types'
 import './suporte.css'
 
@@ -535,6 +535,21 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
             ))}
           </section>
         )}
+
+        {f.contexto && f.recentes && (() => {
+          // SCRUM-1390: o que falhou há pouco — a pessoa decide se vai junto.
+          const s = sugestaoDaAtividade(f.recentes, f.contexto.tela)
+          return s && (
+            <section className="sup-cartao px-3 py-2.5 flex flex-col gap-1.5" aria-label="Falhas detectadas">
+              <p className="text-xs text-surface-200">Detectamos {s.principal}.</p>
+              {s.mais && <p className="text-[11px] text-surface-400">{s.mais}</p>}
+              <label className="flex items-center gap-2 text-xs text-surface-200 cursor-pointer w-fit">
+                <input type="checkbox" checked={f.incluirRecentes} onChange={(e) => f.setIncluirRecentes(e.target.checked)} className="accent-[var(--color-brand-600)]" />
+                Incluir no chamado
+              </label>
+            </section>
+          )
+        })()}
 
         <div>
           <button type="button" onClick={() => f.setVerContexto((v) => !v)} aria-expanded={f.verContexto} className="w-full flex items-center gap-2 py-1 text-left">

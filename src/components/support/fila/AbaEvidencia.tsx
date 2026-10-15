@@ -18,8 +18,10 @@ const NOME_DO_COLETOR: Record<string, string> = {
   entrega: 'Entrega no WhatsApp',
   origem: 'Automação ou regra',
   'contexto-da-plataforma': 'Retrato da plataforma na abertura',
+  anomalia: 'Sinal automático',
+  'atividade-do-servidor': 'Erros do servidor (15 min antes)',
 }
-const ORDEM = ['ia-turno', 'linha-do-tempo', 'entrega', 'origem', 'contexto-da-plataforma']
+const ORDEM = ['ia-turno', 'anomalia', 'linha-do-tempo', 'entrega', 'origem', 'atividade-do-servidor', 'contexto-da-plataforma']
 const SITUACAO: Record<StatusDaEvidencia, { nome: string; tom: 'neutral' | 'success' | 'warning' | 'danger' | 'info' }> = {
   coletando: { nome: 'coletando', tom: 'info' },
   pronta: { nome: 'pronta', tom: 'success' },
@@ -133,7 +135,10 @@ function ColetorDaEvidencia({ e }: { e: EvidenciaDoChamado }) {
     : e.coletor === 'linha-do-tempo'
       ? [`${contagem('mensagens') ?? 0} mensagem(ns)`, contagem('turnosDaIa') !== null ? `${contagem('turnosDaIa')} turno(s) da IA` : null,
         contagem('turnosSemResposta') ? `${contagem('turnosSemResposta')} sem resposta` : null].filter(Boolean).join(' · ')
-      : contagem('mensagens') !== null ? `${contagem('mensagens')} mensagem(ns)` : null
+      : e.coletor === 'atividade-do-servidor'
+        ? [`${contagem('erros') ?? 0} erro(s) de quem abriu`, (e.refs as { ligadosAoNavegador?: number } | null)?.ligadosAoNavegador
+          ? `${(e.refs as { ligadosAoNavegador: number }).ligadosAoNavegador} ligado(s) às falhas do navegador` : null].filter(Boolean).join(' · ')
+        : contagem('mensagens') !== null ? `${contagem('mensagens')} mensagem(ns)` : null
   const situacao = SITUACAO[e.status] ?? SITUACAO.pronta
   return (
     <section className="sup-cartao px-4 py-3 flex flex-col gap-1">

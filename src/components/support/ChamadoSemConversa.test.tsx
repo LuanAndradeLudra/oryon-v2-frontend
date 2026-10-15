@@ -10,6 +10,7 @@ import { supportApi } from '@/services/supportApi'
 import type { ChamadoDaEmpresa } from '@/types/support'
 import ChamadoSemConversa from './ChamadoSemConversa'
 import type { TipoDePedido } from './supportModel'
+import { limparAtividadeRecente, registrarFalhaDeRede, registrarTela } from '@/lib/atividadeRecente'
 
 const h = vi.hoisted(() => ({ navigate: vi.fn() }))
 vi.mock('react-router-dom', async (original) => ({ ...(await original<typeof import('react-router-dom')>()), useNavigate: () => h.navigate }))
@@ -105,6 +106,37 @@ describe('Chamado sem conversa (SCRUM-1382)', () => {
     })
     expect(corpo.contextoTecnico).toMatchObject({ tela: 'Funis', endereco: '/pipelines/abc' })
     expect(corpo).not.toHaveProperty('impacto')
+  })
+
+  it('1390: falha recente nesta tela aparece sugerida; incluída, vai no contexto técnico; desmarcada, não vai nada', async () => {
+    limparAtividadeRecente()
+    registrarTela('/campaigns', 'Disparos')
+    registrarFalhaDeRede({ metodo: 'get', url: '/api/campaigns?busca=Maria', status: 500, requestId: 'c0ffee00-0000-4000-8000-000000000001' })
+    api.criar.mockResolvedValue({ id: 't9', numero: 'SUP-0009' } as ChamadoDaEmpresa)
+    const preencher = () => {
+      fireEvent.click(tipo('Dúvida de uso'))
+      fireEvent.change(within(modal()).getByLabelText(/O que você quer fazer/), { target: { value: 'A tela de disparos não abre.' } })
+    }
+    const { unmount } = render(<Tela rota="/campaigns" />)
+    const sugestao = within(modal()).getByRole('region', { name: 'Falhas detectadas' })
+    expect(sugestao).toHaveTextContent(/Detectamos nesta tela: Disparos não carregou \(erro 500 às/)
+    const incluir = within(sugestao).getByRole('checkbox', { name: 'Incluir no chamado' })
+    expect(incluir).toBeChecked()
+    preencher()
+    fireEvent.click(within(modal()).getByRole('button', { name: 'Enviar' }))
+    await waitFor(() => expect(api.criar).toHaveBeenCalledTimes(1))
+    expect(api.criar.mock.calls[0][0].contextoTecnico?.recentes?.falhas).toEqual([
+      expect.objectContaining({ tela: 'Disparos', rota: '/api/campaigns', status: 500, requestId: 'c0ffee00-0000-4000-8000-000000000001' }),
+    ])
+    unmount()
+    // A pessoa decide: desmarcado, nada da atividade vai junto.
+    render(<Tela rota="/campaigns" />)
+    fireEvent.click(within(within(modal()).getByRole('region', { name: 'Falhas detectadas' })).getByRole('checkbox', { name: 'Incluir no chamado' }))
+    preencher()
+    fireEvent.click(within(modal()).getByRole('button', { name: 'Enviar' }))
+    await waitFor(() => expect(api.criar).toHaveBeenCalledTimes(2))
+    expect(api.criar.mock.calls[1][0].contextoTecnico).not.toHaveProperty('recentes')
+    limparAtividadeRecente()
   })
 
   it('criado: o aviso traz "Ver chamado", que leva à página Suporte', async () => {

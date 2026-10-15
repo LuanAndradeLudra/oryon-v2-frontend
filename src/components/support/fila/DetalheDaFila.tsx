@@ -15,6 +15,7 @@ import { PropriedadesDaFila } from './PropriedadesDaFila'
 import { CampoUnicoDaFila, type CampoDaFilaRef } from './CampoUnicoDaFila'
 import { AbaEvidencia } from './AbaEvidencia'
 import { AbaConversaDoCliente } from './AbaConversaDoCliente'
+import { AtividadeRecenteDoChamado } from './AtividadeRecenteDoChamado'
 
 type Aba = 'atividade' | 'evidencia' | 'conversa' | 'contexto'
 
@@ -116,6 +117,7 @@ export function DetalheDaFila({ c, agora, colunaCabe, onAtualizar, onRecarregar,
                     ))}
                   </dl>
                 </section>
+                {c.contextoTecnico.recentes && <AtividadeRecenteDoChamado a={c.contextoTecnico.recentes} />}
               </div>
             )}
           </div>
