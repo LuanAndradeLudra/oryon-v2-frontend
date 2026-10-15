@@ -363,7 +363,8 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
     enviandoAgora.current = true
     const respondendo = !!c.perguntaPendente
     try {
-      const ok = await agir('texto', () => supportApi.comentar(c.id, corpo), respondendo ? 'Resposta enviada para a equipe Oryon.' : 'Comentário enviado para a equipe Oryon.')
+      const ok = await agir('texto', () => supportApi.comentar(c.id, corpo), respondendo ? 'Resposta enviada para a equipe Oryon.'
+        : esperandoConfirmacao ? 'Enviado. O chamado voltou para a equipe Oryon.' : 'Comentário enviado para a equipe Oryon.')
       // Só limpa se nada foi escrito enquanto enviava.
       if (ok && (rascunhos.get(c.id) ?? '').trim() === corpo) escrever('')
     } finally {
@@ -434,7 +435,7 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
             <Textarea ref={campo} rows={2} value={rascunho} onChange={(e) => escrever(e.target.value)} maxLength={4000} disabled={!podeEscrever}
               aria-label={c.perguntaPendente ? 'Resposta à pergunta da Oryon' : 'Mensagem para a equipe Oryon'}
               placeholder={encerrado ? 'Chamado encerrado. Reabra para escrever.'
-                : esperandoConfirmacao ? 'Algo ainda não está certo? Escreva para a equipe Oryon (ou responda acima se resolveu).'
+                : esperandoConfirmacao ? 'Algo ainda não está certo? Escreva aqui e o chamado volta para a equipe Oryon.'
                 : c.perguntaPendente ? 'Responda à pergunta da Oryon' : 'Escreva para a equipe Oryon. Só a sua empresa e a Oryon veem.'}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void enviar() } }} />
             <div className="flex items-center gap-2">
