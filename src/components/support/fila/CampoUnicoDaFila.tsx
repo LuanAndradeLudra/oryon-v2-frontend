@@ -45,6 +45,14 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
     rascunhos.set(c.id, novo)
     return novo
   })
+  /** Depois do envio, limpa só se o campo ainda é o texto enviado: o que foi escrito durante a requisição fica (revisão do Portão 3). */
+  const limparEnviado = (campo: 'responder' | 'perguntar' | 'nota', enviado: string, extra: Partial<Rascunho> = {}) =>
+    setRascunho((r) => {
+      if (r[campo].trim() !== enviado) return r
+      const novo = { ...r, [campo]: '', ...extra }
+      rascunhos.set(c.id, novo)
+      return novo
+    })
   const [enviando, setEnviando] = useState(false)
   const enviandoAgora = useRef(false)
   const texto = useRef<HTMLTextAreaElement>(null)
@@ -72,15 +80,15 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
     try {
       if (modo === 'responder') {
         onAtualizar(await adminSupportApi.responder(c.id, { resumo: corpo, dependeDaClinica: rascunho.depende.trim() || null, deixarComo, version: c.version }))
-        mudar({ responder: '', depende: '', deixarComo: null })
+        limparEnviado('responder', corpo, { depende: '', deixarComo: null })
         showToast(deixarComo === 'resolved' ? 'Resposta enviada. A empresa vai confirmar se resolveu.' : `Resposta enviada. Chamado: ${STATUS_NA_FILA[deixarComo]}.`, 'success')
       } else if (modo === 'perguntar') {
         onAtualizar(await adminSupportApi.perguntar(c.id, corpo, c.version))
-        mudar({ perguntar: '' })
+        limparEnviado('perguntar', corpo)
         showToast('Pergunta enviada. O chamado aguarda a empresa.', 'success')
       } else {
         onAtualizar(await adminSupportApi.anotar(c.id, corpo))
-        mudar({ nota: '' })
+        limparEnviado('nota', corpo)
         showToast('Nota interna registrada.', 'success')
       }
     } catch (err) {
