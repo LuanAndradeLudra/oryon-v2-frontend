@@ -211,7 +211,22 @@ const sentryPlugins = sentryAuthToken
     })]
   : []
 
+// ─── Identificador do build ───────────────────────────────────────────────────
+// Vai no contexto técnico do chamado de suporte (SCRUM-1382): a equipe Oryon
+// precisa saber QUAL build a pessoa usava. Ordem: a release do Sentry (a mesma
+// dos erros), o commit que a Vercel expõe no build, o commit local; sem
+// nenhum, "dev". Nome próprio de propósito: `VITE_APP_VERSION` é a versão do
+// app nativo no registro de push e continua como está.
+function versaoDoBuild(): string {
+  if (sentryRelease) return sentryRelease
+  const commit = env.VERCEL_GIT_COMMIT_SHA || (() => {
+    try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: __dirname, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() } catch { return '' }
+  })()
+  return commit ? commit.slice(0, 7) : 'dev'
+}
+
 export default defineConfig({
+  define: { 'import.meta.env.VITE_VERSAO_DO_BUILD': JSON.stringify(versaoDoBuild()) },
   plugins: [react(), tailwindcss(), appleEmojiPlugin(), canvaTokenPlugin(), designSearchPlugin(), previaDeLinkPlugin(), ...sentryPlugins],
   build: {
     // Sourcemaps are required for Sentry to symbolicate stack traces.

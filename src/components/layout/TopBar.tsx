@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { comVolta } from '@/lib/voltarPara'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, BookOpen, Megaphone as MegaphoneIcon, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
+  LifeBuoy, Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, BookOpen, Megaphone as MegaphoneIcon, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { NotificationItem, Kbd } from '@/components/notifications/NotificationItem'
@@ -23,7 +23,7 @@ import {
 } from '@/hooks/useNotifications'
 import { cn, getInitials } from '@/lib/utils'
 import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
-import { isRouteVisible } from '@/config/featureFlags'
+import { isRouteVisible, suporteLigadoPara } from '@/config/featureFlags'
 import { papelAlcancaSecao } from '@/components/settings/SettingsLayout'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useTheme, type Theme } from '@/hooks/useTheme'
@@ -1129,8 +1129,12 @@ function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: 
   )
 }
 
+// Épico de suporte (SCRUM-1382): o modal do chamado sem conversa só é baixado
+// quando a pessoa abre "Falar com o suporte" (o menu está em todas as telas).
+const ChamadoSemConversa = lazy(() => import('@/components/support/ChamadoSemConversa'))
+
 function UserMenu() {
-  const { user, logout } = useAuth()
+  const { user, logout, featureFlags } = useAuth()
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
   const [open, setOpen] = useState(false)
@@ -1176,8 +1180,18 @@ function UserMenu() {
     logout()
     navigate('/login', { replace: true })
   }
+  // "Falar com o suporte": chamado que não nasce de uma conversa (tela que não
+  // carrega, lentidão, dúvida…). Flag do tenant; a equipe de suporte da Oryon
+  // não abre chamado para si mesma.
+  const falarComSuporteVisivel = suporteLigadoPara(featureFlags) && user?.role !== 'oryon_support'
+  const [falarComSuporte, setFalarComSuporte] = useState(false)
+  // Menu aberto: já baixa o modal, para o clique em "Falar com o suporte" não esperar.
+  useEffect(() => {
+    if (open && falarComSuporteVisivel) void import('@/components/support/ChamadoSemConversa')
+  }, [open, falarComSuporteVisivel])
 
   return (
+    <>
     <Dropdown
       open={open}
       onClose={close}
@@ -1223,6 +1237,12 @@ function UserMenu() {
       <DropdownItem icon={User} onClick={() => go('/settings/account')}>
         Meu perfil
       </DropdownItem>
+
+      {falarComSuporteVisivel && (
+        <DropdownItem icon={LifeBuoy} onClick={() => { close(); setFalarComSuporte(true) }}>
+          Falar com o suporte
+        </DropdownItem>
+      )}
 
       {settingsVisible && (
         <DropdownItem icon={Settings} onClick={() => go('/settings')}>
@@ -1274,6 +1294,12 @@ function UserMenu() {
         Sair
       </DropdownItem>
     </Dropdown>
+    {falarComSuporte && (
+      <Suspense fallback={null}>
+        <ChamadoSemConversa entrada="menu_do_usuario" onClose={() => setFalarComSuporte(false)} />
+      </Suspense>
+    )}
+    </>
   )
 }
 

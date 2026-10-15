@@ -149,3 +149,7 @@
    claro nos dois temas (claro 3,3:1, escuro 6,5:1). */
 .sup-bandeira { color: var(--sup-warn-fg); }
 .sup-bandeira.sup-bandeira-saida { color: #FDBA74; }
+
+/* Modal (chamado sem conversa, 520 px): a coluna de rótulos pode ser mais
+   larga que no painel de 308 px ("Impede agora" saía cortado). */
+.sup-modal .sup-rotulo { width: 120px; }

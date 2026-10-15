@@ -19,6 +19,9 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { lazy, Suspense, useState } from 'react'
+import { LifeBuoy } from 'lucide-react'
+import { suporteLigadoPara } from '@/config/featureFlags'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
@@ -92,8 +95,13 @@ function ItemRow({ item }: { item: Item }) {
   )
 }
 
+// Épico de suporte (SCRUM-1382): no celular o "menu do usuário" é esta página.
+const ChamadoSemConversa = lazy(() => import('@/components/support/ChamadoSemConversa'))
+
 export function MorePage() {
-  const { user, logout } = useAuth()
+  const { user, logout, featureFlags } = useAuth()
+  const falarComSuporteVisivel = suporteLigadoPara(featureFlags) && user?.role !== 'oryon_support'
+  const [falarComSuporte, setFalarComSuporte] = useState(false)
   const navigate = useNavigate()
   const isSuperAdmin = isOryonStaff(user?.role)
   const { isRouteVisible } = useFeatureVisibility()
@@ -167,6 +175,21 @@ export function MorePage() {
             </div>
             <ChevronRight className="w-4 h-4 text-surface-600 flex-shrink-0" />
           </Link>
+          {falarComSuporteVisivel && (
+            <button
+              type="button"
+              onClick={() => setFalarComSuporte(true)}
+              className="flex items-center gap-3 px-4 py-3 w-full text-left hover:bg-[var(--rowhover)] transition-colors"
+            >
+              <div className="w-10 h-10 rounded-[10px] bg-surface-800 flex items-center justify-center flex-shrink-0">
+                <LifeBuoy className="w-5 h-5 text-surface-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-surface-100">Falar com o suporte</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-surface-600 flex-shrink-0" />
+            </button>
+          )}
           <button
             type="button"
             onClick={handleLogout}
@@ -186,6 +209,11 @@ export function MorePage() {
 
         <div className="h-8" />
       </div>
+      {falarComSuporte && (
+        <Suspense fallback={null}>
+          <ChamadoSemConversa entrada="menu_do_usuario" onClose={() => setFalarComSuporte(false)} />
+        </Suspense>
+      )}
     </div>
   )
 }

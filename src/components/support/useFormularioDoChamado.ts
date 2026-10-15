@@ -77,6 +77,8 @@ export interface PropsDoFormulario {
   onSobre?: (v: SobreOChamado) => void
   /** Por onde o chamado sem conversa entrou (página Suporte ou menu do usuário). */
   entrada?: EntradaDoChamado
+  /** Leva ao chamado (página Suporte): vira a ação "Ver chamado" do aviso de criado. */
+  verChamado?: (id: string) => void
 }
 
 /** Campos que cada tipo de pedido (sem conversa) pergunta. */
@@ -114,7 +116,7 @@ function nomeDoArquivo(f: File, i: number): string {
  * continua no chat): o relato e as respostas ficam; a origem e o assunto são
  * DERIVADOS — vale a escolha da pessoa enquanto ela continuar possível.
  */
-export function useFormularioDoChamado({ open, onClose, conversationId, mensagens, onCriado, telaInicial = null, sobre, entrada }: PropsDoFormulario) {
+export function useFormularioDoChamado({ open, onClose, conversationId, mensagens, onCriado, telaInicial = null, sobre, entrada, verChamado }: PropsDoFormulario) {
   const { pathname, search } = useLocation()
   const modelo = useModelo(open)
   const resumo = useMemo(() => resumoDasMarcadas(mensagens), [mensagens])
@@ -232,6 +234,8 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
     e.preventDefault(); anexar([...e.dataTransfer.files])
   }
 
+  const acaoVerChamado = (id: string) => (verChamado ? { label: 'Ver chamado', onClick: () => verChamado(id) } : undefined)
+
   const enviar = async () => {
     if (!pronto) return
     setEnviando(true)
@@ -240,7 +244,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
         const c = await supportApi.adicionar(juntarEm.id, { messageIds: mensagens.map((m) => m.id), descricao: relato.trim() })
         onCriado(c, false)
         onClose()
-        showToast(`Adicionado ao ${c.numero}. A equipe Oryon já foi avisada.`, 'success', undefined, 6000)
+        showToast(`Adicionado ao ${c.numero}. A equipe Oryon já foi avisada.`, 'success', acaoVerChamado(c.id), 6000)
         return
       }
       const assunto = assuntos.find((a) => a.id === assuntoId)
@@ -267,7 +271,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
       })
       onCriado(c, true)
       onClose()
-      showToast(`Chamado ${c.numero} aberto. A equipe Oryon responde por aqui, por e-mail e por WhatsApp.`, 'success', undefined, 6000)
+      showToast(`Chamado ${c.numero} aberto. A equipe Oryon responde por aqui.`, 'success', acaoVerChamado(c.id), 8000)
     } catch (err) {
       showToast(getApiErrorMessage(err, 'Não foi possível enviar. Tente de novo.'), 'error')
     } finally {
