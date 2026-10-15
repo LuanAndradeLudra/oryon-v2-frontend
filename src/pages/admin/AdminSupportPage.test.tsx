@@ -201,8 +201,8 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
 
   it('revisão do Portão 3: duas mudanças seguidas saem uma de cada vez, cada uma com a versão da anterior', async () => {
     api.atualizar
-      .mockResolvedValueOnce(chamado({ ...A, jiraRef: 'SCRUM-9', version: 4 }))
-      .mockResolvedValueOnce(chamado({ ...A, jiraRef: 'SCRUM-9', causaRaiz: 'ia_informacao', version: 5 } as never))
+      .mockResolvedValueOnce(chamado({ ...A, version: 4 }, { jiraRef: 'SCRUM-9' }))
+      .mockResolvedValueOnce(chamado({ ...A, version: 5 }, { jiraRef: 'SCRUM-9', responsavelId: 'eu', responsavel: 'Sueli' }))
     render(<Tela />)
     await screen.findByRole('region', { name: 'Chamado SUP-0001' })
     const jira = screen.getByLabelText('Card no Jira')
