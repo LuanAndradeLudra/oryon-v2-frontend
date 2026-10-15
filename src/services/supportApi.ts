@@ -1,7 +1,7 @@
 import { api } from './api'
 import type { ModeloDoFormulario, OrigemDoProblema, TipoDePedido } from '@/components/support/supportModel'
 import type {
-  AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados,
+  AnexoEnviado, ChamadoDaEmpresa, ChamadoDaEquipe, ConversaDoChamado, EvidenciasDoChamado, FiltrosDaFila, NovoChamado, PaginaDaFila, PaginaDeChamados,
   ResumoDaFila, ResumoDoChamado, ResumoPorVez, SugestoesDoChamado, VezDoChamado,
 } from '@/types/support'
 import type { CausaRaiz, Prioridade } from '@/components/support/fila/modeloDaFila'
@@ -123,6 +123,14 @@ export const adminSupportApi = {
   },
   sugestoes(id: string) {
     return api.get<SugestoesDoChamado>(`/admin/support/tickets/${id}/suggestions`).then((r) => r.data)
+  },
+  /** Acesso auditado (SCRUM-1385): libera a conversa do chamado por 24 h, para quem pediu, com motivo. */
+  liberarConversa(id: string, motivo: string) {
+    return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/conversation-access`, { motivo }).then((r) => r.data)
+  },
+  /** A conversa do chamado; 403 sem o acesso vigente. Cada leitura fica registrada. */
+  conversa(id: string) {
+    return api.get<ConversaDoChamado>(`/admin/support/tickets/${id}/conversation`).then((r) => r.data)
   },
   /** A evidência do chamado (o acesso fica registrado). */
   evidencia(id: string) {

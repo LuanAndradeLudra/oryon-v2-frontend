@@ -1,5 +1,5 @@
 import { Fragment, useState, type RefObject } from 'react'
-import { ArrowLeft, ChevronDown, Download, MessageSquare, Monitor, Wrench } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Download, Eye, MessageSquare, Monitor, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Tabs } from '@/components/ui/Tabs'
 import { showToast } from '@/hooks/useToast'
@@ -14,14 +14,15 @@ import { PrazoNaFila, PrioridadeNaFila, StatusNaFila } from './PecasDaFila'
 import { PropriedadesDaFila } from './PropriedadesDaFila'
 import { CampoUnicoDaFila, type CampoDaFilaRef } from './CampoUnicoDaFila'
 import { AbaEvidencia } from './AbaEvidencia'
+import { AbaConversaDoCliente } from './AbaConversaDoCliente'
 
-type Aba = 'atividade' | 'evidencia' | 'contexto'
+type Aba = 'atividade' | 'evidencia' | 'conversa' | 'contexto'
 
 /**
  * O CHAMADO na fila: cabeçalho (número, empresa, canal; prioridade e status),
  * abas Atividade (um fio só, com as notas internas tracejadas) · Evidência ·
- * Contexto técnico, o campo único no pé e as propriedades numa coluna de 300 px
- * (abaixo de 1280 px, dobráveis no topo). A Conversa do cliente chega na 1385.
+ * Conversa do cliente (acesso auditado, 1385) · Contexto técnico, o campo único
+ * no pé e as propriedades numa coluna de 300 px (abaixo de 1280 px, dobráveis).
  */
 export function DetalheDaFila({ c, agora, colunaCabe, onAtualizar, onRecarregar, onAbrir, onVoltar, campoRef }: {
   c: ChamadoDaEquipe
@@ -83,6 +84,7 @@ export function DetalheDaFila({ c, agora, colunaCabe, onAtualizar, onRecarregar,
             tabs={[
               { id: 'atividade', label: 'Atividade', icon: <MessageSquare className="w-3.5 h-3.5" />, count: c.eventos.length },
               { id: 'evidencia', label: 'Evidência', icon: <Wrench className="w-3.5 h-3.5" /> },
+              ...(c.conversationId ? [{ id: 'conversa' as Aba, label: 'Conversa do cliente', icon: <Eye className="w-3.5 h-3.5" /> }] : []),
               ...(c.contextoTecnico ? [{ id: 'contexto' as Aba, label: 'Contexto técnico', icon: <Monitor className="w-3.5 h-3.5" /> }] : []),
             ]}
             className="border-b-0"
@@ -103,6 +105,7 @@ export function DetalheDaFila({ c, agora, colunaCabe, onAtualizar, onRecarregar,
             )}
             {aba === 'atividade' && <FioDoChamado c={c} interno titulo={null} />}
             {aba === 'evidencia' && <AbaEvidencia c={c} />}
+            {aba === 'conversa' && c.conversationId && <AbaConversaDoCliente c={c} onAtualizar={onAtualizar} />}
             {aba === 'contexto' && c.contextoTecnico && (
               <div className="flex flex-col gap-3">
                 <p className="text-[11px] text-surface-400">Capturado no navegador de quem abriu, no momento em que abriu o formulário. Sem dados pessoais: o endereço vai sem os parâmetros de busca.</p>

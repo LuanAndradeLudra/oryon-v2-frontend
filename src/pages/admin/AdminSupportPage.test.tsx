@@ -19,6 +19,7 @@ vi.mock('@/services/supportApi', () => ({
   adminSupportApi: {
     resumo: vi.fn(), listar: vi.fn(), obter: vi.fn(), atualizar: vi.fn(), anotar: vi.fn(), perguntar: vi.fn(), responder: vi.fn(),
     sugestoes: vi.fn(async () => ({ problemas: [], parecidos: [] })), evidencia: vi.fn(), baixarDossie: vi.fn(), baixarAnexo: vi.fn(),
+    conversa: vi.fn(), liberarConversa: vi.fn(),
   },
 }))
 vi.mock('@/hooks/useToast', async (original) => ({ ...(await original<typeof import('@/hooks/useToast')>()), showToast: vi.fn() }))
@@ -144,6 +145,29 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     const antes = api.obter.mock.calls.length
     fireEvent.click(screen.getByRole('button', { name: 'Assumir (A)' }))
     await waitFor(() => expect(api.obter.mock.calls.length).toBeGreaterThan(antes))
+  })
+
+  it('conversa do cliente (1385): sem acesso pede motivo; aberta, mostra a conversa com as marcadas destacadas', async () => {
+    api.conversa.mockRejectedValueOnce({ response: { status: 403 } })
+    api.liberarConversa.mockResolvedValue(chamado(A, { acessoAteEm: '2026-10-16T10:00:00Z' }))
+    api.conversa.mockResolvedValueOnce({
+      conversationId: 'c1', contatoNome: 'Maria', ate: '2026-10-16T10:00:00Z',
+      mensagens: [
+        { id: 'm1', autor: 'contato', autorNome: null, texto: 'Quanto custa?', enviadaEm: '2026-10-15T10:00:00Z', tipo: 'text', marcada: false },
+        { id: 'm2', autor: 'ia', autorNome: null, texto: 'R$ 50', enviadaEm: '2026-10-15T10:01:00Z', tipo: 'text', marcada: true },
+      ],
+    })
+    render(<Tela />)
+    await screen.findByRole('region', { name: 'Chamado SUP-0001' })
+    fireEvent.click(screen.getByRole('tab', { name: /Conversa do cliente/ }))
+    const abrir = await screen.findByRole('button', { name: /Abrir conversa por 24 h/ })
+    expect(abrir).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Conferir o contexto das respostas marcadas' } })
+    fireEvent.click(abrir)
+    await waitFor(() => expect(api.liberarConversa).toHaveBeenCalledWith(T1, 'Conferir o contexto das respostas marcadas'))
+    expect(await screen.findByText(/Acesso de suporte ativo até/)).toBeInTheDocument()
+    expect(screen.getByText('marcada no chamado')).toBeInTheDocument()
+    expect(screen.getByText('Quanto custa?')).toBeInTheDocument()
   })
 
   it('atalhos: J/K navegam, A assume; dentro de um campo de texto não valem', async () => {
