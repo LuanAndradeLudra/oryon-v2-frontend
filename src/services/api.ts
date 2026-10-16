@@ -594,7 +594,9 @@ function resolveSemanticEvent(
 
 api.interceptors.request.use((config) => {
   config.headers['x-req-t0'] = String(Date.now())
-  config.headers['x-retry-count'] = '0'
+  // A repetição passa de novo por aqui (`api.request(config)`): só começa do
+  // zero na 1ª tentativa — zerar sempre fazia o limite nunca chegar (SCRUM-1161).
+  if (config.headers['x-retry-count'] == null) config.headers['x-retry-count'] = '0'
   // Generate a fresh correlationId per request unless the caller pinned one
   // (e.g. retries reuse the original). Server may echo or replace it.
   const existing = config.headers['x-correlation-id']
@@ -656,15 +658,29 @@ axios.interceptors.request.use((config) => {
 const RETRY_MAX = 2
 const RETRY_STATUS_CODES = new Set([502, 503, 504, 408, 429])
 
+/** Decide se uma falha merece nova tentativa (exportado para teste).
+ *  SCRUM-1161 (15/10): POST/PUT/PATCH/DELETE não são idempotentes — um 502/504
+ *  pode chegar DEPOIS de o backend ter feito o trabalho (ex.: a mensagem já
+ *  foi para o WhatsApp), e repetir duplicava o envio. Escrita só repete em
+ *  429: o limitador recusa antes de processar, então é seguro. */
+export function deveRepetirRequisicao(
+  method: string | undefined,
+  status: number | undefined,
+  code: string | undefined,
+  tentativas: number,
+): boolean {
+  if (tentativas >= RETRY_MAX) return false
+  const leitura = ['get', 'head', 'options'].includes((method ?? 'get').toLowerCase())
+  if (!leitura) return status === 429
+  return (status !== undefined && RETRY_STATUS_CODES.has(status)) || code === 'ECONNRESET'
+}
+
 api.interceptors.response.use(undefined, async (error) => {
   const config = error.config
   if (!config) return Promise.reject(error)
 
   const retryCount = parseInt(config.headers?.['x-retry-count'] ?? '0', 10)
-  const status = error.response?.status
-
-  const isTransient = RETRY_STATUS_CODES.has(status) || error.code === 'ECONNRESET'
-  if (!isTransient || retryCount >= RETRY_MAX) return Promise.reject(error)
+  if (!deveRepetirRequisicao(config.method, error.response?.status, error.code, retryCount)) return Promise.reject(error)
 
   config.headers['x-retry-count'] = String(retryCount + 1)
   const delay = 500 * Math.pow(2, retryCount) // 500ms, 1000ms
@@ -1057,14 +1073,22 @@ export const messagesApi = {
       // deixa o axios computar o Content-Type certo (com boundary) sozinho a
       // partir do FormData, que é o único jeito confiável de acertar o
       // boundary — ele muda a cada requisição.
+      // SCRUM-1161: o POST só volta depois de subir o arquivo E a Meta aceitar.
+      // Com os 30 s padrão, um vídeo grande numa rede lenta "falhava" no
+      // navegador enquanto o servidor terminava e enviava — e Tentar de novo
+      // duplicava. 16 MB (teto do anexo) a ~1 Mbit/s ≈ 2 min.
       return api.post<Message>(`/conversations/${conversationId}/messages`, formData, {
         headers: { 'Content-Type': undefined },
+        timeout: TEMPO_LIMITE_ENVIO_COM_ARQUIVO,
       })
     }
 
     return api.post<Message>(`/conversations/${conversationId}/messages`, dto)
   },
 }
+
+/** Tempo limite do envio com arquivo (ver `messagesApi.send`). */
+export const TEMPO_LIMITE_ENVIO_COM_ARQUIVO = 180_000
 
 export const tagsApi = {
   async list() {
