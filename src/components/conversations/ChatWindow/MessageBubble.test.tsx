@@ -5,7 +5,7 @@
 // image/video/document não estavam em STRUCTURED_TYPES.
 import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
-import { TextContent } from './MessageBubble'
+import { TextContent, legendaDaMidia, textoDoDocumento } from './MessageBubble'
 import type { Message } from '@/types'
 
 const baseMessage: Message = {
@@ -51,5 +51,31 @@ describe('TextContent', () => {
     expect(loc.textContent).toBe('')
     const { container: reac } = render(<TextContent message={{ ...baseMessage, type: 'reaction', body: '👍' }} />)
     expect(reac.textContent).toBe('')
+  })
+})
+
+// SCRUM-1161 (produção 15/10): imagem enviada pelo operador com texto — o
+// texto estava só em `body` e a bolha lia a legenda só de `mediaCaption`.
+describe('legendaDaMidia / textoDoDocumento', () => {
+  it('imagem/vídeo do operador (linha antiga, mediaCaption null): usa o body', () => {
+    expect(legendaDaMidia({ ...baseMessage, direction: 'outbound', type: 'image', body: 'Segue o pedido', mediaCaption: null } as unknown as Message)).toBe('Segue o pedido')
+    expect(legendaDaMidia({ ...baseMessage, direction: 'outbound', type: 'video', body: 'Veja', mediaCaption: undefined })).toBe('Veja')
+  })
+
+  it('recebimento (body = mediaCaption): uma legenda só', () => {
+    expect(legendaDaMidia({ ...baseMessage, type: 'image', body: 'Oi', mediaCaption: 'Oi' })).toBe('Oi')
+  })
+
+  it('sem texto: null', () => {
+    expect(legendaDaMidia({ ...baseMessage, type: 'image' })).toBeNull()
+  })
+
+  it('documento com texto do operador: mostra o texto (título segue o nome do arquivo)', () => {
+    expect(textoDoDocumento({ ...baseMessage, type: 'document', body: 'Assine e devolva', mediaCaption: 'contrato.pdf' })).toBe('Assine e devolva')
+  })
+
+  it('documento recebido com legenda (body = mediaCaption): não repete', () => {
+    expect(textoDoDocumento({ ...baseMessage, type: 'document', body: 'Exame', mediaCaption: 'Exame' })).toBeNull()
+    expect(textoDoDocumento({ ...baseMessage, type: 'document', mediaCaption: 'a.pdf' })).toBeNull()
   })
 })

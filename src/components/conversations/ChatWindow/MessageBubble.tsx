@@ -1,10 +1,11 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, AlertTriangle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, MoreHorizontal, Workflow,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, MoreHorizontal, Workflow, RefreshCw,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { failureReason } from '@/lib/messageStatus'
+import { filaDeEnvio, useEstadoNaFila } from '@/lib/filaDeEnvio'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { Avatar } from '@/components/ui/Avatar'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -420,8 +421,8 @@ function MediaContent({
           onError={() => setImageError(true)}
           onClick={() => openViewer(message)}
         />
-        {message.mediaCaption && (
-          <p className="text-xs mt-1 text-current opacity-80">{message.mediaCaption}</p>
+        {legendaDaMidia(message) && (
+          <p className="text-xs mt-1 text-current opacity-80 whitespace-pre-wrap break-words">{legendaDaMidia(message)}</p>
         )}
       </div>
     )
@@ -529,7 +530,15 @@ function MediaContent({
   }
 
   if (message.type === 'document' && message.mediaUrl) {
-    return <DocumentCard message={message} onOpen={() => openViewer(message)} />
+    const texto = textoDoDocumento(message)
+    return (
+      <>
+        <DocumentCard message={message} onOpen={() => openViewer(message)} />
+        {texto && (
+          <p className="text-xs mt-1 text-current opacity-80 whitespace-pre-wrap break-words">{texto}</p>
+        )}
+      </>
+    )
   }
 
   if (message.type === 'video' && message.mediaUrl) {
@@ -543,8 +552,8 @@ function MediaContent({
         >
           Seu navegador não suporta o elemento de vídeo.
         </video>
-        {message.mediaCaption && (
-          <p className="text-xs mt-1 text-current opacity-80">{message.mediaCaption}</p>
+        {legendaDaMidia(message) && (
+          <p className="text-xs mt-1 text-current opacity-80 whitespace-pre-wrap break-words">{legendaDaMidia(message)}</p>
         )}
       </div>
     )
@@ -603,6 +612,23 @@ function MediaContent({
   return null
 }
 
+/** Legenda de imagem/vídeo (SCRUM-1161, produção 15/10). No recebimento,
+ *  `body` e `mediaCaption` são a mesma legenda; no envio pelo operador, o
+ *  texto digitado ia só em `body` e a linha ficava com `mediaCaption` NULL.
+ *  O backend agora grava os dois; o `|| body` cobre as linhas antigas. Sem
+ *  risco de duplicar: `TextContent` não desenha `body` desses tipos. */
+export function legendaDaMidia(message: Message): string | null {
+  return message.mediaCaption || message.body || null
+}
+
+/** Texto enviado junto com um documento: `mediaCaption` é o título do card
+ *  (nome do arquivo) e o texto digitado fica em `body`. No recebimento os
+ *  dois são a mesma legenda — aí o card já mostra e não repete. */
+export function textoDoDocumento(message: Message): string | null {
+  if (!message.body || message.body === message.mediaCaption) return null
+  return message.body
+}
+
 // Exportado só pra teste (src/.../MessageBubble.test.tsx) — sem hooks, dá pra
 // renderizar isolado sem mockar mídia autenticada/áudio do componente principal.
 export function TextContent({ message }: { message: Message }) {
@@ -620,6 +646,8 @@ export function TextContent({ message }: { message: Message }) {
 
 export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply, contact, onJumpToMessage, highlighted }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
+  // SCRUM-1161: bolha ainda na fila de envio desta aba (lib/filaDeEnvio).
+  const estadoNaFila = useEstadoNaFila(message.id)
   const isSameDirection = prevMessage?.direction === message.direction
   // Extra top spacing when a new sender run starts (the avatar sits above).
   const gap = showAvatar ? 'mt-3' : isSameDirection ? 'mt-1' : 'mt-3'
@@ -778,6 +806,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
             showAvatar && isOutbound && 'rounded-br-[3px]',
             showAvatar && !isOutbound && 'rounded-bl-[3px]',
             highlighted && 'animate-msg-highlight',
+            estadoNaFila === 'retida' && 'opacity-60',
           )}
           style={isOutbound ? { boxShadow: 'var(--bubble-shadow-soft)' } : undefined}
         >
@@ -868,6 +897,25 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
             Falha no envio{failureReason(message) ? `: ${failureReason(message)}` : ''}
           </p>
         )}
+        {estadoNaFila === 'falhou' && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <button
+              type="button"
+              onClick={() => filaDeEnvio.tentarDeNovo(message.id)}
+              className="relative after:absolute after:-inset-1.5 after:content-[''] inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] border border-white/20 bg-white/10 hover:bg-white/15 text-[12px] font-semibold text-bubble-out-fg whitespace-nowrap transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Tentar de novo
+            </button>
+            <button
+              type="button"
+              onClick={() => filaDeEnvio.descartar(message.id)}
+              className="relative after:absolute after:-inset-1.5 after:content-[''] inline-flex items-center h-7 px-2.5 rounded-[6px] text-[12px] font-semibold text-bubble-out-time hover:text-bubble-out-fg whitespace-nowrap transition-colors"
+            >
+              Descartar
+            </button>
+          </div>
+        )}
 
         {/* Phase 33c — phantom-confirmation flag: the anti-claim guard caught
             the AI claiming an action it never executed on this turn. Shown as a
@@ -918,6 +966,21 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           </>
         )}
         </div>
+        {estadoNaFila === 'retida' && (
+          <p className="flex items-center gap-1.5 text-[11px] text-surface-500 mt-1 whitespace-nowrap">
+            Aguardando a mensagem anterior
+            <span aria-hidden>·</span>
+            {/* Sem isto, o único jeito de não mandar a retida era descartar a
+                que falhou — e aí ela saía sozinha. */}
+            <button
+              type="button"
+              onClick={() => filaDeEnvio.descartar(message.id)}
+              className="relative after:absolute after:-inset-1.5 after:content-[''] font-medium text-surface-400 hover:text-surface-100 underline-offset-2 hover:underline transition-colors"
+            >
+              Cancelar
+            </button>
+          </p>
+        )}
       </div>
     </div>
   )

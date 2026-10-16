@@ -1,7 +1,7 @@
 import { useCallback, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import {
   Send, Paperclip, AlertTriangle, Zap, Image, FileText, Video, ChevronDown,
-  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2, Settings2,
+  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Settings2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
@@ -54,6 +54,10 @@ function fileIcon(file: File) {
 
 /** Limite de texto do WhatsApp Cloud API (mensagem de texto). */
 const WA_TEXT_LIMIT = 4096
+/** Legenda de imagem/vídeo/documento na Meta (SCRUM-1161). O backend manda
+ *  "Nome:
+<texto>", então o teto do texto desconta o prefixo. */
+const WA_CAPTION_LIMIT = 1024
 
 /**
  * SCRUM-1253 (PO, 07/10): janela de 24h fechada (aviso) e aberta (campo) ocupam
@@ -68,12 +72,9 @@ const FAIXA_ATALHOS = 'mt-2 h-6'
 
 interface MessageInputProps {
   /**
-   * Returns a promise that rejects on send failure (e.g. backend rejected
-   * with 403 because the user has no department configured). On rejection
-   * the text-only path leaves the typed text gone from the input — the
-   * optimistic bubble it already rendered (see `useMessages.sendMessage`)
-   * flips to `failed` instead, so the attempt stays visible in the thread
-   * rather than dumped back into the composer.
+   * Põe a mensagem na fila de envio da conversa (lib/filaDeEnvio) e volta na
+   * hora — o campo não espera o envio. Uma falha aparece na própria bolha
+   * (Tentar de novo / Descartar), nunca devolve texto ou anexo ao campo.
    */
   onSend: (dto: SendMessageDto) => Promise<unknown> | void
   /** Used only by the "Escolher template" flow (24h window closed) to call
@@ -184,9 +185,13 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
   const [activeIndex, setActiveIndex] = useState(0)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [attachments, setAttachments] = useState<StagedAttachment[]>([])
+  // Com anexo, o texto vira legenda do 1º arquivo: o teto é o da legenda.
+  const limiteDoTexto = attachments.length > 0
+    ? WA_CAPTION_LIMIT - ((autor?.firstName ?? '').length + 2)
+    : WA_TEXT_LIMIT
+  const textoPassaDoLimite = text.trim().length > limiteDoTexto
   const [dragOver, setDragOver] = useState(false)
   // id do anexo cujo POST está em voo (envio sequencial) — dirige o spinner.
-  const [uploadingId, setUploadingId] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   // Refs used by the outside-click handler below so a mousedown on the
@@ -353,72 +358,46 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
     setTimeout(() => textareaRef.current?.focus(), 0)
   }
 
-  const handleSend = async () => {
+  const handleSend = () => {
     const trimmed = text.trim()
-    // Envia com texto E/OU anexos. Só bloqueia quando não há nada dos dois —
-    // NÃO espera o envio anterior terminar: várias mensagens podem estar em
-    // voo ao mesmo tempo (eco otimista trata cada uma como sua própria bolha,
-    // ver useMessages.sendMessage), então o campo não trava entre elas.
+    // Envia com texto E/OU anexos. Só bloqueia quando não há nada dos dois.
     if ((!trimmed && attachments.length === 0) || disabled) return
+    // O backend recusaria (400) — avisa aqui, sem limpar o campo.
+    if (textoPassaDoLimite) return
 
-    // Snapshot para restaurar em caso de falha total do caminho com anexos.
-    const previousText = text
     const staged = attachments
+    const replyWamid = replyTo?.wamid ?? undefined
 
-    // Limpa o texto de forma otimista (vira legenda do 1º anexo, se houver).
+    // SCRUM-1161 (PO 15/10, opção A): texto E anexos saem do campo na hora —
+    // o andamento fica só na bolha (fila de envio da conversa, ver
+    // lib/filaDeEnvio). Antes o anexo ficava girando aqui até a Meta
+    // responder, e um novo Enter o reenviava. Falha = a bolha mostra
+    // Tentar de novo / Descartar; nada volta para o campo.
     setText('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
+    setAttachments([])
+    onCancelReply?.()
 
-    // Caminho texto puro (sem anexos) — comportamento original.
     if (staged.length === 0) {
-      try {
-        await onSend({ body: trimmed, replyToWamid: replyTo?.wamid ?? undefined })
-        onCancelReply?.()
-      } catch {
-        // Falha (ex.: 403 sem setor) — a bolha otimista já virou `failed` no
-        // hook (useMessages.sendMessage); o texto NÃO volta pro campo, fica
-        // visível na própria bolha da conversa. O toast é exibido pelo
-        // handler no nível da página.
-      }
+      void onSend({ body: trimmed, replyToWamid: replyWamid })
       return
     }
 
-    // Com anexos: 1 POST por arquivo, em sequência (cada um vira seu balão/
-    // status e evita burst na Meta API). O texto vira legenda só do 1º arquivo
-    // (decisão SCRUM-269); idem o reply. Cada card fica visível com um spinner
-    // enquanto seu upload está em voo (uploadingId) e some ao concluir; os que
-    // falham permanecem no preview para nova tentativa.
-    const failed: StagedAttachment[] = []
-    for (let i = 0; i < staged.length; i++) {
-      const item = staged[i]
-      setUploadingId(item.id)
-      try {
-        // Achado 2026-09-23: mandar o nome do arquivo aqui incondicionalmente
-        // contornava a regra do backend (resolveMediaCaption, SCRUM-1158) —
-        // pra ele, um mediaCaption não-vazio é indistinguível de uma legenda
-        // digitada de verdade, então a imagem/vídeo acabava com o nome do
-        // arquivo como legenda mesmo depois daquele fix. mediaCaption só faz
-        // sentido pra DOCUMENTO (vira o título do card); pra imagem/vídeo, a
-        // decisão de "sem legenda" fica só a cargo do backend.
-        await onSend({
-          file: item.file,
-          mediaCaption: inferMessageType(item.file.type) === 'document' ? item.file.name : undefined,
-          body: i === 0 ? trimmed || undefined : undefined,
-          replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
-          clientThumbnailUrl: item.thumbnailUrl,
-        })
-        setAttachments((prev) => prev.filter((a) => a.id !== item.id))
-        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
-      } catch {
-        failed.push(item)
-      }
-    }
-    setUploadingId(null)
-
-    if (failed.length < staged.length) onCancelReply?.()
-    // Se TUDO falhou, devolve o texto (era a legenda do 1º). Os anexos que
-    // falharam seguem no preview (nunca removidos do estado).
-    if (failed.length === staged.length) setText(previousText)
+    // 1 mensagem por arquivo, na ordem; o texto vira legenda só do 1º
+    // (decisão SCRUM-269), idem o reply.
+    staged.forEach((item, i) => {
+      // Achado 2026-09-23: mediaCaption só para DOCUMENTO (título do card);
+      // para imagem/vídeo o nome do arquivo não pode virar legenda.
+      void onSend({
+        file: item.file,
+        mediaCaption: inferMessageType(item.file.type) === 'document' ? item.file.name : undefined,
+        body: i === 0 ? trimmed || undefined : undefined,
+        replyToWamid: i === 0 ? replyWamid : undefined,
+        clientThumbnailUrl: item.thumbnailUrl,
+      })
+      // A bolha usa o próprio blob do arquivo; o da prévia do campo já não serve.
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+    })
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -750,14 +729,10 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
             <div className="flex flex-wrap gap-2 mb-2.5 pb-2.5 border-b border-surface-700">
               {attachments.map((att) => {
                 const Icon = fileIcon(att.file)
-                const isUploading = att.id === uploadingId
                 return (
                   <div
                     key={att.id}
-                    className={cn(
-                      'flex items-center gap-2 bg-[var(--sf2)]/80 border border-surface-600 rounded-[10px] pl-2 pr-1.5 py-1.5 max-w-[220px]',
-                      isUploading && 'opacity-80'
-                    )}
+                    className="flex items-center gap-2 bg-[var(--sf2)]/80 border border-surface-600 rounded-[10px] pl-2 pr-1.5 py-1.5 max-w-[220px]"
                   >
                     <div className="relative w-8 h-8 flex-shrink-0">
                       {att.previewUrl ? (
@@ -771,11 +746,6 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                           <Icon className="w-4 h-4 text-surface-300" />
                         </div>
                       )}
-                      {isUploading && (
-                        <div className="absolute inset-0 rounded bg-black/55 flex items-center justify-center">
-                          <Loader2 className="w-4 h-4 text-white animate-spin" />
-                        </div>
-                      )}
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] font-medium text-surface-200 truncate">{att.file.name}</p>
@@ -784,7 +754,6 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                     <button
                       type="button"
                       onClick={() => removeAttachment(att.id)}
-                      disabled={uploadingId !== null}
                       title="Remover anexo"
                       aria-label={`Remover ${att.file.name}`}
                       className="w-5 h-5 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9 flex items-center justify-center rounded text-surface-400 hover:text-surface-100 hover:bg-surface-600 transition-colors flex-shrink-0 disabled:opacity-40 disabled:hover:bg-transparent"
@@ -903,15 +872,17 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
 
             {/* Contador de caracteres — só aparece perto do limite do WhatsApp
                 (4096); antes disso é ruído. Âmbar ao se aproximar, vermelho no teto. */}
-            {text.length >= WA_TEXT_LIMIT - 300 && (
+            {text.length >= limiteDoTexto - (attachments.length > 0 ? 100 : 300) && (
               <span
                 aria-live="polite"
+                data-testid="contador-de-caracteres"
+                title={attachments.length > 0 ? 'Com anexo, o texto vai como legenda do arquivo, que tem limite menor no WhatsApp' : undefined}
                 className={cn(
-                  'text-[11px] tabular-nums flex-shrink-0',
-                  text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
+                  'text-[11px] tabular-nums flex-shrink-0 whitespace-nowrap',
+                  text.length >= limiteDoTexto ? 'text-danger font-semibold' : 'text-warning',
                 )}
               >
-                {text.length}/{WA_TEXT_LIMIT}
+                {textoPassaDoLimite ? `Legenda até ${limiteDoTexto} caracteres · ` : ''}{text.length}/{limiteDoTexto}
               </span>
             )}
 
@@ -935,7 +906,7 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
                   size="sm"
                   variant="primary"
                   onClick={handleSend}
-                  disabled={disabled}
+                  disabled={disabled || textoPassaDoLimite}
                   aria-label="Enviar mensagem"
                   leftIcon={<Send className="w-3.5 h-3.5" />}
                   className="[@media(pointer:coarse)]:h-11"
