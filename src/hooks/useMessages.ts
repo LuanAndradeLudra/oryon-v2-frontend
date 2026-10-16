@@ -2,11 +2,38 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { messagesApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import { usarPreBusca } from '@/lib/preBusca'
-import { inferMessageType } from '@/lib/inferMessageType'
 import { applyStatusUpdate } from '@/lib/messageStatus'
+import { filaDeEnvio as filaPadrao, type FilaDeEnvio } from '@/lib/filaDeEnvio'
 import type { Message, SendMessageDto, SocketAnomalyReviewed, SocketMediaReady, SocketMessageStatus } from '@/types'
 
-export function useMessages(conversationId: string | null) {
+/** 1ª página + o que já está na tela e a página não trouxe (SCRUM-1161).
+ *  Ao abrir a conversa a lista começa com as bolhas da fila; enquanto a
+ *  página carrega, chegam confirmações de envio e mensagens do socket. A
+ *  busca pode ter saído ANTES delas existirem no servidor — substituir a
+ *  lista as apagava da tela. */
+function mesclarPrimeiraPagina(pagina: Message[], naTela: Message[]): Message[] {
+  const ids = new Set(pagina.map((m) => m.id))
+  const faltando = naTela.filter((m) => !ids.has(m.id))
+  return faltando.length ? [...pagina, ...faltando] : pagina
+}
+
+/** Troca a bolha temporária pela real NO MESMO LUGAR (SCRUM-1161): antes ia
+ *  para o fim da lista e o documento "pulava" para baixo do texto enviado
+ *  depois. A miniatura do navegador fica até a do servidor chegar
+ *  (homologação 06/10, SCRUM-1253). */
+function trocarPelaReal(lista: Message[], tempId: string, real: Message, miniatura?: string): Message[] {
+  const comMiniatura = (m: Message) => (m.mediaThumbnailUrl ? m : { ...m, mediaThumbnailUrl: miniatura })
+  if (lista.some((m) => m.id === real.id)) {
+    // O eco do socket já trouxe a real: só tira a temporária.
+    return lista.filter((m) => m.id !== tempId).map((m) => (m.id === real.id ? comMiniatura(m) : m))
+  }
+  if (!lista.some((m) => m.id === tempId)) return [...lista, comMiniatura(real)]
+  return lista.map((m) => (m.id === tempId ? comMiniatura(real) : m))
+}
+
+/** `usuarioId`: o atendente desta aba — só o eco do socket de uma mensagem
+ *  DELE pode ocupar o lugar de uma bolha temporária (ver addIncomingMessage). */
+export function useMessages(conversationId: string | null, fila: FilaDeEnvio = filaPadrao, usuarioId?: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(false)
@@ -36,7 +63,8 @@ export function useMessages(conversationId: string | null) {
       const { data } = await (pre ? pre.catch(buscar) : buscar())
       if (!valeAinda()) return
       if (reset) {
-        setMessages(data.data.reverse())
+        const pagina = data.data.reverse()
+        setMessages((naTela) => mesclarPrimeiraPagina(pagina, naTela))
         pageRef.current = 2
       } else {
         setMessages((prev) => [...data.data.reverse(), ...prev])
@@ -54,18 +82,50 @@ export function useMessages(conversationId: string | null) {
 
   useEffect(() => {
     if (conversationId) {
-      setMessages([])
+      setMessages(fila.pendentes(conversationId))
       fetchMessages(true)
     }
-  }, [conversationId, fetchMessages])
+  }, [conversationId, fetchMessages, fila])
+
+  // Fila de envio (lib/filaDeEnvio): bolhas otimistas, confirmação e descarte.
+  useEffect(() => {
+    if (!conversationId) return
+    return fila.assinar((e) => {
+      if (e.conversationId !== conversationId) return
+      if (e.tipo === 'mudou') {
+        setMessages((prev) => (prev.some((m) => m.id === e.mensagem.id)
+          ? prev.map((m) => (m.id === e.mensagem.id ? e.mensagem : m))
+          : [...prev, e.mensagem]))
+      } else if (e.tipo === 'confirmado') {
+        setMessages((prev) => trocarPelaReal(prev, e.tempId, e.mensagem, e.clientThumbnailUrl))
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== e.tempId))
+      }
+    })
+  }, [conversationId, fila])
 
   const addIncomingMessage = useCallback((message: Message) => {
     setMessages((prev) => {
       // Deduplicate by id to prevent double-rendering from overlapping socket events
       if (prev.some((m) => m.id === message.id)) return prev
+      // Eco do socket da mensagem que ESTA aba está enviando (chega antes da
+      // resposta do POST): entra no lugar da bolha temporária, não no fim —
+      // senão passava à frente das que ainda estão na fila. Casa por tipo e
+      // texto; só uma mensagem por conversa está em envio de cada vez.
+      const emEnvio = conversationId ? fila.emEnvio(conversationId) : undefined
+      if (
+        emEnvio && message.direction === 'outbound' && message.senderKind === 'operator'
+        && (!usuarioId || (message.sentByUser?.id ?? message.sentByUserId) === usuarioId)
+        && message.type === emEnvio.type && (message.body ?? null) === (emEnvio.body ?? null)
+        && prev.some((m) => m.id === emEnvio.id)
+      ) {
+        return prev.map((m) => (m.id === emEnvio.id
+          ? { ...message, mediaThumbnailUrl: message.mediaThumbnailUrl ?? emEnvio.mediaThumbnailUrl }
+          : m))
+      }
       return [...prev, message]
     })
-  }, [])
+  }, [conversationId, fila, usuarioId])
 
   // Casa por id OU wamid, respeita a conversa e nunca regride o status
   // (lib/messageStatus). O payload do socket não traz `timestamp`: os
@@ -99,99 +159,15 @@ export function useMessages(conversationId: string | null) {
     )
   }, [])
 
+  /** Põe na fila de envio desta conversa e volta na hora (a bolha aparece
+   *  como `sending`). Falhas chegam por `aoFalhar` — o envio continua mesmo
+   *  se o atendente trocar de conversa. */
   const sendMessage = useCallback(
-    async (dto: SendMessageDto) => {
+    (dto: SendMessageDto, aoFalhar?: (err: unknown) => void) => {
       if (!conversationId) return
-
-      // Eco otimista — texto E anexo, do mesmo jeito: a bolha (com a mídia
-      // já visível, via blob: local) aparece na hora, com status `sending`
-      // (cai no ícone de relógio que `StatusIcon` já usa como fallback). O
-      // POST é síncrono até a API do WhatsApp responder (pode levar
-      // segundos) e SÓ ENTÃO devolve a mensagem salva; sem isto a bolha não
-      // aparecia até o fim desse round-trip inteiro. Reconciliada com a
-      // mensagem real — ou marcada `failed` — quando a resposta chega.
-      const tempId = `pending-${crypto.randomUUID()}`
-      // blob: local do arquivo — o mesmo <img>/<audio>/link da bolha real
-      // já aceita sem nenhuma mudança (useAuthenticatedMediaSrc devolve a
-      // blob: URL tal como está, ver mediaUrls.ts). Só revogada no sucesso;
-      // numa falha ela continua servindo de preview na bolha `failed`.
-      const objectUrl = dto.file ? URL.createObjectURL(dto.file) : null
-      const now = new Date().toISOString()
-      setMessages((prev) => [...prev, {
-        id: tempId,
-        conversationId,
-        direction: 'outbound',
-        type: dto.file ? inferMessageType(dto.file.type) : 'text',
-        status: 'sending',
-        body: dto.body,
-        mediaUrl: objectUrl ?? undefined,
-        mediaCaption: dto.mediaCaption,
-        // Miniatura renderizada no navegador (só PDF) — some assim que a
-        // real (gerada no servidor) chega, ver o `?? ` na troca abaixo.
-        mediaThumbnailUrl: dto.clientThumbnailUrl,
-        contextWamid: dto.replyToWamid,
-        senderKind: 'operator',
-        sentAt: now,
-        createdAt: now,
-      }])
-
-      try {
-        const { data } = await messagesApi.send(conversationId, dto)
-        // Trocou de conversa durante o envio: a mensagem já está salva no
-        // servidor e aparece quando voltar — não entra na lista da outra.
-        if (conversaAtual.current !== conversationId) {
-          if (objectUrl) URL.revokeObjectURL(objectUrl)
-          return
-        }
-        // Substitui a bolha otimista pela real. Se o socket `message:new`
-        // já tiver entregue a mesma mensagem enquanto o POST ainda estava em
-        // voo (self-echo — ver handler em ChatWindow), ela já está na lista
-        // por id: só tira a temporária, sem duplicar.
-        setMessages((prev) => {
-          const withoutTemp = prev.filter((m) => m.id !== tempId)
-          // Homologação 06/10 (SCRUM-1253): o eco do socket chega SEM a
-          // miniatura (gerada depois, fila assíncrona) — manter a do navegador
-          // até `message:media-ready`, senão o PDF pisca para o balão genérico.
-          if (withoutTemp.some((m) => m.id === data.id)) {
-            return withoutTemp.map((m) => (m.id === data.id && !m.mediaThumbnailUrl
-              ? { ...m, mediaThumbnailUrl: dto.clientThumbnailUrl } : m))
-          }
-          // A miniatura real (gerada no servidor, fila assíncrona) ainda não
-          // chegou neste ponto — sem isto, a miniatura do navegador
-          // desapareceria por alguns segundos bem na hora em que o status
-          // vira "enviado", até `message:media-ready` repor. `data` sempre
-          // vence quando já tiver a sua própria (nunca deveria acontecer tão
-          // rápido, mas não custa a guarda).
-          const merged = { ...data, mediaThumbnailUrl: data.mediaThumbnailUrl ?? dto.clientThumbnailUrl }
-          return [...withoutTemp, merged]
-        })
-        if (objectUrl) URL.revokeObjectURL(objectUrl)
-      } catch (err) {
-        // A bolha fica marcada como falha em vez de sumir — o operador vê o
-        // que tentou mandar (texto ou mídia) e decide reenviar, em vez de
-        // perder de vista (o backend nunca chega a salvar nada quando a
-        // chamada à Meta falha, então não há mensagem real para reconciliar
-        // aqui — e o objectUrl não é revogado, a bolha falha ainda usa ele).
-        // Com o ciclo "gravar antes" o backend já persistiu a linha `failed`
-        // e a devolve em `failedMessage`: troca a bolha otimista por ela
-        // (sem duplicar). Backend antigo não manda o campo → só marca falha.
-        const failedMessage = (err as { response?: { data?: { failedMessage?: Message } } })?.response?.data
-          ?.failedMessage
-        if (failedMessage && objectUrl) URL.revokeObjectURL(objectUrl) // a bolha passa a usar a URL do servidor
-        if (conversaAtual.current !== conversationId) throw err
-        setMessages((prev) => {
-          if (failedMessage) {
-            const withoutTemp = prev.filter((m) => m.id !== tempId)
-            return withoutTemp.some((m) => m.id === failedMessage.id) ? withoutTemp : [...withoutTemp, failedMessage]
-          }
-          return prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
-        })
-        // Re-throw so the caller (MessageInput / ChatWindow) can show a
-        // toast and decide whether to keep the typed text.
-        throw err
-      }
+      fila.enfileirar(conversationId, dto, aoFalhar)
     },
-    [conversationId],
+    [conversationId, fila],
   )
 
   return {

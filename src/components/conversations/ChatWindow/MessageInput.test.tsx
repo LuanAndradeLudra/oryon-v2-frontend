@@ -194,3 +194,27 @@ describe('MessageInput — limite da legenda com anexo (SCRUM-1161)', () => {
     expect(screen.queryByTestId('contador-de-caracteres')).toBeNull()
   })
 })
+
+// SCRUM-1161 (PO 15/10, opção A): o anexo sai do campo ao clicar em Enviar —
+// antes ficava girando até a Meta responder, e um novo Enter o reenviava.
+describe('MessageInput — anexo sai do campo ao enviar (SCRUM-1161)', () => {
+  it('campo livre na hora e um novo envio não repete o arquivo', async () => {
+    const onSend = vi.fn((_dto: SendMessageDto) => new Promise<void>(() => {})) // envio "demorado"
+    render(<MemoryRouter><ContextMenuProvider><MessageInput onSend={onSend} contactId="c1" windowOpen /></ContextMenuProvider></MemoryRouter>)
+    const textarea = screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas') as HTMLTextAreaElement
+    fireEvent.drop(textarea.closest('.msg-composer') as HTMLElement, { dataTransfer: { types: ['Files'], files: [new File([new Uint8Array(1)], 'foto.png', { type: 'image/png' })] } })
+    await waitFor(() => expect(screen.getByText('foto.png')).toBeInTheDocument())
+
+    fireEvent.change(textarea, { target: { value: 'legenda' } })
+    fireEvent.click(screen.getByLabelText('Enviar mensagem'))
+    expect(screen.queryByText('foto.png')).toBeNull()
+    expect(textarea.value).toBe('')
+
+    fireEvent.change(textarea, { target: { value: 'outra mensagem' } })
+    fireEvent.keyDown(textarea, { key: 'Enter' })
+    expect(onSend.mock.calls.map((c) => ({ file: c[0].file?.name, body: c[0].body }))).toEqual([
+      { file: 'foto.png', body: 'legenda' },
+      { file: undefined, body: 'outra mensagem' },
+    ])
+  })
+})

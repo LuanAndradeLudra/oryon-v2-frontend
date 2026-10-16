@@ -63,13 +63,13 @@ export function ChatWindow({
   onSendError, sendBlockedReason,
   onBack,
 }: ChatWindowProps) {
+  const { user } = useAuth()
   const { messages, loading, carregadaPara, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, updateMediaThumbnail, markAnomaliesReviewed } =
-    useMessages(conversation?.id ?? null)
+    useMessages(conversation?.id ?? null, undefined, user?.id)
 
   // T4 fase 1 — eventos da IA e da equipe entre as mensagens. SCRUM-1253 (PO,
   // 06/10): a rotina aparece SEMPRE por padrão; a URL guarda só a escolha de
   // ocultar (`eventos-ocultos=1`). O antigo `eventos=1` era o padrão invertido.
-  const { user } = useAuth()
   const meuNome = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null
   const ultimaMensagem = messages.length ? messages[messages.length - 1] : null
   const eventos = useEventosDaConversa(conversation?.id ?? null, { ultima: ultimaMensagem, carregando: loading }, meuNome)
@@ -82,15 +82,11 @@ export function ChatWindow({
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   useEffect(() => { setReplyTo(null) }, [conversation?.id])
 
-  // Wrap sendMessage so the page-level handler hears about failures.
-  // Re-throws so the MessageInput's restore-text-on-failure path still runs.
-  const handleSendWithErrorReporting = async (dto: Parameters<typeof sendMessage>[0]) => {
-    try {
-      await sendMessage(dto)
-    } catch (err) {
-      onSendError?.(err)
-      throw err
-    }
+  // A mensagem entra na fila de envio da conversa (lib/filaDeEnvio) e o
+  // campo fica livre na hora; uma falha chega depois, pelo `aoFalhar`, e
+  // vira o toast da página — a bolha que falhou mostra Tentar de novo.
+  const handleSendWithErrorReporting = (dto: Parameters<typeof sendMessage>[0]) => {
+    sendMessage(dto, (err) => onSendError?.(err))
   }
 
   // Listen to socket events for real-time message updates in the active chat

@@ -51,11 +51,10 @@ describe('useMessages — troca de conversa no meio da carga', () => {
     const { result, rerender } = renderHook(({ id }) => useMessages(id), { initialProps: { id: 'A' } })
     await act(async () => { listas.A[0].resolve({ data: { data: [] } }) })
 
-    let envio: Promise<void> | undefined
-    act(() => { envio = result.current.sendMessage({ body: 'oi' } as never) })
+    act(() => { result.current.sendMessage({ body: 'oi' } as never) })
     rerender({ id: 'B' })
     await act(async () => { listas.B[0].resolve({ data: { data: [msg('b1', 'B')] } }) })
-    await act(async () => { envios[0].resolve({ data: { ...msg('a-enviada', 'A'), direction: 'outbound' } }); await envio })
+    await act(async () => { envios[0].resolve({ data: { ...msg('a-enviada', 'A'), direction: 'outbound' } }) })
 
     expect(result.current.messages.map((m) => m.id)).toEqual(['b1'])
   })

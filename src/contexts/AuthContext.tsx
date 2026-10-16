@@ -9,6 +9,7 @@ import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBa
 import { SKIP_AUTH_REFRESH, renovarSessao } from '@/services/api'
 import { resetBillingState } from '@/hooks/useBilling'
 import { resetLinhasComIA } from '@/hooks/useLinhasComIA'
+import { filaDeEnvio } from '@/lib/filaDeEnvio'
 import { limparSessao } from '@/lib/limpezaDaSessao'
 
 // Ensure ALL axios requests send httpOnly cookies
@@ -218,6 +219,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // saldo/plano do tenant que saiu para a próxima sessão.
     resetBillingState()
     resetLinhasComIA()
+    // Fila de envio do chat (SCRUM-1161): nada da sessão que saiu é enviado.
+    filaDeEnvio.limpar()
     limparSessao()
     try {
       const body = isNativePlatform() ? { refreshToken: refreshToken ?? undefined } : {}
