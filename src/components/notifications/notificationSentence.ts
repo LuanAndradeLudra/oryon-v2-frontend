@@ -47,6 +47,25 @@ type Meta = NonNullable<AppNotification['metadata']> & {
   lastSenderName?: string
   mentionedBy?: { name?: string }
   affectedCount?: number
+  /** Cobrança (billing-notifications.listener): evento de origem, ex. `invoice.overdue`. */
+  event?: string
+}
+
+/** Integração 1200 (16/10): tom dos avisos de cobrança pelo evento de origem.
+ *  Sem isto caíam no genérico, sem a cor de estado que os demais tipos têm. */
+const TOM_DA_COBRANCA: Record<string, Tone> = {
+  'account.suspended': 'danger',
+  'invoice.overdue': 'danger',
+  'payment.failed': 'danger',
+  'overage.ceiling': 'danger',
+  'account.suspension_warning': 'warn',
+  'invoice.due_soon': 'warn',
+  'credits.low': 'warn',
+  'renewal.upcoming': 'warn',
+  'payment.confirmed': 'ok',
+  'account.reactivated': 'ok',
+  'credits.purchased': 'ok',
+  'subscription.activated': 'ok',
 }
 
 const num = (n: number) => n.toLocaleString('pt-BR')
@@ -134,6 +153,12 @@ export function sentenceFor(n: AppNotification): Sentence {
       }
     case 'security_alert':
       return { object: n.title, action: '', state: desc ? { text: desc, tone: 'danger' } : undefined }
+    case 'billing_alert':
+    case 'billing_update': {
+      const tom = (m.event && TOM_DA_COBRANCA[m.event]) || (n.type === 'billing_alert' ? 'danger' : undefined)
+      if (!tom || !desc) return { object: n.title, action: '', excerpt: desc }
+      return { object: n.title, action: '', state: { text: desc, tone: tom } }
+    }
     default:
       return { object: n.title, action: '', excerpt: desc }
   }

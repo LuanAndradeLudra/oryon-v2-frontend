@@ -11,6 +11,8 @@ import { resetBillingState } from '@/hooks/useBilling'
 import { resetLinhasComIA } from '@/hooks/useLinhasComIA'
 import { limparSessao } from '@/lib/limpezaDaSessao'
 import { resetAccountState } from '@/hooks/useAccountState'
+import { definirCobrancaOculta } from '@/lib/billingLinks'
+import { cobrancaOcultaPara } from '@/config/featureFlags'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -329,6 +331,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('storage', handleStorage)
     return () => window.removeEventListener('storage', handleStorage)
   }, [])
+
+  // Links de cobrança montados fora do React leem isto (lib/billingLinks).
+  // No render, não num efeito: os filhos deste mesmo render já precisam dele.
+  definirCobrancaOculta(cobrancaOcultaPara(session?.featureFlags))
 
   return (
     <AuthContext.Provider value={{

@@ -16,7 +16,7 @@
 
 import { useEffect } from 'react'
 import { connectSocket } from '@/services/socket'
-import { attemptRefresh, clearSessionAndRedirect } from '@/services/api'
+import { renovarSessao, clearSessionAndRedirect } from '@/services/api'
 
 const relay = (name: string) => () => {
   try {
@@ -37,7 +37,9 @@ export function useAppSocketBridge(enabled: boolean, sessionKey?: string | null)
     const onAuthExpired = () => {
       console.warn('[socket] Token expired — refreshing session and reconnecting')
       socket.disconnect()
-      attemptRefresh().then((ok) => {
+      // Pela fila única (renovarSessao): uma renovação paralela à do
+      // interceptor HTTP chegava com a chave já trocada e deslogava a pessoa.
+      renovarSessao().then((ok) => {
         if (ok) socket.connect()
         else clearSessionAndRedirect()
       })

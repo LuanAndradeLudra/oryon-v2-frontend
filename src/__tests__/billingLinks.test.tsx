@@ -14,7 +14,7 @@ vi.mock('@/services/billingApi', async (importOriginal) => ({
 }))
 
 import { billingApi } from '@/services/billingApi'
-import { billingHref, billingSettingsEnabled, notificationLinkAllowed } from '@/lib/billingLinks'
+import { billingHref, billingSettingsEnabled, definirCobrancaOculta, notificationLinkAllowed } from '@/lib/billingLinks'
 import { CopilotBlockedError, describeCopilotBlock } from '@/lib/copilotBlock'
 import { inlineActionFor } from '@/lib/notificationsUx'
 import { ModuleNotContracted } from '@/components/billing/ModuleNotContracted'
@@ -96,3 +96,24 @@ describe('flag LIGADA (comportamento de antes)', () => {
     expect(await screen.findByRole('link', { name: /Ver todas as faturas/ })).toHaveAttribute('href', '/settings/billing')
   })
 })
+
+// Integração 1200 (16/10): tenant com cobrança fora do Oryon
+// (FF_OCULTAR_COBRANCA) não recebe atalho para a tela, nem com a flag de build ligada.
+describe('FF_OCULTAR_COBRANCA do tenant', () => {
+  beforeEach(() => { flags.settingsBilling = true; definirCobrancaOculta(true) })
+  afterAll(() => { definirCobrancaOculta(false) })
+
+  it('sem destino, notificação de cobrança sem link e sem ação', () => {
+    expect(billingSettingsEnabled()).toBe(false)
+    expect(billingHref()).toBeNull()
+    expect(notificationLinkAllowed('/settings/billing?invoice=abc')).toBe(false)
+    expect(notificationLinkAllowed('/conversations')).toBe(true)
+    expect(inlineActionFor(notif)).toBeNull()
+  })
+
+  it('desligada de novo: volta ao normal', () => {
+    definirCobrancaOculta(false)
+    expect(billingHref()).toBe('/settings/billing')
+  })
+})
+

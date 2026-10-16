@@ -9,9 +9,22 @@ import { isFeatureVisible } from '@/config/featureFlags'
 
 export const BILLING_SETTINGS_PATH = '/settings/billing'
 
-/** A tela Configurações > Plano e cobrança está habilitada neste build? */
+// Tenant com cobrança fora do Oryon (`FF_OCULTAR_COBRANCA`, PO 12/10). Os
+// links daqui são montados fora do React (copilotBlock, notificationsUx), então
+// o AuthProvider informa o valor a cada render — antes de os filhos rodarem.
+let cobrancaOcultaNoTenant = false
+
+/** Chamado pelo AuthProvider com as flags do tenant da sessão. */
+export function definirCobrancaOculta(oculta: boolean): void {
+  cobrancaOcultaNoTenant = oculta
+}
+
+/** A tela Configurações > Plano e cobrança existe para este tenant e build?
+ *  Integração 1200 (16/10): também some com `FF_OCULTAR_COBRANCA` — antes,
+ *  menu e topo escondiam a tela, mas a conta suspensa, o módulo não
+ *  contratado, o bloqueio do Copilot e as notificações ainda levavam a ela. */
 export function billingSettingsEnabled(userEmail?: string | null): boolean {
-  return isFeatureVisible('settingsBilling', userEmail)
+  return !cobrancaOcultaNoTenant && isFeatureVisible('settingsBilling', userEmail)
 }
 
 /**

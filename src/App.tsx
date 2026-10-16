@@ -110,6 +110,7 @@ const AdminBillingPage         = lazyRoute(() => import('@/pages/admin/AdminBill
 import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
 import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
 import { TermsAcceptanceModal } from '@/components/terms/TermsAcceptanceModal'
+import { rotaSemPedidoDeTermos } from '@/lib/rotasSemTermos'
 import { firstAccessRequired } from '@/lib/firstAccessGate'
 import { isOwnerTier } from '@/lib/roleHelpers'
 import { useAccountState, moduleEnabled } from '@/hooks/useAccountState'
@@ -216,9 +217,8 @@ function AppSocketBridge() {
 function GlobalTermsPrompt() {
   const { isAuthenticated, user } = useAuth()
   const location = useLocation()
-  const excluded = ['/login', '/activate', '/first-access', '/register', '/forgot-password', '/reset-password', '/set-password']
   // Staff Oryon não é parte do contrato do cliente — não aceita termos por ele.
-  if (!isAuthenticated || isOryonStaff(user?.role) || excluded.some((p) => location.pathname.startsWith(p))) return null
+  if (!isAuthenticated || isOryonStaff(user?.role) || rotaSemPedidoDeTermos(location.pathname)) return null
   return <TermsAcceptanceModal />
 }
 

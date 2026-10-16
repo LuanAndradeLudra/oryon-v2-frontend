@@ -21,6 +21,8 @@ const fakeSocket = {
   on: (evento: string, fn: Handler) => { handlers.set(evento, fn) },
   off: vi.fn((evento: string, fn?: Handler) => { if (handlers.get(evento) === fn) handlers.delete(evento) }),
   emit: vi.fn(),
+  connect: vi.fn(),
+  disconnect: vi.fn(),
   connected: true,
 }
 
@@ -33,8 +35,10 @@ vi.mock('@/services/socket', () => ({
   joinChannel: vi.fn(),
   leaveChannel: vi.fn(),
 }))
+const renovarSessao = vi.fn().mockResolvedValue(true)
 vi.mock('@/services/api', () => ({
   attemptRefresh: vi.fn().mockResolvedValue(true),
+  renovarSessao: () => renovarSessao(),
   clearSessionAndRedirect: vi.fn(),
 }))
 
@@ -106,5 +110,21 @@ describe('socket compartilhado (SCRUM-1210)', () => {
     expect(disconnectSocket).not.toHaveBeenCalled()
     expect(fakeSocket.off).toHaveBeenCalled()
     for (const call of fakeSocket.off.mock.calls) expect(typeof call[1]).toBe('function')
+  })
+})
+
+// Integração 1200 (16/10): a renovação disparada pelo socket passa pela fila
+// única (renovarSessao) — em paralelo com a do interceptor HTTP, a segunda
+// chegava com a chave de renovação já trocada e deslogava a pessoa.
+describe('auth:expired (integração 1200)', () => {
+  it('renova pela fila única e reconecta o mesmo socket', async () => {
+    renovarSessao.mockClear()
+    renderHook(() => useAppSocketBridge(true))
+    handlers.get('auth:expired')?.()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(renovarSessao).toHaveBeenCalledTimes(1)
+    expect(fakeSocket.disconnect).toHaveBeenCalled()
+    expect(fakeSocket.connect).toHaveBeenCalled()
   })
 })
