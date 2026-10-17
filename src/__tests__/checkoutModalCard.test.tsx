@@ -1,7 +1,5 @@
-// ─── CheckoutModal — cartão bloqueado (SCRUM-154 / item 5.6) ────────────────
-// Sem VITE_BILLING_CARD_ENABLED, o método cartão fica desabilitado e NENHUM
-// dado de cartão (PAN/CVV) é coletado ou enviado — só Pix. Evita trafegar
-// cartão pelo nosso backend antes da tokenização server-side (risco PCI).
+// Pix e cartão convivem no mesmo checkout. O número do cartão não é coletado:
+// o pagamento abre no checkout hospedado da Gates2b.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -22,14 +20,15 @@ beforeEach(() => {
 
 const intent = { kind: 'credits', packCredits: 250, valueCents: 12500 } as const
 
-describe('CheckoutModal — cartão bloqueado (5.6)', () => {
-  it('desabilita o método cartão e não revela campos de PAN/CVV', () => {
+describe('CheckoutModal — Pix e cartão', () => {
+  it('oferece os dois meios e não coleta PAN/CVV', () => {
     render(<CheckoutModal open intent={intent} onClose={() => {}} onDone={() => {}} />)
-    const cardBtn = screen.getByText('Cartão (em breve)').closest('button')!
-    expect(cardBtn).toBeDisabled()
-    fireEvent.click(cardBtn)
+    expect(screen.getByText('Pix').closest('button')).toBeEnabled()
+    expect(screen.getByText('Cartão').closest('button')).toBeEnabled()
+    fireEvent.click(screen.getByText('Cartão'))
     expect(screen.queryByText('Número do cartão')).not.toBeInTheDocument()
     expect(screen.queryByText('CVV')).not.toBeInTheDocument()
+    expect(screen.getByText(/checkout da Gates2b/)).toBeInTheDocument()
   })
 
   it('compra via Pix sem enviar dados de cartão', async () => {
@@ -39,5 +38,15 @@ describe('CheckoutModal — cartão bloqueado (5.6)', () => {
     const arg = mockApi.buyCredits.mock.calls[0][0]
     expect(arg.card).toBeUndefined()
     expect(arg.billingType).toBe('PIX')
+  })
+
+  it('compra no cartão só informando o meio, sem PAN', async () => {
+    render(<CheckoutModal open intent={intent} onClose={() => {}} onDone={() => {}} />)
+    fireEvent.click(screen.getByText('Cartão'))
+    fireEvent.click(screen.getByText('Pagar com cartão'))
+    await waitFor(() => expect(mockApi.buyCredits).toHaveBeenCalledTimes(1))
+    const arg = mockApi.buyCredits.mock.calls[0][0]
+    expect(arg.card).toBeUndefined()
+    expect(arg.billingType).toBe('CREDIT_CARD')
   })
 })

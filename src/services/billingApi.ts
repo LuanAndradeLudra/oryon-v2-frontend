@@ -166,8 +166,13 @@ export const billingApi = {
     const res = await api.post<CheckoutResult>('/settings/billing/subscribe', input)
     return res.data
   },
-  async changePlan(tier: BackendPlanTier): Promise<{ applied: 'now' | 'next_cycle' }> {
-    const res = await api.post('/settings/billing/change-plan', { tier })
+  async changePlan(tier: BackendPlanTier, billingType: BillingMethod = 'PIX'): Promise<{
+    applied: 'now' | 'next_cycle' | 'pending_payment'
+    provider?: string
+    subscriptionId?: string
+    payment?: CheckoutResult['payment']
+  }> {
+    const res = await api.post('/settings/billing/change-plan', { tier, billingType })
     return res.data
   },
   async cancel(): Promise<{ canceled: boolean; accessUntil: string | null }> {

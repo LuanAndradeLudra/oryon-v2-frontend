@@ -8,12 +8,8 @@ import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { billingApi } from '@/services/billingApi'
 import type {
-  BackendPlanTier, BillingMethod, CardInput, CheckoutResult, PlanOption,
+  BackendPlanTier, BillingMethod, CheckoutResult, PlanOption,
 } from '@/services/billingApi'
-
-// PCI: cartão bloqueado por padrão (só Pix). Reabilitar com VITE_BILLING_CARD_ENABLED=true
-// quando houver tokenização no gateway real.
-const CARD_ENABLED = import.meta.env.VITE_BILLING_CARD_ENABLED === 'true'
 
 export type CheckoutIntent =
   | { kind: 'subscribe'; tier: BackendPlanTier; plan: PlanOption }
@@ -39,11 +35,6 @@ function titleFor(intent: CheckoutIntent): string {
 export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalProps) {
   const [method, setMethod] = useState<BillingMethod>('PIX')
   const [cpfCnpj, setCpfCnpj] = useState('')
-  const [card, setCard] = useState<CardInput>({
-    holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '',
-  })
-  const [postalCode, setPostalCode] = useState('')
-  const [addressNumber, setAddressNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<CheckoutResult | null>(null)
@@ -62,24 +53,29 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
     try {
       const payer = {
         cpfCnpj: cpfCnpj || undefined,
-        postalCode: postalCode || undefined,
-        addressNumber: addressNumber || undefined,
       }
-      // Nunca envia PAN/CVV enquanto o cartão está bloqueado (5.6 / PCI).
-      const cardPayload = CARD_ENABLED && method === 'CREDIT_CARD' ? card : undefined
+      // Cartão é checkout hospedado (Gates2b). PAN/CVV não trafegam pelo Oryon.
 
       if (intent.kind === 'change') {
-        const r = await billingApi.changePlan(intent.tier)
-        setChanged(r.applied)
+        const r = await billingApi.changePlan(intent.tier, method)
+        if (r.payment) {
+          setResult({
+            provider: r.provider,
+            subscriptionId: r.subscriptionId,
+            payment: r.payment,
+          })
+        } else {
+          setChanged(r.applied === 'now' ? 'now' : 'next_cycle')
+        }
         onDone()
       } else if (intent.kind === 'subscribe') {
-        const r = await billingApi.subscribe({ tier: intent.tier, billingType: method, payer, card: cardPayload })
+        const r = await billingApi.subscribe({ tier: intent.tier, billingType: method, payer })
         setResult(r)
         onDone()
       } else {
         const r = await billingApi.buyCredits({
           packCredits: intent.packCredits, valueCents: intent.valueCents,
-          billingType: method, payer, card: cardPayload,
+          billingType: method, payer,
         })
         setResult(r)
         onDone()
@@ -166,7 +162,7 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
               {result?.payment.invoiceUrl && (
                 <a href={result.payment.invoiceUrl} target="_blank" rel="noreferrer"
                    className="text-sm text-brand-400 hover:underline">
-                  Abrir fatura →
+                  Continuar pagamento
                 </a>
               )}
             </div>
@@ -185,66 +181,33 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
             <span className="text-lg font-bold text-surface-50">{BRL(amountCents)}</span>
           </div>
 
-          {intent.kind === 'change' ? (
-            <p className="text-sm text-surface-400">
-              A troca usa o método de pagamento da assinatura atual. Upgrades valem na hora
-              (franquia maior já disponível); downgrades entram no próximo ciclo.
+          <div className="grid grid-cols-2 gap-2">
+            {(['PIX', 'CREDIT_CARD'] as BillingMethod[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMethod(m)}
+                className={cn(
+                  'flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors',
+                  method === m
+                    ? 'border-brand-500 bg-brand-950/40 text-brand-300'
+                    : 'border-surface-700 text-surface-300 hover:bg-surface-800',
+                )}
+              >
+                {m === 'PIX' ? <QrCode className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                {m === 'PIX' ? 'Pix' : 'Cartão'}
+              </button>
+            ))}
+          </div>
+
+          <Field label="CPF/CNPJ">
+            <input value={cpfCnpj} onChange={(e) => setCpfCnpj(e.target.value)}
+              placeholder="Somente números" className={inputCls} />
+          </Field>
+
+          {method === 'CREDIT_CARD' && (
+            <p className="text-sm text-surface-400 border-t border-surface-800 pt-3">
+              O número do cartão é digitado no checkout da Gates2b. Nada disso passa pelo Oryon.
             </p>
-          ) : (
-            <>
-              {/* Método */}
-              <div className="grid grid-cols-2 gap-2">
-                {(['PIX', 'CREDIT_CARD'] as BillingMethod[]).map((m) => {
-                  // Cartão bloqueado até tokenização server-side (5.6 / PCI).
-                  const cardBlocked = m === 'CREDIT_CARD' && !CARD_ENABLED
-                  return (
-                    <button
-                      key={m}
-                      onClick={() => { if (!cardBlocked) setMethod(m) }}
-                      disabled={cardBlocked}
-                      title={cardBlocked ? 'Pagamento com cartão em breve' : undefined}
-                      className={cn(
-                        'flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors',
-                        method === m
-                          ? 'border-brand-500 bg-brand-950/40 text-brand-300'
-                          : 'border-surface-700 text-surface-300 hover:bg-surface-800',
-                        cardBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent',
-                      )}
-                    >
-                      {m === 'PIX' ? <QrCode className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
-                      {m === 'PIX' ? 'Pix' : cardBlocked ? 'Cartão (em breve)' : 'Cartão'}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* CPF/CNPJ */}
-              <Field label="CPF/CNPJ">
-                <input value={cpfCnpj} onChange={(e) => setCpfCnpj(e.target.value)}
-                  placeholder="Somente números" className={inputCls} />
-              </Field>
-
-              {/* Cartão */}
-              {method === 'CREDIT_CARD' && (
-                <div className="space-y-3 border-t border-surface-800 pt-3">
-                  <Field label="Nome impresso no cartão">
-                    <input value={card.holderName} onChange={(e) => setCard({ ...card, holderName: e.target.value })} className={inputCls} />
-                  </Field>
-                  <Field label="Número do cartão">
-                    <input value={card.number} onChange={(e) => setCard({ ...card, number: e.target.value })} placeholder="0000 0000 0000 0000" className={inputCls} />
-                  </Field>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Field label="Mês"><input value={card.expiryMonth} onChange={(e) => setCard({ ...card, expiryMonth: e.target.value })} placeholder="MM" className={inputCls} /></Field>
-                    <Field label="Ano"><input value={card.expiryYear} onChange={(e) => setCard({ ...card, expiryYear: e.target.value })} placeholder="AAAA" className={inputCls} /></Field>
-                    <Field label="CVV"><input value={card.ccv} onChange={(e) => setCard({ ...card, ccv: e.target.value })} placeholder="123" className={inputCls} /></Field>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Field label="CEP"><input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={inputCls} /></Field>
-                    <Field label="Nº endereço"><input value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} className={inputCls} /></Field>
-                  </div>
-                </div>
-              )}
-            </>
           )}
 
           {error && (
