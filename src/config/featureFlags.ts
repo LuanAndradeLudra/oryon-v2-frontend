@@ -27,7 +27,8 @@ export const FEATURE_FLAGS = {
   // depender de env de ambiente nenhum.
   //
   // Para validar billing em staging: trocar para `true`. Uma linha.
-  settingsBilling: import.meta.env.VITE_SETTINGS_BILLING === 'true',
+  // Liberado globalmente durante a validação completa do billing em homologação.
+  settingsBilling: true,
   // Phase 18+ — surfaces the customer-facing "Skills" tab on AgentDetail.
   // Skills assigned by Oryon staff are always executed; this flag only
   // governs whether the customer sees them in the UI.
