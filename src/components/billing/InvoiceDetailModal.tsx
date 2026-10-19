@@ -1,13 +1,13 @@
 // ─── Detalhe da fatura do cliente (SCRUM-1210) ────────────────────────────────
 // Composição (linhas), relatório de consumo do período, encargos do dia
 // (segunda via), PDF, instruções de pagamento e contestação em até 10 dias
-// (Termos 7.5.5). Espaço reservado para o Pix na tela (próxima etapa).
+// (Termos 7.5.5). Pix (QR + copia e cola) ou cartão pelo gateway Gates2B.
 // "Vencida" vem do backend (`overdue`, calendário de Brasília e já descontadas
 // as notas de crédito). Nota de crédito aparece com valor negativo e link para
 // a fatura estornada, nunca como "Paga".
 
 import { useEffect, useState } from 'react'
-import { FileText, QrCode, Scale } from 'lucide-react'
+import { FileText, Scale } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
@@ -16,6 +16,7 @@ import { showToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
 import { invoiceStatusText, isCreditNote, signedAmount } from '@/lib/invoiceDisplay'
 import { billingApi, openInvoicePdf, type InvoiceDetailView } from '@/services/billingApi'
+import { PagamentoDaFatura } from './PagamentoDaFatura'
 
 const brl = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmt = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString('pt-BR') : '—')
@@ -150,10 +151,8 @@ export function InvoiceDetailModal({ invoiceId, onClose, onChanged, onOpenInvoic
 
           {open && (
             <div className="rounded-xl border border-surface-800 p-4">
-              <p className="text-xs font-semibold text-surface-200 mb-1">Como pagar</p>
-              <p className="text-xs text-surface-400 whitespace-pre-line">{d.paymentInstructions}</p>
-              {/* Próxima etapa (Gates2B): QR Pix e copia-e-cola aqui, com baixa automática. */}
-              <div className="mt-3 flex items-center gap-2 text-[11px] text-surface-500"><QrCode className="w-3.5 h-3.5" />Em breve: pagamento por Pix direto nesta tela.</div>
+              <p className="text-xs font-semibold text-surface-200 mb-2">Como pagar</p>
+              <PagamentoDaFatura invoiceId={inv.id} instrucoes={d.paymentInstructions} />
             </div>
           )}
 

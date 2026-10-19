@@ -9,7 +9,7 @@ import type { InvoiceDetailView } from '@/services/billingApi'
 
 vi.mock('@/services/billingApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/services/billingApi')>()),
-  billingApi: { getInvoice: vi.fn(), disputeInvoice: vi.fn() },
+  billingApi: { getInvoice: vi.fn(), disputeInvoice: vi.fn(), getInvoicePayment: vi.fn().mockResolvedValue(null) },
   openInvoicePdf: vi.fn(),
 }))
 vi.mock('@/hooks/useToast', () => ({ showToast: vi.fn() }))

@@ -180,6 +180,21 @@ export interface InvoiceDetailView {
   paymentInstructions: string
 }
 
+/**
+ * Como pagar uma fatura pelo gateway (Gates2B, integração 1200): Pix com QR e
+ * copia e cola, ou o checkout hospedado do cartão. `null` sem gateway — a tela
+ * mostra as instruções de pagamento.
+ */
+export interface InvoicePaymentOption {
+  method: 'PIX' | 'CREDIT_CARD'
+  amountCents: number
+  expiresAt: string | null
+  pixPayload: string | null
+  /** PNG em base64, sem o prefixo `data:`. */
+  pixImage: string | null
+  checkoutUrl: string | null
+}
+
 export interface DebtView {
   state: { suspended: boolean }
   items: Array<{ id: string; number: string | null; kind: string; dueAt: string | null; amountCents: number; updatedCents: number; daysLate: number }>
@@ -205,6 +220,9 @@ export const billingApi = {
   },
   async getInvoice(id: string): Promise<InvoiceDetailView> {
     return (await api.get<InvoiceDetailView>(`/settings/billing/invoices/${id}`)).data
+  },
+  async getInvoicePayment(id: string): Promise<InvoicePaymentOption | null> {
+    return (await api.get<{ payment: InvoicePaymentOption | null }>(`/settings/billing/invoices/${id}/payment`)).data.payment
   },
   async disputeInvoice(id: string, reason: string, amountCents?: number): Promise<BillingInvoiceRow> {
     return (await api.post<BillingInvoiceRow>(`/settings/billing/invoices/${id}/dispute`, { reason, amountCents })).data
