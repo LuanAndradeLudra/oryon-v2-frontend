@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserPlus, MoreHorizontal, CheckCircle2, XCircle, Clock, Pencil, Users } from 'lucide-react'
+import { UserPlus, MoreHorizontal, CheckCircle2, XCircle, Clock, Pencil, Users, KeyRound } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { appLogger } from '@/services/appLogger'
 import { isAdminTier, isOwnerTier } from '@/lib/roleHelpers'
@@ -130,6 +130,9 @@ export function AgentManagement() {
   const [reloadKey, setReloadKey] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null)
+  // Link de redefinição de senha enviado pelo administrador (20/10).
+  const [resetTarget, setResetTarget] = useState<User | null>(null)
+  const [sendingReset, setSendingReset] = useState(false)
   const [editTarget, setEditTarget] = useState<User | null>(null)
   const [roleTarget, setRoleTarget] = useState<{ user: User; role: UserRole } | null>(null)
   const [confirming, setConfirming] = useState(false)
@@ -158,11 +161,35 @@ export function AgentManagement() {
   const canManageUsers = isAdminTier(actor?.role)
   // Trocar papel: só o dono (assertCanAssignRole), e nunca o próprio.
   const canChangeRoles = isOwnerTier(actor?.role)
+  // Link de redefinição (20/10): usuário ativo, nunca o próprio, e o dono da
+  // conta só recebe de outro dono (mesma regra do backend).
+  const canSendReset = (u: User) =>
+    u.id !== actor?.id && u.isActive && (u.status ?? 'active') === 'active' && (u.role !== 'business_admin' || isOwnerTier(actor?.role))
 
-  const handleCreated = (newUser: User) => {
+  const handleSendReset = async () => {
+    if (!resetTarget) return
+    setSendingReset(true)
+    try {
+      const r = await api.post<{ emailStatus?: 'sent' | 'failed' | 'no_smtp' }>(`/users/${resetTarget.id}/send-password-reset`)
+      if (!r.data?.emailStatus || r.data.emailStatus === 'sent') toast(`Link enviado para ${resetTarget.email}.`, 'success')
+      else toast('O e-mail não saiu. Tente de novo em alguns minutos ou fale com o suporte.', 'error')
+      setResetTarget(null)
+    } catch (e) {
+      toast(getApiErrorMessage(e, 'Não foi possível enviar o link.'), 'error')
+    } finally {
+      setSendingReset(false)
+    }
+  }
+
+  const handleCreated = (newUser: User & { invitationEmail?: 'sent' | 'failed' | 'no_smtp' }) => {
     setUsers((u) => [...u, newUser])
     setDrawerOpen(false)
-    toast(`Usuário criado. Um e-mail foi enviado para ${newUser.email}.`, 'success')
+    // Usuário criado mesmo se o convite não sair (20/10): antes dizia "enviado" sempre.
+    if (newUser.invitationEmail && newUser.invitationEmail !== 'sent') {
+      toast('Usuário criado, mas o e-mail de convite não saiu. Use "Reenviar convite" no menu do usuário.', 'error')
+    } else {
+      toast(`Usuário criado. Um e-mail foi enviado para ${newUser.email}.`, 'success')
+    }
     appLogger.logUserManagement({
       tenant_id: actor?.tenantId ?? null,
       actor_id: actor?.id ?? null,
@@ -398,6 +425,16 @@ export function AgentManagement() {
                           Reenviar convite
                         </DropdownItem>
                       )}
+                      {canSendReset(user) && (
+                        <DropdownItem
+                          onClick={() => { setResetTarget(user); setOpenDropdown(null) }}
+                        >
+                          <span className="flex items-center gap-2">
+                            <KeyRound className="w-3.5 h-3.5" />
+                            Enviar link de redefinição de senha
+                          </span>
+                        </DropdownItem>
+                      )}
                       {/* A própria conta não se desativa (o backend recusa). */}
                       {user.id !== actor?.id && (
                       <DropdownItem
@@ -436,6 +473,17 @@ export function AgentManagement() {
           onSaved={handleAgentSaved}
         />
       )}
+
+      <ConfirmModal
+        open={!!resetTarget}
+        onClose={() => setResetTarget(null)}
+        onConfirm={handleSendReset}
+        loading={sendingReset}
+        title="Enviar link de redefinição de senha"
+        impact={resetTarget ? { label: `O link vai para ${resetTarget.email}. Você não vê o link.`, tone: 'warning' } : undefined}
+        description={`${resetTarget?.firstName ?? 'O usuário'} recebe um e-mail para criar uma senha nova. A senha atual continua valendo até a troca. Um link enviado antes deixa de valer.`}
+        confirmLabel="Enviar link"
+      />
 
       <ConfirmModal
         open={!!deactivateTarget}

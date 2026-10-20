@@ -54,12 +54,32 @@ describe('EmailsPage', () => {
     expect(toast).toHaveBeenCalledWith('Reenviado para ana@clinica.com', 'success')
   })
 
-  it('redefinição de senha não tem reenvio pelo console', async () => {
-    list.mockResolvedValue({ total: 1, items: [row({ kind: 'password_reset', canResend: false, subject: 'Redefinir sua senha' })] })
+  it('redefinição de senha agora tem reenvio, com a explicação do link novo (20/10)', async () => {
+    list.mockResolvedValue({ total: 1, items: [row({ kind: 'password_reset', subject: 'Redefinir sua senha' })] })
     summary.mockResolvedValue(sum())
     renderPage()
-    expect(await screen.findByText('A própria pessoa pede de novo')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Reenviar' })).toBeInTheDocument()
+    fireEvent.click(screen.getByText('ana@clinica.com'))
+    expect(await screen.findByText(/o anterior deixa de valer/)).toBeInTheDocument()
+  })
+
+  it('tipo sem reenvio mostra o motivo', async () => {
+    list.mockResolvedValue({ total: 1, items: [row({ kind: 'cs_alert', canResend: false, subject: '[CS] conta sem ativação' })] })
+    summary.mockResolvedValue(sum())
+    renderPage()
+    expect(await screen.findByText('O job repete sozinho')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reenviar' })).toBeNull()
+  })
+
+  it('bloqueado pelo limite: selo próprio, motivo e sem reenvio (20/10)', async () => {
+    list.mockResolvedValue({ total: 1, items: [row({ kind: 'password_reset', status: 'blocked', canResend: false, error: 'Limite de 5 links de redefinição por hora para este usuário.' })] })
+    summary.mockResolvedValue({ ...sum(), counts: { sent: 10, failed: 2, noSmtp: 0, blocked: 1 } })
+    renderPage()
+    expect(await screen.findByText('Bloqueado · limite')).toBeInTheDocument()
+    expect(screen.getByText('Não é reenviado')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reenviar' })).toBeNull()
+    fireEvent.click(screen.getByText('ana@clinica.com'))
+    expect(await screen.findByText('Motivo do bloqueio')).toBeInTheDocument()
   })
 
   it('detalhe mostra o erro e não guarda o corpo', async () => {

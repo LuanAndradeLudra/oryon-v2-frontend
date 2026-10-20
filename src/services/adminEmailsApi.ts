@@ -4,7 +4,8 @@
 
 import { api } from './api'
 
-export type EmailStatus = 'sent' | 'failed' | 'no_smtp'
+/** `blocked` (20/10): barrado pelo limite de proteção; não é reenviado. */
+export type EmailStatus = 'sent' | 'failed' | 'no_smtp' | 'blocked'
 
 export interface EmailLogRow {
   id: string
@@ -25,7 +26,7 @@ export interface EmailLogRow {
 }
 
 export interface EmailListQuery {
-  status?: 'problem' | 'sent' | 'all'
+  status?: 'problem' | 'sent' | 'blocked' | 'all'
   kind?: string
   q?: string
   days?: number
@@ -35,7 +36,7 @@ export interface EmailListQuery {
 
 export interface EmailSummary {
   days: number
-  counts: { sent: number; failed: number; noSmtp: number }
+  counts: { sent: number; failed: number; noSmtp: number; blocked?: number }
   smtp: {
     configured: boolean
     failing: boolean
@@ -91,12 +92,27 @@ const KIND_LABEL: Record<string, string> = {
   'billing.plan.changed': 'Troca de plano',
   'billing.overage.ceiling': 'Teto de excedente',
   'billing.contract.no_renew': 'Não renovação',
+  'billing.contract.renewed': 'Contrato renovado',
+  'billing.contract.ended': 'Contrato encerrado',
+  'billing.credits.low': 'Franquia acabando',
+  'billing.cycle.renewed': 'Franquia renovada',
+  'security.brute_force': 'Aviso: tentativas de senha errada',
+  'user.deactivated': 'Acesso desativado',
+  'user.reactivated': 'Acesso reativado',
+  'user.role_changed': 'Função alterada',
+  'user.admin_granted': 'Aviso aos donos: novo administrador',
+  'user.welcome': 'Boas-vindas (convidado ativou)',
+  'org.billing_email_changed': 'E-mail de cobrança alterado',
+  demo_confirmation: 'Confirmação ao solicitante da demonstração',
+  'terms.update': 'Nova versão dos termos',
 }
 
 export function emailKindLabel(kind: string): string {
   if (KIND_LABEL[kind]) return KIND_LABEL[kind]
   if (kind.startsWith('billing.')) return 'Aviso de cobrança'
   if (kind.startsWith('security.')) return 'Aviso de segurança'
+  if (kind.startsWith('notification.')) return 'Notificação por e-mail'
+  if (kind.startsWith('user.')) return 'Aviso de acesso'
   return kind
 }
 
@@ -110,7 +126,12 @@ export const EMAIL_KIND_FILTERS: Array<{ value: string; label: string }> = [
   { value: 'password_reset', label: 'Redefinição de senha' },
   { value: 'security.', label: 'Avisos de segurança' },
   { value: 'whatsapp.alert', label: 'Alertas do WhatsApp' },
+  { value: 'user.', label: 'Avisos de acesso (usuários)' },
+  { value: 'org.billing_email_changed', label: 'E-mail de cobrança alterado' },
+  { value: 'terms.update', label: 'Nova versão dos termos' },
+  { value: 'notification.', label: 'Notificações por e-mail' },
   { value: 'demo_request', label: 'Pedido de demonstração' },
+  { value: 'demo_confirmation', label: 'Confirmação de demonstração' },
   { value: 'cs_alert', label: 'Alerta interno ao CS' },
   { value: 'smtp_test', label: 'Teste de envio' },
 ]
