@@ -384,8 +384,11 @@ export function AgentManagement() {
                       {user.status === 'pending' && (
                         <DropdownItem
                           onClick={() => {
-                            api.post(`/users/${user.id}/resend-invitation`).then(() => {
-                              toast('Convite reenviado com sucesso!', 'success')
+                            api.post<{ emailStatus?: 'sent' | 'failed' | 'no_smtp' }>(`/users/${user.id}/resend-invitation`).then((r) => {
+                              // O backend devolve se o e-mail saiu (20/10); ausente = versão anterior.
+                              const st = r.data?.emailStatus
+                              if (!st || st === 'sent') toast('Convite reenviado com sucesso!', 'success')
+                              else toast('Convite renovado, mas o e-mail não saiu. Tente de novo em alguns minutos ou fale com o suporte.', 'error')
                             }).catch(() => {
                               toast('Erro ao reenviar convite.', 'error')
                             })

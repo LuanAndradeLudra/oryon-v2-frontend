@@ -141,12 +141,21 @@ export interface ProvisionPreview {
   summary: ProvisionSummary
 }
 
+/** Resultado do e-mail de ativação (console de e-mails, 20/10). */
+export interface ActivationEmailResult {
+  status: 'sent' | 'failed' | 'no_smtp'
+  to: string
+  expiresAt: string | null
+}
+
 export interface ProvisionResult {
   organizationId: string
   contractId: string
   activationUrl: string
   adminUserId: string
   summary: ProvisionSummary
+  /** Ausente em backend anterior a 20/10. */
+  activationEmail?: ActivationEmailResult
 }
 
 export interface PendingActivation {
@@ -385,6 +394,10 @@ export const adminBillingApi = {
   async newActivationLink(tenantId: string): Promise<{ activationUrl: string; expiresAt: string; adminEmail: string }> {
     const frontendUrl = window.location.origin
     return (await api.post(`/admin/billing/pending-activations/${tenantId}/new-link`, { frontendUrl })).data
+  },
+  /** Envia (de novo) o e-mail de ativação com o link vigente. */
+  async sendActivationEmail(tenantId: string): Promise<ActivationEmailResult> {
+    return (await api.post<ActivationEmailResult>(`/admin/billing/pending-activations/${tenantId}/send-email`)).data
   },
 }
 

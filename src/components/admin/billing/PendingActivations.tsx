@@ -1,9 +1,10 @@
 // ─── Contas que ainda não ativaram (SCRUM-1205) ───────────────────────────────
 // Lista as contas provisionadas cujo administrador não fez o primeiro acesso,
-// com a validade do link. "Gerar novo link" invalida o anterior.
+// com a validade do link. "Gerar novo link" invalida o anterior. "Enviar
+// e-mail" manda o link vigente ao administrador (20/10).
 
 import { useCallback, useEffect, useState } from 'react'
-import { Copy, Link2, RefreshCw, Hourglass } from 'lucide-react'
+import { Copy, Link2, Mail, RefreshCw, Hourglass } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -27,6 +28,21 @@ export function PendingActivations({ reloadKey = 0 }: { reloadKey?: number }) {
   }, [])
 
   useEffect(() => { load() }, [load, reloadKey])
+
+  async function sendEmail(row: PendingActivation) {
+    setBusy(`mail:${row.tenantId}`)
+    try {
+      const r = await adminBillingApi.sendActivationEmail(row.tenantId)
+      if (r.status === 'sent') showToast(`E-mail de ativação enviado para ${r.to}`, 'success')
+      else if (r.status === 'no_smtp') showToast('O e-mail não saiu: o envio de e-mails não está configurado', 'error')
+      else showToast('O envio do e-mail falhou. Veja o erro em E-mails.', 'error')
+      load()
+    } catch (e) {
+      showToast(getApiErrorMessage(e, 'Não foi possível enviar o e-mail'), 'error')
+    } finally {
+      setBusy(null)
+    }
+  }
 
   async function regenerate(row: PendingActivation) {
     setBusy(row.tenantId)
@@ -87,7 +103,18 @@ export function PendingActivations({ reloadKey = 0 }: { reloadKey?: number }) {
                     </button>
                   )}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3">
+                  <div className="flex justify-end gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    loading={busy === `mail:${r.tenantId}`}
+                    disabled={!r.adminUserId || r.stage === 'steps'}
+                    leftIcon={<Mail className="w-3.5 h-3.5" />}
+                    onClick={() => sendEmail(r)}
+                  >
+                    Enviar e-mail
+                  </Button>
                   <Button
                     size="sm"
                     variant="secondary"
@@ -98,6 +125,7 @@ export function PendingActivations({ reloadKey = 0 }: { reloadKey?: number }) {
                   >
                     Gerar novo link
                   </Button>
+                  </div>
                 </td>
               </tr>
             ))}

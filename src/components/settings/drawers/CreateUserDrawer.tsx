@@ -11,6 +11,7 @@ import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
 import { api } from '@/services/api'
+import { showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOwnerTier } from '@/lib/roleHelpers'
 
@@ -168,7 +169,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     setSubmitError(null)
     try {
       // Send only fields the NestJS InviteUserDto accepts
-      const r = await api.post<User>('/users', {
+      const r = await api.post<User & { invitationEmail?: 'sent' | 'failed' | 'no_smtp' }>('/users', {
         firstName:    s1.firstName.trim(),
         lastName:     s1.lastName.trim(),
         email:        s1.email.trim(),
@@ -187,6 +188,10 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
         action: 'user_created',
         details: { email: r.data.email, role: r.data.role },
       })
+      // Usuário criado mesmo se o e-mail falhar (20/10): avisa para reenviar depois.
+      if (r.data.invitationEmail && r.data.invitationEmail !== 'sent') {
+        showToast('Usuário criado, mas o e-mail de convite não saiu. Use "Reenviar convite" na lista.', 'error')
+      }
       onCreated(r.data)
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {

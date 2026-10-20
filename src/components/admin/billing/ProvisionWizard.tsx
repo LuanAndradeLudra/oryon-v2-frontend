@@ -453,7 +453,20 @@ export function ProvisionWizard({ onProvisioned }: { onProvisioned?: () => void 
       <Card className="max-w-2xl p-5">
         <CardHeader title="Conta criada" description={`${companyName} · ${plan?.displayName ?? ''}`} />
         <div className="space-y-3">
-          <Banner variant="success">Envie o link ao administrador do cliente. Ele vale por 7 dias.</Banner>
+          {resultado.activationEmail?.status === 'sent' ? (
+            <Banner variant="success">
+              E-mail de ativação enviado para {resultado.activationEmail.to}. O link abaixo é o mesmo e vale por 7 dias.
+            </Banner>
+          ) : resultado.activationEmail ? (
+            <Banner variant="warning">
+              {resultado.activationEmail.status === 'no_smtp'
+                ? 'O e-mail de ativação não saiu: o envio de e-mails não está configurado.'
+                : 'O e-mail de ativação falhou.'}{' '}
+              Copie o link e envie ao administrador do cliente. Ele vale por 7 dias. Dá para reenviar o e-mail em Pendentes de ativação.
+            </Banner>
+          ) : (
+            <Banner variant="success">Envie o link ao administrador do cliente. Ele vale por 7 dias.</Banner>
+          )}
           <div className="flex gap-2">
             <Input readOnly value={resultado.activationUrl} className="font-mono text-xs" aria-label="Link de ativação" />
             <Button variant="secondary" leftIcon={<Copy className="w-4 h-4" />} onClick={() => { void navigator.clipboard.writeText(resultado.activationUrl).catch(() => {}); showToast('Link copiado', 'success') }}>Copiar</Button>
