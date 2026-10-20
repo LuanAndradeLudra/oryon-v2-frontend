@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 const post = vi.fn()
@@ -24,6 +24,29 @@ describe('ForgotPasswordPage', () => {
     await waitFor(() => expect(post).toHaveBeenCalledWith('/auth/forgot-password', { email: 'a@b.co' }, expect.anything()))
     expect(await screen.findByRole('heading', { name: /e-mail enviado/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /voltar ao login/i })).toHaveAttribute('href', '/login')
+  })
+
+  it('reenvio: libera depois de 60 s e pede de novo (20/10)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      post.mockResolvedValue({})
+      render(<MemoryRouter><ForgotPasswordPage /></MemoryRouter>)
+      digitar(screen.getByPlaceholderText('seu@email.com'), 'a@b.co')
+      fireEvent.click(screen.getByRole('button', { name: /enviar link/i }))
+      const espera = await screen.findByRole('button', { name: /reenviar em 1:00/i })
+      expect(espera).toBeDisabled()
+      // Avança de segundo em segundo até liberar (cada tick re-renderiza a contagem).
+      for (let i = 0; i < 70 && !screen.queryByRole('button', { name: /reenviar e-mail/i }); i++) {
+        await act(async () => { vi.advanceTimersByTime(1000) })
+      }
+      const reenviar = screen.getByRole('button', { name: /reenviar e-mail/i })
+      expect(reenviar).toBeEnabled()
+      fireEvent.click(reenviar)
+      await waitFor(() => expect(post).toHaveBeenCalledTimes(2))
+      expect(await screen.findByText(/o anterior deixou de valer/i)).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('falha: Banner role=alert e campo inválido', async () => {

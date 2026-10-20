@@ -17,6 +17,7 @@ import {
   Inbox,
   Receipt,
   Mail,
+  FileText,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -378,6 +379,12 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
                   icon={<Mail className="w-[16.5px] h-[16.5px]" />}
                   label="E-mails"
                   active={activeHref === '/admin/emails'}
+                />
+                <SidebarLink
+                  href="/admin/terms"
+                  icon={<FileText className="w-[16.5px] h-[16.5px]" />}
+                  label="Termos"
+                  active={activeHref === '/admin/terms'}
                 />
                 <SidebarLink
                   href="/admin/audit"

@@ -103,6 +103,7 @@ const ConnectorRequestsPage    = lazyRoute(() => import('@/pages/admin/Connector
 const ConnectorAdminPage       = lazyRoute(() => import('@/pages/admin/ConnectorAdminPage').then(m => ({ default: m.ConnectorAdminPage })))
 const AuditPage                = lazyRoute(() => import('@/pages/admin/AuditPage').then(m => ({ default: m.AuditPage })))
 const EmailsPage               = lazyRoute(() => import('@/pages/admin/EmailsPage').then(m => ({ default: m.EmailsPage })))
+const TermsAdminPage           = lazyRoute(() => import('@/pages/admin/TermsAdminPage').then(m => ({ default: m.TermsAdminPage })))
 const AiObservabilityPage      = lazyRoute(() => import('@/pages/admin/AiObservabilityPage').then(m => ({ default: m.AiObservabilityPage })))
 const AiExecutionsPage         = lazyRoute(() => import('@/pages/admin/AiExecutionsPage').then(m => ({ default: m.AiExecutionsPage })))
 const AdminAgentEditorPage     = lazyRoute(() => import('@/pages/admin/AdminAgentEditorPage').then(m => ({ default: m.AdminAgentEditorPage })))
@@ -460,6 +461,9 @@ function AnimatedRoutes() {
           } />
           <Route path="/admin/emails" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Console de e-mails"><EmailsPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/terms" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Termos"><TermsAdminPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/agents" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de agentes"><AdminAgentEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>

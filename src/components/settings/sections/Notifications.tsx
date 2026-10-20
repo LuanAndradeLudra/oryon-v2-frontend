@@ -1,4 +1,4 @@
-import { Bell, Volume2, Lock, RotateCcw } from 'lucide-react'
+import { Bell, Volume2, Lock, RotateCcw, Mail } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
 import { Switch } from '@/components/ui/Switch'
@@ -11,6 +11,7 @@ import {
 } from '@/hooks/useNotificationPreferences'
 import { useNotificationSound } from '@/hooks/useNotificationSound'
 import { CATEGORY_CHIPS, TYPE_ICON } from '@/components/notifications/notificationsMeta'
+import { cn } from '@/lib/utils'
 
 /**
  * Phase 19: dedicated Settings page for notification preferences. Groups
@@ -36,7 +37,7 @@ const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
 }
 
 export function Notifications() {
-  const { preferences, loading, saving, error, update, reset, reload } = useNotificationPreferences()
+  const { preferences, loading, saving, error, update, setEmail, reset, reload } = useNotificationPreferences()
   const { enabled: soundEnabled, toggle: toggleSound } = useNotificationSound()
 
   if (loading) {
@@ -114,6 +115,7 @@ export function Notifications() {
                   pref={pref}
                   saving={saving}
                   onToggle={(enabled) => update(pref.type, enabled).catch(() => {})}
+                  onEmail={(on) => setEmail(pref.type, on).catch(() => {})}
                   onReset={() => reset(pref.type).catch(() => {})}
                 />
               ))}
@@ -126,6 +128,10 @@ export function Notifications() {
         <Bell className="w-3 h-3 inline mr-1" />
         Notificações obrigatórias (como alertas de segurança) não podem ser desativadas por motivo de conformidade.
       </p>
+      <p className="text-2xs text-surface-500 mt-1.5">
+        <Mail className="w-3 h-3 inline mr-1" />
+        "E-mail" manda uma cópia para o seu e-mail. Disponível só nos avisos de baixo volume, com no máximo 20 por hora.
+      </p>
     </div>
   )
 }
@@ -134,13 +140,16 @@ function PreferenceRow({
   pref,
   saving,
   onToggle,
+  onEmail,
   onReset,
 }: {
   pref: ResolvedPreference
   saving: boolean
   onToggle: (enabled: boolean) => void
+  onEmail: (on: boolean) => void
   onReset: () => void
 }) {
+  const emailOn = pref.channels?.includes('email') ?? false
   const TypeIcon = TYPE_ICON[pref.type] ?? Bell // mesmo mapa do iconFor() do sino
   return (
     <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
@@ -191,6 +200,28 @@ function PreferenceRow({
           >
             <RotateCcw className="w-3 h-3" />
             padrão
+          </button>
+        )}
+        {/* Cópia por e-mail (20/10): só nos tipos de baixo volume. Com a
+            notificação desligada, fica apagado (não sai nada). */}
+        {pref.emailAvailable && (
+          <button
+            type="button"
+            aria-pressed={emailOn}
+            disabled={saving || !pref.enabled}
+            onClick={() => onEmail(!emailOn)}
+            title={pref.enabled ? 'Também receber por e-mail' : 'Ligue a notificação para escolher o e-mail'}
+            className={cn(
+              'inline-flex items-center gap-1.5 h-[26px] px-2 rounded-[7px] border text-xs font-semibold transition-colors',
+              'disabled:opacity-40 disabled:cursor-not-allowed',
+              emailOn
+                ? 'color-chip-soft'
+                : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600',
+            )}
+            style={emailOn ? ({ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties) : undefined}
+          >
+            <Mail className="w-3.5 h-3.5" strokeWidth={1.75} />
+            E-mail
           </button>
         )}
         <Switch

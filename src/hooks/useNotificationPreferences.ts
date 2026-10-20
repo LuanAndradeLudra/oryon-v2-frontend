@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { api } from '@/services/api'
 
@@ -27,6 +27,8 @@ export interface ResolvedPreference {
   channels: NotificationChannel[]
   isOverride: boolean
   mandatory: boolean
+  /** O tipo aceita cópia por e-mail (20/10). Ausente em backend anterior. */
+  emailAvailable?: boolean
 }
 
 /**
@@ -61,19 +63,22 @@ export function useNotificationPreferences() {
 
   useEffect(() => { load() }, [load])
 
+  // Lista atual para o rollback (20/10): ler dentro do atualizador do
+  // setState não é garantido — o React pode rodá-lo depois, e o rollback
+  // voltava para [] (tela de Notificações vazia após um erro).
+  const prefsRef = useRef(preferences)
+  prefsRef.current = preferences
+
   /**
    * Optimistic single-toggle update. Flips local state immediately and
    * rolls back on failure so the user sees instant feedback but we never
    * diverge from the backend.
    */
   const update = useCallback(async (type: string, enabled: boolean) => {
-    let snapshot: ResolvedPreference[] = []
-    setPreferences((prev) => {
-      snapshot = prev
-      return prev.map((p) =>
-        p.type === type ? { ...p, enabled, isOverride: true } : p,
-      )
-    })
+    const snapshot = prefsRef.current
+    setPreferences(snapshot.map((p) =>
+      p.type === type ? { ...p, enabled, isOverride: true } : p,
+    ))
     try {
       setSaving(true)
       const { data } = await api.patch<ResolvedPreference[]>(
@@ -85,6 +90,32 @@ export function useNotificationPreferences() {
     } catch (e) {
       setPreferences(snapshot)
       setError('Não foi possível salvar a preferência. Ela voltou ao valor anterior.')
+      throw e
+    } finally {
+      setSaving(false)
+    }
+  }, [])
+
+  /**
+   * Liga/desliga a cópia por e-mail de um tipo (20/10). Otimista, com
+   * rollback. Manda `enabled` junto: a rota grava os dois.
+   */
+  const setEmail = useCallback(async (type: string, on: boolean) => {
+    const snapshot = prefsRef.current
+    const enabled = snapshot.find((p) => p.type === type)?.enabled ?? true
+    const channels: NotificationChannel[] = on ? ['in_app', 'email'] : ['in_app']
+    setPreferences(snapshot.map((p) => (p.type === type ? { ...p, channels, isOverride: true } : p)))
+    try {
+      setSaving(true)
+      const { data } = await api.patch<ResolvedPreference[]>(
+        `/notification-preferences/${encodeURIComponent(type)}`,
+        { enabled, channels: on ? ['in_app', 'email'] : ['in_app'] },
+      )
+      setPreferences(data)
+      setError(null)
+    } catch (e) {
+      setPreferences(snapshot)
+      setError('Não foi possível salvar o aviso por e-mail. Ele voltou ao valor anterior.')
       throw e
     } finally {
       setSaving(false)
@@ -106,5 +137,5 @@ export function useNotificationPreferences() {
     }
   }, [preferences, load])
 
-  return { preferences, loading, saving, error, update, reset, reload: load }
+  return { preferences, loading, saving, error, update, setEmail, reset, reload: load }
 }

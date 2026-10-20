@@ -29,7 +29,7 @@ import {
   type EmailSummary,
 } from '@/services/adminEmailsApi'
 
-type StatusFilter = 'problem' | 'sent' | 'all'
+type StatusFilter = 'problem' | 'sent' | 'blocked' | 'all'
 const PAGE = 50
 const DAYS = [1, 7, 30, 90]
 
@@ -41,13 +41,14 @@ const fmtFull = (iso: string | null) =>
 function StatusPill({ status }: { status: EmailStatus }) {
   if (status === 'sent') return <Badge variant="resolved">Enviado</Badge>
   if (status === 'no_smtp') return <Badge variant="pending">Não saiu · sem SMTP</Badge>
+  if (status === 'blocked') return <Badge variant="abandoned">Bloqueado · limite</Badge>
   return <Badge variant="danger">Falhou</Badge>
 }
 
 /** Por que não há reenvio pelo console, quando não há. */
 function semReenvio(row: EmailLogRow): string | null {
   if (row.status === 'sent' || row.canResend) return null
-  if (row.kind === 'password_reset') return 'A própria pessoa pede de novo'
+  if (row.status === 'blocked') return 'Não é reenviado'
   if (row.kind === 'cs_alert') return 'O job repete sozinho'
   return 'Sem reenvio pelo console'
 }
@@ -57,13 +58,15 @@ function notaReenvio(row: EmailLogRow): string | null {
   if (row.kind === 'invitation') return 'Gera um link de convite novo; o anterior deixa de valer.'
   if (row.kind === 'activation' || row.kind === 'activation_reminder') return 'Manda o link de ativação vigente (só gera outro se ele tiver vencido).'
   if (row.kind.startsWith('billing.')) return 'Confere o fato antes: fatura já paga ou conta reativada não recebe o aviso.'
-  if (row.kind === 'password_reset') return 'Por segurança, o link de redefinição só é pedido pela própria pessoa, na tela de login.'
+  if (row.kind === 'password_reset') return 'Gera um link novo de redefinição; o anterior deixa de valer. O link vai só para o e-mail do usuário.'
+  if (row.kind.startsWith('user.')) return 'Confere antes se o acesso do usuário continua como no envio.'
+  if (row.kind === 'org.billing_email_changed') return 'O aviso ao endereço novo só sai se ele ainda for o e-mail de cobrança.'
   return null
 }
 
 export function EmailsPage() {
   const [params, setParams] = useSearchParams()
-  const status = (['problem', 'sent', 'all'].includes(params.get('situacao') ?? '') ? params.get('situacao') : 'problem') as StatusFilter
+  const status = (['problem', 'sent', 'blocked', 'all'].includes(params.get('situacao') ?? '') ? params.get('situacao') : 'problem') as StatusFilter
   const days = DAYS.includes(Number(params.get('dias'))) ? Number(params.get('dias')) : 7
   const kind = params.get('tipo') ?? ''
   const q = params.get('q') ?? ''
@@ -247,9 +250,11 @@ export function EmailsPage() {
               value={status}
               onChange={(v) => setParam('situacao', v === 'problem' ? null : v)}
               options={[
-                { value: 'all', label: 'Todos', count: summary ? summary.counts.sent + (problemCount ?? 0) : undefined },
+                { value: 'all', label: 'Todos', count: summary ? summary.counts.sent + (problemCount ?? 0) + (summary.counts.blocked ?? 0) : undefined },
                 { value: 'problem', label: 'Com problema', count: problemCount },
                 { value: 'sent', label: 'Enviados', count: summary?.counts.sent },
+                // Barrados de propósito pelos limites (20/10): só para o suporte entender.
+                { value: 'blocked', label: 'Bloqueados', count: summary?.counts.blocked ?? 0 },
               ]}
             />
             <div className="relative flex-1 min-w-[220px]">
@@ -267,8 +272,8 @@ export function EmailsPage() {
               ) : rows.length === 0 ? (
                 <EmptyState
                   icon={Mail}
-                  title={status === 'problem' ? 'Nenhum e-mail com problema no período' : 'Nenhum e-mail no período'}
-                  hint={status === 'problem' ? 'Tudo o que a plataforma tentou enviar foi aceito pelo servidor de e-mail.' : 'Ajuste o período ou os filtros.'}
+                  title={status === 'problem' ? 'Nenhum e-mail com problema no período' : status === 'blocked' ? 'Nenhum envio bloqueado no período' : 'Nenhum e-mail no período'}
+                  hint={status === 'problem' ? 'Tudo o que a plataforma tentou enviar foi aceito pelo servidor de e-mail.' : status === 'blocked' ? 'Nenhum envio passou dos limites de proteção (senha, notificações, demonstração).' : 'Ajuste o período ou os filtros.'}
                 />
               ) : (
                 <div className="rounded-2xl border border-surface-800 overflow-hidden">
@@ -347,13 +352,16 @@ export function EmailsPage() {
                   </dl>
                   {selected.error && selected.status !== 'sent' && (
                     <div>
-                      <p className="text-xs text-surface-500 mb-1">Erro do servidor de e-mail</p>
-                      <code className="block font-mono text-xs text-danger break-words rounded-lg bg-surface-900 p-2">{selected.error}</code>
+                      <p className="text-xs text-surface-500 mb-1">{selected.status === 'blocked' ? 'Motivo do bloqueio' : 'Erro do servidor de e-mail'}</p>
+                      <code className={cn('block font-mono text-xs break-words rounded-lg bg-surface-900 p-2', selected.status === 'blocked' ? 'text-surface-300' : 'text-danger')}>{selected.error}</code>
+                      {selected.status === 'blocked' && (
+                        <p className="text-xs text-surface-500 mt-2">Barrado de propósito, para ninguém usar o envio para lotar a caixa de outra pessoa. Libera sozinho quando a janela do limite passa.</p>
+                      )}
                     </div>
                   )}
                   <p className="text-xs text-surface-500">O conteúdo do e-mail não é guardado (convites e ativação levam o link de acesso). Reenviar monta o e-mail de novo.</p>
                 </div>
-                {selected.status !== 'sent' && (
+                {(selected.status === 'failed' || selected.status === 'no_smtp') && (
                   <div className="p-4 border-t border-surface-800 space-y-2">
                     {selected.canResend && (
                       <Button className="w-full justify-center" loading={busy === selected.id} leftIcon={<RefreshCw className="w-4 h-4" />} onClick={() => resend(selected)}>Reenviar</Button>
