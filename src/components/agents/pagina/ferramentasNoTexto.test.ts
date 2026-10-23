@@ -36,6 +36,27 @@ describe('contradicoes', () => {
     expect(c.some((x) => x.trecho.includes('preços'))).toBe(false)
   })
 
+  // Serra Med, 23/10: a regra da resposta ao lembrete cita a fala do paciente entre aspas.
+  it('a fala do paciente entre aspas não é limitação do agente', () => {
+    const texto = [
+      '## Resposta ao lembrete',
+      '- "Não vou", "não posso" (ou a opção de remarcar ou cancelar): pergunte se prefere remarcar ou cancelar.',
+      '- Se o paciente disser “não posso ir amanhã”, ofereça remarcar a consulta.',
+      '- Quando ele escrever ‘não consigo ir’, pergunte se quer remarcar.',
+    ].join('\n')
+    expect(contradicoes(texto, AGENDA)).toEqual([])
+  })
+
+  it('a frase que o texto manda o AGENTE dizer continua apontada', () => {
+    const c = contradicoes('Responda: "Não consigo agendar pelo chat, a equipe confirma o horário."', AGENDA)
+    expect(c.map((x) => x.trecho)).toEqual(['Responda: "Não consigo agendar pelo chat, a equipe confirma o horário."'])
+  })
+
+  it('a limitação fora das aspas continua apontada, mesmo com aspas na frase', () => {
+    const c = contradicoes('Não consigo agendar pelo chat quando o paciente diz "urgente".', AGENDA)
+    expect(c).toHaveLength(1)
+  })
+
   it('sem ferramenta própria (só base e transferência), nada a apontar', () => {
     expect(contradicoes(TEXTO, [{ name: 'search_knowledge_base', description: 'Busca na base.' }, { name: 'transferir_para_humano' }])).toEqual([])
     expect(contradicoes(TEXTO, [{ name: 'emitir_boleto', description: 'Gera boleto de pagamento.' }])).toEqual([])
