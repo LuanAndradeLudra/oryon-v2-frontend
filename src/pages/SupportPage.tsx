@@ -353,6 +353,8 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
     else rascunhos.delete(c.id)
   }
   const [agindo, setAgindo] = useState<null | 'texto' | 'sim' | 'nao' | 'reabrir'>(null)
+  // "Não, continua" (reavaliação de UX de 27/10): antes de reabrir, a pessoa diz o que ainda não está certo.
+  const [oQueFalta, setOQueFalta] = useState<string | null>(null)
   const esperandoConfirmacao = c.status === 'resolved'
   const encerrado = c.status === 'closed'
   // Resolvido ainda aceita comentário ("ainda falta um detalhe"); encerrado, só reabrindo.
@@ -402,7 +404,7 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
             <p className="text-xs text-surface-300"><span className="font-mono font-semibold tabular-nums">{c.numero}</span></p>
             <h2 className="text-[16px] font-semibold text-surface-50 leading-snug break-words">{tituloDoChamado(c)}</h2>
             <p className="text-xs text-surface-400">{c.contatoNome ? `${c.contatoNome} · ` : ''}Aberto por {c.abertoPor} em {dataCurta(c.abertoEm)}</p>
-            <PrevisaoDaResposta ate={c.respostaPrevistaAte ?? null} />
+            <PrevisaoDaResposta ate={c.respostaPrevistaAte ?? null} aguardando={!!c.aguardandoPrimeiraResposta} />
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
             <SeloDoChamado status={c.status} />
@@ -433,8 +435,21 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
                     <span className="text-[13px] font-semibold text-surface-100 mr-1">Isso resolveu?</span>
                     <Button size="sm" loading={agindo === 'sim'} disabled={!!agindo}
                       onClick={() => void agir('sim', () => supportApi.avaliar(c.id, true), 'Obrigado! Chamado encerrado.')}>Sim, resolveu</Button>
-                    <Button size="sm" variant="neutral" loading={agindo === 'nao'} disabled={!!agindo}
-                      onClick={() => void agir('nao', () => supportApi.avaliar(c.id, false), 'Chamado reaberto. A equipe Oryon vai olhar de novo.')}>Não, continua</Button>
+                    <Button size="sm" variant="neutral" disabled={!!agindo || oQueFalta !== null}
+                      onClick={() => setOQueFalta('')}>Não, continua</Button>
+                  </div>
+                )}
+                {esperandoConfirmacao && oQueFalta !== null && (
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="o-que-falta" className="text-[13px] font-semibold text-surface-100">O que ainda não está certo?</label>
+                    <Textarea id="o-que-falta" rows={2} maxLength={2000} autoFocus value={oQueFalta} onChange={(e) => setOQueFalta(e.target.value)}
+                      placeholder="Ex.: a IA continua dizendo que não aceitamos o convênio." />
+                    <div className="flex gap-2">
+                      <Button size="sm" loading={agindo === 'nao'} disabled={!!agindo || oQueFalta.trim().length < 5}
+                        onClick={() => void agir('nao', () => supportApi.avaliar(c.id, false, oQueFalta.trim()), 'Chamado reaberto. A equipe Oryon vai olhar de novo.')
+                          .then((ok) => { if (ok) setOQueFalta(null) })}>Reabrir o chamado</Button>
+                      <Button size="sm" variant="neutral" disabled={!!agindo} onClick={() => setOQueFalta(null)}>Voltar</Button>
+                    </div>
                   </div>
                 )}
               </AcaoPendente>
@@ -490,6 +505,9 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
 }
 
 /** Cartão neutro com a cor só no ícone (mesma regra do painel do chamado). */
+/** Texto para P2/P3 enquanto o SLA real não é definido (decisão pendente: horas corridas × úteis). */
+const RESPOSTA_SEM_PREVISAO = 'A equipe Oryon responde em horário comercial.'
+
 /** O último retorno da Oryon (é ele que aparece em destaque, acima do fio). */
 function ultimoRetorno(c: ChamadoDaEmpresa) {
   return [...c.eventos].reverse().find((e) => e.tipo === 'retorno') ?? null
@@ -500,9 +518,10 @@ function ultimoRetorno(c: ChamadoDaEmpresa) {
  * do relógio de 1ª resposta, enquanto a Oryon não respondeu. Atrasou: diz que
  * a equipe já foi avisada (o job de prazos avisa uma vez por relógio).
  */
-function PrevisaoDaResposta({ ate }: { ate: string | null }) {
+function PrevisaoDaResposta({ ate, aguardando }: { ate: string | null; aguardando: boolean }) {
   const agora = useRelogioDoMinuto()
-  if (!ate) return null
+  // Sem previsão (P2/P3, até o SLA real): ainda assim, a empresa sabe que a resposta vem.
+  if (!ate) return aguardando ? <p className="mt-1 text-xs text-surface-300" role="status">{RESPOSTA_SEM_PREVISAO}</p> : null
   const quando = new Date(ate)
   const hoje = new Date(agora).toDateString() === quando.toDateString()
   const hora = quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })

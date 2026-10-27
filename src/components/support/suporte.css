@@ -147,7 +147,9 @@
 .sup-selo-acento { background: var(--sup-msg-bg); color: var(--sup-msg-fg); box-shadow: inset 0 0 0 1px var(--sup-msg-bd); }
 
 /* Conversa afetada escolhida. */
-.sup-chip-escolhido { background: var(--sup-msg-bg); color: var(--sup-msg-fg); box-shadow: inset 0 0 0 1px var(--sup-msg-bd); }
+/* Escolhido: o contorno na cor do texto (--sup-msg-fg) — no claro, o fundo #E9FAF6 com a borda #5EEAD4
+   ficava a 1,05:1 do painel branco (reavaliação de UX de 27/10; WCAG 1.4.11 pede 3:1 para o estado). */
+.sup-chip-escolhido { background: var(--sup-msg-bg); color: var(--sup-msg-fg); box-shadow: inset 0 0 0 1.5px var(--sup-msg-fg); }
 
 /* Caixa de seleção da bolha (marcação do chamado): o Checkbox do kit, maior —
    numa conversa a caixa de 14px some ao lado da bolha. A linha inteira também

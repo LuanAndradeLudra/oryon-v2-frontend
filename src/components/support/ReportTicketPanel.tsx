@@ -403,6 +403,8 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
                 <b className="sup-aviso-titulo block text-[13px]">Já existe o {f.duplicado.c.numero} aberto {f.duplicado.motivo}</b>
                 {tituloDoChamado(f.duplicado.c)} · {dataCurta(f.duplicado.c.abertoEm)}. {f.podeJuntar ? 'Se for o mesmo problema, junte a ele.' : 'Se for o mesmo problema, acompanhe por ele.'}
               </p>
+              {/* Reavaliação de UX de 27/10: o que foi relatado lá — é o que decide "é o mesmo?". */}
+              {f.duplicado.c.trecho && <p className="text-xs text-surface-300 italic line-clamp-3 break-words">“{f.duplicado.c.trecho}”</p>}
               <div className="flex flex-wrap gap-1.5">
                 {f.podeJuntar
                   ? <Button size="sm" onClick={() => f.setJuntarEm(f.duplicado!.c)}>Adicionar ao {f.duplicado.c.numero}</Button>

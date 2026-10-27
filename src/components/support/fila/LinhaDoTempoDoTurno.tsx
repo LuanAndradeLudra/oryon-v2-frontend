@@ -88,7 +88,9 @@ function DiagnosticoDoTurno({ turno }: { turno: TurnoGravado }) {
           <dd className={cn('text-xs flex items-start gap-1.5 min-w-0', x.alerta ? 'font-semibold text-surface-100' : 'text-surface-300')}>
             {x.alerta
               ? <AlertTriangle className="w-3.5 h-3.5 mt-px flex-shrink-0 text-warning" aria-label="fora do normal" />
-              : <CheckCircle2 className="w-3.5 h-3.5 mt-px flex-shrink-0 text-surface-500" aria-hidden />}
+              : x.informativo
+                ? <span className="w-3.5 flex-shrink-0" aria-hidden />
+                : <CheckCircle2 className="w-3.5 h-3.5 mt-px flex-shrink-0 text-surface-500" aria-hidden />}
             <span className="break-words">{x.valor}</span>
           </dd>
         </div>

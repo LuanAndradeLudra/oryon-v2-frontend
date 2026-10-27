@@ -39,6 +39,7 @@ import type {
 import { useEstadoNaUrl, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
 import { SupportReportProvider } from '@/components/support/SupportReportContext'
 import { FolhaDoChamadoNoCelular, PainelDoContatoOuChamado } from '@/components/support/ReportTicketPanel'
+import { ColunaQueCedeAoChamado } from '@/components/support/ColunaQueCedeAoChamado'
 
 // SCRUM-1253 (PO, 06/10): abaixo de 1280 px o painel do contato nasce
 // recolhido (abre pelo botão de informações) — com lista e painel fixos o chat
@@ -743,7 +744,7 @@ export function ConversationsPage() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col min-h-0">
+          <ColunaQueCedeAoChamado className="flex flex-col min-h-0">
             <div className="chat-shell-bg flex-1 min-h-0 flex">
               <ConversationList {...listProps} roundedBottomRight />
             </div>
@@ -753,7 +754,7 @@ export function ConversationsPage() {
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">E</kbd> resolver</span>
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> assumir</span>
             </div>
-          </div>
+          </ColunaQueCedeAoChamado>
         )
       })()}
 

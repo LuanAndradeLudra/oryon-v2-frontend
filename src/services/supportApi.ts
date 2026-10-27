@@ -75,8 +75,8 @@ export const supportApi = {
     return api.post<ChamadoDaEmpresa>(`/support/tickets/${id}/reopen`, {}).then((r) => r.data)
   },
   /** "Isso resolveu?" — sim encerra; não reabre e avisa a equipe. */
-  avaliar(id: string, resolveu: boolean) {
-    return api.post<ChamadoDaEmpresa>(`/support/tickets/${id}/evaluation`, { resolveu }).then((r) => r.data)
+  avaliar(id: string, resolveu: boolean, motivo?: string) {
+    return api.post<ChamadoDaEmpresa>(`/support/tickets/${id}/evaluation`, { resolveu, ...(motivo ? { motivo } : {}) }).then((r) => r.data)
   },
   /**
    * Anexo provisório (24 h): sobe antes de criar o chamado; o id vai em

@@ -26,7 +26,7 @@ describe('diagnóstico do turno (revisão de UX de 27/10)', () => {
       { role: 'user', content: '<estado_conversa>\nstatus: open\n</estado_conversa>\n\nVocês atendem sábado?\nObrigada!' },
     ]
     expect(perguntaDoContato(entrada)).toBe('Vocês atendem sábado? Obrigada!')
-    expect(sinaisDoTurno({ secoes: { turno: { entrada } } })[0]).toEqual({ rotulo: 'Pergunta', valor: 'Vocês atendem sábado? Obrigada!', alerta: false })
+    expect(sinaisDoTurno({ secoes: { turno: { entrada } } })[0]).toEqual({ rotulo: 'Pergunta', valor: 'Vocês atendem sábado? Obrigada!', alerta: false, informativo: true })
     expect(perguntaDoContato([{ role: 'user', content: 'x'.repeat(300) }], 20)).toBe(`${'x'.repeat(19)}…`)
     expect(perguntaDoContato(undefined)).toBeNull()
   })

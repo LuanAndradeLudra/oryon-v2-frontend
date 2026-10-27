@@ -24,7 +24,8 @@ export function perguntaDoContato(entrada: Array<{ role: string; content: unknow
   return texto.length > limite ? `${texto.slice(0, limite - 1).trimEnd()}…` : texto
 }
 
-export interface Sinal { rotulo: string; valor: string; alerta: boolean }
+/** `informativo`: não é conferência (ex.: a pergunta do contato) — sem o ícone de "ok". */
+export interface Sinal { rotulo: string; valor: string; alerta: boolean; informativo?: boolean }
 
 /**
  * DIAGNÓSTICO DO TURNO (revisão de UX de 27/10): os sinais que decidem o caso,
@@ -37,7 +38,7 @@ export function sinaisDoTurno(turno: TurnoGravado): Sinal[] {
   const sinais: Sinal[] = []
   // Reavaliação de UX de 27/10: o que o contato perguntou (já mascarado), sem abrir o JSON do turno.
   const pergunta = perguntaDoContato(s.turno?.entrada)
-  if (pergunta) sinais.push({ rotulo: 'Pergunta', valor: pergunta, alerta: false })
+  if (pergunta) sinais.push({ rotulo: 'Pergunta', valor: pergunta, alerta: false, informativo: true })
   const desfecho = turno.rastro?.desfecho ?? null
   if (desfecho) sinais.push({ rotulo: 'Desfecho', valor: DESFECHO[desfecho] ?? desfecho, alerta: desfecho !== 'reply_created' })
   const resposta = s.turno?.respostaFinal ?? s.turno?.textoDoModelo ?? ''

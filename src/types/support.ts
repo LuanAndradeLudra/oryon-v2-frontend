@@ -102,8 +102,12 @@ export interface ChamadoDaEmpresa {
   alcance: Alcance | null
   status: StatusChamado
   prioridade: PrioridadeParaEmpresa
-  /** Enquanto a Oryon não respondeu: o prazo da 1ª resposta (revisão de UX de 27/10). */
+  /** Enquanto a Oryon não respondeu: o prazo da 1ª resposta (revisão de UX de 27/10). Só P0/P1 até o SLA real. */
   respostaPrevistaAte?: string | null
+  /** A Oryon ainda não respondeu e a vez é dela (com ou sem previsão). */
+  aguardandoPrimeiraResposta?: boolean
+  /** A 1ª linha do relato (também no chamado, para o cartão recém-criado). */
+  trecho?: string
   perguntaPendente: string | null
   resumoParaClinica: string | null
   dependeDaClinica: string | null

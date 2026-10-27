@@ -117,7 +117,12 @@ describe('Página Suporte (SCRUM-1383)', () => {
     const card = (await screen.findByText('A Oryon resolveu este chamado')).closest('[role="status"]') as HTMLElement
     expect(screen.getByLabelText('Mensagem para a equipe Oryon')).toBeEnabled()
     fireEvent.click(within(card).getByRole('button', { name: 'Não, continua' }))
-    await waitFor(() => expect(api.avaliar).toHaveBeenCalledWith('t2', false))
+    // Reavaliação de UX de 27/10: antes de reabrir, o que ainda não está certo (mínimo 5 letras).
+    const reabrir = within(card).getByRole('button', { name: 'Reabrir o chamado' })
+    expect(reabrir).toBeDisabled()
+    fireEvent.change(within(card).getByLabelText('O que ainda não está certo?'), { target: { value: 'A IA ainda erra o preço.' } })
+    fireEvent.click(reabrir)
+    await waitFor(() => expect(api.avaliar).toHaveBeenCalledWith('t2', false, 'A IA ainda erra o preço.'))
     await waitFor(() => expect(screen.queryByText('A Oryon resolveu este chamado')).toBeNull())
     expect(api.resumo).toHaveBeenCalledTimes(2) // as abas recontam
   })
