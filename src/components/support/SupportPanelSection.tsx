@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ChevronRight, Flag } from 'lucide-react'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { useDadosDoSuporte, useSuporte } from './suporteDaConversa'
@@ -17,12 +18,16 @@ export function SupportPanelSection({ aoAbrirNoCelular }: { aoAbrirNoCelular?: (
   const s = useSuporte()
   const d = useDadosDoSuporte()
   const marcando = useMarcacao(s.store, (e) => e.marcando)
+  // Reavaliação de UX de 27/10: com muitos chamados, os encerrados ficam recolhidos.
+  const [verEncerrados, setVerEncerrados] = useState(false)
   if (!s.ligado || !d) return null
   const abrir = () => {
     s.iniciarMarcacao()
     if (!s.emPainel) aoAbrirNoCelular?.()
   }
   const abertos = d.chamados.filter(emAberto).length
+  const encerrados = d.chamados.length - abertos
+  const visiveis = verEncerrados || abertos === 0 ? d.chamados : d.chamados.filter(emAberto)
   return (
     <CollapsibleSection
       title={`Chamados · ${d.chamados.length}`}
@@ -50,7 +55,7 @@ export function SupportPanelSection({ aoAbrirNoCelular }: { aoAbrirNoCelular?: (
       ) : (
         <div className="flex flex-col gap-1.5">
           {abertos > 0 && <p className="text-[11px] text-surface-400">{abertos} {abertos > 1 ? 'abertos' : 'aberto'} com a equipe Oryon</p>}
-          {d.chamados.map((c) => {
+          {visiveis.map((c) => {
             const n = c.mensagensMarcadas?.length ?? 0
             return (
               <button
@@ -68,12 +73,19 @@ export function SupportPanelSection({ aoAbrirNoCelular }: { aoAbrirNoCelular?: (
                   <ChevronRight className="w-3.5 h-3.5 ml-auto text-surface-500 group-hover:text-surface-200" aria-hidden />
                 </span>
                 <span className="text-xs font-semibold text-surface-100 truncate">{tituloDoChamado(c)}</span>
+                {c.trecho && <span className="text-[11px] text-surface-300 truncate">{c.trecho}</span>}
                 <span className="text-[11px] text-surface-400">
                   {n ? `${n} ${n === 1 ? 'mensagem marcada' : 'mensagens marcadas'}` : 'a conversa como um todo'} · {dataCurta(c.atualizadoEm)}
                 </span>
               </button>
             )
           })}
+          {abertos > 0 && encerrados > 0 && (
+            <button type="button" onClick={() => setVerEncerrados((v) => !v)} aria-expanded={verEncerrados}
+              className="w-fit text-[11px] font-semibold text-surface-400 hover:text-surface-100 hover:underline">
+              {verEncerrados ? 'Esconder os encerrados' : `+ ${encerrados} ${encerrados > 1 ? 'encerrados' : 'encerrado'}`}
+            </button>
+          )}
         </div>
       )}
     </CollapsibleSection>

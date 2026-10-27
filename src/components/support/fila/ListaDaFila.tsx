@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LifeBuoy, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -28,7 +28,7 @@ const FILAS: Array<[FilaDaEquipe, string, keyof ResumoDaFila['contadores']]> = [
  */
 export function ListaDaFila({
   itens, erro, proximo, carregandoMais, onCarregarMais, onTentarDeNovo, selecionadoId, onAbrir,
-  fila, onFila, contadores, filtros, onFiltros, empresas, busca, celular, agora,
+  fila, onFila, contadores, filtros, onFiltros, empresas, busca, celular, agora, aberto = null,
 }: {
   itens: ItemDaFila[] | null
   /** Motivo da falha ao carregar (null: carregou). */
@@ -48,8 +48,21 @@ export function ListaDaFila({
   busca: string
   celular: boolean
   agora: number
+  /** O chamado aberto agora (por link, busca ou atalho), para quando ele não está nesta página da lista. */
+  aberto?: { id: string; numero: string; titulo: string } | null
 }) {
+  // Reavaliação de UX de 27/10: a lista é por prioridade e carrega 30 por vez; um P2/P3 aberto por
+  // link ficava fora dela. Ele aparece fixo no topo, marcado como aberto.
+  const abertoFora = aberto && itens && !itens.some((i) => i.id === aberto.id) ? aberto : null
   const [verFiltros, setVerFiltros] = useState(false)
+  // Reavaliação de UX de 27/10: o chamado aberto (por link, J/K ou busca) entra na área visível da lista.
+  useEffect(() => {
+    if (!selecionadoId) return
+    const id = requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(`[data-item-da-fila="${selecionadoId}"]`)?.scrollIntoView?.({ block: 'nearest' })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [selecionadoId, itens])
   const ativos = [filtros.situacao !== 'abertos', !!filtros.empresa, !!filtros.origem, filtros.soSinais].filter(Boolean).length
 
   return (
@@ -106,11 +119,20 @@ export function ListaDaFila({
           </div>
         ) : (
           <>
+            {abertoFora && (
+              <div className="relative pl-4 pr-3.5 py-2.5 border-b border-surface-800 bg-[var(--sel)] flex flex-col gap-0.5" aria-current="true">
+                <span className="text-[11px] font-semibold text-surface-300">Aberto agora · fora desta página da fila</span>
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="font-mono text-xs font-semibold text-surface-300 tabular-nums flex-shrink-0">{abertoFora.numero}</span>
+                  <span className="text-[13px] font-semibold text-surface-100 truncate">{abertoFora.titulo}</span>
+                </span>
+              </div>
+            )}
             {itens.map((c) => {
               const ativo = selecionadoId === c.id
               const prazoPerto = c.proximoPrazo?.perto
               return (
-                <button key={c.id} type="button" onClick={() => onAbrir(c.id)} aria-current={ativo ? 'true' : undefined}
+                <button key={c.id} type="button" onClick={() => onAbrir(c.id)} aria-current={ativo ? 'true' : undefined} data-item-da-fila={c.id}
                   className={cn('relative w-full text-left pl-4 pr-3.5 py-2.5 border-b border-surface-800 flex flex-col gap-0.5 transition-colors',
                     ativo ? 'bg-[var(--sel)]' : 'hover:bg-[var(--rowhover)]')}>
                   <span aria-hidden className={cn('absolute left-0 top-0 bottom-0 w-[3px]', PRIORIDADES[c.prioridade].faixa)} />

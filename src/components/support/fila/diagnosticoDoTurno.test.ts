@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sinaisDoTurno } from './diagnosticoDoTurno'
+import { perguntaDoContato, sinaisDoTurno } from './diagnosticoDoTurno'
 
 describe('diagnóstico do turno (revisão de UX de 27/10)', () => {
   it('sem fonte e promessa de retorno sem transferir: os dois sinais vêm marcados', () => {
@@ -16,6 +16,19 @@ describe('diagnóstico do turno (revisão de UX de 27/10)', () => {
       { rotulo: 'Fontes', valor: 'Nenhuma fonte: catálogo vazio · 0 trechos da base · 0 resultados de ferramenta', alerta: true },
       { rotulo: 'Verificação', valor: 'passou', alerta: false },
     ])
+  })
+
+  it('a pergunta do contato vem da última fala dele, sem o bloco de estado da conversa', () => {
+    const entrada = [
+      { role: 'system', content: 'Você é a assistente.' },
+      { role: 'user', content: 'Oi' },
+      { role: 'assistant', content: 'Olá!' },
+      { role: 'user', content: '<estado_conversa>\nstatus: open\n</estado_conversa>\n\nVocês atendem sábado?\nObrigada!' },
+    ]
+    expect(perguntaDoContato(entrada)).toBe('Vocês atendem sábado? Obrigada!')
+    expect(sinaisDoTurno({ secoes: { turno: { entrada } } })[0]).toEqual({ rotulo: 'Pergunta', valor: 'Vocês atendem sábado? Obrigada!', alerta: false })
+    expect(perguntaDoContato([{ role: 'user', content: 'x'.repeat(300) }], 20)).toBe(`${'x'.repeat(19)}…`)
+    expect(perguntaDoContato(undefined)).toBeNull()
   })
 
   it('turno normal: nada marcado; falha de ferramenta e achado da verificação marcam', () => {

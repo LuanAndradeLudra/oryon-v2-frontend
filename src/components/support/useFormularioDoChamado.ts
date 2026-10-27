@@ -342,7 +342,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
       descartar()
       onCriado(c, true)
       onClose()
-      showToast(`Chamado ${c.numero} aberto. Acompanhe a resposta da Oryon em Suporte.`, 'success', acaoVerChamado(c.id), 10000)
+      showToast(`${c.numero} aberto. Acompanhe em Suporte.`, 'success', acaoVerChamado(c.id), 10000)
     } catch (err) {
       showToast(getApiErrorMessage(err, 'Não foi possível enviar. Tente de novo.'), 'error')
     } finally {

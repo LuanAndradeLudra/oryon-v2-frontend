@@ -123,9 +123,7 @@ function ItemDoFio({ c, e, ultimo, interno, destacado = false }: { c: ChamadoNoF
   const Icone = ICONE_DO_EVENTO[e.tipo] ?? CircleDot
   const nota = e.visivelParaEmpresa === false
   // Revisão de UX de 27/10: a resposta em destaque no topo não se repete inteira no fio.
-  const corpo = e.tipo === 'aberto' ? <RelatoNoFio c={c} />
-    : destacado ? <span className="text-surface-400">A resposta está em destaque acima.</span>
-    : e.corpo
+  const corpo = e.tipo === 'aberto' ? <RelatoNoFio c={c} /> : destacado ? null : e.corpo
   const para = interno && e.tipo === 'status' && typeof e.dados?.para === 'string' ? e.dados.para as StatusChamado : null
   const texto = para && STATUS_NA_FILA[para] ? `Status: ${STATUS_NA_FILA[para]}` : e.texto
   return (
@@ -140,7 +138,7 @@ function ItemDoFio({ c, e, ultimo, interno, destacado = false }: { c: ChamadoNoF
           <b className="font-semibold">{texto}</b>
           {interno && nota && <span className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-surface-400">só Oryon</span>}
         </p>
-        <p className="text-[11px] text-surface-400">{e.autor} · {dataCurta(e.em)}</p>
+        <p className="text-[11px] text-surface-400">{e.autor} · {dataCurta(e.em)}{destacado ? ' · a resposta está em destaque acima' : ''}</p>
         {corpo && (
           <div className={cn('mt-2 text-[13px] text-surface-100 rounded-[10px] border px-3 py-2.5 whitespace-pre-wrap break-words',
             nota ? 'border-dashed border-surface-500 bg-transparent' : DA_EMPRESA.has(e.tipo) ? 'border-[var(--bd2)] bg-[var(--sup-cartao-bg)]' : 'border-[var(--bd2)] bg-surface-900')}>

@@ -77,6 +77,22 @@ export function SupportReportProvider({ conversationId, contatoNome, children }:
   const reportar = useCallback((ids: string[]) => {
     const conversa = ids.length === 0
     store.mudar({ marcadas: new Set(ids), marcando: !conversa, sobre: conversa ? 'conversa' : 'mensagens', painelAberto: true })
+    // Reavaliação de UX de 27/10: o painel abre ao lado e o chat encolhe (as bolhas ficam mais altas);
+    // sem isto, a mensagem reportada saía da tela. Depois do layout novo, ela volta à vista.
+    if (ids[0]) {
+      // As caixas de marcação e o painel mudam a altura das bolhas em mais de um quadro: rola de novo
+      // quando o layout assenta (só se a mensagem ainda estiver fora da área visível).
+      const mostrar = () => {
+        const el = document.querySelector<HTMLElement>(`[data-message-id="${ids[0]}"]`)
+        const lista = el?.closest<HTMLElement>('.overflow-y-auto')
+        if (!el || !lista) return
+        const r = el.getBoundingClientRect()
+        const l = lista.getBoundingClientRect()
+        if (r.top < l.top - 1 || r.bottom > l.bottom + 1) el.scrollIntoView?.({ block: 'center' })
+      }
+      requestAnimationFrame(() => requestAnimationFrame(mostrar))
+      setTimeout(mostrar, 250)
+    }
   }, [store])
   // Conversa inteira: sai a marcação (e as caixas do chat). Mensagens: volta a marcar.
   // No celular a folha cobre o chat: "Mensagens" fecha a folha para marcar.

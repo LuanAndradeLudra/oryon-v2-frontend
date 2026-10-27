@@ -13,7 +13,7 @@ import { haSobreposicaoAberta } from '@/lib/sobreposicaoAberta'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import { adminSupportApi } from '@/services/supportApi'
 import type { AtalhoDaFila, ChamadoDaEquipe, FilaDaEquipe, ItemDaFila, ResumoDaFila, SituacaoDaFila } from '@/types/support'
-import { ORIGENS_DO_PROBLEMA, type OrigemDoProblema } from '@/components/support/supportModel'
+import { ORIGENS_DO_PROBLEMA, tituloDoChamado, type OrigemDoProblema } from '@/components/support/supportModel'
 import { useAtualizacaoPeriodica } from '@/components/support/useAtualizacaoPeriodica'
 import { ListaDaFila, type FiltrosDaLista } from '@/components/support/fila/ListaDaFila'
 import { DetalheDaFila } from '@/components/support/fila/DetalheDaFila'
@@ -209,6 +209,7 @@ export function AdminSupportPage() {
       onCarregarMais={() => void carregarMais()} onTentarDeNovo={() => setPedido((v) => v + 1)}
       selecionadoId={selecionadoId} onAbrir={abrir} fila={fila} onFila={setFila} contadores={resumo?.contadores ?? null}
       filtros={filtros} onFiltros={mudarFiltros} empresas={resumo?.empresas ?? []} busca={termo} celular={isMobile} agora={agora}
+      aberto={aberto ? { id: aberto.id, numero: aberto.numero, titulo: tituloDoChamado(aberto) } : null}
     />
   )
   const detalheEl = selecionadoId ? (

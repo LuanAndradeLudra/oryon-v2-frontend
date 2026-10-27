@@ -12,6 +12,18 @@ const VEREDITO: Record<string, string> = { pass: 'passou', block: 'bloqueou', re
 /** "Vou pedir/verificar/confirmar… e já te retorno": promessa que só vale com a transferência de fato. */
 const PROMESSA = /\b(vou|vamos|irei)\s+(pedir|verificar|confirmar|checar|consultar|encaminhar|repassar)|j[áa] te retorn|te retorno|retorno em breve/i
 
+/** Estado da conversa que o backend junta à fala do contato: não é fala dele. */
+const ESTADO_DA_CONVERSA = /<estado_conversa>[\s\S]*?<\/estado_conversa>/g
+
+/** A última fala do contato que a IA recebeu, sem o bloco de estado, curta. */
+export function perguntaDoContato(entrada: Array<{ role: string; content: unknown }> | undefined, limite = 240): string | null {
+  const ultima = [...(entrada ?? [])].reverse().find((m) => m.role === 'user' && typeof m.content === 'string')
+  if (!ultima) return null
+  const texto = (ultima.content as string).replace(ESTADO_DA_CONVERSA, ' ').replace(/\s+/g, ' ').trim()
+  if (!texto) return null
+  return texto.length > limite ? `${texto.slice(0, limite - 1).trimEnd()}…` : texto
+}
+
 export interface Sinal { rotulo: string; valor: string; alerta: boolean }
 
 /**
@@ -23,6 +35,9 @@ export interface Sinal { rotulo: string; valor: string; alerta: boolean }
 export function sinaisDoTurno(turno: TurnoGravado): Sinal[] {
   const s = turno.secoes ?? {}
   const sinais: Sinal[] = []
+  // Reavaliação de UX de 27/10: o que o contato perguntou (já mascarado), sem abrir o JSON do turno.
+  const pergunta = perguntaDoContato(s.turno?.entrada)
+  if (pergunta) sinais.push({ rotulo: 'Pergunta', valor: pergunta, alerta: false })
   const desfecho = turno.rastro?.desfecho ?? null
   if (desfecho) sinais.push({ rotulo: 'Desfecho', valor: DESFECHO[desfecho] ?? desfecho, alerta: desfecho !== 'reply_created' })
   const resposta = s.turno?.respostaFinal ?? s.turno?.textoDoModelo ?? ''

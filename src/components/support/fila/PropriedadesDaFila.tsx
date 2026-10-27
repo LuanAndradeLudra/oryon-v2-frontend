@@ -176,7 +176,7 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
         <p className="text-[11px] text-surface-400 -mt-0.5">Resolvido só pela resposta à empresa, no campo de baixo.</p>
         {/* Revisão de UX de 27/10: a equipe confirma ou corrige a categoria que veio da abertura. */}
         <Linha rotulo="Categoria">
-          <EscolhaEmLinha<Categoria> rotulo="Categoria" valor={c.categoria}
+          <EscolhaEmLinha<Categoria> rotulo="Categoria" valor={c.categoria} quebrar
             onChange={(v) => { if (v && v !== c.categoria) void mudar({ categoria: v }, `Categoria: ${CATEGORIAS[v]}.`) }}
             opcoes={(Object.keys(CATEGORIAS) as Categoria[]).map((k) => [k, CATEGORIAS[k]])} />
         </Linha>
@@ -211,7 +211,7 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
         {listaDeParecidos && listaDeParecidos.length === 0 && <p className="text-[11px] text-surface-400">Nenhum parecido aberto nos últimos 7 dias.</p>}
         {!c.problema && <div className="flex flex-col">
           <Linha rotulo="Causa">
-            <EscolhaEmLinha<CausaRaiz> rotulo="Causa" valor={c.causaRaiz} limpar
+            <EscolhaEmLinha<CausaRaiz> rotulo="Causa" valor={c.causaRaiz} limpar quebrar
               onChange={(v) => void mudar({ causaRaiz: v }, v ? 'Causa registrada.' : 'Causa retirada.')}
               opcoes={(Object.keys(CAUSAS) as CausaRaiz[]).map((k) => [k, CAUSAS[k]])} />
           </Linha>

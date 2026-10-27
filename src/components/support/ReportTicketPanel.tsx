@@ -149,7 +149,9 @@ export function PerguntaDeFato<T extends string>({ pergunta, ajuda, obrigatorio,
       </span>
       <div className="flex flex-wrap gap-1.5">
         {opcoes.map(([k, l]) => (
-          <label key={k} className={cn('h-7 px-2.5 rounded-full text-xs font-semibold border inline-flex items-center cursor-pointer transition-colors',
+          // `relative`: o rádio escondido (sr-only, absoluto) fica DENTRO do botão. Sem isto ele se posicionava
+          // no contêiner da tela, e o foco do clique rolava a página inteira (reavaliação de UX de 27/10).
+          <label key={k} className={cn('relative h-7 px-2.5 rounded-full text-xs font-semibold border inline-flex items-center cursor-pointer transition-colors',
             'focus-within:ring-1 focus-within:ring-brand-500',
             valor === k ? 'sup-chip-escolhido border-transparent' : 'border-[var(--bd2)] text-surface-300 hover:bg-[var(--rowhover)]')}>
             <input type="radio" name={nome} value={k} checked={valor === k} onChange={() => onChange(k)} className="sr-only" />
@@ -162,13 +164,15 @@ export function PerguntaDeFato<T extends string>({ pergunta, ajuda, obrigatorio,
 }
 
 /** Valor da linha: mostra a escolha ou "+ Adicionar"; abre a lista do app. */
-export function EscolhaEmLinha<T extends string>({ valor, opcoes, onChange, rotulo, vazio = 'Adicionar', limpar }: {
+export function EscolhaEmLinha<T extends string>({ valor, opcoes, onChange, rotulo, vazio = 'Adicionar', limpar, quebrar = false }: {
   valor: T | null
   opcoes: Array<[T, string]>
   onChange: (v: T | null) => void
   rotulo: string
   vazio?: string
   limpar?: boolean
+  /** Em coluna estreita (propriedades da fila), o valor quebra a linha em vez de cortar. */
+  quebrar?: boolean
 }) {
   const [aberto, setAberto] = useState(false)
   const [lado, setLado] = useState<'left' | 'right'>('left')
@@ -182,7 +186,9 @@ export function EscolhaEmLinha<T extends string>({ valor, opcoes, onChange, rotu
       // cresce para dentro — nunca vaza da janela.
       align={lado}
       className="w-[220px] max-w-[calc(100vw-24px)]"
-      wrapperClassName="inline-flex max-w-full min-w-0 align-top -ml-2"
+      // Recuo por deslocamento (`-left-2`), não por margem: a margem negativa entrava na conta da largura
+      // máxima e cortava 8 px do texto ("Resolvido · pede confirma…") — reavaliação de UX de 27/10.
+      wrapperClassName="inline-flex max-w-full min-w-0 align-top relative -left-2"
       anchor={
         <button type="button" onClick={(e) => {
           e.currentTarget.scrollIntoView({ block: 'nearest' })
@@ -190,10 +196,10 @@ export function EscolhaEmLinha<T extends string>({ valor, opcoes, onChange, rotu
           setAberto((v) => !v)
         }} aria-haspopup="menu" aria-expanded={aberto} aria-label={`${rotulo}: ${atual?.[1] ?? 'não informado'}`}
           // Menu aberto: o campo fica destacado (fundo de seleção + contorno da marca) até fechar.
-          className={cn('group h-8 px-2 w-fit max-w-full rounded-[6px] flex items-center gap-1.5 text-[13px] transition-colors',
+          className={cn('group px-2 w-fit max-w-full rounded-[6px] flex items-center gap-1.5 text-[13px] text-left transition-colors', quebrar ? 'min-h-8 py-1' : 'h-8',
             aberto ? 'bg-[var(--sel)] shadow-[inset_0_0_0_1px_var(--color-brand-500)]' : 'hover:bg-[var(--rowhover)]')}>
           {atual
-            ? <span className="text-surface-100 truncate">{atual[1]}</span>
+            ? <span className={cn('text-surface-100', quebrar ? 'break-words leading-snug' : 'truncate')}>{atual[1]}</span>
             : <span className="flex items-center gap-1 text-surface-400 group-hover:text-surface-200"><Plus className="w-3.5 h-3.5" />{vazio}</span>}
           {atual && <ChevronDown className={cn('w-3.5 h-3.5 flex-shrink-0 transition-transform', aberto ? 'rotate-180 text-surface-200' : 'text-surface-500')} />}
         </button>
@@ -408,12 +414,13 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
         )}
         {f.juntarEm && (
           <p className="text-xs text-surface-400">
-            As mensagens marcadas e o seu relato entram no {f.juntarEm.numero}.{' '}
+            {conversationId ? 'As mensagens marcadas e o seu relato entram' : 'O seu relato entra'} no {f.juntarEm.numero}.{' '}
             <button type="button" onClick={() => { f.setJuntarEm(null); f.setEhOutro(true) }} className="text-accent-dark font-semibold hover:underline">Abrir um chamado novo</button>
           </p>
         )}
 
-        {textosDoTipo?.complemento && f.camposDoTipo?.complemento === 'antes' && campoComplemento}
+        {/* Juntando a um chamado, só o relato vai (o complemento não tem para onde ir). */}
+        {!f.juntarEm && textosDoTipo?.complemento && f.camposDoTipo?.complemento === 'antes' && campoComplemento}
 
         {/* O que a pessoa escreve vem primeiro (sem conversa: só depois de escolher o tipo). */}
         {mostrarResto && (
@@ -478,7 +485,7 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
         </div>
         )}
 
-        {textosDoTipo?.complemento && f.camposDoTipo?.complemento === 'depois' && campoComplemento}
+        {!f.juntarEm && textosDoTipo?.complemento && f.camposDoTipo?.complemento === 'depois' && campoComplemento}
 
         {!f.juntarEm && f.perguntaEsperado && (
           <div className="flex flex-col gap-1.5">
