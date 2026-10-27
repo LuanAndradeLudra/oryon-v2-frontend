@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRelogioDoMinuto } from '@/hooks/useRelogioDoMinuto'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useEstadoNaUrl, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
@@ -246,11 +247,13 @@ export function SupportPage() {
                   className={cn('w-full text-left px-3.5 py-2.5 border-b border-surface-800 flex flex-col gap-0.5 transition-colors',
                     ativo ? 'bg-[var(--sel)]' : 'hover:bg-[var(--rowhover)]')}>
                   <span className="flex items-center gap-2 min-w-0">
-                    <span className="font-mono text-[11px] text-surface-400">{c.numero}</span>
+                    <span className="font-mono text-xs font-semibold text-surface-300 tabular-nums">{c.numero}</span>
                     <PrioridadeDaEmpresaChip prioridade={c.prioridade} />
                     <span className="ml-auto text-[11px] text-surface-400 tabular-nums flex-shrink-0">{dataCurta(c.atualizadoEm)}</span>
                   </span>
                   <span className="text-[13px] font-semibold text-surface-100 truncate">{tituloDoChamado(c)}</span>
+                  {/* Revisão de UX de 27/10: o que a pessoa escreveu distingue chamados com o mesmo título. */}
+                  {c.trecho && <span className="text-xs text-surface-300 line-clamp-2 break-words">{c.trecho}</span>}
                   <span className="flex items-center gap-2 min-w-0">
                     <span className="text-xs text-surface-400 truncate flex-1">{c.contatoNome ? `${c.contatoNome} · ` : ''}por {c.abertoPor}</span>
                     <SeloDoChamado status={c.status} />
@@ -396,9 +399,10 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
             </button>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] text-surface-400"><span className="font-mono">{c.numero}</span></p>
+            <p className="text-xs text-surface-300"><span className="font-mono font-semibold tabular-nums">{c.numero}</span></p>
             <h2 className="text-[16px] font-semibold text-surface-50 leading-snug break-words">{tituloDoChamado(c)}</h2>
             <p className="text-xs text-surface-400">{c.contatoNome ? `${c.contatoNome} · ` : ''}Aberto por {c.abertoPor} em {dataCurta(c.abertoEm)}</p>
+            <PrevisaoDaResposta ate={c.respostaPrevistaAte ?? null} />
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
             <SeloDoChamado status={c.status} />
@@ -438,7 +442,7 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
 
             {!mostrarColuna && <DetalhesDobraveis c={c} />}
 
-            <FioDoChamado c={c} />
+            <FioDoChamado c={c} emDestaque={c.resumoParaClinica ? ultimoRetorno(c)?.id ?? null : null} />
           </div>
         </div>
 
@@ -486,6 +490,28 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
 }
 
 /** Cartão neutro com a cor só no ícone (mesma regra do painel do chamado). */
+/** O último retorno da Oryon (é ele que aparece em destaque, acima do fio). */
+function ultimoRetorno(c: ChamadoDaEmpresa) {
+  return [...c.eventos].reverse().find((e) => e.tipo === 'retorno') ?? null
+}
+
+/**
+ * Quando a empresa pode esperar a 1ª resposta (revisão de UX de 27/10): o prazo
+ * do relógio de 1ª resposta, enquanto a Oryon não respondeu. Atrasou: diz que
+ * a equipe já foi avisada (o job de prazos avisa uma vez por relógio).
+ */
+function PrevisaoDaResposta({ ate }: { ate: string | null }) {
+  const agora = useRelogioDoMinuto()
+  if (!ate) return null
+  const quando = new Date(ate)
+  const hoje = new Date(agora).toDateString() === quando.toDateString()
+  const hora = quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const texto = quando.getTime() <= agora
+    ? 'A resposta está atrasada; a equipe Oryon já foi avisada.'
+    : `A Oryon responde até ${hoje ? hora : `${dataCurta(ate)}`}.`
+  return <p className="mt-1 text-xs text-surface-300" role="status">{texto}</p>
+}
+
 function AcaoPendente({ familia, icone: Icone, titulo, children }: { familia: 'aviso' | 'mensagem'; icone: LucideIcon; titulo: string; children: ReactNode }) {
   return (
     <div className={cn('sup-cartao px-4 py-3 flex gap-3', `sup-familia-${familia}`)} role="status">

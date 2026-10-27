@@ -847,6 +847,18 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                 <CornerUpLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
               </button>
             )}
+            {/* Suporte (revisão de UX de 27/10): reportar a um clique, sem abrir o "⋯". */}
+            {suporte.ligado && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); suporte.reportar([message.id]) }}
+                title={origemDaMensagem.reportar}
+                aria-label={origemDaMensagem.reportar}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              >
+                <Flag className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
+            )}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}

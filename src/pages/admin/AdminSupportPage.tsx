@@ -18,7 +18,7 @@ import { useAtualizacaoPeriodica } from '@/components/support/useAtualizacaoPeri
 import { ListaDaFila, type FiltrosDaLista } from '@/components/support/fila/ListaDaFila'
 import { DetalheDaFila } from '@/components/support/fila/DetalheDaFila'
 import type { CampoDaFilaRef } from '@/components/support/fila/CampoUnicoDaFila'
-import { ehConflito } from '@/components/support/fila/modeloDaFila'
+import { ehConflito, motivoDaFalha } from '@/components/support/fila/modeloDaFila'
 import { CalibracaoDaRegra } from '@/components/support/fila/CalibracaoDaRegra'
 import { QualidadeDasEmpresas } from '@/components/support/fila/QualidadeDasEmpresas'
 import '@/components/support/suporte.css'
@@ -50,7 +50,7 @@ const ATALHOS: Array<[AtalhoDaFila, string, keyof ResumoDaFila['contadores'], st
   ['com_cliente', 'com o cliente', 'comCliente', 'text-surface-300'],
 ]
 
-interface Lista { chave: string; itens: ItemDaFila[]; proximo: string | null; erro: boolean }
+interface Lista { chave: string; itens: ItemDaFila[]; proximo: string | null; erro: string | null }
 
 export function AdminSupportPage() {
   const navigate = useNavigate()
@@ -90,10 +90,10 @@ export function AdminSupportPage() {
       })
         .then((p) => {
           if (!vivo) return
-          setLista({ chave, itens: p.itens, proximo: p.proximoCursor, erro: false })
+          setLista({ chave, itens: p.itens, proximo: p.proximoCursor, erro: null })
           setAutomatico((a) => (a?.chave === chave && a.id ? a : { chave, id: p.itens[0]?.id ?? null }))
         })
-        .catch(() => { if (vivo) setLista((l) => ({ chave, itens: l?.chave === chave ? l.itens : [], proximo: null, erro: true })) })
+        .catch((err) => { if (vivo) setLista((l) => ({ chave, itens: l?.chave === chave ? l.itens : [], proximo: null, erro: motivoDaFalha(err) })) })
     }, termo ? 250 : 0)
     return () => { vivo = false; clearTimeout(t) }
   }, [chave, pedido, fila, atalho, situacao, empresa, origem, soSinais, termo])
@@ -117,14 +117,14 @@ export function AdminSupportPage() {
   }
 
   const selecionadoId = chamadoId ?? (isMobile ? null : automatico?.chave === chave ? automatico.id : null)
-  const [detalhe, setDetalhe] = useState<{ id: string; c: ChamadoDaEquipe | null; erro: boolean } | null>(null)
+  const [detalhe, setDetalhe] = useState<{ id: string; c: ChamadoDaEquipe | null; erro: string | null } | null>(null)
   const [pedidoDoDetalhe, setPedidoDoDetalhe] = useState(0)
   useEffect(() => {
     if (!selecionadoId) return
     let vivo = true
     adminSupportApi.obter(selecionadoId)
-      .then((c) => { if (vivo) setDetalhe({ id: selecionadoId, c, erro: false }) })
-      .catch(() => { if (vivo) setDetalhe((d) => ({ id: selecionadoId, c: d?.id === selecionadoId ? d.c : null, erro: true })) })
+      .then((c) => { if (vivo) setDetalhe({ id: selecionadoId, c, erro: null }) })
+      .catch((err) => { if (vivo) setDetalhe((d) => ({ id: selecionadoId, c: d?.id === selecionadoId ? d.c : null, erro: motivoDaFalha(err) })) })
     return () => { vivo = false }
   }, [selecionadoId, pedidoDoDetalhe])
   const doSelecionado = detalhe?.id === selecionadoId ? detalhe : null
@@ -145,7 +145,7 @@ export function AdminSupportPage() {
   })
   const aoAtualizar = (c: ChamadoDaEquipe) => {
     if (c.id === selecionadoAtual.current) {
-      setDetalhe({ id: c.id, c, erro: false })
+      setDetalhe({ id: c.id, c, erro: null })
       setPedidoDoDetalhe((v) => v + 1) // invalida uma atualização periódica que saiu antes da ação
       if (!chamadoIdAtual.current) setChamadoId(c.id)
     }
@@ -205,7 +205,7 @@ export function AdminSupportPage() {
 
   const listaEl = (
     <ListaDaFila
-      itens={itens} erro={!!daChave?.erro} proximo={daChave?.proximo ?? null} carregandoMais={carregandoMais}
+      itens={itens} erro={daChave?.erro ?? null} proximo={daChave?.proximo ?? null} carregandoMais={carregandoMais}
       onCarregarMais={() => void carregarMais()} onTentarDeNovo={() => setPedido((v) => v + 1)}
       selecionadoId={selecionadoId} onAbrir={abrir} fila={fila} onFila={setFila} contadores={resumo?.contadores ?? null}
       filtros={filtros} onFiltros={mudarFiltros} empresas={resumo?.empresas ?? []} busca={termo} celular={isMobile} agora={agora}
@@ -217,7 +217,7 @@ export function AdminSupportPage() {
         onRecarregar={recarregar} onAbrir={abrir} onVoltar={isMobile ? voltar : undefined} campoRef={campoRef} />
     ) : doSelecionado?.erro ? (
       <div className="flex-1 flex items-center justify-center p-6">
-        <ErrorState title="Não foi possível abrir o chamado" onRetry={recarregar} />
+        <ErrorState title="Não foi possível abrir o chamado" hint={doSelecionado.erro} onRetry={recarregar} />
       </div>
     ) : (
       <p className="flex-1 p-6 text-xs text-surface-400" role="status">Abrindo o chamado…</p>

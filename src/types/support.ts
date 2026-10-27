@@ -26,6 +26,8 @@ export interface ResumoDoChamado {
   categoria: Categoria
   assunto: { id: string; titulo: string } | null
   ondeAconteceu: string | null
+  /** A 1ª linha do relato (revisão de UX de 27/10): distingue chamados com o mesmo título. */
+  trecho?: string
   status: StatusChamado
   prioridade: PrioridadeParaEmpresa
   perguntaPendente: string | null
@@ -100,6 +102,8 @@ export interface ChamadoDaEmpresa {
   alcance: Alcance | null
   status: StatusChamado
   prioridade: PrioridadeParaEmpresa
+  /** Enquanto a Oryon não respondeu: o prazo da 1ª resposta (revisão de UX de 27/10). */
+  respostaPrevistaAte?: string | null
   perguntaPendente: string | null
   resumoParaClinica: string | null
   dependeDaClinica: string | null

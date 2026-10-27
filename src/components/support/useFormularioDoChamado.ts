@@ -114,7 +114,8 @@ export interface PropsDoFormulario {
 
 /** Campos que cada tipo de pedido (sem conversa) pergunta. */
 export const CAMPOS_DO_TIPO: Record<TipoDePedido, { onde: boolean; desde: boolean; fatos: boolean; terceiros: boolean; complemento: 'antes' | 'depois' | null }> = {
-  defeito: { onde: true, desde: true, fatos: true, terceiros: true, complemento: 'antes' },
+  // Revisão de UX de 27/10: o relato (obrigatório) vem primeiro e recebe o foco; o complemento opcional vem depois.
+  defeito: { onde: true, desde: true, fatos: true, terceiros: true, complemento: 'depois' },
   lentidao: { onde: true, desde: true, fatos: true, terceiros: false, complemento: null },
   duvida: { onde: true, desde: false, fatos: false, terceiros: false, complemento: null },
   sugestao: { onde: false, desde: false, fatos: false, terceiros: false, complemento: 'depois' },
@@ -341,7 +342,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
       descartar()
       onCriado(c, true)
       onClose()
-      showToast(`Chamado ${c.numero} aberto. A equipe Oryon responde por aqui.`, 'success', acaoVerChamado(c.id), 8000)
+      showToast(`Chamado ${c.numero} aberto. Acompanhe a resposta da Oryon em Suporte.`, 'success', acaoVerChamado(c.id), 10000)
     } catch (err) {
       showToast(getApiErrorMessage(err, 'Não foi possível enviar. Tente de novo.'), 'error')
     } finally {

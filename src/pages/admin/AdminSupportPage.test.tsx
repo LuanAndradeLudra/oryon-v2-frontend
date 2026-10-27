@@ -88,22 +88,35 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
   it('responder não resolve por padrão; Resolvido é escolha explícita', async () => {
     api.responder.mockImplementation(async (_id, dto) => chamado(A, { status: dto.deixarComo }))
     render(<Tela />)
+    // Revisão de UX de 27/10: o campo fica recolhido até alguém ir escrever.
+    fireEvent.click(await within(await screen.findByRole('region', { name: 'Chamado SUP-0001' })).findByRole('button', { name: 'Responder à empresa' }))
     const campo = await screen.findByLabelText('Resposta à empresa')
     fireEvent.change(campo, { target: { value: 'Achamos a causa e seguimos investigando.' } })
     fireEvent.click(within(detalhe()).getByRole('button', { name: 'Enviar para a empresa' }))
     await waitFor(() => expect(api.responder).toHaveBeenCalledWith(T1, expect.objectContaining({ deixarComo: 'investigating', version: 3 })))
+    // Enviou: recolhe de novo.
+    fireEvent.click(await within(detalhe()).findByRole('button', { name: 'Responder à empresa' }))
     fireEvent.change(await screen.findByLabelText('Resposta à empresa'), { target: { value: 'Corrigimos o cadastro do agente.' } })
     fireEvent.click(screen.getByRole('button', { name: /Status depois da resposta/ }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: /Resolvido \(pede confirmação\)/ }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Resolvido · pede confirmação/ }))
+    // Resolver pede a causa: sem ela, não envia.
+    expect(within(detalhe()).getByRole('button', { name: 'Enviar para a empresa' })).toBeDisabled()
+    expect(screen.getByText(/Para resolver, escolha a causa/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^Causa do problema:/ }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Cadastro ou configuração do cliente' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Categoria ao resolver:/ }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Ação errada ou não executada' }))
     fireEvent.click(within(detalhe()).getByRole('button', { name: 'Enviar para a empresa' }))
-    await waitFor(() => expect(api.responder).toHaveBeenLastCalledWith(T1, expect.objectContaining({ deixarComo: 'resolved' })))
+    await waitFor(() => expect(api.responder).toHaveBeenLastCalledWith(T1, expect.objectContaining({
+      deixarComo: 'resolved', causaRaiz: 'config_or_data', categoria: 'wrong_action',
+    })))
   })
 
   it('nota interna pelo modo próprio; ocorrência interna (sem empresa) só tem nota', async () => {
     api.anotar.mockResolvedValue(chamado(A))
     const { unmount } = render(<Tela />)
     await screen.findByRole('region', { name: 'Chamado SUP-0001' })
-    fireEvent.click(screen.getByRole('tab', { name: 'Nota interna' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Nota interna' }))
     fireEvent.change(screen.getByLabelText('Nota interna'), { target: { value: 'Hipótese: cadastro desatualizado.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Registrar nota' }))
     await waitFor(() => expect(api.anotar).toHaveBeenCalledWith(T1, 'Hipótese: cadastro desatualizado.'))
@@ -113,6 +126,8 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     await screen.findByRole('region', { name: 'Chamado SUP-0001' })
     expect(screen.queryByRole('tab', { name: 'Responder à empresa' })).toBeNull()
     expect(screen.queryByRole('tab', { name: 'Perguntar' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Perguntar' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Nota interna' }))
     expect(screen.getByLabelText('Nota interna')).toBeInTheDocument()
   })
 
@@ -120,7 +135,7 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     api.obter.mockResolvedValue(chamado({ ...A, status: 'awaiting_client', perguntaPendente: 'Em que horário?' }))
     render(<Tela />)
     await screen.findByRole('region', { name: 'Chamado SUP-0001' })
-    fireEvent.click(screen.getByRole('tab', { name: 'Perguntar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Perguntar' }))
     expect(screen.getByText(/Já existe uma pergunta esperando a empresa/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Enviar pergunta' })).toBeNull()
   })
@@ -178,6 +193,7 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     expect(await screen.findByRole('region', { name: 'Chamado SUP-0002' })).toBeInTheDocument()
     act(() => { fireEvent.keyDown(window, { key: 'k' }) })
     expect(await screen.findByRole('region', { name: 'Chamado SUP-0001' })).toBeInTheDocument()
+    fireEvent.click(within(detalhe()).getByRole('button', { name: 'Responder à empresa' }))
     fireEvent.keyDown(screen.getByLabelText('Resposta à empresa'), { key: 'a' })
     expect(api.atualizar).not.toHaveBeenCalled()
     act(() => { fireEvent.keyDown(window, { key: 'a' }) })
@@ -189,7 +205,7 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     api.anotar.mockImplementation(() => new Promise((r) => { soltar = r }))
     render(<Tela />)
     await screen.findByRole('region', { name: 'Chamado SUP-0001' })
-    fireEvent.click(screen.getByRole('tab', { name: 'Nota interna' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Nota interna' }))
     const campo = screen.getByLabelText('Nota interna')
     fireEvent.change(campo, { target: { value: 'Primeira hipótese.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Registrar nota' }))

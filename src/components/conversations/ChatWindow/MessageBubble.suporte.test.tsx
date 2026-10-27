@@ -62,7 +62,7 @@ describe('MessageBubble — chamado de suporte (SCRUM-1381)', () => {
     expect(await screen.findByRole('menuitem', { name: 'Reportar resposta da IA' })).toBeInTheDocument()
     fireEvent.keyDown(document, { key: 'Escape' })
     fireEvent.contextMenu(screen.getByText('Qual o valor da consulta?'))
-    expect(await screen.findByRole('menuitem', { name: 'Reportar problema com esta mensagem' })).toBeInTheDocument()
+    expect(await screen.findByRole('menuitem', { name: 'Reportar esta mensagem' })).toBeInTheDocument()
   })
 
   it('reportar liga a marcação: caixa de verdade em cada bolha; a linha marca e a caixa não conta duas vezes', async () => {

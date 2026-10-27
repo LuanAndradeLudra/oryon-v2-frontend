@@ -31,7 +31,8 @@ export function ListaDaFila({
   fila, onFila, contadores, filtros, onFiltros, empresas, busca, celular, agora,
 }: {
   itens: ItemDaFila[] | null
-  erro: boolean
+  /** Motivo da falha ao carregar (null: carregou). */
+  erro: string | null
   proximo: string | null
   carregandoMais: boolean
   onCarregarMais: () => void
@@ -96,7 +97,7 @@ export function ListaDaFila({
 
       <div className="flex-1 overflow-y-auto">
         {erro && !itens?.length ? (
-          <ErrorState compact onRetry={onTentarDeNovo} />
+          <ErrorState compact hint={erro} onRetry={onTentarDeNovo} />
         ) : itens === null ? (
           <p className="px-4 py-3 text-xs text-surface-400" role="status">Carregando a fila…</p>
         ) : itens.length === 0 ? (
@@ -115,15 +116,17 @@ export function ListaDaFila({
                   <span aria-hidden className={cn('absolute left-0 top-0 bottom-0 w-[3px]', PRIORIDADES[c.prioridade].faixa)} />
                   <span className="flex items-center gap-1.5 min-w-0">
                     <PrioridadeNaFila prioridade={c.prioridade} />
-                    <span className="font-mono text-[11px] text-surface-400 whitespace-nowrap flex-shrink-0">{c.numero}</span>
+                    <span className="font-mono text-xs font-semibold text-surface-300 tabular-nums whitespace-nowrap flex-shrink-0">{c.numero}</span>
                     <span className="text-[11px] text-surface-300 truncate">{c.tenantNome}{c.kind === 'oco' ? ' · interno' : ''}</span>
                     <span className="ml-auto text-[11px] text-surface-400 tabular-nums flex-shrink-0">{dataCurta(c.atualizadoEm)}</span>
                   </span>
                   <span className="text-[13px] font-semibold text-surface-100 truncate">{tituloDoChamado(c)}</span>
+                  {/* Revisão de UX de 27/10: o começo do relato sempre — títulos iguais não distinguem os chamados. */}
+                  <span className="text-xs text-surface-300 truncate">{c.descricao}</span>
                   <span className="flex items-center gap-2 min-w-0">
                     {prazoPerto
                       ? <span className="flex-1 min-w-0 flex"><PrazoNaFila prazo={c.proximoPrazo} agora={agora} /></span>
-                      : <span className="text-xs text-surface-400 truncate flex-1">{c.responsavel ? `${c.responsavel} · ` : 'Sem dono · '}{c.descricao}</span>}
+                      : <span className="text-xs text-surface-400 truncate flex-1">{c.responsavel ?? 'Sem dono'}</span>}
                     <StatusNaFila status={c.status} />
                   </span>
                 </button>

@@ -34,12 +34,23 @@ function Tela({ rota = '/pipelines/abc?busca=Maria%20Silva&tel=21998765432' }: {
 const modal = () => screen.getByRole('dialog')
 const tipo = (nome: string) => within(modal()).getByRole('radio', { name: nome })
 
-/** Linhas "rótulo · valor" que podem aparecer no formulário. */
-const LINHAS = ['Onde', 'Contornou', 'Mais alguém', 'Impede agora', 'Terceiros', 'Desde', 'Contato viu', 'Em outras', 'Corrigiram', 'Assunto', 'Problema']
-function linhasVisiveis(): string[] {
-  const detalhes = within(modal()).queryByRole('region', { name: 'Detalhes' }) ?? modal().querySelector('section[aria-label="Detalhes"]')
-  if (!detalhes) return []
-  return LINHAS.filter((l) => within(detalhes as HTMLElement).queryAllByText(l, { exact: true }).length > 0)
+/**
+ * O que o formulário pergunta além dos textos (revisão de UX de 27/10): as
+ * perguntas de fato (opções à vista), a chave de dados de terceiros e as linhas
+ * "rótulo · valor" — "Onde" e "Desde" ficam em "Mais detalhes", que é aberto aqui.
+ */
+const PERGUNTAS = ['Conseguiu fazer de outro jeito?', 'Acontece com mais alguém da equipe?', 'O que isso impede agora?']
+const LINHAS = ['Onde', 'Desde', 'Problema']
+function camposVisiveis(): string[] {
+  const mais = within(modal()).queryByRole('button', { name: /Mais detalhes/ })
+  if (mais) fireEvent.click(mais)
+  const rotulos = [...modal().querySelectorAll('[role="radiogroup"], [role="group"]')]
+    .map((g) => document.getElementById(g.getAttribute('aria-labelledby') ?? '')?.textContent ?? '')
+  const perguntas = PERGUNTAS.filter((p) => rotulos.some((r) => r.startsWith(p)))
+  const terceiros = within(modal()).queryByRole('switch', { name: /dados de outra pessoa/ }) ? ['Terceiros'] : []
+  const detalhes = modal().querySelector('section[aria-label="Detalhes"]')
+  const linhas = detalhes ? LINHAS.filter((l) => within(detalhes as HTMLElement).queryAllByText(l, { exact: true }).length > 0) : []
+  return [...perguntas, ...terceiros, ...linhas]
 }
 function camposDeTexto(): string[] {
   return within(modal()).queryAllByRole('textbox').map((t) => t.getAttribute('aria-label') ?? (t.id ? document.querySelector(`label[for="${t.id}"]`)?.textContent?.replace(/\s*[*·].*$/, '').trim() : '') ?? '')
@@ -63,9 +74,11 @@ describe('Chamado sem conversa (SCRUM-1382)', () => {
     expect(within(modal()).getByRole('button', { name: 'Enviar' })).toBeDisabled()
   })
 
+  const FATOS = ['Conseguiu fazer de outro jeito?', 'Acontece com mais alguém da equipe?', 'O que isso impede agora?']
   const CAMPOS_5_3: Record<string, { textos: string[]; linhas: string[] }> = {
-    'Algo não funciona': { textos: ['O que você estava tentando fazer?', 'O que aconteceu?'], linhas: ['Onde', 'Contornou', 'Mais alguém', 'Impede agora', 'Terceiros', 'Desde'] },
-    'Está lento': { textos: ['O que está demorando?'], linhas: ['Onde', 'Contornou', 'Mais alguém', 'Impede agora', 'Desde'] },
+    // Revisão de UX de 27/10: o relato (obrigatório) vem antes do complemento opcional.
+    'Algo não funciona': { textos: ['O que aconteceu?', 'O que você estava tentando fazer?'], linhas: [...FATOS, 'Terceiros', 'Onde', 'Desde'] },
+    'Está lento': { textos: ['O que está demorando?'], linhas: [...FATOS, 'Onde', 'Desde'] },
     'Dúvida de uso': { textos: ['O que você quer fazer?'], linhas: ['Onde'] },
     Sugestão: { textos: ['O que você gostaria?', 'Por que isso ajudaria?'], linhas: [] },
     'Plano ou cobrança': { textos: ['Qual é a sua dúvida?'], linhas: [] },
@@ -74,7 +87,7 @@ describe('Chamado sem conversa (SCRUM-1382)', () => {
     render(<Tela />)
     fireEvent.click(tipo(nome))
     expect(camposDeTexto()).toEqual(esperado.textos)
-    expect(linhasVisiveis()).toEqual(esperado.linhas)
+    expect(camposVisiveis()).toEqual(esperado.linhas)
   })
 
   it('o endereço capturado nunca leva "?…"; "Onde" vem da rota e o repetido é pelo mesmo tipo na mesma tela', async () => {
@@ -89,10 +102,8 @@ describe('Chamado sem conversa (SCRUM-1382)', () => {
     // Obrigatórios do defeito: relato e os dois fatos.
     fireEvent.change(within(modal()).getByLabelText(/O que aconteceu/), { target: { value: 'O card não muda de etapa ao salvar.' } })
     expect(within(modal()).getByRole('button', { name: 'Enviar' })).toBeDisabled()
-    fireEvent.click(within(modal()).getByRole('button', { name: /Conseguiu fazer de outro jeito/ }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Não consegui' }))
-    fireEvent.click(within(modal()).getByRole('button', { name: /Acontece com mais alguém/ }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Só comigo' }))
+    fireEvent.click(within(modal()).getByRole('radio', { name: 'Não consegui' }))
+    fireEvent.click(within(modal()).getByRole('radio', { name: 'Só comigo' }))
     // "Nada urgente" é exclusivo.
     fireEvent.click(within(modal()).getByRole('button', { name: 'Agendar' }))
     fireEvent.click(within(modal()).getByRole('button', { name: 'Nada urgente' }))
@@ -158,6 +169,8 @@ describe('Chamado sem conversa (SCRUM-1382)', () => {
   it('fora das áreas conhecidas, "Onde" fica para a pessoa escolher', async () => {
     render(<Tela rota="/plataforma/algum-lugar" />)
     fireEvent.click(tipo('Está lento'))
+    // Recolhido em "Mais detalhes", com o resumo dizendo que falta.
+    fireEvent.click(within(modal()).getByRole('button', { name: /Mais detalhes/ }))
     expect(within(modal()).getByRole('button', { name: 'Onde aconteceu: não informado' })).toBeInTheDocument()
   })
 })

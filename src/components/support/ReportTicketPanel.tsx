@@ -21,13 +21,6 @@ import { linhasDoContexto, resumoDoContexto, sugestaoDaAtividade } from './conte
 import type { Message } from '@/types'
 import './suporte.css'
 
-/** Alcance com rótulo curto (o painel tem a largura do painel do contato); [conversa, plataforma]. */
-const ALCANCE_CURTO: Record<Alcance, [string, string]> = {
-  esta_conversa: ['Só nesta conversa', 'Só comigo'],
-  outras_conversas: ['Outras conversas também', 'Outras pessoas também'],
-  parando_agora: ['Parando o atendimento', 'Parando o atendimento'],
-}
-
 function duracao(ms: number): string {
   const min = Math.max(1, Math.round(ms / 60000))
   if (min < 60) return `${min} min`
@@ -132,6 +125,42 @@ export function Linha({ rotulo, obrigatorio, ajuda, children, alinhar = 'center'
   )
 }
 
+/**
+ * Pergunta de FATO com as respostas à vista (revisão de UX de 27/10): a
+ * pergunta inteira em cima ("O contato chegou a ver?") e as opções como botões
+ * de um clique — eram rótulos curtos ("Contornou") com um menu de 3 opções
+ * escondidas. Rádios nativos: as setas do teclado andam entre as opções.
+ */
+export function PerguntaDeFato<T extends string>({ pergunta, ajuda, obrigatorio, valor, opcoes, onChange }: {
+  pergunta: string
+  ajuda?: string
+  obrigatorio?: boolean
+  valor: T | null
+  opcoes: Array<[T, string]>
+  onChange: (v: T) => void
+}) {
+  const nome = useId()
+  return (
+    <div className="flex flex-col gap-1.5 min-w-0" role="radiogroup" aria-labelledby={`${nome}-p`} aria-required={obrigatorio || undefined}>
+      <span className="flex items-center">
+        <span id={`${nome}-p`} className="text-xs font-semibold text-surface-200">{pergunta}</span>
+        {obrigatorio && <span className="text-danger text-xs" aria-hidden>&nbsp;*</span>}
+        {ajuda && <Ajuda texto={ajuda} />}
+      </span>
+      <div className="flex flex-wrap gap-1.5">
+        {opcoes.map(([k, l]) => (
+          <label key={k} className={cn('h-7 px-2.5 rounded-full text-xs font-semibold border inline-flex items-center cursor-pointer transition-colors',
+            'focus-within:ring-1 focus-within:ring-brand-500',
+            valor === k ? 'sup-chip-escolhido border-transparent' : 'border-[var(--bd2)] text-surface-300 hover:bg-[var(--rowhover)]')}>
+            <input type="radio" name={nome} value={k} checked={valor === k} onChange={() => onChange(k)} className="sr-only" />
+            {l}
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Valor da linha: mostra a escolha ou "+ Adicionar"; abre a lista do app. */
 export function EscolhaEmLinha<T extends string>({ valor, opcoes, onChange, rotulo, vazio = 'Adicionar', limpar }: {
   valor: T | null
@@ -213,6 +242,8 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
   const f = useFormularioDoChamado(props)
   const s = useSuporte()
   const [verAfetadas, setVerAfetadas] = useState(false)
+  // Sem conversa, "onde" (já preenchido pela tela) e "desde quando" são opcionais: ficam recolhidos.
+  const [verMaisDetalhes, setVerMaisDetalhes] = useState(false)
   const tituloId = useId()
   const painelRef = useRef<HTMLElement>(null)
   // Fechar com algo escrito pede confirmação: um Esc ou um clique não leva o relato (revisão do Portão 2).
@@ -348,7 +379,7 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
               {(Object.keys(TIPOS_DE_PEDIDO) as TipoDePedido[]).map((k) => (
                 <button key={k} type="button" role="radio" aria-checked={f.tipo === k} data-autofocus={k === 'defeito' && !f.tipo ? true : undefined}
                   // Escolheu o tipo: o cursor vai direto para o campo de texto que apareceu.
-                  onClick={() => { f.setTipo(k); requestAnimationFrame(() => document.getElementById(k === 'defeito' ? 'painel-complemento' : 'painel-relato')?.focus()) }}
+                  onClick={() => { f.setTipo(k); requestAnimationFrame(() => document.getElementById('painel-relato')?.focus()) }}
                   className={cn('h-8 px-3 rounded-full text-xs font-semibold border transition-colors',
                     f.tipo === k ? 'sup-chip-escolhido border-transparent' : 'border-[var(--bd2)] text-surface-300 hover:bg-[var(--rowhover)]')}>
                   {TIPOS_DE_PEDIDO[k].nome}
@@ -458,32 +489,43 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
           </div>
         )}
 
-        {/* Detalhes em linhas. Com conversa: os fatos obrigatórios. Sem conversa: as linhas do tipo. */}
-        {!f.juntarEm && mostrarResto && temDetalhes && (
-          <section className="flex flex-col border-t border-surface-700 pt-3" aria-label="Detalhes">
-            {f.candidatas.length > 1 && (
-              <Linha rotulo="Problema" ajuda={AJUDA.problema}>
-                <EscolhaEmLinha rotulo="O problema é com" valor={f.origem} onChange={(o) => o && f.setOrigem(o)}
-                  opcoes={f.candidatas.map((o) => [o, ORIGENS_DA_MENSAGEM[o as keyof typeof ORIGENS_DA_MENSAGEM]?.nome ?? o])} />
-              </Linha>
-            )}
-            {f.semConversa && f.camposDoTipo?.onde && (
-              <Linha rotulo="Onde" ajuda={AJUDA.onde}>
-                <EscolhaEmLinha rotulo="Onde aconteceu" valor={f.onde || null} onChange={(v) => f.setOnde(v ?? '')} limpar
-                  opcoes={AREAS_DO_PRODUTO.map((a) => [a, a])} />
-              </Linha>
-            )}
-            {f.semConversa && f.camposDoTipo?.fatos && (<>
-              <Linha rotulo="Contornou" obrigatorio ajuda={AJUDA.contornou}>
-                <EscolhaEmLinha<Contornou> rotulo="Conseguiu fazer de outro jeito" valor={f.contornou} onChange={(v) => v && f.setContornou(v)} vazio="Selecionar"
-                  opcoes={(Object.keys(CONTORNOU) as Contornou[]).map((k) => [k, CONTORNOU[k]])} />
-              </Linha>
-              <Linha rotulo="Mais alguém" obrigatorio ajuda={AJUDA.quemMais}>
-                <EscolhaEmLinha<QuemMais> rotulo="Acontece com mais alguém" valor={f.quemMais} onChange={(v) => v && f.setQuemMais(v)} vazio="Selecionar"
-                  opcoes={(Object.keys(QUEM_MAIS) as QuemMais[]).map((k) => [k, QUEM_MAIS[k]])} />
-              </Linha>
-              <Linha rotulo="Impede agora" ajuda={AJUDA.impede} alinhar="start">
-                <div className="flex flex-wrap gap-1 py-0.5" role="group" aria-label="O que isso impede agora">
+        {/* Assunto (revisão de UX de 27/10): opções de um clique, logo depois do relato. Escondido no fim, em
+            "+ Adicionar", quase nunca era escolhido e o chamado saía com a categoria padrão ("Informação errada"). */}
+        {!f.juntarEm && !f.semConversa && f.assuntos.length > 0 && (
+          <div className="flex flex-col gap-1.5" role="group" aria-labelledby="painel-assunto">
+            <span className="flex items-center">
+              <span id="painel-assunto" className="text-xs font-semibold text-surface-200">Qual destes descreve melhor?<span className="font-normal text-surface-400"> · opcional</span></span>
+              <Ajuda texto={AJUDA.assunto} />
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {f.assuntos.map((a) => {
+                const escolhido = f.assuntoId === a.id
+                return (
+                  <button key={a.id} type="button" aria-pressed={escolhido} onClick={() => f.setAssuntoId(escolhido ? null : a.id)}
+                    className={cn('h-7 px-2.5 rounded-full text-xs font-semibold border transition-colors',
+                      escolhido ? 'sup-chip-escolhido border-transparent' : 'border-[var(--bd2)] text-surface-300 hover:bg-[var(--rowhover)]')}>
+                    {a.titulo}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Fatos (revisão de UX de 27/10): perguntas inteiras, com as respostas à vista. */}
+        {!f.juntarEm && mostrarResto && (!f.semConversa || f.camposDoTipo?.fatos) && (
+          <section className="flex flex-col gap-3 border-t border-surface-700 pt-3" aria-label="Fatos">
+            {f.semConversa ? (<>
+              <PerguntaDeFato<Contornou> pergunta="Conseguiu fazer de outro jeito?" obrigatorio ajuda={AJUDA.contornou} valor={f.contornou} onChange={f.setContornou}
+                opcoes={(Object.keys(CONTORNOU) as Contornou[]).map((k) => [k, CONTORNOU[k]])} />
+              <PerguntaDeFato<QuemMais> pergunta="Acontece com mais alguém da equipe?" obrigatorio ajuda={AJUDA.quemMais} valor={f.quemMais} onChange={f.setQuemMais}
+                opcoes={(Object.keys(QUEM_MAIS) as QuemMais[]).map((k) => [k, QUEM_MAIS[k]])} />
+              <div className="flex flex-col gap-1.5" role="group" aria-labelledby="painel-impede">
+                <span className="flex items-center">
+                  <span id="painel-impede" className="text-xs font-semibold text-surface-200">O que isso impede agora?<span className="font-normal text-surface-400"> · opcional</span></span>
+                  <Ajuda texto={AJUDA.impede} />
+                </span>
+                <div className="flex flex-wrap gap-1.5">
                   {(Object.keys(IMPEDE_AGORA) as ImpedeAgora[]).map((k) => {
                     const marcado = f.impede.includes(k)
                     return (
@@ -497,32 +539,51 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
                     )
                   })}
                 </div>
-              </Linha>
-            </>)}
-            {!f.semConversa && (<>
-            <Linha rotulo="Contato viu" obrigatorio ajuda={AJUDA.contatoViu}>
-              <EscolhaEmLinha<ContatoViu> rotulo="O contato chegou a ver" valor={f.contatoViu} onChange={(v) => v && f.setContatoViu(v)} vazio="Selecionar"
+              </div>
+            </>) : (<>
+              <PerguntaDeFato<ContatoViu> pergunta="O contato chegou a ver?" obrigatorio ajuda={AJUDA.contatoViu} valor={f.contatoViu} onChange={f.setContatoViu}
                 opcoes={(Object.keys(CONTATO_VIU) as ContatoViu[]).map((k) => [k, CONTATO_VIU[k]])} />
-            </Linha>
-            {f.perguntaCorrigiram && (
-              <Linha rotulo="Corrigiram" obrigatorio ajuda={AJUDA.jaCorrigiram}>
-                <EscolhaEmLinha<JaCorrigiram> rotulo="Já corrigiram com o contato" valor={f.jaCorrigiram} onChange={(v) => v && f.setJaCorrigiram(v)} vazio="Selecionar"
+              {f.perguntaCorrigiram && (
+                <PerguntaDeFato<JaCorrigiram> pergunta="Já corrigiram com o contato?" obrigatorio ajuda={AJUDA.jaCorrigiram} valor={f.jaCorrigiram} onChange={f.setJaCorrigiram}
                   opcoes={(Object.keys(JA_CORRIGIRAM) as JaCorrigiram[]).map((k) => [k, JA_CORRIGIRAM[k]])} />
+              )}
+              {/* Fato, não gravidade: "parando o atendimento" saiu (era uma nota). */}
+              <PerguntaDeFato<Alcance> pergunta="Aconteceu em outras conversas?" ajuda={AJUDA.alcance} valor={f.alcance} onChange={f.setAlcance}
+                opcoes={[['esta_conversa', 'Só nesta'], ['outras_conversas', 'Em outras também']]} />
+            </>)}
+          </section>
+        )}
+
+        {/* Detalhes em linhas: os que não são perguntas de fato. */}
+        {!f.juntarEm && mostrarResto && temDetalhes && (
+          <section className="flex flex-col border-t border-surface-700 pt-3" aria-label="Detalhes">
+            {f.candidatas.length > 1 && (
+              <Linha rotulo="Problema" ajuda={AJUDA.problema}>
+                <EscolhaEmLinha rotulo="O problema é com" valor={f.origem} onChange={(o) => o && f.setOrigem(o)}
+                  opcoes={f.candidatas.map((o) => [o, ORIGENS_DA_MENSAGEM[o as keyof typeof ORIGENS_DA_MENSAGEM]?.nome ?? o])} />
               </Linha>
             )}
-            {/* Fato, não gravidade: "parando o atendimento" saiu (era uma nota). */}
-            <Linha rotulo="Em outras" ajuda={AJUDA.alcance}>
-              <EscolhaEmLinha<Alcance> rotulo="Aconteceu em outras conversas" valor={f.alcance} onChange={(v) => v && f.setAlcance(v)}
-                opcoes={(['esta_conversa', 'outras_conversas'] as Alcance[]).map((a) => [a, ALCANCE_CURTO[a][0]])} />
-            </Linha>
-            </>)}
             {(!f.semConversa || f.camposDoTipo?.terceiros) && (
-            <Linha rotulo="Terceiros" ajuda={AJUDA.terceiros}>
-              <span className="flex items-center gap-2">
-                <Switch checked={f.dadosDeTerceiros} onChange={f.setDadosDeTerceiros} aria-label="Envolve dados de outra pessoa ou empresa" />
-                <span className="text-xs text-surface-400">{f.dadosDeTerceiros ? 'Dados de outra pessoa' : 'Não envolve'}</span>
-              </span>
-            </Linha>
+            // A frase inteira ao lado da chave: "Terceiros" sozinho não dizia nada (revisão de UX de 27/10).
+            <div className="flex items-center gap-2 min-h-[34px]">
+              <Switch checked={f.dadosDeTerceiros} onChange={f.setDadosDeTerceiros} aria-label="Apareceram dados de outra pessoa ou empresa" />
+              <span className="text-xs text-surface-200">Apareceram dados de outra pessoa ou empresa</span>
+              <Ajuda texto={AJUDA.terceiros} />
+            </div>
+            )}
+            {f.semConversa && (f.camposDoTipo?.onde || f.camposDoTipo?.desde) && !verMaisDetalhes && (
+              <button type="button" onClick={() => setVerMaisDetalhes(true)} aria-expanded={false}
+                className="w-fit h-8 -ml-2 px-2 rounded-[6px] flex items-center gap-1 text-[13px] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]">
+                <Plus className="w-3.5 h-3.5" />Mais detalhes<span className="text-surface-500">
+                  {` · ${[f.camposDoTipo?.onde ? `onde: ${f.onde || 'não informado'}` : null, f.camposDoTipo?.desde ? 'desde quando' : null].filter(Boolean).join(' · ')}`}
+                </span>
+              </button>
+            )}
+            {f.semConversa && f.camposDoTipo?.onde && verMaisDetalhes && (
+              <Linha rotulo="Onde" ajuda={AJUDA.onde}>
+                <EscolhaEmLinha rotulo="Onde aconteceu" valor={f.onde || null} onChange={(v) => f.setOnde(v ?? '')} limpar
+                  opcoes={AREAS_DO_PRODUTO.map((a) => [a, a])} />
+              </Linha>
             )}
             {f.perguntaAfetadas && (
               <>
@@ -538,16 +599,10 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
                 {verAfetadas && <div className="pb-2"><ConversasAfetadas atual={conversationId} selecionadas={f.afetadas} onChange={f.setAfetadas} /></div>}
               </>
             )}
-            {(f.semConversa ? f.camposDoTipo?.desde : f.perguntaDesde) && (
+            {(f.semConversa ? f.camposDoTipo?.desde && verMaisDetalhes : f.perguntaDesde) && (
               <Linha rotulo="Desde" ajuda={AJUDA.desde}>
                 <EscolhaEmLinha<DesdeQuando> rotulo="Desde quando" valor={f.desde} onChange={f.setDesde} limpar
                   opcoes={(Object.keys(DESDE_QUANDO) as DesdeQuando[]).map((d) => [d, DESDE_QUANDO[d]])} />
-              </Linha>
-            )}
-            {!f.semConversa && f.assuntos.length > 0 && (
-              <Linha rotulo="Assunto" ajuda={AJUDA.assunto}>
-                <EscolhaEmLinha rotulo="Assunto" valor={f.assuntoId} onChange={f.setAssuntoId} limpar
-                  opcoes={f.assuntos.map((a) => [a.id, a.titulo])} />
               </Linha>
             )}
             {(f.modelo?.camposDaEmpresa ?? []).map((c) => (

@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import { BookOpen, ChevronDown, Cpu, Gavel, Repeat, ShieldCheck, Wrench } from 'lucide-react'
+import { AlertTriangle, BookOpen, CheckCircle2, ChevronDown, Cpu, Gavel, Repeat, ShieldCheck, Wrench } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SupportChip } from '../SupportChip'
+import { DESFECHO, sinaisDoTurno } from './diagnosticoDoTurno'
 
 /**
  * LINHA DO TEMPO DO TURNO DA IA (SCRUM-1384) — o que a IA recebeu, consultou,
@@ -29,7 +30,7 @@ export interface TurnoGravado {
     chamadasAoModelo?: Array<Record<string, unknown>>
     ferramentas?: Array<Record<string, unknown>>
     baseDeConhecimento?: Array<Record<string, unknown>>
-    verificacao?: Array<{ verdict?: string; findings?: unknown[]; shadow?: boolean }>
+    verificacao?: Array<{ verdict?: string; findings?: unknown[]; shadow?: boolean; sources?: { catalog?: string; kbChunks?: number; priorReplies?: number; skillOutputs?: number } }>
     guardas?: Record<string, unknown[]>
     antiLoop?: unknown[]
     juizDoCrm?: unknown[]
@@ -76,6 +77,26 @@ function Passo({ icone: Icone, titulo, resumo, alerta, children }: { icone: Luci
 
 const quantos = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
 
+function DiagnosticoDoTurno({ turno }: { turno: TurnoGravado }) {
+  const sinais = sinaisDoTurno(turno)
+  if (!sinais.length) return null
+  return (
+    <dl className="px-4 pt-3 grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5" aria-label="Diagnóstico do turno">
+      {sinais.map((x) => (
+        <div key={x.rotulo} className="contents">
+          <dt className="text-[11px] text-surface-400 pt-px">{x.rotulo}</dt>
+          <dd className={cn('text-xs flex items-start gap-1.5 min-w-0', x.alerta ? 'font-semibold text-surface-100' : 'text-surface-300')}>
+            {x.alerta
+              ? <AlertTriangle className="w-3.5 h-3.5 mt-px flex-shrink-0 text-warning" aria-label="fora do normal" />
+              : <CheckCircle2 className="w-3.5 h-3.5 mt-px flex-shrink-0 text-surface-500" aria-hidden />}
+            <span className="break-words">{x.valor}</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 export function LinhaDoTempoDoTurno({ turno, acoes }: { turno: TurnoGravado; acoes?: ReactNode }) {
   const s = turno.secoes ?? {}
   const t = s.turno ?? null
@@ -100,9 +121,10 @@ export function LinhaDoTempoDoTurno({ turno, acoes }: { turno: TurnoGravado; aco
         <span className="font-mono text-[11px] text-surface-400">
           {[modelo, versao ? `prompt ${versao}` : null, turno.ligacao === 'aproximada' ? 'ligação aproximada' : null].filter(Boolean).join(' · ')}
         </span>
-        {turno.rastro?.desfecho && <SupportChip tom={turno.rastro.desfecho === 'reply_created' ? 'neutral' : 'warning'}>{turno.rastro.desfecho}</SupportChip>}
+        {turno.rastro?.desfecho && <SupportChip tom={turno.rastro.desfecho === 'reply_created' ? 'neutral' : 'warning'}>{DESFECHO[turno.rastro.desfecho] ?? turno.rastro.desfecho}</SupportChip>}
         {acoes && <span className="ml-auto flex items-center gap-1.5">{acoes}</span>}
       </header>
+      <DiagnosticoDoTurno turno={turno} />
       {(turno.classificacao?.length ?? 0) > 0 && (
         <div className="px-4 pt-2.5 flex flex-wrap gap-1.5" aria-label="Classificação da falha">
           {turno.classificacao!.map((k) => <SupportChip key={k} tom="danger"><span className="font-mono">{k}</span></SupportChip>)}

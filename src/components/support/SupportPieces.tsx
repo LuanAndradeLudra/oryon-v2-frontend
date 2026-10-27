@@ -1,4 +1,5 @@
-import { Bell, CheckCircle2, CircleDot, CircleHelp, Eye, Flag, Layers, Lock, MessageSquare, RotateCcw, Sparkles, ThumbsUp, UserCheck } from 'lucide-react'
+import { useState } from 'react'
+import { Bell, CheckCircle2, ChevronRight, CircleDot, CircleHelp, Eye, Flag, Layers, Lock, MessageSquare, RotateCcw, Sparkles, ThumbsUp, UserCheck } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChamadoDaEmpresa, EventoDoChamado, MensagemDoChamado } from '@/types/support'
@@ -69,26 +70,62 @@ type ChamadoNoFio = Pick<ChamadoDaEmpresa, 'complemento' | 'tipoDePedido' | 'des
  * nota interna nunca chega aqui). `interno`, na fila da Oryon, marca as notas
  * e mostra o status com o nome da equipe (triado ≠ investigando).
  */
-export function FioDoChamado({ c, interno = false, titulo = 'Conversa com a Oryon' }: {
+export function FioDoChamado({ c, interno = false, titulo = 'Conversa com a Oryon', emDestaque = null }: {
   c: ChamadoNoFio
   interno?: boolean
   titulo?: string | null
+  /** Evento cujo texto já aparece em destaque acima do fio (a resposta da Oryon): aqui, só a menção. */
+  emDestaque?: string | null
 }) {
   const eventos = c.eventos
   return (
     <div className="flex flex-col gap-2">
       {titulo && <h3 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-surface-400">{titulo}</h3>}
       <ol className="flex flex-col">
-        {eventos.map((e, i) => <ItemDoFio key={e.id} c={c} e={e} ultimo={i === eventos.length - 1} interno={interno} />)}
+        {eventos.map((e, i) => (
+          interno && e.autorTipo === 'sistema'
+            ? <ItemDoSistema key={e.id} e={e} ultimo={i === eventos.length - 1} />
+            : <ItemDoFio key={e.id} c={c} e={e} ultimo={i === eventos.length - 1} interno={interno} destacado={e.id === emDestaque} />
+        ))}
       </ol>
     </div>
   )
 }
 
-function ItemDoFio({ c, e, ultimo, interno }: { c: ChamadoNoFio; e: EventoNoFio; ultimo: boolean; interno: boolean }) {
+/**
+ * Evento do SISTEMA na fila (prioridade sugerida, evidência anexada, aviso de
+ * prazo): uma linha compacta, com o detalhe a um clique (revisão de UX de
+ * 27/10) — misturados à conversa, com o mesmo peso, eles escondiam as falas.
+ */
+function ItemDoSistema({ e, ultimo }: { e: EventoNoFio; ultimo: boolean }) {
+  const [aberto, setAberto] = useState(false)
+  const Icone = ICONE_DO_EVENTO[e.tipo] ?? CircleDot
+  return (
+    <li className="grid grid-cols-[28px_1fr] gap-3 relative pb-2.5 last:pb-0">
+      {!ultimo && <span aria-hidden className="absolute left-[13px] top-5 bottom-0 w-px bg-surface-700" />}
+      <span aria-hidden className="w-7 h-5 flex items-center justify-center text-surface-500"><Icone className="w-3 h-3" /></span>
+      <div className="min-w-0">
+        <button type="button" onClick={() => setAberto((v) => !v)} aria-expanded={e.corpo ? aberto : undefined} disabled={!e.corpo}
+          className="max-w-full flex items-center gap-1.5 text-left text-[12px] text-surface-400 enabled:hover:text-surface-200 disabled:cursor-default">
+          {e.corpo && <ChevronRight className={cn('w-3 h-3 flex-shrink-0 transition-transform', aberto && 'rotate-90')} aria-hidden />}
+          <span className="truncate">{e.texto}</span>
+          <span className="flex-shrink-0 text-[11px] text-surface-500">· {dataCurta(e.em)}</span>
+        </button>
+        {aberto && e.corpo && (
+          <div className="mt-1.5 text-[12px] text-surface-300 rounded-[8px] border border-dashed border-surface-600 px-2.5 py-2 whitespace-pre-wrap break-words">{e.corpo}</div>
+        )}
+      </div>
+    </li>
+  )
+}
+
+function ItemDoFio({ c, e, ultimo, interno, destacado = false }: { c: ChamadoNoFio; e: EventoNoFio; ultimo: boolean; interno: boolean; destacado?: boolean }) {
   const Icone = ICONE_DO_EVENTO[e.tipo] ?? CircleDot
   const nota = e.visivelParaEmpresa === false
-  const corpo = e.tipo === 'aberto' ? <RelatoNoFio c={c} /> : e.corpo
+  // Revisão de UX de 27/10: a resposta em destaque no topo não se repete inteira no fio.
+  const corpo = e.tipo === 'aberto' ? <RelatoNoFio c={c} />
+    : destacado ? <span className="text-surface-400">A resposta está em destaque acima.</span>
+    : e.corpo
   const para = interno && e.tipo === 'status' && typeof e.dados?.para === 'string' ? e.dados.para as StatusChamado : null
   const texto = para && STATUS_NA_FILA[para] ? `Status: ${STATUS_NA_FILA[para]}` : e.texto
   return (

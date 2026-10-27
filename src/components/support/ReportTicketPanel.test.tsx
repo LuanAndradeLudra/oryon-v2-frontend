@@ -87,7 +87,10 @@ function Tela({ conversationId = 'conv-1' }: { conversationId?: string | null })
 
 const painel = () => screen.queryByRole('dialog')
 const enviar = () => within(painel()!).getByRole('button', { name: /Enviar|Adicionar$/ })
+/** Pergunta de fato (opções à vista, revisão de UX de 27/10) ou linha com lista. */
 async function escolher(campo: RegExp, opcao: string) {
+  const grupo = within(painel()!).queryByRole('radiogroup', { name: campo })
+  if (grupo) { fireEvent.click(within(grupo).getByRole('radio', { name: opcao })); return }
   fireEvent.click(within(painel()!).getByRole('button', { name: campo }))
   fireEvent.click(await screen.findByRole('menuitem', { name: opcao }))
 }
@@ -139,7 +142,9 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     render(<Tela />)
     fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))
     relatar()
-    fireEvent.click(within(painel()!).getByRole('button', { name: /O contato chegou a ver/ }))
+    // As perguntas de fato não abrem lista; "desde quando" (com outras conversas) ainda abre.
+    await escolher(/Aconteceu em outras conversas/, 'Em outras também')
+    fireEvent.click(within(painel()!).getByRole('button', { name: /Desde quando/ }))
     expect(await screen.findByRole('menu')).toBeInTheDocument()
     act(() => { fireEvent.keyDown(document, { key: 'Escape' }) })
     expect(screen.queryByRole('menu')).toBeNull()
@@ -183,7 +188,7 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     expect(enviar()).toBeEnabled()
     // Não viu: "já corrigiram" sai da tela e deixa de ser pedido.
     await escolher(/O contato chegou a ver/, 'Não chegou a ver')
-    expect(within(painel()!).queryByRole('button', { name: /Já corrigiram/ })).toBeNull()
+    expect(within(painel()!).queryByRole('radiogroup', { name: /Já corrigiram/ })).toBeNull()
     expect(enviar()).toBeEnabled()
   })
 
@@ -269,7 +274,7 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     fireEvent.change(screen.getByLabelText('Mensagem'), { target: { value: 'rascunho da resposta' } })
     fireEvent.click(screen.getByRole('button', { name: 'menu do cabeçalho' }))
     expect(painel()).toBeNull()
-    expect(screen.getByText('Marque as mensagens do problema')).toBeInTheDocument()
+    expect(screen.getByText('Toque nas mensagens do problema')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'marcar m2' }))
     expect(screen.getByText('1 mensagem marcada')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))

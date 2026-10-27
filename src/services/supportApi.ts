@@ -7,7 +7,7 @@ import type {
   VisaoDaCalibracao, VisaoDaQualidade,
 } from '@/types/support'
 import type { CausaRaiz, Prioridade } from '@/components/support/fila/modeloDaFila'
-import type { StatusChamado } from '@/components/support/supportModel'
+import type { Categoria, StatusChamado } from '@/components/support/supportModel'
 
 /**
  * Cliente do módulo `support` do backend (épico SCRUM-1376) — o lado da
@@ -104,6 +104,7 @@ export type MudancaNaFila =
   | { status: StatusChamado }
   | { prioridade: Prioridade; motivo: string }
   | { causaRaiz: CausaRaiz | null }
+  | { categoria: Categoria }
   | { jiraRef: string | null }
 
 /** SCRUM-1387 — uma mudança por vez no problema. */
@@ -141,7 +142,10 @@ export const adminSupportApi = {
     return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/question`, { pergunta, version }).then((r) => r.data)
   },
   /** Resposta ao cliente com o status escolhido — o único caminho para Resolvido. */
-  responder(id: string, dto: { resumo: string; dependeDaClinica: string | null; deixarComo: StatusChamado; version: number }) {
+  /** Resolvendo, a causa é obrigatória (a do pedido, a do chamado ou a do problema) e a categoria pode ser corrigida junto. */
+  responder(id: string, dto: {
+    resumo: string; dependeDaClinica: string | null; deixarComo: StatusChamado; version: number; causaRaiz?: CausaRaiz; categoria?: Categoria
+  }) {
     return api.post<ChamadoDaEquipe>(`/admin/support/tickets/${id}/reply`, dto).then((r) => r.data)
   },
   sugestoes(id: string) {

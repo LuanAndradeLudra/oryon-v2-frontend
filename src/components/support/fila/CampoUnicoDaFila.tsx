@@ -11,13 +11,18 @@ import { adminSupportApi } from '@/services/supportApi'
 import type { ChamadoDaEquipe } from '@/types/support'
 import { EscolhaEmLinha } from '../ReportTicketPanel'
 import type { StatusChamado } from '../supportModel'
-import { MODELOS_DE_RESPOSTA, STATUS_AO_RESPONDER, STATUS_NA_FILA, ehConflito } from './modeloDaFila'
+import { CATEGORIAS, type Categoria } from '../supportModel'
+import { CAUSAS, MODELOS_DE_RESPOSTA, STATUS_AO_RESPONDER, STATUS_NA_FILA, ehConflito, type CausaRaiz } from './modeloDaFila'
 
 export type ModoDoCampo = 'responder' | 'perguntar' | 'nota'
 export interface CampoDaFilaRef { focar: (m: ModoDoCampo) => void }
 
-interface Rascunho { responder: string; depende: string; perguntar: string; nota: string; deixarComo: StatusChamado | null }
-const VAZIO: Rascunho = { responder: '', depende: '', perguntar: '', nota: '', deixarComo: null }
+interface Rascunho {
+  responder: string; depende: string; perguntar: string; nota: string; deixarComo: StatusChamado | null
+  /** Resolvendo (revisão de UX de 27/10): a causa e a categoria confirmada. */
+  causa: CausaRaiz | null; categoria: Categoria | null
+}
+const VAZIO: Rascunho = { responder: '', depende: '', perguntar: '', nota: '', deixarComo: null, causa: null, categoria: null }
 /** Rascunho POR chamado e por modo, na sessão: trocar de chamado não leva nem perde o texto. Sai no logout. */
 const rascunhos = new Map<string, Rascunho>()
 aoSairDaSessao(() => rascunhos.clear())
@@ -57,9 +62,15 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
   const enviandoAgora = useRef(false)
   const texto = useRef<HTMLTextAreaElement>(null)
   const [verModelos, setVerModelos] = useState(false)
+  // Revisão de UX de 27/10: o campo fica RECOLHIDO (uma linha) até alguém ir escrever — aberto, ele
+  // tomava 1/4 da altura e espremia a leitura da evidência. Com rascunho, já abre aberto.
+  const [ativo, setAtivo] = useState(false)
+  const temRascunho = !!(rascunho.responder.trim() || rascunho.perguntar.trim() || rascunho.nota.trim())
+  const expandido = ativo || temRascunho
+  const abrir = (m: ModoDoCampo) => { setModo(semEmpresa ? 'nota' : m); setAtivo(true); requestAnimationFrame(() => texto.current?.focus()) }
 
   useEffect(() => {
-    campoRef.current = { focar: (m) => { setModo(semEmpresa ? 'nota' : m); requestAnimationFrame(() => texto.current?.focus()) } }
+    campoRef.current = { focar: (m) => { setModo(semEmpresa ? 'nota' : m); setAtivo(true); requestAnimationFrame(() => texto.current?.focus()) } }
     return () => { campoRef.current = null }
   }, [campoRef, semEmpresa])
 
@@ -70,7 +81,12 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
   const perguntaAberta = modo === 'perguntar' && !!c.perguntaPendente
   const bloqueado = encerrado && modo !== 'nota'
   const minimo = modo === 'responder' ? 10 : modo === 'perguntar' ? 5 : 1
-  const pronto = valor.trim().length >= minimo && !perguntaAberta && !bloqueado
+  // Resolver pede a causa (a Qualidade depende dela); num problema vinculado, vale a do problema.
+  const resolvendo = modo === 'responder' && deixarComo === 'resolved'
+  const causa = rascunho.causa ?? c.causaRaiz ?? null
+  const faltaCausa = resolvendo && !causa && !c.problemaId
+  const categoria = rascunho.categoria ?? c.categoria
+  const pronto = valor.trim().length >= minimo && !perguntaAberta && !bloqueado && !faltaCausa
 
   const enviar = async () => {
     if (!pronto || enviandoAgora.current) return
@@ -79,16 +95,23 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
     const corpo = valor.trim()
     try {
       if (modo === 'responder') {
-        onAtualizar(await adminSupportApi.responder(c.id, { resumo: corpo, dependeDaClinica: rascunho.depende.trim() || null, deixarComo, version: c.version }))
-        limparEnviado('responder', corpo, { depende: '', deixarComo: null })
+        onAtualizar(await adminSupportApi.responder(c.id, {
+          resumo: corpo, dependeDaClinica: rascunho.depende.trim() || null, deixarComo, version: c.version,
+          ...(resolvendo && causa && causa !== c.causaRaiz ? { causaRaiz: causa } : {}),
+          ...(resolvendo && categoria !== c.categoria ? { categoria } : {}),
+        }))
+        limparEnviado('responder', corpo, { depende: '', deixarComo: null, causa: null, categoria: null })
+        setAtivo(false)
         showToast(deixarComo === 'resolved' ? 'Resposta enviada. A empresa vai confirmar se resolveu.' : `Resposta enviada. Chamado: ${STATUS_NA_FILA[deixarComo]}.`, 'success')
       } else if (modo === 'perguntar') {
         onAtualizar(await adminSupportApi.perguntar(c.id, corpo, c.version))
         limparEnviado('perguntar', corpo)
+        setAtivo(false)
         showToast('Pergunta enviada. O chamado aguarda a empresa.', 'success')
       } else {
         onAtualizar(await adminSupportApi.anotar(c.id, corpo))
         limparEnviado('nota', corpo)
+        setAtivo(false)
         showToast('Nota interna registrada.', 'success')
       }
     } catch (err) {
@@ -101,6 +124,25 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
   }
 
   const modos = semEmpresa ? MODOS.filter(([k]) => k === 'nota') : MODOS
+  if (!expandido) {
+    // Recolhido: os modos e uma linha que abre o campo (R também abre, pela página).
+    return (
+      <div className="border-t border-surface-800 px-4 md:px-6 py-2 flex-shrink-0">
+        <div className="max-w-[820px] mx-auto flex items-center gap-1 flex-wrap">
+          {modos.map(([k, r]) => (
+            <button key={k} type="button" onClick={() => abrir(k)}
+              className="h-8 px-2.5 rounded-[6px] text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100">
+              {k === 'nota' && <Lock className="w-3 h-3" aria-hidden />}{r}
+            </button>
+          ))}
+          <button type="button" onClick={() => abrir(semEmpresa ? 'nota' : 'responder')}
+            className="flex-1 min-w-[160px] h-8 px-3 rounded-[6px] border border-[var(--bd2)] text-left text-xs text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]">
+            {encerrado ? 'Chamado encerrado · nota interna' : 'Escrever…'} <kbd className="ml-1 font-mono text-[11px] text-surface-500">R</kbd>
+          </button>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className={cn('border-t px-4 md:px-6 py-3 flex-shrink-0', modo === 'nota' ? 'border-dashed border-surface-500' : 'border-surface-800')}>
       <div className="max-w-[820px] mx-auto flex flex-col gap-2">
@@ -138,6 +180,8 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
           <p className="text-xs text-surface-400 py-2">Já existe uma pergunta esperando a empresa: “{c.perguntaPendente}”. A resposta dela aparece na Atividade.</p>
         ) : (
           <Textarea ref={texto} rows={modo === 'responder' ? 3 : 2} maxLength={modo === 'perguntar' ? 2000 : 5000} value={valor} onChange={(e) => escrever(e.target.value)}
+            // Esc no campo vazio recolhe de novo.
+            onKeyUp={(e) => { if (e.key === 'Escape' && !valor.trim()) setAtivo(false) }}
             aria-label={modo === 'responder' ? 'Resposta à empresa' : modo === 'perguntar' ? 'Pergunta para a empresa' : 'Nota interna'}
             placeholder={modo === 'responder' ? 'O que aconteceu, o que a Oryon fez e o que vem a seguir.' : modo === 'perguntar' ? 'Ex.: isso aconteceu com outros contatos depois das 10h?' : 'Hipótese, o que já foi verificado, próximo passo…'}
             onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void enviar() } }} />
@@ -148,14 +192,31 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
         )}
         <div className="flex flex-wrap items-center gap-2">
           {modo === 'responder' && !bloqueado && (
-            <span className="flex items-center gap-1 text-xs text-surface-400">
+            <span className="flex flex-shrink-0 items-center gap-1 text-xs text-surface-400">
               Deixar como
-              <span className="max-w-[220px]"><EscolhaEmLinha rotulo="Status depois da resposta" valor={deixarComo} onChange={(v) => v && mudar({ deixarComo: v })}
-                opcoes={STATUS_AO_RESPONDER.map((s) => [s, s === 'resolved' ? 'Resolvido (pede confirmação)' : STATUS_NA_FILA[s]])} /></span>
+              <span className="max-w-[300px]"><EscolhaEmLinha rotulo="Status depois da resposta" valor={deixarComo} onChange={(v) => v && mudar({ deixarComo: v })}
+                opcoes={STATUS_AO_RESPONDER.map((s) => [s, s === 'resolved' ? 'Resolvido · pede confirmação' : STATUS_NA_FILA[s]])} /></span>
             </span>
           )}
+          {/* Resolvendo: a causa (obrigatória, salvo problema vinculado) e a categoria confirmada, no mesmo clique. */}
+          {resolvendo && !bloqueado && (
+            <>
+              <span className="flex flex-shrink-0 items-center gap-1 text-xs text-surface-400">
+                Causa{!c.problemaId && <span className="text-danger" aria-hidden>*</span>}
+                <span className="max-w-[260px]"><EscolhaEmLinha<CausaRaiz> rotulo="Causa do problema" valor={causa} vazio={c.problemaId ? 'A do problema' : 'Escolher'}
+                  onChange={(v) => mudar({ causa: v })} opcoes={(Object.keys(CAUSAS) as CausaRaiz[]).map((k) => [k, CAUSAS[k]])} /></span>
+              </span>
+              <span className="flex flex-shrink-0 items-center gap-1 text-xs text-surface-400">
+                Categoria
+                <span className="max-w-[260px]"><EscolhaEmLinha<Categoria> rotulo="Categoria ao resolver" valor={categoria}
+                  onChange={(v) => v && mudar({ categoria: v })} opcoes={(Object.keys(CATEGORIAS) as Categoria[]).map((k) => [k, CATEGORIAS[k]])} /></span>
+              </span>
+            </>
+          )}
           <span className="text-[11px] text-surface-400 mr-auto">
-            {bloqueado || perguntaAberta ? null : modo === 'responder'
+            {bloqueado || perguntaAberta ? null : faltaCausa
+              ? 'Para resolver, escolha a causa: ela alimenta a Qualidade'
+              : modo === 'responder'
               ? 'A empresa vê na página Suporte e é avisada no produto, por e-mail e WhatsApp'
               : modo === 'perguntar'
                 ? 'A empresa é avisada no produto, por e-mail e WhatsApp; os prazos param até ela responder'

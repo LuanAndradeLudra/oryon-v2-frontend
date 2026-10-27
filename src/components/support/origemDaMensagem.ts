@@ -27,8 +27,9 @@ export const ORIGENS_DA_MENSAGEM: Record<OrigemDaMensagem, { nome: string; plura
   ia: { nome: 'Resposta da IA', plural: 'da IA', reportar: 'Reportar resposta da IA' },
   automacao: { nome: 'Disparo ou automação', plural: 'de automação', reportar: 'Reportar esta automação' },
   regra: { nome: 'Resposta automática por regra', plural: 'de regra', reportar: 'Reportar resposta automática' },
-  equipe: { nome: 'Mensagem da equipe', plural: 'da equipe', reportar: 'Reportar problema com esta mensagem' },
-  contato: { nome: 'Mensagem do contato', plural: 'do contato', reportar: 'Reportar problema com esta mensagem' },
+  // Rótulos curtos: o menu da bolha tem 220px e cortava "Reportar problema com esta mens…" (revisão de UX de 27/10).
+  equipe: { nome: 'Mensagem da equipe', plural: 'da equipe', reportar: 'Reportar esta mensagem' },
+  contato: { nome: 'Mensagem do contato', plural: 'do contato', reportar: 'Reportar esta mensagem' },
 }
 
 const RULE_KIND: Record<string, string> = {

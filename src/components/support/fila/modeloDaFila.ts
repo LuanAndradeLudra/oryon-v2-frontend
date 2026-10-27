@@ -83,6 +83,18 @@ export function textoDaCalibracao(c: ResumoDaCalibracao): string {
 }
 
 /** 409: alguém mexeu no chamado entre a leitura e o envio (a tela recarrega o chamado). */
+/**
+ * O que dizer quando a fila não carrega (revisão de UX de 27/10): sem permissão
+ * não é "verifique sua conexão" — a pessoa precisa de outra conta, não de outra rede.
+ */
+export function motivoDaFalha(err: unknown): string {
+  const status = (err as { response?: { status?: number } })?.response?.status
+  if (status === 401) return 'A sessão expirou. Entre de novo.'
+  if (status === 403) return 'Esta conta não tem acesso à fila da equipe Oryon. Entre com uma conta da equipe de suporte.'
+  if (status && status >= 500) return 'O servidor falhou ao responder. Tente de novo em instantes.'
+  return 'Verifique sua conexão e tente novamente.'
+}
+
 export function ehConflito(err: unknown): boolean {
   return (err as { response?: { status?: number } } | null)?.response?.status === 409
 }

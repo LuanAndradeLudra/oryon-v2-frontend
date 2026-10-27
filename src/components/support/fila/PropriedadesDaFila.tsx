@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
-import { BarChart3, Layers, Paperclip, Sparkles } from 'lucide-react'
+import { BarChart3, ChevronRight, Layers, Paperclip, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { AcoesDaOcorrencia } from './AcoesDaOcorrencia'
 import { ProblemaDoChamado } from './ProblemaDoChamado'
@@ -12,16 +12,46 @@ import { adminSupportApi, type MudancaNaFila } from '@/services/supportApi'
 import type { ChamadoDaEquipe, SugestoesDoChamado } from '@/types/support'
 import { EscolhaEmLinha, Linha } from '../ReportTicketPanel'
 import {
-  ALCANCES, CONTATO_VIU, CONTORNOU, DESDE_QUANDO, IMPEDE_AGORA, JA_CORRIGIRAM, ORIGENS_DO_PROBLEMA, QUEM_MAIS, TIPOS_DE_PEDIDO,
-  dataCurta, tituloDoChamado,
+  ALCANCES, CATEGORIAS, CONTATO_VIU, CONTORNOU, DESDE_QUANDO, IMPEDE_AGORA, JA_CORRIGIRAM, ORIGENS_DO_PROBLEMA, QUEM_MAIS, TIPOS_DE_PEDIDO,
+  dataCurta, tituloDoChamado, type Categoria,
 } from '../supportModel'
 import {
   CAUSAS, PRIORIDADES, RELOGIOS, STATUS_DA_EQUIPE, STATUS_NA_FILA, canalDe, ehConflito, relativo, textoDaCalibracao, type CausaRaiz, type Prioridade,
   type Relogio,
 } from './modeloDaFila'
 
-function Titulo({ children }: { children: ReactNode }) {
-  return <h3 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-surface-400 mt-1 mb-1">{children}</h3>
+/** Seções que a pessoa recolheu (lembrado neste navegador; sem acesso ao armazenamento, tudo aberto). */
+const CHAVE_DAS_SECOES = 'oryon:fila:secoes-recolhidas'
+function lerRecolhidas(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(CHAVE_DAS_SECOES) ?? '[]') as string[]) } catch { return new Set() }
+}
+
+/**
+ * Seção recolhível da coluna (revisão de UX de 27/10): a coluna passava de 25
+ * linhas e pedia rolagem a cada chamado; quem só precisa de prazos recolhe o
+ * resto, e a escolha fica para os próximos chamados.
+ */
+function Secao({ id, titulo, children, className }: { id: string; titulo: string; children: ReactNode; className?: string }) {
+  const [aberta, setAberta] = useState(() => !lerRecolhidas().has(id))
+  const alternar = () => setAberta((v) => {
+    try {
+      const r = lerRecolhidas()
+      if (v) r.add(id); else r.delete(id)
+      localStorage.setItem(CHAVE_DAS_SECOES, JSON.stringify([...r]))
+    } catch { /* sem armazenamento: vale só nesta tela */ }
+    return !v
+  })
+  return (
+    <section className={cn('flex flex-col', className)}>
+      <h3 className="mt-1 mb-1">
+        <button type="button" onClick={alternar} aria-expanded={aberta}
+          className="w-full flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-surface-400 hover:text-surface-200">
+          <ChevronRight className={cn('w-3 h-3 transition-transform', aberta && 'rotate-90')} aria-hidden />{titulo}
+        </button>
+      </h3>
+      {aberta && children}
+    </section>
+  )
 }
 
 /**
@@ -109,7 +139,8 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
       <div className="flex flex-col">
         <Linha rotulo="Responsável">
           <span className="flex items-center gap-2 text-[13px] min-w-0">
-            <span className={cn('truncate', c.responsavel ? 'text-surface-100' : 'text-surface-400')}>{c.responsavel ?? 'Sem dono'}</span>
+            {/* O nome inteiro (quebra a linha em vez de cortar "Sueli Suporte O…"). */}
+            <span className={cn('break-words min-w-0', c.responsavel ? 'text-surface-100' : 'text-surface-400')}>{c.responsavel ?? 'Sem dono'}</span>
             {meu
               ? <button type="button" disabled={salvando} onClick={() => void mudar({ assumir: false }, 'Você soltou o chamado.')} className="text-xs font-semibold text-surface-400 hover:text-surface-100 hover:underline flex-shrink-0">Soltar</button>
               : <button type="button" disabled={salvando} onClick={() => void mudar({ assumir: true }, 'Chamado atribuído a você.')} className="text-xs font-semibold text-accent-dark hover:underline flex-shrink-0">Assumir (A)</button>}
@@ -143,24 +174,27 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
           ) : <span className="text-[13px] text-surface-100">{STATUS_NA_FILA[c.status]}</span>}
         </Linha>
         <p className="text-[11px] text-surface-400 -mt-0.5">Resolvido só pela resposta à empresa, no campo de baixo.</p>
+        {/* Revisão de UX de 27/10: a equipe confirma ou corrige a categoria que veio da abertura. */}
+        <Linha rotulo="Categoria">
+          <EscolhaEmLinha<Categoria> rotulo="Categoria" valor={c.categoria}
+            onChange={(v) => { if (v && v !== c.categoria) void mudar({ categoria: v }, `Categoria: ${CATEGORIAS[v]}.`) }}
+            opcoes={(Object.keys(CATEGORIAS) as Categoria[]).map((k) => [k, CATEGORIAS[k]])} />
+        </Linha>
       </div>
 
-      <div className="flex flex-col">
-        <Titulo>Prazos</Titulo>
+      <Secao id="prazos" titulo="Prazos">
         {(['primeiraResposta', 'triagem', 'contorno', 'solucao'] as Relogio[]).map((r) => (
           <Linha key={r} rotulo={RELOGIOS[r]}><Prazo c={c} relogio={r} agora={agora} /></Linha>
         ))}
         {c.sla.pausadoDesde && <p className="text-[11px] text-surface-400">Parados desde {dataCurta(c.sla.pausadoDesde)}: a vez é da empresa.</p>}
         <p className="text-[11px] text-surface-500">Prazos de exemplo; o SLA ainda será definido.</p>
-      </div>
+      </Secao>
 
-      <div className="flex flex-col">
-        <Titulo>Chamado</Titulo>
+      <Secao id="chamado" titulo="Chamado">
         <DadosDoChamado c={c} />
-      </div>
+      </Secao>
 
-      <div className="flex flex-col gap-2">
-        <Titulo>Problema</Titulo>
+      <Secao id="problema" titulo="Problema" className="gap-2">
         <ProblemaDoChamado c={c} sugeridos={atuais?.problemas ?? null} onAtualizar={onAtualizar} onRecarregar={onRecarregar} onAbrir={onAbrir} />
         {listaDeParecidos && listaDeParecidos.length > 0 && (
           <div className="flex flex-col gap-1">
@@ -193,7 +227,7 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
               className="w-full h-8 -ml-2 px-2 rounded-[6px] bg-transparent text-[13px] text-surface-100 placeholder:text-surface-400 hover:bg-[var(--rowhover)] focus:bg-surface-800 focus:outline-none" />
           </Linha>
         </div>}
-      </div>
+      </Secao>
     </div>
   )
 }
