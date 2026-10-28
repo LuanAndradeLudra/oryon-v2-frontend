@@ -349,7 +349,7 @@ function DadosDoChamado({ c }: { c: ChamadoDaEquipe }) {
     linhas.push(['Tipo', TIPOS_DE_PEDIDO[c.tipoDePedido].nome], ['Vai para', TIPOS_DE_PEDIDO[c.tipoDePedido].destino])
   } else {
     linhas.push(['Sobre', `${ORIGENS_DO_PROBLEMA[c.origemDoProblema]}${c.origemNome ? ` · ${c.origemNome}` : ''}`])
-    linhas.push(['Assunto', c.assunto?.titulo ?? 'não informado'])
+    linhas.push(['Assunto', c.assunto?.titulo ?? 'Não informado'])
   }
   if (c.ondeAconteceu) linhas.push(['Onde', c.ondeAconteceu])
   const f = c.fatos

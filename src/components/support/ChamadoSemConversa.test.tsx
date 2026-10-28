@@ -166,11 +166,13 @@ describe('Chamado sem conversa (SCRUM-1382)', () => {
     expect(api.criar.mock.calls[0][0]).toMatchObject({ tipoDePedido: 'duvida', ondeAconteceu: 'Disparos', fatos: null })
   })
 
-  it('fora das áreas conhecidas, "Onde" fica para a pessoa escolher', async () => {
+  it('fora das áreas conhecidas, "Onde" fica à vista para a pessoa escolher; o Enviar diz o que falta', async () => {
     render(<Tela rota="/plataforma/algum-lugar" />)
     fireEvent.click(tipo('Está lento'))
-    // Recolhido em "Mais detalhes", com o resumo dizendo que falta.
-    fireEvent.click(within(modal()).getByRole('button', { name: /Mais detalhes/ }))
+    // Auditoria de UX de 28/10: sem a área, não fica recolhido em "Mais detalhes".
     expect(within(modal()).getByRole('button', { name: 'Onde aconteceu: não informado' })).toBeInTheDocument()
+    expect(within(modal()).getByRole('button', { name: /Mais detalhes\s?· desde quando$/ })).toBeInTheDocument()
+    expect(within(modal()).getByText('Falta descrever o que aconteceu · dizer se conseguiu de outro jeito · dizer se acontece com mais alguém.')).toBeInTheDocument()
+    expect(within(modal()).getByRole('button', { name: 'Enviar' })).toHaveAccessibleDescription(/Falta descrever/)
   })
 })

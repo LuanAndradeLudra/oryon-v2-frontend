@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { useEffect, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
@@ -182,7 +182,13 @@ function RotaDaFilaDeSuporte() {
   if (ehEquipeDeSuporte(user?.role)) {
     return <RequireAuth><ShellDaEquipeDeSuporte><AdminSupportPage /></ShellDaEquipeDeSuporte></RequireAuth>
   }
-  return <ProtectedRoute><RequireSuperAdmin><AdminSupportPage /></RequireSuperAdmin></ProtectedRoute>
+  return (
+    <ProtectedRoute>
+      <RequireSuperAdmin descricao={<>A fila de suporte é da equipe Oryon. Os chamados da sua empresa ficam em <Link to="/support" className="font-semibold text-brand-400 hover:underline">Suporte</Link>.</>}>
+        <AdminSupportPage />
+      </RequireSuperAdmin>
+    </ProtectedRoute>
+  )
 }
 
 function RequireGuest({ children }: { children: ReactNode }) {

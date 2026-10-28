@@ -97,7 +97,7 @@ describe('Página Suporte (SCRUM-1383)', () => {
     fireEvent.change(campo, { target: { value: 'Foi às 18h15.' } })
     fireEvent.click(await within(lista()).findByText('SUP-0002'))
     expect(await screen.findByText('A Oryon resolveu este chamado')).toBeInTheDocument()
-    expect(screen.getByLabelText('Mensagem para a equipe Oryon')).toHaveValue('')
+    expect(screen.getByLabelText('O que ainda não está certo?')).toHaveValue('')
     fireEvent.click(within(lista()).getByText('SUP-0001'))
     expect(await screen.findByLabelText('Resposta à pergunta da Oryon')).toHaveValue('Foi às 18h15.')
   })
@@ -111,18 +111,20 @@ describe('Página Suporte (SCRUM-1383)', () => {
     expect(await screen.findByLabelText('Mensagem para a equipe Oryon')).toHaveValue('')
   })
 
-  it('"Isso resolveu?": sim encerra; não reabre — e resolvido ainda aceita comentário (o backend aceita)', async () => {
+  it('"Isso resolveu?": não leva ao único campo, e o texto dele reabre COM a avaliação (auditoria de UX de 28/10)', async () => {
     api.avaliar.mockImplementation(async (_id: string, resolveu: boolean) => completo({ ...RESOLVIDO, status: resolveu ? 'closed' : 'triaged' }))
     render(<Tela rota="/support?chamado=t2" />)
     const card = (await screen.findByText('A Oryon resolveu este chamado')).closest('[role="status"]') as HTMLElement
-    expect(screen.getByLabelText('Mensagem para a equipe Oryon')).toBeEnabled()
+    const campo = screen.getByLabelText('O que ainda não está certo?')
+    expect(within(card).queryByRole('textbox')).toBeNull() // um campo só: o do pé
     fireEvent.click(within(card).getByRole('button', { name: 'Não, continua' }))
-    // Reavaliação de UX de 27/10: antes de reabrir, o que ainda não está certo (mínimo 5 letras).
-    const reabrir = within(card).getByRole('button', { name: 'Reabrir o chamado' })
+    expect(campo).toHaveFocus()
+    const reabrir = screen.getByRole('button', { name: 'Reabrir o chamado' })
     expect(reabrir).toBeDisabled()
-    fireEvent.change(within(card).getByLabelText('O que ainda não está certo?'), { target: { value: 'A IA ainda erra o preço.' } })
+    fireEvent.change(campo, { target: { value: 'A IA ainda erra o preço.' } })
     fireEvent.click(reabrir)
     await waitFor(() => expect(api.avaliar).toHaveBeenCalledWith('t2', false, 'A IA ainda erra o preço.'))
+    expect(api.comentar).not.toHaveBeenCalled()
     await waitFor(() => expect(screen.queryByText('A Oryon resolveu este chamado')).toBeNull())
     expect(api.resumo).toHaveBeenCalledTimes(2) // as abas recontam
   })

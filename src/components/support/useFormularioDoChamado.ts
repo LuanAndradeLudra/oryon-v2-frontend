@@ -7,7 +7,7 @@ import { supportApi } from '@/services/supportApi'
 import type { Message } from '@/types'
 import type { ChamadoDaEmpresa, ResumoDoChamado } from '@/types/support'
 import {
-  ALCANCES, TIPOS_DE_PEDIDO,
+  ALCANCES, TIPOS_DE_PEDIDO, areaDaRota,
   type Alcance, type Categoria, type ContatoViu, type ContextoTecnico, type Contornou, type DesdeQuando, type EntradaDoChamado,
   type ImpedeAgora, type JaCorrigiram, type ModeloDoFormulario, type OrigemDoProblema, type QuemMais, type TipoDePedido,
 } from './supportModel'
@@ -192,7 +192,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
   const [jaCorrigiram, setJaCorrigiram] = useState<JaCorrigiram | null>(inicial?.jaCorrigiram ?? null)
   const [complemento, setComplemento] = useState('')
   // O contexto técnico é o do momento em que o formulário abre (endereço sem `?…`).
-  const [contexto] = useState<ContextoTecnico | null>(() => (conversationId ? null : capturarContextoTecnico(`${pathname}${search}`, telaInicial)))
+  const [contexto] = useState<ContextoTecnico | null>(() => (conversationId ? null : capturarContextoTecnico(`${pathname}${search}`, telaInicial ?? areaDaRota(pathname))))
   // SCRUM-1390: as falhas e os erros dos últimos 15 min, como estavam ao abrir (o que a pessoa vê é o que vai).
   const [recentes] = useState(() => (conversationId ? null : atividadeRecente()))
   const [incluirRecentes, setIncluirRecentes] = useState(true)
@@ -269,9 +269,20 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
   // Obrigatórios são FATOS: sem conversa, o tipo e (defeito/lentidão) se contornou e com quem acontece;
   // com conversa, se o contato viu e (se viu) se já corrigiram.
   const perguntaCorrigiram = !!contatoViu && contatoViu !== 'nao_viu'
-  const pronto = !aguardandoMarcacao && !anexosEnviando && (juntarEm ? relato.trim().length >= MIN_RELATO
-    : semConversa ? !!tipo && relato.trim().length >= MIN_RELATO && (!camposDoTipo?.fatos || (!!contornou && !!quemMais)) && !camposFaltando
-    : relato.trim().length >= MIN_RELATO && !!contatoViu && (!perguntaCorrigiram || !!jaCorrigiram) && !camposFaltando)
+  // Auditoria de UX de 28/10: o Enviar desabilitado diz o que falta (o mínimo do relato e as
+  // perguntas que aparecem depois de outra resposta não estavam à vista).
+  const relatoCurto = relato.trim().length < MIN_RELATO
+  const faltando = [
+    aguardandoMarcacao && 'marcar a mensagem no chat',
+    semConversa && !juntarEm && !tipo && 'escolher do que se trata',
+    relatoCurto && (relato.trim() ? `descrever com pelo menos ${MIN_RELATO} letras` : 'descrever o que aconteceu'),
+    semConversa && !juntarEm && camposDoTipo?.fatos && !contornou && 'dizer se conseguiu de outro jeito',
+    semConversa && !juntarEm && camposDoTipo?.fatos && !quemMais && 'dizer se acontece com mais alguém',
+    !semConversa && !juntarEm && !contatoViu && 'dizer se o contato chegou a ver',
+    !semConversa && !juntarEm && perguntaCorrigiram && !jaCorrigiram && 'dizer se já corrigiram com o contato',
+    !juntarEm && camposFaltando && 'preencher os campos obrigatórios da empresa',
+  ].filter((x): x is string => !!x)
+  const pronto = !anexosEnviando && faltando.length === 0
 
   /** Sobe cada arquivo na hora: o tipo é conferido pelos bytes no backend, e o erro aparece no próprio anexo. */
   const anexar = (arquivos: File[]) => {
@@ -388,7 +399,7 @@ export function useFormularioDoChamado({ open, onClose, conversationId, mensagen
 
   return {
     podeRascunho, pedirRascunho, pedindoRascunho, rascunhoAplicado, sugestaoDaIa, acrescentarRascunho, descartarRascunho,
-    modelo, resumo, candidatas, nomeDaOrigem, semConversa, assuntos, perguntaEsperado, perguntaDesde, perguntaAfetadas, duplicado, pronto,
+    modelo, resumo, candidatas, nomeDaOrigem, semConversa, assuntos, perguntaEsperado, perguntaDesde, perguntaAfetadas, duplicado, pronto, faltando,
     aguardandoMarcacao, anexosEnviando, podeJuntar, temConteudo, descartar, rascunhoRecuperado: !!inicial,
     titulo: juntarEm ? `Adicionar ao ${juntarEm.numero}` : aguardandoMarcacao ? 'Reportar mensagens' : TITULO[origem],
     rotuloAlcance: (a: Alcance) => (semConversa ? ALCANCES[a].plataforma : ALCANCES[a].conversa),

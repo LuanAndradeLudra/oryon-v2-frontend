@@ -1,6 +1,6 @@
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, BarChart3, CheckCircle2, ChevronDown, CircleHelp, LifeBuoy, MessageSquare, Paperclip, Plus, RotateCcw, Search } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ChevronDown, CircleHelp, Gauge, LifeBuoy, MessageSquare, Paperclip, Plus, RotateCcw, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
@@ -309,8 +309,9 @@ export function SupportPage() {
         <div className="ml-auto flex items-center gap-2 flex-shrink-0">
           {/* SCRUM-1391: os números do mês, só para a gestão. */}
           {gestao && (
-            <Button size="sm" variant="neutral" leftIcon={<BarChart3 className="w-4 h-4" />} onClick={() => navigate('/support/qualidade')}
+            <Button size="sm" variant="neutral" leftIcon={<Gauge className="w-4 h-4" />} onClick={() => navigate('/support/qualidade')}
               aria-label="Qualidade do atendimento" title="Qualidade do atendimento">
+              {/* No celular, só o ícone: o próprio (o gráfico era o do Dashboard da barra de baixo). */}
               <span className="hidden sm:inline">Qualidade</span>
             </Button>
           )}
@@ -353,12 +354,12 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
     else rascunhos.delete(c.id)
   }
   const [agindo, setAgindo] = useState<null | 'texto' | 'sim' | 'nao' | 'reabrir'>(null)
-  // "Não, continua" (reavaliação de UX de 27/10): antes de reabrir, a pessoa diz o que ainda não está certo.
-  const [oQueFalta, setOQueFalta] = useState<string | null>(null)
   const esperandoConfirmacao = c.status === 'resolved'
   const encerrado = c.status === 'closed'
-  // Resolvido ainda aceita comentário ("ainda falta um detalhe"); encerrado, só reabrindo.
+  // Resolvido: o campo do pé é o "não resolveu" (auditoria de UX de 28/10 — eram dois campos, e o
+  // comentário reabria sem registrar a avaliação). Encerrado, só reabrindo.
   const podeEscrever = !encerrado
+  const envio = esperandoConfirmacao ? 'nao' : 'texto'
   // Ctrl+Enter repetido (ou segurado) não manda o mesmo comentário duas vezes.
   const enviandoAgora = useRef(false)
 
@@ -379,10 +380,10 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
     const corpo = rascunho.trim()
     if (!corpo || !podeEscrever || enviandoAgora.current) return
     enviandoAgora.current = true
-    const respondendo = !!c.perguntaPendente
     try {
-      const ok = await agir('texto', () => supportApi.comentar(c.id, corpo), respondendo ? 'Resposta enviada para a equipe Oryon.'
-        : esperandoConfirmacao ? 'Enviado. O chamado voltou para a equipe Oryon.' : 'Comentário enviado para a equipe Oryon.')
+      const ok = esperandoConfirmacao
+        ? await agir('nao', () => supportApi.avaliar(c.id, false, corpo), 'Chamado reaberto. A equipe Oryon vai olhar de novo.')
+        : await agir('texto', () => supportApi.comentar(c.id, corpo), c.perguntaPendente ? 'Resposta enviada para a equipe Oryon.' : 'Comentário enviado para a equipe Oryon.')
       // Só limpa se nada foi escrito enquanto enviava.
       if (ok && (rascunhos.get(c.id) ?? '').trim() === corpo) escrever('')
     } finally {
@@ -435,21 +436,8 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
                     <span className="text-[13px] font-semibold text-surface-100 mr-1">Isso resolveu?</span>
                     <Button size="sm" loading={agindo === 'sim'} disabled={!!agindo}
                       onClick={() => void agir('sim', () => supportApi.avaliar(c.id, true), 'Obrigado! Chamado encerrado.')}>Sim, resolveu</Button>
-                    <Button size="sm" variant="neutral" disabled={!!agindo || oQueFalta !== null}
-                      onClick={() => setOQueFalta('')}>Não, continua</Button>
-                  </div>
-                )}
-                {esperandoConfirmacao && oQueFalta !== null && (
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="o-que-falta" className="text-[13px] font-semibold text-surface-100">O que ainda não está certo?</label>
-                    <Textarea id="o-que-falta" rows={2} maxLength={2000} autoFocus value={oQueFalta} onChange={(e) => setOQueFalta(e.target.value)}
-                      placeholder="Ex.: a IA continua dizendo que não aceitamos o convênio." />
-                    <div className="flex gap-2">
-                      <Button size="sm" loading={agindo === 'nao'} disabled={!!agindo || oQueFalta.trim().length < 5}
-                        onClick={() => void agir('nao', () => supportApi.avaliar(c.id, false, oQueFalta.trim()), 'Chamado reaberto. A equipe Oryon vai olhar de novo.')
-                          .then((ok) => { if (ok) setOQueFalta(null) })}>Reabrir o chamado</Button>
-                      <Button size="sm" variant="neutral" disabled={!!agindo} onClick={() => setOQueFalta(null)}>Voltar</Button>
-                    </div>
+                    <Button size="sm" variant="neutral" disabled={!!agindo}
+                      onClick={() => { campo.current?.focus(); campo.current?.scrollIntoView?.({ block: 'nearest' }) }}>Não, continua</Button>
                   </div>
                 )}
               </AcaoPendente>
@@ -465,9 +453,9 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
         <div className="border-t border-surface-800 px-4 md:px-6 py-3 flex-shrink-0">
           <div className="max-w-[760px] mx-auto flex flex-col gap-2">
             <Textarea ref={campo} rows={2} value={rascunho} onChange={(e) => escrever(e.target.value)} maxLength={4000} disabled={!podeEscrever}
-              aria-label={c.perguntaPendente ? 'Resposta à pergunta da Oryon' : 'Mensagem para a equipe Oryon'}
+              aria-label={esperandoConfirmacao ? 'O que ainda não está certo?' : c.perguntaPendente ? 'Resposta à pergunta da Oryon' : 'Mensagem para a equipe Oryon'}
               placeholder={encerrado ? 'Chamado encerrado. Reabra para escrever.'
-                : esperandoConfirmacao ? 'Algo ainda não está certo? Escreva aqui e o chamado volta para a equipe Oryon.'
+                : esperandoConfirmacao ? 'Não resolveu? Diga o que ainda não está certo e o chamado volta para a equipe Oryon.'
                 : c.perguntaPendente ? 'Responda à pergunta da Oryon' : 'Escreva para a equipe Oryon. Só a sua empresa e a Oryon veem.'}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void enviar() } }} />
             <div className="flex items-center gap-2">
@@ -479,8 +467,8 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
                   Reabrir
                 </Button>
               )}
-              <Button size="sm" disabled={!podeEscrever || !rascunho.trim() || (!!agindo && agindo !== 'texto')} loading={agindo === 'texto'} onClick={() => void enviar()}>
-                {c.perguntaPendente ? 'Enviar resposta' : 'Enviar'}
+              <Button size="sm" disabled={!podeEscrever || !rascunho.trim() || (!!agindo && agindo !== envio)} loading={agindo === envio} onClick={() => void enviar()}>
+                {esperandoConfirmacao ? 'Reabrir o chamado' : c.perguntaPendente ? 'Enviar resposta' : 'Enviar'}
               </Button>
             </div>
           </div>
@@ -504,7 +492,6 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
   )
 }
 
-/** Cartão neutro com a cor só no ícone (mesma regra do painel do chamado). */
 /** Texto para P2/P3 enquanto o SLA real não é definido (decisão pendente: horas corridas × úteis). */
 const RESPOSTA_SEM_PREVISAO = 'A equipe Oryon responde em horário comercial.'
 
@@ -558,7 +545,7 @@ function ListaDeDetalhes({ c }: { c: ChamadoDaEmpresa }) {
   if (c.conversasAfetadas.length) linhas.push(['Também afetadas', c.conversasAfetadas.map((x) => x.contatoNome).join(', ')])
   if (c.desdeQuando) linhas.push(['Desde', DESDE_QUANDO[c.desdeQuando]])
   if (c.dadosDeTerceiros) linhas.push(['Atenção', <span key="t" className="text-danger font-semibold">dados de outra pessoa ou empresa</span>])
-  if (!c.tipoDePedido) linhas.push(['Assunto', c.assunto?.titulo ?? 'não informado'])
+  if (!c.tipoDePedido) linhas.push(['Assunto', c.assunto?.titulo ?? 'Não informado'])
   for (const x of c.camposExtras) linhas.push([x.rotulo, x.valor])
   linhas.push(['Aberto por', c.abertoPor])
   if (c.anexos.length) {

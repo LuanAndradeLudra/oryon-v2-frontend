@@ -250,6 +250,9 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
   const [verAfetadas, setVerAfetadas] = useState(false)
   // Sem conversa, "onde" (já preenchido pela tela) e "desde quando" são opcionais: ficam recolhidos.
   const [verMaisDetalhes, setVerMaisDetalhes] = useState(false)
+  // ...mas, sem a área (aberto pela página Suporte, ou fora das áreas conhecidas), "Onde" fica à vista:
+  // recolhido, o chamado ia como "não informado" (auditoria de UX de 28/10).
+  const [ondeAberto] = useState(() => !f.onde)
   const tituloId = useId()
   const painelRef = useRef<HTMLElement>(null)
   // Fechar com algo escrito pede confirmação: um Esc ou um clique não leva o relato (revisão do Portão 2).
@@ -301,14 +304,16 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
   ) : (
     <>
       <Button variant="neutral" size="sm" onClick={pedirFechar}>Cancelar</Button>
-      <Button size="sm" onClick={f.enviar} loading={f.enviando} disabled={!f.pronto} leftIcon={<Flag className="w-3.5 h-3.5" />}>
+      <Button size="sm" onClick={f.enviar} loading={f.enviando} disabled={!f.pronto} leftIcon={<Flag className="w-3.5 h-3.5" />}
+        aria-describedby={f.faltando.length ? 'o-que-falta-enviar' : undefined}>
         {f.juntarEm ? 'Adicionar' : 'Enviar'}
       </Button>
     </>
   )
   const avisoDosAnexos = confirmarDescarte
     ? <span className="text-xs font-semibold text-surface-100" role="alert">Descartar o relato?</span>
-    : f.anexosEnviando ? <span className="text-[11px] text-surface-400" role="status">Enviando anexos…</span> : null
+    : f.anexosEnviando ? <span className="text-[11px] text-surface-400" role="status">Enviando anexos…</span>
+    : f.faltando.length ? <span className="text-[11px] text-surface-400 leading-snug" id="o-que-falta-enviar">Falta {f.faltando.join(' · ')}.</span> : null
   const corpo = (
       <div className={cn('flex flex-col gap-4', variante === 'modal' ? 'sup-modal px-5 py-4' : 'flex-1 min-h-0 overflow-y-auto px-4 py-4')}>
         {f.rascunhoRecuperado && (
@@ -580,15 +585,15 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
               <Ajuda texto={AJUDA.terceiros} />
             </div>
             )}
-            {f.semConversa && (f.camposDoTipo?.onde || f.camposDoTipo?.desde) && !verMaisDetalhes && (
+            {f.semConversa && ((f.camposDoTipo?.onde && !ondeAberto) || f.camposDoTipo?.desde) && !verMaisDetalhes && (
               <button type="button" onClick={() => setVerMaisDetalhes(true)} aria-expanded={false}
                 className="w-fit h-8 -ml-2 px-2 rounded-[6px] flex items-center gap-1 text-[13px] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]">
                 <Plus className="w-3.5 h-3.5" />Mais detalhes<span className="text-surface-500">
-                  {` · ${[f.camposDoTipo?.onde ? `onde: ${f.onde || 'não informado'}` : null, f.camposDoTipo?.desde ? 'desde quando' : null].filter(Boolean).join(' · ')}`}
+                  {` · ${[f.camposDoTipo?.onde && !ondeAberto ? `onde: ${f.onde}` : null, f.camposDoTipo?.desde ? 'desde quando' : null].filter(Boolean).join(' · ')}`}
                 </span>
               </button>
             )}
-            {f.semConversa && f.camposDoTipo?.onde && verMaisDetalhes && (
+            {f.semConversa && f.camposDoTipo?.onde && (verMaisDetalhes || ondeAberto) && (
               <Linha rotulo="Onde" ajuda={AJUDA.onde}>
                 <EscolhaEmLinha rotulo="Onde aconteceu" valor={f.onde || null} onChange={(v) => f.setOnde(v ?? '')} limpar
                   opcoes={AREAS_DO_PRODUTO.map((a) => [a, a])} />

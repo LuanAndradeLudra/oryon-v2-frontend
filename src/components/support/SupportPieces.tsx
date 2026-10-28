@@ -125,7 +125,10 @@ function ItemDoFio({ c, e, ultimo, interno, destacado = false }: { c: ChamadoNoF
   // Revisão de UX de 27/10: a resposta em destaque no topo não se repete inteira no fio.
   const corpo = e.tipo === 'aberto' ? <RelatoNoFio c={c} /> : destacado ? null : e.corpo
   const para = interno && e.tipo === 'status' && typeof e.dados?.para === 'string' ? e.dados.para as StatusChamado : null
-  const texto = para && STATUS_NA_FILA[para] ? `Status: ${STATUS_NA_FILA[para]}` : e.texto
+  const deixou = interno && e.tipo === 'retorno' && typeof e.dados?.deixarComo === 'string' && e.dados.deixarComo !== 'resolved'
+    ? e.dados.deixarComo as StatusChamado : null
+  const texto = para && STATUS_NA_FILA[para] ? `Status: ${STATUS_NA_FILA[para]}`
+    : deixou && STATUS_NA_FILA[deixou] ? `A Oryon respondeu · ${STATUS_NA_FILA[deixou]}` : e.texto
   return (
     <li className="grid grid-cols-[28px_1fr] gap-3 relative pb-4 last:pb-0">
       {!ultimo && <span aria-hidden className="absolute left-[13px] top-7 bottom-0 w-px bg-surface-700" />}

@@ -6,7 +6,7 @@ import { showToast } from '@/hooks/useToast'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import { adminSupportApi } from '@/services/supportApi'
 import type { ChamadoDaEquipe } from '@/types/support'
-import { FioDoChamado } from '../SupportPieces'
+import { FioDoChamado, MensagensMarcadas } from '../SupportPieces'
 import { dataCurta, tituloDoChamado } from '../supportModel'
 import { linhasDoContexto } from '../contextoTecnico'
 import { canalDe } from './modeloDaFila'
@@ -104,7 +104,18 @@ export function DetalheDaFila({ c, agora, colunaCabe, onAtualizar, onRecarregar,
                 {verPropriedades && <div className="px-4 pb-4">{propriedades}</div>}
               </div>
             )}
-            {aba === 'atividade' && <FioDoChamado c={c} interno titulo={null} />}
+            {/* Auditoria de UX de 28/10: o que foi reportado vem antes do fio, sem trocar de aba. */}
+            {aba === 'atividade' && (
+              <div className="flex flex-col gap-5">
+                {c.mensagens.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-surface-400">Mensagens marcadas</h3>
+                    <MensagensMarcadas mensagens={c.mensagens} />
+                  </div>
+                )}
+                <FioDoChamado c={c} interno titulo={null} />
+              </div>
+            )}
             {aba === 'evidencia' && <AbaEvidencia c={c} />}
             {aba === 'conversa' && c.conversationId && <AbaConversaDoCliente c={c} onAtualizar={onAtualizar} />}
             {aba === 'contexto' && c.contextoTecnico && (

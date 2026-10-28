@@ -81,7 +81,7 @@ export function useRegistrarMensagensDoSuporte(messages: readonly Message[]) {
 export function resumoDe(c: ChamadoDaEmpresa): ResumoDoChamado {
   return {
     id: c.id, numero: c.numero, origemDoProblema: c.origemDoProblema, origemNome: c.origemNome, tipoDePedido: c.tipoDePedido,
-    categoria: c.categoria, assunto: c.assunto, ondeAconteceu: c.ondeAconteceu, status: c.status, prioridade: c.prioridade,
+    categoria: c.categoria, assunto: c.assunto, ondeAconteceu: c.ondeAconteceu, trecho: c.trecho, status: c.status, prioridade: c.prioridade,
     perguntaPendente: c.perguntaPendente, avaliacao: c.avaliacao, conversationId: c.conversationId, contatoNome: c.contatoNome,
     abertoPor: c.abertoPor, abertoEm: c.abertoEm, atualizadoEm: c.atualizadoEm, mensagensMarcadas: c.mensagens.map((m) => m.id),
   }
