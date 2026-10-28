@@ -10,6 +10,7 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
 import type { SendMessageDto } from '@/types'
+import { templatesApi } from '@/services/api'
 
 vi.mock('@/services/api', () => ({
   cannedResponsesApi: { fetchAll: vi.fn(async () => []) },
@@ -158,5 +159,51 @@ describe('MessageInput — gerenciar respostas rápidas sem sair da conversa', (
     const href = new URL(link.getAttribute('href') ?? '', 'http://x')
     expect(href.pathname).toBe('/settings/quick-replies')
     expect(href.searchParams.get('voltarPara')).toBe('/conversations?id=c9')
+  })
+})
+
+// Petrópolis (28/10): com a janela fechada o atendente abria "Escolher
+// template", o GET /templates voltava 403 e o `.catch(() => {})` deixava a
+// lista vazia com "Crie em Disparos" — orientação que ele nem pode seguir.
+describe('MessageInput — seletor de template com a janela de 24h fechada', () => {
+  beforeEach(() => {
+    papel.atual = 'agent'
+    vi.mocked(templatesApi.list).mockReset()
+  })
+
+  const abrirSeletor = async () => {
+    render(
+      <MemoryRouter>
+        <ContextMenuProvider>
+          <MessageInput onSend={vi.fn(async () => {})} contactId="c1" windowOpen={false} />
+        </ContextMenuProvider>
+      </MemoryRouter>,
+    )
+    fireEvent.click(await screen.findByRole('button', { name: /Escolher template/ }))
+  }
+
+  it('falha ao listar mostra o motivo que o backend mandou, não a lista vazia', async () => {
+    vi.mocked(templatesApi.list).mockRejectedValue({
+      response: { status: 403, data: { message: 'Nenhuma linha de WhatsApp associada ao seu setor.' } },
+    })
+    await abrirSeletor()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nenhuma linha de WhatsApp associada ao seu setor.')
+    expect(screen.queryByText(/Nenhum template aprovado/)).toBeNull()
+  })
+
+  it('atendente com a lista vazia não é mandado criar template em Disparos', async () => {
+    vi.mocked(templatesApi.list).mockResolvedValue({ data: [] } as never)
+    await abrirSeletor()
+    expect(await screen.findByText(/Nenhum template aprovado para a linha do seu setor/)).toBeInTheDocument()
+    expect(screen.queryByText(/Crie em Disparos/)).toBeNull()
+  })
+
+  it('atendente vê e escolhe os templates aprovados da linha', async () => {
+    vi.mocked(templatesApi.list).mockResolvedValue({
+      data: [{ id: 't1', name: 'mensagem_apos_24_horas', language: 'pt_BR', body: 'Olá! Podemos continuar?' }],
+    } as never)
+    await abrirSeletor()
+    expect(await screen.findByText('mensagem_apos_24_horas')).toBeInTheDocument()
+    expect(templatesApi.list).toHaveBeenCalledWith('APPROVED')
   })
 })
