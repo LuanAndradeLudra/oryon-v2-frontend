@@ -73,7 +73,7 @@ export function AbaEvidencia({ c }: { c: ChamadoDaEquipe }) {
         <p className="text-xs text-surface-400">Nada coletado ainda. A coleta roda em segundo plano logo depois da abertura.</p>
       ) : (
         evidencias.map((e) => (e.coletor === 'ia-turno' && e.secoes
-          ? <TurnoDaEvidencia key={e.id} c={c} e={e} />
+          ? <TurnoDaEvidencia key={e.id} c={c} e={e} replay={atual.dados?.replayHabilitado !== false} />
           : <ColetorDaEvidencia key={e.id} e={e} />))
       )}
     </div>
@@ -81,7 +81,7 @@ export function AbaEvidencia({ c }: { c: ChamadoDaEquipe }) {
 }
 
 /** O turno da IA, com "Repetir o turno" (custa IA: pede motivo, e o backend só aceita com a configuração ligada). */
-function TurnoDaEvidencia({ c, e }: { c: ChamadoDaEquipe; e: EvidenciaDoChamado }) {
+function TurnoDaEvidencia({ c, e, replay }: { c: ChamadoDaEquipe; e: EvidenciaDoChamado; replay: boolean }) {
   const [pedindoMotivo, setPedindoMotivo] = useState(false)
   const [motivo, setMotivo] = useState('')
   const [repetindo, setRepetindo] = useState(false)
@@ -101,11 +101,16 @@ function TurnoDaEvidencia({ c, e }: { c: ChamadoDaEquipe; e: EvidenciaDoChamado 
   }
   return (
     <div className="flex flex-col gap-2">
-      <LinhaDoTempoDoTurno turno={e.secoes as TurnoGravado} acoes={repetivel ? (
+      {/* Auditoria de UX de 28/10: com a repetição desligada (custa IA), o botão levava a um erro. */}
+      <LinhaDoTempoDoTurno turno={e.secoes as TurnoGravado} acoes={repetivel ? (replay ? (
         <Button size="sm" variant="ghost" leftIcon={<RotateCcw className="w-3.5 h-3.5" />} onClick={() => setPedindoMotivo((v) => !v)} aria-expanded={pedindoMotivo}>
           Repetir o turno
         </Button>
-      ) : undefined} />
+      ) : (
+        <span className="text-[11px] text-surface-400" title="A repetição chama o modelo de verdade; o super_admin liga na configuração do suporte.">
+          Repetir o turno: desligado (custa IA)
+        </span>
+      )) : undefined} />
       {pedindoMotivo && (
         <div className="sup-cartao px-4 py-3 flex flex-col gap-2">
           <p className="text-xs text-surface-300">Repete o turno com as ferramentas respondendo pelo que foi gravado (nada é executado de novo). Custa IA e fica registrado.</p>

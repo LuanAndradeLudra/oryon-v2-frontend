@@ -171,7 +171,11 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
               ))}
             </Dropdown>
           )}
-          {modo === 'nota' && <span className="ml-auto text-[11px] text-surface-400">só a equipe Oryon vê</span>}
+          {modo === 'nota' && (
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-surface-200">
+              <Lock className="w-3 h-3" aria-hidden />Nota interna · só a equipe Oryon vê
+            </span>
+          )}
         </div>
 
         {bloqueado ? (
@@ -180,6 +184,8 @@ export function CampoUnicoDaFila({ c, onAtualizar, onRecarregar, campoRef }: {
           <p className="text-xs text-surface-400 py-2">Já existe uma pergunta esperando a empresa: “{c.perguntaPendente}”. A resposta dela aparece na Atividade.</p>
         ) : (
           <Textarea ref={texto} rows={modo === 'responder' ? 3 : 2} maxLength={modo === 'perguntar' ? 2000 : 5000} value={valor} onChange={(e) => escrever(e.target.value)}
+            // Auditoria de UX de 28/10: tracejado como a nota no fio — não se confunde com a resposta.
+            className={modo === 'nota' ? 'border-dashed border-surface-500' : undefined}
             // Esc no campo vazio recolhe de novo.
             onKeyUp={(e) => { if (e.key === 'Escape' && !valor.trim()) setAtivo(false) }}
             aria-label={modo === 'responder' ? 'Resposta à empresa' : modo === 'perguntar' ? 'Pergunta para a empresa' : 'Nota interna'}

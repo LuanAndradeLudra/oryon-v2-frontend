@@ -159,7 +159,7 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
         {mudouPrioridade && (
           <div className="flex flex-col gap-1.5 pb-2">
             <p className="text-[11px] text-surface-400">A regra sugeriu {c.prioridadeDaRegra}. Para mudar para {prioridade}, diga o motivo (fica no histórico).</p>
-            <Input size="sm" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={500} placeholder="Motivo da mudança" aria-label="Motivo da mudança de prioridade" />
+            <Input size="sm" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={500} placeholder="Motivo da mudança" aria-label="Motivo da mudança de prioridade" autoFocus />
             <div className="flex gap-1.5">
               <Button size="sm" disabled={motivo.trim().length < 5} loading={salvando} onClick={() => void salvarPrioridade()}>Salvar</Button>
               <Button size="sm" variant="neutral" onClick={() => { setPrioridade(c.prioridade); setMotivo('') }}>Desfazer</Button>
@@ -173,7 +173,7 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
               opcoes={[...(c.status === 'received' ? [['received', STATUS_NA_FILA.received] as [typeof c.status, string]] : []), ...STATUS_DA_EQUIPE.map((s) => [s, STATUS_NA_FILA[s]] as [typeof s, string])]} />
           ) : <span className="text-[13px] text-surface-100">{STATUS_NA_FILA[c.status]}</span>}
         </Linha>
-        <p className="text-[11px] text-surface-400 -mt-0.5">Resolvido só pela resposta à empresa, no campo de baixo.</p>
+        {c.status !== 'closed' && <p className="text-[11px] text-surface-400 -mt-0.5">Resolvido só pela resposta à empresa, no campo de baixo.</p>}
         {/* Revisão de UX de 27/10: a equipe confirma ou corrige a categoria que veio da abertura. */}
         <Linha rotulo="Categoria">
           <EscolhaEmLinha<Categoria> rotulo="Categoria" valor={c.categoria} quebrar
@@ -186,7 +186,10 @@ export function PropriedadesDaFila({ c, agora, onAtualizar, onRecarregar, onAbri
         {(['primeiraResposta', 'triagem', 'contorno', 'solucao'] as Relogio[]).map((r) => (
           <Linha key={r} rotulo={RELOGIOS[r]}><Prazo c={c} relogio={r} agora={agora} /></Linha>
         ))}
-        {c.sla.pausadoDesde && <p className="text-[11px] text-surface-400">Parados desde {dataCurta(c.sla.pausadoDesde)}: a vez é da empresa.</p>}
+        {/* Auditoria de UX de 28/10: encerrado não tem "vez" de ninguém. */}
+        {c.status === 'closed'
+          ? c.sla.encerradoEm && <p className="text-[11px] text-surface-400">Encerrado em {dataCurta(c.sla.encerradoEm)}.</p>
+          : c.sla.pausadoDesde && <p className="text-[11px] text-surface-400">Parados desde {dataCurta(c.sla.pausadoDesde)}: a vez é da empresa.</p>}
         <p className="text-[11px] text-surface-500">Prazos de exemplo; o SLA ainda será definido.</p>
       </Secao>
 

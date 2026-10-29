@@ -169,12 +169,16 @@ describe('Página Suporte (SCRUM-1383)', () => {
     expect(screen.getByTestId('endereco').textContent).not.toMatch(/Maria|2199/)
   })
 
-  it('encerrado: o campo fica fechado e aparece "Reabrir"', async () => {
+  it('encerrado: o campo do pé reabre com o porquê (auditoria de UX de 28/10)', async () => {
     api.obter.mockResolvedValue(completo({ ...RESOLVIDO, status: 'closed' }))
     api.reabrir.mockResolvedValue(completo({ ...RESOLVIDO, status: 'triaged' }))
     render(<Tela rota="/support?chamado=t2" />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Reabrir' }))
-    await waitFor(() => expect(api.reabrir).toHaveBeenCalledWith('t2'))
+    const campo = await screen.findByLabelText('Por que reabrir?')
+    const reabrir = screen.getByRole('button', { name: 'Reabrir o chamado' })
+    expect(reabrir).toBeDisabled()
+    fireEvent.change(campo, { target: { value: 'O erro voltou hoje de manhã.' } })
+    fireEvent.click(reabrir)
+    await waitFor(() => expect(api.reabrir).toHaveBeenCalledWith('t2', 'O erro voltou hoje de manhã.'))
   })
 
   it('prioridade só aparece quando o backend manda (gestão, alta); para o agent vem null e nada aparece', async () => {

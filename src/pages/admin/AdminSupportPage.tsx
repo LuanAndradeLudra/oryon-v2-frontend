@@ -52,6 +52,19 @@ const ATALHOS: Array<[AtalhoDaFila, string, keyof ResumoDaFila['contadores'], st
 
 interface Lista { chave: string; itens: ItemDaFila[]; proximo: string | null; erro: string | null }
 
+/**
+ * Auditoria de UX de 28/10: buscar pelo número (SUP-0005, OCO-12) acha o chamado em qualquer
+ * situação — antes, um encerrado dava "Fila vazia" com o filtro padrão (em aberto).
+ */
+const ehNumeroDeChamado = (termo: string) => /^(sup|oco)-?\d{1,6}$/i.test(termo.trim())
+function situacaoDaBusca(termo: string, situacao: SituacaoDaFila): SituacaoDaFila {
+  return ehNumeroDeChamado(termo) ? 'todos' : situacao
+}
+/** O número acha o chamado em qualquer aba também (um encerrado com dono não está em "Sem dono"). */
+function filaDaBusca(termo: string, fila: FilaDaEquipe): FilaDaEquipe {
+  return ehNumeroDeChamado(termo) ? 'todos' : fila
+}
+
 export function AdminSupportPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -85,7 +98,7 @@ export function AdminSupportPage() {
     let vivo = true
     const t = setTimeout(() => {
       adminSupportApi.listar({
-        fila, atalho: atalho ?? undefined, situacao, empresa: empresa ?? undefined, origemDoProblema: origem ?? undefined,
+        fila: filaDaBusca(termo, fila), atalho: atalho ?? undefined, situacao: situacaoDaBusca(termo, situacao), empresa: empresa ?? undefined, origemDoProblema: origem ?? undefined,
         soSinais, busca: termo || undefined, limite: LIMITE,
       })
         .then((p) => {
@@ -105,7 +118,7 @@ export function AdminSupportPage() {
     setCarregandoMais(true)
     try {
       const p = await adminSupportApi.listar({
-        fila, atalho: atalho ?? undefined, situacao, empresa: empresa ?? undefined, origemDoProblema: origem ?? undefined,
+        fila: filaDaBusca(termo, fila), atalho: atalho ?? undefined, situacao: situacaoDaBusca(termo, situacao), empresa: empresa ?? undefined, origemDoProblema: origem ?? undefined,
         soSinais, busca: termo || undefined, limite: LIMITE, cursor: daChave.proximo,
       })
       setLista((l) => (l && l.chave === chave ? { ...l, itens: [...l.itens, ...p.itens], proximo: p.proximoCursor } : l))

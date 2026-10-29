@@ -66,14 +66,17 @@ export function SupportReportProvider({ conversationId, contatoNome, children }:
     store.mudar({ chamadoPorMensagem: mapa })
   }, [chamados, store])
 
+  // Mensagens → Conversa inteira guarda as marcadas; a volta as devolve (auditoria de UX de 28/10).
+  const marcadasGuardadas = useRef<Set<string> | null>(null)
   // No painel, marcar e escrever são um passo só: o formulário abre junto.
   const iniciarMarcacao = useCallback((primeira?: string) => {
+    marcadasGuardadas.current = null
     store.mudar({ marcando: true, marcadas: new Set(primeira ? [primeira] : []), sobre: 'mensagens', painelAberto: emPainel })
   }, [store, emPainel])
   const alternar = useCallback((id: string) => {
     if (!store.alternar(id)) showToast(`Até ${MAX_MARCADAS} mensagens por chamado.`, 'error')
   }, [store])
-  const cancelarMarcacao = useCallback(() => store.zerar(true), [store])
+  const cancelarMarcacao = useCallback(() => { marcadasGuardadas.current = null; store.zerar(true) }, [store])
   const reportar = useCallback((ids: string[]) => {
     const conversa = ids.length === 0
     store.mudar({ marcadas: new Set(ids), marcando: !conversa, sobre: conversa ? 'conversa' : 'mensagens', painelAberto: true })
@@ -97,8 +100,14 @@ export function SupportReportProvider({ conversationId, contatoNome, children }:
   // Conversa inteira: sai a marcação (e as caixas do chat). Mensagens: volta a marcar.
   // No celular a folha cobre o chat: "Mensagens" fecha a folha para marcar.
   const definirSobre = useCallback((v: SobreOChamado) => {
-    if (v === 'conversa') store.mudar({ sobre: v, marcando: false, marcadas: new Set() })
-    else store.mudar({ sobre: v, marcando: true, painelAberto: emPainel ? store.ler().painelAberto : false })
+    if (v === 'conversa') {
+      marcadasGuardadas.current = new Set(store.ler().marcadas)
+      store.mudar({ sobre: v, marcando: false, marcadas: new Set() })
+    } else {
+      const volta = marcadasGuardadas.current
+      marcadasGuardadas.current = null
+      store.mudar({ sobre: v, marcando: true, ...(volta?.size ? { marcadas: volta } : {}), painelAberto: emPainel ? store.ler().painelAberto : false })
+    }
   }, [store, emPainel])
   const irParaChamado = useCallback((id: string) => navigate(`/support?chamado=${encodeURIComponent(id)}`), [navigate])
   const registrarMensagens = useCallback((m: readonly Message[]) => store.mudar({ mensagens: m }), [store])

@@ -71,8 +71,9 @@ export const supportApi = {
   comentar(id: string, corpo: string) {
     return api.post<ChamadoDaEmpresa>(`/support/tickets/${id}/comments`, { corpo }).then((r) => r.data)
   },
-  reabrir(id: string) {
-    return api.post<ChamadoDaEmpresa>(`/support/tickets/${id}/reopen`, {}).then((r) => r.data)
+  /** Reabrir um encerrado, com o porquê (vai mascarado para o histórico). */
+  reabrir(id: string, motivo?: string) {
+    return api.post<ChamadoDaEmpresa>(`/support/tickets/${id}/reopen`, motivo ? { motivo } : {}).then((r) => r.data)
   },
   /** "Isso resolveu?" — sim encerra; não reabre e avisa a equipe. */
   avaliar(id: string, resolveu: boolean, motivo?: string) {

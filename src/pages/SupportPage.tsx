@@ -146,6 +146,15 @@ export function SupportPage() {
     return () => { vivo = false }
   }, [selecionadoId, pedidoDoDetalhe])
   const doSelecionado = detalhe?.id === selecionadoId ? detalhe : null
+  // Auditoria de UX de 28/10: aberto por link (sino, "Ver chamado") e sem aba na URL, a lista
+  // vai para a aba do chamado — antes ficava na aba padrão, sem ele.
+  const abaAjustadaPara = useRef<string | null>(null)
+  useEffect(() => {
+    const aberto = doSelecionado?.c
+    if (abaUrl || !chamadoId || !aberto || abaAjustadaPara.current === aberto.id) return
+    abaAjustadaPara.current = aberto.id
+    setAbaInicial(vezDoStatus(aberto.status))
+  }, [abaUrl, chamadoId, doSelecionado])
 
   // A cada 30 s (aba visível): contagens, a 1ª página (se não carregou mais) e o chamado aberto.
   useAtualizacaoPeriodica(() => {
@@ -232,6 +241,8 @@ export function SupportPage() {
           <ErrorState compact onRetry={() => setPedido((v) => v + 1)} />
         ) : itens === null ? (
           <p className="px-4 py-3 text-xs text-surface-400" role="status">Carregando chamados…</p>
+        ) : itens.length === 0 && busca.trim() ? (
+          <BuscaNasOutrasAbas busca={busca.trim()} aba={aba} onIr={setAba} />
         ) : itens.length === 0 ? (
           <div className="px-3">
             <EmptyState icon={LifeBuoy}
@@ -339,6 +350,41 @@ export function SupportPage() {
 
 /* ─── Detalhe ─────────────────────────────────────────────────────────────── */
 
+/** De quem é a vez, pelo status (a mesma regra das abas no backend). */
+function vezDoStatus(s: ChamadoDaEmpresa['status']): VezDoChamado {
+  if (s === 'closed') return 'encerrados'
+  return s === 'awaiting_client' || s === 'resolved' ? 'empresa' : 'oryon'
+}
+
+/**
+ * Busca sem resultado nesta aba (auditoria de UX de 28/10): procura nas outras duas e aponta onde
+ * há resultado — antes dizia "Nada encontrado · Tente outro termo" com o chamado em outra aba.
+ */
+function BuscaNasOutrasAbas({ busca, aba, onIr }: { busca: string; aba: VezDoChamado; onIr: (v: VezDoChamado) => void }) {
+  const chave = `${aba}|${busca}`
+  const [achadas, setAchadas] = useState<{ chave: string; abas: VezDoChamado[] } | null>(null)
+  useEffect(() => {
+    let vivo = true
+    const outras = ABAS.map(([k]) => k).filter((k) => k !== aba)
+    void Promise.all(outras.map((v) => supportApi.listar({ vez: v, busca, limite: 1 }).then((p) => (p.itens.length ? v : null)).catch(() => null)))
+      .then((r) => { if (vivo) setAchadas({ chave, abas: r.filter((x): x is VezDoChamado => !!x) }) })
+    return () => { vivo = false }
+  }, [aba, busca, chave])
+  const abas = achadas?.chave === chave ? achadas.abas : null
+  const rotulo = (v: VezDoChamado) => ABAS.find(([k]) => k === v)?.[1] ?? v
+  return (
+    <div className="px-3 flex flex-col gap-2">
+      <EmptyState icon={LifeBuoy} title={`Nada em “${rotulo(aba)}”`}
+        hint={abas === null ? 'Procurando nas outras abas…' : abas.length ? 'Há resultado em:' : 'Nada nas outras abas também. Tente outro termo.'} />
+      {abas && abas.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-1">
+          {abas.map((v) => <Button key={v} size="sm" variant="neutral" onClick={() => onIr(v)}>{rotulo(v)}</Button>)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConversa }: {
   c: ChamadoDaEmpresa
   mostrarColuna: boolean
@@ -357,9 +403,8 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
   const esperandoConfirmacao = c.status === 'resolved'
   const encerrado = c.status === 'closed'
   // Resolvido: o campo do pé é o "não resolveu" (auditoria de UX de 28/10 — eram dois campos, e o
-  // comentário reabria sem registrar a avaliação). Encerrado, só reabrindo.
-  const podeEscrever = !encerrado
-  const envio = esperandoConfirmacao ? 'nao' : 'texto'
+  // comentário reabria sem registrar a avaliação). Encerrado: o mesmo campo reabre, com o porquê.
+  const envio = esperandoConfirmacao ? 'nao' : encerrado ? 'reabrir' : 'texto'
   // Ctrl+Enter repetido (ou segurado) não manda o mesmo comentário duas vezes.
   const enviandoAgora = useRef(false)
 
@@ -378,12 +423,14 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
   }
   const enviar = async () => {
     const corpo = rascunho.trim()
-    if (!corpo || !podeEscrever || enviandoAgora.current) return
+    if (!corpo || enviandoAgora.current) return
     enviandoAgora.current = true
     try {
       const ok = esperandoConfirmacao
         ? await agir('nao', () => supportApi.avaliar(c.id, false, corpo), 'Chamado reaberto. A equipe Oryon vai olhar de novo.')
-        : await agir('texto', () => supportApi.comentar(c.id, corpo), c.perguntaPendente ? 'Resposta enviada para a equipe Oryon.' : 'Comentário enviado para a equipe Oryon.')
+        : encerrado
+          ? await agir('reabrir', () => supportApi.reabrir(c.id, corpo), 'Chamado reaberto. A equipe Oryon foi avisada.')
+          : await agir('texto', () => supportApi.comentar(c.id, corpo), c.perguntaPendente ? 'Resposta enviada para a equipe Oryon.' : 'Comentário enviado para a equipe Oryon.')
       // Só limpa se nada foi escrito enquanto enviava.
       if (ok && (rascunhos.get(c.id) ?? '').trim() === corpo) escrever('')
     } finally {
@@ -405,7 +452,7 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
             <p className="text-xs text-surface-300"><span className="font-mono font-semibold tabular-nums">{c.numero}</span></p>
             <h2 className="text-[16px] font-semibold text-surface-50 leading-snug break-words">{tituloDoChamado(c)}</h2>
             <p className="text-xs text-surface-400">{c.contatoNome ? `${c.contatoNome} · ` : ''}Aberto por {c.abertoPor} em {dataCurta(c.abertoEm)}</p>
-            <PrevisaoDaResposta ate={c.respostaPrevistaAte ?? null} aguardando={!!c.aguardandoPrimeiraResposta} />
+            <PrevisaoDaResposta ate={c.respostaPrevistaAte ?? null} aguardando={!!c.aguardandoPrimeiraResposta} abertoEm={c.abertoEm} />
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
             <SeloDoChamado status={c.status} />
@@ -452,23 +499,18 @@ function DetalheDoChamado({ c, mostrarColuna, onAtualizar, onVoltar, onAbrirConv
         {/* Um único campo de escrever, fixo no pé. */}
         <div className="border-t border-surface-800 px-4 md:px-6 py-3 flex-shrink-0">
           <div className="max-w-[760px] mx-auto flex flex-col gap-2">
-            <Textarea ref={campo} rows={2} value={rascunho} onChange={(e) => escrever(e.target.value)} maxLength={4000} disabled={!podeEscrever}
-              aria-label={esperandoConfirmacao ? 'O que ainda não está certo?' : c.perguntaPendente ? 'Resposta à pergunta da Oryon' : 'Mensagem para a equipe Oryon'}
-              placeholder={encerrado ? 'Chamado encerrado. Reabra para escrever.'
+            <Textarea ref={campo} rows={2} value={rascunho} onChange={(e) => escrever(e.target.value)} maxLength={4000}
+              aria-label={esperandoConfirmacao ? 'O que ainda não está certo?' : encerrado ? 'Por que reabrir?' : c.perguntaPendente ? 'Resposta à pergunta da Oryon' : 'Mensagem para a equipe Oryon'}
+              placeholder={encerrado ? 'Precisa reabrir? Diga o porquê e o chamado volta para a equipe Oryon.'
                 : esperandoConfirmacao ? 'Não resolveu? Diga o que ainda não está certo e o chamado volta para a equipe Oryon.'
                 : c.perguntaPendente ? 'Responda à pergunta da Oryon' : 'Escreva para a equipe Oryon. Só a sua empresa e a Oryon veem.'}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void enviar() } }} />
             <div className="flex items-center gap-2">
               {/* O espaçador fica no celular também: sem ele o Enviar ia para a esquerda. */}
-              <span className="mr-auto text-[11px] text-surface-400"><span className="hidden sm:inline">{podeEscrever ? 'Ctrl+Enter envia' : ''}</span></span>
-              {encerrado && (
-                <Button size="sm" variant="neutral" leftIcon={<RotateCcw className="w-3.5 h-3.5" />} loading={agindo === 'reabrir'} disabled={!!agindo}
-                  onClick={() => void agir('reabrir', () => supportApi.reabrir(c.id), 'Chamado reaberto. A equipe Oryon foi avisada.')}>
-                  Reabrir
-                </Button>
-              )}
-              <Button size="sm" disabled={!podeEscrever || !rascunho.trim() || (!!agindo && agindo !== envio)} loading={agindo === envio} onClick={() => void enviar()}>
-                {esperandoConfirmacao ? 'Reabrir o chamado' : c.perguntaPendente ? 'Enviar resposta' : 'Enviar'}
+              <span className="mr-auto text-[11px] text-surface-400"><span className="hidden sm:inline">Ctrl+Enter envia</span></span>
+              <Button size="sm" disabled={!rascunho.trim() || (!!agindo && agindo !== envio)} loading={agindo === envio} onClick={() => void enviar()}
+                leftIcon={encerrado ? <RotateCcw className="w-3.5 h-3.5" /> : undefined}>
+                {esperandoConfirmacao || encerrado ? 'Reabrir o chamado' : c.perguntaPendente ? 'Enviar resposta' : 'Enviar'}
               </Button>
             </div>
           </div>
@@ -505,10 +547,16 @@ function ultimoRetorno(c: ChamadoDaEmpresa) {
  * do relógio de 1ª resposta, enquanto a Oryon não respondeu. Atrasou: diz que
  * a equipe já foi avisada (o job de prazos avisa uma vez por relógio).
  */
-function PrevisaoDaResposta({ ate, aguardando }: { ate: string | null; aguardando: boolean }) {
+function PrevisaoDaResposta({ ate, aguardando, abertoEm }: { ate: string | null; aguardando: boolean; abertoEm: string }) {
   const agora = useRelogioDoMinuto()
-  // Sem previsão (P2/P3, até o SLA real): ainda assim, a empresa sabe que a resposta vem.
-  if (!ate) return aguardando ? <p className="mt-1 text-xs text-surface-300" role="status">{RESPOSTA_SEM_PREVISAO}</p> : null
+  if (!ate) {
+    if (!aguardando) return null
+    // Sem previsão (P2/P3, até o SLA real): a empresa sabe que a resposta vem — e, passado um dia,
+    // não promete o que já não valeu (auditoria de UX de 28/10).
+    const dias = Math.floor((agora - new Date(abertoEm).getTime()) / 86_400_000)
+    const texto = dias >= 1 ? `Ainda sem a 1ª resposta da Oryon · aberto há ${dias} ${dias > 1 ? 'dias' : 'dia'}.` : RESPOSTA_SEM_PREVISAO
+    return <p className="mt-1 text-xs text-surface-300" role="status">{texto}</p>
+  }
   const quando = new Date(ate)
   const hoje = new Date(agora).toDateString() === quando.toDateString()
   const hora = quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })

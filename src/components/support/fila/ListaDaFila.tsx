@@ -115,7 +115,13 @@ export function ListaDaFila({
           <p className="px-4 py-3 text-xs text-surface-400" role="status">Carregando a fila…</p>
         ) : itens.length === 0 ? (
           <div className="px-3">
-            <EmptyState icon={LifeBuoy} title="Fila vazia" hint={busca ? 'Nada com esse termo.' : 'Nada neste filtro.'} />
+            <EmptyState icon={LifeBuoy} title="Fila vazia"
+              hint={busca ? (filtros.situacao === 'todos' ? 'Nada com esse termo.' : 'Nada com esse termo nesta situação.') : 'Nada neste filtro.'} />
+            {busca && filtros.situacao !== 'todos' && (
+              <div className="px-1 pt-2">
+                <Button size="sm" variant="neutral" onClick={() => onFiltros({ situacao: 'todos' })}>Procurar também nos encerrados</Button>
+              </div>
+            )}
           </div>
         ) : (
           <>

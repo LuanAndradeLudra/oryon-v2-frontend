@@ -163,7 +163,7 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     expect(painel()).toHaveAccessibleName('Reportar mensagens')
   })
 
-  it('Conversa inteira mostra os fatos da conversa; Mensagens volta a pedir a marcação', async () => {
+  it('Conversa inteira mostra os fatos da conversa; voltar para Mensagens devolve as marcadas (auditoria de UX de 28/10)', async () => {
     render(<Tela />)
     fireEvent.click(screen.getByRole('button', { name: 'menu da mensagem m2' }))
     fireEvent.click(within(painel()!).getByRole('radio', { name: 'Conversa inteira' }))
@@ -171,7 +171,8 @@ describe('Painel do chamado na conversa (SCRUM-1381)', () => {
     expect(within(painel()!).getByText('A conversa inteira')).toBeInTheDocument()
     expect(within(painel()!).getByLabelText('Resumo da conversa')).toHaveTextContent('Mensagens2')
     fireEvent.click(within(painel()!).getByRole('radio', { name: /Mensagens/ }))
-    expect(within(painel()!).getByText(/Clique nas mensagens do problema/)).toBeInTheDocument()
+    expect(within(painel()!).getByRole('radio', { name: /Mensagens\s*·\s*1/ })).toBeInTheDocument()
+    expect(within(painel()!).queryByText(/Clique nas mensagens do problema/)).toBeNull()
   })
 
   it('só envia com os obrigatórios: relato, "contato viu" e, quando viu, "já corrigiram"', async () => {

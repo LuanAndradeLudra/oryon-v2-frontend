@@ -481,6 +481,8 @@ export interface EvidenciaDoChamado {
 export interface EvidenciasDoChamado {
   chamado: { id: string; numero: string; tenantId: string; status: StatusChamado }
   evidencias: EvidenciaDoChamado[]
+  /** "Repetir o turno" custa IA: só aparece com a configuração ligada. */
+  replayHabilitado?: boolean
 }
 
 /** A conversa do chamado, para quem tem o acesso de suporte vigente (SCRUM-1385). Texto mascarado. */
