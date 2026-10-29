@@ -85,6 +85,18 @@ describe('Fila da Oryon (SCRUM-1384)', () => {
     await waitFor(() => expect(api.listar).toHaveBeenLastCalledWith(expect.objectContaining({ atalho: 'urgentes' })))
   })
 
+  it('o número do chamado acha em qualquer aba, situação, contador ou filtro; texto livre respeita os filtros', async () => {
+    render(<Tela rota={`/admin/support?fila=minha&atalho=com_cliente&empresa=${T2}&sinais=1`} />)
+    await screen.findByRole('region', { name: 'Chamado SUP-0001' })
+    const campo = screen.getByPlaceholderText('Buscar em todos os clientes')
+    fireEvent.change(campo, { target: { value: 'SUP-0336' } })
+    await waitFor(() => expect(api.listar).toHaveBeenLastCalledWith({ fila: 'todos', situacao: 'todos', soSinais: false, busca: 'SUP-0336', limite: 30 }))
+    fireEvent.change(campo, { target: { value: 'sábado' } })
+    await waitFor(() => expect(api.listar).toHaveBeenLastCalledWith(expect.objectContaining({
+      fila: 'minha', atalho: 'com_cliente', situacao: 'abertos', empresa: T2, soSinais: true, busca: 'sábado',
+    })))
+  })
+
   it('responder não resolve por padrão; Resolvido é escolha explícita', async () => {
     api.responder.mockImplementation(async (_id, dto) => chamado(A, { status: dto.deixarComo }))
     render(<Tela />)

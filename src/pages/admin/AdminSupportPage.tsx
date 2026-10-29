@@ -52,17 +52,23 @@ const ATALHOS: Array<[AtalhoDaFila, string, keyof ResumoDaFila['contadores'], st
 
 interface Lista { chave: string; itens: ItemDaFila[]; proximo: string | null; erro: string | null }
 
+interface FiltrosDaBusca {
+  fila: FilaDaEquipe; atalho: AtalhoDaFila | null; situacao: SituacaoDaFila
+  empresa: string | null; origem: OrigemDoProblema | null; soSinais: boolean
+}
+
 /**
  * Auditoria de UX de 28/10: buscar pelo número (SUP-0005, OCO-12) acha o chamado em qualquer
- * situação — antes, um encerrado dava "Fila vazia" com o filtro padrão (em aberto).
+ * situação, aba, contador ou filtro — antes, um encerrado dava "Fila vazia" com o filtro padrão
+ * (em aberto), e com "com o cliente" ligado o SUP-0336 também sumia.
  */
 const ehNumeroDeChamado = (termo: string) => /^(sup|oco)-?\d{1,6}$/i.test(termo.trim())
-function situacaoDaBusca(termo: string, situacao: SituacaoDaFila): SituacaoDaFila {
-  return ehNumeroDeChamado(termo) ? 'todos' : situacao
-}
-/** O número acha o chamado em qualquer aba também (um encerrado com dono não está em "Sem dono"). */
-function filaDaBusca(termo: string, fila: FilaDaEquipe): FilaDaEquipe {
-  return ehNumeroDeChamado(termo) ? 'todos' : fila
+function filtrosDaBusca(termo: string, f: FiltrosDaBusca) {
+  if (ehNumeroDeChamado(termo)) return { fila: 'todos' as const, situacao: 'todos' as const, soSinais: false, busca: termo }
+  return {
+    fila: f.fila, atalho: f.atalho ?? undefined, situacao: f.situacao, empresa: f.empresa ?? undefined,
+    origemDoProblema: f.origem ?? undefined, soSinais: f.soSinais, busca: termo || undefined,
+  }
 }
 
 export function AdminSupportPage() {
@@ -97,10 +103,7 @@ export function AdminSupportPage() {
   useEffect(() => {
     let vivo = true
     const t = setTimeout(() => {
-      adminSupportApi.listar({
-        fila: filaDaBusca(termo, fila), atalho: atalho ?? undefined, situacao: situacaoDaBusca(termo, situacao), empresa: empresa ?? undefined, origemDoProblema: origem ?? undefined,
-        soSinais, busca: termo || undefined, limite: LIMITE,
-      })
+      adminSupportApi.listar({ ...filtrosDaBusca(termo, { fila, atalho, situacao, empresa, origem, soSinais }), limite: LIMITE })
         .then((p) => {
           if (!vivo) return
           setLista({ chave, itens: p.itens, proximo: p.proximoCursor, erro: null })
@@ -118,8 +121,7 @@ export function AdminSupportPage() {
     setCarregandoMais(true)
     try {
       const p = await adminSupportApi.listar({
-        fila: filaDaBusca(termo, fila), atalho: atalho ?? undefined, situacao: situacaoDaBusca(termo, situacao), empresa: empresa ?? undefined, origemDoProblema: origem ?? undefined,
-        soSinais, busca: termo || undefined, limite: LIMITE, cursor: daChave.proximo,
+        ...filtrosDaBusca(termo, { fila, atalho, situacao, empresa, origem, soSinais }), limite: LIMITE, cursor: daChave.proximo,
       })
       setLista((l) => (l && l.chave === chave ? { ...l, itens: [...l.itens, ...p.itens], proximo: p.proximoCursor } : l))
     } catch (err) {
