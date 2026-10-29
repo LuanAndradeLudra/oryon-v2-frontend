@@ -1414,6 +1414,15 @@ export function TopBar() {
   const closeNotif = useCallback(() => setNotifOpen(false), [])
   useLayer(notifOpen, closeNotif)
 
+  // Revisão visual da homologação (29/10): o aviso leva a outra tela ("Ver chamado") e o
+  // painel ficava aberto por cima dela. Mudou a rota, o sino fecha.
+  const rotaAtual = `${location.pathname}${location.search}`
+  const [rotaDoSino, setRotaDoSino] = useState(rotaAtual)
+  if (rotaDoSino !== rotaAtual) {
+    setRotaDoSino(rotaAtual)
+    if (notifOpen) setNotifOpen(false)
+  }
+
   // Click outside — notifications
   useEffect(() => {
     if (!notifOpen) return

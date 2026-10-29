@@ -367,7 +367,7 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
                         </span>
                         {s.ligado && (
                           <button type="button" onClick={() => s.alternar(m.id)} aria-label="Tirar do chamado" title="Tirar do chamado"
-                            className="w-6 h-6 rounded-[5px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] opacity-60 group-hover:opacity-100 focus-visible:opacity-100">
+                            className="w-6 h-6 rounded-[5px] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)]">
                             <X className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -712,9 +712,12 @@ export function ReportTicketPanel(props: PropsDoFormulario & { className?: strin
 
       {corpo}
 
-      <footer className="flex items-center gap-2 px-4 py-3 border-t border-surface-700 flex-shrink-0">
-        <span className="mr-auto">{avisoDosAnexos}</span>
-        {botoes}
+      {/* Revisão visual da homologação (29/10): o aviso ("Falta…") fica numa linha própria acima
+          dos botões, e os botões no pé. Antes, centrados ao lado de um texto de 3–5 linhas, eles
+          desciam ~22 px quando o aviso sumia e o clique em Enviar caía no vazio. */}
+      <footer className="flex flex-col gap-2 px-4 py-3 border-t border-surface-700 flex-shrink-0">
+        {avisoDosAnexos}
+        <div className="flex items-center justify-end gap-2">{botoes}</div>
       </footer>
     </aside>
   )
