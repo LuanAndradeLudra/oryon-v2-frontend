@@ -21,6 +21,8 @@ interface Mensagem {
   texto: string
   em: Date
   debug?: ChatTurnDebug
+  /** Respondida com as ferramentas simuladas (P1). Testes revistos não têm. */
+  simulada?: boolean
 }
 
 const ICONE: Record<TipoDeFonte, LucideIcon> = {
@@ -46,9 +48,9 @@ function dataCurta(iso: string) {
 }
 
 /** O cartão sob cada resposta: de onde ela saiu e o que a IA fez. */
-function OQueUsou({ debug }: { debug?: ChatTurnDebug }) {
+function OQueUsou({ debug, simulada }: { debug?: ChatTurnDebug; simulada?: boolean }) {
   const [tecnico, setTecnico] = useState(false)
-  const fontes = fontesDaResposta(debug)
+  const fontes = fontesDaResposta(debug, { simuladas: simulada })
   if (fontes.length === 0) return null
   return (
     <div className="mt-1.5 rounded-[6px] border border-surface-700 bg-[var(--sf2)] px-2.5 py-2">
@@ -167,12 +169,16 @@ export function BancadaDeTeste({
       const r = await chatWithAgent(
         promptDeTeste(agentRef.current),
         conversa.map((m) => ({ role: m.papel, content: m.texto })),
-        { sessionId: sessao.current ?? undefined, agentId: agent.id },
+        // P1 — "Simulação" de verdade: skill, CRM e integração não são
+        // executados. Sem isso um "quero marcar consulta" marcava na agenda da
+        // clínica. Base de conhecimento e transferência só leem e seguem valendo.
+        { sessionId: sessao.current ?? undefined, agentId: agent.id, stubTools: true },
       )
       if (!valeAinda()) return
       setMensagens((m) => [...m, {
         id: `a-${Date.now()}`, papel: 'assistant', texto: r.message, em: new Date(),
         debug: { toolCalls: r.toolCalls, turnSummary: r.turnSummary, guard: r.guard, simulated: r.simulated },
+        simulada: true,
       }])
       if (!avisouTeste.current) { avisouTeste.current = true; onTestou() }
     } catch (e) {
@@ -272,7 +278,7 @@ export function BancadaDeTeste({
         </div>
       ) : (
         <p className="flex-shrink-0 border-b border-surface-700 px-4 py-2 text-2xs text-surface-400">
-          Usa as instruções salvas{regras > 0 ? ` e ${regras} ${regras === 1 ? 'regra' : 'regras'} de transferência` : ''}. Você escreve como o cliente.
+          Usa as instruções salvas{regras > 0 ? ` e ${regras} ${regras === 1 ? 'regra' : 'regras'} de transferência` : ''}. Você escreve como o cliente. Agenda, CRM e integrações são simulados: nada é executado.
         </p>
       )}
 
@@ -281,7 +287,7 @@ export function BancadaDeTeste({
         {exibidas.length === 0 && !pensando && (
           <div className="pt-6">
             <p className="text-sm font-semibold text-surface-100">Converse como se fosse um cliente</p>
-            <p className="mt-1 text-xs leading-relaxed text-surface-400">A resposta mostra de onde veio e o que a IA fez no CRM. Nada é enviado a ninguém.</p>
+            <p className="mt-1 text-xs leading-relaxed text-surface-400">A resposta mostra de onde veio e o que a IA faria no CRM. Nada é enviado a ninguém nem marcado na agenda.</p>
             <div className="mt-3 flex flex-col items-start gap-1.5">
               {SUGESTOES.map((s) => (
                 <button key={s} type="button" onClick={() => void enviar(s)}
@@ -312,7 +318,7 @@ export function BancadaDeTeste({
                 {m.texto}
                 <span className={cn('mt-0.5 block text-right text-2xs', m.papel === 'user' ? 'text-surface-500' : 'text-bubble-out-time')}>{hora(m.em)}</span>
               </div>
-              {m.papel === 'assistant' && <div className="w-[88%]"><OQueUsou debug={m.debug} /></div>}
+              {m.papel === 'assistant' && <div className="w-[88%]"><OQueUsou debug={m.debug} simulada={m.simulada} /></div>}
             </motion.div>
           ))}
         </AnimatePresence>
