@@ -7,6 +7,7 @@
  */
 
 import type { AppNotification, NotificationMetaKnown } from '@/hooks/useNotifications'
+import { palavrasDoNome, primeiroCaractere } from '@/lib/utils'
 
 // ── Category / visual mapping ──────────────────────────────────────────────
 
@@ -100,9 +101,11 @@ export function avatarColorFor(name: string): string {
 
 export function initialsOf(name: string): string {
   if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  // Mesma regra do getInitials para emoji/símbolo no nome (ver palavrasDoNome).
+  const parts = palavrasDoNome(name)
+  if (parts.length === 0) return primeiroCaractere(name) || '?'
+  if (parts.length === 1) return Array.from(parts[0]).slice(0, 2).join('').toUpperCase()
+  return (Array.from(parts[0])[0] + Array.from(parts[parts.length - 1])[0]).toUpperCase()
 }
 
 /** Extract the "subject" contact from a notification's metadata so we can

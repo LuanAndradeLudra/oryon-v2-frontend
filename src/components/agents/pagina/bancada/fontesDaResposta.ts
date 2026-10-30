@@ -22,7 +22,19 @@ function legivel(nome: string): string {
   return nome.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-function daFerramenta(t: ToolCall): FonteDaResposta {
+/** Ferramentas que mudam algo fora daqui: na bancada, o servidor não executa. */
+const SIMULAVEIS: ReadonlySet<ToolCall['kind']> = new Set(['crm', 'skill', 'http'])
+
+function daFerramenta(t: ToolCall, simuladas: boolean): FonteDaResposta {
+  // P1 — com `stub_tools` o servidor devolve uma falha fixa ("não foi
+  // executada"): não é erro, e mostrar "(falhou)" em âmbar faria a pessoa
+  // procurar um defeito que não existe.
+  if (simuladas && SIMULAVEIS.has(t.kind)) {
+    const nome = t.kind === 'crm' ? ROTULO_CRM.get(t.name) ?? legivel(t.name) : legivel(t.name)
+    const prefixo = t.kind === 'crm' ? 'CRM' : t.kind === 'skill' ? 'Skill' : 'Integração'
+    const tipo: TipoDeFonte = t.kind === 'http' ? 'integracao' : t.kind === 'crm' ? 'crm' : 'skill'
+    return { tipo, rotulo: `${prefixo}: ${nome} (simulada: não foi executada)` }
+  }
   const alerta = !t.success
   switch (t.kind) {
     case 'kb':
@@ -40,7 +52,11 @@ function daFerramenta(t: ToolCall): FonteDaResposta {
   }
 }
 
-export function fontesDaResposta(debug: ChatTurnDebug | undefined): FonteDaResposta[] {
+export function fontesDaResposta(
+  debug: ChatTurnDebug | undefined,
+  /** O turno rodou com as ferramentas simuladas (bancada, P1). Testes antigos não. */
+  { simuladas = false }: { simuladas?: boolean } = {},
+): FonteDaResposta[] {
   if (!debug) return []
   const out: FonteDaResposta[] = []
   // Onda 3 — uma regra ou FAQ respondeu antes do modelo, como em produção.
@@ -54,7 +70,7 @@ export function fontesDaResposta(debug: ChatTurnDebug | undefined): FonteDaRespo
   // A mesma ferramenta chamada várias vezes no turno vira uma linha só.
   const vistas = new Set<string>()
   for (const t of debug.toolCalls ?? []) {
-    const f = daFerramenta(t)
+    const f = daFerramenta(t, simuladas)
     if (vistas.has(f.rotulo)) continue
     vistas.add(f.rotulo)
     out.push(f)
