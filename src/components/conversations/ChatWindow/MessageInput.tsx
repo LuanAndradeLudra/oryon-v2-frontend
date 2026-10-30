@@ -9,6 +9,7 @@ import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { TemplateSendModal } from '@/components/templates/TemplateSendModal'
+import { templateListError } from '@/components/templates/templateListError'
 import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -459,15 +460,20 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   const [loadingTemplates, setLoadingTemplates] = useState(false)
+  // Falha ao listar NÃO é "nenhum template aprovado": o atendente recebia 403
+  // e via a lista vazia, sem saber por quê. Fica o texto do backend; reabrir
+  // o seletor tenta de novo (a lista continua vazia).
+  const [templatesError, setTemplatesError] = useState<string | null>(null)
   // Selecting a template opens a review modal (below) instead of sending
   // immediately, so the operator can inspect the full structure first.
   const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null)
   const toggleTemplatePicker = () => {
     if (!templatePickerOpen && templates.length === 0 && !loadingTemplates) {
       setLoadingTemplates(true)
+      setTemplatesError(null)
       templatesApi.list('APPROVED')
-        .then((r) => setTemplates(r.data))
-        .catch(() => {})
+        .then((r) => setTemplates(Array.isArray(r.data) ? r.data : []))
+        .catch((e) => setTemplatesError(templateListError(e)))
         .finally(() => setLoadingTemplates(false))
     }
     setTemplatePickerOpen((v) => !v)
@@ -635,9 +641,13 @@ export function MessageInput({ onSend, contactId, windowOpen, windowHoursLeft, d
             <div className="mt-3 border-t border-brand-600/20 pt-3">
               {loadingTemplates ? (
                 <p className="text-[11px] text-surface-500 text-center py-2">Carregando templates…</p>
+              ) : templatesError ? (
+                <p role="alert" className="text-[11px] text-danger text-center py-2">{templatesError}</p>
               ) : templates.length === 0 ? (
                 <p className="text-[11px] text-surface-500 text-center py-2">
-                  Nenhum template aprovado. Crie em Disparos → Templates.
+                  {isAdminTier(autor?.role)
+                    ? 'Nenhum template aprovado. Crie em Disparos → Templates.'
+                    : 'Nenhum template aprovado para a linha do seu setor. Fale com o administrador.'}
                 </p>
               ) : (
                 <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
