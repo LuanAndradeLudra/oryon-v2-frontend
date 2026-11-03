@@ -37,7 +37,7 @@ type SnapshotCru = {
 } | null
 
 /** Indicadores "agora" (não seguem o período) e os sem período anterior: sem variação. */
-const SEM_VARIACAO = new Set(['active_conversations', 'queued', 'agents_online', 'appointments_scheduled', 'appointments_cancelled'])
+const SEM_VARIACAO = new Set(['active_conversations', 'queued', 'agents_online', 'appointments_scheduled', 'appointments_cancelled', 'appointments_confirmed'])
 
 /** Coluna da série diária de cada contagem (DC-3 no backend). */
 const SERIE_DO_KPI: Record<string, string> = {
@@ -103,6 +103,7 @@ function valoresDe(x: Record<string, unknown>, resolucao: { media: number | null
     'campaign_reply_rate':    n(x.campaignReplyRate),
     'appointments_scheduled': n(x.appointmentsScheduled),
     'appointments_cancelled': n(x.appointmentsCancelled),
+    'appointments_confirmed': n(x.appointmentsConfirmed),
   }
 }
 

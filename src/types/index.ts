@@ -1439,6 +1439,7 @@ export interface HomeStats {
   myMessagesSentToday: number
   appointmentsScheduled?: number | null
   appointmentsCancelled?: number | null
+  appointmentsConfirmed?: number | null
   // Revisão das métricas (30/09)
   newConversations?: number
   reopenedConversations?: number
