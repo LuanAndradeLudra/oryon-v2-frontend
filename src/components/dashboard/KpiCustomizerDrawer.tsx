@@ -5,7 +5,7 @@ import { api } from '@/services/api'
 import { Drawer } from '@/components/ui/Drawer'
 import { Button } from '@/components/ui/Button'
 import { useDragReorder } from '@/hooks/useDragReorder'
-import { KPI_CATALOG, type KpiId } from '@/types/dashboard'
+import { KPI_CATALOG, type KpiDefinition, type KpiId } from '@/types/dashboard'
 import { CAMPOS_DAS_METAS, lerNumeroDaMeta, type CampoDaMeta, type MetasDoPainel } from '@/lib/metasDoPainel'
 import { DESTAQUE_MAX, type Densidade } from './kpiIdentidade'
 
@@ -37,10 +37,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   Disparos:    'var(--color-warning)',
   Marketing:   'var(--color-accent-blue)',
   Clínica:     'var(--color-accent-rose)',
+  'Do seu negócio': 'var(--color-accent-rose)',
 }
 
-const DEF_BY_ID = new Map(KPI_CATALOG.map((d) => [d.id, d]))
-const CATEGORIAS = [...new Set(KPI_CATALOG.map((d) => d.category))]
 
 function semAcento(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -72,6 +71,11 @@ interface Props {
   onSave: (prefs: PreferenciasDaFaixa) => void
   podeEditarMetas?: boolean
   onMetasSalvas?: () => void
+  /**
+   * SCRUM-1465: o catálogo à vista — os fixos mais as métricas do negócio
+   * publicadas para o cliente (grupo "Do seu negócio"). Padrão: só os fixos.
+   */
+  catalogo?: KpiDefinition[]
 }
 
 type TextoDasMetas = Record<CampoDaMeta, string>
@@ -85,8 +89,11 @@ const DENSIDADES: Array<{ valor: Densidade; rotulo: string; dica: string }> = [
 
 export function KpiCustomizerDrawer({
   open, onClose, slots, defaults, densidade = 'compacta', destaque = [], onSave, podeEditarMetas = false, onMetasSalvas,
+  catalogo = KPI_CATALOG,
 }: Props) {
-  const [rascunho, setRascunho] = useState<KpiId[]>(slots)
+  const DEF_BY_ID = useMemo(() => new Map(catalogo.map((d) => [d.id, d])), [catalogo])
+  const CATEGORIAS = useMemo(() => [...new Set(catalogo.map((d) => d.category))], [catalogo])
+  const [rascunho, setRascunho] = useState<KpiId[]>(() => slots.filter((id) => DEF_BY_ID.has(id)))
   const [busca, setBusca] = useState('')
   const [categoria, setCategoria] = useState<string | null>(null)
   const [verSemDado, setVerSemDado] = useState(false)
@@ -104,7 +111,7 @@ export function KpiCustomizerDrawer({
   if (open !== estavaAberto) {
     setEstavaAberto(open)
     if (open) {
-      setRascunho(slots)
+      setRascunho(slots.filter((id) => DEF_BY_ID.has(id)))
       setBusca('')
       setCategoria(null)
       setVerSemDado(false)
@@ -157,13 +164,13 @@ export function KpiCustomizerDrawer({
   // grupo recolhido no fim (são a maioria do catálogo e escondiam o resto).
   const [comDado, semDadoLista] = useMemo(() => {
     const termo = semAcento(busca.trim())
-    const filtrados = KPI_CATALOG.filter((d) =>
+    const filtrados = catalogo.filter((d) =>
       !rascunho.includes(d.id)
       && (!categoria || d.category === categoria)
       && (!termo || semAcento(d.label).includes(termo) || semAcento(d.category).includes(termo)),
     )
     return [filtrados.filter((d) => d.hasData !== false), filtrados.filter((d) => d.hasData === false)]
-  }, [rascunho, busca, categoria])
+  }, [catalogo, rascunho, busca, categoria])
   // Buscando, o grupo sem dado abre sozinho: quem digitou "NPS" quer ver o NPS.
   const semDadoAberto = verSemDado || busca.trim().length > 0
 
@@ -194,7 +201,11 @@ export function KpiCustomizerDrawer({
   }, [podeEditarMetas, metas, metasSalvas])
   const metasInvalidas = Object.keys(errosDasMetas).length > 0
 
-  const mudou = !mesmaLista(rascunho, slots) || dens !== densidade || !mesmaLista(fixos, destaqueAtual) || mudancaDasMetas !== null
+  // Ids salvos fora do catálogo de agora (métrica do negócio que não carregou):
+  // não aparecem e não contam, mas o Salvar os mantém no fim da faixa.
+  const ocultos = slots.filter((id) => !DEF_BY_ID.has(id))
+  const visiveis = slots.filter((id) => DEF_BY_ID.has(id))
+  const mudou = !mesmaLista(rascunho, visiveis) || dens !== densidade || !mesmaLista(fixos, destaqueAtual) || mudancaDasMetas !== null
 
   const salvar = async () => {
     if (mudancaDasMetas) {
@@ -209,7 +220,7 @@ export function KpiCustomizerDrawer({
       }
       setSalvando(false)
     }
-    onSave({ slots: rascunho, densidade: dens, destaque: fixos.filter((id) => rascunho.includes(id)) })
+    onSave({ slots: [...rascunho, ...ocultos], densidade: dens, destaque: fixos.filter((id) => rascunho.includes(id)) })
     onClose()
   }
 

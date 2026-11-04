@@ -1,4 +1,4 @@
-import type { KpiDefinition, KpiId, KpiMetric } from '@/types/dashboard'
+import type { KpiCategoria, KpiCategoriaFixa, KpiDefinition, KpiId, KpiMetric } from '@/types/dashboard'
 
 /**
  * Identidade dos indicadores dos Relatórios (pedido do PO, 01/10).
@@ -12,7 +12,7 @@ import type { KpiDefinition, KpiId, KpiMetric } from '@/types/dashboard'
  */
 
 /** Nome do grupo no cabeçalho da faixa. */
-export const NOME_DO_GRUPO: Record<KpiDefinition['category'], string> = {
+export const NOME_DO_GRUPO: Record<KpiCategoriaFixa, string> = {
   Atendimento: 'Atendimento',
   Velocidade: 'Velocidade',
   Qualidade: 'Qualidade',
@@ -22,6 +22,11 @@ export const NOME_DO_GRUPO: Record<KpiDefinition['category'], string> = {
   Disparos: 'Disparos',
   Marketing: 'Marketing',
   Clínica: 'Clínica',
+}
+
+/** SCRUM-1465: o grupo da métrica do negócio vem do servidor e é o próprio nome. */
+export function nomeDoGrupo(c: KpiCategoria): string {
+  return (NOME_DO_GRUPO as Record<string, string>)[c] ?? c
 }
 
 /** Indicadores de AGORA (estado atual) — ganham o ponto "ao vivo"; os demais são do período. */
@@ -44,7 +49,7 @@ const DESTINO: Partial<Record<KpiId, { para: string; rotulo: string }>> = {
 }
 
 export function identidadeDo(kpi: Pick<KpiDefinition, 'id'>) {
-  return { aoVivo: KPI_AO_VIVO.has(kpi.id), destino: DESTINO[kpi.id] ?? null }
+  return { aoVivo: KPI_AO_VIVO.has(kpi.id), destino: DESTINO[kpi.id as keyof typeof DESTINO] ?? null }
 }
 
 /**

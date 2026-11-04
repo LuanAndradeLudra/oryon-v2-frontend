@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/services/api'
 import { formatActivity, pickActivityType } from '@/components/dashboard/activityFormatter'
 import { montarSnapshot } from '@/lib/snapshotDoPainel'
+import { juntarMetricasDoNegocio, type RespostaDasMetricas } from '@/lib/metricasDoNegocio'
 import type { ActivityEvent, DashboardSnapshot, DateRange } from '@/types/dashboard'
 import type { HomeStats } from '@/types'
 
@@ -77,8 +78,10 @@ export interface RelatoriosDoPainel {
 /**
  * Dados da aba Relatórios por período (28/09).
  *
- * - O período vai em `?range=` para `/home/stats` e `/home/snapshot`; trocar
- *   de período refaz só essas duas leituras. A atividade (janela fixa de 4 h)
+ * - O período vai em `?range=` para `/home/stats`, `/home/snapshot` e
+ *   `/home/metrics` (SCRUM-1465: as métricas do negócio); trocar de período
+ *   refaz só essas leituras. A das métricas do negócio é complementar: se
+ *   falhar, ficam os cards fixos (os da clínica voltam ao `/home/stats`). A atividade (janela fixa de 4 h)
  *   é outra leitura, feita ao abrir e no "atualizar".
  * - Só a resposta mais recente vale: trocar de "7 dias" para "Hoje" e de
  *   volta rápido não deixa uma resposta velha sobrescrever a nova.
@@ -100,12 +103,16 @@ export function useRelatoriosDoPainel(periodo: DateRange, podeVerAtividade = tru
   const buscarPeriodo = useCallback(async (p: DateRange) => {
     const minha = ++seq.current
     try {
-      const [{ data: db }, { data: stats }] = await comTeto(Promise.all([
+      const [{ data: db }, { data: stats }, negocio] = await comTeto(Promise.all([
         api.get('/home/snapshot', { params: { range: p, compare: 1 } }),
         api.get<HomeStats>('/home/stats', { params: { range: p, compare: 1 } }),
+        api.get<RespostaDasMetricas>('/home/metrics', { params: { range: p } })
+          .then((r) => r.data)
+          .catch((err) => { console.warn('[Dashboard/Relatórios] métricas do negócio indisponíveis:', err); return null }),
       ]))
       if (!vivo.current || minha !== seq.current) return
-      setSnapshot(montarSnapshot(stats, db))
+      const snap = montarSnapshot(stats, db)
+      setSnapshot({ ...snap, kpis: juntarMetricasDoNegocio(snap.kpis, negocio) })
       setPeriodoCarregado(p)
       setErroDoPeriodo(null)
       setAtualizadoEm(new Date())
