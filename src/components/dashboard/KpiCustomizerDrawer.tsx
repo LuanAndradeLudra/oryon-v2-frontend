@@ -138,7 +138,8 @@ export function KpiCustomizerDrawer({
     (reordenado) => setRascunho(reordenado),
   )
 
-  const count = rascunho.length
+  // Os ids salvos que não carregaram desta vez também ocupam vaga (A41).
+  const count = rascunho.length + slots.filter((id) => !DEF_BY_ID.has(id)).length
   const cheio = count >= KPI_MAX
   const noMinimo = count <= KPI_MIN
 

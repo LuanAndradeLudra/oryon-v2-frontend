@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '@/services/api'
 import { formatActivity, pickActivityType } from '@/components/dashboard/activityFormatter'
 import { montarSnapshot } from '@/lib/snapshotDoPainel'
-import { juntarMetricasDoNegocio, type RespostaDasMetricas } from '@/lib/metricasDoNegocio'
+import { juntarMetricasDoNegocio, type MetricaDoCatalogo, type RespostaDasMetricas, type RespostaDoCatalogo } from '@/lib/metricasDoNegocio'
 import type { ActivityEvent, DashboardSnapshot, DateRange } from '@/types/dashboard'
 import type { HomeStats } from '@/types'
 
@@ -73,16 +73,22 @@ export interface RelatoriosDoPainel {
   erro: boolean
   atualizadoEm: Date | null
   recarregar: () => void
+  /** SCRUM-1465: o catálogo das métricas do negócio já respondeu (a faixa salva só é gravada depois — A20). */
+  catalogoPronto: boolean
 }
 
 /**
  * Dados da aba Relatórios por período (28/09).
  *
- * - O período vai em `?range=` para `/home/stats`, `/home/snapshot` e
- *   `/home/metrics` (SCRUM-1465: as métricas do negócio); trocar de período
- *   refaz só essas leituras. A das métricas do negócio é complementar: se
- *   falhar, ficam os cards fixos (os da clínica voltam ao `/home/stats`). A atividade (janela fixa de 4 h)
- *   é outra leitura, feita ao abrir e no "atualizar".
+ * - O período vai em `?range=` para `/home/stats` e `/home/snapshot`; trocar
+ *   de período refaz só essas leituras. A atividade (janela fixa de 4 h) é
+ *   outra leitura, feita ao abrir e no "atualizar".
+ * - SCRUM-1465: as métricas do negócio são uma leitura À PARTE, com estado e
+ *   teto próprios — uma métrica lenta nunca derruba a aba (A3). O catálogo
+ *   (`/home/metrics/catalog`, que não calcula nada) vem ao abrir: com ele, se
+ *   `/home/metrics` falhar, os cards do negócio aparecem em erro e nunca voltam
+ *   calados ao card fixo de antes (A2). O pedido anterior é cancelado quando o
+ *   período muda (A41).
  * - Só a resposta mais recente vale: trocar de "7 dias" para "Hoje" e de
  *   volta rápido não deixa uma resposta velha sobrescrever a nova.
  * - Trocando de período, o dado anterior fica na tela (esmaecido) até o novo
@@ -99,20 +105,44 @@ export function useRelatoriosDoPainel(periodo: DateRange, podeVerAtividade = tru
   const [recarregando, setRecarregando] = useState(false)
   const seq = useRef(0)
   const vivo = useRef(true)
+  // Métricas do negócio: catálogo (uma vez) e valores por período, com o próprio cancelamento.
+  const [catalogo, setCatalogo] = useState<MetricaDoCatalogo[] | null>(null)
+  const [negocio, setNegocio] = useState<{ periodo: DateRange; resposta: RespostaDasMetricas | null } | null>(null)
+  const pedidoDoNegocio = useRef<AbortController | null>(null)
+
+  const buscarNegocio = useCallback(async (p: DateRange) => {
+    pedidoDoNegocio.current?.abort()
+    const ctl = new AbortController()
+    pedidoDoNegocio.current = ctl
+    try {
+      const { data } = await comTeto(api.get<RespostaDasMetricas>('/home/metrics', { params: { range: p }, signal: ctl.signal }))
+      if (vivo.current && !ctl.signal.aborted) setNegocio({ periodo: p, resposta: data ?? null })
+    } catch (err) {
+      if (!vivo.current || ctl.signal.aborted) return
+      console.warn('[Dashboard/Relatórios] métricas do negócio indisponíveis:', err)
+      setNegocio({ periodo: p, resposta: null })
+    } finally {
+      if (pedidoDoNegocio.current === ctl) ctl.abort()
+    }
+  }, [])
+
+  useEffect(() => {
+    let ativo = true
+    api.get<RespostaDoCatalogo>('/home/metrics/catalog')
+      .then(({ data }) => { if (ativo) setCatalogo(Array.isArray(data?.metricas) ? data.metricas : []) })
+      .catch(() => { if (ativo) setCatalogo([]) })
+    return () => { ativo = false }
+  }, [])
 
   const buscarPeriodo = useCallback(async (p: DateRange) => {
     const minha = ++seq.current
     try {
-      const [{ data: db }, { data: stats }, negocio] = await comTeto(Promise.all([
+      const [{ data: db }, { data: stats }] = await comTeto(Promise.all([
         api.get('/home/snapshot', { params: { range: p, compare: 1 } }),
         api.get<HomeStats>('/home/stats', { params: { range: p, compare: 1 } }),
-        api.get<RespostaDasMetricas>('/home/metrics', { params: { range: p } })
-          .then((r) => r.data)
-          .catch((err) => { console.warn('[Dashboard/Relatórios] métricas do negócio indisponíveis:', err); return null }),
       ]))
       if (!vivo.current || minha !== seq.current) return
-      const snap = montarSnapshot(stats, db)
-      setSnapshot({ ...snap, kpis: juntarMetricasDoNegocio(snap.kpis, negocio) })
+      setSnapshot(montarSnapshot(stats, db))
       setPeriodoCarregado(p)
       setErroDoPeriodo(null)
       setAtualizadoEm(new Date())
@@ -145,16 +175,28 @@ export function useRelatoriosDoPainel(periodo: DateRange, podeVerAtividade = tru
   }, [buscarAtividade])
 
   useEffect(() => { void buscarPeriodo(periodo) }, [periodo, buscarPeriodo])
+  useEffect(() => { void buscarNegocio(periodo) }, [periodo, buscarNegocio])
+  useEffect(() => () => pedidoDoNegocio.current?.abort(), [])
 
   const recarregar = useCallback(() => {
     setRecarregando(true)
     void buscarPeriodo(periodo)
+    void buscarNegocio(periodo)
     void buscarAtividade()
-  }, [periodo, buscarPeriodo, buscarAtividade])
+  }, [periodo, buscarPeriodo, buscarNegocio, buscarAtividade])
+
+  // O cartão do negócio só mostra valor do MESMO período dos fixos à vista; senão, "carregando".
+  const snapshotComNegocio = useMemo(() => {
+    if (!snapshot) return null
+    const doMesmoPeriodo = negocio && negocio.periodo === periodoCarregado ? negocio : null
+    const kpis = juntarMetricasDoNegocio(snapshot.kpis, doMesmoPeriodo?.resposta ?? null, catalogo ?? [], doMesmoPeriodo ? 'erro' : 'carregando')
+    return kpis === snapshot.kpis ? snapshot : { ...snapshot, kpis }
+  }, [snapshot, negocio, periodoCarregado, catalogo])
 
   const erro = erroDoPeriodo === periodo
   return {
-    snapshot,
+    catalogoPronto: catalogo !== null,
+    snapshot: snapshotComNegocio,
     periodoCarregado,
     atividade,
     carregando: !snapshot && !erro,

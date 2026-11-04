@@ -38,12 +38,18 @@ export type KpiCategoria = KpiCategoriaFixa | (string & {})
 
 /** SCRUM-1465: o que só a métrica do negócio tem — estado, partes e a explicação. */
 export interface DadosDoNegocio {
-  estado: 'ok' | 'sem_dado' | 'base_pequena' | 'periodo_curto' | 'erro' | 'tempo_esgotado'
+  /** `carregando` só existe na tela: o catálogo chegou e os valores ainda não. */
+  estado: 'ok' | 'sem_dado' | 'base_pequena' | 'periodo_curto' | 'erro' | 'tempo_esgotado' | 'carregando'
   partes: Record<string, number>
+  /** `valor` na mesma unidade do cartão (moeda já em reais). */
   quebra: Array<{ chave: string | null; rotulo: string; valor: number | null; partes: Record<string, number> }>
   /** "Como calculamos", em português, sem LLM. */
   explicacao: string
   selos: Array<'estimado' | 'pela_ia'>
+  /** Métrica de estado ("agora"), não do período (A17). */
+  deEstado: boolean
+  /** Na conversão: as datas da coorte que o número cobre (A6). */
+  janela: { inicio: string; fim: string } | null
   /** ISO do primeiro dado que a métrica usa; `null` = nenhum ainda. */
   desde: string | null
   versao: number

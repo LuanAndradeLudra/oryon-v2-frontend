@@ -1,6 +1,6 @@
 // SCRUM-1465: a resposta de /home/metrics vira o cartão do painel sem rede.
 import { describe, it, expect } from 'vitest'
-import { apoioDoNegocio, atributosLegiveis, juntarMetricasDoNegocio, kpiDoServidor, type MetricaDoServidor } from './metricasDoNegocio'
+import { apoioDoNegocio, atributosLegiveis, juntarMetricasDoNegocio, kpiDoServidor, type MetricaDoCatalogo, type MetricaDoServidor } from './metricasDoNegocio'
 import { buildEmptySnapshot } from '@/types/dashboard'
 
 function metrica(extra: Partial<MetricaDoServidor> = {}): MetricaDoServidor {
@@ -13,6 +13,10 @@ function metrica(extra: Partial<MetricaDoServidor> = {}): MetricaDoServidor {
     ...extra,
   }
 }
+
+const catalogo = (chave: string): MetricaDoCatalogo => ({
+  chave, rotulo: chave, grupo: 'Do seu negócio', unidade: 'count', sentido: 'up', ajuda: null, selos: [], versao: 1, publicadaEm: null,
+})
 
 describe('kpiDoServidor', () => {
   it('contagem: valor, variação em % sobre o cru, série e "Como calculamos" na ajuda', () => {
@@ -34,22 +38,34 @@ describe('kpiDoServidor', () => {
     expect(k.detail).toBe('53 de 125')
   })
 
-  it('moeda: centavos viram reais, também na série', () => {
+  it('moeda: centavos viram reais UMA vez — no valor, na série e na quebra (A42)', () => {
     const k = kpiDoServidor(metrica({
       unidade: 'currency', valor: 125050, anterior: 100000, selos: ['estimado'], partes: { consideradas: 10, semPreco: 2, semEspecialidade: 1 },
       serie: { granularidade: 'dia', pontos: [{ data: 'a', valor: 25050 }, { data: 'b', valor: 100000 }] },
+      quebra: [{ chave: 'Cardiologia', rotulo: 'Cardiologia', valor: 30000, partes: { consultas: 1 } }],
     }))
     expect(k.value).toBe(1250.5)
     expect(k.sparkline).toEqual([250.5, 1000])
+    expect(k.negocio!.quebra[0].valor).toBe(300)
     expect(k.trend).toBe(25.1)
-    expect(k.detail).toBe('estimado · 2 sem preço · 1 sem detalhe')
+    // "estimado" fica no selo do cartão, não repetido no apoio (A42).
+    expect(k.detail).toBe('2 sem preço · 1 sem detalhe')
   })
 
-  it('base pequena: sem %, sem variação, e as partes no apoio', () => {
-    const k = kpiDoServidor(metrica({ unidade: 'percent', estado: 'base_pequena', valor: null, anterior: null, partes: { convertidos: 3, base: 5 } }))
+  it('conversão com prazo fixo: o cartão diz de quando é a coorte (A6)', () => {
+    const k = kpiDoServidor(metrica({
+      unidade: 'percent', valor: 40, partes: { convertidos: 8, base: 20, dentroDoPrazo: 6 },
+      janela: { inicio: '2026-11-07T03:00:00.000Z', fim: '2026-11-14T03:00:00.000Z' },
+    }))
+    expect(k.detail).toBe('pedidos de 07/11 a 13/11 · 8 de 20 · 6 dentro do prazo')
+    expect(k.negocio!.janela).toEqual({ inicio: '2026-11-07T03:00:00.000Z', fim: '2026-11-14T03:00:00.000Z' })
+  })
+
+  it('base pequena: sem %, sem variação, e as partes — inclusive dentro do prazo (A16)', () => {
+    const k = kpiDoServidor(metrica({ unidade: 'percent', estado: 'base_pequena', valor: null, anterior: null, partes: { convertidos: 3, base: 5, dentroDoPrazo: 40 } }))
     expect(k.value).toBeNull()
     expect(k.trend).toBeNull()
-    expect(k.detail).toBe('3 de 5 · base pequena para %')
+    expect(k.detail).toBe('3 de 5 · base pequena para % · 40 dentro do prazo')
   })
 
   it('série com semana sem base (null) não desenha linha', () => {
@@ -60,12 +76,12 @@ describe('kpiDoServidor', () => {
 
 describe('apoioDoNegocio', () => {
   it('cada estado diz o que houve; nulo nunca vira zero', () => {
-    expect(apoioDoNegocio({ estado: 'sem_dado', partes: {}, selos: [] })).toEqual({ texto: 'sem dado ainda', alerta: false })
-    expect(apoioDoNegocio({ estado: 'erro', partes: {}, selos: [] })).toEqual({ texto: 'não foi possível calcular agora', alerta: true })
-    expect(apoioDoNegocio({ estado: 'tempo_esgotado', partes: {}, selos: [] }).alerta).toBe(true)
-    expect(apoioDoNegocio({ estado: 'periodo_curto', partes: {}, selos: [] }).texto).toBe('precisa de 7 dias ou mais')
-    expect(apoioDoNegocio({ estado: 'ok', partes: { convertidos: 8, base: 20, dentroDoPrazo: 12 }, selos: [] }).texto).toBe('8 de 20 · 12 dentro do prazo')
-    expect(apoioDoNegocio({ estado: 'ok', partes: { total: 4, semDetalhe: 0 }, selos: [] }).texto).toBeNull()
+    expect(apoioDoNegocio({ estado: 'sem_dado', partes: {} })).toBe('sem dado ainda')
+    expect(apoioDoNegocio({ estado: 'erro', partes: {} })).toBe('não foi possível calcular agora')
+    expect(apoioDoNegocio({ estado: 'tempo_esgotado', partes: {} })).toMatch(/demorou demais/)
+    expect(apoioDoNegocio({ estado: 'periodo_curto', partes: {} })).toBe('precisa de 7 dias ou mais')
+    expect(apoioDoNegocio({ estado: 'ok', partes: { convertidos: 8, base: 20, dentroDoPrazo: 12, semLigacao: 2 } })).toBe('8 de 20 · 12 dentro do prazo · 2 sem contato')
+    expect(apoioDoNegocio({ estado: 'ok', partes: { total: 4, semDetalhe: 0 } })).toBeNull()
   })
 })
 
@@ -83,7 +99,16 @@ describe('juntarMetricasDoNegocio', () => {
     expect(out[out.length - 1]).toMatchObject({ id: 'clinica_pedidos_sem_vaga', value: 3 })
   })
 
-  it('sem resposta (falhou, ou atendente sem métrica): ficam os fixos', () => {
+  it('A2: /home/metrics falhou — os ids do catálogo aparecem em ERRO, nunca o card fixo com a fórmula antiga', () => {
+    const out = juntarMetricasDoNegocio(fixos, null, [catalogo('appointments_scheduled'), catalogo('clinica_valor_tabela')])
+    const i = fixos.findIndex((k) => k.id === 'appointments_scheduled')
+    expect(out[i]).toMatchObject({ id: 'appointments_scheduled', value: null, detail: 'indisponível agora', negocio: { estado: 'erro' } })
+    expect(out[out.length - 1]).toMatchObject({ id: 'clinica_valor_tabela', negocio: { estado: 'erro' } })
+    // Ainda carregando: o mesmo card, em "carregando".
+    expect(juntarMetricasDoNegocio(fixos, null, [catalogo('appointments_scheduled')], 'carregando')[i].negocio!.estado).toBe('carregando')
+  })
+
+  it('sem catálogo nem valores (atendente, cliente sem métrica): ficam os fixos', () => {
     expect(juntarMetricasDoNegocio(fixos, null)).toBe(fixos)
     expect(juntarMetricasDoNegocio(fixos, { escopo: 'minhas', metricas: [] })).toBe(fixos)
   })
@@ -96,5 +121,9 @@ describe('atributosLegiveis', () => {
       { rotulo: 'Havia horário', valor: 'não' },
       { rotulo: 'Consulta', valor: '10/11, 10:30' },
     ])
+  })
+
+  it('A18: só a data veio do sistema (hora desconhecida) — mostra só o dia, nunca 23:59', () => {
+    expect(atributosLegiveis({ data_consulta: '2026-11-11T02:59:59.000Z', hora_conhecida: false })).toEqual([{ rotulo: 'Consulta', valor: '10/11' }])
   })
 })

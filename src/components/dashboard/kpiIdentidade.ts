@@ -1,4 +1,4 @@
-import type { KpiCategoria, KpiCategoriaFixa, KpiDefinition, KpiId, KpiMetric } from '@/types/dashboard'
+import type { KpiCategoria, KpiCategoriaFixa, KpiDefinition, KpiIdFixo, KpiMetric } from '@/types/dashboard'
 
 /**
  * Identidade dos indicadores dos Relatórios (pedido do PO, 01/10).
@@ -30,10 +30,11 @@ export function nomeDoGrupo(c: KpiCategoria): string {
 }
 
 /** Indicadores de AGORA (estado atual) — ganham o ponto "ao vivo"; os demais são do período. */
-export const KPI_AO_VIVO: ReadonlySet<KpiId> = new Set<KpiId>(['active_conversations', 'queued', 'agents_online'])
+// KpiIdFixo (A42): um id digitado errado aqui não passa no tsc.
+export const KPI_AO_VIVO: ReadonlySet<string> = new Set<KpiIdFixo>(['active_conversations', 'queued', 'agents_online'])
 
 /** Para onde o cartão leva (a lista que compõe o número). Sem destino = não é clicável. */
-const DESTINO: Partial<Record<KpiId, { para: string; rotulo: string }>> = {
+const DESTINO: Partial<Record<KpiIdFixo, { para: string; rotulo: string }>> = {
   total_conversations:    { para: '/conversations', rotulo: 'Abrir as conversas' },
   active_conversations:   { para: '/conversations?status=open', rotulo: 'Abrir as conversas ativas' },
   queued:                 { para: '/conversations?aba=fila', rotulo: 'Abrir a Fila' },

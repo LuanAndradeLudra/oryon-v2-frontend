@@ -179,7 +179,7 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
         className={cn('space-y-3.5 transition-opacity', r.atualizando && 'opacity-60')}
         aria-busy={r.atualizando || undefined}
       >
-        <KpiGrid metrics={snapshot.kpis} customizerOpen={personalizando} onCustomizerClose={() => setPersonalizando(false)} podeEditarMetas={podeVerAtividade} onMetasSalvas={r.recarregar} tenantId={user?.tenantId} periodo={r.periodoCarregado ?? periodo} />
+        <KpiGrid metrics={snapshot.kpis} customizerOpen={personalizando} onCustomizerClose={() => setPersonalizando(false)} podeEditarMetas={podeVerAtividade} onMetasSalvas={r.recarregar} tenantId={user?.tenantId} userId={user?.id} catalogoPronto={r.catalogoPronto} periodo={r.periodoCarregado ?? periodo} />
 
         {/* Seção desligada por padrão (flag dashboardAiInsights) — não
             montar evita a chamada generateDashboardInsights() e o gasto

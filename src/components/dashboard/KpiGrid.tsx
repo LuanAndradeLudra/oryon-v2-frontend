@@ -4,7 +4,7 @@ import { HelpCircle } from 'lucide-react'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
-import type { DateRange, KpiId, KpiMetric } from '@/types/dashboard'
+import type { DateRange, KpiId, KpiIdFixo, KpiMetric } from '@/types/dashboard'
 import { KPI_CATALOG, DEFAULT_KPI_SLOTS } from '@/types/dashboard'
 import { KpiCustomizerDrawer } from './KpiCustomizerDrawer'
 import { ListaDaMetrica } from './ListaDaMetrica'
@@ -21,16 +21,20 @@ const LS_DESTAQUE = 'oryon:dashboard:kpi-destaque'
 
 /**
  * SCRUM-1465: os ids escolhidos dependem do cliente (as métricas do negócio
- * são de cada um), então a faixa e o destaque ficam guardados POR TENANT. Sem
- * tenant, vale a chave antiga (global) — e ela semeia a nova na 1ª vez.
+ * são de cada um) e de quem olha (o atendente não recebe as métricas do
+ * negócio — A20), então a faixa e o destaque ficam guardados POR TENANT E
+ * USUÁRIO. Sem eles, vale a chave antiga (global) — e ela semeia a nova na 1ª vez.
  */
-function chaveDoTenant(base: string, tenantId?: string | null): string {
-  return tenantId ? `${base}:${tenantId}` : base
+function chaveDoTenant(base: string, tenantId?: string | null, userId?: string | null): string {
+  return tenantId ? `${base}:${tenantId}${userId ? `:${userId}` : ''}` : base
 }
 
+/** A chave do usuário; sem ela, a do tenant (antes de 04/11); sem ela, a global (antes do épico). */
 function lerBruto(chave: string, base: string): string | null {
   const proprio = localStorage.getItem(chave)
-  return proprio ?? (chave !== base ? localStorage.getItem(base) : null)
+  if (proprio !== null || chave === base) return proprio
+  const doTenant = chave.split(':').length > base.split(':').length + 1 ? localStorage.getItem(chave.slice(0, chave.lastIndexOf(':'))) : null
+  return doTenant ?? localStorage.getItem(base)
 }
 
 function lerLocal<T>(chave: string, ler: (v: unknown) => T | null, padrao: T, base = chave): T {
@@ -142,8 +146,13 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false, onAb
   /** SCRUM-1465: métrica do negócio abre o "Quais são?" em vez de navegar. */
   onAbrirLista?: (m: KpiMetric) => void
 }) {
-  const { aoVivo, destino } = identidadeDo(metric)
+  const identidade = identidadeDo(metric)
+  const destino = identidade.destino
+  // A17: a métrica do negócio de estado (interessados em aberto) é "agora", como a fila.
+  const aoVivo = identidade.aoVivo || metric.negocio?.deEstado === true
   const estimado = metric.negocio?.selos.includes('estimado') ?? false
+  // G20 (A42): o número conta o que a IA fez — quem marcou por telefone não está nele.
+  const pelaIa = metric.negocio?.selos.includes('pela_ia') ?? false
   const estado = estadoDaMeta(metric)
   const valor = formatKpiValue(metric.value, metric.unit)
   const comSerie = (detalhada || grande) && metric.sparkline.length >= 2
@@ -159,6 +168,9 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false, onAb
         {estimado && (
           <span className="pt-[1px] flex-shrink-0 text-2xs font-semibold text-surface-500" title="Estimativa: preço de tabela, sem descontar convênio">estimado</span>
         )}
+        {pelaIa && !estimado && (
+          <span className="pt-[1px] flex-shrink-0 text-2xs font-semibold text-surface-500" title="Conta só o que a IA fez pelo WhatsApp">pela IA</span>
+        )}
         {aoVivo && (
           <span className="pt-[4px] flex-shrink-0" title="Agora — não segue o período">
             <span className="block w-1.5 h-1.5 rounded-full bg-online animate-pulse" aria-hidden />
@@ -167,7 +179,8 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false, onAb
         )}
         {/* Revisão 30/09: todo indicador diz o que conta. */}
         {metric.help && (
-          <span className="pt-[1px] flex-shrink-0" onClick={(e) => e.preventDefault()}>
+          // O ⓘ explica; não abre o "Quais são?" (que é auditado e tem dado de saúde — A21).
+          <span className="pt-[1px] flex-shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
             <Tooltip content={metric.help} side="top" wide>
               <HelpCircle className="w-3 h-3 text-surface-600 hover:text-surface-400 transition-colors" aria-label={`O que é ${metric.label}`} />
             </Tooltip>
@@ -223,7 +236,7 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false, onAb
   // Divisória fina à direita e embaixo de cada cartão (a margem negativa da
   // grade esconde as da última coluna/linha) — o PO pediu separação clara.
   const base = cn('flex flex-col min-w-0 border-r border-b border-surface-700', grande ? 'px-4 py-3.5' : 'px-3.5 py-3')
-  if (metric.negocio && onAbrirLista) {
+  if (metric.negocio && onAbrirLista && metric.negocio.estado !== 'carregando') {
     return (
       <button
         type="button"
@@ -259,7 +272,7 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false, onAb
 
 // 28/09: KPIs que NÃO seguem o período dizem o próprio recorte na linha de
 // apoio (os demais seguem o seletor e não precisam de etiqueta).
-const KPI_ESCOPO: Partial<Record<KpiId, string>> = {
+const KPI_ESCOPO: Partial<Record<KpiIdFixo, string>> = {
   active_conversations: 'agora',
   queued: 'agora',
   agents_online: 'agora',
@@ -267,7 +280,8 @@ const KPI_ESCOPO: Partial<Record<KpiId, string>> = {
 
 function apoioDo(metric: KpiMetric, queued: number): Apoio | undefined {
   if (metric.id === 'active_conversations' && queued > 0) return { text: `agora · ${queued} na fila`, tone: 'warn' }
-  const escopo = KPI_ESCOPO[metric.id]
+  const escopo = KPI_ESCOPO[metric.id as KpiIdFixo] ?? (metric.negocio?.deEstado ? 'agora' : undefined)
+  if (escopo && metric.negocio?.deEstado && metric.detail) return { text: `agora · ${metric.detail}`, tone: 'muted' }
   if (escopo) return { text: escopo, tone: 'muted' }
   // SCRUM-1465: erro ou tempo esgotado da métrica do negócio é aviso, não apoio.
   const falhou = metric.negocio?.estado === 'erro' || metric.negocio?.estado === 'tempo_esgotado'
@@ -358,7 +372,9 @@ export function KpiGrid({
   podeEditarMetas = false,
   onMetasSalvas,
   tenantId,
+  userId,
   periodo = '7d',
+  catalogoPronto = true,
 }: {
   metrics: KpiMetric[]
   customizerOpen: boolean
@@ -366,27 +382,40 @@ export function KpiGrid({
   /** DC-6: só administradores definem as metas da empresa. */
   podeEditarMetas?: boolean
   onMetasSalvas?: () => void
-  /** SCRUM-1465: a faixa salva é do cliente (as métricas do negócio são dele). */
+  /** SCRUM-1465: a faixa salva é do cliente e de quem olha (A20). */
   tenantId?: string | null
+  userId?: string | null
+  /** O catálogo das métricas do negócio respondeu: antes disso a faixa salva não é regravada (A20). */
+  catalogoPronto?: boolean
   /** Período à vista — o "Quais são?" lista o mesmo recorte do número. */
   periodo?: DateRange
 }) {
-  const chaveSlots = chaveDoTenant(LS_KEY, tenantId)
-  const chaveDestaque = chaveDoTenant(LS_DESTAQUE, tenantId)
-  const [slots, setSlots] = useState<KpiId[]>(() => loadSlots(chaveSlots, new Set([...KPI_CATALOG.map((d) => d.id), ...metrics.map((m) => m.id)])))
+  const chaveSlots = chaveDoTenant(LS_KEY, tenantId, userId)
+  const chaveDestaque = chaveDoTenant(LS_DESTAQUE, tenantId, userId)
+  const conhecidos = () => new Set([...KPI_CATALOG.map((d) => d.id), ...metrics.map((m) => m.id)])
+  const [slots, setSlots] = useState<KpiId[]>(() => loadSlots(chaveSlots, conhecidos()))
+  // Montou antes do catálogo: quando ele chega, relê a faixa salva (os ids do negócio agora são conhecidos).
+  const [lidoComCatalogo, setLidoComCatalogo] = useState(catalogoPronto)
+  if (catalogoPronto && !lidoComCatalogo) {
+    setLidoComCatalogo(true)
+    setSlots(loadSlots(chaveSlots, conhecidos()))
+  }
   const [densidade, setDensidade] = useState<Densidade>(() => lerLocal(LS_DENSIDADE, lerDensidade, 'compacta'))
   const [destaque, setDestaque] = useState<KpiId[]>(() => lerLocal(chaveDestaque, lerDestaque, [], LS_DESTAQUE))
   const [lista, setLista] = useState<KpiMetric | null>(null)
 
   useEffect(() => {
+    // Só depois do catálogo: antes, um padrão provisório apagaria a escolha salva (A20).
+    if (!catalogoPronto) return
     try { localStorage.setItem(chaveSlots, JSON.stringify(slots)) } catch { /* ignore */ }
-  }, [slots, chaveSlots])
+  }, [slots, chaveSlots, catalogoPronto])
   useEffect(() => {
     try { localStorage.setItem(LS_DENSIDADE, JSON.stringify(densidade)) } catch { /* ignore */ }
   }, [densidade])
   useEffect(() => {
+    if (!catalogoPronto) return
     try { localStorage.setItem(chaveDestaque, JSON.stringify(destaque)) } catch { /* ignore */ }
-  }, [destaque, chaveDestaque])
+  }, [destaque, chaveDestaque, catalogoPronto])
 
   const activeMetrics = slots
     .map((id) => metrics.find((m) => m.id === id))
