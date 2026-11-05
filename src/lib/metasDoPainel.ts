@@ -1,4 +1,4 @@
-import type { KpiId, KpiMetric } from '@/types/dashboard'
+import type { KpiId, KpiIdFixo, KpiMetric } from '@/types/dashboard'
 
 /**
  * DC-4/DC-6 — metas do Dashboard por empresa (espelho de
@@ -21,7 +21,7 @@ export type CampoDaMeta = keyof MetasDoPainel
 /** Cada meta: o indicador que ela julga, a unidade de quem digita e o sentido. */
 export const CAMPOS_DAS_METAS: Array<{
   campo: CampoDaMeta
-  kpi: KpiId
+  kpi: KpiIdFixo
   rotulo: string
   unidade: 'min' | 'h' | '%'
   sentido: 'menor' | 'maior'

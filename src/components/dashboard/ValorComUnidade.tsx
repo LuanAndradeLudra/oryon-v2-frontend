@@ -6,6 +6,16 @@
  */
 export function ValorComUnidade({ texto }: { texto: string }) {
   if (!/\d/.test(texto)) return <span data-valor={texto}>{texto}</span>
+  // Moeda: "R$" é a unidade inteira, antes do número (o split separava "R" de "$ 1.250,50" — A19).
+  const moeda = /^R\$\s*(.+)$/.exec(texto)
+  if (moeda) {
+    return (
+      <span data-valor={texto}>
+        <span className="text-[0.58em] font-semibold text-surface-400 mr-[3px] tracking-normal">R$</span>
+        <span>{moeda[1]}</span>
+      </span>
+    )
+  }
   const partes = texto.split(/([a-zà-ú%]+)/i).filter((p) => p.trim() !== '')
   return (
     <span data-valor={texto}>

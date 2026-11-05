@@ -196,3 +196,11 @@ export const TENANT_FLAG_OCULTAR_COBRANCA = 'FF_OCULTAR_COBRANCA'
 export function cobrancaOcultaPara(featureFlags?: readonly string[] | null): boolean {
   return featureFlags?.includes(TENANT_FLAG_OCULTAR_COBRANCA) ?? false
 }
+
+/** API pública v1 (SCRUM-1216) — ligada pela Oryon (super_admin) por tenant. */
+export const TENANT_FLAG_PUBLIC_API = 'FF_PUBLIC_API'
+
+/** `true` só quando o backend listou `FF_PUBLIC_API` para o tenant. */
+export function publicApiEnabled(featureFlags?: readonly string[] | null): boolean {
+  return featureFlags?.includes(TENANT_FLAG_PUBLIC_API) ?? false
+}

@@ -35,6 +35,22 @@ beforeEach(() => { pendentes.length = 0; get.mockClear(); vi.spyOn(console, 'err
 afterEach(() => cleanup())
 
 describe('useRelatoriosDoPainel', () => {
+  it('SCRUM-1465 (A2/A3): métricas do negócio à parte — a falha não derruba a aba e o catálogo põe o card em erro', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { result } = renderHook(() => useRelatoriosDoPainel('7d'))
+    const catalogo = pendentes.find((p) => p.url === '/home/metrics/catalog')!
+    catalogo.resolve({ data: { escopo: 'empresa', metricas: [{ chave: 'appointments_scheduled', rotulo: 'Agendamentos', grupo: 'Do seu negócio', unidade: 'count', sentido: 'up', ajuda: null, selos: [], versao: 1, publicadaEm: null }] } })
+    for (const p of pendentes.filter((x) => x.range === '7d' && x.url !== '/home/metrics')) p.resolve(p.url === '/home/stats' ? stats(4) : { data: null })
+    await waitFor(() => expect(result.current.snapshot).not.toBeNull())
+    // Valores ainda não chegaram: o card do catálogo aparece "carregando", nunca o fixo.
+    expect(result.current.snapshot!.kpis.find((k) => k.id === 'appointments_scheduled')!.negocio?.estado).toBe('carregando')
+    pendentes.find((p) => p.url === '/home/metrics')!.reject(new Error('500'))
+    await waitFor(() => expect(result.current.snapshot!.kpis.find((k) => k.id === 'appointments_scheduled')!.negocio?.estado).toBe('erro'))
+    expect(result.current.erro).toBe(false)
+    expect(result.current.catalogoPronto).toBe(true)
+    expect(resolvidasDe(result.current)).toBe(4)
+  })
+
   it('manda o período nas duas leituras e a atividade uma vez só', async () => {
     const { result, rerender } = renderHook(({ p }: { p: DateRange }) => useRelatoriosDoPainel(p), { initialProps: { p: '7d' as DateRange } })
     expect(get).toHaveBeenCalledWith('/home/stats', { params: { range: '7d', compare: 1 } })

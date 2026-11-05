@@ -2,7 +2,8 @@
 
 export type DateRange = 'today' | '7d' | '30d' | 'month'
 
-export type KpiId =
+/** Indicadores fixos, calculados no `/home/stats` e `/home/snapshot`. */
+export type KpiIdFixo =
   | 'total_conversations' | 'active_conversations' | 'queued'
   | 'resolved' | 'abandoned' | 'resolution_rate' | 'abandon_rate'
   | 'first_response_time' | 'human_first_response' | 'avg_resolution_time' | 'sla_compliance'
@@ -19,15 +20,46 @@ export type KpiId =
   | 'ads_leads_meta' | 'ads_leads_google' | 'ads_total_spend'
   | 'ads_avg_cpl' | 'ads_avg_roas' | 'ads_conversion_rate'
   | 'ads_qualified_rate' | 'ads_customer_rate'
-  // ── Clínica (agentes de WhatsApp: agendar/cancelar consulta) ────────────────
-  | 'appointments_scheduled' | 'appointments_cancelled'
+  // ── Clínica (agentes de WhatsApp: agendar/cancelar/confirmar consulta) ──────
+  | 'appointments_scheduled' | 'appointments_cancelled' | 'appointments_confirmed'
+
+/**
+ * SCRUM-1465: além dos fixos, as métricas do negócio publicadas para o cliente
+ * (`/home/metrics`) — a chave vem do servidor. As da clínica reaproveitam os
+ * ids dos cards fixos (`appointments_*`) e os substituem quando publicadas.
+ */
+export type KpiId = KpiIdFixo | (string & {})
 
 export type KpiUnit = 'count' | 'percent' | 'seconds' | 'csat_score' | 'nps_score' | 'currency'
+
+export type KpiCategoriaFixa = 'Atendimento' | 'Velocidade' | 'Qualidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing' | 'Clínica'
+/** SCRUM-1465: a métrica do negócio traz o próprio grupo (ex.: "Do seu negócio"). */
+export type KpiCategoria = KpiCategoriaFixa | (string & {})
+
+/** SCRUM-1465: o que só a métrica do negócio tem — estado, partes e a explicação. */
+export interface DadosDoNegocio {
+  /** `carregando` só existe na tela: o catálogo chegou e os valores ainda não. */
+  estado: 'ok' | 'sem_dado' | 'base_pequena' | 'periodo_curto' | 'erro' | 'tempo_esgotado' | 'carregando'
+  partes: Record<string, number>
+  /** `valor` na mesma unidade do cartão (moeda já em reais). */
+  quebra: Array<{ chave: string | null; rotulo: string; valor: number | null; partes: Record<string, number> }>
+  /** "Como calculamos", em português, sem LLM. */
+  explicacao: string
+  selos: Array<'estimado' | 'pela_ia'>
+  /** Métrica de estado ("agora"), não do período (A17). */
+  deEstado: boolean
+  /** Na conversão: as datas da coorte que o número cobre (A6). */
+  janela: { inicio: string; fim: string } | null
+  /** ISO do primeiro dado que a métrica usa; `null` = nenhum ainda. */
+  desde: string | null
+  versao: number
+  publicadaEm: string | null
+}
 
 export interface KpiDefinition {
   id: KpiId
   label: string
-  category: 'Atendimento' | 'Velocidade' | 'Qualidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing' | 'Clínica'
+  category: KpiCategoria
   unit: KpiUnit
   trendIsGood: 'up' | 'down' | 'neutral' // whether an increasing trend is good
   /** PL-C2-FAR-3 (P14): false quando `DashboardPage.fetchDashboard` não tem
@@ -55,6 +87,8 @@ export interface KpiMetric extends KpiDefinition {
   trendUnit?: '%' | 'pp'
   /** DC-5: valor por dia do período (mais antigo → mais novo); vazio = sem série. */
   sparkline: number[]
+  /** SCRUM-1465: presente só nas métricas do negócio (vindas do servidor). */
+  negocio?: DadosDoNegocio
 }
 
 export interface VolumeDataPoint {
@@ -224,16 +258,19 @@ export const KPI_CATALOG: KpiDefinition[] = [
     help: 'Dos disparos entregues, quantos foram lidos (quem desligou a confirmação de leitura não aparece).' },
   { id: 'campaign_reply_rate',    label: 'Taxa de resposta',          category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',
     help: 'Dos disparos entregues, quantos tiveram resposta do cliente.' },
-  // ── Clínica (agentes de WhatsApp: agendar/cancelar consulta) ────────────────
+  // ── Clínica (agentes de WhatsApp: agendar/cancelar/confirmar consulta) ──────
   { id: 'appointments_scheduled', label: 'Agendamentos marcados',     category: 'Clínica',    unit: 'count',      trendIsGood: 'up',
     help: 'Agendamentos que os agentes de IA marcaram no período.' },
   { id: 'appointments_cancelled', label: 'Cancelamentos',             category: 'Clínica',    unit: 'count',      trendIsGood: 'down',
     help: 'Agendamentos cancelados pelos agentes de IA no período.' },
+  // SCRUM-1456: só conta quando a IA confirmou de fato — "já estava confirmada" não entra.
+  { id: 'appointments_confirmed', label: 'Confirmações',              category: 'Clínica',    unit: 'count',      trendIsGood: 'up',
+    help: 'Consultas que os agentes de IA confirmaram no período.' },
 ]
 
 // R2-DASH-07: a faixa do mock 1b tem 5 KPIs — o padrão acompanha (o usuário
 // escolhe mais no "Personalizar"; cada 5 viram uma nova linha da mesma faixa).
-export const DEFAULT_KPI_SLOTS: KpiId[] = [
+export const DEFAULT_KPI_SLOTS: KpiIdFixo[] = [
   'active_conversations',
   'resolved',
   'first_response_time',

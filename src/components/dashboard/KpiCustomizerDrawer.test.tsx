@@ -66,6 +66,7 @@ describe('Personalizar indicadores', () => {
     expect(within(lista).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       expect.stringContaining('Agendamentos marcados'),
       expect.stringContaining('Cancelamentos'),
+      expect.stringContaining('Confirmações'),
     ])
   })
 })

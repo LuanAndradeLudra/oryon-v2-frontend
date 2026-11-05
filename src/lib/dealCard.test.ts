@@ -14,12 +14,15 @@ describe('dealCard — F8 (SCRUM-870/871)', () => {
     expect(originInfo({ createdByKind: 'ai' }).kind).toBe('ai')
     expect(originInfo({ createdByKind: 'automation' }).kind).toBe('event')
     expect(originInfo({}).label).toBe('Manual')
+    // SCRUM-1216: negócio criado pela API pública.
+    expect(originInfo({ originKind: 'api' }).label).toBe('Via API')
   })
 
   it('movedByChip: IA para ai, auto para eventos/automação/jornada/campanha/sistema, nada para humano; fallback por createdByKind', () => {
     expect(movedByChip({ lastMovedByKind: 'ai' })).toBe('ia')
     expect(movedByChip({ lastMovedByKind: 'automation' })).toBe('auto')
     expect(movedByChip({ lastMovedByKind: 'campaign' })).toBe('auto')
+    expect(movedByChip({ lastMovedByKind: 'api' })).toBe('auto')
     expect(movedByChip({ lastMovedByKind: 'user' })).toBeNull()
     expect(movedByChip({ createdByKind: 'ai' })).toBe('ia')
     expect(movedByChip({ createdByKind: 'user' })).toBeNull()

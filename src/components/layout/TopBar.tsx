@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { comVolta } from '@/lib/voltarPara'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, BookOpen, Megaphone as MegaphoneIcon, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
+  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, KeyRound, BookOpen, Megaphone as MegaphoneIcon, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { NotificationItem, Kbd } from '@/components/notifications/NotificationItem'
@@ -164,6 +164,7 @@ const SEARCH_INDEX = ([
   { type: 'settings', label: 'Plano e cobrança', description: 'Assinatura, limites e faturas', href: '/settings/billing', Icon: CreditCard, keywords: ['plano', 'fatura', 'assinatura', 'pagamento', 'upgrade', 'limite', 'mensalidade'] },
   { type: 'settings', label: 'Etiquetas', description: 'Gerenciar tags de conversas', href: '/settings/tags', Icon: Tag, keywords: ['tags', 'etiquetas', 'labels', 'marcadores'] },
   { type: 'settings', label: 'Notificações', description: 'Preferências de alertas', href: '/settings/notifications', Icon: BellRing, keywords: ['alertas', 'avisos', 'push', 'email'] },
+  { type: 'settings', label: 'Chaves de API', description: 'Chaves da API pública para n8n, ERP e site', href: '/settings/api-keys', Icon: KeyRound, keywords: ['api', 'chave', 'token', 'n8n', 'zapier', 'integracao', 'desenvolvedor'] },
   { type: 'settings', label: 'Conectores', description: 'Integrações com sistemas externos', href: '/settings/connectors', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
   { type: 'settings', label: 'Perfil da empresa', description: 'Nome e e-mail de contato da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
 ] as SearchItem[])
