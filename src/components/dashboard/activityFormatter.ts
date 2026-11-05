@@ -82,6 +82,8 @@ const FORMATTERS: Record<string, Formatter> = {
   api_key_revoked:                 ({ s }) => `Chave de API ${q(s)} revogada`,
   // C3: troca com sobreposição — a anterior vale até `previousExpiresAt`.
   api_key_rotated:                 ({ s }) => `Chave de API ${q(s)} trocada`,
+  // 05/11: revogar a substituta com a anterior ainda na janela desfaz a troca.
+  api_key_rotation_undone:         ({ s }) => `Troca da chave de API ${q(s)} desfeita`,
   public_api_write:                ({ d }) => `Escrita pela API${apiRoute(d)}${apiStatus(d)}`,
   public_api_denied:               ({ d }) => `Chamada à API recusada${apiRoute(d)}${apiDenial(d.code)}`,
   // B4: alerta de volume (5x a média diária, piso 5000 registros).

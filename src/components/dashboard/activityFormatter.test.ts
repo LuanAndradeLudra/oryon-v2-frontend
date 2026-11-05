@@ -7,6 +7,7 @@ describe('formatActivity — API pública v1', () => {
     expect(formatActivity({ action: 'api_key_created', subject: 'n8n' })).toBe('Chave de API "n8n" criada')
     expect(formatActivity({ action: 'api_key_revoked', subject: 'n8n' })).toBe('Chave de API "n8n" revogada')
     expect(formatActivity({ action: 'api_key_rotated', subject: 'n8n' })).toBe('Chave de API "n8n" trocada')
+    expect(formatActivity({ action: 'api_key_rotation_undone', subject: 'n8n' })).toBe('Troca da chave de API "n8n" desfeita')
   })
 
   it('pico de leituras em português', () => {

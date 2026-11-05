@@ -2,6 +2,7 @@
  * SCRUM-1219 — tela "Chaves de API": sem o flag mostra o card de
  * liberação; com o flag lista, cria (segredo exibido uma vez), troca e revoga.
  * C3 (04/11): validade (`expiresAt`), troca com sobreposição e status `expired`.
+ * 05/11: "Ler métricas", chave da rede e revogar a substituta desfaz a troca.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -15,9 +16,13 @@ const keysApi = vi.hoisted(() => ({
   create: vi.fn(),
   rotate: vi.fn(),
   revoke: vi.fn(),
+  myNetwork: vi.fn(),
 }))
 
+const toast = vi.hoisted(() => ({ show: vi.fn() }))
+
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => auth.atual }))
+vi.mock('@/hooks/useToast', () => ({ showToast: toast.show }))
 vi.mock('@/services/api', () => ({
   pipelinesApi: { list: vi.fn(async () => ({ data: [{ id: 'p1', name: 'Vendas' }] })) },
 }))
@@ -28,9 +33,9 @@ vi.mock('@/services/apiKeysApi', () => ({
 }))
 
 const key = (over: Record<string, unknown> = {}) => ({
-  id: 'k1', name: 'n8n', prefix: 'abcdefghijkl', scopes: ['contacts:read'], pipelineIds: null,
+  id: 'k1', name: 'n8n', prefix: 'abcdefghijkl', scopes: ['contacts:read'], pipelineIds: null, networkWide: false,
   createdByUserId: 'u1', createdByName: 'João', lastUsedAt: null, revokedAt: null,
-  expiresAt: null, replacedByKeyId: null,
+  expiresAt: null, replacedByKeyId: null, replacesKeyId: null, revokeUndoesRotation: false,
   createdAt: '2026-10-03T12:00:00.000Z', status: 'active', ...over,
 })
 
@@ -46,6 +51,8 @@ describe('Chaves de API', () => {
     keysApi.create.mockReset()
     keysApi.rotate.mockReset()
     keysApi.revoke.mockReset()
+    keysApi.myNetwork.mockReset().mockResolvedValue(null)
+    toast.show.mockReset()
   })
 
   it('sem FF_PUBLIC_API explica a liberação e não chama a API', async () => {
@@ -222,20 +229,109 @@ describe('Chaves de API', () => {
     expect(await screen.findByTestId('api-keys-pipelines-error')).toHaveTextContent(/todos os funis/)
   })
 
-  it('não oferece metrics:read', async () => {
+  it('oferece "Ler métricas"; fora da conta da rede não há chave da rede', async () => {
+    keysApi.create.mockResolvedValue({ key: key({ id: 'k2', name: 'BI', scopes: ['metrics:read'] }), secret: SECRET })
     renderTela()
     fireEvent.click(await screen.findByTestId('api-keys-new'))
-    expect(screen.queryByText(/métricas/i)).toBeNull()
+    expect(screen.getByText('Ler métricas')).toBeInTheDocument()
+    expect(screen.queryByTestId('api-keys-network-wide')).toBeNull()
+    fireEvent.change(screen.getByPlaceholderText('Ex.: n8n'), { target: { value: 'BI' } })
+    fireEvent.click(screen.getByTestId('api-keys-scope-contacts:read'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-contacts:write'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-metrics:read'))
+    fireEvent.click(screen.getByTestId('api-keys-create'))
+    await waitFor(() => expect(keysApi.create).toHaveBeenCalledWith({ name: 'BI', scopes: ['metrics:read'], pipelineIds: null }))
+  })
+
+  it('conta da rede: chave da rede marca e trava "Ler métricas"', async () => {
+    keysApi.myNetwork.mockResolvedValue({ id: 'n1', nome: 'Rede Sorriso' })
+    keysApi.create.mockResolvedValue({ key: key({ id: 'k2', name: 'BI', scopes: ['metrics:read'], networkWide: true }), secret: SECRET })
+    renderTela()
+    fireEvent.click(await screen.findByTestId('api-keys-new'))
+    const rede = await screen.findByTestId('api-keys-network-wide')
+    expect(screen.getByText(/todas as unidades da rede Rede Sorriso/)).toBeInTheDocument()
+    fireEvent.change(screen.getByPlaceholderText('Ex.: n8n'), { target: { value: 'BI' } })
+    fireEvent.click(screen.getByTestId('api-keys-scope-contacts:read'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-contacts:write'))
+    fireEvent.click(rede)
+    const metricas = screen.getByTestId('api-keys-scope-metrics:read')
+    expect(metricas).toBeChecked()
+    expect(metricas).toBeDisabled()
+    expect(screen.getByText('Obrigatória na chave da rede')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('api-keys-create'))
+    await waitFor(() => expect(keysApi.create).toHaveBeenCalledWith({
+      name: 'BI', scopes: ['metrics:read'], pipelineIds: null, networkWide: true,
+    }))
+  })
+
+  it('a lista marca a chave da rede e traduz "Ler métricas"', async () => {
+    keysApi.list.mockResolvedValue([key({ scopes: ['metrics:read'], networkWide: true })])
+    renderTela()
+    expect(await screen.findByTestId('api-key-network')).toHaveTextContent('Da rede')
+    expect(screen.getByText(/^Ler métricas/)).toBeInTheDocument()
+  })
+
+  it('revogar a substituta avisa que desfaz a troca e devolve a anterior', async () => {
+    keysApi.list.mockResolvedValue([
+      key({ id: 'k2', prefix: 'novaprefixo1', replacesKeyId: 'k1', revokeUndoesRotation: true }),
+      key({ id: 'k1', replacedByKeyId: 'k2', expiresAt: emDias(7) }),
+    ])
+    keysApi.revoke.mockResolvedValue({
+      ...key({ id: 'k2', prefix: 'novaprefixo1', status: 'revoked', revokedAt: new Date().toISOString() }),
+      rotationUndone: { previousKeyId: 'k1', previousExpiresAt: null, legacy: false },
+    })
+    renderTela()
+    expect(await screen.findByTestId('api-key-undo-hint')).toHaveTextContent(/oryon_live_abcdefghijkl…: revogá-la desfaz a troca/)
+    // A nova é a primeira linha: o primeiro "Revogar" é o dela.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Revogar' })[0])
+    expect(screen.getByText('Revogar a chave nova e desfazer a troca?')).toBeInTheDocument()
+    expect(screen.getByText(/A chave anterior \(oryon_live_abcdefghijkl…\) volta a valer como antes da troca/)).toBeInTheDocument()
+    keysApi.list.mockResolvedValue([
+      key({ id: 'k2', prefix: 'novaprefixo1', status: 'revoked', revokedAt: new Date().toISOString() }),
+      key({ id: 'k1' }),
+    ])
+    fireEvent.click(screen.getByRole('button', { name: 'Revogar e desfazer a troca' }))
+    await waitFor(() => expect(keysApi.revoke).toHaveBeenCalledWith('k2'))
+    await waitFor(() => expect(toast.show).toHaveBeenCalledWith(expect.stringMatching(/a troca desfeita: a anterior volta a valer sem validade/)))
+    await waitFor(() => expect(screen.queryByTestId('api-key-replaced')).toBeNull())
+    expect(screen.getByText('Sem validade')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Trocar chave/ })).toHaveLength(1)
+  })
+
+  it('troca antiga (legacy): a anterior sai da troca e pode ser trocada de novo', async () => {
+    const fim = emDias(5)
+    keysApi.list.mockResolvedValue([
+      key({ id: 'k2', prefix: 'novaprefixo1', replacesKeyId: 'k1', revokeUndoesRotation: true }),
+      key({ id: 'k1', replacedByKeyId: 'k2', expiresAt: fim }),
+    ])
+    keysApi.revoke.mockResolvedValue({
+      ...key({ id: 'k2', prefix: 'novaprefixo1', status: 'revoked', revokedAt: new Date().toISOString() }),
+      rotationUndone: { previousKeyId: 'k1', previousExpiresAt: fim, legacy: true },
+    })
+    renderTela()
+    await screen.findByTestId('api-key-undo-hint')
+    // A releitura falha: vale o que a resposta do revoke já aplicou.
+    keysApi.list.mockRejectedValue(new Error('rede'))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Revogar' })[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Revogar e desfazer a troca' }))
+    await waitFor(() => expect(toast.show).toHaveBeenCalledWith(expect.stringMatching(/A anterior saiu da troca e pode ser trocada de novo; vale até/)))
+    expect(screen.queryByTestId('api-key-replaced')).toBeNull()
+    expect(screen.getAllByRole('button', { name: /Trocar chave/ })).toHaveLength(1)
+    expect(screen.getByTestId('api-key-expiry')).toHaveTextContent(/\(5 dias\)/)
   })
 
   it('revogar pede confirmação', async () => {
-    keysApi.revoke.mockResolvedValue(key({ status: 'revoked', revokedAt: '2026-10-03T13:00:00.000Z' }))
+    keysApi.revoke.mockResolvedValue({ ...key({ status: 'revoked', revokedAt: '2026-10-03T13:00:00.000Z' }), rotationUndone: null })
     renderTela()
     fireEvent.click(await screen.findByRole('button', { name: 'Revogar' }))
     expect(keysApi.revoke).not.toHaveBeenCalled()
+    expect(screen.getByText('Revogar chave?')).toBeInTheDocument()
+    // Depois de revogar, a tela relê a lista do servidor.
+    keysApi.list.mockResolvedValue([key({ status: 'revoked', revokedAt: '2026-10-03T13:00:00.000Z' })])
     const confirmar = screen.getAllByRole('button', { name: 'Revogar' }).at(-1)!
     fireEvent.click(confirmar)
     await waitFor(() => expect(keysApi.revoke).toHaveBeenCalledWith('k1'))
     expect(await screen.findByText(/Revogada em/)).toBeInTheDocument()
+    expect(toast.show).toHaveBeenCalledWith('Chave "n8n" revogada.')
   })
 })

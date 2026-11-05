@@ -4,8 +4,10 @@
 // O segredo completo aparece UMA vez, logo depois de criar ou de trocar.
 // Validade e troca com sobreposição (C3, 04/11): a chave pode vencer; trocar
 // cria uma nova com as mesmas permissões e a antiga vale mais alguns dias.
+// 05/11: "Ler métricas", chave da rede (só na conta da rede) e revogar a
+// substituta de uma troca desfaz a troca (a anterior volta a valer).
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, BookOpen, Check, Clock, Copy, KeyRound, Lock, Plus, RefreshCw, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, BookOpen, Check, Clock, Copy, KeyRound, Lock, Network, Plus, RefreshCw, ShieldAlert } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { Button } from '@/components/ui/Button'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
@@ -24,7 +26,7 @@ import { publicApiEnabled } from '@/config/featureFlags'
 import { pipelinesApi } from '@/services/api'
 import {
   apiKeysApi, apiDocsUrl, DEFAULT_ROTATION_OVERLAP_DAYS,
-  type ApiKey, type ApiKeyScope, type ApiKeyStatus,
+  type ApiKey, type ApiKeyScope, type ApiKeyStatus, type MinhaRede, type RevokedApiKey,
 } from '@/services/apiKeysApi'
 
 const SCOPE_OPTIONS: Array<{ value: ApiKeyScope; label: string; hint: string }> = [
@@ -32,6 +34,7 @@ const SCOPE_OPTIONS: Array<{ value: ApiKeyScope; label: string; hint: string }> 
   { value: 'contacts:write', label: 'Gravar contatos', hint: 'Criar e editar contatos, etiquetar' },
   { value: 'deals:read', label: 'Ler negócios', hint: 'Funis e negócios' },
   { value: 'deals:write', label: 'Gravar negócios', hint: 'Criar, mover, fechar e reabrir negócios' },
+  { value: 'metrics:read', label: 'Ler métricas', hint: 'Números do painel: métricas, séries e o "agora"' },
 ]
 const SCOPE_LABEL = new Map(SCOPE_OPTIONS.map((s) => [s.value as string, s.label]))
 
@@ -89,6 +92,7 @@ export function ApiKeysSettings() {
   const [rotating, setRotating] = useState<ApiKey | null>(null)
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
   const [revokeBusy, setRevokeBusy] = useState(false)
+  const [rede, setRede] = useState<MinhaRede | null>(null)
 
   const reload = useCallback(() => {
     if (!enabled || !canManage) { setLoading(false); return }
@@ -127,8 +131,17 @@ export function ApiKeysSettings() {
     return () => { vivo = false }
   }, [enabled, canManage])
 
+  // Chave da rede só existe na conta da rede: sem rede (403) a opção nem aparece.
+  useEffect(() => {
+    if (!enabled || !canManage) return
+    let vivo = true
+    apiKeysApi.myNetwork().then((r) => { if (vivo) setRede(r) })
+    return () => { vivo = false }
+  }, [enabled, canManage])
+
   const pipelineName = useMemo(() => new Map(pipelines.map((p) => [p.id, p.name])), [pipelines])
   const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows])
+  const previousOf = (k: ApiKey | null) => (k?.replacesKeyId ? byId.get(k.replacesKeyId) : undefined)
   const activeCount = rows.filter((r) => r.status === 'active').length
   // Ativas primeiro (são as que importam), depois vencidas e revogadas; dentro
   // de cada grupo, a ordem do backend (mais nova antes — sort é estável).
@@ -141,13 +154,31 @@ export function ApiKeysSettings() {
   const mergeRow = (updated: ApiKey) =>
     setRows((rs) => rs.map((r) => (r.id === updated.id ? { ...r, ...updated, createdByName: updated.createdByName ?? r.createdByName } : r)))
 
+  /** Revogar a substituta de uma troca devolve a anterior ao estado de antes. */
+  function applyRevoke(revoked: RevokedApiKey) {
+    const { rotationUndone, ...key } = revoked
+    mergeRow(key)
+    if (!rotationUndone) return
+    setRows((rs) => rs.map((r) => (r.id === rotationUndone.previousKeyId
+      ? { ...r, status: 'active', revokedAt: null, replacedByKeyId: null, expiresAt: rotationUndone.previousExpiresAt }
+      : r)))
+  }
+
   async function confirmRevoke() {
     if (!revoking) return
     setRevokeBusy(true)
     try {
-      mergeRow(await apiKeysApi.revoke(revoking.id))
-      showToast(`Chave "${revoking.name}" revogada.`)
+      const revoked = await apiKeysApi.revoke(revoking.id)
+      applyRevoke(revoked)
+      const undone = revoked.rotationUndone
+      showToast(!undone
+        ? `Chave "${revoking.name}" revogada.`
+        : undone.legacy
+          ? `Chave "${revoking.name}" revogada. A anterior saiu da troca e pode ser trocada de novo; vale até ${fmt(undone.previousExpiresAt)}.`
+          : `Chave "${revoking.name}" revogada e a troca desfeita: a anterior volta a valer ${undone.previousExpiresAt ? `até ${fmt(undone.previousExpiresAt)}` : 'sem validade'}.`)
       setRevoking(null)
+      // Relê em silêncio: o servidor é quem sabe o estado final das duas chaves.
+      apiKeysApi.list().then(setRows).catch(() => { /* mantém o que já foi aplicado */ })
     } catch (e) {
       showToast(getApiErrorMessage(e, 'Não foi possível revogar a chave.'), 'error')
     } finally {
@@ -226,6 +257,7 @@ export function ApiKeysSettings() {
                 key={k.id}
                 k={k}
                 replacement={k.replacedByKeyId ? byId.get(k.replacedByKeyId) : undefined}
+                previous={previousOf(k)}
                 pipelineName={pipelineName}
                 onRotate={() => setRotating(k)}
                 onRevoke={() => setRevoking(k)}
@@ -237,6 +269,7 @@ export function ApiKeysSettings() {
 
       {creating && (
         <CreateKeyModal
+          rede={rede}
           pipelines={pipelines}
           pipelinesError={pipelinesError}
           onClose={() => setCreating(false)}
@@ -266,9 +299,11 @@ export function ApiKeysSettings() {
         open={!!revoking}
         onClose={() => setRevoking(null)}
         onConfirm={() => void confirmRevoke()}
-        title="Revogar chave?"
-        description={`Os sistemas que usam "${revoking?.name ?? ''}" (${revoking ? maskedPrefix(revoking.prefix) : ''}) passam a receber erro 401 em até 30 segundos. Não dá para desfazer: para voltar, crie uma chave nova.`}
-        confirmLabel="Revogar"
+        title={revoking?.revokeUndoesRotation ? 'Revogar a chave nova e desfazer a troca?' : 'Revogar chave?'}
+        description={revoking?.revokeUndoesRotation
+          ? `A chave anterior${previousOf(revoking) ? ` (${maskedPrefix(previousOf(revoking)!.prefix)})` : ''} volta a valer como antes da troca. Os sistemas que já usam a nova (${maskedPrefix(revoking.prefix)}) passam a receber erro 401 em até 30 segundos.`
+          : `Os sistemas que usam "${revoking?.name ?? ''}" (${revoking ? maskedPrefix(revoking.prefix) : ''}) passam a receber erro 401 em até 30 segundos. Não dá para desfazer: para voltar, crie uma chave nova.`}
+        confirmLabel={revoking?.revokeUndoesRotation ? 'Revogar e desfazer a troca' : 'Revogar'}
         danger
         loading={revokeBusy}
       />
@@ -292,7 +327,9 @@ function StatusBadge({ k }: { k: ApiKey }) {
 function ValidityLine({ k, replacement }: { k: ApiKey; replacement?: ApiKey }) {
   if (k.status === 'revoked') return null
   if (k.replacedByKeyId) {
-    const nova = replacement ? `"${replacement.name}" (${maskedPrefix(replacement.prefix)})` : 'uma chave nova'
+    const nova = replacement
+      ? `"${replacement.name}" (${maskedPrefix(replacement.prefix)}${replacement.status === 'revoked' ? ', revogada' : ''})`
+      : 'uma chave nova'
     return (
       <span className="inline-flex items-start gap-1.5 text-[12px] text-surface-300" data-testid="api-key-replaced">
         <RefreshCw className="w-3.5 h-3.5 mt-px flex-shrink-0 text-accent-dark" />
@@ -322,9 +359,11 @@ function ValidityLine({ k, replacement }: { k: ApiKey; replacement?: ApiKey }) {
   )
 }
 
-function KeyRow({ k, replacement, pipelineName, onRotate, onRevoke }: {
+function KeyRow({ k, replacement, previous, pipelineName, onRotate, onRevoke }: {
   k: ApiKey
   replacement?: ApiKey
+  /** A chave que esta substituiu (enquanto a troca está de pé). */
+  previous?: ApiKey
   pipelineName: Map<string, string>
   onRotate: () => void
   onRevoke: () => void
@@ -336,6 +375,11 @@ function KeyRow({ k, replacement, pipelineName, onRotate, onRevoke }: {
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`text-[13px] font-semibold break-words min-w-0 ${inactive ? 'text-surface-300' : 'text-surface-100'}`}>{k.name}</span>
           <StatusBadge k={k} />
+          {k.networkWide && (
+            <span className="inline-flex items-center gap-1 h-5 px-[7px] rounded-[6px] text-[11px] font-semibold whitespace-nowrap border border-surface-700 text-surface-200" data-testid="api-key-network">
+              <Network className="w-3 h-3 text-accent-dark" /> Da rede
+            </span>
+          )}
         </div>
         <span className="font-mono text-[12px] text-surface-400 break-all">{maskedPrefix(k.prefix)}</span>
         <span className="text-[12px] text-surface-300 break-words">
@@ -346,6 +390,11 @@ function KeyRow({ k, replacement, pipelineName, onRotate, onRevoke }: {
           </span>
         </span>
         <ValidityLine k={k} replacement={replacement} />
+        {k.revokeUndoesRotation && previous && (
+          <span className="text-[12px] text-surface-400" data-testid="api-key-undo-hint">
+            Nova chave da troca de {maskedPrefix(previous.prefix)}: revogá-la desfaz a troca.
+          </span>
+        )}
         <span className="text-[11.5px] text-surface-400">
           Criada por {k.createdByName ?? '—'} em {fmt(k.createdAt)} · Último uso: {k.lastUsedAt ? fmt(k.lastUsedAt) : 'nunca'}
         </span>
@@ -373,7 +422,9 @@ function KeyRow({ k, replacement, pipelineName, onRotate, onRevoke }: {
   )
 }
 
-function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
+function CreateKeyModal({ rede, pipelines, pipelinesError, onClose, onCreated }: {
+  /** Só a conta da rede pode criar chave da rede. */
+  rede: MinhaRede | null
   pipelines: PipelineOption[]
   pipelinesError: boolean
   onClose: () => void
@@ -384,10 +435,19 @@ function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
   const [restrict, setRestrict] = useState(false)
   const [pipelineIds, setPipelineIds] = useState<string[]>([])
   const [validity, setValidity] = useState('')
+  const [networkWide, setNetworkWide] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const canSubmit = name.trim().length > 0 && scopes.length > 0 && (!restrict || pipelineIds.length > 0)
+  // O backend recusa chave da rede sem "Ler métricas" (network_wide_requires_metrics).
+  const networkOk = !networkWide || scopes.includes('metrics:read')
+  const canSubmit = name.trim().length > 0 && scopes.length > 0 && (!restrict || pipelineIds.length > 0) && networkOk
+
+  function toggleNetworkWide() {
+    const next = !networkWide
+    setNetworkWide(next)
+    if (next) setScopes((cur) => (cur.includes('metrics:read') ? cur : [...cur, 'metrics:read']))
+  }
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v])
 
   async function submit() {
@@ -400,6 +460,7 @@ function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
         scopes,
         pipelineIds: restrict ? pipelineIds : null,
         ...(validity ? { expiresInDays: Number(validity) } : {}),
+        ...(rede && networkWide ? { networkWide: true } : {}),
       })
       onCreated(key, secret)
     } catch (e) {
@@ -431,20 +492,41 @@ function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
 
         <fieldset className="flex flex-col gap-2">
           <legend className="text-[12.5px] font-medium text-surface-200 mb-1">Permissões</legend>
-          {SCOPE_OPTIONS.map((s) => (
-            <label key={s.value} className="flex items-start gap-2.5 cursor-pointer">
-              <Checkbox
-                className="mt-0.5"
-                checked={scopes.includes(s.value)}
-                onChange={() => setScopes((cur) => toggle(cur, s.value))}
-              />
+          {SCOPE_OPTIONS.map((s) => {
+            // Na chave da rede, "Ler métricas" é obrigatória: fica marcada e travada.
+            const locked = networkWide && s.value === 'metrics:read'
+            return (
+              <label key={s.value} className={`flex items-start gap-2.5 ${locked ? 'cursor-default' : 'cursor-pointer'}`}>
+                <Checkbox
+                  className="mt-0.5"
+                  checked={scopes.includes(s.value)}
+                  disabled={locked}
+                  onChange={() => setScopes((cur) => toggle(cur, s.value))}
+                  data-testid={`api-keys-scope-${s.value}`}
+                />
+                <span className="flex flex-col">
+                  <span className="text-[12.5px] text-surface-100">{s.label}</span>
+                  <span className="text-[11.5px] text-surface-400">{locked ? 'Obrigatória na chave da rede' : s.hint}</span>
+                </span>
+              </label>
+            )
+          })}
+        </fieldset>
+
+        {rede && (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-[12.5px] font-medium text-surface-200 mb-1">Alcance</legend>
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <Checkbox className="mt-0.5" checked={networkWide} onChange={toggleNetworkWide} data-testid="api-keys-network-wide" />
               <span className="flex flex-col">
-                <span className="text-[12.5px] text-surface-100">{s.label}</span>
-                <span className="text-[11.5px] text-surface-400">{s.hint}</span>
+                <span className="text-[12.5px] text-surface-100">Chave da rede</span>
+                <span className="text-[11.5px] text-surface-400">
+                  Lê as métricas de todas as unidades da rede {rede.nome}. Contatos e negócios continuam só desta conta.
+                </span>
               </span>
             </label>
-          ))}
-        </fieldset>
+          </fieldset>
+        )}
 
         {pipelinesError && (
           <p className="flex items-start gap-1.5 text-[12px] text-surface-200" role="status" data-testid="api-keys-pipelines-error">
