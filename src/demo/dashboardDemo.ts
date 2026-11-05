@@ -64,6 +64,7 @@ export function heroHomeStats(at: HeroState): HomeStats {
     campaignReplyRate: 12,
     appointmentsScheduled: 18,
     appointmentsCancelled: 2,
+    appointmentsConfirmed: 14,
   } as HomeStats
 }
 

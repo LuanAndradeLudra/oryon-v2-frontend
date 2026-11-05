@@ -19,8 +19,8 @@ export type KpiId =
   | 'ads_leads_meta' | 'ads_leads_google' | 'ads_total_spend'
   | 'ads_avg_cpl' | 'ads_avg_roas' | 'ads_conversion_rate'
   | 'ads_qualified_rate' | 'ads_customer_rate'
-  // ── Clínica (agentes de WhatsApp: agendar/cancelar consulta) ────────────────
-  | 'appointments_scheduled' | 'appointments_cancelled'
+  // ── Clínica (agentes de WhatsApp: agendar/cancelar/confirmar consulta) ──────
+  | 'appointments_scheduled' | 'appointments_cancelled' | 'appointments_confirmed'
 
 export type KpiUnit = 'count' | 'percent' | 'seconds' | 'csat_score' | 'nps_score' | 'currency'
 
@@ -224,11 +224,14 @@ export const KPI_CATALOG: KpiDefinition[] = [
     help: 'Dos disparos entregues, quantos foram lidos (quem desligou a confirmação de leitura não aparece).' },
   { id: 'campaign_reply_rate',    label: 'Taxa de resposta',          category: 'Disparos',   unit: 'percent',    trendIsGood: 'up',
     help: 'Dos disparos entregues, quantos tiveram resposta do cliente.' },
-  // ── Clínica (agentes de WhatsApp: agendar/cancelar consulta) ────────────────
+  // ── Clínica (agentes de WhatsApp: agendar/cancelar/confirmar consulta) ──────
   { id: 'appointments_scheduled', label: 'Agendamentos marcados',     category: 'Clínica',    unit: 'count',      trendIsGood: 'up',
     help: 'Agendamentos que os agentes de IA marcaram no período.' },
   { id: 'appointments_cancelled', label: 'Cancelamentos',             category: 'Clínica',    unit: 'count',      trendIsGood: 'down',
     help: 'Agendamentos cancelados pelos agentes de IA no período.' },
+  // SCRUM-1456: só conta quando a IA confirmou de fato — "já estava confirmada" não entra.
+  { id: 'appointments_confirmed', label: 'Confirmações',              category: 'Clínica',    unit: 'count',      trendIsGood: 'up',
+    help: 'Consultas que os agentes de IA confirmaram no período.' },
 ]
 
 // R2-DASH-07: a faixa do mock 1b tem 5 KPIs — o padrão acompanha (o usuário
