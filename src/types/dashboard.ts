@@ -2,7 +2,8 @@
 
 export type DateRange = 'today' | '7d' | '30d' | 'month'
 
-export type KpiId =
+/** Indicadores fixos, calculados no `/home/stats` e `/home/snapshot`. */
+export type KpiIdFixo =
   | 'total_conversations' | 'active_conversations' | 'queued'
   | 'resolved' | 'abandoned' | 'resolution_rate' | 'abandon_rate'
   | 'first_response_time' | 'human_first_response' | 'avg_resolution_time' | 'sla_compliance'
@@ -22,12 +23,43 @@ export type KpiId =
   // ── Clínica (agentes de WhatsApp: agendar/cancelar/confirmar consulta) ──────
   | 'appointments_scheduled' | 'appointments_cancelled' | 'appointments_confirmed'
 
+/**
+ * SCRUM-1465: além dos fixos, as métricas do negócio publicadas para o cliente
+ * (`/home/metrics`) — a chave vem do servidor. As da clínica reaproveitam os
+ * ids dos cards fixos (`appointments_*`) e os substituem quando publicadas.
+ */
+export type KpiId = KpiIdFixo | (string & {})
+
 export type KpiUnit = 'count' | 'percent' | 'seconds' | 'csat_score' | 'nps_score' | 'currency'
+
+export type KpiCategoriaFixa = 'Atendimento' | 'Velocidade' | 'Qualidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing' | 'Clínica'
+/** SCRUM-1465: a métrica do negócio traz o próprio grupo (ex.: "Do seu negócio"). */
+export type KpiCategoria = KpiCategoriaFixa | (string & {})
+
+/** SCRUM-1465: o que só a métrica do negócio tem — estado, partes e a explicação. */
+export interface DadosDoNegocio {
+  /** `carregando` só existe na tela: o catálogo chegou e os valores ainda não. */
+  estado: 'ok' | 'sem_dado' | 'base_pequena' | 'periodo_curto' | 'erro' | 'tempo_esgotado' | 'carregando'
+  partes: Record<string, number>
+  /** `valor` na mesma unidade do cartão (moeda já em reais). */
+  quebra: Array<{ chave: string | null; rotulo: string; valor: number | null; partes: Record<string, number> }>
+  /** "Como calculamos", em português, sem LLM. */
+  explicacao: string
+  selos: Array<'estimado' | 'pela_ia'>
+  /** Métrica de estado ("agora"), não do período (A17). */
+  deEstado: boolean
+  /** Na conversão: as datas da coorte que o número cobre (A6). */
+  janela: { inicio: string; fim: string } | null
+  /** ISO do primeiro dado que a métrica usa; `null` = nenhum ainda. */
+  desde: string | null
+  versao: number
+  publicadaEm: string | null
+}
 
 export interface KpiDefinition {
   id: KpiId
   label: string
-  category: 'Atendimento' | 'Velocidade' | 'Qualidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing' | 'Clínica'
+  category: KpiCategoria
   unit: KpiUnit
   trendIsGood: 'up' | 'down' | 'neutral' // whether an increasing trend is good
   /** PL-C2-FAR-3 (P14): false quando `DashboardPage.fetchDashboard` não tem
@@ -55,6 +87,8 @@ export interface KpiMetric extends KpiDefinition {
   trendUnit?: '%' | 'pp'
   /** DC-5: valor por dia do período (mais antigo → mais novo); vazio = sem série. */
   sparkline: number[]
+  /** SCRUM-1465: presente só nas métricas do negócio (vindas do servidor). */
+  negocio?: DadosDoNegocio
 }
 
 export interface VolumeDataPoint {
@@ -236,7 +270,7 @@ export const KPI_CATALOG: KpiDefinition[] = [
 
 // R2-DASH-07: a faixa do mock 1b tem 5 KPIs — o padrão acompanha (o usuário
 // escolhe mais no "Personalizar"; cada 5 viram uma nova linha da mesma faixa).
-export const DEFAULT_KPI_SLOTS: KpiId[] = [
+export const DEFAULT_KPI_SLOTS: KpiIdFixo[] = [
   'active_conversations',
   'resolved',
   'first_response_time',

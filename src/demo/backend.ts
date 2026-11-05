@@ -244,6 +244,9 @@ export function instalarBackendDemo() {
   // ── Dashboard (dados fictícios em dashboardDemo.ts) ─────────────────────────
   rota('home/stats', eq('get', '/home/stats'), () => ({ data: heroHomeStats(estado) }))
   rota('home/snapshot', eq('get', '/home/snapshot'), () => ({ data: heroHomeSnapshot(estado) }))
+  // SCRUM-1465: métricas do negócio — a demonstração não publica nenhuma (ficam os cards fixos).
+  rota('home/metrics', eq('get', '/home/metrics'), () => ({ data: { escopo: 'empresa', metricas: [] } }))
+  rota('home/metrics/catalog', eq('get', '/home/metrics/catalog'), () => ({ data: { escopo: 'empresa', metricas: [] } }))
   // Revisão das métricas (M5): resumo da fila; vazio = a aba Agora conta pela lista da demonstração.
   rota('home/queue', eq('get', '/home/queue'), () => ({ data: { maiorEsperaMin: 18, janelaFechando: 1, janelaFechada: 0 } }))
   rota('activity-feed', eq('get', '/activity-feed'), () => ({ data: { data: heroActivityFeed(estado) } }))
