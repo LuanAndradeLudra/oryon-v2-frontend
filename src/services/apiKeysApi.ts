@@ -1,10 +1,13 @@
 // ─── Chaves da API pública (SCRUM-1219) ─────────────────────────────────────
 // Backend: /api-keys (JWT, admin ou dono). O segredo completo só vem na
-// resposta de criação — nunca é listado de novo.
+// resposta de criação ou de troca — nunca é listado de novo.
 import api from './api'
 import { apiBaseUrl } from '@/config/env'
 
 export type ApiKeyScope = 'contacts:read' | 'contacts:write' | 'deals:read' | 'deals:write'
+
+/** Revogada > vencida > ativa (o backend decide; a tela só mostra). */
+export type ApiKeyStatus = 'active' | 'revoked' | 'expired'
 
 export interface ApiKey {
   id: string
@@ -16,14 +19,32 @@ export interface ApiKey {
   createdByName: string | null
   lastUsedAt: string | null
   revokedAt: string | null
+  /** Fim da validade (ou da janela de troca); null = sem validade. */
+  expiresAt: string | null
+  /** Chave que substituiu esta numa troca; enquanto a janela corre, esta continua ativa. */
+  replacedByKeyId: string | null
   createdAt: string
-  status: 'active' | 'revoked'
+  status: ApiKeyStatus
 }
+
+/** Limites do backend (dto/create-api-key.dto.ts). */
+export const MAX_KEY_VALIDITY_DAYS = 730
+export const DEFAULT_ROTATION_OVERLAP_DAYS = 7
+export const MAX_ROTATION_OVERLAP_DAYS = 30
 
 export interface CreateApiKeyPayload {
   name: string
   scopes: ApiKeyScope[]
   pipelineIds?: string[] | null
+  /** 1 a 730; ausente = sem validade. */
+  expiresInDays?: number
+}
+
+export interface RotateApiKeyPayload {
+  /** 0 a 30 (padrão do backend: 7). Quanto tempo a chave antiga ainda vale. */
+  overlapDays?: number
+  /** Validade da chave nova; ausente = a mesma duração da antiga (ou sem validade). */
+  expiresInDays?: number
 }
 
 export const apiKeysApi = {
@@ -33,6 +54,11 @@ export const apiKeysApi = {
   },
   async create(payload: CreateApiKeyPayload): Promise<{ key: ApiKey; secret: string }> {
     const { data } = await api.post<{ key: ApiKey; secret: string }>('/api-keys', payload)
+    return data
+  },
+  /** Cria a chave nova (mesmo nome, escopos e funis) e encurta a validade da antiga. */
+  async rotate(id: string, payload: RotateApiKeyPayload): Promise<{ key: ApiKey; secret: string; previous: ApiKey }> {
+    const { data } = await api.post<{ key: ApiKey; secret: string; previous: ApiKey }>(`/api-keys/${id}/rotate`, payload)
     return data
   },
   async revoke(id: string): Promise<ApiKey> {

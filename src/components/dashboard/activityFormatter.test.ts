@@ -6,6 +6,12 @@ describe('formatActivity — API pública v1', () => {
   it('criação e revogação de chave', () => {
     expect(formatActivity({ action: 'api_key_created', subject: 'n8n' })).toBe('Chave de API "n8n" criada')
     expect(formatActivity({ action: 'api_key_revoked', subject: 'n8n' })).toBe('Chave de API "n8n" revogada')
+    expect(formatActivity({ action: 'api_key_rotated', subject: 'n8n' })).toBe('Chave de API "n8n" trocada')
+  })
+
+  it('pico de leituras em português', () => {
+    expect(formatActivity({ action: 'public_api_read_spike', subject: 'leituras da API v1' }))
+      .toBe('Leituras pela API muito acima do normal')
   })
 
   it('escrita pela API com rota e, se houver, o erro', () => {
@@ -29,5 +35,14 @@ describe('formatActivity — API pública v1', () => {
       .toBe('Chamada à API recusada (muitas chaves inválidas do mesmo IP)')
     expect(formatActivity({ action: 'public_api_denied', subject: '', details: { code: 'subscription_suspended' } }))
       .toBe('Chamada à API recusada (assinatura suspensa)')
+  })
+
+  it('recusa por assinatura traduz cada status do backend (B2: subscription_<status>)', () => {
+    const recusa = (code: string) => formatActivity({ action: 'public_api_denied', subject: '', details: { code } })
+    expect(recusa('subscription_paused')).toBe('Chamada à API recusada (assinatura pausada)')
+    expect(recusa('subscription_canceled')).toBe('Chamada à API recusada (assinatura cancelada)')
+    // Status novo que a tela ainda não conhece: frase genérica, nunca o código cru.
+    expect(recusa('subscription_ended')).toBe('Chamada à API recusada (assinatura inativa)')
+    expect(recusa('codigo_desconhecido')).toBe('Chamada à API recusada')
   })
 })

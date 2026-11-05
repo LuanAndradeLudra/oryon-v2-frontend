@@ -1,14 +1,17 @@
-// API e integrações (SCRUM-1219) — chaves da API pública v1.
+// Chaves de API (SCRUM-1219) — chaves da API pública v1.
 // Backend: /api-keys (admin ou dono). A API só funciona para o workspace com
 // `FF_PUBLIC_API`, ligado pela Oryon; sem o flag a tela explica isso.
-// O segredo completo aparece UMA vez, logo depois de criar.
+// O segredo completo aparece UMA vez, logo depois de criar ou de trocar.
+// Validade e troca com sobreposição (C3, 04/11): a chave pode vencer; trocar
+// cria uma nova com as mesmas permissões e a antiga vale mais alguns dias.
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { BookOpen, Check, Copy, KeyRound, Lock, Plus, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, BookOpen, Check, Clock, Copy, KeyRound, Lock, Plus, RefreshCw, ShieldAlert } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { Button } from '@/components/ui/Button'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -19,7 +22,10 @@ import { isAdminTier } from '@/lib/roleHelpers'
 import { getApiErrorMessage } from '@/lib/utils'
 import { publicApiEnabled } from '@/config/featureFlags'
 import { pipelinesApi } from '@/services/api'
-import { apiKeysApi, apiDocsUrl, type ApiKey, type ApiKeyScope } from '@/services/apiKeysApi'
+import {
+  apiKeysApi, apiDocsUrl, DEFAULT_ROTATION_OVERLAP_DAYS,
+  type ApiKey, type ApiKeyScope, type ApiKeyStatus,
+} from '@/services/apiKeysApi'
 
 const SCOPE_OPTIONS: Array<{ value: ApiKeyScope; label: string; hint: string }> = [
   { value: 'contacts:read', label: 'Ler contatos', hint: 'Contatos, etiquetas e campos personalizados' },
@@ -29,10 +35,44 @@ const SCOPE_OPTIONS: Array<{ value: ApiKeyScope; label: string; hint: string }> 
 ]
 const SCOPE_LABEL = new Map(SCOPE_OPTIONS.map((s) => [s.value as string, s.label]))
 
+/** Validade na criação (o backend aceita 1 a 730 dias; vazio = sem validade). */
+const VALIDITY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'Sem validade' },
+  { value: '30', label: '30 dias' },
+  { value: '90', label: '90 dias' },
+  { value: '180', label: '180 dias' },
+  { value: '365', label: '1 ano (365 dias)' },
+]
+/** Quanto tempo a chave antiga ainda vale depois da troca (0 a 30; padrão 7). */
+const OVERLAP_OPTIONS: Array<{ value: number; label: string }> = [
+  { value: 0, label: 'Para de valer agora' },
+  { value: 1, label: '1 dia' },
+  { value: 3, label: '3 dias' },
+  { value: 7, label: '7 dias (recomendado)' },
+  { value: 14, label: '14 dias' },
+  { value: 30, label: '30 dias' },
+]
+
+const DAY_MS = 24 * 60 * 60 * 1000
+/** "Vence em…" ganha destaque quando falta uma semana ou menos. */
+const EXPIRING_SOON_DAYS = 7
+const MAX_ACTIVE_KEYS = 20
+
 const dateFmt = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
 const fmt = (iso: string | null) => (iso ? dateFmt.format(new Date(iso)) : '—')
+const maskedPrefix = (prefix: string) => `oryon_live_${prefix}…`
+
+/** Dias até `iso`, ao dia mais próximo (3 dias e 1 minuto = "3 dias"); 0 = menos de 24 h. */
+function daysUntil(iso: string, now = Date.now()): number {
+  const ms = new Date(iso).getTime() - now
+  return ms < DAY_MS ? 0 : Math.round(ms / DAY_MS)
+}
+const diasTxt = (n: number) => (n === 1 ? '1 dia' : `${n} dias`)
+
+const STATUS_ORDER: Record<ApiKeyStatus, number> = { active: 0, expired: 1, revoked: 2 }
 
 interface PipelineOption { id: string; name: string }
+interface ShownSecret { title: string; secret: string; previous?: ApiKey }
 
 export function ApiKeysSettings() {
   const { user, featureFlags } = useAuth()
@@ -45,7 +85,8 @@ export function ApiKeysSettings() {
   const [pipelines, setPipelines] = useState<PipelineOption[]>([])
   const [pipelinesError, setPipelinesError] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [created, setCreated] = useState<{ name: string; secret: string } | null>(null)
+  const [shown, setShown] = useState<ShownSecret | null>(null)
+  const [rotating, setRotating] = useState<ApiKey | null>(null)
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
   const [revokeBusy, setRevokeBusy] = useState(false)
 
@@ -61,8 +102,8 @@ export function ApiKeysSettings() {
 
   useEffect(reload, [reload])
 
-  // "Último uso" muda enquanto a tela está aberta (a integração chama a API):
-  // ao voltar para a aba, atualiza a lista em silêncio, sem o esqueleto.
+  // "Último uso" e a validade mudam enquanto a tela está aberta: ao voltar
+  // para a aba, atualiza a lista em silêncio, sem o esqueleto.
   useEffect(() => {
     if (!enabled || !canManage) return
     const refresh = () => {
@@ -87,19 +128,24 @@ export function ApiKeysSettings() {
   }, [enabled, canManage])
 
   const pipelineName = useMemo(() => new Map(pipelines.map((p) => [p.id, p.name])), [pipelines])
+  const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows])
   const activeCount = rows.filter((r) => r.status === 'active').length
-  // Ativas primeiro (são as que importam); dentro de cada grupo, a ordem do backend (mais nova antes).
+  // Ativas primeiro (são as que importam), depois vencidas e revogadas; dentro
+  // de cada grupo, a ordem do backend (mais nova antes — sort é estável).
   const sortedRows = useMemo(
-    () => [...rows.filter((r) => r.status === 'active'), ...rows.filter((r) => r.status !== 'active')],
+    () => [...rows].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]),
     [rows],
   )
+
+  /** Troca a linha pela versão do servidor sem perder o nome de quem criou. */
+  const mergeRow = (updated: ApiKey) =>
+    setRows((rs) => rs.map((r) => (r.id === updated.id ? { ...r, ...updated, createdByName: updated.createdByName ?? r.createdByName } : r)))
 
   async function confirmRevoke() {
     if (!revoking) return
     setRevokeBusy(true)
     try {
-      const updated = await apiKeysApi.revoke(revoking.id)
-      setRows((rs) => rs.map((r) => (r.id === updated.id ? { ...r, ...updated, createdByName: r.createdByName } : r)))
+      mergeRow(await apiKeysApi.revoke(revoking.id))
       showToast(`Chave "${revoking.name}" revogada.`)
       setRevoking(null)
     } catch (e) {
@@ -114,7 +160,7 @@ export function ApiKeysSettings() {
       href={apiDocsUrl()}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-brand-400 hover:underline"
+      className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-accent-dark hover:underline"
     >
       <BookOpen className="w-3.5 h-3.5" /> Documentação da API
     </a>
@@ -123,7 +169,7 @@ export function ApiKeysSettings() {
   return (
     <div>
       <SectionHeader
-        title="API e integrações"
+        title="Chaves de API"
         description="Chaves para sistemas externos (n8n, ERP, site) lerem e gravarem contatos e negócios pela API da Oryon."
         action={enabled && canManage ? (
           <Button
@@ -141,16 +187,16 @@ export function ApiKeysSettings() {
       {!canManage ? (
         <div className="flex items-start gap-3 p-4 rounded-lg border border-surface-700 bg-surface-800 text-sm">
           <Lock className="w-4 h-4 text-surface-500 flex-shrink-0 mt-0.5" />
-          <p className="text-surface-400">Só administradores e o dono do workspace gerenciam chaves de API.</p>
+          <p className="text-surface-300">Só administradores e o dono do workspace gerenciam chaves de API.</p>
         </div>
       ) : !enabled ? (
         <div className="flex items-start gap-3 p-4 rounded-lg border border-surface-700 bg-surface-800 text-sm" data-testid="api-keys-disabled">
-          <KeyRound className="w-4 h-4 text-surface-500 flex-shrink-0 mt-0.5" />
-          <div className="flex flex-col gap-1.5">
-            <p className="text-surface-200 font-medium">A API ainda não está liberada para este workspace</p>
-            <p className="text-surface-400">
+          <KeyRound className="w-4 h-4 text-accent-dark flex-shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <p className="text-surface-100 font-medium">A API ainda não está liberada para este workspace</p>
+            <p className="text-surface-300">
               A liberação é feita pela equipe da Oryon. Fale com seu gerente de conta ou escreva para{' '}
-              <a href="mailto:contato@oryon.com.br" className="text-brand-400 hover:underline">contato@oryon.com.br</a>.
+              <a href="mailto:contato@oryon.com.br" className="text-accent-dark font-medium hover:underline break-words">contato@oryon.com.br</a>.
             </p>
             {docsLink}
           </div>
@@ -170,42 +216,20 @@ export function ApiKeysSettings() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs text-surface-400">{activeCount} de 20 chaves ativas</span>
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
+            <span className="text-xs text-surface-300">{activeCount} de {MAX_ACTIVE_KEYS} chaves ativas</span>
             {docsLink}
           </div>
           <ul className="rounded-lg border border-surface-700 divide-y divide-surface-700">
             {sortedRows.map((k) => (
-              <li key={k.id} className="px-3.5 py-3 flex items-start gap-3" data-testid="api-key-row">
-                <div className="min-w-0 flex-1 flex flex-col gap-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[13px] font-semibold text-surface-100">{k.name}</span>
-                    {k.status === 'active' ? (
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-brand-500/10 text-brand-400">Ativa</span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-surface-700 text-surface-400">
-                        Revogada em {fmt(k.revokedAt)}
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-mono text-[12px] text-surface-400 break-all">oryon_live_{k.prefix}…</span>
-                  <span className="text-[12px] text-surface-300">
-                    {k.scopes.map((s) => SCOPE_LABEL.get(s) ?? s).join(' · ')}
-                    <span className="text-surface-500">
-                      {' — funis: '}
-                      {k.pipelineIds ? k.pipelineIds.map((id) => pipelineName.get(id) ?? 'Funil removido').join(', ') : 'todos'}
-                    </span>
-                  </span>
-                  <span className="text-[11.5px] text-surface-500">
-                    Criada por {k.createdByName ?? '—'} em {fmt(k.createdAt)} · Último uso: {k.lastUsedAt ? fmt(k.lastUsedAt) : 'nunca'}
-                  </span>
-                </div>
-                {k.status === 'active' && (
-                  <Button size="sm" variant="neutral" className="h-7 px-2.5 text-xs flex-shrink-0" onClick={() => setRevoking(k)}>
-                    Revogar
-                  </Button>
-                )}
-              </li>
+              <KeyRow
+                key={k.id}
+                k={k}
+                replacement={k.replacedByKeyId ? byId.get(k.replacedByKeyId) : undefined}
+                pipelineName={pipelineName}
+                onRotate={() => setRotating(k)}
+                onRevoke={() => setRevoking(k)}
+              />
             ))}
           </ul>
         </>
@@ -219,24 +243,133 @@ export function ApiKeysSettings() {
           onCreated={(key, secret) => {
             setRows((rs) => [key, ...rs])
             setCreating(false)
-            setCreated({ name: key.name, secret })
+            setShown({ title: `Chave "${key.name}" criada`, secret })
           }}
         />
       )}
 
-      {created && <SecretModal name={created.name} secret={created.secret} onClose={() => setCreated(null)} />}
+      {rotating && (
+        <RotateKeyModal
+          apiKey={rotating}
+          onClose={() => setRotating(null)}
+          onRotated={(key, secret, previous) => {
+            setRows((rs) => [key, ...rs.map((r) => (r.id === previous.id ? { ...r, ...previous, createdByName: previous.createdByName ?? r.createdByName } : r))])
+            setRotating(null)
+            setShown({ title: `Chave "${key.name}" trocada`, secret, previous })
+          }}
+        />
+      )}
+
+      {shown && <SecretModal {...shown} onClose={() => setShown(null)} />}
 
       <ConfirmModal
         open={!!revoking}
         onClose={() => setRevoking(null)}
         onConfirm={() => void confirmRevoke()}
         title="Revogar chave?"
-        description={`Os sistemas que usam "${revoking?.name ?? ''}" passam a receber erro 401 em até 30 segundos. Não dá para desfazer: para voltar, crie uma chave nova.`}
+        description={`Os sistemas que usam "${revoking?.name ?? ''}" (${revoking ? maskedPrefix(revoking.prefix) : ''}) passam a receber erro 401 em até 30 segundos. Não dá para desfazer: para voltar, crie uma chave nova.`}
         confirmLabel="Revogar"
         danger
         loading={revokeBusy}
       />
     </div>
+  )
+}
+
+function StatusBadge({ k }: { k: ApiKey }) {
+  const base = 'inline-flex items-center h-5 px-[7px] rounded-[6px] text-[11px] font-semibold whitespace-nowrap'
+  if (k.status === 'active') {
+    return <span className={`${base} bg-accent-soft text-accent-dark`}>{k.replacedByKeyId ? 'Em troca' : 'Ativa'}</span>
+  }
+  return (
+    <span className={`${base} bg-[var(--sf2)] border border-surface-700 text-surface-300`}>
+      {k.status === 'revoked' ? `Revogada em ${fmt(k.revokedAt)}` : `Expirada em ${fmt(k.expiresAt)}`}
+    </span>
+  )
+}
+
+/** Linha de validade: "Vence em…", "Sem validade", ou a ligação com a chave que a substituiu. */
+function ValidityLine({ k, replacement }: { k: ApiKey; replacement?: ApiKey }) {
+  if (k.status === 'revoked') return null
+  if (k.replacedByKeyId) {
+    const nova = replacement ? `"${replacement.name}" (${maskedPrefix(replacement.prefix)})` : 'uma chave nova'
+    return (
+      <span className="inline-flex items-start gap-1.5 text-[12px] text-surface-300" data-testid="api-key-replaced">
+        <RefreshCw className="w-3.5 h-3.5 mt-px flex-shrink-0 text-accent-dark" />
+        <span className="min-w-0 break-words">
+          Substituída por {nova} · {k.status === 'active' ? 'vale até' : 'valeu até'} {fmt(k.expiresAt)}
+        </span>
+      </span>
+    )
+  }
+  if (k.status === 'expired') {
+    return (
+      <span className="text-[12px] text-surface-300">Parou de funcionar em {fmt(k.expiresAt)}. Crie uma chave nova para voltar.</span>
+    )
+  }
+  if (!k.expiresAt) return <span className="text-[12px] text-surface-400">Sem validade</span>
+  const dias = daysUntil(k.expiresAt)
+  const soon = dias <= EXPIRING_SOON_DAYS
+  return (
+    <span className="inline-flex items-start gap-1.5 text-[12px] text-surface-300" data-testid="api-key-expiry">
+      {soon
+        ? <AlertTriangle className="w-3.5 h-3.5 mt-px flex-shrink-0 text-warning" />
+        : <Clock className="w-3.5 h-3.5 mt-px flex-shrink-0 text-surface-400" />}
+      <span className={soon ? 'font-medium text-surface-100' : undefined}>
+        Vence em {fmt(k.expiresAt)} ({dias === 0 ? 'menos de 1 dia' : diasTxt(dias)}){soon ? ' — troque a chave antes disso' : ''}
+      </span>
+    </span>
+  )
+}
+
+function KeyRow({ k, replacement, pipelineName, onRotate, onRevoke }: {
+  k: ApiKey
+  replacement?: ApiKey
+  pipelineName: Map<string, string>
+  onRotate: () => void
+  onRevoke: () => void
+}) {
+  const inactive = k.status !== 'active'
+  return (
+    <li className="px-3.5 py-3 flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-3" data-testid="api-key-row">
+      <div className="min-w-0 flex-1 flex flex-col gap-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`text-[13px] font-semibold break-words min-w-0 ${inactive ? 'text-surface-300' : 'text-surface-100'}`}>{k.name}</span>
+          <StatusBadge k={k} />
+        </div>
+        <span className="font-mono text-[12px] text-surface-400 break-all">{maskedPrefix(k.prefix)}</span>
+        <span className="text-[12px] text-surface-300 break-words">
+          {k.scopes.map((s) => SCOPE_LABEL.get(s) ?? s).join(' · ')}
+          <span className="text-surface-400">
+            {' — funis: '}
+            {k.pipelineIds ? k.pipelineIds.map((id) => pipelineName.get(id) ?? 'Funil removido').join(', ') : 'todos'}
+          </span>
+        </span>
+        <ValidityLine k={k} replacement={replacement} />
+        <span className="text-[11.5px] text-surface-400">
+          Criada por {k.createdByName ?? '—'} em {fmt(k.createdAt)} · Último uso: {k.lastUsedAt ? fmt(k.lastUsedAt) : 'nunca'}
+        </span>
+      </div>
+      {k.status === 'active' && (
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Em troca: a nova já existe — só dá para encerrar a antiga antes da hora. */}
+          {!k.replacedByKeyId && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-7 px-2.5 text-xs"
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+              onClick={onRotate}
+            >
+              Trocar chave
+            </Button>
+          )}
+          <Button size="sm" variant="neutral" className="h-7 px-2.5 text-xs" onClick={onRevoke}>
+            Revogar
+          </Button>
+        </div>
+      )}
+    </li>
   )
 }
 
@@ -250,6 +383,7 @@ function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
   const [scopes, setScopes] = useState<ApiKeyScope[]>(['contacts:read', 'contacts:write'])
   const [restrict, setRestrict] = useState(false)
   const [pipelineIds, setPipelineIds] = useState<string[]>([])
+  const [validity, setValidity] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -265,6 +399,7 @@ function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
         name: name.trim(),
         scopes,
         pipelineIds: restrict ? pipelineIds : null,
+        ...(validity ? { expiresInDays: Number(validity) } : {}),
       })
       onCreated(key, secret)
     } catch (e) {
@@ -305,15 +440,16 @@ function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
               />
               <span className="flex flex-col">
                 <span className="text-[12.5px] text-surface-100">{s.label}</span>
-                <span className="text-[11.5px] text-surface-500">{s.hint}</span>
+                <span className="text-[11.5px] text-surface-400">{s.hint}</span>
               </span>
             </label>
           ))}
         </fieldset>
 
         {pipelinesError && (
-          <p className="text-[12px] text-warning" role="status" data-testid="api-keys-pipelines-error">
-            Não foi possível carregar os funis: esta chave valerá para todos os funis. Para restringir, feche e tente de novo.
+          <p className="flex items-start gap-1.5 text-[12px] text-surface-200" role="status" data-testid="api-keys-pipelines-error">
+            <AlertTriangle className="w-3.5 h-3.5 mt-px flex-shrink-0 text-warning" />
+            <span>Não foi possível carregar os funis: esta chave valerá para todos os funis. Para restringir, feche e tente de novo.</span>
           </p>
         )}
         {pipelines.length > 0 && (
@@ -331,12 +467,101 @@ function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
                     <span className="text-[12.5px] text-surface-300">{p.name}</span>
                   </label>
                 ))}
-                <p className="text-[11.5px] text-surface-500">Contatos não são restringidos por funil.</p>
+                <p className="text-[11.5px] text-surface-400">Contatos não são restringidos por funil.</p>
               </div>
             )}
           </fieldset>
         )}
 
+        <FormField
+          label="Validade"
+          hint={validity
+            ? 'Depois desse prazo a chave para de funcionar. Troque-a antes de vencer, sem queda.'
+            : 'A chave vale até ser revogada. Uma validade obriga a troca periódica, o que é mais seguro.'}
+        >
+          <Select value={validity} onChange={(e) => setValidity(e.target.value)} data-testid="api-keys-validity">
+            {VALIDITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </Select>
+        </FormField>
+
+        {error && <p className="text-[12.5px] text-danger" role="alert">{error}</p>}
+      </div>
+    </Modal>
+  )
+}
+
+function RotateKeyModal({ apiKey, onClose, onRotated }: {
+  apiKey: ApiKey
+  onClose: () => void
+  onRotated: (key: ApiKey, secret: string, previous: ApiKey) => void
+}) {
+  const [overlap, setOverlap] = useState(DEFAULT_ROTATION_OVERLAP_DAYS)
+  const [validity, setValidity] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Sem escolha, o backend dá à nova a mesma duração da atual (ou nenhuma).
+  const sameDurationDays = apiKey.expiresAt
+    ? Math.max(1, Math.round((new Date(apiKey.expiresAt).getTime() - new Date(apiKey.createdAt).getTime()) / DAY_MS))
+    : null
+  const sameLabel = sameDurationDays ? `Mesma da atual (${diasTxt(sameDurationDays)})` : 'Sem validade (igual à atual)'
+  // A janela nunca estica a validade da antiga: vale o que vier primeiro.
+  const expiresFirst = apiKey.expiresAt && overlap > 0 && daysUntil(apiKey.expiresAt) < overlap
+
+  async function submit() {
+    setSubmitting(true)
+    setError(null)
+    try {
+      const { key, secret, previous } = await apiKeysApi.rotate(apiKey.id, {
+        overlapDays: overlap,
+        ...(validity ? { expiresInDays: Number(validity) } : {}),
+      })
+      onRotated(key, secret, previous)
+    } catch (e) {
+      setError(getApiErrorMessage(e, 'Não foi possível trocar a chave.'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={submitting ? () => {} : onClose}
+      className="max-w-[480px]"
+      title={`Trocar a chave "${apiKey.name}"`}
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="neutral" onClick={onClose} disabled={submitting}>Cancelar</Button>
+          <Button onClick={() => void submit()} loading={submitting} data-testid="api-keys-rotate-confirm">
+            Trocar chave
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <p className="text-[12.5px] text-surface-300">
+          Uma chave nova é criada com o mesmo nome, permissões e funis. A atual ({maskedPrefix(apiKey.prefix)}) continua
+          funcionando pelo prazo abaixo, para você atualizar o sistema sem queda.
+        </p>
+        <FormField
+          label="A chave atual ainda vale por"
+          hint={overlap === 0
+            ? 'Os sistemas que usam a chave atual passam a receber erro 401 em até 30 segundos.'
+            : expiresFirst
+              ? `A chave atual já vence antes disso, em ${fmt(apiKey.expiresAt)}; vale essa data.`
+              : 'Depois disso, só a chave nova funciona.'}
+        >
+          <Select value={String(overlap)} onChange={(e) => setOverlap(Number(e.target.value))} data-testid="api-keys-overlap">
+            {OVERLAP_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </Select>
+        </FormField>
+        <FormField label="Validade da chave nova">
+          <Select value={validity} onChange={(e) => setValidity(e.target.value)} data-testid="api-keys-rotate-validity">
+            <option value="">{sameLabel}</option>
+            {VALIDITY_OPTIONS.filter((o) => o.value).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </Select>
+        </FormField>
         {error && <p className="text-[12.5px] text-danger" role="alert">{error}</p>}
       </div>
     </Modal>
@@ -345,7 +570,7 @@ function CreateKeyModal({ pipelines, pipelinesError, onClose, onCreated }: {
 
 const KEEP_OPEN = () => {}
 
-function SecretModal({ name, secret, onClose }: { name: string; secret: string; onClose: () => void }) {
+function SecretModal({ title, secret, previous, onClose }: ShownSecret & { onClose: () => void }) {
   const [copied, setCopied] = useState(false)
 
   async function copy() {
@@ -365,7 +590,7 @@ function SecretModal({ name, secret, onClose }: { name: string; secret: string; 
       open
       onClose={KEEP_OPEN}
       className="max-w-[520px]"
-      title={`Chave "${name}" criada`}
+      title={title}
       footer={
         <div className="flex justify-end">
           <Button onClick={onClose}>Já guardei a chave</Button>
@@ -373,19 +598,29 @@ function SecretModal({ name, secret, onClose }: { name: string; secret: string; 
       }
     >
       <div className="flex flex-col gap-3">
-        <div className="flex items-start gap-2.5 p-3 rounded-lg border border-warning/30 bg-warning/10 text-[12.5px] text-surface-200">
+        <div className="flex items-start gap-2.5 p-3 rounded-lg border border-warning/30 bg-warning/10 text-[12.5px] text-surface-100">
           <ShieldAlert className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
           <p>Copie e guarde esta chave agora: ela <strong>não será exibida de novo</strong>. Quem tiver a chave age com o poder de administrador nas permissões escolhidas.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col min-[420px]:flex-row min-[420px]:items-center gap-2">
           <code className="flex-1 min-w-0 break-all rounded-sm border border-[var(--bd2)] bg-surface-800 px-2.5 py-2 font-mono text-[12px] text-surface-100 select-all" data-testid="api-key-secret">
             {secret}
           </code>
-          <Button variant="neutral" size="sm" onClick={() => void copy()} leftIcon={copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}>
+          <Button variant="neutral" size="sm" className="self-end min-[420px]:self-auto" onClick={() => void copy()} leftIcon={copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}>
             {copied ? 'Copiada' : 'Copiar'}
           </Button>
         </div>
-        <p className="text-[11.5px] text-surface-500">
+        {previous && (
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-accent-soft text-[12.5px] text-surface-100" data-testid="api-key-previous-until">
+            <Clock className="w-4 h-4 text-accent-dark flex-shrink-0 mt-0.5" />
+            <p>
+              {previous.status === 'active'
+                ? <>A chave anterior ({maskedPrefix(previous.prefix)}) continua valendo até <strong>{fmt(previous.expiresAt)}</strong>. Atualize o sistema antes disso.</>
+                : <>A chave anterior ({maskedPrefix(previous.prefix)}) já parou de funcionar. Atualize o sistema agora.</>}
+            </p>
+          </div>
+        )}
+        <p className="text-[11.5px] text-surface-400">
           Use no header <code className="font-mono">Authorization: Bearer &lt;chave&gt;</code>.
         </p>
       </div>

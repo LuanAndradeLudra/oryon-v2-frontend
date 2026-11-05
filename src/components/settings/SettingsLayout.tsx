@@ -148,8 +148,8 @@ export const SETTINGS_NAV: NavDomain[] = [
         ],
       },
       {
-        // Mock 5b: "Integrações" é sub-grupo de Automação (Conectores dentro;
-        // Webhooks e Chaves de API do mock não têm rota hoje). Breadcrumb do
+        // Mock 5b: "Integrações" é sub-grupo de Automação (Conectores e Chaves
+        // de API dentro; Webhooks do mock ainda não tem rota). Breadcrumb do
         // mock: "Automação / Integrações / Conectores".
         label: 'Integrações',
         items: [
@@ -158,8 +158,10 @@ export const SETTINGS_NAV: NavDomain[] = [
           // igual ao guard do SettingsPage). D12: escondido pela flag
           // connectorsSelfService (isRouteVisible) até os itens de segurança da T6.
           { section: 'connectors',    label: 'Conectores',          ownerOnly: true },
-          // SCRUM-1219: chaves da API pública v1 — admin ou dono (igual ao @Roles do backend).
-          { section: 'api-keys',      label: 'API e integrações',   adminOnly: true },
+          // SCRUM-1219: chaves da API pública v1 — admin ou dono (igual ao @Roles
+          // do backend). Fica no menu mesmo sem FF_PUBLIC_API: a tela explica
+          // como pedir a liberação.
+          { section: 'api-keys',      label: 'Chaves de API',       adminOnly: true },
         ],
       },
     ],

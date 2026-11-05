@@ -48,7 +48,18 @@ const API_DENIAL: Record<string, string> = {
   rate_limited: 'limite de requisições',
   api_not_enabled: 'API não liberada',
   auth_blocked: 'muitas chaves inválidas do mesmo IP',
-  subscription_suspended: 'assinatura suspensa',
+}
+/** B2: `subscription_<status>` — status fora da lista positiva (active/trialing/past_due). */
+const SUBSCRIPTION_DENIAL: Record<string, string> = {
+  suspended: 'assinatura suspensa',
+  paused: 'assinatura pausada',
+  canceled: 'assinatura cancelada',
+}
+const apiDenial = (code: unknown): string => {
+  const c = String(code ?? '')
+  if (API_DENIAL[c]) return ` (${API_DENIAL[c]})`
+  if (c.startsWith('subscription_')) return ` (${SUBSCRIPTION_DENIAL[c.slice('subscription_'.length)] ?? 'assinatura inativa'})`
+  return ''
 }
 
 const FORMATTERS: Record<string, Formatter> = {
@@ -69,8 +80,12 @@ const FORMATTERS: Record<string, Formatter> = {
   // API pública v1 (SCRUM-1216) — o ator ("via API · <chave>") vai no rodapé.
   api_key_created:                 ({ s }) => `Chave de API ${q(s)} criada`,
   api_key_revoked:                 ({ s }) => `Chave de API ${q(s)} revogada`,
+  // C3: troca com sobreposição — a anterior vale até `previousExpiresAt`.
+  api_key_rotated:                 ({ s }) => `Chave de API ${q(s)} trocada`,
   public_api_write:                ({ d }) => `Escrita pela API${apiRoute(d)}${apiStatus(d)}`,
-  public_api_denied:               ({ d }) => `Chamada à API recusada${apiRoute(d)}${API_DENIAL[String(d.code)] ? ` (${API_DENIAL[String(d.code)]})` : ''}`,
+  public_api_denied:               ({ d }) => `Chamada à API recusada${apiRoute(d)}${apiDenial(d.code)}`,
+  // B4: alerta de volume (5x a média diária, piso 5000 registros).
+  public_api_read_spike:           () => `Leituras pela API muito acima do normal`,
   // Funis
   pipeline_created:                ({ s }) => `Funil ${q(s)} criado`,
   pipeline_updated:                ({ s }) => `Funil ${q(s)} atualizado`,
