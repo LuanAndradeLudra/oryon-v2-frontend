@@ -58,6 +58,7 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
   'pipeline-routing':  ['roteamento', 'funil', 'linha', 'canal'],
   billing:             ['plano', 'fatura', 'cobrança', 'pagamento', 'assinatura'],
   connectors:          ['integrações', 'integração', 'conectores', 'erp', 'api', 'feegow', 'doctoralia', 'webhook', 'skills', 'mcp'],
+  'api-keys':          ['api', 'chave', 'chaves', 'token', 'integração', 'n8n', 'zapier', 'make', 'webhook', 'desenvolvedor'],
   security:            ['segurança', 'sessões', 'logs de acesso', '2fa'],
   audit:               ['auditoria', 'logs', 'histórico', 'atividade'],
 }
@@ -157,6 +158,8 @@ export const SETTINGS_NAV: NavDomain[] = [
           // igual ao guard do SettingsPage). D12: escondido pela flag
           // connectorsSelfService (isRouteVisible) até os itens de segurança da T6.
           { section: 'connectors',    label: 'Conectores',          ownerOnly: true },
+          // SCRUM-1219: chaves da API pública v1 — admin ou dono (igual ao @Roles do backend).
+          { section: 'api-keys',      label: 'API e integrações',   adminOnly: true },
         ],
       },
     ],

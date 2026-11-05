@@ -1,4 +1,4 @@
-import { Megaphone, Zap, Sparkles, Pencil, Upload, Workflow, type LucideIcon } from 'lucide-react'
+import { Megaphone, Zap, Sparkles, Pencil, Upload, Workflow, KeyRound, type LucideIcon } from 'lucide-react'
 import type { Deal, DealOriginKind, DealMovedByKind } from '@/types'
 
 /**
@@ -28,6 +28,8 @@ const ORIGIN_BASE: Record<DealOriginKind, { label: string; icon: LucideIcon }> =
   // próprio; só a manual colidia, e é justamente a maioria.
   manual: { label: 'Manual', icon: Pencil },
   import: { label: 'Importação', icon: Upload },
+  // SCRUM-1216: criado pela API pública v1 (chave de API de um sistema externo).
+  api: { label: 'Via API', icon: KeyRound },
 }
 
 /** Origem do registro. Backend anterior ao épico (sem `originKind`) → deriva de `createdByKind`. */
