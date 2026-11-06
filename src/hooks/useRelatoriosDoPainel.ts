@@ -4,7 +4,8 @@ import { formatActivity, pickActivityType } from '@/components/dashboard/activit
 import { montarSnapshot } from '@/lib/snapshotDoPainel'
 import { juntarMetricasDoNegocio, type MetricaDoCatalogo, type RespostaDasMetricas, type RespostaDoCatalogo } from '@/lib/metricasDoNegocio'
 import type { ActivityEvent, DashboardSnapshot } from '@/types/dashboard'
-import { chaveDoPeriodo, paramsDoPeriodo, periodoDoEco, type Periodo } from '@/lib/periodoDoPainel'
+import { chaveDoPeriodo, paramsDoPeriodo, periodoDoEco, periodoIncluiHoje, type Periodo } from '@/lib/periodoDoPainel'
+import { connectSocket } from '@/services/socket'
 import type { HomeStats } from '@/types'
 
 // Row shape returned by GET /activity-feed (mirrors the public shape from
@@ -53,6 +54,14 @@ function mapActivityFeed(rows: ActivityFeedApiRow[]): ActivityEvent[] {
  * services/api.ts (uma tentativa; o retry de timeout já saiu no PL-C3-FAR-1).
  */
 const TETO_MS = 15_000
+
+/**
+ * Tempo real da aba (06/11): o backend avisa `metricas:mudou` (só a versão,
+ * nenhum número) e guarda a conta por versão, refeita no máximo a cada 30 s.
+ * A aba relê no mesmo ritmo: no máximo uma vez a cada 30 s.
+ */
+export const EVENTO_METRICAS = 'metricas:mudou'
+export const MIN_ENTRE_RECARGAS_AO_VIVO_MS = 30_000
 
 function comTeto<T>(p: Promise<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -118,6 +127,8 @@ export function useRelatoriosDoPainel(periodoPedido: Periodo, podeVerAtividade =
   const [atualizadoEm, setAtualizadoEm] = useState<Date | null>(null)
   const [recarregando, setRecarregando] = useState(false)
   const seq = useRef(0)
+  /** Fim da última leitura boa do período (base da janela de 30 s do tempo real). */
+  const ultimaLeitura = useRef(0)
   const vivo = useRef(true)
   // Métricas do negócio: catálogo (uma vez) e valores por período, com o próprio cancelamento.
   const [catalogo, setCatalogo] = useState<MetricaDoCatalogo[] | null>(null)
@@ -168,6 +179,7 @@ export function useRelatoriosDoPainel(periodoPedido: Periodo, podeVerAtividade =
       setErroDoPeriodo(null)
       setMensagemDoErro(null)
       setAtualizadoEm(new Date())
+      ultimaLeitura.current = Date.now()
     } catch (err) {
       if (!vivo.current || minha !== seq.current) return
       console.error('[Dashboard/Relatórios] busca do período falhou:', err)
@@ -200,6 +212,46 @@ export function useRelatoriosDoPainel(periodoPedido: Periodo, podeVerAtividade =
   }, [buscarAtividade])
 
   useEffect(() => { void buscarPeriodo(periodo) }, [periodo, buscarPeriodo])
+
+  // Tempo real: `metricas:mudou` relê o período em silêncio (sem esmaecer),
+  // no máximo uma vez a cada 30 s — um aviso dentro da janela agenda UMA
+  // recarga para o fim dela. Aba escondida só marca; ao voltar, relê.
+  // Período que não inclui hoje (mês anterior, personalizado no passado)
+  // nunca muda: o aviso é ignorado.
+  useEffect(() => {
+    let espera: ReturnType<typeof setTimeout> | undefined
+    let pendente = false
+    const escondida = () => document.visibilityState !== 'visible'
+    const reler = () => {
+      espera = undefined
+      void buscarPeriodo(periodo)
+      void buscarNegocio(periodo)
+    }
+    const agendar = () => {
+      if (espera !== undefined) return
+      const falta = MIN_ENTRE_RECARGAS_AO_VIVO_MS - (Date.now() - ultimaLeitura.current)
+      if (falta <= 0) reler()
+      else espera = setTimeout(reler, falta)
+    }
+    const aoMudar = () => {
+      if (!periodoIncluiHoje(periodo)) return
+      if (escondida()) { pendente = true; return }
+      agendar()
+    }
+    const aoVoltar = () => {
+      if (escondida() || !pendente) return
+      pendente = false
+      agendar()
+    }
+    const socket = connectSocket()
+    socket.on(EVENTO_METRICAS, aoMudar)
+    document.addEventListener('visibilitychange', aoVoltar)
+    return () => {
+      clearTimeout(espera)
+      socket.off(EVENTO_METRICAS, aoMudar)
+      document.removeEventListener('visibilitychange', aoVoltar)
+    }
+  }, [periodo, buscarPeriodo, buscarNegocio])
   useEffect(() => { void buscarNegocio(periodo) }, [periodo, buscarNegocio])
   useEffect(() => () => pedidoDoNegocio.current?.abort(), [])
 

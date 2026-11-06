@@ -9,6 +9,16 @@ const get = vi.fn((url: string, cfg?: { params?: { range?: string } }) =>
 
 vi.mock('@/services/api', () => ({ api: { get: (url: string, cfg?: { params?: { range?: string } }) => get(url, cfg) } }))
 
+// Socket falso: guarda os ouvintes para o teste disparar `metricas:mudou`.
+const ouvintes = vi.hoisted(() => new Map<string, Set<(p: unknown) => void>>())
+vi.mock('@/services/socket', () => ({
+  connectSocket: () => ({
+    on: (e: string, fn: (p: unknown) => void) => { if (!ouvintes.has(e)) ouvintes.set(e, new Set()); ouvintes.get(e)!.add(fn) },
+    off: (e: string, fn: (p: unknown) => void) => { ouvintes.get(e)?.delete(fn) },
+  }),
+}))
+const emitir = (e: string) => { for (const fn of ouvintes.get(e) ?? []) fn({ tenantId: 't1', version: 2, at: new Date().toISOString() }) }
+
 import { useRelatoriosDoPainel } from './useRelatoriosDoPainel'
 import { chaveDoPeriodo, type Periodo } from '@/lib/periodoDoPainel'
 
@@ -159,5 +169,74 @@ describe('useRelatoriosDoPainel — períodos novos (SCRUM-1216, 05/11)', () => 
     pendentes.find((x) => x.url === '/home/stats')!.reject({ response: { status: 422, data: { statusCode: 422, error: 'validation_failed', message: 'Período maior que 400 dias.' } } })
     await waitFor(() => expect(result.current.erro).toBe(true))
     expect(result.current.mensagemDoErro).toBe('Período maior que 400 dias.')
+  })
+})
+
+describe('useRelatoriosDoPainel — tempo real (06/11)', () => {
+  const leiturasDeStats = () => get.mock.calls.filter(([u]) => u === '/home/stats').length
+  let visibilidade: DocumentVisibilityState = 'visible'
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    visibilidade = 'visible'
+    vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibilidade)
+  })
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
+
+  async function carregado(p: Periodo) {
+    const r = renderHook(() => useRelatoriosDoPainel(p))
+    for (const x of pendentes.filter((y) => y.url !== '/activity-feed')) x.resolve(x.url === '/home/stats' ? stats(1) : { data: null })
+    await waitFor(() => expect(r.result.current.snapshot).not.toBeNull())
+    return r
+  }
+
+  it('aviso dentro dos 30 s: uma recarga só, no fim da janela, e em silêncio', async () => {
+    const { result } = await carregado(fixo('7d'))
+    expect(leiturasDeStats()).toBe(1)
+    emitir('metricas:mudou'); emitir('metricas:mudou'); emitir('metricas:mudou')
+    expect(leiturasDeStats()).toBe(1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+    expect(leiturasDeStats()).toBe(2)
+    expect(get).toHaveBeenLastCalledWith('/home/metrics', expect.objectContaining({ params: { range: '7d' } }))
+    // Recarga do tempo real não esmaece a tela.
+    expect(result.current.atualizando).toBe(false)
+  })
+
+  it('passados os 30 s, o aviso relê na hora', async () => {
+    await carregado(fixo('today'))
+    await act(async () => { await vi.advanceTimersByTimeAsync(31_000) })
+    emitir('metricas:mudou')
+    expect(leiturasDeStats()).toBe(2)
+  })
+
+  it('mês anterior e personalizado no passado nunca mudam: o aviso é ignorado', async () => {
+    await carregado(fixo('last_month'))
+    await act(async () => { await vi.advanceTimersByTimeAsync(31_000) })
+    emitir('metricas:mudou')
+    await act(async () => { await vi.advanceTimersByTimeAsync(31_000) })
+    expect(leiturasDeStats()).toBe(1)
+  })
+
+  it('aba escondida só marca; ao voltar, relê', async () => {
+    await carregado(fixo('30d'))
+    await act(async () => { await vi.advanceTimersByTimeAsync(31_000) })
+    visibilidade = 'hidden'
+    emitir('metricas:mudou')
+    expect(leiturasDeStats()).toBe(1)
+    visibilidade = 'visible'
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(leiturasDeStats()).toBe(2)
+    // Voltar de novo sem aviso novo não relê.
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(leiturasDeStats()).toBe(2)
+  })
+
+  it('desmontar tira o ouvinte e a recarga agendada', async () => {
+    const { unmount } = await carregado(fixo('7d'))
+    emitir('metricas:mudou')
+    unmount()
+    expect(ouvintes.get('metricas:mudou')?.size ?? 0).toBe(0)
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+    expect(leiturasDeStats()).toBe(1)
   })
 })

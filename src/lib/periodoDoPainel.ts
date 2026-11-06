@@ -247,3 +247,13 @@ export function periodoDoEco(eco: unknown): Periodo | null {
   if (typeof e.id === 'string' && IDS_FIXOS.has(e.id)) return { tipo: 'fixo', valor: e.id as DateRange, comparar }
   return null
 }
+
+/**
+ * Tempo real (06/11): o período ainda pode mudar? Os que terminam hoje sim
+ * (today, 7d, 30d, month, 90d e um personalizado até hoje); o mês anterior e
+ * um personalizado no passado nunca mudam — o evento de métricas é ignorado.
+ */
+export function periodoIncluiHoje(p: Periodo, agora: Date = new Date()): boolean {
+  if (p.tipo === 'personalizado') return p.ate === hojeEmBrasilia(agora)
+  return p.valor !== 'last_month'
+}

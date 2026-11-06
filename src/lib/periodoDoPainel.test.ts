@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   chaveDoPeriodo, comparacaoPorExtenso, escreverPeriodo, hojeEmBrasilia, lerPeriodo, paramsDoPeriodo, periodoDoEco,
-  periodoPorExtenso, rotuloDoPeriodo, validarIntervalo, volumeSeguePeriodo, type Periodo,
+  periodoIncluiHoje, periodoPorExtenso, rotuloDoPeriodo, validarIntervalo, volumeSeguePeriodo, type Periodo,
 } from './periodoDoPainel'
 import { montarSnapshot } from './snapshotDoPainel'
 import type { HomeStats } from '@/types'
@@ -108,6 +108,13 @@ describe('período do Dashboard', () => {
     expect(periodoDoEco(undefined)).toBeNull()
     expect(periodoDoEco({ id: 'custom', from: 'ontem' })).toBeNull()
     expect(periodoDoEco({ id: 'semana' })).toBeNull()
+  })
+
+  it('tempo real: só o período que termina hoje pode mudar', () => {
+    for (const v of ['today', '7d', '30d', 'month', '90d'] as const) expect(periodoIncluiHoje({ tipo: 'fixo', valor: v, comparar: 'anterior' }, AGORA)).toBe(true)
+    expect(periodoIncluiHoje({ tipo: 'fixo', valor: 'last_month', comparar: 'anterior' }, AGORA)).toBe(false)
+    expect(periodoIncluiHoje({ tipo: 'personalizado', de: '2026-10-01', ate: '2026-11-05', comparar: 'anterior' }, AGORA)).toBe(true)
+    expect(periodoIncluiHoje({ tipo: 'personalizado', de: '2026-10-01', ate: '2026-11-04', comparar: 'anterior' }, AGORA)).toBe(false)
   })
 
   it('K11: o volume segue todos os períodos (o backend manda já recortado, em dias de Brasília)', () => {
