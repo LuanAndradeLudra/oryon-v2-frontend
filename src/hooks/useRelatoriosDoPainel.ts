@@ -3,7 +3,8 @@ import { api } from '@/services/api'
 import { formatActivity, pickActivityType } from '@/components/dashboard/activityFormatter'
 import { montarSnapshot } from '@/lib/snapshotDoPainel'
 import { juntarMetricasDoNegocio, type MetricaDoCatalogo, type RespostaDasMetricas, type RespostaDoCatalogo } from '@/lib/metricasDoNegocio'
-import type { ActivityEvent, DashboardSnapshot, DateRange } from '@/types/dashboard'
+import type { ActivityEvent, DashboardSnapshot } from '@/types/dashboard'
+import { chaveDoPeriodo, paramsDoPeriodo, periodoDoEco, type Periodo } from '@/lib/periodoDoPainel'
 import type { HomeStats } from '@/types'
 
 // Row shape returned by GET /activity-feed (mirrors the public shape from
@@ -63,7 +64,9 @@ function comTeto<T>(p: Promise<T>): Promise<T> {
 export interface RelatoriosDoPainel {
   /** O último snapshot bom — de `periodoCarregado`, que pode não ser o pedido. */
   snapshot: DashboardSnapshot | null
-  periodoCarregado: DateRange | null
+  periodoCarregado: Periodo | null
+  /** O período que o backend diz ter calculado (`period`), do mesmo snapshot; `null` sem eco. */
+  periodoDaResposta: Periodo | null
   atividade: ActivityEvent[]
   /** Nenhum dado ainda (primeira carga). */
   carregando: boolean
@@ -71,6 +74,10 @@ export interface RelatoriosDoPainel {
   atualizando: boolean
   /** A busca do período pedido falhou. */
   erro: boolean
+  /** Mensagem do backend quando ele recusa o período (422), para o aviso. */
+  mensagemDoErro: string | null
+  /** Sem comparação: o ano anterior é de antes de a conta existir (`previousReason`). */
+  semComparacao: boolean
   atualizadoEm: Date | null
   recarregar: () => void
   /** SCRUM-1465: o catálogo das métricas do negócio já respondeu (a faixa salva só é gravada depois — A20). */
@@ -96,31 +103,39 @@ export interface RelatoriosDoPainel {
  * - Falha: sem dado nenhum, a tela de erro; com dado anterior, ele fica e um
  *   aviso diz qual período está à vista (nunca zera nada).
  */
-export function useRelatoriosDoPainel(periodo: DateRange, podeVerAtividade = true): RelatoriosDoPainel {
+export function useRelatoriosDoPainel(periodoPedido: Periodo, podeVerAtividade = true): RelatoriosDoPainel {
+  // O objeto muda a cada render; a chave é o que identifica o período.
+  const chave = chaveDoPeriodo(periodoPedido)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const periodo = useMemo(() => periodoPedido, [chave])
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null)
-  const [periodoCarregado, setPeriodoCarregado] = useState<DateRange | null>(null)
+  const [periodoCarregado, setPeriodoCarregado] = useState<Periodo | null>(null)
   const [atividade, setAtividade] = useState<ActivityEvent[]>([])
-  const [erroDoPeriodo, setErroDoPeriodo] = useState<DateRange | null>(null)
+  const [erroDoPeriodo, setErroDoPeriodo] = useState<string | null>(null)
+  const [mensagemDoErro, setMensagemDoErro] = useState<string | null>(null)
+  const [periodoDaResposta, setPeriodoDaResposta] = useState<Periodo | null>(null)
+  const [semComparacao, setSemComparacao] = useState(false)
   const [atualizadoEm, setAtualizadoEm] = useState<Date | null>(null)
   const [recarregando, setRecarregando] = useState(false)
   const seq = useRef(0)
   const vivo = useRef(true)
   // Métricas do negócio: catálogo (uma vez) e valores por período, com o próprio cancelamento.
   const [catalogo, setCatalogo] = useState<MetricaDoCatalogo[] | null>(null)
-  const [negocio, setNegocio] = useState<{ periodo: DateRange; resposta: RespostaDasMetricas | null } | null>(null)
+  const [negocio, setNegocio] = useState<{ chave: string; resposta: RespostaDasMetricas | null } | null>(null)
   const pedidoDoNegocio = useRef<AbortController | null>(null)
 
-  const buscarNegocio = useCallback(async (p: DateRange) => {
+  const buscarNegocio = useCallback(async (p: Periodo) => {
     pedidoDoNegocio.current?.abort()
+    const params = paramsDoPeriodo(p, { comparar: 'ano' })
     const ctl = new AbortController()
     pedidoDoNegocio.current = ctl
     try {
-      const { data } = await comTeto(api.get<RespostaDasMetricas>('/home/metrics', { params: { range: p }, signal: ctl.signal }))
-      if (vivo.current && !ctl.signal.aborted) setNegocio({ periodo: p, resposta: data ?? null })
+      const { data } = await comTeto(api.get<RespostaDasMetricas>('/home/metrics', { params, signal: ctl.signal }))
+      if (vivo.current && !ctl.signal.aborted) setNegocio({ chave: chaveDoPeriodo(p), resposta: data ?? null })
     } catch (err) {
       if (!vivo.current || ctl.signal.aborted) return
       console.warn('[Dashboard/Relatórios] métricas do negócio indisponíveis:', err)
-      setNegocio({ periodo: p, resposta: null })
+      setNegocio({ chave: chaveDoPeriodo(p), resposta: null })
     } finally {
       if (pedidoDoNegocio.current === ctl) ctl.abort()
     }
@@ -134,22 +149,32 @@ export function useRelatoriosDoPainel(periodo: DateRange, podeVerAtividade = tru
     return () => { ativo = false }
   }, [])
 
-  const buscarPeriodo = useCallback(async (p: DateRange) => {
+  const buscarPeriodo = useCallback(async (p: Periodo) => {
     const minha = ++seq.current
+    const params = paramsDoPeriodo(p, { comparar: 'sempre' })
     try {
       const [{ data: db }, { data: stats }] = await comTeto(Promise.all([
-        api.get('/home/snapshot', { params: { range: p, compare: 1 } }),
-        api.get<HomeStats>('/home/stats', { params: { range: p, compare: 1 } }),
+        api.get('/home/snapshot', { params }),
+        api.get<HomeStats>('/home/stats', { params }),
       ]))
       if (!vivo.current || minha !== seq.current) return
       setSnapshot(montarSnapshot(stats, db))
+      // O rótulo sai do período que o backend diz ter calculado (`period`, só
+      // nos pedidos novos); sem eco, vale o pedido.
+      const eco = (stats as { period?: { previousReason?: string | null } } | null)?.period
       setPeriodoCarregado(p)
+      setPeriodoDaResposta(periodoDoEco(eco))
+      setSemComparacao(eco?.previousReason === 'before_account')
       setErroDoPeriodo(null)
+      setMensagemDoErro(null)
       setAtualizadoEm(new Date())
     } catch (err) {
       if (!vivo.current || minha !== seq.current) return
       console.error('[Dashboard/Relatórios] busca do período falhou:', err)
-      setErroDoPeriodo(p)
+      setErroDoPeriodo(chaveDoPeriodo(p))
+      // 422 validation_failed: o backend diz o que há de errado com o período.
+      const resp = (err as { response?: { status?: number; data?: { message?: unknown } } })?.response
+      setMensagemDoErro(resp?.status === 422 && typeof resp.data?.message === 'string' ? resp.data.message : null)
     } finally {
       if (vivo.current && minha === seq.current) setRecarregando(false)
     }
@@ -188,20 +213,24 @@ export function useRelatoriosDoPainel(periodo: DateRange, podeVerAtividade = tru
   // O cartão do negócio só mostra valor do MESMO período dos fixos à vista; senão, "carregando".
   const snapshotComNegocio = useMemo(() => {
     if (!snapshot) return null
-    const doMesmoPeriodo = negocio && negocio.periodo === periodoCarregado ? negocio : null
+    const doMesmoPeriodo = negocio && periodoCarregado && negocio.chave === chaveDoPeriodo(periodoCarregado) ? negocio : null
     const kpis = juntarMetricasDoNegocio(snapshot.kpis, doMesmoPeriodo?.resposta ?? null, catalogo ?? [], doMesmoPeriodo ? 'erro' : 'carregando')
     return kpis === snapshot.kpis ? snapshot : { ...snapshot, kpis }
   }, [snapshot, negocio, periodoCarregado, catalogo])
 
-  const erro = erroDoPeriodo === periodo
+  const erro = erroDoPeriodo === chave
+  const carregadoEhOPedido = !!periodoCarregado && chaveDoPeriodo(periodoCarregado) === chave
   return {
     catalogoPronto: catalogo !== null,
     snapshot: snapshotComNegocio,
     periodoCarregado,
+    periodoDaResposta,
     atividade,
     carregando: !snapshot && !erro,
-    atualizando: recarregando || (!!snapshot && periodoCarregado !== periodo && !erro),
+    atualizando: recarregando || (!!snapshot && !carregadoEhOPedido && !erro),
     erro,
+    mensagemDoErro,
+    semComparacao,
     atualizadoEm,
     recarregar,
   }

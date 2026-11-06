@@ -1,10 +1,11 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { HelpCircle } from 'lucide-react'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
-import type { DateRange, KpiId, KpiIdFixo, KpiMetric } from '@/types/dashboard'
+import type { KpiId, KpiIdFixo, KpiMetric } from '@/types/dashboard'
+import { PERIODO_PADRAO, comparacaoPorExtenso, type Comparacao, type Periodo } from '@/lib/periodoDoPainel'
 import { KPI_CATALOG, DEFAULT_KPI_SLOTS } from '@/types/dashboard'
 import { KpiCustomizerDrawer } from './KpiCustomizerDrawer'
 import { ListaDaMetrica } from './ListaDaMetrica'
@@ -80,12 +81,17 @@ function loadSlots(chave: string, conhecidos: ReadonlySet<string>): KpiId[] {
 
 type Apoio = { text: string; tone: 'warn' | 'muted' }
 
+/** SCRUM-1216: com quem a variação compara (período anterior ou o mesmo do ano anterior). */
+const ComparacaoDoPainel = createContext<Comparacao>('anterior')
+
 /**
  * DC-5: variação contra o período anterior de mesma duração, ao lado do
  * número. Verde/vermelho só quando o indicador tem um lado bom
  * (`trendIsGood`); nos neutros (mensagens recebidas…) fica cinza.
  */
 export function Variacao({ metric }: { metric: KpiMetric }) {
+  const comparar = useContext(ComparacaoDoPainel)
+  const com = comparacaoPorExtenso(comparar)
   const t = metric.trend
   if (t === null || t === undefined || !Number.isFinite(t)) return null
   const pp = metric.trendUnit === 'pp'
@@ -97,12 +103,12 @@ export function Variacao({ metric }: { metric: KpiMetric }) {
   const seta = t > 0 ? '↑' : t < 0 ? '↓' : '='
   const texto = t === 0 ? 'estável' : `${numero}${sufixo}`
   const extenso = t === 0
-    ? 'estável em relação ao período anterior'
-    : `${t > 0 ? 'subiu' : 'caiu'} ${numero}${pp ? ' pontos percentuais' : '%'} em relação ao período anterior`
+    ? `estável em relação ao ${com}`
+    : `${t > 0 ? 'subiu' : 'caiu'} ${numero}${pp ? ' pontos percentuais' : '%'} em relação ao ${com}`
   return (
     <span
       data-testid="kpi-variacao"
-      title="Comparado ao período anterior de mesma duração"
+      title={comparar === 'ano_anterior' ? 'Comparado ao mesmo período do ano anterior' : 'Comparado ao período anterior de mesma duração'}
       className={cn(
         'inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums whitespace-nowrap',
         bom ? 'text-online' : ruim ? 'text-danger' : 'text-surface-500',
@@ -373,7 +379,7 @@ export function KpiGrid({
   onMetasSalvas,
   tenantId,
   userId,
-  periodo = '7d',
+  periodo = PERIODO_PADRAO,
   catalogoPronto = true,
 }: {
   metrics: KpiMetric[]
@@ -388,7 +394,7 @@ export function KpiGrid({
   /** O catálogo das métricas do negócio respondeu: antes disso a faixa salva não é regravada (A20). */
   catalogoPronto?: boolean
   /** Período à vista — o "Quais são?" lista o mesmo recorte do número. */
-  periodo?: DateRange
+  periodo?: Periodo
 }) {
   const chaveSlots = chaveDoTenant(LS_KEY, tenantId, userId)
   const chaveDestaque = chaveDoTenant(LS_DESTAQUE, tenantId, userId)
@@ -422,6 +428,7 @@ export function KpiGrid({
     .filter(Boolean) as KpiMetric[]
 
   return (
+    <ComparacaoDoPainel.Provider value={periodo.comparar}>
     <div>
       <KpiStrip
         metrics={activeMetrics}
@@ -447,5 +454,6 @@ export function KpiGrid({
         onMetasSalvas={onMetasSalvas}
       />
     </div>
+    </ComparacaoDoPainel.Provider>
   )
 }
