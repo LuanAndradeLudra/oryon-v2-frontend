@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
 import { atributosLegiveis, type PaginaDaListaDaMetrica } from '@/lib/metricasDoNegocio'
-import type { DateRange, KpiMetric } from '@/types/dashboard'
+import type { KpiMetric } from '@/types/dashboard'
+import { chaveDoPeriodo, paramsDoPeriodo, periodoPorExtenso, type Periodo } from '@/lib/periodoDoPainel'
 
 /**
  * SCRUM-1465 — "Quais são?": quem compõe o número de uma métrica do negócio,
@@ -19,7 +20,7 @@ const LIMITE = 50
 
 export function ListaDaMetrica({ metric, periodo, onClose }: {
   metric: KpiMetric | null
-  periodo: DateRange
+  periodo: Periodo
   onClose: () => void
 }) {
   const [pagina, setPagina] = useState(1)
@@ -29,7 +30,8 @@ export function ListaDaMetrica({ metric, periodo, onClose }: {
 
   // Outra métrica ou outro período: volta para a 1ª página.
   const [alvo, setAlvo] = useState<string | null>(null)
-  const alvoAtual = chave ? `${chave}|${periodo}` : null
+  const chavePeriodo = chaveDoPeriodo(periodo)
+  const alvoAtual = chave ? `${chave}|${chavePeriodo}` : null
   if (alvoAtual !== alvo) {
     setAlvo(alvoAtual)
     setPagina(1)
@@ -39,13 +41,15 @@ export function ListaDaMetrica({ metric, periodo, onClose }: {
 
   useEffect(() => {
     if (!chave) return
+    const params = paramsDoPeriodo(periodo)
     // Trocar de página, de período ou fechar cancela o pedido em voo (A41).
     const ctl = new AbortController()
-    api.get<PaginaDaListaDaMetrica>(`/home/metrics/${encodeURIComponent(chave)}/list`, { params: { range: periodo, page: pagina, limit: LIMITE }, signal: ctl.signal })
+    api.get<PaginaDaListaDaMetrica>(`/home/metrics/${encodeURIComponent(chave)}/list`, { params: { ...params, page: pagina, limit: LIMITE }, signal: ctl.signal })
       .then(({ data }) => { if (!ctl.signal.aborted) setDados(data) })
       .catch(() => { if (!ctl.signal.aborted) setErro(true) })
     return () => ctl.abort()
-  }, [chave, periodo, pagina])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chave, chavePeriodo, pagina])
 
   const irPara = (p: number) => { setPagina(p); setDados(null); setErro(false) }
   const negocio = metric?.negocio
@@ -68,6 +72,7 @@ export function ListaDaMetrica({ metric, periodo, onClose }: {
               <h2 className="text-base font-display font-semibold tracking-[-0.01em] text-surface-50">{metric.label}</h2>
               <p className="text-xs text-surface-400 mt-0.5">
                 {formatKpiValue(metric.value, metric.unit)}
+                <span data-testid="lista-periodo">{` · ${periodoPorExtenso(periodo)}`}</span>
                 {negocio?.selos.includes('estimado') ? ' · estimado' : ''}
                 {negocio?.selos.includes('pela_ia') ? ' · só o que a IA fez' : ''}
               </p>
@@ -117,7 +122,7 @@ export function ListaDaMetrica({ metric, periodo, onClose }: {
               ) : !dados ? (
                 <p className="py-3 text-xs text-surface-500">Carregando…</p>
               ) : dados.itens.length === 0 ? (
-                <p className="py-3 text-xs text-surface-500">Nada neste período.</p>
+                <p className="py-3 text-xs text-surface-500">Nada {periodoPorExtenso(periodo)}.</p>
               ) : (
                 <ul className="rounded-[10px] border border-surface-700 bg-surface-800 overflow-hidden" data-testid="itens-da-metrica">
                   {dados.itens.map((it, i) => {
