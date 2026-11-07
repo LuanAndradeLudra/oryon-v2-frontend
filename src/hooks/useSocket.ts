@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { connectSocket, disconnectSocket, getSocket } from '@/services/socket'
+import { useEffect, useLayoutEffect, useRef } from 'react'
+import { connectSocket } from '@/services/socket'
 import { renovarSessao, clearSessionAndRedirect } from '@/services/api'
 import type {
   SocketAiPauseUpdated,
@@ -33,56 +33,65 @@ interface SocketHandlers {
   onContactAiFailed?: (payload: { contactId: string; error?: string }) => void
 }
 
+/** O ouvinte com a tipagem do próprio socket.io. */
+type Ouvinte = Parameters<ReturnType<typeof connectSocket>['on']>[1]
+
 export function useSocket(handlers: SocketHandlers = {}) {
   const handlersRef = useRef(handlers)
-  handlersRef.current = handlers
+  // Os handlers mais novos a cada render, sem mexer no ref durante o render.
+  useLayoutEffect(() => { handlersRef.current = handlers })
 
   useEffect(() => {
     const socket = connectSocket()
+    // Retomadas (06/11): cada handler daqui fica guardado e sai SÓ ele na limpeza. Antes, o
+    // `off(evento)` sem a função tirava os ouvintes de todo o app (o sino global, o menu) e o
+    // `disconnectSocket()` derrubava a conexão única — ao sair de Conversas, o tempo real morria
+    // em todas as telas até recarregar. A conexão é da sessão: o AuthContext a fecha no logout.
+    const meus: Array<[string, Ouvinte]> = []
+    const on = (evento: string, fn: Ouvinte) => {
+      socket.on(evento, fn)
+      meus.push([evento, fn])
+    }
 
-    socket.on('message:new', (p) => handlersRef.current.onMessageNew?.(p))
-    socket.on('message:status', (p) => handlersRef.current.onMessageStatus?.(p))
-    socket.on('conversation:new', (p) => handlersRef.current.onConversationNew?.(p))
-    socket.on('conversation:assigned', (p) => handlersRef.current.onConversationAssigned?.(p))
-    socket.on('conversation:resolved', (p) => handlersRef.current.onConversationResolved?.(p))
-    socket.on('conversation:updated', (p) => handlersRef.current.onConversationUpdated?.(p))
-    socket.on('conversation:ai-pause-updated', (p) => handlersRef.current.onConversationAiPauseUpdated?.(p))
-    socket.on('conversation:status-updated', (p) => handlersRef.current.onConversationStatusUpdated?.(p))
-    socket.on('unread:update', (p) => handlersRef.current.onUnreadUpdate?.(p))
-    socket.on('notification:new', (p) => {
+    on('message:new', (p) => handlersRef.current.onMessageNew?.(p))
+    on('message:status', (p) => handlersRef.current.onMessageStatus?.(p))
+    on('conversation:new', (p) => handlersRef.current.onConversationNew?.(p))
+    on('conversation:assigned', (p) => handlersRef.current.onConversationAssigned?.(p))
+    on('conversation:resolved', (p) => handlersRef.current.onConversationResolved?.(p))
+    on('conversation:updated', (p) => handlersRef.current.onConversationUpdated?.(p))
+    on('conversation:ai-pause-updated', (p) => handlersRef.current.onConversationAiPauseUpdated?.(p))
+    on('conversation:status-updated', (p) => handlersRef.current.onConversationStatusUpdated?.(p))
+    on('unread:update', (p) => handlersRef.current.onUnreadUpdate?.(p))
+    on('notification:new', (p) => {
       // Fan-out the notification two ways:
       //  1) to the optional local handler passed by the consumer
       //  2) to a window CustomEvent so useNotifications (which mounts far
       //     from useSocket) can keep its cache in sync without needing a
       //     direct coupling. Both layers are idempotent — duplicate delivery
       //     is handled by de-dupe on id in the store.
+      // Retomadas (06/11): o evento de janela agora sai do ouvinte global (OuvinteDoTempoReal, no
+      // AppShell) — daqui ele sairia em dobro quando Conversas está aberta.
       handlersRef.current.onNotificationNew?.(p)
-      try {
-        window.dispatchEvent(new CustomEvent('notification:new', { detail: p }))
-      } catch { /* window unavailable (SSR, etc.) */ }
     })
     // Phase 17: grouped notifications emit `notification:updated` when a new
     // contact is appended to an existing row. Same fan-out pattern so the
     // badge doesn't re-increment but the modal/description refresh in place.
-    socket.on('notification:updated', (p) => {
-      handlersRef.current.onNotificationUpdated?.(p)
-      try {
-        window.dispatchEvent(new CustomEvent('notification:updated', { detail: p }))
-      } catch { /* window unavailable (SSR, etc.) */ }
+    on('notification:updated', (p) => {
+      handlersRef.current.onNotificationUpdated?.(p) // o evento de janela sai do ouvinte global (idem)
     })
 
     // AI profile generation lifecycle (triggered on conversation resolve).
     // Fan-out via window CustomEvent so any component (not just the one
     // holding this hook) can react — e.g. a contact drawer mounted far away.
-    socket.on('contact:ai-generating', (p) => {
+    on('contact:ai-generating', (p) => {
       handlersRef.current.onContactAiGenerating?.(p)
       try { window.dispatchEvent(new CustomEvent('contact:ai-generating', { detail: p })) } catch { /* SSR */ }
     })
-    socket.on('contact:ai-generated', (p) => {
+    on('contact:ai-generated', (p) => {
       handlersRef.current.onContactAiGenerated?.(p)
       try { window.dispatchEvent(new CustomEvent('contact:ai-generated', { detail: p })) } catch { /* SSR */ }
     })
-    socket.on('contact:ai-failed', (p) => {
+    on('contact:ai-failed', (p) => {
       handlersRef.current.onContactAiFailed?.(p)
       try { window.dispatchEvent(new CustomEvent('contact:ai-failed', { detail: p })) } catch { /* SSR */ }
     })
@@ -94,8 +103,8 @@ export function useSocket(handlers: SocketHandlers = {}) {
     // reconnecting without refreshing first would just fail again. Reuses
     // `socket.disconnect()/.connect()` on the SAME instance (not
     // connectSocket()/disconnectSocket(), which tear down the module-level
-    // singleton) so the listeners registered below stay attached (R39).
-    socket.on('auth:expired', () => {
+    // singleton) so the listeners registered here stay attached (R39).
+    on('auth:expired', () => {
       console.warn('[socket] Token expired — refreshing session and reconnecting')
       socket.disconnect()
       renovarSessao().then((ok) => {
@@ -105,22 +114,7 @@ export function useSocket(handlers: SocketHandlers = {}) {
     })
 
     return () => {
-      socket.off('message:new')
-      socket.off('message:status')
-      socket.off('conversation:new')
-      socket.off('conversation:assigned')
-      socket.off('conversation:resolved')
-      socket.off('conversation:updated')
-      socket.off('conversation:ai-pause-updated')
-      socket.off('conversation:status-updated')
-      socket.off('unread:update')
-      socket.off('notification:new')
-      socket.off('notification:updated')
-      socket.off('contact:ai-generating')
-      socket.off('contact:ai-generated')
-      socket.off('contact:ai-failed')
-      socket.off('auth:expired')
-      disconnectSocket()
+      for (const [evento, fn] of meus) socket.off(evento, fn)
     }
   }, [])
 }

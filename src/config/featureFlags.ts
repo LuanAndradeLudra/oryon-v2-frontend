@@ -183,6 +183,14 @@ export function multiPipelineEnabled(featureFlags?: readonly string[] | null): b
   return featureFlags?.includes(TENANT_FLAG_MULTI_PIPELINE) ?? false
 }
 
+/** Retomadas / "Planos de ação" (07/11): ligadas por unidade, pela Oryon. */
+export const TENANT_FLAG_RETOMADAS = 'FF_RETOMADAS'
+
+/** `true` só quando o backend listou `FF_RETOMADAS` para o tenant. */
+export function retomadasEnabled(featureFlags?: readonly string[] | null): boolean {
+  return featureFlags?.includes(TENANT_FLAG_RETOMADAS) ?? false
+}
+
 /**
  * Cobrança fora do Oryon (PO, 12/10 — SCRUM-1161): clientes com modelo de
  * cobrança próprio não veem o consumo de créditos nem "Plano & faturamento".

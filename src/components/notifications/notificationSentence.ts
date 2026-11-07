@@ -97,6 +97,10 @@ export function sentenceFor(n: AppNotification): Sentence {
     case 'mention':
       if (!actorSrc) return { object: n.title, action: '', excerpt: desc, context: ctx(channel && `#${channel.replace(/^#/, '')}`) }
       return { actor: actorSrc, action: 'mencionou você', excerpt: desc, context: ctx(channel && `#${channel.replace(/^#/, '')}`) }
+    case 'follow_up_plan':
+      return { object: n.title.replace(/^Novo plano de ação: /, ''), action: 'chegou do gestor', excerpt: desc }
+    case 'follow_up_plan_due':
+      return { object: n.title.replace(/^Prazo amanhã: /, ''), action: 'vence amanhã', state: desc ? { text: desc, tone: 'warn' } : undefined }
     case 'campaign_complete':
       if (!m.campaignName) return { object: n.title, action: '', excerpt: desc }
       return {
