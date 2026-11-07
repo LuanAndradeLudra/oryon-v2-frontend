@@ -15,6 +15,7 @@ import {
   PanelLeft,
   Handshake,
   Inbox,
+  ListChecks,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -32,6 +33,7 @@ import { AiCreditsIndicator } from './AiCreditsIndicator'
 import { useCobrancaOculta } from '@/hooks/useCobrancaOculta'
 import { OryonLogo } from '@/components/brand/OryonLogo'
 import { rotaPermitida } from '@/lib/rotasPorPapel'
+import { usePlanosDaUnidade } from '@/hooks/usePlanosDaUnidade'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -152,6 +154,8 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
   const { vocab } = useTenantVocab()
   const { totalUnread: internalUnread } = useInternalChat()
   const multiPipeline = useMultiPipeline()
+  // Retomadas: o item "Planos de ação" só aparece em unidade de rede, para os admins.
+  const planos = usePlanosDaUnidade(rotaPermitida('/planos', { role: user?.role, multiPipeline }))
 
   const refreshUnread = useCallback(() => {
     conversationsApi.unreadTotal()
@@ -167,19 +171,19 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
   // Listen for real-time unread updates via socket
   useEffect(() => {
     let socket: ReturnType<typeof import('@/services/socket').connectSocket> | null = null
+    // Retomadas (06/11): sai só o ouvinte daqui (o `off(evento)` sem a função tirava também os
+    // de Conversas e do resto do app).
+    const naoLidas = (payload: { total: number }) => setWhatsappUnread(payload.total)
+    // Update unread count when new messages come in (via conversation:updated)
+    const atualizou = () => refreshUnread()
     import('@/services/socket').then(({ connectSocket }) => {
       socket = connectSocket()
-      socket.on('unread:update', (payload: { total: number }) => {
-        setWhatsappUnread(payload.total)
-      })
-      // Update unread count when new messages come in (via conversation:updated)
-      socket.on('conversation:updated', () => {
-        refreshUnread()
-      })
+      socket.on('unread:update', naoLidas)
+      socket.on('conversation:updated', atualizou)
     })
     return () => {
-      socket?.off('unread:update')
-      socket?.off('conversation:updated')
+      socket?.off('unread:update', naoLidas)
+      socket?.off('conversation:updated', atualizou)
     }
   }, [refreshUnread])
 
@@ -214,6 +218,12 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
       icon: <Handshake className="w-[15px] h-[15px]" strokeWidth={1.75} />,
       label: 'Funis',
       href: '/pipelines',
+    }] : []),
+    ...(planos.enabled ? [{
+      icon: <ListChecks className="w-[16.5px] h-[16.5px]" />,
+      label: 'Planos de ação',
+      href: '/planos',
+      badge: planos.openItems > 0 ? planos.openItems : undefined,
     }] : []),
   ].filter((item) => isRouteVisible(item.href))
 

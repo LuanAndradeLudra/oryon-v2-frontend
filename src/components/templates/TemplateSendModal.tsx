@@ -40,9 +40,12 @@ interface TemplateSendModalProps {
   onBack?: () => void
   /** Envio concluído (o modal NÃO se fecha sozinho — quem chama decide). */
   onSent: (result: { conversationId: string; messageId: string }) => void
+  /** Outro caminho de envio (o plano de ação manda pelo plano, para ficar no histórico dele).
+   *  Omitido = o envio de sempre, `contactsApi.sendTemplate`. */
+  enviar?: (templateName: string, language: string, variables: string[]) => Promise<{ conversationId: string; messageId: string }>
 }
 
-export function TemplateSendModal({ template, contactId, recipientName, onClose, onBack, onSent }: TemplateSendModalProps) {
+export function TemplateSendModal({ template, contactId, recipientName, onClose, onBack, onSent, enviar }: TemplateSendModalProps) {
   // Valores das variáveis, chaves "1","2"… — o formato que o <TemplatePreview>
   // lê pro preview ao vivo. Resetados a cada template escolhido.
   const [vars, setVars] = useState<Record<string, string>>({})
@@ -68,8 +71,8 @@ export function TemplateSendModal({ template, contactId, recipientName, onClose,
     try {
       // Meta template flow (R10/SCRUM-807): API real de template com variáveis
       // posicionais — não `tpl.body` como texto (falha fora das 24h).
-      const res = await contactsApi.sendTemplate(contactId, template.name, template.language, variablesToArray(slots, vars))
-      onSent(res.data)
+      const variaveis = variablesToArray(slots, vars)
+      onSent(enviar ? await enviar(template.name, template.language, variaveis) : (await contactsApi.sendTemplate(contactId, template.name, template.language, variaveis)).data)
     } catch (err) {
       // Mantém o modal aberto pra corrigir e tentar de novo. A mensagem já vem
       // classificada do backend (contagem de variáveis, template não aprovado,

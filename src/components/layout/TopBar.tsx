@@ -57,6 +57,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/copilot': 'Copilot AI',
   '/team': 'Nexus',
   '/settings': 'Configurações',
+  '/planos': 'Planos de ação',
 }
 
 /** Page subtitles — short noun phrases (2-4 words) rendered next to the
@@ -71,6 +72,7 @@ const PAGE_SUBTITLES: Record<string, string> = {
   // subtítulo próprios. Prometer "pipeline" nesta tela virou promessa falsa.
   '/contacts': 'Base de clientes',
   '/pipelines': 'Negócios por etapa',
+  '/planos': 'Retomadas do gestor',
   '/campaigns': 'Campanhas em massa',
   '/marketing': 'Estratégia e canais',
   '/automations': 'Fluxos automáticos',
@@ -874,7 +876,9 @@ function NotificationsPanel() {
 
   const handleItemClick = useCallback((n: AppNotification) => {
     if (!n.isRead) markAsRead(n.id)
-    if (n.metadata && Object.keys(n.metadata).length > 0) {
+    if (n.type.startsWith('follow_up_') && isValidLink(n.link)) {
+      navigate(normalizeNotificationLink(n.link!))
+    } else if (n.metadata && Object.keys(n.metadata).length > 0) {
       setDetail(n)
     } else if (isValidLink(n.link)) {
       navigate(normalizeNotificationLink(n.link!))

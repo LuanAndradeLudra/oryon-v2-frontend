@@ -31,6 +31,8 @@ export interface NotificationSource {
  *  components that want type-safe rendering (TopBar modal) cast to this. */
 export interface NotificationMetaKnown {
   context?: string
+  /** Retomadas (06/11): o plano de ação do aviso (`follow_up_plan`, `follow_up_plan_due`). */
+  planId?: string
   automationId?: string
   automationName?: string
   automationType?: string

@@ -24,6 +24,9 @@ export const TYPE_TO_CATEGORY: Record<string, Category> = {
   conversation_waiting: 'conversations',
   team_message: 'team',
   mention: 'team',
+  follow_up_plan: 'team',
+  follow_up_plan_due: 'team',
+  follow_up_digest: 'team',
   campaign_complete: 'campaigns',
   campaign_failed: 'campaigns',
   automation_executed: 'automations',
@@ -210,6 +213,12 @@ export function inlineActionFor(n: AppNotification): InlineAction | null {
       if (!aid) return null
       // AutomationsPage consome ?automation=:id e abre o detalhe.
       return { label: 'Ver automação', href: `/automations?automation=${aid}` }
+    }
+    case 'follow_up_plan':
+    case 'follow_up_plan_due': {
+      const pid = meta?.planId
+      if (!pid) return null
+      return { label: 'Abrir o plano', href: `/planos/${pid}`, variant: 'primary' }
     }
     case 'whatsapp_integration_error':
       return { label: 'Ver integração', href: '/settings/numbers', variant: 'primary' }
