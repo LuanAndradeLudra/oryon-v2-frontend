@@ -4,7 +4,7 @@
 // unidade abrir o rascunho e enviar). Consulta marcada depois do plano vira "Marcou" sozinha.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CheckCheck, ClipboardList, Kanban, Lightbulb, Megaphone, Tag as TagIcon } from 'lucide-react'
+import { ArrowLeft, CheckCheck, ClipboardList, Kanban, Lightbulb, Megaphone, MessageSquareText, Settings2, Sparkles, Tag as TagIcon, Target } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { pipelinesApi, tagsApi, whatsappNumbersApi } from '@/services/api'
 import { codigoDoErro, followUpsApi, type DesfechoDaEquipe, type DetalheDoPlanoDaUnidade, type ItemDoPlano, type PlanoDaUnidade, type SituacaoDoPlano } from '@/services/followUpsApi'
-import { AJUDA, EXPLICA_A_SITUACAO, MOTIVO, MOTIVO_CURTO, ROTULO_DA_SITUACAO, ROTULO_DO_DESFECHO, fraseDaAcao, fraseDoProgresso, fraseDoUltimoPasso, haQuanto, motivoDoErro, pedeTrabalho, prazo } from '@/lib/planosDeAcao'
+import { AJUDA, EXPLICA_A_SITUACAO, MOTIVO, MOTIVO_CURTO, ROTULO_DA_SITUACAO, ROTULO_DO_DESFECHO, fraseDaAcao, fraseDaMetaDoPlano, fraseDaSugestao, fraseDoProgresso, fraseDoUltimoPasso, haQuanto, motivoDoErro, pedeTrabalho, prazo } from '@/lib/planosDeAcao'
 import type { Pipeline, Tag, WhatsAppNumber } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -66,8 +66,13 @@ export function PlanosDeAcaoPage() {
   const [filtro, setFiltro] = useState<Filtro>('ativos')
   const [planos, setPlanos] = useState<PlanoDaUnidade[] | null>(null)
   const [erro, setErro] = useState(false)
+  const [configurar, setConfigurar] = useState(false)
   const ler = useCallback(() => {
-    followUpsApi.planos(STATUS_DO_FILTRO[filtro]).then((r) => { setPlanos(r.data); setErro(false) }).catch(() => setErro(true))
+    // Os urgentes primeiro (o resto na ordem do servidor: em andamento, pelo prazo).
+    followUpsApi.planos(STATUS_DO_FILTRO[filtro]).then((r) => {
+      setPlanos([...r.data].sort((a, b) => Number(b.priority === 'urgente') - Number(a.priority === 'urgente')))
+      setErro(false)
+    }).catch(() => setErro(true))
   }, [filtro])
   useEffect(() => { ler() }, [ler])
   useAvisoDosPlanos(ler)
@@ -76,7 +81,10 @@ export function PlanosDeAcaoPage() {
     <div className="flex flex-col h-full w-full bg-surface-950 overflow-y-auto">
       {isMobile && <MobilePageHeader title="Planos de ação" />}
       <main className="flex-1 px-4 md:px-6 pt-4 md:pt-6 pb-8 space-y-4 w-full min-w-0">
-        <p className="text-sm text-surface-400">Do gestor da rede. Os casos já vêm com o nome: retome cada pessoa e marque o resultado.</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <p className="text-sm text-surface-400">Do gestor da rede. Os casos já vêm com o nome: retome cada pessoa e marque o resultado.</p>
+          <Button variant="ghost" size="sm" leftIcon={<Settings2 className="w-4 h-4" aria-hidden />} onClick={() => setConfigurar(true)}>Configurar</Button>
+        </div>
         <SegmentedControl label="Quais planos" value={filtro} onChange={setFiltro} options={[
           { value: 'ativos', label: 'Em andamento' },
           { value: 'vencidos', label: 'Vencidos' },
@@ -102,9 +110,11 @@ export function PlanosDeAcaoPage() {
                       p.overdue ? 'text-status-pending bg-status-pending-bg' : p.status === 'enviado' ? 'text-white bg-[#0F766E]' : 'text-surface-200 bg-surface-700')}>
                       {p.overdue && p.status !== 'concluido' ? 'Atrasado' : ROTULO_DA_SITUACAO[p.status]}
                     </span>
+                    {p.priority === 'urgente' && <span className="flex-shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded-[5px] text-status-pending bg-status-pending-bg">Urgente</span>}
                   </span>
                   <span className="block mt-0.5 text-xs text-surface-400">
                     {p.origin === 'regra' ? 'Sugestão aprovada pelo gestor' : 'Do gestor da rede'} · prazo {prazo(p.dueAt)}
+                    {p.goalBooked ? ` · ${fraseDaMetaDoPlano(p.goalBooked, p.progress)}` : ''}
                   </span>
                   {p.orientation && <span className="block mt-1.5 text-sm text-surface-300 line-clamp-2">{p.orientation}</span>}
                   </span>
@@ -118,7 +128,74 @@ export function PlanosDeAcaoPage() {
           </ul>
         )}
       </main>
+      {configurar && <ConfiguracaoDosPlanos onFechar={() => setConfigurar(false)} />}
     </div>
+  )
+}
+
+/**
+ * A configuração da unidade para os planos (07/11): os avisos por e-mail e, sobretudo, se o gestor
+ * da rede pode ver TRECHOS das conversas dos casos. Cada unidade é um CNPJ e o que o paciente
+ * escreve é dado de saúde: desligado por padrão, e a decisão é da unidade (fica guardado quem
+ * ligou e quando).
+ */
+function ConfiguracaoDosPlanos({ onFechar }: { onFechar: () => void }) {
+  const { toast } = useToast()
+  const [email, setEmail] = useState<boolean | null>(null)
+  const [trechos, setTrechos] = useState<boolean | null>(null)
+  const [salvando, setSalvando] = useState(false)
+  // Sem a leitura, não há o que salvar: gravar os padrões por cima trocaria a configuração real
+  // sem a pessoa ver (revisão de 07/11, P3-5).
+  const [erroAoLer, setErroAoLer] = useState(false)
+  useEffect(() => {
+    let vivo = true
+    followUpsApi.configuracao().then((r) => { if (vivo) { setEmail(r.data.notifyEmail); setTrechos(r.data.shareExcerpts === true) } }).catch(() => { if (vivo) setErroAoLer(true) })
+    return () => { vivo = false }
+  }, [])
+  const salvar = async () => {
+    if (erroAoLer || email === null || trechos === null) return
+    setSalvando(true)
+    try {
+      await followUpsApi.salvarConfiguracao({ notifyEmail: email, shareExcerpts: trechos })
+      toast('Configuração dos planos salva.', 'success')
+      onFechar()
+    } catch (e) {
+      toast(motivoDoErro(codigoDoErro(e)), 'error')
+    } finally {
+      setSalvando(false)
+    }
+  }
+  return (
+    <Modal open onClose={onFechar} title="Configurar os planos de ação"
+      footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={onFechar}>Cancelar</Button><Button onClick={() => void salvar()} loading={salvando} disabled={erroAoLer || email === null || trechos === null}>Salvar</Button></div>}>
+      <div className="space-y-4 text-sm text-surface-200">
+        {erroAoLer && (
+          <p role="alert" className="text-sm text-status-pending">
+            Não deu para ler a configuração agora. Feche e abra de novo; nada foi alterado.
+          </p>
+        )}
+        <label className="flex items-start gap-3">
+          <input type="checkbox" className="mt-1" checked={!!email} disabled={email === null} onChange={(e) => setEmail(e.target.checked)} />
+          <span>
+            <span className="block font-medium text-surface-100">Avisar por e-mail</span>
+            <span className="block text-xs text-surface-400">Os admins da unidade recebem por e-mail os planos novos e a véspera do prazo, além do aviso no app.</span>
+          </span>
+        </label>
+        <label className="flex items-start gap-3">
+          <input type="checkbox" className="mt-1" checked={!!trechos} disabled={trechos === null} onChange={(e) => setTrechos(e.target.checked)} />
+          <span>
+            <span className="block font-medium text-surface-100">Mostrar trechos das conversas ao gestor da rede</span>
+            <span className="block text-xs text-surface-400">
+              Para o gestor entender cada caso antes de montar o plano. Vão até 12 mensagens em volta do pedido, com o dia e a hora,
+              e com nomes (da pessoa e de quem ela citar), telefone, CPF, RG, e-mail, endereço, datas com ano, links e números
+              longos mascarados; localização e contatos compartilhados vão só como “[localização]” e “[contato]”. Contato excluído
+              não aparece. A máscara é automática, não é perfeita: o que o paciente escreve sobre a saúde dele pode aparecer.
+              Cada leitura do gestor fica no registro da unidade, com o contato, e esta escolha também.
+            </span>
+          </span>
+        </label>
+      </div>
+    </Modal>
   )
 }
 
@@ -140,7 +217,7 @@ export function PlanoDeAcaoPage() {
   const [p, setP] = useState<DetalheDoPlanoDaUnidade | null>(null)
   const [erro, setErro] = useState(false)
   // A ação em lote (etiqueta, funil, disparo) — para os marcados, todos em aberto ou um contato só.
-  const [acao, setAcao] = useState<{ kind: Acao; itemIds: string[]; nome?: string } | null>(null)
+  const [acao, setAcao] = useState<{ kind: Acao; itemIds: string[]; nome?: string; preset?: { tagId?: string; pipelineId?: string; stageId?: string | null } } | null>(null)
   const [modeloPara, setModeloPara] = useState<ItemDoPlano | null>(null)
   const [confirmarConclusao, setConfirmarConclusao] = useState(false)
   const [comoTrabalhar, setComoTrabalhar] = useState(() => !jaViuOComoTrabalhar())
@@ -235,6 +312,12 @@ export function PlanoDeAcaoPage() {
           </span>
           {/* Sem a coluna (celular e tablet), o motivo vem embaixo do nome e o resultado cabe inteiro. */}
           <span className="lg:hidden text-xs text-surface-400 truncate">{MOTIVO_CURTO[i.kind]}{i.specialty ? ` · ${i.specialty}` : ''}</span>
+          {i.managerNote && (
+            <span className="flex items-start gap-1 text-xs text-surface-200" title={`Instrução do gestor: ${i.managerNote}`}>
+              <MessageSquareText className="w-3.5 h-3.5 mt-px shrink-0 text-surface-400" aria-hidden />
+              <span className="line-clamp-2"><span className="sr-only">Instrução do gestor: </span>{i.managerNote}</span>
+            </span>
+          )}
           {i.lastAction && <span className="text-xs text-surface-400 truncate" title={fraseDoUltimoPasso(i.lastAction)}>{fraseDoUltimoPasso(i.lastAction)}</span>}
           {i.optedOut && <span className="text-xs text-status-pending">Não quer receber disparo</span>}
           {/* No celular a coluna do resultado não cabe: ele vem aqui, embaixo do nome. */}
@@ -279,7 +362,14 @@ export function PlanoDeAcaoPage() {
 
   if (erro && !p) return <div className="p-6"><ErrorState onRetry={ler} /></div>
   const voltar = () => navigate('/planos')
-  const contexto = p ? `${p.origin === 'regra' ? 'Sugestão aprovada pelo gestor' : 'Do gestor da rede'} · prazo ${prazo(p.dueAt)} · ${fraseDoProgresso(p.progress, abertos.length)}` : undefined
+  const contexto = p ? `${p.priority === 'urgente' ? 'Urgente · ' : ''}${p.origin === 'regra' ? 'Sugestão aprovada pelo gestor' : 'Do gestor da rede'} · prazo ${prazo(p.dueAt)} · ${fraseDoProgresso(p.progress, abertos.length)}` : undefined
+  const sugestao = p?.recommendedAction ?? null
+  const aplicarSugestao = () => {
+    if (!sugestao || sugestao.kind === 'template') return
+    setAcao(sugestao.kind === 'tag'
+      ? { kind: 'tag', itemIds: [], preset: { tagId: sugestao.tagId } }
+      : { kind: 'pipeline', itemIds: [], preset: { pipelineId: sugestao.pipelineId, stageId: sugestao.stageId ?? null } })
+  }
   const botaoComoFunciona = !comoTrabalhar && (
     <Button variant="ghost" size="sm" leftIcon={<Lightbulb className="w-4 h-4" aria-hidden />} onClick={() => { reabrirComoTrabalhar(); setComoTrabalhar(true) }}>Como funciona?</Button>
   )
@@ -310,10 +400,26 @@ export function PlanoDeAcaoPage() {
               {botaoComoFunciona}
             </div>
           )}
-          {p.orientation && (
-            <section className="rounded-[10px] border border-surface-700 bg-surface-800 px-4 py-3">
-              <h2 className="text-xs font-semibold text-surface-400">Orientação do gestor</h2>
-              <p className="mt-1 text-sm text-surface-100 whitespace-pre-line">{p.orientation}</p>
+          {(p.orientation || p.goalBooked || sugestao) && (
+            <section className="rounded-[10px] border border-surface-700 bg-surface-800 px-4 py-3 space-y-2.5">
+              {p.orientation && (
+                <div>
+                  <h2 className="text-xs font-semibold text-surface-400">Orientação do gestor</h2>
+                  <p className="mt-1 text-sm text-surface-100 whitespace-pre-line">{p.orientation}</p>
+                </div>
+              )}
+              {p.goalBooked ? (
+                <p className="flex items-center gap-2 text-sm text-surface-200"><Target className="w-4 h-4 shrink-0 text-surface-400" aria-hidden />{fraseDaMetaDoPlano(p.goalBooked, p.progress)}</p>
+              ) : null}
+              {sugestao && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="flex items-center gap-2 text-sm text-surface-200"><Sparkles className="w-4 h-4 shrink-0 text-surface-400" aria-hidden />O gestor sugere {fraseDaSugestao(sugestao)}.</p>
+                  {ativo && abertos.length > 0 && sugestao.kind !== 'template' && (
+                    <Button size="sm" variant="neutral" onClick={aplicarSugestao}>Aplicar aos {abertos.length} em aberto</Button>
+                  )}
+                  {sugestao.kind === 'template' && <span className="text-xs text-surface-400">Use o botão Modelo de cada contato e escolha esse modelo.</span>}
+                </div>
+              )}
             </section>
           )}
           {comoTrabalhar && ativo && <ComoTrabalhar onFechar={() => setComoTrabalhar(false)} />}
@@ -372,7 +478,7 @@ export function PlanoDeAcaoPage() {
       )}
 
       {p && acao && (
-        <AcaoDoPlano plano={p} acao={acao.kind} itemIds={acao.itemIds} nome={acao.nome}
+        <AcaoDoPlano plano={p} acao={acao.kind} itemIds={acao.itemIds} nome={acao.nome} preset={acao.preset}
           onFechar={() => setAcao(null)} onFeito={(msg) => { setAcao(null); toast(msg, 'success'); ler() }} onErro={(msg) => toast(msg, 'error')} />
       )}
       {p && modeloPara && (
@@ -397,10 +503,12 @@ export function PlanoDeAcaoPage() {
 }
 
 /** A folha de cada ação em lote: etiqueta, funil (com a etapa de retomada guardada) e disparo em rascunho. */
-function AcaoDoPlano({ plano, acao, itemIds, nome, onFechar, onFeito, onErro }: {
+function AcaoDoPlano({ plano, acao, itemIds, nome, preset, onFechar, onFeito, onErro }: {
   plano: DetalheDoPlanoDaUnidade
   acao: Acao
   itemIds: string[]
+  /** A ação que o gestor sugeriu: já vem escolhida (a etiqueta, ou o funil e a etapa). */
+  preset?: { tagId?: string; pipelineId?: string; stageId?: string | null }
   /** A ação de um contato só (o ⋯ da linha): o nome dele no texto. */
   nome?: string
   onFechar: () => void
@@ -420,16 +528,16 @@ function AcaoDoPlano({ plano, acao, itemIds, nome, onFechar, onFeito, onErro }: 
     let vivo = true
     void followUpsApi.configuracao().then((c) => {
       if (!vivo) return
-      setTagId(c.data.tagId ?? '')
-      setFunilId(c.data.pipelineId ?? '')
-      setEtapaId(c.data.stageId ?? '')
+      setTagId(preset?.tagId ?? c.data.tagId ?? '')
+      setFunilId(preset?.pipelineId ?? c.data.pipelineId ?? '')
+      setEtapaId(preset?.pipelineId ? (preset.stageId ?? '') : (c.data.stageId ?? ''))
       setLinhaId(c.data.whatsappNumberId ?? '')
     }).catch(() => {})
     if (acao === 'tag') void tagsApi.list().then((r) => { if (vivo) setTags(r.data) }).catch(() => {})
     if (acao === 'pipeline') void pipelinesApi.list().then((r) => { if (vivo) setFunis(r.data.filter((f) => !f.isArchived)) }).catch(() => {})
     if (acao === 'campaign_draft') void whatsappNumbersApi.list().then((r) => { if (vivo) setLinhas(r.data.filter((l) => l.isActive !== false)) }).catch(() => {})
     return () => { vivo = false }
-  }, [acao])
+  }, [acao, preset])
   const etapas = funis.find((f) => f.id === funilId)?.stages?.filter((s) => !s.isWon && !s.isLost) ?? []
   const quantos = itemIds.length || plano.items.filter(pedeTrabalho).length
   const alvo = nome && itemIds.length === 1 ? nome : itemIds.length ? `os ${itemIds.length} contatos marcados` : `os ${quantos} contatos em aberto`

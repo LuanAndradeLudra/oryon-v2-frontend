@@ -195,3 +195,15 @@ export function fraseDoUltimoPasso(u: UltimoPasso, agora = new Date()): string {
               : 'Atualizado'
   return [oQue, haQuanto(u.at, agora), u.actorName].filter(Boolean).join(' · ')
 }
+
+/** A ação que o gestor sugeriu, em português (07/11). */
+export function fraseDaSugestao(a: { kind: 'template' | 'tag' | 'pipeline'; label: string }): string {
+  return a.kind === 'template' ? `enviar o modelo “${a.label}”` : a.kind === 'tag' ? `pôr a etiqueta “${a.label}”` : `levar ao funil “${a.label}”`
+}
+
+/** A meta do plano: quantos devem marcar e quantos já marcaram. */
+export function fraseDaMetaDoPlano(meta: number | null | undefined, p: { booked: number; bookedReported: number }): string | null {
+  if (!meta) return null
+  const ja = p.booked + p.bookedReported
+  return ja >= meta ? `Meta batida: ${ja} de ${meta} marcaram` : `Meta do gestor: ${meta} ${meta === 1 ? 'marcar' : 'marcarem'} · ${ja} até agora · faltam ${meta - ja}`
+}

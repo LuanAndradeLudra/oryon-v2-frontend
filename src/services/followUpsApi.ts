@@ -22,6 +22,21 @@ export interface PlanoDaUnidade {
   version: number
   progress: ProgressoDoPlano
   overdue: boolean
+  /** 07/11: a prioridade, a meta (quantos devem marcar) e a ação que o gestor sugere. */
+  priority?: 'normal' | 'urgente'
+  goalBooked?: number | null
+  recommendedAction?: AcaoSugeridaDoGestor | null
+}
+
+/** O que o gestor sugere à unidade: um modelo, uma etiqueta ou uma etapa do funil da unidade. */
+export interface AcaoSugeridaDoGestor {
+  kind: 'template' | 'tag' | 'pipeline'
+  label: string
+  templateName?: string
+  language?: string
+  tagId?: string
+  pipelineId?: string
+  stageId?: string | null
 }
 
 export interface ItemDoPlano {
@@ -41,6 +56,8 @@ export interface ItemDoPlano {
   outcome: Desfecho | null
   outcomeAt: string | null
   note: string | null
+  /** A instrução do gestor para este caso. */
+  managerNote?: string | null
   version: number
   /** O último passo neste contato (o que a equipe já fez com ele). */
   lastAction?: UltimoPasso | null
@@ -70,6 +87,8 @@ export interface ConfiguracaoDasRetomadas {
   whatsappNumberId: string | null
   tagId: string | null
   notifyEmail: boolean
+  /** A unidade mostra trechos mascarados das conversas dos casos ao gestor da rede. */
+  shareExcerpts?: boolean
   actions?: AcoesDisponiveis
 }
 

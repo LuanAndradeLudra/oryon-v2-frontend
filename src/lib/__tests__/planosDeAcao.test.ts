@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DESFECHOS_DA_EQUIPE, diaDoPasso, fraseDaAcao, fraseDoHistorico, fraseDoProgresso, fraseDoUltimoPasso, haQuanto, pedeTrabalho, prazo, quandoExato } from '@/lib/planosDeAcao'
+import { DESFECHOS_DA_EQUIPE, diaDoPasso, fraseDaAcao, fraseDoHistorico, fraseDoProgresso, fraseDoUltimoPasso, haQuanto, pedeTrabalho, prazo, quandoExato, fraseDaMetaDoPlano, fraseDaSugestao } from '@/lib/planosDeAcao'
 import type { EventoDoHistorico } from '@/services/followUpsApi'
 import { rotaPermitida } from '@/lib/rotasPorPapel'
 
@@ -63,5 +63,17 @@ describe('planos de ação na unidade', () => {
     expect(diaDoPasso('2026-11-05T12:00:00.000Z', agora)).toBe('Ontem')
     expect(diaDoPasso('2026-11-02T12:00:00.000Z', agora)).toBe('02/11')
     expect(quandoExato('2026-11-06T23:40:00.000Z')).toBe('06/11 às 20h40')
+  })
+})
+
+describe('planos de ação: o que o gestor pede (07/11)', () => {
+  it('a meta mostra quanto falta e quando foi batida', () => {
+    expect(fraseDaMetaDoPlano(null, { booked: 0, bookedReported: 0 })).toBeNull()
+    expect(fraseDaMetaDoPlano(4, { booked: 1, bookedReported: 0 })).toBe('Meta do gestor: 4 marcarem · 1 até agora · faltam 3')
+    expect(fraseDaMetaDoPlano(1, { booked: 0, bookedReported: 1 })).toBe('Meta batida: 1 de 1 marcaram')
+  })
+  it('a ação sugerida em português', () => {
+    expect(fraseDaSugestao({ kind: 'tag', label: 'Retomar' })).toBe('pôr a etiqueta “Retomar”')
+    expect(fraseDaSugestao({ kind: 'pipeline', label: 'Retomadas · Ligar' })).toBe('levar ao funil “Retomadas · Ligar”')
   })
 })

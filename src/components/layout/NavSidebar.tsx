@@ -29,6 +29,7 @@ import { useInternalChat } from '@/contexts/InternalChatContext'
 import { conversationsApi } from '@/services/api'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useRetomadas } from '@/hooks/useRetomadas'
 import { AiCreditsIndicator } from './AiCreditsIndicator'
 import { useCobrancaOculta } from '@/hooks/useCobrancaOculta'
 import { OryonLogo } from '@/components/brand/OryonLogo'
@@ -155,7 +156,9 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
   const { totalUnread: internalUnread } = useInternalChat()
   const multiPipeline = useMultiPipeline()
   // Retomadas: o item "Planos de ação" só aparece em unidade de rede, para os admins.
-  const planos = usePlanosDaUnidade(rotaPermitida('/planos', { role: user?.role, multiPipeline }))
+  // FF_RETOMADAS (07/11): sem a flag da unidade, o item nem pergunta ao backend.
+  const retomadasLigadas = useRetomadas()
+  const planos = usePlanosDaUnidade(retomadasLigadas && rotaPermitida('/planos', { role: user?.role, multiPipeline }))
 
   const refreshUnread = useCallback(() => {
     conversationsApi.unreadTotal()
