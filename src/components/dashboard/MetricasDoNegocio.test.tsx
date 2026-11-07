@@ -44,7 +44,7 @@ afterEach(() => { cleanup(); localStorage.clear() })
 function montar(tenantId: string | undefined = TENANT) {
   return render(
     <MemoryRouter>
-      <KpiGrid metrics={METRICAS} customizerOpen={false} onCustomizerClose={() => undefined} tenantId={tenantId} periodo="30d" />
+      <KpiGrid metrics={METRICAS} customizerOpen={false} onCustomizerClose={() => undefined} tenantId={tenantId} periodo={{ tipo: 'fixo', valor: '30d', comparar: 'anterior' }} />
     </MemoryRouter>,
   )
 }

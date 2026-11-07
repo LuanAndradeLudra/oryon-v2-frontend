@@ -1,7 +1,7 @@
 import type React from 'react'
 import {
   Bell, MessageSquare, UserCheck, Bot, Sparkles, Clock, MessagesSquare, AtSign, Send, AlertCircle,
-  Workflow, Zap, Plug, ShieldAlert,
+  Workflow, Zap, Plug, ShieldAlert, ListChecks, AlarmClock, Mail,
 } from 'lucide-react'
 
 /** Metadados de notificação compartilhados pelo popover do sino (TopBar) e
@@ -16,6 +16,10 @@ export const TYPE_ICON: Record<string, React.ComponentType<{ className?: string;
   conversation_waiting: Clock,
   team_message: MessagesSquare,
   mention: AtSign,
+  follow_up_plan: ListChecks,
+  follow_up_plan_due: AlarmClock,
+  /** Só e-mail (o resumo das 7h do dono da rede): aparece nas preferências, nunca no sino. */
+  follow_up_digest: Mail,
   campaign_complete: Send,
   campaign_failed: AlertCircle,
   automation_executed: Workflow,
@@ -31,7 +35,7 @@ export function iconFor(type: string): React.ComponentType<{ className?: string;
 export const CATEGORY_CHIPS: Array<{ key: string; label: string; types: string[] }> = [
   { key: 'all', label: 'Todas', types: [] },
   { key: 'conversations', label: 'Conversas', types: ['new_message', 'conversation_assigned', 'conversation_transferred', 'agent_handoff', 'agent_ai_response', 'conversation_waiting'] },
-  { key: 'team', label: 'Equipe', types: ['team_message', 'mention'] },
+  { key: 'team', label: 'Equipe', types: ['team_message', 'mention', 'follow_up_plan', 'follow_up_plan_due', 'follow_up_digest'] },
   { key: 'campaigns', label: 'Campanhas', types: ['campaign_complete', 'campaign_failed'] },
   { key: 'automations', label: 'Automações', types: ['automation_executed', 'automation_note'] },
   { key: 'security', label: 'Segurança', types: ['whatsapp_integration_error', 'security_alert'] },

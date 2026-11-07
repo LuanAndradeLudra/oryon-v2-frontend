@@ -1,6 +1,6 @@
 // ── Dashboard Types & Constants ───────────────────────────────────────────────
 
-export type DateRange = 'today' | '7d' | '30d' | 'month'
+export type DateRange = 'today' | '7d' | '30d' | 'month' | '90d' | 'last_month'
 
 /** Indicadores fixos, calculados no `/home/stats` e `/home/snapshot`. */
 export type KpiIdFixo =

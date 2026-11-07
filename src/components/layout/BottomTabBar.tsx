@@ -53,16 +53,18 @@ export function BottomTabBar() {
 
   useEffect(() => {
     let socket: ReturnType<typeof import('@/services/socket').connectSocket> | null = null
+    // Retomadas (06/11): sai só o ouvinte daqui (o `off(evento)` sem a função tirava também os
+    // de Conversas e do resto do app).
+    const naoLidas = (payload: { total: number }) => setUnreadConversations(payload.total)
+    const atualizou = () => refresh()
     import('@/services/socket').then(({ connectSocket }) => {
       socket = connectSocket()
-      socket.on('unread:update', (payload: { total: number }) => {
-        setUnreadConversations(payload.total)
-      })
-      socket.on('conversation:updated', () => refresh())
+      socket.on('unread:update', naoLidas)
+      socket.on('conversation:updated', atualizou)
     })
     return () => {
-      socket?.off('unread:update')
-      socket?.off('conversation:updated')
+      socket?.off('unread:update', naoLidas)
+      socket?.off('conversation:updated', atualizou)
     }
   }, [refresh])
 
