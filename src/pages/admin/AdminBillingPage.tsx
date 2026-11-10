@@ -16,11 +16,13 @@ import { PendingActivations } from '@/components/admin/billing/PendingActivation
 import { AdminInvoices } from '@/components/admin/billing/AdminInvoices'
 import { Portfolio } from '@/components/admin/billing/Portfolio'
 import { CatalogManager } from '@/components/admin/billing/CatalogManager'
+import { ContractExisting } from '@/components/admin/billing/ContractExisting'
 
-type BillingTab = 'provision' | 'pending' | 'invoices' | 'portfolio' | 'catalog'
+type BillingTab = 'provision' | 'existing' | 'pending' | 'invoices' | 'portfolio' | 'catalog'
 
 const TABS: Array<{ id: BillingTab; label: string }> = [
   { id: 'provision', label: 'Nova conta' },
+  { id: 'existing', label: 'Contratar conta existente' },
   { id: 'pending', label: 'Pendentes de ativação' },
   { id: 'invoices', label: 'Faturas' },
   { id: 'portfolio', label: 'Carteira' },
@@ -46,6 +48,7 @@ export function AdminBillingPage() {
             ficavam presos à esquerda em monitor grande. */}
         <div className="mx-auto w-full max-w-6xl">
           {tab === 'provision' && <ProvisionWizard onProvisioned={() => setReloadKey((k) => k + 1)} />}
+          {tab === 'existing' && <ContractExisting />}
           {tab === 'pending' && <PendingActivations reloadKey={reloadKey} />}
           {tab === 'invoices' && <AdminInvoices />}
           {tab === 'portfolio' && <Portfolio />}

@@ -382,6 +382,10 @@ export const adminBillingApi = {
   async preview(body: ProvisionTermsBody & { adminEmail?: string }): Promise<ProvisionPreview> {
     return (await api.post<ProvisionPreview>('/admin/billing/provision/preview', body)).data
   },
+  /** Contrata uma conta que já existe. A franquia e o ciclo vêm da proposta. */
+  async contractExisting(tenantId: string, body: ProvisionTermsBody): Promise<{ organizationId: string; contractId: string }> {
+    return (await api.post(`/admin/billing/accounts/${tenantId}/contract`, body)).data
+  },
   /** `idempotencyKey`: gerada uma vez por envio e repetida no retry do mesmo corpo (não cria a conta duas vezes). */
   async provision(body: ProvisionBody, idempotencyKey?: string): Promise<ProvisionResult> {
     return (await api.post<ProvisionResult>('/admin/billing/provision', body, {
