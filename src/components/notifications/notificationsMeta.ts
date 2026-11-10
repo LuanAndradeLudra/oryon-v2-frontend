@@ -2,6 +2,7 @@ import type React from 'react'
 import {
   Bell, MessageSquare, UserCheck, Bot, Sparkles, Clock, MessagesSquare, AtSign, Send, AlertCircle,
   Workflow, Zap, Plug, ShieldAlert, AlertTriangle, Receipt, ListChecks, AlarmClock, Mail,
+  LifeBuoy, MessageCircleQuestion, CircleCheck,
 } from 'lucide-react'
 
 /** Metadados de notificação compartilhados pelo popover do sino (TopBar) e
@@ -29,6 +30,12 @@ export const TYPE_ICON: Record<string, React.ComponentType<{ className?: string;
   // SCRUM-1206 — avisos de cobrança (fatura, vencimento, suspensão, franquia).
   billing_alert: AlertTriangle,
   billing_update: Receipt,
+  // Suporte (SCRUM-1386)
+  support_ticket_created: LifeBuoy,
+  support_ticket_updated: LifeBuoy,
+  support_ticket_question: MessageCircleQuestion,
+  support_ticket_resolved: CircleCheck,
+  support_ticket_client_comment: MessagesSquare,
 }
 
 export function iconFor(type: string): React.ComponentType<{ className?: string; strokeWidth?: number }> {
@@ -41,6 +48,7 @@ export const CATEGORY_CHIPS: Array<{ key: string; label: string; types: string[]
   { key: 'team', label: 'Equipe', types: ['team_message', 'mention', 'follow_up_plan', 'follow_up_plan_due', 'follow_up_digest'] },
   { key: 'campaigns', label: 'Campanhas', types: ['campaign_complete', 'campaign_failed'] },
   { key: 'automations', label: 'Automações', types: ['automation_executed', 'automation_note'] },
+  { key: 'support', label: 'Suporte', types: ['support_ticket_created', 'support_ticket_updated', 'support_ticket_question', 'support_ticket_resolved', 'support_ticket_client_comment'] },
   { key: 'security', label: 'Segurança', types: ['whatsapp_integration_error', 'security_alert'] },
   { key: 'billing', label: 'Cobrança', types: ['billing_alert', 'billing_update'] },
 ]

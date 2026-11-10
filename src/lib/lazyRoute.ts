@@ -10,7 +10,9 @@ const RELOAD_KEY = 'oryon_chunk_reload_pending'
  * Same as `React.lazy`, but after a new deploy if the browser still has an old
  * shell that points at removed `/assets/*.js`, we reload once to fetch fresh HTML.
  */
-export function lazyRoute<T extends ComponentType<Record<string, unknown>>>(
+// Mesmo tipo do React.lazy: aceita componente com props (ex.: o formulário do suporte).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function lazyRoute<T extends ComponentType<any>>(
   factory: () => Promise<{ default: T }>,
 ): LazyExoticComponent<T> {
   return lazy(async () => {

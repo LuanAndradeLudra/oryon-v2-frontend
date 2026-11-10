@@ -497,7 +497,10 @@ function visualForAgentEntry(entry: Extract<TimelineEntry, { kind: 'agent' }>): 
 }
 
 function visualForUserEntry(entry: Extract<TimelineEntry, { kind: 'user' }>): RowVisual {
-  return visualForActionKey(entry.action, entry.metadata)
+  const v = visualForActionKey(entry.action, entry.metadata)
+  // Ação sem rótulo próprio: o texto da atividade, nunca a chave técnica (reavaliação de UX de 27/10:
+  // o acesso do suporte aparecia como "support_conversation_access").
+  return v.label === entry.action && entry.summary ? { ...v, label: entry.summary } : v
 }
 
 /** Map agent tool names onto the same action keys we use for user audit
@@ -609,6 +612,10 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
     case 'message_sent':
       return { label: 'Enviou uma mensagem', Icon: Send,
                chip: 'var(--color-accent-cyan)' }
+    // SCRUM-1385: a equipe Oryon abriu a conversa (acesso auditado, com motivo, por 24 h).
+    case 'support_conversation_access':
+      return { label: 'Suporte Oryon abriu a conversa por 24 h', Icon: AlertCircle,
+               chip: 'var(--color-accent-amber)' }
     // As duas ferramentas abaixo caíam no `default` — ponto CINZA na linha do
     // tempo. Justamente as duas que a IA usa para justificar e executar um
     // avanço de negócio: a linha que confirma o clímax era a mais apagada da

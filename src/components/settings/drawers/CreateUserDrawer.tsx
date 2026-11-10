@@ -17,6 +17,7 @@ import { isOwnerTier } from '@/lib/roleHelpers'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Equipe Oryon',
+  oryon_support:  'Suporte Oryon',
   business_admin: 'Dono',
   admin:      'Administrador',
   supervisor: 'Supervisor',
@@ -25,6 +26,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   super_admin:    'Equipe interna Oryon',
+  oryon_support:  'Fila de suporte de todos os clientes',
   business_admin: 'Super administrador do negócio',
   admin:      'Acesso total à plataforma',
   supervisor: 'Gerencia equipe e atendimentos',

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { useEffect, useState, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
-import { isAdminTier, isOryonStaff } from '@/lib/roleHelpers'
+import { ehEquipeDeSuporte, isAdminTier, isOryonStaff } from '@/lib/roleHelpers'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TagsProvider }         from '@/contexts/TagsContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
@@ -60,6 +60,8 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
+const SupportPage = lazyRoute(() => import('@/pages/SupportPage').then(m => ({ default: m.SupportPage })))
+const SupportQualidadePage = lazyRoute(() => import('@/pages/SupportQualidadePage').then(m => ({ default: m.SupportQualidadePage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
 const PipelinePage      = lazyRoute(() => import('@/pages/PipelinePage').then(m => ({ default: m.PipelinePage })))
@@ -107,12 +109,14 @@ const ConnectorAdminPage       = lazyRoute(() => import('@/pages/admin/Connector
 const AuditPage                = lazyRoute(() => import('@/pages/admin/AuditPage').then(m => ({ default: m.AuditPage })))
 const EmailsPage               = lazyRoute(() => import('@/pages/admin/EmailsPage').then(m => ({ default: m.EmailsPage })))
 const TermsAdminPage           = lazyRoute(() => import('@/pages/admin/TermsAdminPage').then(m => ({ default: m.TermsAdminPage })))
+const AdminSupportPage         = lazyRoute(() => import('@/pages/admin/AdminSupportPage').then(m => ({ default: m.AdminSupportPage })))
 const AiObservabilityPage      = lazyRoute(() => import('@/pages/admin/AiObservabilityPage').then(m => ({ default: m.AiObservabilityPage })))
 const AiExecutionsPage         = lazyRoute(() => import('@/pages/admin/AiExecutionsPage').then(m => ({ default: m.AiExecutionsPage })))
 const AdminAgentEditorPage     = lazyRoute(() => import('@/pages/admin/AdminAgentEditorPage').then(m => ({ default: m.AdminAgentEditorPage })))
 const AdminBillingPage         = lazyRoute(() => import('@/pages/admin/AdminBillingPage').then(m => ({ default: m.AdminBillingPage })))
 
 import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
+import { ShellDaEquipeDeSuporte } from '@/components/support/fila/ShellDaEquipeDeSuporte'
 import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
 import { TermsAcceptanceModal } from '@/components/terms/TermsAcceptanceModal'
 import { rotaSemPedidoDeTermos } from '@/lib/rotasSemTermos'
@@ -273,6 +277,9 @@ function SoAdminNoSetup({ children }: { children: ReactNode }) {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  // A equipe de suporte da Oryon só usa a fila (o app da empresa responde 403 para ela).
+  if (ehEquipeDeSuporte(user?.role)) return <Navigate to="/admin/support" replace />
   return (
     <RequireAuth>
       <FirstAccessGate>
@@ -287,6 +294,24 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
         </OnboardingGate>
       </FirstAccessGate>
     </RequireAuth>
+  )
+}
+
+/**
+ * Fila de suporte da Oryon (SCRUM-1384): a equipe de suporte usa um shell só
+ * dela (não carrega nada de empresa); o super_admin abre dentro do app.
+ */
+function RotaDaFilaDeSuporte() {
+  const { user } = useAuth()
+  if (ehEquipeDeSuporte(user?.role)) {
+    return <RequireAuth><ShellDaEquipeDeSuporte><AdminSupportPage /></ShellDaEquipeDeSuporte></RequireAuth>
+  }
+  return (
+    <ProtectedRoute>
+      <RequireSuperAdmin descricao={<>A fila de suporte é da equipe Oryon. Os chamados da sua empresa ficam em <Link to="/support" className="font-semibold text-brand-400 hover:underline">Suporte</Link>.</>}>
+        <AdminSupportPage />
+      </RequireSuperAdmin>
+    </ProtectedRoute>
   )
 }
 
@@ -371,6 +396,14 @@ function AnimatedRoutes() {
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute><DashboardPage /></ProtectedRoute>
+          } />
+          {/* Suporte da empresa (SCRUM-1383): flag do tenant e papel em rotaPermitida. */}
+          <Route path="/support" element={
+            <ProtectedRoute><RotaPorPapel><SupportPage /></RotaPorPapel></ProtectedRoute>
+          } />
+          {/* Qualidade (SCRUM-1391): só a gestão da empresa (rotaPermitida). */}
+          <Route path="/support/qualidade" element={
+            <ProtectedRoute><RotaPorPapel><SupportQualidadePage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/contacts" element={
             <ProtectedRoute><ContactsPage /></ProtectedRoute>
@@ -457,6 +490,7 @@ function AnimatedRoutes() {
           <Route path="/admin/connectors" element={isFeatureVisible('connectorsSelfService') ? (
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Conectores"><ConnectorAdminPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           ) : <Navigate to="/admin/skill-templates" replace />} />
+          <Route path="/admin/support" element={<RotaDaFilaDeSuporte />} />
           <Route path="/admin/audit" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Auditoria"><AuditPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />

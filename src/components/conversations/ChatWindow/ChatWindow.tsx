@@ -12,6 +12,8 @@ import { msRestantesDaJanela } from '@/lib/whatsappWindow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEventosDaConversa } from '@/hooks/useEventosDaConversa'
 import { useEstadoNaUrl, lerBool, escreverBool } from '@/hooks/useEstadoNaUrl'
+import { useRegistrarMensagensDoSuporte } from '@/components/support/suporteDaConversa'
+import { RodapeDoChat } from '@/components/support/RodapeDoChat'
 
 interface ChatWindowProps {
   conversation: Conversation | null
@@ -163,6 +165,8 @@ export function ChatWindow({
 
   // Hook antes do retorno da tela vazia (regra dos hooks).
   const semMovimento = useReducedMotion()
+  // Épico de suporte (SCRUM-1381): o painel do chamado mostra as mensagens marcadas.
+  useRegistrarMensagensDoSuporte(messages)
 
   if (!conversation) {
     // Estado vazio como CENTRO DE COMANDO — o espaço morto vira onboarding
@@ -264,6 +268,7 @@ export function ChatWindow({
       {/* key por conversa (28/09): sem ela o rascunho, os anexos e o
           "modelo enviado" sobreviviam à troca de conversa — digitar em A,
           apertar J e Enviar mandava o texto para B. */}
+      <RodapeDoChat>
       <MessageInput
         key={conversation.id}
         onSend={handleSendWithErrorReporting}
@@ -274,6 +279,7 @@ export function ChatWindow({
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
       />
+      </RodapeDoChat>
     </div>
   )
 }

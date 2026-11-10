@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
 import { stagesApi, customFieldsApi, productsApi, practitionersApi, pipelinesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { ehEquipeDeSuporte } from '@/lib/roleHelpers'
 import type { TenantStage, ContactCustomFieldDef, Product, Practitioner, Pipeline } from '@/types'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 
@@ -53,7 +54,9 @@ const CRMConfigContext = createContext<CRMConfig>({
 })
 
 export function CRMConfigProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated: logado, user } = useAuth()
+  // A equipe de suporte da Oryon não tem dados de empresa para carregar (o backend responderia 403).
+  const isAuthenticated = logado && !ehEquipeDeSuporte(user?.role)
   const [stages, setStages] = useState<TenantStage[]>([])
   const [fieldDefs, setFieldDefs] = useState<ContactCustomFieldDef[]>([])
   const [products, setProducts] = useState<Product[]>([])

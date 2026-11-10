@@ -19,7 +19,9 @@ import {
   Mail,
   FileText,
   ListChecks,
+  LifeBuoy,
 } from 'lucide-react'
+import { suporteLigadoPara } from '@/config/featureFlags'
 import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
@@ -153,7 +155,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
   // Configurações e logout saíram da sidebar (SCRUM-1100 · rodapé agora é só
   // o consumo de créditos de IA) — `useAuth` aqui só precisa do usuário/flags
   // que ainda decidem quais itens de navegação aparecem.
-  const { user, organizationConfigured } = useAuth()
+  const { user, organizationConfigured, featureFlags } = useAuth()
   const cobrancaOculta = useCobrancaOculta()
   const moduleAllowed = useModuleAccess()
   const { isRouteVisible, isFeatureVisible } = useFeatureVisibility()
@@ -258,7 +260,9 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
     { icon: <CopilotMark className="w-[16.5px] h-[16.5px]" />,   label: 'Copilot AI', href: '/copilot',
       nudge: !checklist.copilot ? 'Setup' : undefined },
-  ].filter((item) => isRouteVisible(item.href) && rotaPermitida(item.href, { role: user?.role, multiPipeline }) && moduleVisible(item.href))
+    // Épico de suporte (SCRUM-1383): chamados da empresa com a Oryon (flag do tenant; regra em rotaPermitida).
+    { icon: <LifeBuoy className="w-[16.5px] h-[16.5px]" />,   label: 'Suporte',     href: '/support', nudge: undefined as string | undefined },
+  ].filter((item) => isRouteVisible(item.href) && rotaPermitida(item.href, { role: user?.role, multiPipeline, suporte: suporteLigadoPara(featureFlags) }) && moduleVisible(item.href))
 
   const internalChatItem = {
     icon: <MessagesSquare className="w-[16.5px] h-[16.5px]" />,
@@ -381,6 +385,13 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
                     active={activeHref === '/admin/connector-requests'}
                   />
                 )}
+                {/* Fila de suporte de todos os clientes (SCRUM-1384). */}
+                <SidebarLink
+                  href="/admin/support"
+                  icon={<LifeBuoy className="w-[16.5px] h-[16.5px]" />}
+                  label="Fila de suporte"
+                  active={activeHref === '/admin/support'}
+                />
                 <SidebarLink
                   href="/admin/billing"
                   icon={<Receipt className="w-[16.5px] h-[16.5px]" />}

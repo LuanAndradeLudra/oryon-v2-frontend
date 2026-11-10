@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
+import { lazyRoute } from '@/lib/lazyRoute'
+import { LimiteDoSuporte } from '@/components/support/LimiteDoSuporte'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { comVolta } from '@/lib/voltarPara'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, KeyRound, BookOpen, Megaphone as MegaphoneIcon, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
+  LifeBuoy, Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, KeyRound, BookOpen, Megaphone as MegaphoneIcon, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { NotificationItem, Kbd } from '@/components/notifications/NotificationItem'
@@ -23,7 +25,7 @@ import {
 } from '@/hooks/useNotifications'
 import { cn, getInitials } from '@/lib/utils'
 import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
-import { isRouteVisible } from '@/config/featureFlags'
+import { isRouteVisible, suporteLigadoPara } from '@/config/featureFlags'
 import { papelAlcancaSecao } from '@/components/settings/SettingsLayout'
 import { useModuleAccess } from '@/hooks/useAccountState'
 import { moduleForPath } from '@/lib/billingModules'
@@ -812,7 +814,9 @@ type NotifFilter = 'all' | 'unread'
 // Phase 19: category chips — maps UI label to the set of notification
 // types the backend filters on.
 
-function NotificationsPanel() {
+/** Painel do sino. Exportado para o shell da equipe de suporte (SCRUM-1386),
+ *  que não tem a tela de preferências (`semPreferencias`). */
+export function NotificationsPanel({ semPreferencias = false }: { semPreferencias?: boolean }) {
   // Localização do roteador: as preferências voltam para a tela de onde o sino foi aberto.
   const location = useLocation()
   const {
@@ -1013,15 +1017,17 @@ function NotificationsPanel() {
             >
               <Archive className="w-3.5 h-3.5" />
             </button>
-            <button
-              type="button"
-              onClick={() => navigate(comVolta('/settings/notifications', `${location.pathname}${location.search}`))}
-              title="Preferências de notificação"
-              aria-label="Preferências de notificação"
-              className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-            </button>
+            {!semPreferencias && (
+              <button
+                type="button"
+                onClick={() => navigate(comVolta('/settings/notifications', `${location.pathname}${location.search}`))}
+                title="Preferências de notificação"
+                aria-label="Preferências de notificação"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
         <div ref={panelRef} className="max-h-[28rem] overflow-y-auto py-1" role="list">
@@ -1141,8 +1147,13 @@ function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: 
   )
 }
 
+// Épico de suporte (SCRUM-1382): o modal do chamado sem conversa só é baixado
+// quando a pessoa abre "Falar com o suporte" (o menu está em todas as telas).
+// lazyRoute: um arquivo antigo depois de uma atualização recarrega a página em vez de quebrar.
+const ChamadoSemConversa = lazyRoute(() => import('@/components/support/ChamadoSemConversa'))
+
 function UserMenu() {
-  const { user, logout } = useAuth()
+  const { user, logout, featureFlags } = useAuth()
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
   const [open, setOpen] = useState(false)
@@ -1188,8 +1199,18 @@ function UserMenu() {
     logout()
     navigate('/login', { replace: true })
   }
+  // "Falar com o suporte": chamado que não nasce de uma conversa (tela que não
+  // carrega, lentidão, dúvida…). Flag do tenant; a equipe de suporte da Oryon
+  // não abre chamado para si mesma.
+  const falarComSuporteVisivel = suporteLigadoPara(featureFlags) && user?.role !== 'oryon_support'
+  const [falarComSuporte, setFalarComSuporte] = useState(false)
+  // Menu aberto: já baixa o modal, para o clique em "Falar com o suporte" não esperar.
+  useEffect(() => {
+    if (open && falarComSuporteVisivel) import('@/components/support/ChamadoSemConversa').catch(() => undefined)
+  }, [open, falarComSuporteVisivel])
 
   return (
+    <>
     <Dropdown
       open={open}
       onClose={close}
@@ -1235,6 +1256,12 @@ function UserMenu() {
       <DropdownItem icon={User} onClick={() => go('/settings/account')}>
         Meu perfil
       </DropdownItem>
+
+      {falarComSuporteVisivel && (
+        <DropdownItem icon={LifeBuoy} onClick={() => { close(); setFalarComSuporte(true) }}>
+          Falar com o suporte
+        </DropdownItem>
+      )}
 
       {settingsVisible && (
         <DropdownItem icon={Settings} onClick={() => go('/settings')}>
@@ -1286,6 +1313,14 @@ function UserMenu() {
         Sair
       </DropdownItem>
     </Dropdown>
+    {falarComSuporte && (
+      <LimiteDoSuporte aoFalhar={() => setFalarComSuporte(false)}>
+        <Suspense fallback={null}>
+          <ChamadoSemConversa entrada="menu_do_usuario" onClose={() => setFalarComSuporte(false)} />
+        </Suspense>
+      </LimiteDoSuporte>
+    )}
+    </>
   )
 }
 
@@ -1397,6 +1432,15 @@ export function TopBar() {
   // a11y: o sino era a única camada sem Esc.
   const closeNotif = useCallback(() => setNotifOpen(false), [])
   useLayer(notifOpen, closeNotif)
+
+  // Revisão visual da homologação (29/10): o aviso leva a outra tela ("Ver chamado") e o
+  // painel ficava aberto por cima dela. Mudou a rota, o sino fecha.
+  const rotaAtual = `${location.pathname}${location.search}`
+  const [rotaDoSino, setRotaDoSino] = useState(rotaAtual)
+  if (rotaDoSino !== rotaAtual) {
+    setRotaDoSino(rotaAtual)
+    if (notifOpen) setNotifOpen(false)
+  }
 
   // Click outside — notifications
   useEffect(() => {

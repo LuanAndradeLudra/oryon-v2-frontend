@@ -1,8 +1,11 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
-import { UserCheck, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff, Loader2 } from 'lucide-react'
+import { UserCheck, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff, Loader2, LifeBuoy } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/Button'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import { conversationsApi } from '@/services/api'
+import { supportApi } from '@/services/supportApi'
+import { useDadosDoSuporte, useSuporte } from '@/components/support/suporteDaConversa'
 import type { Message } from '@/types'
 // O motivo do bloqueio vem TODO daqui. Antes este arquivo tinha a sua própria
 // cópia do claimLabel e o seu próprio mapa de outcome, nenhum deles com os
@@ -126,6 +129,10 @@ export function renderHighlighted(text: string, findings: AnomalyFinding[]): Rea
  * contagem do cabeçalho limpam via socket (ai-pause-updated com
  * hasRecentAnomaly:false); nenhum refetch manual aqui. O marcador desta bolha
  * permanece: ele é histórico da mensagem, não estado da conversa.
+ *
+ * SCRUM-1389 — "Promover a chamado" (com o suporte ligado): a anomalia vira um
+ * chamado com a mensagem marcada e a evidência do sinal. Uma vez só: promover
+ * de novo devolve o mesmo chamado ("Já estava no SUP-…").
  */
 export function AnomalyDetailModal({
   open,
@@ -155,6 +162,46 @@ export function AnomalyDetailModal({
 
   const [resolving, setResolving] = useState(false)
   const [resolveError, setResolveError] = useState<string | null>(null)
+
+  // SCRUM-1389 — promover o sinal a chamado.
+  const suporte = useSuporte()
+  const dadosDoSuporte = useDadosDoSuporte()
+  const podePromover = suporte.ligado && !!anomaly?.logId
+  const [promovendo, setPromovendo] = useState(false)
+  const [promovido, setPromovido] = useState<{ id: string; numero: string; ja: boolean } | null>(null)
+  const [promoverErro, setPromoverErro] = useState<string | null>(null)
+  const promover = async () => {
+    if (!anomaly?.logId || promovendo) return
+    setPromovendo(true)
+    setPromoverErro(null)
+    try {
+      const t = await supportApi.promoverAnomalia(anomaly.logId)
+      setPromovido({ id: t.id, numero: t.numero, ja: t.jaPromovido })
+      // A seção "Chamados" do contato passa a mostrar o chamado.
+      dadosDoSuporte?.recarregar()
+    } catch (e) {
+      setPromoverErro(getApiErrorMessage(e, 'Não foi possível promover a chamado. Tente novamente.'))
+    } finally {
+      setPromovendo(false)
+    }
+  }
+  const acaoDoChamado = !podePromover ? null : promovido ? (
+    <p className="mr-auto flex items-center gap-1.5 text-xs text-surface-300" role="status">
+      <LifeBuoy className="w-4 h-4 text-brand-400 shrink-0" aria-hidden />
+      {promovido.ja ? 'Já estava no' : 'Promovido a'} {promovido.numero}
+      <button
+        type="button"
+        onClick={() => { onClose(); suporte.irParaChamado(promovido.id) }}
+        className="font-semibold text-surface-100 underline underline-offset-2 hover:opacity-80"
+      >
+        Ver chamado
+      </button>
+    </p>
+  ) : (
+    <Button size="sm" variant="ghost" className="mr-auto" leftIcon={<LifeBuoy className="w-4 h-4" />} loading={promovendo} onClick={() => void promover()}>
+      Promover a chamado
+    </Button>
+  )
   // Erro de uma abertura anterior não pertence à próxima.
   useEffect(() => { if (open) setResolveError(null) }, [open])
 
@@ -181,12 +228,18 @@ export function AnomalyDetailModal({
       fillHeight={hasV2}
       className={hasV2 ? 'max-w-3xl h-[85vh]' : 'max-w-lg'}
       footer={isReviewed ? (
-        <p className="flex items-center gap-1.5 text-xs text-surface-400" data-testid="anomaly-reviewed">
-          <ShieldCheck className="w-4 h-4 text-success shrink-0" />
-          Verificada{anomaly?.reviewedBy ? ` por ${anomaly.reviewedBy}` : ''}{reviewedWhen ? ` em ${reviewedWhen}` : ''}
-        </p>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {acaoDoChamado}
+          {promoverErro && <p className="text-xs text-red-400" role="alert">{promoverErro}</p>}
+          <p className="flex items-center gap-1.5 text-xs text-surface-400" data-testid="anomaly-reviewed">
+            <ShieldCheck className="w-4 h-4 text-success shrink-0" />
+            Verificada{anomaly?.reviewedBy ? ` por ${anomaly.reviewedBy}` : ''}{reviewedWhen ? ` em ${reviewedWhen}` : ''}
+          </p>
+        </div>
       ) : isHandoff && conversationId ? (
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {acaoDoChamado}
+          {promoverErro && <p className="text-xs text-red-400" role="alert">{promoverErro}</p>}
           {resolveError && <p className="text-xs text-red-400 mr-auto">{resolveError}</p>}
           <button
             type="button"
@@ -198,6 +251,11 @@ export function AnomalyDetailModal({
             {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
             {resolving ? 'Marcando…' : 'Marcar como verificada'}
           </button>
+        </div>
+      ) : acaoDoChamado ? (
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {acaoDoChamado}
+          {promoverErro && <p className="text-xs text-red-400" role="alert">{promoverErro}</p>}
         </div>
       ) : undefined}
     >

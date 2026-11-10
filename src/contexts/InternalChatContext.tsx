@@ -5,6 +5,7 @@ import {
 import axios from 'axios'
 import type { InternalChannel, InternalMessage, UserPresence, UserPresenceStatus } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { ehEquipeDeSuporte } from '@/lib/roleHelpers'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
 
@@ -114,7 +115,8 @@ export function InternalChatProvider({ children }: { children: ReactNode }) {
   const MSG_POLL_MS       = 5_000   // active channel messages every 5s (was 3s)
 
   useEffect(() => {
-    if (!user) {
+    // A equipe de suporte da Oryon não tem chat interno de empresa (o backend responderia 403).
+    if (!user || ehEquipeDeSuporte(user.role)) {
       setLoadingChannels(false)
       return
     }

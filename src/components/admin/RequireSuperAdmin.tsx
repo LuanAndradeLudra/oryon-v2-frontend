@@ -8,7 +8,7 @@ import type { ReactNode } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { ShieldAlert } from 'lucide-react'
 
-export function RequireSuperAdmin({ children }: { children: ReactNode }) {
+export function RequireSuperAdmin({ children, descricao }: { children: ReactNode; descricao?: ReactNode }) {
   const { user } = useAuth()
 
   if (user?.role !== 'super_admin') {
@@ -21,9 +21,7 @@ export function RequireSuperAdmin({ children }: { children: ReactNode }) {
           Área restrita à equipe Oryon
         </h1>
         <p className="text-sm text-surface-400 max-w-md">
-          Esta seção é usada para administrar o catálogo da plataforma e atribuir
-          skills aos agentes dos clientes. Acesso disponível apenas para
-          administradores internos.
+          {descricao ?? 'Esta seção é usada para administrar o catálogo da plataforma e atribuir skills aos agentes dos clientes. Acesso disponível apenas para administradores internos.'}
         </p>
       </div>
     )
