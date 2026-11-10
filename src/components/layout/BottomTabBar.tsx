@@ -54,6 +54,7 @@ export function BottomTabBar() {
   useEffect(() => {
     let socket: ReturnType<typeof import('@/services/socket').connectSocket> | null = null
     let alive = true
+    // Sai só o ouvinte daqui: `off(evento)` sem a função tirava também os de Conversas.
     const onUnread = (payload: { total: number }) => setUnreadConversations(payload.total)
     const onConversationUpdated = () => refresh()
     import('@/services/socket').then(({ connectSocket }) => {

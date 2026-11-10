@@ -41,6 +41,7 @@ import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSetti
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 import { ConnectorsSettings } from '@/components/settings/sections/ConnectorsSettings'
+import { ApiKeysSettings } from '@/components/settings/sections/ApiKeysSettings'
 import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
@@ -58,6 +59,9 @@ const VALID_SECTIONS = [
   'connectors',
   // SCRUM-1253 (11/10): instruções do Copilot para todos os papéis.
   'copilot',
+  // SCRUM-1219: chaves da API pública v1 (admin ou dono; o gate do flag
+  // FF_PUBLIC_API fica dentro da tela, que explica como pedir a liberação).
+  'api-keys',
 ]
 
 const OWNER_ONLY_SECTIONS = new Set<string>(['billing', 'connectors'])
@@ -119,6 +123,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   'pipeline-routing': PipelineRoutingSettings,
   connectors:       ConnectorsSettings,
   copilot:          CopilotInstrucoes,
+  'api-keys':       ApiKeysSettings,
 }
 
 export function SettingsPage() {

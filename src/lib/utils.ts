@@ -109,11 +109,29 @@ export function formatPhoneBR(waId: string | undefined | null): string {
   return waId
 }
 
+/** Palavras do nome a partir da primeira letra/dígito de cada uma; palavra
+ *  sem letra nem dígito (emoji, símbolo) sai. Base das iniciais de avatar:
+ *  `palavra[0]` num nome como "💐 Maria Aparecida" pegava METADE do emoji (um
+ *  surrogate solto) e o navegador desenhava "�M". */
+export function palavrasDoNome(name: string): string[] {
+  return (name ?? '')
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.slice(Math.max(0, w.search(/[\p{L}\p{N}]/u))))
+    .filter((w) => /^[\p{L}\p{N}]/u.test(w))
+}
+
+/** Primeiro caractere inteiro (não meio emoji) — fallback de nome só com emoji. */
+export function primeiroCaractere(text: string): string {
+  return Array.from((text ?? '').trim())[0] ?? ''
+}
+
 export function getInitials(name: string): string {
-  return name
-    .split(' ')
+  const palavras = palavrasDoNome(name)
+  if (palavras.length === 0) return primeiroCaractere(name)
+  return palavras
     .slice(0, 2)
-    .map((n) => n[0])
+    .map((p) => Array.from(p)[0])
     .join('')
     .toUpperCase()
 }

@@ -4,8 +4,8 @@ import {
   Tooltip,
 } from 'recharts'
 import { useChartColors } from '@/hooks/useChartColors'
-import type { DateRange, VolumeDataPoint } from '@/types/dashboard'
-import { ESCOPO, periodoPorExtenso, volumeSeguePeriodo } from '@/lib/periodoDoPainel'
+import type { VolumeDataPoint } from '@/types/dashboard'
+import { ESCOPO, PERIODO_PADRAO, periodoPorExtenso, volumeSeguePeriodo, type Periodo } from '@/lib/periodoDoPainel'
 import { EscopoDoCartao } from './EscopoDoCartao'
 import { emFrase } from '@/lib/emFrase'
 
@@ -38,14 +38,14 @@ function diaMes(iso: string): string {
   return /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : iso
 }
 
-export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
+export const VolumeChart = memo(function VolumeChart({ data, range = PERIODO_PADRAO }: {
   data: VolumeDataPoint[]
   /**
    * O período da página (28/09: o seletor próprio do cartão saiu — eram dois
    * controles para o mesmo estado). O backend manda sempre os últimos 7 dias:
    * "Hoje" filtra aqui; 30 dias e "Este mês" mostram os 7 dias e dizem isso.
    */
-  range?: DateRange
+  range?: Periodo
 }) {
   const C = useChartColors()
   const chartData = data
@@ -69,7 +69,9 @@ export const VolumeChart = memo(function VolumeChart({ data, range = '7d' }: {
             Enviadas
           </span>
         </div>
-        {!volumeSeguePeriodo(range) && <EscopoDoCartao className="ml-auto">{ESCOPO.seteDias}</EscopoDoCartao>}
+        {volumeSeguePeriodo(range)
+          ? <span className="ml-auto text-xs text-surface-400 truncate min-w-0" data-testid="volume-periodo">{periodoPorExtenso(range)}</span>
+          : <EscopoDoCartao className="ml-auto">{ESCOPO.seteDias}</EscopoDoCartao>}
       </div>
       {/* Altura MÍNIMA fixa (26/09): com só `flex-1` num cartão de altura
           indefinida, os 100% do ResponsiveContainer resolviam para zero e o

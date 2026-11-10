@@ -87,6 +87,9 @@ const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m 
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
 const NotificationsPage = lazyRoute(() => import('@/pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
+// Retomadas (06/11): os planos de ação que o gestor da rede manda para a unidade.
+const PlanosDeAcaoPage = lazyRoute(() => import('@/pages/PlanosDeAcaoPage').then(m => ({ default: m.PlanosDeAcaoPage })))
+const PlanoDeAcaoPage = lazyRoute(() => import('@/pages/PlanosDeAcaoPage').then(m => ({ default: m.PlanoDeAcaoPage })))
 
 // CopilotPanel é lazy: junto com ArtifactPanel/CopilotMessage ele puxa ~1MB de
 // código (parsers, previews, export). Fora do chunk de entrada, o app pinta
@@ -393,6 +396,13 @@ function AnimatedRoutes() {
           } />
           <Route path="/campaigns" element={
             <ProtectedRoute><RotaPorPapel><CampaignsPage /></RotaPorPapel></ProtectedRoute>
+          } />
+          {/* Retomadas (06/11): planos de ação do gestor da rede — só os admins da unidade. */}
+          <Route path="/planos" element={
+            <ProtectedRoute><RotaPorPapel><PlanosDeAcaoPage /></RotaPorPapel></ProtectedRoute>
+          } />
+          <Route path="/planos/:id" element={
+            <ProtectedRoute><RotaPorPapel><PlanoDeAcaoPage /></RotaPorPapel></ProtectedRoute>
           } />
           {/* Leva 9 (SCRUM-1107) — casca visual de Agendamentos, dado de
               exemplo fixo, sem integração real de agenda por trás. */}

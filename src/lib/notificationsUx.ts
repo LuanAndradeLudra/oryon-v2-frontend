@@ -8,6 +8,7 @@
 
 import type { AppNotification, NotificationMetaKnown } from '@/hooks/useNotifications'
 import { BILLING_SETTINGS_PATH, billingSettingsEnabled } from './billingLinks'
+import { palavrasDoNome, primeiroCaractere } from '@/lib/utils'
 
 // ── Category / visual mapping ──────────────────────────────────────────────
 
@@ -24,6 +25,9 @@ export const TYPE_TO_CATEGORY: Record<string, Category> = {
   conversation_waiting: 'conversations',
   team_message: 'team',
   mention: 'team',
+  follow_up_plan: 'team',
+  follow_up_plan_due: 'team',
+  follow_up_digest: 'team',
   campaign_complete: 'campaigns',
   campaign_failed: 'campaigns',
   automation_executed: 'automations',
@@ -105,9 +109,11 @@ export function avatarColorFor(name: string): string {
 
 export function initialsOf(name: string): string {
   if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  // Mesma regra do getInitials para emoji/símbolo no nome (ver palavrasDoNome).
+  const parts = palavrasDoNome(name)
+  if (parts.length === 0) return primeiroCaractere(name) || '?'
+  if (parts.length === 1) return Array.from(parts[0]).slice(0, 2).join('').toUpperCase()
+  return (Array.from(parts[0])[0] + Array.from(parts[parts.length - 1])[0]).toUpperCase()
 }
 
 /** Extract the "subject" contact from a notification's metadata so we can
@@ -212,6 +218,12 @@ export function inlineActionFor(n: AppNotification): InlineAction | null {
       if (!aid) return null
       // AutomationsPage consome ?automation=:id e abre o detalhe.
       return { label: 'Ver automação', href: `/automations?automation=${aid}` }
+    }
+    case 'follow_up_plan':
+    case 'follow_up_plan_due': {
+      const pid = meta?.planId
+      if (!pid) return null
+      return { label: 'Abrir o plano', href: `/planos/${pid}`, variant: 'primary' }
     }
     case 'whatsapp_integration_error':
       return { label: 'Ver integração', href: '/settings/numbers', variant: 'primary' }

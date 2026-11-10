@@ -256,9 +256,9 @@ export interface DealLineItem {
 }
 
 /** Origem do registro no funil (Modelo B §4.2, F1-823). */
-export type DealOriginKind = 'manual' | 'import' | 'campaign' | 'journey' | 'event' | 'ai'
+export type DealOriginKind = 'manual' | 'import' | 'campaign' | 'journey' | 'event' | 'ai' | 'api'
 /** Quem executou o último movimento (histórico, F2). */
-export type DealMovedByKind = 'user' | 'ai' | 'journey' | 'campaign' | 'system' | 'automation'
+export type DealMovedByKind = 'user' | 'ai' | 'journey' | 'campaign' | 'system' | 'automation' | 'api'
 
 export interface Deal {
   id: string
@@ -1439,6 +1439,7 @@ export interface HomeStats {
   myMessagesSentToday: number
   appointmentsScheduled?: number | null
   appointmentsCancelled?: number | null
+  appointmentsConfirmed?: number | null
   // Revisão das métricas (30/09)
   newConversations?: number
   reopenedConversations?: number

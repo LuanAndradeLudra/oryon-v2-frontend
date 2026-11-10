@@ -13,7 +13,7 @@ describe('Dashboard onda 1 — montarSnapshot', () => {
       abandonedCount: 2, resolutionRate: 50, abandonRate: 5, avgResponseMinutes: 4, recontactRate: 10,
       botResolved: 6, botDeflectionRate: 30, campaignSent: 100, campaignDeliveryRate: 90, campaignReadRate: 60,
       campaignReplyRate: 12, messagesSentToday: 300, messagesReceivedToday: 280, newContactsThisWeek: 9,
-      appointmentsScheduled: 4, appointmentsCancelled: 1, agentsOnline: null,
+      appointmentsScheduled: 4, appointmentsCancelled: 1, appointmentsConfirmed: 9, agentsOnline: null,
     } as unknown as HomeStats
     const snap = montarSnapshot(stats, { avgResolutionTimeTenant: 3600 })
     expect(valor(snap, 'active_conversations')).toBe(7)
@@ -25,6 +25,10 @@ describe('Dashboard onda 1 — montarSnapshot', () => {
     expect(valor(snap, 'recontact_rate')).toBe(10)
     expect(valor(snap, 'bot_resolved')).toBe(6)
     expect(valor(snap, 'campaign_delivery_rate')).toBe(90)
+    // SCRUM-1456: os três cards da Clínica.
+    expect(valor(snap, 'appointments_scheduled')).toBe(4)
+    expect(valor(snap, 'appointments_cancelled')).toBe(1)
+    expect(valor(snap, 'appointments_confirmed')).toBe(9)
   })
 
   it('K6-FE/regra 6: sem dado vira null → "—", nunca 0', () => {

@@ -18,13 +18,12 @@ import { isFeatureVisible } from '@/config/featureFlags'
 // Removido temporariamente — endpoint /api/analytics/marketing-funnel ainda nao
 // existe no backend; trazer de volta quando o endpoint for implementado.
 
-import type { DateRange } from '@/types/dashboard'
 import { useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { ConnectedLineChip } from '@/components/layout/ConnectedLineChip'
 import { usePrimaryConnectedLine } from '@/hooks/usePrimaryConnectedLine'
 import { useRelatoriosDoPainel } from '@/hooks/useRelatoriosDoPainel'
-import { ESCOPO, lerPeriodo, PERIODO_PADRAO, PERIODOS, periodoPorExtenso } from '@/lib/periodoDoPainel'
+import { chaveDoPeriodo, comparacaoPorExtenso, escreverPeriodo, lerPeriodo, periodoPorExtenso, rotuloDoPeriodo, type Periodo } from '@/lib/periodoDoPainel'
 import { cn } from '@/lib/utils'
 import type { AbaDoPainel } from '@/lib/abaDoPainel'
 import { CabecalhoDoPainel } from './CabecalhoDoPainel'
@@ -39,10 +38,6 @@ function formatUpdatedSubtitle(lastUpdated: Date, now: Date): string {
   const diffSec = Math.max(0, Math.floor((now.getTime() - lastUpdated.getTime()) / 1000))
   const ago = diffSec < 60 ? `${diffSec} s` : diffSec < 3600 ? `${Math.floor(diffSec / 60)} min` : `${Math.floor(diffSec / 3600)} h`
   return `${dia} · atualizado há ${ago}`
-}
-
-function rotuloDo(p: DateRange): string {
-  return PERIODOS.find((x) => x.value === p)?.label ?? p
 }
 
 interface Props {
@@ -62,14 +57,11 @@ interface Props {
  */
 export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
   const [searchParams, setSearchParams] = useSearchParams()
-  const periodo = lerPeriodo(searchParams.get('periodo'))
-  const setPeriodo = (p: DateRange) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      if (p === PERIODO_PADRAO) next.delete('periodo')
-      else next.set('periodo', p)
-      return next
-    }, { replace: true })
+  // SCRUM-1216 (05/11): período e comparação na URL (`?periodo=`, `?de=`,
+  // `?ate=`, `?comparar=`); um personalizado inválido cai no padrão.
+  const periodo = lerPeriodo(searchParams)
+  const setPeriodo = (p: Periodo) => {
+    setSearchParams((prev) => escreverPeriodo(prev, p), { replace: true })
   }
 
   const { user } = useAuth()
@@ -145,7 +137,7 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
     return (
       <div className="space-y-3.5">
         {cabecalho}
-        <ErrorState onRetry={r.recarregar} />
+        <ErrorState hint={r.mensagemDoErro ?? undefined} onRetry={r.recarregar} />
       </div>
     )
   }
@@ -153,7 +145,10 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
   const snapshot = r.snapshot
   // Falhou o período pedido, mas há um anterior bom: ele fica, e o aviso diz
   // de qual período são os números à vista.
-  const mostrandoOutro = r.erro && r.periodoCarregado && r.periodoCarregado !== periodo
+  const mostrandoOutro = r.erro && r.periodoCarregado && chaveDoPeriodo(r.periodoCarregado) !== chaveDoPeriodo(periodo)
+  // O período dos números à vista: o que o backend diz ter calculado; sem eco,
+  // o pedido que carregou (ou o anterior, enquanto o novo chega).
+  const periodoAVista = r.periodoDaResposta ?? r.periodoCarregado ?? periodo
 
   return (
     <div className="space-y-3.5">
@@ -168,8 +163,8 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
       {r.erro && (
         <div role="status" className="flex items-center gap-3 px-3.5 py-2 rounded-[10px] border border-status-pending-border bg-status-pending-bg text-xs text-status-pending">
           <span className="flex-1">
-            Não foi possível carregar {periodoPorExtenso(periodo)}.
-            {mostrandoOutro ? ` Mostrando ${rotuloDo(r.periodoCarregado!)}.` : ' Mostrando a última leitura.'}
+            Não foi possível carregar {periodoPorExtenso(periodo)}{r.mensagemDoErro ? ` (${r.mensagemDoErro})` : ''}.
+            {mostrandoOutro ? ` Mostrando ${rotuloDoPeriodo(r.periodoCarregado!)}.` : ' Mostrando a última leitura.'}
           </span>
           <button type="button" onClick={r.recarregar} className="font-semibold underline underline-offset-2">Tentar de novo</button>
         </div>
@@ -179,7 +174,13 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
         className={cn('space-y-3.5 transition-opacity', r.atualizando && 'opacity-60')}
         aria-busy={r.atualizando || undefined}
       >
-        <KpiGrid metrics={snapshot.kpis} customizerOpen={personalizando} onCustomizerClose={() => setPersonalizando(false)} podeEditarMetas={podeVerAtividade} onMetasSalvas={r.recarregar} />
+        {/* SCRUM-1216: de que período são os números e com quem as variações comparam. */}
+        <p className="text-xs text-surface-400" data-testid="periodo-a-vista">
+          Números {periodoPorExtenso(periodoAVista)} · {r.semComparacao
+            ? 'sem comparação: a conta ainda não existia no mesmo período do ano anterior'
+            : `variação comparada ao ${comparacaoPorExtenso(periodoAVista.comparar)}`}
+        </p>
+        <KpiGrid metrics={snapshot.kpis} customizerOpen={personalizando} onCustomizerClose={() => setPersonalizando(false)} podeEditarMetas={podeVerAtividade} onMetasSalvas={r.recarregar} tenantId={user?.tenantId} userId={user?.id} catalogoPronto={r.catalogoPronto} periodo={periodoAVista} />
 
         {/* Seção desligada por padrão (flag dashboardAiInsights) — não
             montar evita a chamada generateDashboardInsights() e o gasto
@@ -193,11 +194,11 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
             vizinhos, com um vão embaixo). Cada cartão é `h-full`. */}
         <div className="grid grid-cols-12 gap-3.5 items-stretch">
           <div className="col-span-12 xl:col-span-8">
-            <VolumeChart data={snapshot.volumeChart} range={r.periodoCarregado ?? periodo} />
+            <VolumeChart data={snapshot.volumeChart} range={periodoAVista} />
           </div>
           <div className="col-span-12 xl:col-span-4">
             {/* Revisão 30/09 (C5): ativas/pendentes de agora; resolvidas/arquivadas do período. */}
-            <StatusDonut data={snapshot.statusDistribution} periodo={periodoPorExtenso(r.periodoCarregado ?? periodo)} />
+            <StatusDonut data={snapshot.statusDistribution} periodo={periodoPorExtenso(periodoAVista)} />
           </div>
         </div>
 

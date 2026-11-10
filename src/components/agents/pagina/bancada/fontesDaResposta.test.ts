@@ -34,6 +34,28 @@ describe('fontesDaResposta', () => {
     expect(f).toEqual([{ tipo: 'transferencia', rotulo: 'Chamou uma pessoa da equipe em vez de responder', alerta: true }])
   })
 
+  it('P1: com as ferramentas simuladas, skill/CRM/integração aparecem como simuladas, sem alerta', () => {
+    const f = fontesDaResposta(debug({
+      toolCalls: [
+        { name: 'search_kb', kind: 'kb', success: true },
+        { name: 'nova_consulta', kind: 'skill', success: false },
+        { name: 'manage_deal_pipeline', kind: 'crm', success: false },
+        { name: 'agenda_livre', kind: 'http', success: false },
+      ],
+    }), { simuladas: true })
+    expect(f).toEqual([
+      { tipo: 'conhecimento', rotulo: 'Consultou a base de conhecimento', alerta: false },
+      { tipo: 'skill', rotulo: 'Skill: nova consulta (simulada: não foi executada)' },
+      { tipo: 'crm', rotulo: 'CRM: Mover negócio ou registro no funil (simulada: não foi executada)' },
+      { tipo: 'integracao', rotulo: 'Integração: agenda livre (simulada: não foi executada)' },
+    ])
+  })
+
+  it('P1: busca na base que falhou continua sendo falha, mesmo simulando', () => {
+    const f = fontesDaResposta(debug({ toolCalls: [{ name: 'search_kb', kind: 'kb', success: false }] }), { simuladas: true })
+    expect(f).toEqual([{ tipo: 'conhecimento', rotulo: 'Tentou consultar a base de conhecimento (falhou)', alerta: true }])
+  })
+
   it('sem debug (mensagem antiga): nada a mostrar', () => {
     expect(fontesDaResposta(undefined)).toEqual([])
   })

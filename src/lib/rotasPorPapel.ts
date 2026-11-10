@@ -13,6 +13,8 @@ import { isAdminTier } from '@/lib/roleHelpers'
 export function rotaPermitida(href: string, ctx: { role?: string | null; multiPipeline: boolean }): boolean {
   const caminho = href.split('?')[0]
   if (caminho === '/campaigns' || caminho.startsWith('/campaigns/')) return isAdminTier(ctx.role)
+  // Retomadas (06/11): os planos de ação têm o nome dos pacientes — só os admins da unidade (D2).
+  if (caminho === '/planos' || caminho.startsWith('/planos/')) return isAdminTier(ctx.role)
   if (caminho === '/pipelines' || caminho.startsWith('/pipelines/')) return ctx.multiPipeline
   return true
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { connectSocket } from '@/services/socket'
 import type {
   SocketAiPauseUpdated,
@@ -32,54 +32,64 @@ interface SocketHandlers {
   onContactAiFailed?: (payload: { contactId: string; error?: string }) => void
 }
 
+/** O ouvinte com a tipagem do próprio socket.io. */
+type Ouvinte = Parameters<ReturnType<typeof connectSocket>['on']>[1]
+
 export function useSocket(handlers: SocketHandlers = {}) {
   const handlersRef = useRef(handlers)
-  handlersRef.current = handlers
+  // Os handlers mais novos a cada render, sem mexer no ref durante o render.
+  useLayoutEffect(() => { handlersRef.current = handlers })
 
   useEffect(() => {
     const socket = connectSocket()
-
-    // Cada handler é uma função própria para o cleanup tirar SÓ o que este
-    // hook registrou (`off(evento)` sem a função tirava também os listeners
-    // do NavSidebar/BottomTabBar e das outras telas no mesmo socket).
-    // Fan-out por CustomEvent: stores que montam longe daqui (notificações,
-    // gaveta de contato) reagem sem acoplamento direto; ambos são idempotentes.
-    const fanOut = (name: string) => (p: unknown) => {
-      try { window.dispatchEvent(new CustomEvent(name, { detail: p })) } catch { /* SSR */ }
+    // Cada handler daqui fica guardado e sai SÓ ele na limpeza. Antes, o
+    // `off(evento)` sem a função tirava os ouvintes de todo o app e o
+    // `disconnectSocket()` derrubava a conexão única. A conexão é da sessão:
+    // o AuthContext a fecha no logout.
+    const meus: Array<[string, Ouvinte]> = []
+    const on = (evento: string, fn: Ouvinte) => {
+      socket.on(evento, fn)
+      meus.push([evento, fn])
     }
-    const notifyNew = fanOut('notification:new')
-    const notifyUpdated = fanOut('notification:updated')
-    const aiGenerating = fanOut('contact:ai-generating')
-    const aiGenerated = fanOut('contact:ai-generated')
-    const aiFailed = fanOut('contact:ai-failed')
 
-    const listeners: Array<[string, (p: never) => void]> = [
-      ['message:new', (p: SocketMessageNew) => handlersRef.current.onMessageNew?.(p)],
-      ['message:status', (p: SocketMessageStatus) => handlersRef.current.onMessageStatus?.(p)],
-      ['conversation:new', (p: unknown) => handlersRef.current.onConversationNew?.(p)],
-      ['conversation:assigned', (p: SocketConversationAssigned) => handlersRef.current.onConversationAssigned?.(p)],
-      ['conversation:resolved', (p: { conversationId: string }) => handlersRef.current.onConversationResolved?.(p)],
-      ['conversation:updated', (p: SocketMessageNew) => handlersRef.current.onConversationUpdated?.(p)],
-      ['conversation:ai-pause-updated', (p: SocketAiPauseUpdated) => handlersRef.current.onConversationAiPauseUpdated?.(p)],
-      ['conversation:status-updated', (p: SocketConversationStatusUpdated) => handlersRef.current.onConversationStatusUpdated?.(p)],
-      ['unread:update', (p: SocketUnreadUpdate) => handlersRef.current.onUnreadUpdate?.(p)],
-      ['notification:new', (p: unknown) => { handlersRef.current.onNotificationNew?.(p); notifyNew(p) }],
-      // Phase 17: notificação agrupada ganha contato novo → atualiza no lugar.
-      ['notification:updated', (p: unknown) => { handlersRef.current.onNotificationUpdated?.(p); notifyUpdated(p) }],
-      // Geração do perfil por IA (disparada ao resolver a conversa).
-      ['contact:ai-generating', (p: { contactId: string }) => { handlersRef.current.onContactAiGenerating?.(p); aiGenerating(p) }],
-      ['contact:ai-generated', (p: { contactId: string }) => { handlersRef.current.onContactAiGenerated?.(p); aiGenerated(p) }],
-      ['contact:ai-failed', (p: { contactId: string; error?: string }) => { handlersRef.current.onContactAiFailed?.(p); aiFailed(p) }],
-    ]
-    // Sinais de cobrança (billing:*) e auth:expired moram na ponte do app
-    // (useAppSocketBridge): precisam valer fora da tela de conversas.
-    for (const [event, fn] of listeners) socket.on(event, fn as (...args: unknown[]) => void)
+    on('message:new', (p) => handlersRef.current.onMessageNew?.(p))
+    on('message:status', (p) => handlersRef.current.onMessageStatus?.(p))
+    on('conversation:new', (p) => handlersRef.current.onConversationNew?.(p))
+    on('conversation:assigned', (p) => handlersRef.current.onConversationAssigned?.(p))
+    on('conversation:resolved', (p) => handlersRef.current.onConversationResolved?.(p))
+    on('conversation:updated', (p) => handlersRef.current.onConversationUpdated?.(p))
+    on('conversation:ai-pause-updated', (p) => handlersRef.current.onConversationAiPauseUpdated?.(p))
+    on('conversation:status-updated', (p) => handlersRef.current.onConversationStatusUpdated?.(p))
+    on('unread:update', (p) => handlersRef.current.onUnreadUpdate?.(p))
+    on('notification:new', (p) => {
+      // O evento de janela sai do ouvinte global (OuvinteDoTempoReal). Daqui
+      // ele sairia em dobro quando Conversas está aberta.
+      handlersRef.current.onNotificationNew?.(p)
+    })
+    on('notification:updated', (p) => {
+      handlersRef.current.onNotificationUpdated?.(p)
+    })
+
+    // Geração do perfil por IA. Fan-out para a gaveta de contato montada longe.
+    on('contact:ai-generating', (p) => {
+      handlersRef.current.onContactAiGenerating?.(p)
+      try { window.dispatchEvent(new CustomEvent('contact:ai-generating', { detail: p })) } catch { /* SSR */ }
+    })
+    on('contact:ai-generated', (p) => {
+      handlersRef.current.onContactAiGenerated?.(p)
+      try { window.dispatchEvent(new CustomEvent('contact:ai-generated', { detail: p })) } catch { /* SSR */ }
+    })
+    on('contact:ai-failed', (p) => {
+      handlersRef.current.onContactAiFailed?.(p)
+      try { window.dispatchEvent(new CustomEvent('contact:ai-failed', { detail: p })) } catch { /* SSR */ }
+    })
+
+    // billing:* e auth:expired ficam na ponte do app (useAppSocketBridge):
+    // precisam valer fora da tela de conversas, e um segundo ouvinte de
+    // auth:expired renovaria a sessão duas vezes.
 
     return () => {
-      for (const [event, fn] of listeners) socket.off(event, fn as (...args: unknown[]) => void)
-      // O socket é compartilhado com o resto do app — não desconecta aqui
-      // (antes, sair das conversas derrubava o singleton e, com ele, os
-      // listeners do menu e a ponte de cobrança). Quem desconecta é o logout.
+      for (const [evento, fn] of meus) socket.off(evento, fn)
     }
   }, [])
 }

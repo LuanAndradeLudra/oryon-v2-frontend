@@ -1,15 +1,17 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { HelpCircle } from 'lucide-react'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
-import type { KpiId, KpiMetric } from '@/types/dashboard'
+import type { KpiId, KpiIdFixo, KpiMetric } from '@/types/dashboard'
+import { PERIODO_PADRAO, comparacaoPorExtenso, type Comparacao, type Periodo } from '@/lib/periodoDoPainel'
 import { KPI_CATALOG, DEFAULT_KPI_SLOTS } from '@/types/dashboard'
 import { KpiCustomizerDrawer } from './KpiCustomizerDrawer'
+import { ListaDaMetrica } from './ListaDaMetrica'
 import { ValorComUnidade } from './ValorComUnidade'
 import {
-  identidadeDo, agruparPorGrupo, NOME_DO_GRUPO, estadoDaMeta, COR_DO_ESTADO, ROTULO_DO_ESTADO, DESTAQUE_MAX, type Densidade,
+  identidadeDo, agruparPorGrupo, nomeDoGrupo, estadoDaMeta, COR_DO_ESTADO, ROTULO_DO_ESTADO, DESTAQUE_MAX, type Densidade,
 } from './kpiIdentidade'
 import { classeDaGrade } from '@/components/dashboard/gradeDeIndicadores'
 
@@ -18,9 +20,27 @@ const LS_DENSIDADE = 'oryon:dashboard:kpi-densidade'
 const LS_DESTAQUE = 'oryon:dashboard:kpi-destaque'
 
 
-function lerLocal<T>(chave: string, ler: (v: unknown) => T | null, padrao: T): T {
+/**
+ * SCRUM-1465: os ids escolhidos dependem do cliente (as métricas do negócio
+ * são de cada um) e de quem olha (o atendente não recebe as métricas do
+ * negócio — A20), então a faixa e o destaque ficam guardados POR TENANT E
+ * USUÁRIO. Sem eles, vale a chave antiga (global) — e ela semeia a nova na 1ª vez.
+ */
+function chaveDoTenant(base: string, tenantId?: string | null, userId?: string | null): string {
+  return tenantId ? `${base}:${tenantId}${userId ? `:${userId}` : ''}` : base
+}
+
+/** A chave do usuário; sem ela, a do tenant (antes de 04/11); sem ela, a global (antes do épico). */
+function lerBruto(chave: string, base: string): string | null {
+  const proprio = localStorage.getItem(chave)
+  if (proprio !== null || chave === base) return proprio
+  const doTenant = chave.split(':').length > base.split(':').length + 1 ? localStorage.getItem(chave.slice(0, chave.lastIndexOf(':'))) : null
+  return doTenant ?? localStorage.getItem(base)
+}
+
+function lerLocal<T>(chave: string, ler: (v: unknown) => T | null, padrao: T, base = chave): T {
   try {
-    const raw = localStorage.getItem(chave)
+    const raw = lerBruto(chave, base)
     if (raw) {
       const v = ler(JSON.parse(raw))
       if (v !== null) return v
@@ -29,15 +49,21 @@ function lerLocal<T>(chave: string, ler: (v: unknown) => T | null, padrao: T): T
   return padrao
 }
 const lerDensidade = (v: unknown): Densidade | null => (v === 'compacta' || v === 'detalhada' ? v : null)
-const lerDestaque = (v: unknown): KpiId[] | null =>
-  Array.isArray(v) ? (v.filter((id) => KPI_CATALOG.some((d) => d.id === id)) as KpiId[]).slice(0, DESTAQUE_MAX) : null
+const idsSalvos = (v: unknown): KpiId[] =>
+  Array.isArray(v) ? [...new Set(v.filter((id): id is string => typeof id === 'string' && id.length > 0))] : []
+const lerDestaque = (v: unknown): KpiId[] | null => (Array.isArray(v) ? idsSalvos(v).slice(0, DESTAQUE_MAX) : null)
 
-function loadSlots(): KpiId[] {
+/**
+ * A faixa salva. Id fora do catálogo de agora NÃO é apagado: pode ser uma
+ * métrica do negócio que não carregou desta vez (o servidor falhou) — só não
+ * aparece. Se nenhum id salvo é conhecido, volta ao padrão.
+ */
+function loadSlots(chave: string, conhecidos: ReadonlySet<string>): KpiId[] {
   try {
-    const raw = localStorage.getItem(LS_KEY)
+    const raw = lerBruto(chave, LS_KEY)
     if (raw) {
-      const ids = (JSON.parse(raw) as KpiId[]).filter((id) => KPI_CATALOG.some((d) => d.id === id))
-      if (ids.length > 0) return ids
+      const ids = idsSalvos(JSON.parse(raw))
+      if (ids.some((id) => conhecidos.has(id))) return ids
     }
   } catch { /* ignore */ }
   return DEFAULT_KPI_SLOTS
@@ -55,12 +81,17 @@ function loadSlots(): KpiId[] {
 
 type Apoio = { text: string; tone: 'warn' | 'muted' }
 
+/** SCRUM-1216: com quem a variação compara (período anterior ou o mesmo do ano anterior). */
+const ComparacaoDoPainel = createContext<Comparacao>('anterior')
+
 /**
  * DC-5: variação contra o período anterior de mesma duração, ao lado do
  * número. Verde/vermelho só quando o indicador tem um lado bom
  * (`trendIsGood`); nos neutros (mensagens recebidas…) fica cinza.
  */
 export function Variacao({ metric }: { metric: KpiMetric }) {
+  const comparar = useContext(ComparacaoDoPainel)
+  const com = comparacaoPorExtenso(comparar)
   const t = metric.trend
   if (t === null || t === undefined || !Number.isFinite(t)) return null
   const pp = metric.trendUnit === 'pp'
@@ -72,12 +103,12 @@ export function Variacao({ metric }: { metric: KpiMetric }) {
   const seta = t > 0 ? '↑' : t < 0 ? '↓' : '='
   const texto = t === 0 ? 'estável' : `${numero}${sufixo}`
   const extenso = t === 0
-    ? 'estável em relação ao período anterior'
-    : `${t > 0 ? 'subiu' : 'caiu'} ${numero}${pp ? ' pontos percentuais' : '%'} em relação ao período anterior`
+    ? `estável em relação ao ${com}`
+    : `${t > 0 ? 'subiu' : 'caiu'} ${numero}${pp ? ' pontos percentuais' : '%'} em relação ao ${com}`
   return (
     <span
       data-testid="kpi-variacao"
-      title="Comparado ao período anterior de mesma duração"
+      title={comparar === 'ano_anterior' ? 'Comparado ao mesmo período do ano anterior' : 'Comparado ao período anterior de mesma duração'}
       className={cn(
         'inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums whitespace-nowrap',
         bom ? 'text-online' : ruim ? 'text-danger' : 'text-surface-500',
@@ -113,13 +144,21 @@ export function Sparkline({ pontos, alto = 22 }: { pontos: number[]; alto?: numb
   )
 }
 
-function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
+function KpiStripCell({ metric, support, detalhada = false, grande = false, onAbrirLista }: {
   metric: KpiMetric
   support?: Apoio
   detalhada?: boolean
   grande?: boolean
+  /** SCRUM-1465: métrica do negócio abre o "Quais são?" em vez de navegar. */
+  onAbrirLista?: (m: KpiMetric) => void
 }) {
-  const { aoVivo, destino } = identidadeDo(metric)
+  const identidade = identidadeDo(metric)
+  const destino = identidade.destino
+  // A17: a métrica do negócio de estado (interessados em aberto) é "agora", como a fila.
+  const aoVivo = identidade.aoVivo || metric.negocio?.deEstado === true
+  const estimado = metric.negocio?.selos.includes('estimado') ?? false
+  // G20 (A42): o número conta o que a IA fez — quem marcou por telefone não está nele.
+  const pelaIa = metric.negocio?.selos.includes('pela_ia') ?? false
   const estado = estadoDaMeta(metric)
   const valor = formatKpiValue(metric.value, metric.unit)
   const comSerie = (detalhada || grande) && metric.sparkline.length >= 2
@@ -132,6 +171,12 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
         <span className="flex-1 min-w-0 text-xs leading-[1.3] font-medium text-surface-400 line-clamp-2">
           {metric.label}
         </span>
+        {estimado && (
+          <span className="pt-[1px] flex-shrink-0 text-2xs font-semibold text-surface-500" title="Estimativa: preço de tabela, sem descontar convênio">estimado</span>
+        )}
+        {pelaIa && !estimado && (
+          <span className="pt-[1px] flex-shrink-0 text-2xs font-semibold text-surface-500" title="Conta só o que a IA fez pelo WhatsApp">pela IA</span>
+        )}
         {aoVivo && (
           <span className="pt-[4px] flex-shrink-0" title="Agora — não segue o período">
             <span className="block w-1.5 h-1.5 rounded-full bg-online animate-pulse" aria-hidden />
@@ -140,7 +185,8 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
         )}
         {/* Revisão 30/09: todo indicador diz o que conta. */}
         {metric.help && (
-          <span className="pt-[1px] flex-shrink-0" onClick={(e) => e.preventDefault()}>
+          // O ⓘ explica; não abre o "Quais são?" (que é auditado e tem dado de saúde — A21).
+          <span className="pt-[1px] flex-shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
             <Tooltip content={metric.help} side="top" wide>
               <HelpCircle className="w-3 h-3 text-surface-600 hover:text-surface-400 transition-colors" aria-label={`O que é ${metric.label}`} />
             </Tooltip>
@@ -196,6 +242,20 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
   // Divisória fina à direita e embaixo de cada cartão (a margem negativa da
   // grade esconde as da última coluna/linha) — o PO pediu separação clara.
   const base = cn('flex flex-col min-w-0 border-r border-b border-surface-700', grande ? 'px-4 py-3.5' : 'px-3.5 py-3')
+  if (metric.negocio && onAbrirLista && metric.negocio.estado !== 'carregando') {
+    return (
+      <button
+        type="button"
+        onClick={() => onAbrirLista(metric)}
+        data-spotlight-target="kpi-cell"
+        aria-label={`${metric.label}: ${valor}. Ver quais são`}
+        title="Ver quais são"
+        className={cn(base, 'text-left transition-colors hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500')}
+      >
+        {conteudo}
+      </button>
+    )
+  }
   if (!destino) {
     return <div data-spotlight-target="kpi-cell" className={base}>{conteudo}</div>
   }
@@ -218,7 +278,7 @@ function KpiStripCell({ metric, support, detalhada = false, grande = false }: {
 
 // 28/09: KPIs que NÃO seguem o período dizem o próprio recorte na linha de
 // apoio (os demais seguem o seletor e não precisam de etiqueta).
-const KPI_ESCOPO: Partial<Record<KpiId, string>> = {
+const KPI_ESCOPO: Partial<Record<KpiIdFixo, string>> = {
   active_conversations: 'agora',
   queued: 'agora',
   agents_online: 'agora',
@@ -226,8 +286,12 @@ const KPI_ESCOPO: Partial<Record<KpiId, string>> = {
 
 function apoioDo(metric: KpiMetric, queued: number): Apoio | undefined {
   if (metric.id === 'active_conversations' && queued > 0) return { text: `agora · ${queued} na fila`, tone: 'warn' }
-  const escopo = KPI_ESCOPO[metric.id]
+  const escopo = KPI_ESCOPO[metric.id as KpiIdFixo] ?? (metric.negocio?.deEstado ? 'agora' : undefined)
+  if (escopo && metric.negocio?.deEstado && metric.detail) return { text: `agora · ${metric.detail}`, tone: 'muted' }
   if (escopo) return { text: escopo, tone: 'muted' }
+  // SCRUM-1465: erro ou tempo esgotado da métrica do negócio é aviso, não apoio.
+  const falhou = metric.negocio?.estado === 'erro' || metric.negocio?.estado === 'tempo_esgotado'
+  if (falhou && metric.detail) return { text: metric.detail, tone: 'warn' }
   // Revisão 30/09: o detalhe real do número (média, sem resposta, base da taxa…).
   return metric.detail ? { text: metric.detail, tone: 'muted' } : undefined
 }
@@ -253,11 +317,12 @@ function CartaoDoGrupo({ titulo, largura, colunas = largura, children }: { titul
   )
 }
 
-function KpiStrip({ metrics, queued, densidade = 'compacta', destaque = [] }: {
+function KpiStrip({ metrics, queued, densidade = 'compacta', destaque = [], onAbrirLista }: {
   metrics: KpiMetric[]
   queued: number
   densidade?: Densidade
   destaque?: KpiId[]
+  onAbrirLista?: (m: KpiMetric) => void
 }) {
   // Um CARTÃO por categoria, separados pelo mesmo espaço dos outros blocos do
   // Dashboard (pedido do PO, 01/10: as categorias se misturavam numa faixa
@@ -279,8 +344,8 @@ function KpiStrip({ metrics, queued, densidade = 'compacta', destaque = [] }: {
       {emDestaque.length > 0 && (
         <div className="flex flex-wrap gap-3.5" data-testid="kpi-destaques">
           {emDestaque.map((metric) => (
-            <CartaoDoGrupo key={metric.id} titulo={NOME_DO_GRUPO[metric.category]} largura={2} colunas={1}>
-              <KpiStripCell metric={metric} support={apoioDo(metric, queued)} grande />
+            <CartaoDoGrupo key={metric.id} titulo={nomeDoGrupo(metric.category)} largura={2} colunas={1}>
+              <KpiStripCell metric={metric} support={apoioDo(metric, queued)} grande onAbrirLista={onAbrirLista} />
             </CartaoDoGrupo>
           ))}
         </div>
@@ -288,9 +353,9 @@ function KpiStrip({ metrics, queued, densidade = 'compacta', destaque = [] }: {
       {grupos.length > 0 && (
         <div className="flex flex-wrap gap-3.5">
           {grupos.map(({ grupo, itens }) => (
-            <CartaoDoGrupo key={grupo} titulo={NOME_DO_GRUPO[grupo]} largura={itens.length}>
+            <CartaoDoGrupo key={grupo} titulo={nomeDoGrupo(grupo)} largura={itens.length}>
               {itens.map((metric) => (
-                <KpiStripCell key={metric.id} metric={metric} support={apoioDo(metric, queued)} detalhada={detalhada} />
+                <KpiStripCell key={metric.id} metric={metric} support={apoioDo(metric, queued)} detalhada={detalhada} onAbrirLista={onAbrirLista} />
               ))}
             </CartaoDoGrupo>
           ))}
@@ -312,6 +377,10 @@ export function KpiGrid({
   onCustomizerClose,
   podeEditarMetas = false,
   onMetasSalvas,
+  tenantId,
+  userId,
+  periodo = PERIODO_PADRAO,
+  catalogoPronto = true,
 }: {
   metrics: KpiMetric[]
   customizerOpen: boolean
@@ -319,39 +388,65 @@ export function KpiGrid({
   /** DC-6: só administradores definem as metas da empresa. */
   podeEditarMetas?: boolean
   onMetasSalvas?: () => void
+  /** SCRUM-1465: a faixa salva é do cliente e de quem olha (A20). */
+  tenantId?: string | null
+  userId?: string | null
+  /** O catálogo das métricas do negócio respondeu: antes disso a faixa salva não é regravada (A20). */
+  catalogoPronto?: boolean
+  /** Período à vista — o "Quais são?" lista o mesmo recorte do número. */
+  periodo?: Periodo
 }) {
-  const [slots, setSlots] = useState<KpiId[]>(loadSlots)
+  const chaveSlots = chaveDoTenant(LS_KEY, tenantId, userId)
+  const chaveDestaque = chaveDoTenant(LS_DESTAQUE, tenantId, userId)
+  const conhecidos = () => new Set([...KPI_CATALOG.map((d) => d.id), ...metrics.map((m) => m.id)])
+  const [slots, setSlots] = useState<KpiId[]>(() => loadSlots(chaveSlots, conhecidos()))
+  // Montou antes do catálogo: quando ele chega, relê a faixa salva (os ids do negócio agora são conhecidos).
+  const [lidoComCatalogo, setLidoComCatalogo] = useState(catalogoPronto)
+  if (catalogoPronto && !lidoComCatalogo) {
+    setLidoComCatalogo(true)
+    setSlots(loadSlots(chaveSlots, conhecidos()))
+  }
   const [densidade, setDensidade] = useState<Densidade>(() => lerLocal(LS_DENSIDADE, lerDensidade, 'compacta'))
-  const [destaque, setDestaque] = useState<KpiId[]>(() => lerLocal(LS_DESTAQUE, lerDestaque, []))
+  const [destaque, setDestaque] = useState<KpiId[]>(() => lerLocal(chaveDestaque, lerDestaque, [], LS_DESTAQUE))
+  const [lista, setLista] = useState<KpiMetric | null>(null)
 
   useEffect(() => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(slots)) } catch { /* ignore */ }
-  }, [slots])
+    // Só depois do catálogo: antes, um padrão provisório apagaria a escolha salva (A20).
+    if (!catalogoPronto) return
+    try { localStorage.setItem(chaveSlots, JSON.stringify(slots)) } catch { /* ignore */ }
+  }, [slots, chaveSlots, catalogoPronto])
   useEffect(() => {
     try { localStorage.setItem(LS_DENSIDADE, JSON.stringify(densidade)) } catch { /* ignore */ }
   }, [densidade])
   useEffect(() => {
-    try { localStorage.setItem(LS_DESTAQUE, JSON.stringify(destaque)) } catch { /* ignore */ }
-  }, [destaque])
+    if (!catalogoPronto) return
+    try { localStorage.setItem(chaveDestaque, JSON.stringify(destaque)) } catch { /* ignore */ }
+  }, [destaque, chaveDestaque, catalogoPronto])
 
   const activeMetrics = slots
     .map((id) => metrics.find((m) => m.id === id))
     .filter(Boolean) as KpiMetric[]
 
   return (
+    <ComparacaoDoPainel.Provider value={periodo.comparar}>
     <div>
       <KpiStrip
         metrics={activeMetrics}
         queued={metrics.find((m) => m.id === 'queued')?.value ?? 0}
         densidade={densidade}
         destaque={destaque.filter((id) => slots.includes(id))}
+        onAbrirLista={setLista}
       />
+
+      {/* Valor atualizado do período à vista (a lista acompanha o recarregar). */}
+      <ListaDaMetrica metric={lista ? metrics.find((m) => m.id === lista.id) ?? lista : null} periodo={periodo} onClose={() => setLista(null)} />
 
       <KpiCustomizerDrawer
         open={customizerOpen}
         onClose={onCustomizerClose}
         slots={slots}
         defaults={DEFAULT_KPI_SLOTS}
+        catalogo={metrics}
         densidade={densidade}
         destaque={destaque}
         onSave={(r) => { setSlots(r.slots); setDensidade(r.densidade); setDestaque(r.destaque) }}
@@ -359,5 +454,6 @@ export function KpiGrid({
         onMetasSalvas={onMetasSalvas}
       />
     </div>
+    </ComparacaoDoPainel.Provider>
   )
 }

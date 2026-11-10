@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Send, Loader2, MessageSquare, AlertCircle } from 'lucide-react'
 import { templatesApi } from '@/services/api'
 import { cn } from '@/lib/utils'
+import { templateListError } from './templateListError'
 import type { WhatsAppTemplate } from '@/types'
 
 /**
@@ -36,7 +37,9 @@ function templateMatches(tpl: WhatsAppTemplate, query: string): boolean {
 export function TemplatePicker({ onSelect, query = '', className }: TemplatePickerProps) {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [loading, setLoading] = useState(true)
-  const [failed, setFailed] = useState(false)
+  // Texto do erro que o backend mandou (ex.: 403 "Nenhuma linha de WhatsApp
+  // associada ao seu setor."), ou o genérico quando não há um. null = sem falha.
+  const [failed, setFailed] = useState<string | null>(null)
 
   // `attempt` só existe pra "Tentar novamente" refazer a busca sem chamar
   // setState no corpo do efeito (a busca inicial não precisa de nada: o estado
@@ -47,14 +50,16 @@ export function TemplatePicker({ onSelect, query = '', className }: TemplatePick
     let cancelled = false
     templatesApi.list('APPROVED')
       .then((r) => { if (!cancelled) setTemplates(Array.isArray(r.data) ? r.data : []) })
-      .catch(() => { if (!cancelled) { setTemplates([]); setFailed(true) } })
+      .catch((e) => {
+        if (!cancelled) { setTemplates([]); setFailed(templateListError(e)) }
+      })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [attempt])
 
   const retry = () => {
     setLoading(true)
-    setFailed(false)
+    setFailed(null)
     setAttempt((n) => n + 1)
   }
 
@@ -74,7 +79,7 @@ export function TemplatePicker({ onSelect, query = '', className }: TemplatePick
     return (
       <div className={cn('flex flex-col items-center justify-center py-16 gap-3 px-6 text-center', className)}>
         <AlertCircle className="w-8 h-8 text-surface-600" />
-        <p className="text-sm text-surface-400">Não foi possível carregar os templates.</p>
+        <p role="alert" className="text-sm text-surface-400">{failed}</p>
         <button
           type="button"
           onClick={retry}

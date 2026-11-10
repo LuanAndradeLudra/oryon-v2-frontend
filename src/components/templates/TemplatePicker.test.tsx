@@ -106,3 +106,16 @@ describe('TemplatePicker', () => {
     err.mockRestore()
   })
 })
+
+describe('TemplatePicker — motivo da falha', () => {
+  beforeEach(() => { vi.mocked(templatesApi.list).mockReset() })
+
+  it('mostra o texto que o backend mandou (ex.: atendente sem linha no setor)', async () => {
+    vi.mocked(templatesApi.list).mockRejectedValue({
+      response: { status: 403, data: { message: 'Nenhuma linha de WhatsApp associada ao seu setor.' } },
+    })
+    render(<TemplatePicker onSelect={vi.fn()} />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nenhuma linha de WhatsApp associada ao seu setor.')
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument()
+  })
+})

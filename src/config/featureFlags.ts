@@ -178,6 +178,14 @@ export function multiPipelineEnabled(featureFlags?: readonly string[] | null): b
   return featureFlags?.includes(TENANT_FLAG_MULTI_PIPELINE) ?? false
 }
 
+/** Retomadas / "Planos de ação" (07/11): ligadas por unidade, pela Oryon. */
+export const TENANT_FLAG_RETOMADAS = 'FF_RETOMADAS'
+
+/** `true` só quando o backend listou `FF_RETOMADAS` para o tenant. */
+export function retomadasEnabled(featureFlags?: readonly string[] | null): boolean {
+  return featureFlags?.includes(TENANT_FLAG_RETOMADAS) ?? false
+}
+
 /**
  * Cobrança fora do Oryon (PO, 12/10 — SCRUM-1161): clientes com modelo de
  * cobrança próprio não veem o consumo de créditos nem "Plano & faturamento".
@@ -190,4 +198,12 @@ export const TENANT_FLAG_OCULTAR_COBRANCA = 'FF_OCULTAR_COBRANCA'
 /** `true` quando o backend listou `FF_OCULTAR_COBRANCA` para o tenant. */
 export function cobrancaOcultaPara(featureFlags?: readonly string[] | null): boolean {
   return featureFlags?.includes(TENANT_FLAG_OCULTAR_COBRANCA) ?? false
+}
+
+/** API pública v1 (SCRUM-1216) — ligada pela Oryon (super_admin) por tenant. */
+export const TENANT_FLAG_PUBLIC_API = 'FF_PUBLIC_API'
+
+/** `true` só quando o backend listou `FF_PUBLIC_API` para o tenant. */
+export function publicApiEnabled(featureFlags?: readonly string[] | null): boolean {
+  return featureFlags?.includes(TENANT_FLAG_PUBLIC_API) ?? false
 }

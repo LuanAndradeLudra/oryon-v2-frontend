@@ -40,6 +40,23 @@ export interface Contradicao {
   ferramentas: string[]
 }
 
+/** Trecho entre aspas: "…", “…” ou ‘…’ (a aspa simples reta fica de fora: é apóstrofo). */
+const ENTRE_ASPAS = /["“”][^"“”]*["“”]|‘[^’]*’/g
+/** Antes das aspas, o texto manda o AGENTE dizer aquilo: `Responda: "não consigo agendar"`. */
+const FALA_DO_AGENTE_ANTES = /\b(?:diga|responda|fale|escreva|informe|explique|avise|mande|envie|use a frase)\b[^"“”‘]{0,25}$/
+
+/**
+ * A fala do PACIENTE entre aspas não é o agente dizendo que não faz algo:
+ * `"Não vou", "não posso" (ou a opção de remarcar ou cancelar): pergunte se
+ * prefere remarcar ou cancelar` é a regra da resposta ao lembrete, e o aviso
+ * apontava o "não posso" como limitação (Serra Med, 23/10). Sai da análise,
+ * a não ser que o texto mande o agente dizer aquilo.
+ */
+function semFalaDoPaciente(frase: string): string {
+  return frase.replace(ENTRE_ASPAS, (trecho: string, pos: number, todo: string) =>
+    (FALA_DO_AGENTE_ANTES.test(norm(todo.slice(0, pos))) ? trecho : ' '))
+}
+
 function semRegrasDoNegocio(texto: string): string {
   const linhas = texto.split('\n')
   const out: string[] = []
@@ -61,7 +78,7 @@ export function contradicoes(texto: string, ferramentas: Array<{ name: string; d
     .filter((f) => f.length > 8)
   const achados = new Map<string, Set<string>>()
   for (const frase of frases) {
-    const n = norm(frase)
+    const n = norm(semFalaDoPaciente(frase))
     if (!LIMITACAO.some((re) => re.test(n))) continue
     const assuntos = ASSUNTOS.filter((re) => re.test(n))
     for (const f of uteis) {
