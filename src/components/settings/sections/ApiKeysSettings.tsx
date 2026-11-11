@@ -29,13 +29,38 @@ import {
   type ApiKey, type ApiKeyScope, type ApiKeyStatus, type MinhaRede, type RevokedApiKey,
 } from '@/services/apiKeysApi'
 
-const SCOPE_OPTIONS: Array<{ value: ApiKeyScope; label: string; hint: string }> = [
-  { value: 'contacts:read', label: 'Ler contatos', hint: 'Contatos, etiquetas e campos personalizados' },
-  { value: 'contacts:write', label: 'Gravar contatos', hint: 'Criar e editar contatos, etiquetar' },
-  { value: 'deals:read', label: 'Ler negócios', hint: 'Funis e negócios' },
-  { value: 'deals:write', label: 'Gravar negócios', hint: 'Criar, mover, fechar e reabrir negócios' },
-  { value: 'metrics:read', label: 'Ler métricas', hint: 'Números do painel: métricas, séries e o "agora"' },
+/**
+ * Permissões da chave, agrupadas por área (ORY-25: um par ler/gravar por domínio).
+ * As marcadas com "ação crítica" pedem confirmação em duas etapas na API.
+ */
+const SCOPE_OPTIONS: Array<{ value: ApiKeyScope; label: string; hint: string; group: string }> = [
+  { group: 'Contatos e negócios', value: 'contacts:read', label: 'Ler contatos', hint: 'Contatos, etiquetas e campos personalizados' },
+  { group: 'Contatos e negócios', value: 'contacts:write', label: 'Gravar contatos', hint: 'Criar e editar contatos, etiquetar' },
+  { group: 'Contatos e negócios', value: 'deals:read', label: 'Ler negócios', hint: 'Funis e negócios' },
+  { group: 'Contatos e negócios', value: 'deals:write', label: 'Gravar negócios', hint: 'Criar, mover, fechar e reabrir negócios' },
+  { group: 'Contatos e negócios', value: 'contacts:reveal', label: 'Ver contato sem máscara', hint: 'Nome e telefone completos nas respostas do assistente (fica registrado)' },
+  { group: 'Atendimento', value: 'conversations:read', label: 'Ler conversas', hint: 'Conversas, mensagens e o chat interno' },
+  { group: 'Atendimento', value: 'conversations:write', label: 'Operar conversas', hint: 'Atribuir, transferir, mudar status e etiquetar' },
+  { group: 'Atendimento', value: 'messages:send', label: 'Enviar mensagens', hint: 'Texto e modelo ao contato — ação crítica, pede confirmação' },
+  { group: 'Equipe e configuração', value: 'team:read', label: 'Ler equipe', hint: 'Usuários, disponibilidade, setores e números' },
+  { group: 'Equipe e configuração', value: 'settings:read', label: 'Ler configuração', hint: 'Etiquetas, etapas, campos e respostas prontas' },
+  { group: 'Equipe e configuração', value: 'settings:write', label: 'Gravar configuração', hint: 'Criar e editar etiquetas, etapas, campos, respostas e setores' },
+  { group: 'Modelos, campanhas e automações', value: 'templates:read', label: 'Ler modelos', hint: 'Modelos de mensagem e o status na Meta' },
+  { group: 'Modelos, campanhas e automações', value: 'templates:write', label: 'Gravar modelos', hint: 'Criar e editar modelos; enviar à Meta pede confirmação' },
+  { group: 'Modelos, campanhas e automações', value: 'campaigns:read', label: 'Ler campanhas', hint: 'Campanhas, relatórios e prévia do público' },
+  { group: 'Modelos, campanhas e automações', value: 'campaigns:write', label: 'Gravar campanhas', hint: 'Criar e editar campanhas em rascunho' },
+  { group: 'Modelos, campanhas e automações', value: 'campaigns:send', label: 'Disparar campanhas', hint: 'Ação crítica, pede confirmação' },
+  { group: 'Modelos, campanhas e automações', value: 'automations:read', label: 'Ler automações', hint: 'Automações e as execuções' },
+  { group: 'Modelos, campanhas e automações', value: 'automations:write', label: 'Gravar automações', hint: 'Criar e editar; ligar pede confirmação' },
+  { group: 'Catálogo, conhecimento e IA', value: 'catalog:read', label: 'Ler catálogo', hint: 'Produtos e profissionais' },
+  { group: 'Catálogo, conhecimento e IA', value: 'catalog:write', label: 'Gravar catálogo', hint: 'Criar e editar produtos e profissionais' },
+  { group: 'Catálogo, conhecimento e IA', value: 'knowledge:read', label: 'Ler conhecimento', hint: 'Cérebro da empresa, base de conhecimento e busca' },
+  { group: 'Catálogo, conhecimento e IA', value: 'knowledge:write', label: 'Gravar conhecimento', hint: 'Editar o Cérebro e a base de conhecimento' },
+  { group: 'Catálogo, conhecimento e IA', value: 'agents:read', label: 'Ler agentes de IA', hint: 'Agentes, FAQ, documentos e desempenho' },
+  { group: 'Catálogo, conhecimento e IA', value: 'agents:write', label: 'Gravar agentes de IA', hint: 'FAQ e documentos; publicar o prompt pede confirmação' },
+  { group: 'Painel', value: 'metrics:read', label: 'Ler métricas', hint: 'Números do painel: métricas, séries e o "agora"' },
 ]
+const SCOPE_GROUPS = [...new Set(SCOPE_OPTIONS.map((s) => s.group))]
 const SCOPE_LABEL = new Map(SCOPE_OPTIONS.map((s) => [s.value as string, s.label]))
 
 /** Validade na criação (o backend aceita 1 a 730 dias; vazio = sem validade). */
@@ -492,25 +517,30 @@ function CreateKeyModal({ rede, pipelines, pipelinesError, onClose, onCreated }:
 
         <fieldset className="flex flex-col gap-2">
           <legend className="text-[12.5px] font-medium text-surface-200 mb-1">Permissões</legend>
-          {SCOPE_OPTIONS.map((s) => {
-            // Na chave da rede, "Ler métricas" é obrigatória: fica marcada e travada.
-            const locked = networkWide && s.value === 'metrics:read'
-            return (
-              <label key={s.value} className={`flex items-start gap-2.5 ${locked ? 'cursor-default' : 'cursor-pointer'}`}>
-                <Checkbox
-                  className="mt-0.5"
-                  checked={scopes.includes(s.value)}
-                  disabled={locked}
-                  onChange={() => setScopes((cur) => toggle(cur, s.value))}
-                  data-testid={`api-keys-scope-${s.value}`}
-                />
-                <span className="flex flex-col">
-                  <span className="text-[12.5px] text-surface-100">{s.label}</span>
-                  <span className="text-[11.5px] text-surface-400">{locked ? 'Obrigatória na chave da rede' : s.hint}</span>
-                </span>
-              </label>
-            )
-          })}
+          {SCOPE_GROUPS.map((group) => (
+            <div key={group} className="flex flex-col gap-2">
+              <span className="text-[11px] uppercase tracking-wide text-surface-400 mt-1">{group}</span>
+              {SCOPE_OPTIONS.filter((s) => s.group === group).map((s) => {
+                // Na chave da rede, "Ler métricas" é obrigatória: fica marcada e travada.
+                const locked = networkWide && s.value === 'metrics:read'
+                return (
+                  <label key={s.value} className={`flex items-start gap-2.5 ${locked ? 'cursor-default' : 'cursor-pointer'}`}>
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={scopes.includes(s.value)}
+                      disabled={locked}
+                      onChange={() => setScopes((cur) => toggle(cur, s.value))}
+                      data-testid={`api-keys-scope-${s.value}`}
+                    />
+                    <span className="flex flex-col">
+                      <span className="text-[12.5px] text-surface-100">{s.label}</span>
+                      <span className="text-[11.5px] text-surface-400">{locked ? 'Obrigatória na chave da rede' : s.hint}</span>
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          ))}
         </fieldset>
 
         {rede && (

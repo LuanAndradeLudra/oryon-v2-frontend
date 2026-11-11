@@ -4,7 +4,19 @@
 import api from './api'
 import { apiBaseUrl } from '@/config/env'
 
-export type ApiKeyScope = 'contacts:read' | 'contacts:write' | 'deals:read' | 'deals:write' | 'metrics:read'
+/** Espelha `PUBLIC_API_SCOPES` do backend (ORY-25: um par ler/gravar por domínio). */
+export type ApiKeyScope =
+  | 'contacts:read' | 'contacts:write' | 'contacts:reveal'
+  | 'deals:read' | 'deals:write'
+  | 'metrics:read'
+  | 'conversations:read' | 'conversations:write' | 'messages:send'
+  | 'team:read' | 'settings:read' | 'settings:write'
+  | 'templates:read' | 'templates:write'
+  | 'campaigns:read' | 'campaigns:write' | 'campaigns:send'
+  | 'automations:read' | 'automations:write'
+  | 'catalog:read' | 'catalog:write'
+  | 'knowledge:read' | 'knowledge:write'
+  | 'agents:read' | 'agents:write'
 
 /** Revogada > vencida > ativa (o backend decide; a tela só mostra). */
 export type ApiKeyStatus = 'active' | 'revoked' | 'expired'

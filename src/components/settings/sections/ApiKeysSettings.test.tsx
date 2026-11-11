@@ -243,6 +243,26 @@ describe('Chaves de API', () => {
     await waitFor(() => expect(keysApi.create).toHaveBeenCalledWith({ name: 'BI', scopes: ['metrics:read'], pipelineIds: null }))
   })
 
+  it('ORY-25: permissões agrupadas por área, com os escopos novos de cada domínio', async () => {
+    keysApi.create.mockResolvedValue({ key: key({ id: 'k3', name: 'Copiloto', scopes: ['conversations:read', 'messages:send'] }), secret: SECRET })
+    renderTela()
+    fireEvent.click(await screen.findByTestId('api-keys-new'))
+    for (const grupo of ['Contatos e negócios', 'Atendimento', 'Equipe e configuração', 'Modelos, campanhas e automações', 'Catálogo, conhecimento e IA', 'Painel']) {
+      expect(screen.getByText(grupo)).toBeInTheDocument()
+    }
+    expect(screen.getByText('Disparar campanhas')).toBeInTheDocument()
+    expect(screen.getByText('Ver contato sem máscara')).toBeInTheDocument()
+    fireEvent.change(screen.getByPlaceholderText('Ex.: n8n'), { target: { value: 'Copiloto' } })
+    fireEvent.click(screen.getByTestId('api-keys-scope-contacts:read'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-contacts:write'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-conversations:read'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-messages:send'))
+    fireEvent.click(screen.getByTestId('api-keys-create'))
+    await waitFor(() => expect(keysApi.create).toHaveBeenCalledWith({
+      name: 'Copiloto', scopes: ['conversations:read', 'messages:send'], pipelineIds: null,
+    }))
+  })
+
   it('conta da rede: chave da rede marca e trava "Ler métricas"', async () => {
     keysApi.myNetwork.mockResolvedValue({ id: 'n1', nome: 'Rede Sorriso' })
     keysApi.create.mockResolvedValue({ key: key({ id: 'k2', name: 'BI', scopes: ['metrics:read'], networkWide: true }), secret: SECRET })
