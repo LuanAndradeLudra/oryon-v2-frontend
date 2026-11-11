@@ -3,6 +3,8 @@
  * liberação; com o flag lista, cria (segredo exibido uma vez), troca e revoga.
  * C3 (04/11): validade (`expiresAt`), troca com sobreposição e status `expired`.
  * 05/11: "Ler métricas", chave da rede e revogar a substituta desfaz a troca.
+ * Revisão da ORY-13: F1 (escopo sem rota = "Em breve"), F2 (sem "contato sem
+ * máscara" na chave) e F3 (a lista vem do backend; escopo novo aparece).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -17,7 +19,18 @@ const keysApi = vi.hoisted(() => ({
   rotate: vi.fn(),
   revoke: vi.fn(),
   myNetwork: vi.fn(),
+  scopes: vi.fn(),
 }))
+
+/** O que o backend devolve hoje em GET /api-keys/scopes (os 5 com rota). */
+const HOJE = {
+  grantable: ['contacts:read', 'contacts:write', 'deals:read', 'deals:write', 'metrics:read'],
+  upcoming: [
+    'contacts:reveal', 'conversations:read', 'conversations:write', 'messages:send', 'team:read', 'settings:read', 'settings:write',
+    'templates:read', 'templates:write', 'campaigns:read', 'campaigns:write', 'campaigns:send', 'automations:read',
+    'automations:write', 'catalog:read', 'catalog:write', 'knowledge:read', 'knowledge:write', 'agents:read', 'agents:write',
+  ],
+}
 
 const toast = vi.hoisted(() => ({ show: vi.fn() }))
 
@@ -30,6 +43,7 @@ vi.mock('@/services/apiKeysApi', () => ({
   apiKeysApi: keysApi,
   apiDocsUrl: () => 'http://localhost:3000/api/v1/docs',
   DEFAULT_ROTATION_OVERLAP_DAYS: 7,
+  FALLBACK_SCOPE_CATALOG: { grantable: ['contacts:read', 'contacts:write', 'deals:read', 'deals:write', 'metrics:read'], upcoming: [] },
 }))
 
 const key = (over: Record<string, unknown> = {}) => ({
@@ -52,6 +66,7 @@ describe('Chaves de API', () => {
     keysApi.rotate.mockReset()
     keysApi.revoke.mockReset()
     keysApi.myNetwork.mockReset().mockResolvedValue(null)
+    keysApi.scopes.mockReset().mockResolvedValue(HOJE)
     toast.show.mockReset()
   })
 
@@ -241,6 +256,53 @@ describe('Chaves de API', () => {
     fireEvent.click(screen.getByTestId('api-keys-scope-metrics:read'))
     fireEvent.click(screen.getByTestId('api-keys-create'))
     await waitFor(() => expect(keysApi.create).toHaveBeenCalledWith({ name: 'BI', scopes: ['metrics:read'], pipelineIds: null }))
+  })
+
+  it('F1: escopos sem rota aparecem como "Em breve", desabilitados; os com rota, marcáveis', async () => {
+    renderTela()
+    fireEvent.click(await screen.findByTestId('api-keys-new'))
+    for (const grupo of ['Contatos e negócios', 'Atendimento', 'Equipe e configuração', 'Modelos, campanhas e automações', 'Catálogo, conhecimento e IA', 'Painel']) {
+      expect(screen.getByText(grupo)).toBeInTheDocument()
+    }
+    expect(screen.getByText('Disparar campanhas')).toBeInTheDocument()
+    expect(screen.getByTestId('api-keys-scope-campaigns:send')).toBeDisabled()
+    expect(screen.getByTestId('api-keys-soon-campaigns:send')).toHaveTextContent('Em breve')
+    expect(screen.getByTestId('api-keys-scope-messages:send')).toBeDisabled()
+    expect(screen.getByTestId('api-keys-scope-deals:write')).not.toBeDisabled()
+    expect(screen.queryByTestId('api-keys-soon-deals:write')).toBeNull()
+  })
+
+  it('F2: "Ver contato sem máscara" não aparece na chave (a API sempre devolve o dado completo)', async () => {
+    renderTela()
+    fireEvent.click(await screen.findByTestId('api-keys-new'))
+    expect(screen.queryByText('Ver contato sem máscara')).toBeNull()
+    expect(screen.queryByTestId('api-keys-scope-contacts:reveal')).toBeNull()
+  })
+
+  it('F3: escopo novo que o backend devolver e a tela não conhecer aparece pelo nome técnico', async () => {
+    keysApi.scopes.mockResolvedValue({ grantable: [...HOJE.grantable, 'reports:read'], upcoming: ['reports:write'] })
+    renderTela()
+    fireEvent.click(await screen.findByTestId('api-keys-new'))
+    await waitFor(() => expect(screen.getByTestId('api-keys-scope-reports:read')).not.toBeDisabled())
+    expect(screen.getByText('Outros')).toBeInTheDocument()
+    expect(screen.getByTestId('api-keys-scope-reports:write')).toBeDisabled()
+  })
+
+  it('ORY-25: quando o domínio ganha rota, o escopo dele passa a ser marcável e vai na criação', async () => {
+    keysApi.scopes.mockResolvedValue({ grantable: [...HOJE.grantable, 'conversations:read', 'messages:send'], upcoming: [] })
+    keysApi.create.mockResolvedValue({ key: key({ id: 'k3', name: 'Copiloto', scopes: ['conversations:read', 'messages:send'] }), secret: SECRET })
+    renderTela()
+    fireEvent.click(await screen.findByTestId('api-keys-new'))
+    await waitFor(() => expect(screen.getByTestId('api-keys-scope-messages:send')).not.toBeDisabled())
+    fireEvent.change(screen.getByPlaceholderText('Ex.: n8n'), { target: { value: 'Copiloto' } })
+    fireEvent.click(screen.getByTestId('api-keys-scope-contacts:read'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-contacts:write'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-conversations:read'))
+    fireEvent.click(screen.getByTestId('api-keys-scope-messages:send'))
+    fireEvent.click(screen.getByTestId('api-keys-create'))
+    await waitFor(() => expect(keysApi.create).toHaveBeenCalledWith({
+      name: 'Copiloto', scopes: ['conversations:read', 'messages:send'], pipelineIds: null,
+    }))
   })
 
   it('conta da rede: chave da rede marca e trava "Ler métricas"', async () => {

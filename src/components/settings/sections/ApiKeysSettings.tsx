@@ -25,18 +25,49 @@ import { getApiErrorMessage } from '@/lib/utils'
 import { publicApiEnabled } from '@/config/featureFlags'
 import { pipelinesApi } from '@/services/api'
 import {
-  apiKeysApi, apiDocsUrl, DEFAULT_ROTATION_OVERLAP_DAYS,
-  type ApiKey, type ApiKeyScope, type ApiKeyStatus, type MinhaRede, type RevokedApiKey,
+  apiKeysApi, apiDocsUrl, DEFAULT_ROTATION_OVERLAP_DAYS, FALLBACK_SCOPE_CATALOG,
+  type ApiKey, type ApiKeyScope, type ApiKeyScopeCatalog, type ApiKeyStatus, type MinhaRede, type RevokedApiKey,
 } from '@/services/apiKeysApi'
 
-const SCOPE_OPTIONS: Array<{ value: ApiKeyScope; label: string; hint: string }> = [
-  { value: 'contacts:read', label: 'Ler contatos', hint: 'Contatos, etiquetas e campos personalizados' },
-  { value: 'contacts:write', label: 'Gravar contatos', hint: 'Criar e editar contatos, etiquetar' },
-  { value: 'deals:read', label: 'Ler negócios', hint: 'Funis e negócios' },
-  { value: 'deals:write', label: 'Gravar negócios', hint: 'Criar, mover, fechar e reabrir negócios' },
-  { value: 'metrics:read', label: 'Ler métricas', hint: 'Números do painel: métricas, séries e o "agora"' },
+/**
+ * Permissões da chave, agrupadas por área (ORY-25: um par ler/gravar por domínio).
+ * As marcadas com "ação crítica" pedem confirmação em duas etapas na API.
+ * Revisão F1 (ORY-13): só dá para marcar o que o backend diz que já tem rota
+ * (`GET /api-keys/scopes`); o resto aparece como "Em breve", desabilitado.
+ * Revisão F2: "Ver contato sem máscara" (`contacts:reveal`) não está aqui — a API
+ * sempre devolve o dado completo; ele só vale para o assistente (Oryon MCP).
+ */
+const SCOPE_OPTIONS: Array<{ value: ApiKeyScope; label: string; hint: string; group: string }> = [
+  { group: 'Contatos e negócios', value: 'contacts:read', label: 'Ler contatos', hint: 'Contatos, etiquetas e campos personalizados' },
+  { group: 'Contatos e negócios', value: 'contacts:write', label: 'Gravar contatos', hint: 'Criar e editar contatos, etiquetar' },
+  { group: 'Contatos e negócios', value: 'deals:read', label: 'Ler negócios', hint: 'Funis e negócios' },
+  { group: 'Contatos e negócios', value: 'deals:write', label: 'Gravar negócios', hint: 'Criar, mover, fechar e reabrir negócios' },
+  { group: 'Atendimento', value: 'conversations:read', label: 'Ler conversas', hint: 'Conversas, mensagens e o chat interno' },
+  { group: 'Atendimento', value: 'conversations:write', label: 'Operar conversas', hint: 'Atribuir, transferir, mudar status e etiquetar' },
+  { group: 'Atendimento', value: 'messages:send', label: 'Enviar mensagens', hint: 'Texto e modelo ao contato — ação crítica, pede confirmação' },
+  { group: 'Equipe e configuração', value: 'team:read', label: 'Ler equipe', hint: 'Usuários, disponibilidade, setores e números' },
+  { group: 'Equipe e configuração', value: 'settings:read', label: 'Ler configuração', hint: 'Etiquetas, etapas, campos e respostas prontas' },
+  { group: 'Equipe e configuração', value: 'settings:write', label: 'Gravar configuração', hint: 'Criar e editar etiquetas, etapas, campos, respostas e setores' },
+  { group: 'Modelos, campanhas e automações', value: 'templates:read', label: 'Ler modelos', hint: 'Modelos de mensagem e o status na Meta' },
+  { group: 'Modelos, campanhas e automações', value: 'templates:write', label: 'Gravar modelos', hint: 'Criar e editar modelos; enviar à Meta pede confirmação' },
+  { group: 'Modelos, campanhas e automações', value: 'campaigns:read', label: 'Ler campanhas', hint: 'Campanhas, relatórios e prévia do público' },
+  { group: 'Modelos, campanhas e automações', value: 'campaigns:write', label: 'Gravar campanhas', hint: 'Criar e editar campanhas em rascunho' },
+  { group: 'Modelos, campanhas e automações', value: 'campaigns:send', label: 'Disparar campanhas', hint: 'Ação crítica, pede confirmação' },
+  { group: 'Modelos, campanhas e automações', value: 'automations:read', label: 'Ler automações', hint: 'Automações e as execuções' },
+  { group: 'Modelos, campanhas e automações', value: 'automations:write', label: 'Gravar automações', hint: 'Criar e editar; ligar pede confirmação' },
+  { group: 'Catálogo, conhecimento e IA', value: 'catalog:read', label: 'Ler catálogo', hint: 'Produtos e profissionais' },
+  { group: 'Catálogo, conhecimento e IA', value: 'catalog:write', label: 'Gravar catálogo', hint: 'Criar e editar produtos e profissionais' },
+  { group: 'Catálogo, conhecimento e IA', value: 'knowledge:read', label: 'Ler conhecimento', hint: 'Cérebro da empresa, base de conhecimento e busca' },
+  { group: 'Catálogo, conhecimento e IA', value: 'knowledge:write', label: 'Gravar conhecimento', hint: 'Editar o Cérebro e a base de conhecimento' },
+  { group: 'Catálogo, conhecimento e IA', value: 'agents:read', label: 'Ler agentes de IA', hint: 'Agentes, FAQ, documentos e desempenho' },
+  { group: 'Catálogo, conhecimento e IA', value: 'agents:write', label: 'Gravar agentes de IA', hint: 'FAQ e documentos; publicar o prompt pede confirmação' },
+  { group: 'Painel', value: 'metrics:read', label: 'Ler métricas', hint: 'Números do painel: métricas, séries e o "agora"' },
 ]
 const SCOPE_LABEL = new Map(SCOPE_OPTIONS.map((s) => [s.value as string, s.label]))
+/** Escopos que nunca aparecem na tela de chaves (F2: só valem para o assistente). */
+const HIDDEN_SCOPES = new Set(['contacts:reveal'])
+/** Grupo dos escopos que o backend devolveu e a tela ainda não conhece (F3). */
+const OTHER_GROUP = 'Outros'
 
 /** Validade na criação (o backend aceita 1 a 730 dias; vazio = sem validade). */
 const VALIDITY_OPTIONS: Array<{ value: string; label: string }> = [
@@ -93,6 +124,7 @@ export function ApiKeysSettings() {
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
   const [revokeBusy, setRevokeBusy] = useState(false)
   const [rede, setRede] = useState<MinhaRede | null>(null)
+  const [catalog, setCatalog] = useState<ApiKeyScopeCatalog>(FALLBACK_SCOPE_CATALOG)
 
   const reload = useCallback(() => {
     if (!enabled || !canManage) { setLoading(false); return }
@@ -136,6 +168,7 @@ export function ApiKeysSettings() {
     if (!enabled || !canManage) return
     let vivo = true
     apiKeysApi.myNetwork().then((r) => { if (vivo) setRede(r) })
+    apiKeysApi.scopes().then((c) => { if (vivo) setCatalog(c) })
     return () => { vivo = false }
   }, [enabled, canManage])
 
@@ -269,6 +302,7 @@ export function ApiKeysSettings() {
 
       {creating && (
         <CreateKeyModal
+          catalog={catalog}
           rede={rede}
           pipelines={pipelines}
           pipelinesError={pipelinesError}
@@ -422,7 +456,9 @@ function KeyRow({ k, replacement, previous, pipelineName, onRotate, onRevoke }: 
   )
 }
 
-function CreateKeyModal({ rede, pipelines, pipelinesError, onClose, onCreated }: {
+function CreateKeyModal({ catalog, rede, pipelines, pipelinesError, onClose, onCreated }: {
+  /** O que o backend deixa conceder hoje e o que vem "em breve" (F1/F3). */
+  catalog: ApiKeyScopeCatalog
   /** Só a conta da rede pode criar chave da rede. */
   rede: MinhaRede | null
   pipelines: PipelineOption[]
@@ -432,6 +468,16 @@ function CreateKeyModal({ rede, pipelines, pipelinesError, onClose, onCreated }:
 }) {
   const [name, setName] = useState('')
   const [scopes, setScopes] = useState<ApiKeyScope[]>(['contacts:read', 'contacts:write'])
+  const grantable = useMemo(() => new Set(catalog.grantable), [catalog])
+  // F3: escopo novo do backend que a tela ainda não conhece aparece pelo nome técnico.
+  const options = useMemo(() => {
+    const known = new Set(SCOPE_OPTIONS.map((s) => s.value as string))
+    const extra = [...catalog.grantable, ...catalog.upcoming]
+      .filter((v) => !known.has(v) && !HIDDEN_SCOPES.has(v))
+      .map((v) => ({ group: OTHER_GROUP, value: v as ApiKeyScope, label: v, hint: '' }))
+    return [...SCOPE_OPTIONS, ...extra]
+  }, [catalog])
+  const groups = useMemo(() => [...new Set(options.map((s) => s.group))], [options])
   const [restrict, setRestrict] = useState(false)
   const [pipelineIds, setPipelineIds] = useState<string[]>([])
   const [validity, setValidity] = useState('')
@@ -492,25 +538,38 @@ function CreateKeyModal({ rede, pipelines, pipelinesError, onClose, onCreated }:
 
         <fieldset className="flex flex-col gap-2">
           <legend className="text-[12.5px] font-medium text-surface-200 mb-1">Permissões</legend>
-          {SCOPE_OPTIONS.map((s) => {
-            // Na chave da rede, "Ler métricas" é obrigatória: fica marcada e travada.
-            const locked = networkWide && s.value === 'metrics:read'
-            return (
-              <label key={s.value} className={`flex items-start gap-2.5 ${locked ? 'cursor-default' : 'cursor-pointer'}`}>
-                <Checkbox
-                  className="mt-0.5"
-                  checked={scopes.includes(s.value)}
-                  disabled={locked}
-                  onChange={() => setScopes((cur) => toggle(cur, s.value))}
-                  data-testid={`api-keys-scope-${s.value}`}
-                />
-                <span className="flex flex-col">
-                  <span className="text-[12.5px] text-surface-100">{s.label}</span>
-                  <span className="text-[11.5px] text-surface-400">{locked ? 'Obrigatória na chave da rede' : s.hint}</span>
-                </span>
-              </label>
-            )
-          })}
+          {groups.map((group) => (
+            <div key={group} className="flex flex-col gap-2">
+              <span className="text-[11px] uppercase tracking-wide text-surface-400 mt-1">{group}</span>
+              {options.filter((s) => s.group === group).map((s) => {
+                // Na chave da rede, "Ler métricas" é obrigatória: fica marcada e travada.
+                const locked = networkWide && s.value === 'metrics:read'
+                // F1: escopo sem rota ainda — aparece, mas não dá para marcar.
+                const soon = !grantable.has(s.value)
+                const blocked = locked || soon
+                return (
+                  <label key={s.value} className={`flex items-start gap-2.5 ${blocked ? 'cursor-default' : 'cursor-pointer'} ${soon ? 'opacity-60' : ''}`}>
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={scopes.includes(s.value)}
+                      disabled={blocked}
+                      onChange={() => setScopes((cur) => toggle(cur, s.value))}
+                      data-testid={`api-keys-scope-${s.value}`}
+                    />
+                    <span className="flex flex-col">
+                      <span className="text-[12.5px] text-surface-100">
+                        {s.label}
+                        {soon && <span className="ml-1.5 text-[11px] text-surface-400" data-testid={`api-keys-soon-${s.value}`}>Em breve</span>}
+                      </span>
+                      <span className="text-[11.5px] text-surface-400">
+                        {locked ? 'Obrigatória na chave da rede' : soon ? 'Ainda sem rota na API; fica disponível quando a área chegar.' : s.hint}
+                      </span>
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          ))}
         </fieldset>
 
         {rede && (

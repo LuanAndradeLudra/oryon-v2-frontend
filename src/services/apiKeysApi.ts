@@ -4,7 +4,35 @@
 import api from './api'
 import { apiBaseUrl } from '@/config/env'
 
-export type ApiKeyScope = 'contacts:read' | 'contacts:write' | 'deals:read' | 'deals:write' | 'metrics:read'
+/** Espelha `PUBLIC_API_SCOPES` do backend (ORY-25: um par ler/gravar por domínio). */
+export type ApiKeyScope =
+  | 'contacts:read' | 'contacts:write' | 'contacts:reveal'
+  | 'deals:read' | 'deals:write'
+  | 'metrics:read'
+  | 'conversations:read' | 'conversations:write' | 'messages:send'
+  | 'team:read' | 'settings:read' | 'settings:write'
+  | 'templates:read' | 'templates:write'
+  | 'campaigns:read' | 'campaigns:write' | 'campaigns:send'
+  | 'automations:read' | 'automations:write'
+  | 'catalog:read' | 'catalog:write'
+  | 'knowledge:read' | 'knowledge:write'
+  | 'agents:read' | 'agents:write'
+
+/**
+ * Revisão F1/F3 da ORY-13: os escopos que uma chave pode receber HOJE (os que já
+ * têm rota na API) e os que ainda não ("em breve"). Vem do backend
+ * (`GET /api-keys/scopes`) para a tela não ficar para trás quando um domínio ganhar rotas.
+ */
+export interface ApiKeyScopeCatalog {
+  grantable: string[]
+  upcoming: string[]
+}
+
+/** Sem a rota (backend antigo) ou com falha: só os escopos que têm rota desde a v1.1. */
+export const FALLBACK_SCOPE_CATALOG: ApiKeyScopeCatalog = {
+  grantable: ['contacts:read', 'contacts:write', 'deals:read', 'deals:write', 'metrics:read'],
+  upcoming: [],
+}
 
 /** Revogada > vencida > ativa (o backend decide; a tela só mostra). */
 export type ApiKeyStatus = 'active' | 'revoked' | 'expired'
@@ -90,6 +118,16 @@ export const apiKeysApi = {
   async revoke(id: string): Promise<RevokedApiKey> {
     const { data } = await api.post<RevokedApiKey>(`/api-keys/${id}/revoke`)
     return { ...data, rotationUndone: data.rotationUndone ?? null }
+  },
+  /** Escopos concedíveis e "em breve"; na falha, os que têm rota desde a v1.1 (nunca libera a mais). */
+  async scopes(): Promise<ApiKeyScopeCatalog> {
+    try {
+      const { data } = await api.get<ApiKeyScopeCatalog>('/api-keys/scopes')
+      if (!Array.isArray(data?.grantable) || !Array.isArray(data?.upcoming)) return FALLBACK_SCOPE_CATALOG
+      return { grantable: data.grantable, upcoming: data.upcoming }
+    } catch {
+      return FALLBACK_SCOPE_CATALOG
+    }
   },
   /** `null` quando a conta não é a de uma rede (o backend responde 403) ou a consulta falha. */
   async myNetwork(): Promise<MinhaRede | null> {
