@@ -27,8 +27,8 @@ const HOJE = {
   grantable: ['contacts:read', 'contacts:write', 'deals:read', 'deals:write', 'metrics:read'],
   upcoming: [
     'contacts:reveal', 'conversations:read', 'conversations:write', 'messages:send', 'team:read', 'settings:read', 'settings:write',
-    'templates:read', 'templates:write', 'campaigns:read', 'campaigns:write', 'campaigns:send', 'automations:read',
-    'automations:write', 'catalog:read', 'catalog:write', 'knowledge:read', 'knowledge:write', 'agents:read', 'agents:write',
+    'templates:read', 'templates:write', 'campaigns:read', 'campaigns:write', 'campaigns:send',
+    'catalog:read', 'catalog:write', 'knowledge:read', 'knowledge:write', 'agents:read', 'agents:write',
   ],
 }
 
@@ -261,7 +261,7 @@ describe('Chaves de API', () => {
   it('F1: escopos sem rota aparecem como "Em breve", desabilitados; os com rota, marcáveis', async () => {
     renderTela()
     fireEvent.click(await screen.findByTestId('api-keys-new'))
-    for (const grupo of ['Contatos e negócios', 'Atendimento', 'Equipe e configuração', 'Modelos, campanhas e automações', 'Catálogo, conhecimento e IA', 'Painel']) {
+    for (const grupo of ['Contatos e negócios', 'Atendimento', 'Equipe e configuração', 'Modelos e campanhas', 'Catálogo, conhecimento e IA', 'Painel']) {
       expect(screen.getByText(grupo)).toBeInTheDocument()
     }
     expect(screen.getByText('Disparar campanhas')).toBeInTheDocument()
@@ -270,6 +270,9 @@ describe('Chaves de API', () => {
     expect(screen.getByTestId('api-keys-scope-messages:send')).toBeDisabled()
     expect(screen.getByTestId('api-keys-scope-deals:write')).not.toBeDisabled()
     expect(screen.queryByTestId('api-keys-soon-deals:write')).toBeNull()
+    // ORY-45: as automações saíram da v1 (as Jornadas vão substituí-las).
+    expect(screen.queryByTestId('api-keys-scope-automations:read')).toBeNull()
+    expect(screen.queryByTestId('api-keys-scope-automations:write')).toBeNull()
   })
 
   it('F2: "Ver contato sem máscara" não aparece na chave (a API sempre devolve o dado completo)', async () => {
