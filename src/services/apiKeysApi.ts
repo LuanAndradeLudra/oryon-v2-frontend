@@ -13,7 +13,6 @@ export type ApiKeyScope =
   | 'team:read' | 'settings:read' | 'settings:write'
   | 'templates:read' | 'templates:write'
   | 'campaigns:read' | 'campaigns:write' | 'campaigns:send'
-  | 'automations:read' | 'automations:write'
   | 'catalog:read' | 'catalog:write'
   | 'knowledge:read' | 'knowledge:write'
   | 'agents:read' | 'agents:write'
