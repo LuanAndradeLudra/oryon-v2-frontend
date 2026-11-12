@@ -23,6 +23,11 @@ import { listTenantAuditFeed, type TenantAuditRow } from '@/services/tenantAudit
 import { formatActivity } from '@/components/dashboard/activityFormatter'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { comVolta } from '@/lib/voltarPara'
+import { formatKpiValue } from '@/components/dashboard/utils'
+
+/** Início da janela das conversas ativas (7 dias), como no Dashboard. Arredondado na hora: o valor
+ *  entra na chave das consultas e não pode mudar a cada render. */
+const seteDiasAtras = () => new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000 - 7 * 86_400_000).toISOString()
 import type { ConversationFilters } from '@/types'
 
 
@@ -125,26 +130,43 @@ function KPICard({ data }: { data: KPIData }) {
   )
 }
 
+/** "+ N paradas" quando há estoque fora do recorte; senão o próprio recorte. */
+const comParadas = (paradas: number | undefined, recorte: string) =>
+  paradas && paradas > 0 ? `+ ${paradas.toLocaleString('pt-BR')} ${paradas === 1 ? 'parada' : 'paradas'} há mais de 7 dias` : recorte
+
+/**
+ * Auditoria do Dashboard (12/11): os números da Home seguem as mesmas regras do Dashboard —
+ * "agora" só com as conversas ativas (7 dias, as paradas à parte), resolvidas = todas as
+ * resoluções do dia, novos contatos = os mesmos 7 dias dos Relatórios, e as mensagens dizem
+ * que são as ENVIADAS (e quanto é da IA). Backend antigo: os campos de antes.
+ */
 function getKPIs(stats: HomeStats, role: string): KPIData[] {
+  const abertas: KPIData = {
+    label: 'Conversas abertas',
+    value: stats.conversationsOpenActive ?? stats.conversationsOpen ?? 0,
+    icon: MessageSquare, color: 'brand',
+    subtext: stats.conversationsOpenActive === undefined ? undefined : comParadas(stats.conversationsOpenStale, 'ativas nos últimos 7 dias'),
+  }
+  const resolvidas: KPIData = { label: 'Resolvidas hoje', value: stats.resolvedInPeriod ?? stats.conversationsResolvedToday ?? 0, icon: CheckCircle2, color: 'green', subtext: 'pela IA ou pela equipe' }
+  const por = stats.messagesSentBy
+  const enviadas: KPIData = {
+    label: 'Mensagens enviadas hoje', value: stats.messagesSentToday ?? 0, icon: MessageCircle, color: 'purple',
+    subtext: por ? `IA ${(por.ai ?? 0).toLocaleString('pt-BR')} · equipe ${(por.operator ?? 0).toLocaleString('pt-BR')}` : undefined,
+  }
+  const fila: KPIData = {
+    label: 'Ninguém assumiu', value: stats.queueCount ?? 0, icon: Inbox,
+    color: (stats.queueCount ?? 0) > 5 ? 'amber' : 'green', href: '/conversations?aba=fila',
+    subtext: comParadas(stats.queueStale, 'na fila, sem dono'),
+  }
   // Admin/business_admin KPIs
   if (role === 'admin' || role === 'business_admin') return [
-    { label: 'Conversas abertas', value: stats.conversationsOpen ?? 0, icon: MessageSquare, color: 'brand' },
-    { label: 'Resolvidas hoje', value: stats.conversationsResolvedToday ?? 0, icon: CheckCircle2, color: 'green', trend: 'hoje' },
-    { label: 'Novos contatos', value: stats.newContactsThisWeek ?? 0, icon: UserPlus, color: 'blue', subtext: 'esta semana' },
-    { label: 'Mensagens hoje', value: stats.messagesSentToday ?? 0, icon: MessageCircle, color: 'purple' },
+    abertas,
+    resolvidas,
+    { label: 'Novos contatos', value: stats.newContactsThisWeek ?? 0, icon: UserPlus, color: 'blue', subtext: 'nos últimos 7 dias' },
+    enviadas,
   ]
-  if (role === 'supervisor') return [
-    { label: 'Conversas abertas', value: stats.conversationsOpen ?? 0, icon: MessageSquare, color: 'brand' },
-    { label: 'Na fila', value: stats.queueCount ?? 0, icon: Inbox, color: (stats.queueCount ?? 0) > 5 ? 'amber' : 'green', href: '/conversations?aba=fila', subtext: 'pendentes sem dono' },
-    { label: 'Resolvidas hoje', value: stats.conversationsResolvedToday ?? 0, icon: CheckCircle2, color: 'green' },
-    { label: 'Mensagens hoje', value: stats.messagesSentToday ?? 0, icon: MessageCircle, color: 'purple' },
-  ]
-  return [
-    { label: 'Conversas abertas', value: stats.conversationsOpen ?? 0, icon: MessageSquare, color: 'brand' },
-    { label: 'Resolvidas hoje', value: stats.conversationsResolvedToday ?? 0, icon: CheckCircle2, color: 'green' },
-    { label: 'Na fila', value: stats.queueCount ?? 0, icon: Inbox, color: 'amber', href: '/conversations?aba=fila', subtext: 'pendentes sem dono' },
-    { label: 'Mensagens hoje', value: stats.messagesSentToday ?? 0, icon: MessageCircle, color: 'purple' },
-  ]
+  if (role === 'supervisor') return [abertas, fila, resolvidas, enviadas]
+  return [abertas, resolvidas, fila, enviadas]
 }
 
 function KPIGrid({ stats, role, linkAoVivo = false }: { stats: HomeStats; role: string; linkAoVivo?: boolean }) {
@@ -281,16 +303,20 @@ function useTotalDeConversas(filtros: ConversationFilters): number | null {
 function MyPerformanceCard({ stats }: { stats: HomeStats }) {
   // Pessoais e acionáveis: as que a IA passou para mim (pendentes) e as em
   // que o cliente falou por último. Mesmos filtros das abas da inbox.
-  const precisamDeVoce = useTotalDeConversas({ status: 'pending', assignedTo: 'me' })
-  const esperandoResposta = useTotalDeConversas({ assignedTo: 'me', awaitingReply: true })
+  // Auditoria 12/11: só as ativas (mensagem nos últimos 7 dias), como no Dashboard.
+  const desde = seteDiasAtras()
+  const precisamDeVoce = useTotalDeConversas({ status: 'pending', assignedTo: 'me', startDate: desde } as ConversationFilters)
+  const esperandoResposta = useTotalDeConversas({ assignedTo: 'me', awaitingReply: true, startDate: desde } as ConversationFilters)
   // Fallback p/ 0 quando o backend não popula os campos myXxx (acontece com
   // super_admin / users sem conversas atribuídas, ou se o endpoint
   // /home/stats ainda não retorna esses campos). Sem isso, o template
   // literal `${undefined}min` vira "undefinedmin" na UI.
-  const myOpen      = stats.myConversationsOpen ?? 0
+  const myOpen      = stats.myConversationsOpenActive ?? stats.myConversationsOpen ?? 0
   const myResolved  = stats.myConversationsResolvedToday ?? 0
   const mySent      = stats.myMessagesSentToday ?? 0
-  const myAvgMin    = stats.myAvgResponseMinutes
+  // Auditoria 12/11: a MINHA 1ª resposta (mediana, sem o tempo da IA) — antes era a média do ciclo
+  // até a 1ª resposta da IA ou de qualquer pessoa nas minhas conversas.
+  const minhaPrimeira = stats.myFirstResponseMedianSeconds
 
   return (
     <Card className="h-full flex flex-col">
@@ -334,11 +360,11 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
             icon: <Send className="w-3.5 h-3.5" />,
           },
           {
-            label: 'Tempo médio de resposta',
-            // Sem mensagem enviada hoje não há tempo médio: "—", não "0min".
-            value: myAvgMin == null ? '—' : `${myAvgMin.toLocaleString('pt-BR')} min`,
-            // Mesma régua do "Atendimento agora": >10min = atenção.
-            cls: (myAvgMin ?? 0) > 10 ? 'text-status-pending' : 'text-surface-200',
+            label: 'Minha 1ª resposta',
+            // Sem resposta minha hoje: "—", não "0min". Mediana, do repasse para a equipe.
+            value: minhaPrimeira == null ? '—' : formatKpiValue(Math.max(1, minhaPrimeira), 'seconds'),
+            // Prazo de 15 min (o mesmo da fila).
+            cls: (minhaPrimeira ?? 0) > 15 * 60 ? 'text-status-pending' : 'text-surface-200',
             icon: <Clock className="w-3.5 h-3.5" />,
           },
         ].map((row) => (
@@ -604,8 +630,9 @@ function AgentBlock() {
   // O total vem do servidor (antes contava só as 5 da lista).
   useEffect(() => {
     Promise.all([
-      conversationsApi.list({ status: 'pending', assignedTo: 'me' }, 1, 5),
-      conversationsApi.list({ status: 'open', assignedTo: 'me' }, 1, 5),
+      // Auditoria 12/11: só as ativas (mensagem nos últimos 7 dias).
+      conversationsApi.list({ status: 'pending', assignedTo: 'me', startDate: seteDiasAtras() } as ConversationFilters, 1, 5),
+      conversationsApi.list({ status: 'open', assignedTo: 'me', startDate: seteDiasAtras() } as ConversationFilters, 1, 5),
     ])
       .then(([pend, abertas]) => {
         const todas = [...(pend.data.data ?? []), ...(abertas.data.data ?? [])]
@@ -682,15 +709,13 @@ export function HomePage() {
       avgResponseMinutes: 0, queueCount: 0, planUsed: 0, planLimit: 0,
       myConversationsOpen: 0, myConversationsResolvedToday: 0, myAvgResponseMinutes: 0, myMessagesSentToday: 0,
     }
-    // "Na fila" do /home/stats (queueCount) conta TODAS as pendentes, com ou
-    // sem dono; "sem atendente" (unassignedCount) conta abertas + pendentes sem
-    // dono. A Fila do produto é pendentes SEM dono (inbox e Dashboard): busca o
-    // total real e usa nos dois campos — é o que os cards e os insights leem.
+    // Auditoria 12/11: a fila da Home é a MESMA do Dashboard (/home/queue): ninguém assumiu, só as
+    // ativas (7 dias), com as paradas à parte. Antes a Home contava todas as pendentes sem dono.
     Promise.all([
       api.get<HomeStats>('/home/stats').then((r) => r.data).catch(() => { setStatsErro(true); return fallbackStats }),
-      conversationsApi.list({ status: 'pending', assignedTo: 'unassigned' }, 1, 1).then((r) => r.data.total).catch(() => null),
+      api.get<{ semDono?: number; paradas?: number }>('/home/queue').then((r) => r.data).catch(() => null),
     ]).then(([base, fila]) => {
-      setStats(fila === null || fila === undefined ? base : { ...base, queueCount: fila, unassignedCount: fila })
+      setStats(typeof fila?.semDono !== 'number' ? base : { ...base, queueCount: fila.semDono, unassignedCount: fila.semDono, queueStale: fila.paradas ?? 0 })
     })
   }, [])
 

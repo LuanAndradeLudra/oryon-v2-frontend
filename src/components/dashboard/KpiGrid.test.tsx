@@ -13,13 +13,16 @@ function kpi(id: string, value: number | null, extra: Partial<KpiMetric> = {}): 
   return { ...def, value, trend: 0, sparkline: [], ...extra }
 }
 
+// Auditoria 12/11: os indicadores "agora" saíram dos Relatórios; o tempo de resposta é o da IA.
 const METRICAS: KpiMetric[] = [
-  kpi('active_conversations', 190),
-  kpi('queued', 8),
-  kpi('resolution_rate', 39, { detail: 'de 36 atendimentos iniciados' }),
-  kpi('first_response_time', 37200),
+  kpi('total_conversations', 190),
+  kpi('resolved', 8),
+  kpi('resolution_rate', 39, { detail: 'dos 36 atendimentos' }),
+  kpi('recontact_rate', 12),
+  kpi('ai_first_response', 37200),
   kpi('human_first_response', 1320, { meta: { alvo: 900, sentido: 'menor' } }),
   kpi('bot_deflection', 0),
+  kpi('expired_review_alerts', 2),
 ]
 
 beforeEach(() => {
@@ -37,9 +40,9 @@ function montar() {
 
 describe('kpiIdentidade', () => {
   it('agrupa pela categoria na ordem em que aparece, mantendo a ordem do usuário dentro dela', () => {
-    const grupos = agruparPorGrupo([kpi('resolved', 1), kpi('first_response_time', 1), kpi('queued', 1), kpi('bot_resolved', 1)])
+    const grupos = agruparPorGrupo([kpi('resolved', 1), kpi('first_response_time', 1), kpi('recontact_rate', 1), kpi('bot_resolved', 1)])
     expect(grupos.map((g) => [g.grupo, g.itens.map((i) => i.id)])).toEqual([
-      ['Atendimento', ['resolved', 'queued']],
+      ['Atendimento', ['resolved', 'recontact_rate']],
       ['Velocidade', ['first_response_time']],
       ['Bot', ['bot_resolved']],
     ])
@@ -63,35 +66,34 @@ describe('KpiGrid — um cartão por categoria', () => {
     const cartoes = within(faixa).getAllByRole('region')
     expect(cartoes.map((c) => c.getAttribute('aria-label'))).toEqual(['Atendimento', 'Velocidade', 'IA'])
     expect(within(cartoes[1]).getByRole('heading', { name: 'Velocidade' })).toBeInTheDocument()
-    expect(within(cartoes[1]).getByText('Tempo de resposta')).toBeInTheDocument()
+    expect(within(cartoes[1]).getByText('1ª resposta da IA')).toBeInTheDocument()
+    expect(within(cartoes[2]).getByText('Alertas não verificados')).toBeInTheDocument()
   })
 
-  it('indicador de agora tem o ponto "ao vivo"; o do período não', () => {
+  it('auditoria 12/11: nenhum indicador fixo dos Relatórios é "agora" — todos seguem o período', () => {
     montar()
-    const fila = screen.getByRole('link', { name: /Em fila/ })
-    expect(within(fila).getByText('agora', { selector: '.sr-only' })).toBeInTheDocument()
-    const taxa = screen.getByText('Taxa de resolução').closest('[data-spotlight-target]') as HTMLElement
-    expect(within(taxa).queryByText('agora', { selector: '.sr-only' })).toBeNull()
+    expect(screen.queryAllByText('agora', { selector: '.sr-only' })).toHaveLength(0)
+    const ids = KPI_CATALOG.map((d) => d.id as string)
+    for (const agora of ['active_conversations', 'queued', 'agents_online']) expect(ids).not.toContain(agora)
   })
 
   it('o cartão leva à lista que compõe o número', () => {
     montar()
-    expect(screen.getByRole('link', { name: /Em fila: 8\. Abrir a Fila/ })).toHaveAttribute('href', '/conversations?aba=fila')
-    expect(screen.getByRole('link', { name: /Conversas ativas/ })).toHaveAttribute('href', '/conversations?status=open')
+    expect(screen.getByRole('link', { name: /Resolvidas: 8\. Abrir as conversas resolvidas/ })).toHaveAttribute('href', '/conversations?status=resolved')
   })
 
   it('taxa ganha a barra; tempo com meta mostra o estado e a meta', () => {
     montar()
     const taxa = screen.getByText('Taxa de resolução').closest('[data-spotlight-target]') as HTMLElement
     expect(taxa.querySelector('span[style*="width: 39%"]')).not.toBeNull()
-    const humana = screen.getByText('1ª resposta humana').closest('[data-spotlight-target]') as HTMLElement
+    const humana = screen.getByText('1ª resposta da equipe').closest('[data-spotlight-target]') as HTMLElement
     expect(within(humana).getByText('atenção')).toBeInTheDocument()
     expect(within(humana).getByText('· meta 15m')).toBeInTheDocument()
   })
 
   it('a unidade aparece separada do número (menor e mais leve)', () => {
     montar()
-    const tempo = screen.getByText('Tempo de resposta').closest('[data-spotlight-target]') as HTMLElement
+    const tempo = screen.getByText('1ª resposta da IA').closest('[data-spotlight-target]') as HTMLElement
     const unidades = [...tempo.querySelectorAll('span.text-\\[0\\.58em\\]')].map((s) => s.textContent)
     expect(unidades).toEqual(['h', 'm'])
   })
@@ -112,7 +114,7 @@ describe('DC-5 — variação, destaque e densidade', () => {
   it('variação ao lado do número: cor pelo lado bom do indicador; p.p. nas taxas', () => {
     montarCom([
       kpi('resolved', 30, { trend: 20, trendUnit: '%' }),
-      kpi('first_response_time', 90, { trend: 12.5, trendUnit: '%' }),
+      kpi('ai_first_response', 90, { trend: 12.5, trendUnit: '%' }),
       kpi('resolution_rate', 62, { trend: -2.5, trendUnit: 'pp' }),
       kpi('msgs_received', 10, { trend: 5, trendUnit: '%' }),
       kpi('abandoned', 1, { trend: null }),
@@ -122,7 +124,7 @@ describe('DC-5 — variação, destaque e densidade', () => {
     expect(de('Resolvidas')).toHaveTextContent('↑20%')
     expect(de('Resolvidas')).toHaveClass('text-online')
     // Tempo subindo é ruim.
-    expect(de('Tempo de resposta')).toHaveClass('text-danger')
+    expect(de('1ª resposta da IA')).toHaveClass('text-danger')
     expect(de('Taxa de resolução')).toHaveTextContent('↓2,5 p.p.')
     expect(de('Taxa de resolução')).toHaveTextContent('caiu 2,5 pontos percentuais')
     // Neutro (mensagens recebidas) fica cinza.
@@ -141,7 +143,7 @@ describe('DC-5 — variação, destaque e densidade', () => {
   })
 
   it('destaque sobe para a linha própria e sai do grupo', () => {
-    montarCom([kpi('resolved', 3, { sparkline: [1, 2] }), kpi('queued', 2), kpi('resolution_rate', 50)], { destaque: ['resolution_rate', 'nao_existe'] })
+    montarCom([kpi('resolved', 3, { sparkline: [1, 2] }), kpi('recontact_rate', 2), kpi('resolution_rate', 50)], { destaque: ['resolution_rate', 'nao_existe'] })
     const destaques = screen.getByTestId('kpi-destaques')
     expect(within(destaques).getByText('Taxa de resolução')).toBeInTheDocument()
     expect(screen.getAllByText('Taxa de resolução')).toHaveLength(1)

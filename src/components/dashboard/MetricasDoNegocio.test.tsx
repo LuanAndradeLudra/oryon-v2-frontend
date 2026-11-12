@@ -26,9 +26,9 @@ function doServidor(extra: Partial<MetricaDoServidor>): KpiMetric {
 const fixo = (id: string, value: number): KpiMetric => ({ ...KPI_CATALOG.find((d) => d.id === id)!, value, trend: null, sparkline: [] })
 
 const METRICAS: KpiMetric[] = [
-  fixo('active_conversations', 10),
+  fixo('total_conversations', 10),
   fixo('resolved', 4),
-  fixo('queued', 1),
+  fixo('recontact_rate', 1),
   fixo('resolution_rate', 30),
   doServidor({}),
   doServidor({ chave: 'clinica_valor_tabela', rotulo: 'Valor a preço de tabela', unidade: 'currency', selos: ['estimado'], valor: 125000, partes: { consideradas: 5, semPreco: 1, semEspecialidade: 0 } }),
@@ -168,8 +168,8 @@ describe('Personalizar com as métricas do negócio', () => {
     render(
       <KpiCustomizerDrawer
         open onClose={() => undefined} onSave={onSave}
-        slots={['active_conversations', 'resolved', 'queued', 'resolution_rate', 'metrica_que_nao_veio']}
-        defaults={['active_conversations', 'resolved', 'queued', 'resolution_rate']}
+        slots={['total_conversations', 'resolved', 'recontact_rate', 'resolution_rate', 'metrica_que_nao_veio']}
+        defaults={['total_conversations', 'resolved', 'recontact_rate', 'resolution_rate']}
         catalogo={METRICAS}
       />,
     )
@@ -179,6 +179,6 @@ describe('Personalizar com as métricas do negócio', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Do seu negócio' }))
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar Pedidos sem vaga' }))
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
-    expect(onSave.mock.calls[0][0].slots).toEqual(['active_conversations', 'resolved', 'queued', 'resolution_rate', 'clinica_pedidos_sem_vaga', 'metrica_que_nao_veio'])
+    expect(onSave.mock.calls[0][0].slots).toEqual(['total_conversations', 'resolved', 'recontact_rate', 'resolution_rate', 'clinica_pedidos_sem_vaga', 'metrica_que_nao_veio'])
   })
 })

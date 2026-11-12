@@ -301,12 +301,15 @@ export function useConversations(filters: ConversationFilters = {}) {
         return [conv, ...prev]
       })
       loadedConvIds.current.add(conversationId)
+      // 12/11 (auditoria do Dashboard): conversa nova (ou que voltou a caber no filtro) muda as
+      // contagens das abas; antes elas só andavam ao recarregar.
+      refetchCounts()
     } catch {
       // Silent fail — the conversation will appear on next manual refetch.
     } finally {
       pendingFetches.current.delete(conversationId)
     }
-  }, [])
+  }, [refetchCounts])
 
   const handleNewMessage = useCallback((payload: SocketMessageNew) => {
     // Defensive — `conversation:updated` fan-out can carry a message-less
@@ -546,6 +549,25 @@ export function useConversations(filters: ConversationFilters = {}) {
   // ao reconectar o socket (queda de rede, sono do notebook) e ao voltar para
   // a aba depois de um tempo, a lista é lida de novo. A primeira conexão não
   // conta — a carga inicial já cuida dela.
+  // 12/11 (auditoria do Dashboard): `conversation:read` (alguém leu, nesta ou em outra aba) zera o
+  // chip da linha; `conversation:reopened` (o cliente voltou) muda o status e as contagens das abas.
+  useEffect(() => {
+    const socket = connectSocket()
+    const lida = (p: { conversationId?: string }) => { if (p?.conversationId) patchConv(p.conversationId, { unreadCount: 0 }) }
+    const reaberta = (p: { conversationId?: string }) => {
+      if (!p?.conversationId) return
+      if (loadedConvIds.current.has(p.conversationId)) patchAndReconcile(p.conversationId, { status: 'open' })
+      else fetchAndPrependConversation(p.conversationId)
+      refetchCounts()
+    }
+    socket.on('conversation:read', lida)
+    socket.on('conversation:reopened', reaberta)
+    return () => {
+      socket.off('conversation:read', lida)
+      socket.off('conversation:reopened', reaberta)
+    }
+  }, [patchConv, patchAndReconcile, fetchAndPrependConversation, refetchCounts])
+
   useEffect(() => {
     const socket = connectSocket()
     const aoReconectar = () => { if (initialLoadDone.current) void fetchConversations() }

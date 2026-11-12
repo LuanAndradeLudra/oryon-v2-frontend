@@ -44,6 +44,7 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
   agents:              ['usuários', 'atendentes', 'equipe', 'membros', 'convites'],
   departments:         ['setores', 'times', 'filas'],
   'quick-replies':     ['respostas rápidas', 'atalhos', 'mensagens prontas'],
+  inactivity:          ['inatividade', 'arquivar', 'encerrar', 'conversas paradas', 'fila'],
   tags:                ['etiquetas', 'labels', 'marcadores'],
   numbers:             ['whatsapp', 'linhas', 'números', 'telefone', 'conexão'],
   'whatsapp-health':   ['saúde', 'qualidade', 'limites', 'tier', 'whatsapp'],
@@ -143,6 +144,8 @@ export const SETTINGS_NAV: NavDomain[] = [
           // PO 04/10: só administradores — o backend só deixa admin sincronizar (o supervisor via a tela e a sincronização falhava).
           { section: 'company-brain', label: 'Contexto da IA',    adminOnly: true },
           { section: 'quick-replies', label: 'Respostas rápidas', supervisorOnly: true },
+          // Auditoria do Dashboard (12/11): arquiva sozinho as conversas paradas (admin, igual ao backend).
+          { section: 'inactivity',    label: 'Encerramento por inatividade', adminOnly: true },
           // SCRUM-1253 (11/10): instruções do Copilot para todos os papéis (fora do menu se o Copilot estiver desligado).
           { section: 'copilot',       label: 'Copilot',           hidden: !isFeatureVisible('copilot') },
         ],

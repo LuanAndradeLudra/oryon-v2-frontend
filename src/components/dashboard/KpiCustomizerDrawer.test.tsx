@@ -9,7 +9,8 @@ vi.mock('@/services/api', () => ({ api: { get, put } }))
 beforeEach(() => { get.mockResolvedValue({ data: {} }) })
 afterEach(() => { cleanup(); get.mockReset(); put.mockReset() })
 
-const SLOTS: KpiId[] = ['active_conversations', 'resolved', 'first_response_time', 'queued', 'resolution_rate']
+// Auditoria 12/11: os indicadores "agora" saíram do catálogo dos Relatórios.
+const SLOTS: KpiId[] = ['total_conversations', 'resolved', 'ai_first_response', 'recontact_rate', 'resolution_rate']
 
 function montar(slots: KpiId[] = SLOTS) {
   const onSave = vi.fn()
@@ -22,10 +23,10 @@ function montar(slots: KpiId[] = SLOTS) {
 describe('Personalizar indicadores', () => {
   it('mostra a faixa na ordem e reordena com as setas', () => {
     const { selecionados } = montar()
-    expect(selecionados()[0]).toContain('Conversas ativas')
-    fireEvent.click(screen.getByRole('button', { name: 'Descer Conversas ativas' }))
+    expect(selecionados()[0]).toContain('Atendimentos')
+    fireEvent.click(screen.getByRole('button', { name: 'Descer Atendimentos' }))
     expect(selecionados()[0]).toContain('Resolvidas')
-    expect(selecionados()[1]).toContain('Conversas ativas')
+    expect(selecionados()[1]).toContain('Atendimentos')
   })
 
   it('adiciona pelo catálogo com busca, e Salvar grava o rascunho', () => {
@@ -77,11 +78,11 @@ describe('DC-5/DC-6 — densidade, destaque e metas', () => {
     const { onSave } = montar()
     fireEvent.click(screen.getByRole('radio', { name: /Detalhada/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Destacar Resolvidas' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Destacar Em fila' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Destacar Reabertas depois de resolvidas' }))
     // O terceiro não entra: até 2.
-    expect(screen.getByRole('button', { name: 'Destacar Conversas ativas' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Destacar Atendimentos' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
-    expect(onSave).toHaveBeenCalledWith({ slots: SLOTS, densidade: 'detalhada', destaque: ['resolved', 'queued'] })
+    expect(onSave).toHaveBeenCalledWith({ slots: SLOTS, densidade: 'detalhada', destaque: ['resolved', 'recontact_rate'] })
   })
 
   it('tirar da faixa tira do destaque', () => {

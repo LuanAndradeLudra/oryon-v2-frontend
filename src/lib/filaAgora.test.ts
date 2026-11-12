@@ -96,3 +96,19 @@ describe('selo "sem resposta" da lista (esperaPessoa — regra própria, não é
     expect(esperaPessoa(conv({ linha: 'ia', status: 'pending', lastMessageSenderKind: 'ai', lastAgentReplyAt: min(0) }), IA, NOW)).toBe(false)
   })
 })
+
+describe('auditoria 12/11 — a fila do servidor e a data vazia', () => {
+  it('data vazia nunca vira espera (antes: 01/01/1970 = "20768 d")', () => {
+    const semData = conv({ id: 'x', status: 'pending', lastMessageAt: null as unknown as string })
+    expect(montarFila([semData], IA, NOW)).toEqual([])
+  })
+
+  it('com o "desde" do servidor: entra só quem ele devolveu, e a espera conta da mensagem do paciente', () => {
+    const c1 = conv({ id: 'c1', status: 'pending', lastMessageAt: min(1), lastMessageSenderKind: 'ai' })
+    const c2 = conv({ id: 'c2', status: 'pending', lastMessageAt: min(3) })
+    const fila = montarFila([c1, c2], IA, NOW, new Map([['c1', min(300)]]))
+    expect(fila.map((i) => i.conversa.id)).toEqual(['c1'])
+    expect(fila[0].esperaMin).toBe(300)
+    expect(fila[0].faixa).toBe('atrasada')
+  })
+})

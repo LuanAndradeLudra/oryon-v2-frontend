@@ -128,7 +128,8 @@ describe('montarSnapshot', () => {
     const s = { conversationsOpen: 4, queueCount: 2, conversationsResolvedToday: 3, totalConversations: 12, resolutionRate: 25, appointmentsScheduled: 7 } as unknown as HomeStats
     const snap = montarSnapshot(s, null)
     const kpi = (id: string) => snap.kpis.find((k) => k.id === id)?.value
-    expect(kpi('active_conversations')).toBe(4)
+    // Auditoria 12/11: "conversas ativas" (agora) saiu dos Relatórios.
+    expect(kpi('active_conversations')).toBeUndefined()
     expect(kpi('resolved')).toBe(3)
     expect(kpi('resolution_rate')).toBe(25)
     expect(kpi('appointments_scheduled')).toBe(7)

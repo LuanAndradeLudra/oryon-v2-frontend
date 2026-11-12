@@ -5,6 +5,7 @@ import {
 import axios from 'axios'
 import type { InternalChannel, InternalMessage, UserPresence, UserPresenceStatus } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { connectSocket } from '@/services/socket'
 import { ehEquipeDeSuporte } from '@/lib/roleHelpers'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
@@ -149,9 +150,17 @@ export function InternalChatProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', onVisibilityChange)
     if (visible) startPolling()
 
+    // 12/11 (auditoria do Dashboard): o contador do menu esperava até 15 s pela próxima leitura.
+    // Mensagem nova para mim, canal novo/removido e leitura em outra aba relêem os canais na hora.
+    const socket = connectSocket()
+    const reler = () => { void fetchChannels() }
+    const EVENTOS_DA_EQUIPE = ['team:message:notification', 'team:channel:new', 'team:channel:removed', 'team:channel:read'] as const
+    EVENTOS_DA_EQUIPE.forEach((e) => socket.on(e, reler))
+
     return () => {
       stopPolling()
       document.removeEventListener('visibilitychange', onVisibilityChange)
+      EVENTOS_DA_EQUIPE.forEach((e) => socket.off(e, reler))
     }
   }, [user, fetchChannels, fetchPresence])
 

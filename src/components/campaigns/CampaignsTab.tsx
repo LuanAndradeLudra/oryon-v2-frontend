@@ -24,6 +24,7 @@ import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/
 import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequiredBanner'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { Campaign, CampaignStatus } from '@/types'
+import { connectSocket } from '@/services/socket'
 
 // CAMP-TABLE-08: label do chip "Concluída" (não "Enviada") pro status `sent`
 // — texto do mock. `chip`/`icon` de cores/ícone por status saíram: o chip
@@ -82,6 +83,27 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
 
   useEffect(() => {
     campaignsApi.list().then((r) => setCampaigns(r.data)).finally(() => setLoading(false))
+  }, [])
+
+  // 12/11 (auditoria do Dashboard): o backend avisa o progresso e o fim de cada disparo, mas a lista
+  // ficava em "Enviando" com os números parados até recarregar. Relê a lista (no máximo a cada 3 s).
+  useEffect(() => {
+    const socket = connectSocket()
+    let espera: ReturnType<typeof setTimeout> | null = null
+    const reler = () => {
+      if (espera) return
+      espera = setTimeout(() => {
+        espera = null
+        campaignsApi.list().then((r) => setCampaigns(r.data)).catch(() => { /* mantém a lista */ })
+      }, 3_000)
+    }
+    socket.on('campaign:progress', reler)
+    socket.on('campaign:complete', reler)
+    return () => {
+      socket.off('campaign:progress', reler)
+      socket.off('campaign:complete', reler)
+      if (espera) clearTimeout(espera)
+    }
   }, [])
 
   // ?report= apontando pra campanha que não existe (excluída, id errado):

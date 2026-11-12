@@ -94,6 +94,7 @@ function linhaTemIA(c: ConversaDaFila, linhasComIA: LinhasComIA): boolean {
  *  só anda com mensagem HUMANA — a IA não mexe nele.) */
 function pessoaRespondeu(c: ConversaDaFila): boolean {
   if (!c.lastAgentReplyAt) return false
+  if (!c.lastMessageAt) return true
   return new Date(c.lastAgentReplyAt).getTime() >= new Date(c.lastMessageAt).getTime()
 }
 
@@ -143,17 +144,33 @@ export function faixaDoPrazo(esperaMin: number): FaixaDePrazo {
   return 'no-prazo'
 }
 
-/** Monta a fila do Dashboard (`esperaNaFila`), da maior espera para a menor. */
+/**
+ * Monta a fila do Dashboard, da maior espera para a menor.
+ *
+ * Auditoria do Dashboard (12/11): com `desdePorId` (o `/home/queue`), quem está na fila e desde
+ * quando o paciente espera vêm do SERVIDOR — só as conversas ativas (7 dias) e a espera contada da
+ * última mensagem do PACIENTE, a mesma régua da "Maior espera". Sem ele (leitura do resumo falhou),
+ * vale a regra local (`esperaNaFila` + última mensagem da conversa).
+ * Data vazia NUNCA vira espera: `new Date(null)` é 01/01/1970 e mostrava "20768 d".
+ */
 export function montarFila(
   conversas: ReadonlyArray<Conversation>,
   linhasComIA: LinhasComIA,
   now: number = Date.now(),
+  desdePorId?: ReadonlyMap<string, string>,
 ): ItemDaFila[] {
   const out: ItemDaFila[] = []
   for (const c of conversas) {
-    if (!esperaNaFila(c)) continue
-    const t = new Date(c.lastMessageAt).getTime()
-    if (!Number.isFinite(t)) continue
+    let desde: string | null
+    if (desdePorId) {
+      desde = desdePorId.get(c.id) ?? null
+    } else {
+      if (!esperaNaFila(c)) continue
+      desde = c.lastMessageAt || null
+    }
+    if (!desde) continue
+    const t = new Date(desde).getTime()
+    if (!Number.isFinite(t) || t <= 0) continue
     const esperaMin = Math.max(0, Math.floor((now - t) / 60_000))
     out.push({
       conversa: c,
@@ -161,7 +178,8 @@ export function montarFila(
       faixa: faixaDoPrazo(esperaMin),
       iaPassou: iaPassouParaEquipe(c, linhasComIA),
       semDono: !c.assignedUser,
-      janela: computeWhatsAppWindow({ lastMessageAt: c.lastMessageAt, lastMessageSenderKind: c.lastMessageSenderKind, now }),
+      // Com o servidor, `desde` é a última mensagem do paciente: a janela de 24h sai exata.
+      janela: computeWhatsAppWindow({ lastMessageAt: desde, lastMessageSenderKind: desdePorId ? 'client' : c.lastMessageSenderKind, now }),
     })
   }
   return out.sort((a, b) => b.esperaMin - a.esperaMin)

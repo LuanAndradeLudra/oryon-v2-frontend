@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
 import type { KpiId, KpiIdFixo, KpiMetric } from '@/types/dashboard'
 import { PERIODO_PADRAO, comparacaoPorExtenso, type Comparacao, type Periodo } from '@/lib/periodoDoPainel'
-import { KPI_CATALOG, DEFAULT_KPI_SLOTS } from '@/types/dashboard'
+import { KPI_CATALOG, DEFAULT_KPI_SLOTS, migrarFaixaDaAuditoria } from '@/types/dashboard'
 import { KpiCustomizerDrawer } from './KpiCustomizerDrawer'
 import { ListaDaMetrica } from './ListaDaMetrica'
 import { ValorComUnidade } from './ValorComUnidade'
@@ -16,6 +16,8 @@ import {
 import { classeDaGrade } from '@/components/dashboard/gradeDeIndicadores'
 
 const LS_KEY = 'oryon:dashboard:kpi-slots'
+/** Auditoria do Dashboard (12/11): a faixa salva já passou pela troca de indicadores. */
+const marcaDaAuditoria = (chave: string) => `${chave}:auditoria-1211`
 const LS_DENSIDADE = 'oryon:dashboard:kpi-densidade'
 const LS_DESTAQUE = 'oryon:dashboard:kpi-destaque'
 
@@ -62,7 +64,11 @@ function loadSlots(chave: string, conhecidos: ReadonlySet<string>): KpiId[] {
   try {
     const raw = lerBruto(chave, LS_KEY)
     if (raw) {
-      const ids = idsSalvos(JSON.parse(raw))
+      let ids = idsSalvos(JSON.parse(raw))
+      // Auditoria do Dashboard (12/11): uma vez por faixa salva, troca o "Tempo de resposta"
+      // misturado pela 1ª resposta da IA e acrescenta Reabertas e Alertas não verificados ao
+      // lado dos vizinhos. Só em memória: quem grava (e marca) é o efeito, depois do catálogo (A20).
+      if (localStorage.getItem(marcaDaAuditoria(chave)) === null) ids = migrarFaixaDaAuditoria(ids)
       if (ids.some((id) => conhecidos.has(id))) return ids
     }
   } catch { /* ignore */ }
@@ -413,7 +419,10 @@ export function KpiGrid({
   useEffect(() => {
     // Só depois do catálogo: antes, um padrão provisório apagaria a escolha salva (A20).
     if (!catalogoPronto) return
-    try { localStorage.setItem(chaveSlots, JSON.stringify(slots)) } catch { /* ignore */ }
+    try {
+      localStorage.setItem(chaveSlots, JSON.stringify(slots))
+      localStorage.setItem(marcaDaAuditoria(chaveSlots), '1')
+    } catch { /* ignore */ }
   }, [slots, chaveSlots, catalogoPronto])
   useEffect(() => {
     try { localStorage.setItem(LS_DENSIDADE, JSON.stringify(densidade)) } catch { /* ignore */ }

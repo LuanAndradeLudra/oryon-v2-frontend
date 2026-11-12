@@ -83,6 +83,15 @@ export interface AppNotification {
  *  tenants. Bump if the inbox pattern reaches the cap regularly. */
 const FETCH_LIMIT = 50
 
+/**
+ * 12/11 (João): o sino, a lista do sino, a página de notificações e o cabeçalho do celular são
+ * cópias separadas deste hook — ler numa não baixava o número das outras. Agora, depois de cada
+ * mudança, esta aba avisa as outras cópias (evento de janela) e o backend avisa as outras abas e
+ * aparelhos do mesmo usuário (`notifications:sync`, repassado pelo OuvinteDoTempoReal).
+ */
+export const NOTIFICACOES_MUDARAM = 'oryon:notifications-changed'
+const avisarMudanca = () => { try { window.dispatchEvent(new CustomEvent(NOTIFICACOES_MUDARAM)) } catch { /* sem janela */ } }
+
 export function useNotifications() {
   const { isAuthenticated } = useAuth()
   const [notifications, setNotifications] = useState<AppNotification[]>([])
@@ -159,6 +168,19 @@ export function useNotifications() {
 
   useEffect(() => { load() }, [load])
 
+  // 12/11: outra cópia (ou outra aba/aparelho, via socket) mudou o estado — relê do servidor.
+  const loadRef = useRef(load)
+  loadRef.current = load
+  useEffect(() => {
+    const reler = () => { void loadRef.current() }
+    window.addEventListener(NOTIFICACOES_MUDARAM, reler)
+    window.addEventListener('notifications:sync', reler)
+    return () => {
+      window.removeEventListener(NOTIFICACOES_MUDARAM, reler)
+      window.removeEventListener('notifications:sync', reler)
+    }
+  }, [])
+
   const markAsRead = useCallback(async (id: string) => {
     // Optimistic update with rollback on failure. Without rollback, the UI
     // would show the notification as read but the DB would keep it unread,
@@ -173,6 +195,7 @@ export function useNotifications() {
     if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1))
     try {
       await api.post(`/notifications/${id}/read`)
+      avisarMudanca()
     } catch {
       // Roll back the optimistic UI change
       if (wasUnread) {
@@ -190,6 +213,7 @@ export function useNotifications() {
     setUnreadCount((c) => { prevCount = c; return 0 })
     try {
       await api.post('/notifications/read-all')
+      avisarMudanca()
     } catch {
       setNotifications(snapshot)
       setUnreadCount(prevCount)
@@ -207,6 +231,7 @@ export function useNotifications() {
     if (wasRead) setUnreadCount((c) => c + 1)
     try {
       await api.post(`/notifications/${id}/unread`)
+      avisarMudanca()
     } catch {
       if (wasRead) {
         setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
@@ -232,6 +257,7 @@ export function useNotifications() {
     if (decreaseUnread) setUnreadCount((c) => Math.max(0, c - 1))
     try {
       await api.post(`/notifications/${id}/archive`)
+      avisarMudanca()
     } catch {
       setNotifications(snapshot)
       if (decreaseUnread) setUnreadCount((c) => c + 1)
@@ -249,6 +275,7 @@ export function useNotifications() {
     })
     try {
       await api.post(`/notifications/${id}/unarchive`)
+      avisarMudanca()
     } catch {
       setNotifications(snapshot)
     }

@@ -62,12 +62,17 @@ export function BottomTabBar() {
       socket = connectSocket()
       socket.on('unread:update', onUnread)
       socket.on('conversation:updated', onConversationUpdated)
+      // 12/11: ler uma conversa (nesta ou em outra aba) baixa as não lidas na hora; antes só no troca de página.
+      socket.on('conversation:read', onConversationUpdated)
+      socket.on('conversation:status-updated', onConversationUpdated)
     })
     return () => {
       alive = false
       // Só os handlers deste componente: o socket é compartilhado (SCRUM-1210).
       socket?.off('unread:update', onUnread)
       socket?.off('conversation:updated', onConversationUpdated)
+      socket?.off('conversation:read', onConversationUpdated)
+      socket?.off('conversation:status-updated', onConversationUpdated)
     }
   }, [refresh])
 

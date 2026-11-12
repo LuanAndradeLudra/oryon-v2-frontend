@@ -1149,8 +1149,10 @@ export interface AvailableUser {
   role: string
   departmentId: string | null
   isOnline: boolean
-  /** Conversas abertas + pendentes atribuídas à pessoa. */
+  /** Conversas abertas + pendentes atribuídas à pessoa, com mensagem nos últimos 7 dias (auditoria 12/11). */
   activeConversations: number
+  /** As atribuídas à pessoa paradas há mais de 7 dias (fora da carga). Ausente em backend antigo. */
+  staleConversations?: number
 }
 
 export const usersApi = {

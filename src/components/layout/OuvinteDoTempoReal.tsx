@@ -21,13 +21,17 @@ export function OuvinteDoTempoReal() {
     const novo = repassar('notification:new')
     const mudou = repassar('notification:updated')
     const planos = repassar('follow-ups:mudou')
+    // 12/11: ler/arquivar notificação em outra aba ou aparelho → o sino desta aba relê.
+    const sincronizar = repassar('notifications:sync')
     socket.on('notification:new', novo)
     socket.on('notification:updated', mudou)
     socket.on('follow-ups:mudou', planos)
+    socket.on('notifications:sync', sincronizar)
     return () => {
       socket.off('notification:new', novo)
       socket.off('notification:updated', mudou)
       socket.off('follow-ups:mudou', planos)
+      socket.off('notifications:sync', sincronizar)
     }
   }, [])
   return null

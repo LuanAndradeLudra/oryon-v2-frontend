@@ -7,6 +7,8 @@ export type KpiIdFixo =
   | 'total_conversations' | 'active_conversations' | 'queued'
   | 'resolved' | 'abandoned' | 'resolution_rate' | 'abandon_rate'
   | 'first_response_time' | 'human_first_response' | 'avg_resolution_time' | 'sla_compliance'
+  // Auditoria do Dashboard (12/11): 1ª resposta só da IA e os alertas de verificação vencidos.
+  | 'ai_first_response' | 'expired_review_alerts'
   | 'csat' | 'nps' | 'recontact_rate'
   | 'msgs_received' | 'msgs_sent' | 'new_contacts'
   | 'bot_deflection' | 'bot_resolved'
@@ -104,6 +106,14 @@ export interface StatusDistribution {
   abandoned: number
 }
 
+/** Auditoria do Dashboard (12/11): como terminaram os atendimentos (sessões) do período. */
+export interface DesfechoDosAtendimentos {
+  resolvedByAiOnly: number
+  resolvedWithTeam: number
+  archived: number
+  open: number
+}
+
 export interface TagVolume {
   tagId: string
   tagName: string
@@ -190,6 +200,8 @@ export interface DashboardSnapshot {
   volumeChart: VolumeDataPoint[]
   /** `null` quando /home/snapshot não veio; a UI mostra indisponibilidade. */
   statusDistribution: StatusDistribution | null
+  /** Auditoria do Dashboard (12/11): o desfecho dos atendimentos do período; `null` = sem o dado. */
+  desfecho?: DesfechoDosAtendimentos | null
   tagVolumes: TagVolume[]
   csatChart: CsatDataPoint[]
   heatmap: HeatmapCell[]
@@ -215,40 +227,41 @@ export const EMPTY_REALTIME_STATUS: RealtimeStatus = {
 // fonte no backend e os que a D4 tirou (CSAT, NPS, SLA global, Ads, CTR,
 // opt-out, utilização). Slots salvos com esses ids são ignorados (loadSlots).
 export const KPI_CATALOG: KpiDefinition[] = [
+  // Auditoria do Dashboard (12/11): os indicadores "agora" (conversas ativas, em fila, pessoas
+  // online) saíram dos Relatórios — o lugar deles é a aba Agora. Faixas salvas com esses ids
+  // simplesmente não os mostram mais (loadSlots).
   { id: 'total_conversations',  label: 'Atendimentos',             category: 'Atendimento', unit: 'count',      trendIsGood: 'up',
-    help: 'Atendimentos iniciados no período: contatos novos mais os clientes que voltaram (conversa reaberta). Cada volta do cliente é um atendimento.' },
-  { id: 'active_conversations', label: 'Conversas ativas',         category: 'Atendimento', unit: 'count',      trendIsGood: 'neutral',
-    help: 'Conversas abertas neste momento (não segue o período).' },
-  { id: 'queued',               label: 'Em fila',                  category: 'Atendimento', unit: 'count',      trendIsGood: 'down',
-    help: 'Conversas pendentes sem dono neste momento — a mesma aba Fila das Conversas (não segue o período).' },
+    help: 'Cada vez que um paciente procura a clínica: começa na mensagem dele e termina na resolução ou depois de 24 h sem mensagens. Lembretes e disparos que o paciente não respondeu não contam. É o mesmo número do painel do gestor.' },
   { id: 'resolved',             label: 'Resolvidas',               category: 'Atendimento', unit: 'count',      trendIsGood: 'up',
-    help: 'Conversas marcadas como resolvidas dentro do período (e que seguem resolvidas).' },
+    help: 'Conversas marcadas como resolvidas no período, pela IA ou pela equipe, uma vez por conversa — inclusive as que foram resolvidas e reabertas depois.' },
   { id: 'abandoned',            label: 'Arquivadas',               category: 'Atendimento', unit: 'count',      trendIsGood: 'down',
     help: 'Conversas arquivadas no período — encerradas pela IA ou por uma pessoa porque o cliente parou de responder. Não mede cliente que desistiu de esperar.' },
   { id: 'resolution_rate',      label: 'Taxa de resolução',        category: 'Atendimento', unit: 'percent',    trendIsGood: 'up',
-    help: 'Dos atendimentos iniciados no período, quantos já estão resolvidos. Não é "Resolvidas ÷ Atendimentos": Resolvidas conta também atendimentos de antes do período.' },
+    help: 'Dos atendimentos que começaram no período, quantos terminaram resolvidos (pela IA ou com a equipe). A base é a mesma do cartão Atendimentos.' },
   { id: 'abandon_rate',         label: 'Taxa de arquivamento',     category: 'Atendimento', unit: 'percent',    trendIsGood: 'down',
     help: 'Dos atendimentos iniciados no período, quantos foram arquivados.' },
-  { id: 'first_response_time',  label: 'Tempo de resposta',        category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
+  { id: 'ai_first_response',    label: '1ª resposta da IA',        category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
+    help: 'Mediana do tempo entre a mensagem do paciente e a primeira resposta da IA. Respostas de pessoas, mensagens automáticas por regra e campanhas não contam.' },
+  { id: 'first_response_time',  label: 'Tempo de resposta (IA ou pessoa)', category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
     help: 'Mediana do tempo entre o cliente começar a falar e a primeira resposta da IA ou de uma pessoa. Resposta automática por regra e campanha não contam; quem ficou sem resposta aparece à parte.' },
-  { id: 'human_first_response', label: '1ª resposta humana',       category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
-    help: 'Mediana do tempo até a primeira mensagem de uma pessoa em cada atendimento, contado de quando a conversa passou para a equipe (ou do início, se a pessoa assumiu antes). O tempo em que a IA atendia não entra.' },
+  { id: 'human_first_response', label: '1ª resposta da equipe',    category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
+    help: 'Mediana do tempo entre a IA passar o atendimento para a equipe e a primeira mensagem de uma pessoa (ou do início, se a pessoa assumiu antes). O tempo em que a IA atendia não entra. A média aparece na linha de baixo.' },
   { id: 'avg_resolution_time',  label: 'Tempo de resolução',       category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down',
-    help: 'Mediana do tempo entre o início do atendimento e a resolução, nas conversas resolvidas no período. Cliente que voltou conta do dia em que voltou, não do primeiro contato.' },
-  { id: 'recontact_rate',       label: 'Taxa de recontato',        category: 'Qualidade',   unit: 'percent',    trendIsGood: 'down',
-    help: 'Conversas que o cliente reabriu no período, sobre as resolvidas mais as reabertas. Nunca passa de 100%.' },
+    help: 'Mediana do tempo entre o início do atendimento e a resolução, nas conversas resolvidas no período. A média aparece na linha de baixo e sobe com poucos casos muito longos.' },
+  { id: 'recontact_rate',       label: 'Reabertas depois de resolvidas', category: 'Atendimento', unit: 'percent', trendIsGood: 'down',
+    help: 'Conversas em que o paciente voltou a escrever depois de a conversa ser resolvida, sobre as resolvidas mais as reabertas. Mostra se a resolução resolveu de fato. Lembretes e reaberturas automáticas não contam.' },
   { id: 'msgs_received',        label: 'Msgs recebidas',           category: 'Volume',      unit: 'count',      trendIsGood: 'neutral',
     help: 'Mensagens que os clientes mandaram no período.' },
   { id: 'msgs_sent',            label: 'Msgs enviadas',            category: 'Volume',      unit: 'count',      trendIsGood: 'neutral',
     help: 'Mensagens que saíram no período (sem as que falharam): de pessoas, da IA, de respostas automáticas e de campanhas.' },
   { id: 'new_contacts',         label: 'Novos contatos',           category: 'Volume',      unit: 'count',      trendIsGood: 'up',
-    help: 'Contatos cadastrados no período.' },
+    help: 'Contatos criados no período, mesmo os que ainda não conversaram (importados ou de campanha).' },
   { id: 'bot_deflection',       label: 'Resolução pela IA',        category: 'Bot',         unit: 'percent',    trendIsGood: 'up',
-    help: 'Das conversas resolvidas no período, quantas a IA atendeu sem nenhuma mensagem de pessoa no atendimento. Conversa que a IA passou para a equipe não conta como sucesso da IA.' },
+    help: 'Das conversas resolvidas no período, quantas a IA resolveu sozinha: nenhuma pessoa escreveu e o paciente não voltou pedindo ajuda em 24 h. Se o paciente volta, a resolução é descontada.' },
   { id: 'bot_resolved',         label: 'Resolvidas pela IA',       category: 'Bot',         unit: 'count',      trendIsGood: 'up',
-    help: 'Conversas resolvidas no período em que a IA respondeu e nenhuma pessoa escreveu no atendimento.' },
-  { id: 'agents_online',        label: 'Pessoas online',           category: 'Equipe',      unit: 'count',      trendIsGood: 'neutral',
-    help: 'Pessoas da equipe com o Oryon aberto agora (não inclui os agentes de IA).' },
+    help: 'Conversas resolvidas no período em que a IA respondeu, nenhuma pessoa escreveu e o paciente não voltou pedindo ajuda em 24 h.' },
+  { id: 'expired_review_alerts', label: 'Alertas não verificados', category: 'Bot',         unit: 'count',      trendIsGood: 'down',
+    help: 'Vezes em que a IA disse ao paciente ter feito algo que o sistema não confirmou e ninguém da equipe tratou em 7 dias (sem resposta, sem resolver e sem marcar como verificada). Os casos recentes estão na aba Agora.' },
   // ── Campanhas (Meta WhatsApp Business API) ──────────────────────────────────
   { id: 'campaign_sent',          label: 'Disparos enviados',         category: 'Disparos',   unit: 'count',      trendIsGood: 'up',
     help: 'Mensagens de campanha que saíram no período, contando as que a Meta recusou (mesma regra do relatório da campanha). Inclui campanhas interrompidas.' },
@@ -260,23 +273,56 @@ export const KPI_CATALOG: KpiDefinition[] = [
     help: 'Dos disparos entregues, quantos tiveram resposta do cliente.' },
   // ── Clínica (agentes de WhatsApp: agendar/cancelar/confirmar consulta) ──────
   { id: 'appointments_scheduled', label: 'Agendamentos marcados',     category: 'Clínica',    unit: 'count',      trendIsGood: 'up',
-    help: 'Agendamentos que os agentes de IA marcaram no período.' },
+    help: 'Consultas que a IA gravou na agenda pelo WhatsApp no período. Não conta as marcadas pela equipe, por telefone ou no balcão — onde a equipe marca a maioria, este número é só uma parte.' },
   { id: 'appointments_cancelled', label: 'Cancelamentos',             category: 'Clínica',    unit: 'count',      trendIsGood: 'down',
-    help: 'Agendamentos cancelados pelos agentes de IA no período.' },
+    help: 'Consultas que a IA cancelou na agenda a pedido do paciente, no período.' },
   // SCRUM-1456: só conta quando a IA confirmou de fato — "já estava confirmada" não entra.
   { id: 'appointments_confirmed', label: 'Confirmações',              category: 'Clínica',    unit: 'count',      trendIsGood: 'up',
-    help: 'Consultas que os agentes de IA confirmaram no período.' },
+    help: 'Consultas confirmadas na agenda pelo WhatsApp no período. A maioria vem do botão "Sim, irei comparecer" do lembrete de 24 h.' },
 ]
 
 // R2-DASH-07: a faixa do mock 1b tem 5 KPIs — o padrão acompanha (o usuário
 // escolhe mais no "Personalizar"; cada 5 viram uma nova linha da mesma faixa).
+// Auditoria do Dashboard (12/11): o padrão é o da prévia aprovada — Atendimento, Velocidade e IA.
 export const DEFAULT_KPI_SLOTS: KpiIdFixo[] = [
-  'active_conversations',
+  'total_conversations',
   'resolved',
-  'first_response_time',
-  'queued',
   'resolution_rate',
+  'recontact_rate',
+  'ai_first_response',
+  'human_first_response',
+  'avg_resolution_time',
+  'new_contacts',
+  'bot_deflection',
+  'expired_review_alerts',
 ]
+
+/**
+ * Auditoria do Dashboard (12/11): a faixa salva antes da auditoria. O "Tempo de resposta"
+ * misturado dá lugar à 1ª resposta da IA, e entram uma vez (depois fica a escolha da pessoa)
+ * os indicadores novos que explicam os números: reabertas e alertas não verificados.
+ */
+export const KPI_TROCADOS: Readonly<Record<string, KpiIdFixo>> = { first_response_time: 'ai_first_response' }
+export const KPI_NOVOS_DA_AUDITORIA: Array<{ id: KpiIdFixo; depoisDe: KpiIdFixo }> = [
+  { id: 'recontact_rate', depoisDe: 'resolution_rate' },
+  { id: 'expired_review_alerts', depoisDe: 'bot_deflection' },
+]
+
+export function migrarFaixaDaAuditoria(ids: string[]): string[] {
+  const out: string[] = []
+  for (const id of ids) {
+    const novo = KPI_TROCADOS[id] ?? id
+    if (!out.includes(novo)) out.push(novo)
+  }
+  for (const { id, depoisDe } of KPI_NOVOS_DA_AUDITORIA) {
+    if (out.includes(id)) continue
+    // Só entra ao lado do indicador vizinho que a pessoa já escolheu (quem tirou a taxa de
+    // resolução da faixa não ganha "Reabertas" do nada).
+    const i = out.indexOf(depoisDe)
+    if (i >= 0) out.splice(i + 1, 0, id)
+  }
+  return out
+}
 
 /** Creates an empty dashboard snapshot with zero-valued KPIs from the catalog */
 export function buildEmptySnapshot(): DashboardSnapshot {
