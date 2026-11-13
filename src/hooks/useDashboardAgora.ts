@@ -45,11 +45,32 @@ const EVENTOS = [
  * consulta do próprio servidor — o mesmo que a aba Fila mostra.
  */
 export interface TotaisDaFila {
-  /** Pendentes sem dono + pendentes com dono sem resposta humana. */
+  /** Pendentes sem dono + pendentes com dono sem resposta humana — só as ATIVAS (auditoria 12/11). */
   esperando: number
-  /** Pendentes sem dono = a aba Fila da inbox. */
+  /** Ninguém assumiu (pendente sem dono, ativa). */
   semDono: number
+  /** Alguém assumiu e ainda não respondeu. `semDono + comDonoSemResposta = esperando`. */
+  comDonoSemResposta: number
+  /** Esperando, mas sem mensagem do paciente há mais de `horizonteDias` (fora da fila). */
+  paradas: number
+  horizonteDias: number
 }
+
+/** Auditoria do Dashboard (12/11): o `/home/queue` — a fila só com as conversas ativas. */
+interface FilaDoServidor {
+  horizonteDias?: number
+  esperando: number
+  semDono: number
+  comDonoSemResposta?: number
+  paradas?: number
+  maiorEsperaMin: number | null
+  janelaFechando: number
+  janelaFechada: number
+  itens?: Array<{ id: string; desde: string; semDono: boolean }>
+}
+
+/** Horizonte padrão quando o servidor não diz (backend antigo). */
+export const HORIZONTE_PADRAO_DIAS = 7
 
 /**
  * Revisão das métricas (30/09, M5): `GET /home/queue` — calculado no servidor
@@ -93,24 +114,9 @@ export interface DashboardAgora {
   agora: number
 }
 
-const PENDENTES_SEM_DONO = { status: 'pending', assignedTo: 'unassigned' } as ConversationFilters
-const PENDENTES_AGUARDANDO = { status: 'pending', awaitingReply: true } as ConversationFilters
-const PENDENTES_SEM_DONO_AGUARDANDO = { status: 'pending', assignedTo: 'unassigned', awaitingReply: true } as ConversationFilters
-
-/** Uma consulta só pelo total (limit 1). */
-async function contar(filtros: ConversationFilters): Promise<number> {
-  const { data } = await conversationsApi.list(filtros, 1, 1)
-  return data?.total ?? 0
-}
-
-/** "Esperando alguém" num recorte: sem dono + com dono aguardando (sem contar duas vezes). */
-async function contarEsperando(extra: Partial<ConversationFilters> = {}): Promise<{ esperando: number; semDono: number }> {
-  const [semDono, aguardando, semDonoAguardando] = await Promise.all([
-    contar({ ...PENDENTES_SEM_DONO, ...extra }),
-    contar({ ...PENDENTES_AGUARDANDO, ...extra }),
-    contar({ ...PENDENTES_SEM_DONO_AGUARDANDO, ...extra }),
-  ])
-  return { esperando: semDono + Math.max(0, aguardando - semDonoAguardando), semDono }
+/** As pendentes com mensagem nos últimos `dias` (a base da fila; o servidor diz quais esperam). */
+function pendentesAtivas(dias: number): ConversationFilters {
+  return { status: 'pending', startDate: new Date(Date.now() - dias * 86_400_000).toISOString() } as ConversationFilters
 }
 
 /** Todas as conversas de um filtro (até MAX_PAGINAS_DA_FILA páginas). */
@@ -140,6 +146,7 @@ async function lerTodas(filtros: ConversationFilters): Promise<{ lista: Conversa
  */
 export function useDashboardAgora(): DashboardAgora {
   const [conversas, setConversas] = useState<Conversation[]>([])
+  const [desdePorId, setDesdePorId] = useState<ReadonlyMap<string, string> | undefined>(undefined)
   const [filaTruncada, setFilaTruncada] = useState(false)
   const [totais, setTotais] = useState<TotaisDaFila | null>(null)
   const [resumo, setResumo] = useState<ResumoDaFila | null>(null)
@@ -162,28 +169,31 @@ export function useDashboardAgora(): DashboardAgora {
     try {
       // A fila vem com folga e é ordenada no cliente pela maior espera: o
       // backend só ordena pela mensagem mais recente (P1 do SCRUM-1161).
-      const [semDono, aguardando, totalGeral, revisar, pessoas, numeros, ias, fila] = await Promise.all([
-        lerTodas(PENDENTES_SEM_DONO),
-        lerTodas(PENDENTES_AGUARDANDO),
-        contarEsperando(),
+      // Auditoria do Dashboard (12/11): o servidor diz QUEM está na fila (só as ativas, 7 dias),
+      // os totais (as duas partes que somam o total, as paradas à parte) e desde quando cada
+      // paciente espera. A lista carrega as pendentes com mensagem no mesmo horizonte.
+      const [pendentes, revisar, pessoas, numeros, ias, fila] = await Promise.all([
+        lerTodas(pendentesAtivas(HORIZONTE_PADRAO_DIAS)),
         conversationsApi.list({ needsReview: true } as ConversationFilters, 1, LIMITE_DA_VERIFICACAO).catch(() => null),
         usersApi.available().catch(() => ({ data: [] as AvailableUser[] })),
         whatsappNumbersApi.listDetailed().catch(() => ({ data: [] as WhatsAppNumberDetailed[] })),
         listAgents().catch(() => null),
-        api.get<Omit<ResumoDaFila, 'lidoEm'>>('/home/queue').catch(() => null),
+        api.get<FilaDoServidor>('/home/queue').catch(() => null),
       ])
       if (!aindaAtual()) return
-      // A lista: as pendentes sem dono (a aba Fila, inteira) + as com dono em
-      // que ninguém respondeu ainda.
-      const lista = [...semDono.lista]
-      for (const c of aguardando.lista) if (c.assignedUser && !lista.some((x) => x.id === c.id)) lista.push(c)
+      const doServidor = fila?.data ?? null
+      const itens = Array.isArray(doServidor?.itens) ? doServidor.itens : null
       // Publica o retrato inteiro de uma vez, somente depois de todas as leituras.
-      setConversas(lista)
-      setFilaTruncada(semDono.truncada || aguardando.truncada)
-      setTotais({
-        esperando: totalGeral.esperando,
-        semDono: totalGeral.semDono,
-      })
+      setConversas(pendentes.lista)
+      setDesdePorId(itens ? new Map(itens.map((i) => [i.id, i.desde])) : undefined)
+      setFilaTruncada(pendentes.truncada || (!!itens && !!doServidor && itens.length < doServidor.esperando))
+      setTotais(doServidor ? {
+        esperando: doServidor.esperando ?? 0,
+        semDono: doServidor.semDono ?? 0,
+        comDonoSemResposta: doServidor.comDonoSemResposta ?? Math.max(0, (doServidor.esperando ?? 0) - (doServidor.semDono ?? 0)),
+        paradas: doServidor.paradas ?? 0,
+        horizonteDias: doServidor.horizonteDias ?? HORIZONTE_PADRAO_DIAS,
+      } : null)
       // Falhou só esta leitura: mantém a anterior em vez de dizer "nenhuma".
       if (revisar) {
         const rev = Array.isArray(revisar.data?.data) ? revisar.data.data : []
@@ -258,7 +268,7 @@ export function useDashboardAgora(): DashboardAgora {
   }, [carregar])
 
   const linhasComIA = useMemo(() => calcularLinhasComIA(linhas, agentes), [linhas, agentes])
-  const fila = useMemo(() => montarFila(conversas, linhasComIA, agora), [conversas, linhasComIA, agora])
+  const fila = useMemo(() => montarFila(conversas, linhasComIA, agora, desdePorId), [conversas, linhasComIA, agora, desdePorId])
   const recarregar = useCallback(() => { void carregar() }, [carregar])
 
   return { fila, totais, resumo, filaTruncada, equipe, agentes, linhas, linhasComIA, verificar, verificarTotal, carregando, erro, atualizadoEm, recarregar, agora }

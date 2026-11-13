@@ -81,6 +81,19 @@ export function refreshWorkspaceReadiness(): void {
   void fetchSnapshot()
 }
 
+/**
+ * 12/11 (auditoria do Dashboard): o retrato ficava guardado para sempre — conectar uma linha, criar
+ * um setor ou ligar um agente não tirava o aviso do topo nem o banner da Home até recarregar a
+ * página. Agora relê ao voltar para a aba e ao trocar de tela, no máximo a cada 15 s.
+ */
+const RELER_A_CADA_MS = 15_000
+let lidoEm = 0
+export function releituraDaProntidao(): void {
+  if (Date.now() - lidoEm < RELER_A_CADA_MS) return
+  lidoEm = Date.now()
+  refreshWorkspaceReadiness()
+}
+
 export function useWorkspaceReadiness() {
   const [snapshot, setSnapshot] = useState<WorkspaceReadinessSnapshot>(
     cachedSnapshot ?? EMPTY_SNAPSHOT,
@@ -95,7 +108,15 @@ export function useWorkspaceReadiness() {
     } else {
       setLoading(false)
     }
-    return () => { subscribers.delete(sub) }
+    lidoEm = lidoEm || Date.now()
+    const aoVoltar = () => { if (!document.hidden) releituraDaProntidao() }
+    document.addEventListener('visibilitychange', aoVoltar)
+    window.addEventListener('focus', aoVoltar)
+    return () => {
+      subscribers.delete(sub)
+      document.removeEventListener('visibilitychange', aoVoltar)
+      window.removeEventListener('focus', aoVoltar)
+    }
   }, [])
 
   const refresh = useCallback(() => {

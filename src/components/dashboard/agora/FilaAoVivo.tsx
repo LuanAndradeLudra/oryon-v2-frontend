@@ -16,7 +16,7 @@ import type { Conversation } from '@/types'
 // com o prazo à vista e as duas ações do PO (27/09) sem sair do painel —
 // Assumir (atribui a mim e abre a conversa) e Atribuir (escolhe alguém).
 
-export type FiltroDaFila = 'todas' | 'sem-dono' | 'janela'
+export type FiltroDaFila = 'todas' | 'sem-dono' | 'assumidas' | 'janela'
 
 /** Conversas por página. A lista rola dentro do cartão (altura fixa, PO 28/09). */
 const POR_PAGINA = 20
@@ -73,7 +73,9 @@ interface Props {
 
 const FILTROS: Array<{ id: FiltroDaFila; rotulo: string }> = [
   { id: 'todas', rotulo: 'Todas' },
-  { id: 'sem-dono', rotulo: 'Sem dono' },
+  // Auditoria 12/11: as duas partes da fila, com os mesmos nomes das células da faixa.
+  { id: 'sem-dono', rotulo: 'Ninguém assumiu' },
+  { id: 'assumidas', rotulo: 'Assumidas' },
   // SCRUM-1253 (PO, 11/10): saiu o filtro das que a IA passou — com IA em
   // todas as linhas ele repetia "Todas", e a origem não muda o que o operador
   // faz. `?fila=ia-passou` em links antigos cai em "Todas".
@@ -129,7 +131,7 @@ export function FilaAoVivo({
             icon={Inbox}
             title={filtro === 'todas' ? 'Ninguém esperando uma pessoa agora' : 'Nada neste filtro agora'}
             hint={filtro === 'todas'
-              ? 'Aparece aqui quem mandou a última mensagem e não está sendo atendido pela IA.'
+              ? 'Aparece aqui quem a IA passou para a equipe nos últimos 7 dias e ainda espera a resposta de uma pessoa.'
               : 'Troque para "Todas" para ver a fila inteira.'}
           />
         </div>
@@ -221,9 +223,9 @@ export function FilaAoVivo({
                         </>
                       )}
                       {dono ? (
-                        <span className="truncate">com {ehMinha ? 'você' : nomeDe(dono)}</span>
+                        <span className="truncate">com {ehMinha ? 'você' : nomeDe(dono)} · sem resposta do dono</span>
                       ) : (
-                        <span className="text-status-pending font-semibold flex-shrink-0">sem dono</span>
+                        <span className="text-status-pending font-semibold flex-shrink-0">ninguém assumiu</span>
                       )}
                       {mostrarLinha && rotuloDaLinha(c) && (
                         <>
@@ -280,7 +282,7 @@ export function FilaAoVivo({
                       >
                         <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', u.isOnline ? 'bg-online' : 'bg-surface-600')} aria-hidden />
                         <span className="flex-1 min-w-0 truncate">{u.id === meuId ? `${nomeDe(u)} (você)` : nomeDe(u)}</span>
-                        <span className="text-2xs text-surface-500 tabular-nums">{u.activeConversations} em aberto</span>
+                        <span className="text-2xs text-surface-500 tabular-nums">{u.activeConversations} em atendimento</span>
                         {dono?.id === u.id && <Check className="w-3.5 h-3.5 text-brand-400" aria-hidden />}
                         <span className="sr-only">{u.isOnline ? ' · online' : ' · offline'}</span>
                       </DropdownItem>
@@ -314,8 +316,8 @@ export function FilaAoVivo({
       {truncada && (
         <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-xs text-surface-500">
           {carregadas !== undefined && totalReal !== undefined && totalReal > carregadas
-            ? `A lista mostra ${carregadas} de ${totalReal}: todas as sem dono e as mais recentes com dono. Os números acima são o total.`
-            : 'A lista não coube inteira: mostra as mais recentes. Os números acima são o total.'}
+            ? `A lista mostra ${carregadas} de ${totalReal}, da maior espera para a menor. Os números acima são o total.`
+            : 'A lista não coube inteira. Os números acima são o total.'}
         </p>
       )}
     </section>

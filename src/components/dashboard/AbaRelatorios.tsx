@@ -6,7 +6,7 @@ import { DateRangePicker }  from './DateRangePicker'
 import { KpiGrid }          from './KpiGrid'
 import { VolumeChart }      from './VolumeChart'
 import { SalesFunnelCard }  from './SalesFunnelCard'
-import { StatusDonut }      from './StatusDonut'
+import { DesfechoDonut }    from './DesfechoDonut'
 import { TagsChart }        from './TagsChart'
 import { PeakHoursHeatmap } from './PeakHoursHeatmap'
 import { AgentTable }       from './AgentTable'
@@ -197,8 +197,8 @@ export function AbaRelatorios({ aba, onAba, celular = false }: Props) {
             <VolumeChart data={snapshot.volumeChart} range={periodoAVista} />
           </div>
           <div className="col-span-12 xl:col-span-4">
-            {/* Revisão 30/09 (C5): ativas/pendentes de agora; resolvidas/arquivadas do período. */}
-            <StatusDonut data={snapshot.statusDistribution} periodo={periodoPorExtenso(periodoAVista)} />
+            {/* Auditoria 12/11 (D6): só o período — como terminaram os atendimentos que começaram nele. */}
+            <DesfechoDonut data={snapshot.desfecho ?? null} periodo={periodoPorExtenso(periodoAVista)} />
           </div>
         </div>
 

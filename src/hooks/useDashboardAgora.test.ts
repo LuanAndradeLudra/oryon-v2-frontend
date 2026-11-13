@@ -14,7 +14,8 @@ function deferred<T>(): Deferred<T> {
 }
 
 list.mockImplementation(() => {
-  const round = state.calls++ < 6 ? 0 : 1
+  // Auditoria 12/11: por carga, 2 listas (as pendentes ativas e as a verificar); a fila vem do /home/queue.
+  const round = state.calls++ < 2 ? 0 : 1
   const next = deferred<ListResponse>()
   rounds[round].push(next)
   return next.promise
@@ -41,21 +42,24 @@ afterEach(() => {
 describe('LOG-FE-01 — geração da carga do painel Agora', () => {
   it('não deixa a carga A atrasada sobrescrever a carga B mais nova', async () => {
     const { result } = renderHook(() => useDashboardAgora())
-    await waitFor(() => expect(rounds[0]).toHaveLength(6))
+    await waitFor(() => expect(rounds[0]).toHaveLength(2))
     act(() => result.current.recarregar())
-    await waitFor(() => expect(rounds[1]).toHaveLength(6))
+    await waitFor(() => expect(rounds[1]).toHaveLength(2))
 
     await act(async () => {
       rounds[1].forEach((d) => d.resolve({ data: { data: [], total: 0, hasMore: false } }))
     })
-    await waitFor(() => expect(result.current.totais?.esperando).toBe(0))
+    await waitFor(() => expect(result.current.atualizadoEm).not.toBeNull())
+    expect(result.current.fila).toHaveLength(0)
     const dataDaB = result.current.atualizadoEm
 
+    // A carga A (atrasada) traria uma pendente esperando: não pode publicar.
+    const pendente = { id: 'a1', status: 'pending', lastMessageAt: new Date().toISOString(), lastMessageSenderKind: 'client', assignedUser: null, contact: { displayName: 'A' } }
     await act(async () => {
-      rounds[0].forEach((d) => d.resolve({ data: { data: [], total: 1, hasMore: false } }))
+      rounds[0].forEach((d) => d.resolve({ data: { data: [pendente], total: 1, hasMore: false } }))
     })
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(result.current.totais?.esperando).toBe(0)
+    expect(result.current.fila).toHaveLength(0)
     expect(result.current.atualizadoEm).toBe(dataDaB)
   })
 })

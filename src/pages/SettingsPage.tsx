@@ -42,6 +42,7 @@ import { ContactStagesSettings } from '@/components/settings/sections/crm/Contac
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 import { ConnectorsSettings } from '@/components/settings/sections/ConnectorsSettings'
 import { ApiKeysSettings } from '@/components/settings/sections/ApiKeysSettings'
+import { InactivitySettings } from '@/components/settings/sections/InactivitySettings'
 import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
@@ -62,6 +63,8 @@ const VALID_SECTIONS = [
   // SCRUM-1219: chaves da API pública v1 (admin ou dono; o gate do flag
   // FF_PUBLIC_API fica dentro da tela, que explica como pedir a liberação).
   'api-keys',
+  // Auditoria do Dashboard (12/11): encerramento por inatividade (admin).
+  'inactivity',
 ]
 
 const OWNER_ONLY_SECTIONS = new Set<string>(['billing', 'connectors'])
@@ -124,6 +127,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   connectors:       ConnectorsSettings,
   copilot:          CopilotInstrucoes,
   'api-keys':       ApiKeysSettings,
+  inactivity:       InactivitySettings,
 }
 
 export function SettingsPage() {

@@ -22,7 +22,7 @@ import { CabecalhoDoPainel } from '../CabecalhoDoPainel'
 // da fila vive na URL (`?fila=`), como todo estado de tela (regra do PO).
 
 function lerFiltro(v: string | null): FiltroDaFila {
-  return v === 'sem-dono' || v === 'janela' ? v : 'todas'
+  return v === 'sem-dono' || v === 'assumidas' || v === 'janela' ? v : 'todas'
 }
 
 function nomeDe(u: { firstName: string; lastName?: string | null }): string {
@@ -152,14 +152,16 @@ export function AbaAgora({ aba, onAba, celular = false }: Props) {
   // ficam e um aviso diz que a atualização falhou (não zera nada).
   if (d.erro && !d.atualizadoEm) return <div className="space-y-3.5">{cabecalho}<ErrorState onRetry={d.recarregar} /></div>
 
+  // Os números dos filtros são os do servidor — os mesmos da faixa (auditoria 12/11: a janela
+  // contava a lista carregada e podia divergir da faixa logo acima).
   const contagens: Record<FiltroDaFila, number> = {
-    // Os números dos filtros são os totais exatos do servidor — os mesmos da
-    // faixa e da aba Fila da inbox (28/09: contar a lista carregada divergia).
     todas: d.totais?.esperando ?? d.fila.length,
     'sem-dono': d.totais?.semDono ?? d.fila.filter((i) => i.semDono).length,
-    janela: d.fila.filter(janelaFechando).length,
+    assumidas: d.totais?.comDonoSemResposta ?? d.fila.filter((i) => !i.semDono).length,
+    janela: d.resumo?.janelaFechando ?? d.fila.filter(janelaFechando).length,
   }
   const itens = filtro === 'sem-dono' ? d.fila.filter((i) => i.semDono)
+    : filtro === 'assumidas' ? d.fila.filter((i) => !i.semDono)
     : filtro === 'janela' ? d.fila.filter(janelaFechando)
     : d.fila
 

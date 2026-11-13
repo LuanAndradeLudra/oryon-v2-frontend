@@ -110,9 +110,10 @@ describe('Dashboard · aba Agora', () => {
   it('pede quem aguarda resposta e mostra a fila da maior espera para a menor, sem o que a IA atende', async () => {
     montar()
     await screen.findByText('Carla')
-    // As pendentes sem dono (a aba Fila da inbox) e as pendentes aguardando resposta.
-    expect(list).toHaveBeenCalledWith({ status: 'pending', assignedTo: 'unassigned' }, 1, 100)
-    expect(list).toHaveBeenCalledWith({ status: 'pending', awaitingReply: true }, 1, 100)
+    // Auditoria 12/11: as pendentes com mensagem nos últimos 7 dias (o servidor diz quais esperam).
+    expect(list).toHaveBeenCalledWith({ status: 'pending', startDate: expect.any(String) }, 1, 100)
+    const desde = new Date((list.mock.calls[0][0] as { startDate: string }).startDate).getTime()
+    expect(Math.round((Date.now() - desde) / 86_400_000)).toBe(7)
     const nomes = screen.getAllByTestId('fila-item').map((li) => within(li).getByRole('button', { name: /Abrir a conversa/ }).getAttribute('aria-label'))
     expect(nomes).toEqual([
       'Abrir a conversa com Carla',
@@ -130,13 +131,14 @@ describe('Dashboard · aba Agora', () => {
     expect(within(screen.getAllByTestId('fila-item')[0]).getByText('42 min')).toBeInTheDocument()
   })
 
-  it('a faixa conta do mesmo dado: 3 esperando (1 com dono), 2 sem dono, maior espera, linhas', async () => {
+  it('a faixa conta do mesmo dado: 3 esperando = 2 ninguém assumiu + 1 assumida sem resposta, maior espera, linhas', async () => {
     montar()
     const faixa = await screen.findByTestId('faixa-do-agora')
-    await waitFor(() => expect(within(faixa).getByText('1 com dono, sem resposta')).toBeInTheDocument())
-    // O valor sai com a unidade separada (menor) — `data-valor` guarda o texto.
-    expect(faixa.querySelector('[data-valor="3"]')).not.toBeNull()
+    // Auditoria 12/11: o total no título; as células são as duas partes, que somam o total.
+    await waitFor(() => expect(within(faixa).getByTestId('fila-total').textContent).toContain('3'))
     expect(faixa.querySelector('[data-celula="sem-dono"] [data-valor="2"]')).not.toBeNull()
+    expect(faixa.querySelector('[data-celula="assumidas"] [data-valor="1"]')).not.toBeNull()
+    expect(faixa.querySelector('[data-celula="esperando"]')).toBeNull()
     // SCRUM-1253: "Pendentes" repetia "Esperando alguém" e saiu da faixa.
     expect(faixa.querySelector('[data-celula="ia-passou"]')).toBeNull()
     expect(faixa.querySelector('[data-valor="42 min"]')).not.toBeNull()
@@ -158,12 +160,12 @@ describe('Dashboard · aba Agora', () => {
   it('PO 01/10: a faixa vem em cartões por assunto, com filete só onde há urgência, e a célula filtra a fila', async () => {
     montar()
     const faixa = await screen.findByTestId('faixa-do-agora')
-    await waitFor(() => expect(within(faixa).getByText('ninguém assumiu ainda')).toBeInTheDocument())
+    await waitFor(() => expect(within(faixa).getByText('assumir ou atribuir')).toBeInTheDocument())
     expect(within(faixa).getAllByRole('region').map((r) => r.getAttribute('aria-label'))).toEqual(['Fila', 'Verificação', 'Linhas'])
-    const esperando = faixa.querySelector('[data-celula="esperando"]') as HTMLElement
+    const assumidas = faixa.querySelector('[data-celula="assumidas"]') as HTMLElement
     const semDono = faixa.querySelector('[data-celula="sem-dono"]') as HTMLElement
     expect(semDono.style.boxShadow).toContain('status-pending') // 2 sem dono = atenção
-    expect(esperando.getAttribute('style') ?? '').not.toContain('box-shadow')
+    expect(assumidas.getAttribute('style') ?? '').not.toContain('box-shadow')
     expect(faixa.querySelector('[data-celula="linhas"]')!.getAttribute('style') ?? '').not.toContain('box-shadow')
     fireEvent.click(semDono)
     await waitFor(() => expect(screen.getByTestId('local').textContent).toContain('fila=sem-dono'))
@@ -248,10 +250,22 @@ describe('Dashboard · aba Agora', () => {
     await waitFor(() => expect(screen.getByTestId('local').textContent).toBe('/conversations?id=v-1'))
   })
 
-  it('sem nada a verificar, o cartão não ocupa espaço', async () => {
+  it('12/11: sem nada a verificar, o cartão fica com a mesma altura e diz que não há nada', async () => {
     montar()
     await screen.findByText('Carla')
-    expect(screen.queryByTestId('verificacao-agora')).toBeNull()
+    const cartao = screen.getByTestId('verificacao-agora')
+    expect(within(cartao).getByTestId('verificacao-vazia')).toBeInTheDocument()
+    expect(within(cartao).getByTestId('verificacao-rolagem').className).toContain('h-[261px]')
+  })
+
+  it('12/11: com mais de 5, a lista rola dentro da altura fixa (sem páginas)', async () => {
+    aVerificar = Array.from({ length: 8 }, (_, i) => conversa('v' + i, 'Pessoa ' + i, { hasRecentAnomaly: true }))
+    montar()
+    const cartao = await screen.findByTestId('verificacao-agora')
+    await waitFor(() => expect(within(cartao).getAllByTestId('verificacao-item')).toHaveLength(8))
+    expect(within(cartao).getByTestId('verificacao-rolagem').className).toContain('overflow-y-auto')
+    expect(within(cartao).queryByRole('button', { name: 'Próxima página' })).toBeNull()
+    expect(within(cartao).getByTestId('verificacao-rodape').textContent).toContain('8 conversas · role a lista para ver todas')
   })
 
   it('a equipe mostra o agente ligado à linha e as pessoas com a carga', async () => {
@@ -260,6 +274,46 @@ describe('Dashboard · aba Agora', () => {
     await waitFor(() => expect(within(equipe).getByText('Agente Recepção')).toBeInTheDocument())
     expect(within(equipe).getByText('atende Recepção')).toBeInTheDocument()
     expect(within(equipe).getByText('1 de 2 online')).toBeInTheDocument()
-    expect(within(equipe).getByText('4 em aberto')).toBeInTheDocument()
+    expect(within(equipe).getByText('4 em atendimento')).toBeInTheDocument()
+  })
+
+  describe('auditoria 12/11 — a fila do servidor (só as ativas)', () => {
+    it('quem está na fila e desde quando vêm do /home/queue; paradas à parte; data vazia nunca vira espera', async () => {
+      aguardando = [
+        conversa('s-1', 'Sérgio', { lastMessageAt: minAtras(2), lastMessageSenderKind: 'ai' }),
+        conversa('s-2', 'Tânia', { assignedUser: { id: 'u2', firstName: 'Diego', lastName: 'Souza' } as Conversation['assignedUser'] }),
+        // Sem data e fora do que o servidor devolveu: não entra (antes virava "20768 d").
+        conversa('s-3', 'Úrsula', { lastMessageAt: null as unknown as string }),
+      ]
+      resumoDaFila = {
+        horizonteDias: 7, esperando: 2, semDono: 1, comDonoSemResposta: 1, paradas: 12,
+        maiorEsperaMin: 313, janelaFechando: 0, janelaFechada: 0,
+        itens: [{ id: 's-1', desde: minAtras(313), semDono: true }, { id: 's-2', desde: minAtras(30), semDono: false }],
+      }
+      montar()
+      await screen.findByText('Sérgio')
+      // A espera do Sérgio conta da mensagem DELE (313 min), não da resposta da IA (2 min).
+      const itens = screen.getAllByTestId('fila-item')
+      expect(itens).toHaveLength(2)
+      expect(within(itens[0]).getByText('5 h 13 min')).toBeInTheDocument()
+      expect(screen.queryByText('Úrsula')).toBeNull()
+      const faixa = screen.getByTestId('faixa-do-agora')
+      expect(within(faixa).getByTestId('fila-paradas').textContent).toContain('+ 12 paradas há mais de 7 dias')
+      expect(faixa.querySelector('[data-celula="assumidas"] [data-valor="1"]')).not.toBeNull()
+      expect(screen.queryByText(/20768/)).toBeNull()
+    })
+
+    it('o filtro "Assumidas" mostra só as que alguém assumiu e não respondeu', async () => {
+      montar('/dashboard?fila=assumidas')
+      await screen.findByText('Joana')
+      expect(screen.getAllByTestId('fila-item')).toHaveLength(1)
+    })
+
+    it('cada célula tem o "?" que explica o que conta', async () => {
+      montar()
+      const faixa = await screen.findByTestId('faixa-do-agora')
+      await waitFor(() => expect(within(faixa).getAllByTestId('ajuda').length).toBeGreaterThanOrEqual(7))
+      expect(within(faixa).getByLabelText('O que é Ninguém assumiu')).toBeInTheDocument()
+    })
   })
 })

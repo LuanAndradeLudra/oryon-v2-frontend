@@ -95,6 +95,8 @@ export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data, escopo }:
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
           <Legend
+            // Auditoria 12/11: a legenda vinha em ordem alfabética (Madrugada, Manhã, Noite, Tarde).
+            itemSorter={null}
             iconType="square"
             iconSize={8}
             formatter={(value) => (

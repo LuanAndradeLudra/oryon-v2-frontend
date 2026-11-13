@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Bell, CheckCircle2, ChevronRight, CircleDot, CircleHelp, Eye, Flag, Layers, Lock, MessageSquare, RotateCcw, Sparkles, ThumbsUp, UserCheck } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,26 @@ import { STATUS_NA_FILA } from './fila/modeloDaFila'
  * chamado (relato, andamento, comentários, perguntas, acessos).
  */
 
+/** O dia da mensagem no fuso de Brasília (AAAA-MM-DD), para agrupar; `null` se a data não vale. */
+export function diaDaMensagem(iso: string): string | null {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+}
+
+/** "Hoje", "Ontem" ou "quarta, 12/11/2026" — o rótulo do divisor de dia. */
+export function rotuloDoDia(iso: string, agora: Date = new Date()): string {
+  const dia = diaDaMensagem(iso)
+  const hoje = diaDaMensagem(agora.toISOString())
+  const ontem = diaDaMensagem(new Date(agora.getTime() - 86_400_000).toISOString())
+  if (dia === hoje) return 'Hoje'
+  if (dia === ontem) return 'Ontem'
+  const d = new Date(iso)
+  const semana = d.toLocaleDateString('pt-BR', { weekday: 'long', timeZone: 'America/Sao_Paulo' })
+  const data = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' })
+  return `${semana.split('-')[0]}, ${data}`
+}
+
 /**
  * As mensagens marcadas no desenho das bolhas do chat, em tamanho de leitura.
  * `destacar` (conversa inteira, na fila da Oryon): as que foram marcadas no chamado.
@@ -25,14 +45,26 @@ export function MensagensMarcadas({ mensagens, moldura = true, destacar }: {
 }) {
   return (
     <div className={cn('flex flex-col gap-1.5', moldura && 'chat-shell-bg rounded-[8px] border border-surface-800 p-3')}>
-      {mensagens.map((m) => {
+      {mensagens.map((m, i) => {
+        // 12/11 (João): a conversa inteira vinha só com o horário — não dava para separar o atendimento
+        // de hoje dos antigos. Um divisor com a data abre cada dia, e a hora segue na bolha.
+        const dia = diaDaMensagem(m.enviadaEm)
+        const novoDia = dia !== null && (i === 0 || diaDaMensagem(mensagens[i - 1].enviadaEm) !== dia)
         const nossa = m.autor !== 'contato'
         const destacada = !!destacar?.has(m.id)
         const quem = m.autor === 'contato' ? 'Contato'
           : m.autorNome ? `${m.autor === 'automacao' ? 'Automação · ' : m.autor === 'regra' ? 'Regra · ' : ''}${m.autorNome}`
           : ORIGENS_DA_MENSAGEM[m.autor]?.nome ?? m.autor
         return (
-          <div key={m.id} className={cn('flex flex-col max-w-[85%]', nossa ? 'self-end items-end' : 'self-start items-start')}>
+          <Fragment key={m.id}>
+          {novoDia && (
+            <div className="self-stretch flex items-center gap-2 my-1.5 first:mt-0" role="separator" aria-label={rotuloDoDia(m.enviadaEm)} data-testid="divisor-de-dia">
+              <span className="h-px flex-1 bg-surface-700" aria-hidden />
+              <span className="px-2 py-0.5 rounded-full bg-surface-800 border border-surface-700 text-[10.5px] font-semibold text-surface-300 whitespace-nowrap">{rotuloDoDia(m.enviadaEm)}</span>
+              <span className="h-px flex-1 bg-surface-700" aria-hidden />
+            </div>
+          )}
+          <div className={cn('flex flex-col max-w-[85%]', nossa ? 'self-end items-end' : 'self-start items-start')}>
             <div className={cn(
               'px-2.5 py-1.5 rounded-[10px] text-xs leading-[1.45] break-words',
               nossa ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg' : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)]',
@@ -45,6 +77,7 @@ export function MensagensMarcadas({ mensagens, moldura = true, destacar }: {
             </div>
             {destacada && <span className="mt-0.5 text-[10.5px] font-semibold text-accent-amber">marcada no chamado</span>}
           </div>
+          </Fragment>
         )
       })}
     </div>

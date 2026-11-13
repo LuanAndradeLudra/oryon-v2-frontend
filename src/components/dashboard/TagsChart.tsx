@@ -17,6 +17,13 @@ export const TagsChart = memo(function TagsChart({ data, escopo }: { data: TagVo
         <p className="text-sm font-semibold text-surface-100">{'Etiquetas mais usadas'}</p>
         {escopo && <EscopoDoCartao className="ml-auto">{escopo}</EscopoDoCartao>}
       </div>
+      {/* Auditoria 12/11: sem etiqueta no período o gráfico ficava em branco, sem explicação. */}
+      {sorted.length === 0 ? (
+        <div className="h-[200px] flex flex-col items-center justify-center gap-1 rounded-[8px] border border-dashed border-surface-700 text-center px-4">
+          <p className="text-sm font-semibold text-surface-200">Nenhuma etiqueta aplicada no período</p>
+          <p className="text-xs text-surface-500">As etiquetas que a equipe ou a IA aplicam nas conversas aparecem aqui.</p>
+        </div>
+      ) : (
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={sorted} layout="vertical" margin={{ left: 4, right: 20, top: 4, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={C.grid} horizontal={false} />
@@ -31,6 +38,7 @@ export const TagsChart = memo(function TagsChart({ data, escopo }: { data: TagVo
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      )}
     </div>
   )
 })

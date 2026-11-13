@@ -47,3 +47,13 @@ describe('formatActivity — API pública v1', () => {
     expect(recusa('codigo_desconhecido')).toBe('Chamada à API recusada')
   })
 })
+
+describe('formatActivity — status da conversa em português (auditoria 12/11)', () => {
+  it('resolvida, arquivada (por inatividade) e os demais status traduzidos', () => {
+    expect(formatActivity({ action: 'conversation_status_updated', subject: 'Ana', details: { to: 'resolved' } })).toBe('Conversa de Ana resolvida')
+    expect(formatActivity({ action: 'conversation_status_updated', subject: 'Ana', details: { to: 'abandoned', motivo: 'inatividade' } }))
+      .toBe('Conversa de Ana arquivada por inatividade')
+    expect(formatActivity({ action: 'conversation_status_updated', subject: 'Ana', details: { status: 'pending' } })).toBe('Status da conversa de Ana alterado para pendente')
+    expect(formatActivity({ action: 'conversation_status_updated', subject: 'Ana', details: {} })).toBe('Status da conversa de Ana alterado')
+  })
+})

@@ -15,6 +15,7 @@
 // Home checklist mode).
 
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { LinkComVolta } from '@/components/ui/LinkComVolta'
 import { AlertTriangle, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -23,11 +24,15 @@ import { topBarHoverProps, TopBarHoverBloom, TopBarHoverIcon } from './topBarHov
 import {
   unmetChecks,
   useWorkspaceReadiness,
+  releituraDaProntidao,
   type WorkspaceCheck,
 } from '@/hooks/useWorkspaceReadiness'
 
 export function TopBarReadinessIndicator() {
   const { snapshot, loading } = useWorkspaceReadiness()
+  // 12/11: trocar de tela (ex.: voltar das Configurações depois de criar um setor) relê o retrato.
+  const { pathname } = useLocation()
+  useEffect(() => { releituraDaProntidao() }, [pathname])
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 

@@ -12,10 +12,10 @@ import { emFrase } from '@/lib/emFrase'
 // definition propagates to every place the table is rendered, and so the
 // product team can iterate on copy without hunting through JSX.
 const COLUMN_TOOLTIPS: Record<string, string> = {
-  conversations:  'Atendimentos iniciados no período (contato novo ou cliente que voltou) que hoje estão com a pessoa.',
+  conversations:  'Atendimentos iniciados no período (contato novo ou cliente que voltou) que hoje estão com a pessoa. A soma da coluna é só a parte com uma pessoa: o resto foi atendido só pela IA.',
   resolved:       'Conversas resolvidas no período que hoje estão com a pessoa.',
-  responseTime:   'Tempo médio da 1ª resposta desta pessoa nos atendimentos em que ela respondeu primeiro, no período. Conta de quando a conversa passou para a equipe (ou do início, se ela assumiu antes) — o tempo em que a IA atendia não entra.',
-  resolutionTime: 'Tempo médio entre o início do atendimento e a resolução, nas conversas resolvidas no período que estão com a pessoa. Cliente que voltou conta do dia em que voltou.',
+  responseTime:   'Mediana da 1ª resposta desta pessoa (a mesma conta do cartão "1ª resposta da equipe") nos atendimentos em que ela respondeu primeiro, no período. Conta de quando a conversa passou para a equipe (ou do início, se ela assumiu antes) — o tempo em que a IA atendia não entra.',
+  resolutionTime: 'Mediana do tempo entre o início do atendimento e a resolução, nas conversas resolvidas no período que estão com a pessoa. Cliente que voltou conta do dia em que voltou.',
   csat:           'Satisfação do cliente (CSAT) — média das avaliações recebidas em uma escala de 0 a 5. Disponível quando a pesquisa de satisfação estiver ativa.',
   sla:            'Das 1ªs respostas que a pessoa deu no período, quantas saíram em até 15 minutos depois de a conversa passar para a equipe.',
   utilization:    'Utilização da capacidade do atendente. 100% indica saturação (a partir de 20 conversas abertas simultâneas).',

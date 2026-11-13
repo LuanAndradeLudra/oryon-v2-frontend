@@ -1,9 +1,6 @@
-import { useEffect, useRef } from 'react'
-import { ShieldAlert } from 'lucide-react'
+import { ShieldAlert, ShieldCheck } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
-import { Paginacao } from '@/components/ui/Paginacao'
-import { paginar } from '@/lib/paginar'
 import { formatarEspera } from '@/lib/filaAgora'
 import type { Conversation } from '@/types'
 
@@ -13,10 +10,11 @@ import type { Conversation } from '@/types'
 // falta é alguém conferir com o cliente. A verificação em si (e o "marcar como
 // verificada") acontece na conversa, onde está o contexto — daqui só se abre.
 //
-// Só aparece quando há alguma: vazio não é notícia na aba Agora.
+// 12/11 (João): altura FIXA de 5 conversas, com rolagem interna na lista (sem páginas). Com menos
+// de 5, ou nenhuma, o cartão mantém a mesma altura — a estrutura da tela não pula.
 
-/** Conversas por página; o cartão rola dentro de si como a fila (PO 28/09). */
-const POR_PAGINA = 5
+/** Altura da lista = 5 linhas de 52 px (com as divisórias). */
+const ALTURA_DA_LISTA = 'h-[261px]'
 
 function nomeDe(u: { firstName: string; lastName?: string | null }): string {
   return [u.firstName, u.lastName].filter(Boolean).join(' ')
@@ -28,18 +26,13 @@ interface Props {
   total: number
   meuId: string | undefined
   agora: number
-  pagina: number
-  onPagina: (p: number) => void
+  /** Sem uso desde 12/11 (a lista rola em vez de paginar); mantidos para quem ainda passa. */
+  pagina?: number
+  onPagina?: (p: number) => void
   onAbrir: (c: Conversation) => void
 }
 
-export function VerificacaoAgora({ conversas, total, meuId, agora, pagina, onPagina, onAbrir }: Props) {
-  const pag = paginar(conversas, pagina, POR_PAGINA)
-  const rolagem = useRef<HTMLDivElement>(null)
-  useEffect(() => { rolagem.current?.scrollTo?.({ top: 0 }) }, [pag.pagina])
-
-  if (conversas.length === 0) return null
-
+export function VerificacaoAgora({ conversas, total, meuId, agora, onAbrir }: Props) {
   return (
     <section
       aria-labelledby="verificacao-agora-titulo"
@@ -53,16 +46,31 @@ export function VerificacaoAgora({ conversas, total, meuId, agora, pagina, onPag
             Precisam de verificação <span className="ml-1 text-xs font-normal text-surface-400 tabular-nums">{total}</span>
           </h2>
           <p className="text-xs text-surface-400">
-            A IA disse ao cliente que fez algo que o sistema não confirmou. Confira na conversa e marque como verificada.
+            A IA disse ao cliente que fez algo que o sistema não confirmou. Confira na conversa: sai da lista quando alguém da equipe responde depois do alerta, ou em 7 dias.
           </p>
         </div>
       </header>
 
-      <div ref={rolagem} className="max-h-[280px] overflow-y-auto" data-testid="verificacao-rolagem">
+      <div className={`${ALTURA_DA_LISTA} flex-shrink-0 overflow-y-auto`} data-testid="verificacao-rolagem">
+        {conversas.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center gap-1.5 text-center px-4" data-testid="verificacao-vazia">
+            <ShieldCheck className="w-6 h-6 text-surface-600" aria-hidden />
+            <p className="text-sm font-semibold text-surface-200">Nada para verificar agora</p>
+            <p className="text-xs text-surface-500">Quando a IA disser algo que o sistema não confirmou, a conversa aparece aqui.</p>
+          </div>
+        ) : (
         <ul className="divide-y divide-surface-700">
-          {pag.itens.map((c) => {
+          {conversas.map((c) => {
             const dono = c.assignedUser
-            const min = Math.max(0, Math.floor((agora - new Date(c.lastMessageAt).getTime()) / 60_000))
+            // Auditoria 12/11: a idade do ALERTA (antes, a da última mensagem — um alerta de maio
+            // aparecia como "última mensagem agora"). Sem a hora do alerta (backend antigo), a de antes.
+            const alertaEm = c.lastAnomalyAt ? new Date(c.lastAnomalyAt).getTime() : NaN
+            const temAlerta = Number.isFinite(alertaEm)
+            const ref = temAlerta ? alertaEm : c.lastMessageAt ? new Date(c.lastMessageAt).getTime() : NaN
+            const min = Number.isFinite(ref) ? Math.max(0, Math.floor((agora - ref) / 60_000)) : null
+            const quando = min === null ? null
+              : temAlerta ? (min < 1 ? 'alerta agora' : `alerta há ${formatarEspera(min)}`)
+              : (min < 1 ? 'última mensagem agora' : `última mensagem há ${formatarEspera(min)}`)
             return (
               <li key={c.id} className="flex items-center gap-3 px-3.5 py-2" data-testid="verificacao-item">
                 <Avatar name={c.contact.displayName} imageUrl={c.contact.profilePicUrl} size="30" />
@@ -70,7 +78,7 @@ export function VerificacaoAgora({ conversas, total, meuId, agora, pagina, onPag
                   <span className="block text-sm font-semibold text-surface-100 truncate">{c.contact.displayName}</span>
                   <span className="block text-xs text-surface-500 truncate">
                     {dono ? `com ${dono.id === meuId ? 'você' : nomeDe(dono)}` : <span className="text-status-pending font-semibold">sem dono</span>}
-                    {' · '}{min < 1 ? 'última mensagem agora' : `última mensagem há ${formatarEspera(min)}`}
+                    {quando && <>{' · '}{quando}</>}
                   </span>
                 </span>
                 <Button size="sm" variant="secondary" onClick={() => onAbrir(c)} aria-label={`Verificar a conversa com ${c.contact.displayName}`}>
@@ -80,23 +88,15 @@ export function VerificacaoAgora({ conversas, total, meuId, agora, pagina, onPag
             )
           })}
         </ul>
+        )}
       </div>
 
-      <Paginacao
-        pagina={pag.pagina}
-        paginas={pag.paginas}
-        de={pag.de}
-        ate={pag.ate}
-        total={pag.total}
-        onPagina={onPagina}
-        rotulo="conversas a verificar"
-        className="flex-shrink-0"
-      />
-      {total > conversas.length && (
-        <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-xs text-surface-500">
-          Mostrando {conversas.length} de {total}. As demais estão em Conversas, filtro "Precisam de verificação".
-        </p>
-      )}
+      <p className="flex-shrink-0 px-3.5 py-2 border-t border-surface-700 text-xs text-surface-500 tabular-nums" data-testid="verificacao-rodape">
+        {total > conversas.length
+          ? `As ${conversas.length} mais recentes de ${total}. As demais estão em Conversas, filtro "Precisam de verificação".`
+          : conversas.length === 0 ? 'Nenhuma conversa na lista.'
+          : `${conversas.length} ${conversas.length === 1 ? 'conversa' : 'conversas'}${conversas.length > 5 ? ' · role a lista para ver todas' : ''}`}
+      </p>
     </section>
   )
 }

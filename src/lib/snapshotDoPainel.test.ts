@@ -16,8 +16,9 @@ describe('Dashboard onda 1 — montarSnapshot', () => {
       appointmentsScheduled: 4, appointmentsCancelled: 1, appointmentsConfirmed: 9, agentsOnline: null,
     } as unknown as HomeStats
     const snap = montarSnapshot(stats, { avgResolutionTimeTenant: 3600 })
-    expect(valor(snap, 'active_conversations')).toBe(7)
-    expect(valor(snap, 'queued')).toBe(3)
+    // Auditoria 12/11: os indicadores "agora" saíram dos Relatórios (o lugar deles é a aba Agora).
+    expect(valor(snap, 'active_conversations')).toBeUndefined()
+    expect(valor(snap, 'queued')).toBeUndefined()
     expect(valor(snap, 'abandoned')).toBe(2)
     expect(valor(snap, 'abandon_rate')).toBe(5)
     expect(valor(snap, 'avg_resolution_time')).toBe(3600)
@@ -33,7 +34,9 @@ describe('Dashboard onda 1 — montarSnapshot', () => {
 
   it('K6-FE/regra 6: sem dado vira null → "—", nunca 0', () => {
     const snap = montarSnapshot({ agentsOnline: null, avgResponseMinutes: 0 } as unknown as HomeStats, null)
-    expect(valor(snap, 'agents_online')).toBeNull()
+    expect(valor(snap, 'agents_online')).toBeUndefined()
+    expect(valor(snap, 'ai_first_response')).toBeNull()
+    expect(valor(snap, 'expired_review_alerts')).toBeNull()
     expect(valor(snap, 'first_response_time')).toBeNull()
     expect(valor(snap, 'avg_resolution_time')).toBeNull()
     expect(formatKpiValue(null, 'count')).toBe('—')
@@ -71,7 +74,8 @@ describe('R4 — duração em segundos', () => {
     } as unknown as HomeStats
     const snap = montarSnapshot(stats, { avgResolutionTimeTenant: 7200, medianResolutionTimeTenant: 3600 })
     const kpi = (id: string) => snap.kpis.find((k) => k.id === id)!
-    expect(kpi('total_conversations').detail).toBe('9 novos · 3 voltaram')
+    // Backend sem a sessão (antigo): a linha diz o que conta, sem "novos" que pareçam contatos.
+    expect(kpi('total_conversations').detail).toBe('9 conversas novas · 3 reaberturas')
     expect(kpi('resolution_rate').detail).toBe('de 10 atendimentos iniciados')
     expect(kpi('first_response_time').value).toBe(120) // mediana, não a média de 12 min
     expect(kpi('first_response_time').detail).toBe('média 12m · 4 sem resposta')
@@ -79,7 +83,7 @@ describe('R4 — duração em segundos', () => {
     expect(kpi('human_first_response').detail).toBe('80% em até 15 min · 5 atendimentos')
     expect(kpi('avg_resolution_time').value).toBe(3600)
     expect(kpi('avg_resolution_time').detail).toBe('média 2h')
-    expect(kpi('bot_deflection').detail).toBe('3 de 8 resolvidas')
+    expect(kpi('bot_deflection').detail).toBe('3 de 8 encerradas no período')
     expect(kpi('new_contacts').value).toBe(7) // do período, não os 7 dias fixos
     expect(kpi('msgs_sent').detail).toBe('pessoas 10 · IA 15 · automáticas 5')
     expect(kpi('abandoned').label).toBe('Arquivadas')
@@ -129,8 +133,6 @@ describe('DC-5/DC-6 — comparação, série diária e metas', () => {
     // Base zero: sem % honesto. Sem dado no anterior: sem variação.
     expect(kpiDe(snap, 'resolved').trend).toBeNull()
     expect(kpiDe(snap, 'msgs_received').trend).toBeNull()
-    // "Agora" não compara com período nenhum.
-    expect(kpiDe(snap, 'active_conversations').trend).toBeNull()
   })
 
   it('sem `previousPeriod` (backend antigo ou sem compare): nenhuma variação', () => {
@@ -147,12 +149,13 @@ describe('DC-5/DC-6 — comparação, série diária e metas', () => {
   it('série diária vira a linha das contagens; 1 dia só ou buraco (null) não desenha', () => {
     const dia = (date: string, a: number, d: number | null) => ({ date, atendimentos: a, resolvidas: 1, recebidas: 2, enviadas: 3, contatos: 0, disparos: d })
     const snap = montarSnapshot({} as HomeStats, { dailySeries: [dia('2026-09-29', 4, null), dia('2026-09-30', 6, null), dia('2026-10-01', 2, null)] })
-    expect(kpiDe(snap, 'total_conversations').sparkline).toEqual([4, 6, 2])
+    // Auditoria 12/11: Atendimentos e Resolvidas mudaram de conta; a série ainda é a antiga, então ficam sem linha.
+    expect(kpiDe(snap, 'total_conversations').sparkline).toEqual([])
     expect(kpiDe(snap, 'msgs_sent').sparkline).toEqual([3, 3, 3])
     expect(kpiDe(snap, 'campaign_sent').sparkline).toEqual([])
     expect(kpiDe(snap, 'resolution_rate').sparkline).toEqual([])
     const umDia = montarSnapshot({} as HomeStats, { dailySeries: [dia('2026-10-01', 4, 1)] })
-    expect(kpiDe(umDia, 'total_conversations').sparkline).toEqual([])
+    expect(kpiDe(umDia, 'msgs_sent').sparkline).toEqual([])
   })
 
   it('metas da empresa viram o alvo do cartão, na unidade do valor; 1ª humana cai no SLA', () => {
@@ -168,5 +171,47 @@ describe('DC-5/DC-6 — comparação, série diária e metas', () => {
     expect(kpiDe(snap, 'campaign_delivery_rate').meta).toEqual({ alvo: 95, sentido: 'maior' })
     expect(kpiDe(snap, 'human_first_response').meta).toEqual({ alvo: 900, sentido: 'menor' })
     expect(kpiDe(snap, 'bot_deflection').meta).toBeNull()
+  })
+})
+
+describe('Auditoria do Dashboard (12/11) — números confiáveis nos Relatórios', () => {
+  const kpi = (snap: ReturnType<typeof montarSnapshot>, id: string) => snap.kpis.find((k) => k.id === id)!
+  const stats = {
+    totalConversations: 1973, newConversations: 450, reopenedConversations: 1523, cohortConversations: 1498,
+    attendances: 1663, attendancesNew: 496, attendancesReturning: 1167,
+    conversationsResolvedToday: 1561, resolvedInPeriod: 1640, resolutionRate: 90, attendanceResolutionRate: 84,
+    recontactRate: 38, recontactCount: 957, botResolved: 1000,
+    aiFirstResponseMedianSeconds: 19, aiFirstResponseCycles: 6000, unansweredCycles: 334, expiredReviewAlerts: 4,
+    attendanceOutcome: { resolvedByAiOnly: 965, resolvedWithTeam: 432, archived: 83, open: 183 },
+  } as unknown as HomeStats
+
+  it('Atendimentos é a sessão (o número do painel do gestor), com pacientes novos e de quem já era paciente', () => {
+    const snap = montarSnapshot(stats, null)
+    expect(kpi(snap, 'total_conversations').value).toBe(1663)
+    expect(kpi(snap, 'total_conversations').detail).toBe('496 de pacientes novos · 1.167 de quem já era paciente')
+  })
+
+  it('Resolvidas conta todas as resoluções do período; a taxa usa a base dos atendimentos', () => {
+    const snap = montarSnapshot(stats, null)
+    expect(kpi(snap, 'resolved').value).toBe(1640)
+    expect(kpi(snap, 'resolution_rate').value).toBe(84)
+    expect(kpi(snap, 'resolution_rate').detail).toBe('dos 1.663 atendimentos')
+    expect(kpi(snap, 'recontact_rate').label).toBe('Reabertas depois de resolvidas')
+    expect(kpi(snap, 'recontact_rate').detail).toBe('957 conversas')
+  })
+
+  it('1ª resposta da IA à parte da equipe, e os alertas de verificação vencidos', () => {
+    const snap = montarSnapshot(stats, null)
+    expect(kpi(snap, 'ai_first_response').value).toBe(19)
+    expect(kpi(snap, 'ai_first_response').detail).toBe('334 mensagens sem resposta')
+    expect(kpi(snap, 'human_first_response').label).toBe('1ª resposta da equipe')
+    expect(kpi(snap, 'expired_review_alerts').value).toBe(4)
+  })
+
+  it('o desfecho dos atendimentos soma o cartão Atendimentos', () => {
+    const snap = montarSnapshot(stats, null)
+    const d = snap.desfecho!
+    expect(d.resolvedByAiOnly + d.resolvedWithTeam + d.archived + d.open).toBe(1663)
+    expect(montarSnapshot({} as HomeStats, null).desfecho).toBeNull()
   })
 })

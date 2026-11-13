@@ -40,9 +40,10 @@ type SnapshotCru = {
 const SEM_VARIACAO = new Set(['active_conversations', 'queued', 'agents_online', 'appointments_scheduled', 'appointments_cancelled', 'appointments_confirmed'])
 
 /** Coluna da série diária de cada contagem (DC-3 no backend). */
+// Auditoria do Dashboard (12/11): Atendimentos (sessão) e Resolvidas (todas as resoluções) mudaram
+// de conta; a série diária ainda é a da conta antiga, então esses dois cartões ficam sem a linha
+// de tendência até a série acompanhar (uma linha que não bate com o número engana).
 const SERIE_DO_KPI: Record<string, string> = {
-  total_conversations: 'atendimentos',
-  resolved:            'resolvidas',
   msgs_received:       'recebidas',
   msgs_sent:           'enviadas',
   new_contacts:        'contatos',
@@ -78,14 +79,15 @@ const plural = (q: number, um: string, varios: string) => `${q.toLocaleString('p
 /** Valor de cada indicador a partir dos números de um período (atual ou anterior). */
 function valoresDe(x: Record<string, unknown>, resolucao: { media: number | null; mediana: number | null }): Record<string, number | null> {
   return {
-    'total_conversations':    n(x.totalConversations),
-    // Estes três são "agora" (a faixa diz), não do período.
-    'active_conversations':   n(x.conversationsOpen),
-    'queued':                 n(x.queueCount),
-    'agents_online':          n(x.agentsOnline),
-    'resolved':               n(x.conversationsResolvedToday),
+    // Auditoria do Dashboard (12/11): atendimento = sessão (o mesmo número do painel do gestor);
+    // resolvidas = todas as resoluções do período; a taxa de resolução na base dos atendimentos.
+    // Sem os campos novos (backend antigo), vale a conta anterior.
+    'total_conversations':    n(x.attendances) ?? n(x.totalConversations),
+    'resolved':               n(x.resolvedInPeriod) ?? n(x.conversationsResolvedToday),
     'abandoned':              n(x.abandonedCount),
-    'resolution_rate':        n(x.resolutionRate),
+    'resolution_rate':        n(x.attendanceResolutionRate) ?? n(x.resolutionRate),
+    'ai_first_response':      tempo(x.aiFirstResponseMedianSeconds, null, (n(x.aiFirstResponseCycles) ?? 0) > 0),
+    'expired_review_alerts':  n(x.expiredReviewAlerts),
     'abandon_rate':           n(x.abandonRate),
     'first_response_time':    tempo(x.medianResponseSeconds, x.medianResponseMinutes ?? x.avgResponseMinutes, (n(x.respondedCycles) ?? 0) > 0),
     'human_first_response':   tempo(x.humanFirstResponseMedianSeconds, x.humanFirstResponseMedianMinutes, (n(x.humanFirstResponseCount) ?? 0) > 0),
@@ -129,6 +131,9 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
 
   const resolvidas = n(x.conversationsResolvedToday)
   const coorte = n(x.cohortConversations)
+  const atendimentos = n(x.attendances)
+  const novos = n(x.attendancesNew)
+  const voltaram = n(x.attendancesReturning)
   const semResposta = n(x.unansweredCycles) ?? 0
   const humanas = n(x.humanFirstResponseCount) ?? 0
   const sla = n(x.humanFirstResponseSlaRate)
@@ -146,10 +151,17 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
   const serie = Array.isArray(db?.dailySeries) ? db.dailySeries : []
 
   const detalhes: Record<string, string | null> = {
-    'total_conversations': n(x.newConversations) !== null && n(x.reopenedConversations) !== null
-      ? `${plural(n(x.newConversations)!, 'novo', 'novos')} · ${plural(n(x.reopenedConversations)!, 'voltou', 'voltaram')}`
-      : null,
-    'resolution_rate': coorte !== null ? `de ${plural(coorte, 'atendimento iniciado', 'atendimentos iniciados')}` : null,
+    'total_conversations': atendimentos !== null && novos !== null && voltaram !== null
+      ? `${novos.toLocaleString('pt-BR')} de pacientes novos · ${voltaram.toLocaleString('pt-BR')} de quem já era paciente`
+      : n(x.newConversations) !== null && n(x.reopenedConversations) !== null
+        ? `${plural(n(x.newConversations)!, 'conversa nova', 'conversas novas')} · ${plural(n(x.reopenedConversations)!, 'reabertura', 'reaberturas')}`
+        : null,
+    'resolution_rate': atendimentos !== null && n(x.attendanceResolutionRate) !== null
+      ? `dos ${plural(atendimentos, 'atendimento', 'atendimentos')}`
+      : coorte !== null ? `de ${plural(coorte, 'atendimento iniciado', 'atendimentos iniciados')}` : null,
+    'recontact_rate': n(x.recontactCount) !== null ? plural(n(x.recontactCount)!, 'conversa', 'conversas') : null,
+    'ai_first_response': semResposta > 0 ? plural(semResposta, 'mensagem sem resposta', 'mensagens sem resposta') : null,
+    'expired_review_alerts': 'vencidos sem tratamento',
     'abandon_rate': coorte !== null ? `de ${plural(coorte, 'atendimento iniciado', 'atendimentos iniciados')}` : null,
     'first_response_time': [
       tempo(x.avgResponseSeconds, x.avgResponseMinutes, (n(x.respondedCycles) ?? 0) > 0) !== null
@@ -161,7 +173,7 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
       ? `${sla !== null ? `${sla}% em até ${n(x.slaTargetMinutes) ?? 15} min · ` : ''}${plural(humanas, 'atendimento', 'atendimentos')}`
       : 'nenhuma resposta de pessoa no período',
     'avg_resolution_time': mediaResolucao ? `média ${fmtSeg(mediaResolucao)}` : null,
-    'bot_deflection': resolvidas !== null && resolvidas > 0 ? `${n(x.botResolved) ?? 0} de ${resolvidas} resolvidas` : null,
+    'bot_deflection': resolvidas !== null && resolvidas > 0 ? `${(n(x.botResolved) ?? 0).toLocaleString('pt-BR')} de ${resolvidas.toLocaleString('pt-BR')} encerradas no período` : null,
     'msgs_sent': enviadasPor
       ? [
           enviadasPor.operator ? `pessoas ${enviadasPor.operator.toLocaleString('pt-BR')}` : null,
@@ -197,6 +209,12 @@ export function montarSnapshot(s: HomeStats, db: SnapshotCru): DashboardSnapshot
     ? { open: sd.open ?? 0, pending: sd.pending ?? 0, resolved: sd.resolved ?? 0, abandoned: sd.abandoned ?? 0 }
     // UI-FE-01: stats e snapshot têm recortes diferentes; sem o snapshot, não
     // há distribuição honesta para desenhar.
+    : null
+
+  // Auditoria do Dashboard (12/11): o desfecho dos atendimentos do período (soma o cartão Atendimentos).
+  const d = (x.attendanceOutcome ?? null) as Record<string, unknown> | null
+  snap.desfecho = d && [d.resolvedByAiOnly, d.resolvedWithTeam, d.archived, d.open].every((v) => n(v) !== null)
+    ? { resolvedByAiOnly: n(d.resolvedByAiOnly)!, resolvedWithTeam: n(d.resolvedWithTeam)!, archived: n(d.archived)!, open: n(d.open)! }
     : null
 
   snap.tagVolumes = Array.isArray(db?.tagVolumes) ? db.tagVolumes : []

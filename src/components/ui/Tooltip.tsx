@@ -35,6 +35,10 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
   // empurra para dentro com 8px de folga.
   const balaoRef = useRef<HTMLDivElement>(null)
   const [desvio, setDesvio] = useState(0)
+  // 12/11 (auditoria do Dashboard): sem espaço em cima (ou embaixo), o balão vira para o outro
+  // lado em vez de vazar da tela. Uma virada por abertura.
+  const [lado, setLado] = useState(side)
+  const virou = useRef(false)
 
   useLayoutEffect(() => {
     if (!show || !wrapperRef.current) return
@@ -48,18 +52,27 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
       left:   { top: rect.top + rect.height / 2,   left: rect.left - 8 },
       right:  { top: rect.top + rect.height / 2,   left: rect.right + 8 },
     }
-    setCoords(positions[side])
+    setCoords(positions[lado])
     setDesvio(0)
-  }, [show, side])
+  }, [show, lado])
 
   useLayoutEffect(() => {
     const el = balaoRef.current
     if (!coords || !el) return
     const r = el.getBoundingClientRect()
     const margem = 8
+    if (!virou.current) {
+      if (lado === 'top' && r.top < margem) { virou.current = true; setLado('bottom'); return }
+      if (lado === 'bottom' && r.bottom > window.innerHeight - margem) { virou.current = true; setLado('top'); return }
+      if (lado === 'right' && r.right > window.innerWidth - margem) { virou.current = true; setLado('left'); return }
+      if (lado === 'left' && r.left < margem) { virou.current = true; setLado('right'); return }
+    }
     if (r.right > window.innerWidth - margem) setDesvio((d) => d - (r.right - (window.innerWidth - margem)))
     else if (r.left < margem) setDesvio((d) => d + (margem - r.left))
-  }, [coords])
+  }, [coords, lado])
+
+  const abrir = () => { virou.current = false; setLado(side); setShow(true) }
+  const fechar = () => { setShow(false); setCoords(null) }
 
   const transforms = {
     top:    '-translate-x-1/2 -translate-y-full',
@@ -72,10 +85,10 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
     <div
       ref={wrapperRef}
       className="relative flex items-center"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => { setShow(false); setCoords(null) }}
-      onFocus={() => setShow(true)}
-      onBlur={() => { setShow(false); setCoords(null) }}
+      onMouseEnter={abrir}
+      onMouseLeave={fechar}
+      onFocus={abrir}
+      onBlur={fechar}
     >
       {children}
       {show && coords && createPortal(
@@ -89,8 +102,13 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
             'z-[9999] flex items-center rounded-[6px] px-2 bg-[var(--toast)] text-[var(--toasttx)]',
             'text-xs font-medium',
             'pointer-events-none',
-            wide ? 'min-h-6 py-1 whitespace-normal max-w-xs leading-snug' : 'h-6 whitespace-nowrap w-max',
-            transforms[side],
+            // 12/11 (auditoria do Dashboard): o balão largo tem largura PRÓPRIA (o texto, até 20rem e
+            // nunca mais que a tela). Sem ela, perto da borda direita o navegador espremia o balão
+            // numa coluna estreita e comprida. Mais respiro para ler várias frases.
+            wide
+              ? 'w-max max-w-[min(20rem,calc(100vw-16px))] px-3 py-2 whitespace-normal leading-relaxed text-left'
+              : 'h-6 whitespace-nowrap w-max',
+            transforms[lado],
           )}
         >
           {content}

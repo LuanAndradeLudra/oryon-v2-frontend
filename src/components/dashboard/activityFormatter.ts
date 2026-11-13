@@ -62,6 +62,18 @@ const apiDenial = (code: unknown): string => {
   return ''
 }
 
+
+/** Auditoria 12/11: status da conversa em português, na frase da atividade. */
+const STATUS_DA_CONVERSA: Record<string, string> = { resolved: 'resolvida', abandoned: 'arquivada', pending: 'pendente', open: 'aberta' }
+function frasePorStatus(s: string | null | undefined, d: Record<string, unknown>): string {
+  const quem = s || 'um cliente'
+  const bruto = typeof d.to === 'string' ? d.to : typeof d.status === 'string' ? d.status : null
+  if (bruto === 'resolved') return `Conversa de ${quem} resolvida`
+  if (bruto === 'abandoned') return `Conversa de ${quem} arquivada${d.motivo === 'inatividade' ? ' por inatividade' : ''}`
+  const pt = bruto ? STATUS_DA_CONVERSA[bruto] ?? bruto : null
+  return `Status da conversa de ${quem} alterado${pt ? ` para ${pt}` : ''}`
+}
+
 const FORMATTERS: Record<string, Formatter> = {
   // ── 29/09: eventos que caíam no fallback em inglês (backend developer) ──
   // Negócios (os do DealNotifier também trazem `description` em português —
@@ -162,14 +174,9 @@ const FORMATTERS: Record<string, Formatter> = {
 
   // ── Conversas ───────────────────────────────────────────────────────────
   conversation_resolved:           ({ s }) => `Conversa de ${s || 'um cliente'} resolvida`,
-  conversation_status_changed:     ({ s, d }) => {
-    const to = d.to ? ` para "${d.to}"` : ''
-    return `Status da conversa de ${s || 'um cliente'} alterado${to}`
-  },
-  conversation_status_updated:     ({ s, d }) => {
-    const to = d.to ? ` para "${d.to}"` : ''
-    return `Status da conversa de ${s || 'um cliente'} alterado${to}`
-  },
+  // Auditoria 12/11: o status vinha cru, em inglês ("alterado para \"resolved\"").
+  conversation_status_changed:     ({ s, d }) => frasePorStatus(s, d),
+  conversation_status_updated:     ({ s, d }) => frasePorStatus(s, d),
   conversation_assigned:           ({ s }) => `Conversa de ${s || 'um cliente'} atribuída a um atendente`,
   conversation_transferred:        ({ s }) => `Conversa de ${s || 'um cliente'} transferida`,
   conversation_tag_added:          ({ s }) => `Etiqueta adicionada à conversa de ${s || 'um cliente'}`,

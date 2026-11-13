@@ -241,6 +241,8 @@ export function PlanoDeAcaoPage() {
     setP((x) => (x ? { ...x, items: x.items.map((y) => (y.id === i.id ? { ...y, outcome } : y)) } : x))
     try {
       await followUpsApi.desfecho(i.id, outcome, { version: i.version })
+      // 12/11 (auditoria do Dashboard): o contador "Planos de ação" do menu só baixava ao trocar de tela.
+      try { window.dispatchEvent(new Event('follow-ups:mudou')) } catch { /* sem janela */ }
       toast(`${nomeDe(i)}: “${ROTULO_DO_DESFECHO[outcome]}”.`, 'success')
       ler()
     } catch (e) {
@@ -255,6 +257,7 @@ export function PlanoDeAcaoPage() {
     if (!ids.length || !p) return
     try {
       const r = await followUpsApi.desfechoEmLote(p.id, ids, outcome)
+      try { window.dispatchEvent(new Event('follow-ups:mudou')) } catch { /* sem janela */ }
       toast(`${r.data.done} ${r.data.done === 1 ? 'contato marcado' : 'contatos marcados'} como “${ROTULO_DO_DESFECHO[outcome]}”.`, 'success')
       sel.clear()
       ler()
@@ -267,6 +270,7 @@ export function PlanoDeAcaoPage() {
     setConcluindo(true)
     try {
       await followUpsApi.concluir(p.id)
+      try { window.dispatchEvent(new Event('follow-ups:mudou')) } catch { /* sem janela */ }
       toast('Plano concluído. O gestor vê o resultado no painel.', 'success')
       navigate('/planos')
     } catch (e) {

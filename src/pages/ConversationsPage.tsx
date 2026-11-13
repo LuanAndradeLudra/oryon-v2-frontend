@@ -178,10 +178,23 @@ export function ConversationsPage() {
     return { visibleConversations: list, offFilterId }
   }, [conversations, filters, activeConversation, user, idsDaPrimeiraCarga])
 
+  // 12/11 (auditoria do Dashboard): mensagem do cliente que chega na conversa ABERTA (aba visível)
+  // já foi vista — marca como lida. Antes ela contava como não lida no menu até sair e voltar.
+  // Uma vez por rajada: `message:new` e `conversation:updated` chegam juntos.
+  const leituraAutomatica = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lerSeAberta = useCallback((payload: SocketMessageNew) => {
+    if (payload?.message?.direction !== 'inbound' || activeConversation?.id !== payload.conversationId) return
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+    if (leituraAutomatica.current) clearTimeout(leituraAutomatica.current)
+    leituraAutomatica.current = setTimeout(() => { leituraAutomatica.current = null; markAsRead(payload.conversationId) }, 800)
+  }, [activeConversation?.id, markAsRead])
+  useEffect(() => () => { if (leituraAutomatica.current) clearTimeout(leituraAutomatica.current) }, [])
+
   // ── Socket.IO real-time ────────────────────────────────────────────────────
   useSocket({
     onMessageNew: useCallback((payload: SocketMessageNew) => {
       handleNewMessage(payload)
+      lerSeAberta(payload)
       // Phase 32 — outbound human messages now carry aiPausedUntil +
       // assignedUser via the same event. Mirror onto activeConversation so
       // the header pill flips state without a refetch.
@@ -206,7 +219,7 @@ export function ConversationsPage() {
           )
         }
       }
-    }, [handleNewMessage, activeConversation?.id]),
+    }, [handleNewMessage, activeConversation?.id, lerSeAberta]),
 
 
     onConversationResolved: useCallback((payload: { conversationId: string }) => {
@@ -229,6 +242,7 @@ export function ConversationsPage() {
     // Sidebar updates (conversation:updated replaces tenant-wide message:new for list)
     onConversationUpdated: useCallback((payload: SocketMessageNew) => {
       handleNewMessage(payload)
+      lerSeAberta(payload)
       // Phase 32 — same as onMessageNew: keep activeConversation in lockstep
       // with the latest pause + assignment so the header pill is correct.
       if (activeConversation?.id === payload.conversationId) {
@@ -247,7 +261,7 @@ export function ConversationsPage() {
           )
         }
       }
-    }, [handleNewMessage, activeConversation?.id]),
+    }, [handleNewMessage, activeConversation?.id, lerSeAberta]),
 
     // Phase 27 — AI handoff pause/resume from another tab or operator. Keeps
     // the in-memory list in sync so opening that conversation later shows the

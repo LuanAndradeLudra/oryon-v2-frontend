@@ -1043,6 +1043,8 @@ export interface Conversation {
    * "Verificar" badge in the conversation list. Cleared after the window.
    */
   hasRecentAnomaly?: boolean
+  /** Auditoria do Dashboard (12/11): hora do alerta de verificação que ainda pede ação (ISO); null = nenhum. */
+  lastAnomalyAt?: string | null
   createdAt: string
 }
 
@@ -1439,6 +1441,19 @@ export interface HomeStats {
   myConversationsOpen: number
   myConversationsResolvedToday: number
   myAvgResponseMinutes: number | null
+  // ── Auditoria do Dashboard (12/11): campos novos da Home (opcionais em backend antigo) ──
+  /** Abertas com mensagem nos últimos 7 dias; o resto vai em `conversationsOpenStale`. */
+  conversationsOpenActive?: number
+  conversationsOpenStale?: number
+  /** Resoluções do período (inclui as reabertas depois). */
+  resolvedInPeriod?: number
+  /** Minhas abertas com mensagem nos últimos 7 dias. */
+  myConversationsOpenActive?: number
+  /** Mediana da MINHA 1ª resposta hoje, em segundos (null = nenhuma). */
+  myFirstResponseMedianSeconds?: number | null
+  myFirstResponsesCount?: number
+  /** Fila do /home/queue (só as ativas): paradas há mais de 7 dias, fora da fila. */
+  queueStale?: number
   myMessagesSentToday: number
   appointmentsScheduled?: number | null
   appointmentsCancelled?: number | null
