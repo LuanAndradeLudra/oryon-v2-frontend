@@ -1,8 +1,8 @@
-// ─── Como pagar uma fatura (gateway Gates2B, integração 1200) ─────────────────
-// Pix: QR + copia e cola + validade. Cartão: checkout hospedado do gateway
-// (nenhum dado de cartão passa pela Oryon — SCRUM-1204). Sem gateway, ou se o
-// gateway falhar, as instruções de pagamento de sempre. A baixa é automática
-// pelo aviso do gateway.
+// ─── Como pagar uma fatura ────────────────────────────────────────────────────
+// Pix: QR + copia e cola + validade. Cartão: página hospedada do Asaas
+// (nenhum dado de cartão passa pela Oryon). Sem gateway, ou se a geração
+// falhar, ficam as instruções de pagamento. A baixa automática entra com o
+// webhook do Asaas.
 
 import { useEffect, useState } from 'react'
 import { Copy, CreditCard, Loader2 } from 'lucide-react'
@@ -68,7 +68,7 @@ export function PagamentoDaFatura({ invoiceId, instrucoes }: { invoiceId: string
             <Button size="sm" variant="secondary" leftIcon={<Copy className="w-3.5 h-3.5" />} onClick={() => copiar(opcao.pixPayload!)}>Copiar código</Button>
             {ate && <span className="text-[11px] text-surface-500">Válido até {ate}</span>}
           </div>
-          <p className="text-[11px] text-surface-500">A confirmação é automática: assim que o pagamento cair, a fatura muda para Paga.</p>
+          <p className="text-[11px] text-surface-500">Quando o Asaas confirmar o pagamento, a fatura muda para Paga.</p>
         </div>
       </div>
     )
