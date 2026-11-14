@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Background, Controls, MiniMap, ReactFlow, ReactFlowProvider, useReactFlow,
+  Background, BackgroundVariant, MarkerType, MiniMap, ReactFlow, ReactFlowProvider, useNodesInitialized, useReactFlow,
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { CircleAlert, FlaskConical, Gauge, LayoutGrid, Pause, Play, Redo2, Rocket, TriangleAlert, Undo2 } from 'lucide-react'
+import { CircleAlert, CircleCheck, CloudAlert, CloudCheck, FlaskConical, Gauge, LoaderCircle, MousePointerClick, PanelRightClose, PanelRightOpen, Pause, Play, Rocket, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { useTheme } from '@/hooks/useTheme'
@@ -12,14 +12,14 @@ import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import { jornadasApi } from '@/services/jornadas/jornadasApi'
 import { passoDoCatalogo, saidasDoNo } from '@/services/jornadas/catalogo'
-import { ID_DA_ENTRADA, organizar, Y_DA_ENTRADA } from '@/services/jornadas/layout'
+import { haSobreposicao, ID_DA_ENTRADA, organizar, type Medida } from '@/services/jornadas/layout'
 import { validarDesenho } from '@/services/jornadas/validar'
 import type { EstadoDoTeste } from '@/services/jornadas/simulador'
 import type { ApoioDoEditor, Catalogo, Jornada, NoDoGrafo, ResultadosDaJornada, VersaoDaJornada } from '@/services/jornadas/tipos'
-import { SeloDoStatus } from '../comum'
 import { NoDaEntrada, NoDoPasso, type NoDaEntradaRF, type NoDoPassoRF } from './NosDoCanvas'
 import { PainelDoPasso } from './PainelDoPasso'
 import { Paleta, TIPO_ARRASTADO } from './Paleta'
+import { ControlesDoCanvas } from './ControlesDoCanvas'
 import { resumoDaPorta, resumoDaReentrada, resumoDoNo } from './resumo'
 import { frasesDasCondicoes } from './condicoes'
 import { TestarJornada } from '../TestarJornada'
@@ -30,6 +30,10 @@ import { PublicarJornada } from '../PublicarJornada'
  * ORY-60 — o canvas livre (decisão 11: React Flow). A fonte da verdade é a
  * `VersaoDaJornada` (o rascunho); os nós e as ligações do React Flow são
  * derivados dela a cada mudança. O rascunho salva sozinho.
+ *
+ * Estrutura: uma barra fina de ações em cima; abaixo, paleta | canvas | painel.
+ * O canvas ocupa todo o espaço que sobra e nunca passa da tela; os controles
+ * ficam flutuando no canto, com margem.
  */
 
 interface Props {
@@ -53,6 +57,8 @@ const LIMITE_DO_HISTORICO = 50
 /** Fora do componente: o React Flow pede o mesmo objeto a cada render. */
 const TIPOS_DE_NO = { passo: NoDoPasso, entrada: NoDaEntrada }
 const idDaLigacao = (origem: string, saida: string) => `${origem}::${saida}`
+/** Tamanho estimado de um cartão ainda não medido (passo novo). */
+const TAMANHO_ESTIMADO = { w: 260, h: 110 }
 
 function paramsPadrao(type: string, catalogo: Catalogo): Record<string, unknown> {
   const passo = passoDoCatalogo(catalogo, type)
@@ -68,6 +74,8 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
   const { toast } = useToast()
   const { resolvedTheme } = useTheme()
   const rf = useReactFlow()
+  const nosMedidos = useNodesInitialized()
+  const areaRef = useRef<HTMLDivElement>(null)
   const [versao, setVersao] = useState<VersaoDaJornada>(jornada.draft)
   const [nome, setNome] = useState(jornada.name)
   const [descricao, setDescricao] = useState(jornada.description)
@@ -81,8 +89,12 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
   const [simulando, setSimulando] = useState(false)
   const [publicacao, setPublicacao] = useState<'publicar' | 'retomar' | null>(null)
   const [pausando, setPausando] = useState(false)
+  const [painelAberto, setPainelAberto] = useState(!somenteLeitura)
+  const [mapa, setMapa] = useState(false)
+  /** Tamanho real de cada cartão (o React Flow mede e avisa; nós controlados guardam aqui). */
+  const [medidas, setMedidas] = useState<Record<string, { width: number; height: number }>>({})
   const versaoRef = useRef(versao)
-  versaoRef.current = versao
+  useEffect(() => { versaoRef.current = versao }, [versao])
 
   const problemas = useMemo(() => validarDesenho(versao, catalogo, apoio), [versao, catalogo, apoio])
   const erros = problemas.filter((p) => p.severity === 'error')
@@ -157,9 +169,64 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
     return j
   }
 
+  // ── medidas, enquadramento e organização ─────────────────────────────────
+  const medida: Medida = useCallback((id) => {
+    const n = rf.getNode(id)
+    return n?.measured?.width && n.measured.height ? { w: n.measured.width, h: n.measured.height } : TAMANHO_ESTIMADO
+  }, [rf])
+
+  /** Vista inicial: legível (entre 75% e 100%), com a Entrada no alto e o desenho centrado. */
+  const enquadrarInicio = useCallback(() => {
+    const area = areaRef.current
+    if (!area) return
+    const { width, height } = area.getBoundingClientRect()
+    const nos = rf.getNodes()
+    if (!nos.length) return
+    const b = rf.getNodesBounds(nos)
+    const zoomQueCabe = Math.min((width - 96) / Math.max(b.width, 1), (height - 112) / Math.max(b.height, 1))
+    const zoom = Math.max(0.75, Math.min(1, zoomQueCabe))
+    rf.setViewport({ x: width / 2 - (b.x + b.width / 2) * zoom, y: 40 - b.y * zoom, zoom })
+  }, [rf])
+
+  const arrumar = useCallback((registrar = true) => {
+    const v = versaoRef.current
+    const layout = organizar(v.graph, medida)
+    if (registrar) aplicar({ ...v, graph: { ...v.graph, layout } })
+    else {
+      const nova = { ...v, graph: { ...v.graph, layout } }
+      versaoRef.current = nova
+      setVersao(nova)
+    }
+    requestAnimationFrame(() => (registrar ? rf.fitView({ padding: 0.12, maxZoom: 1, duration: 300 }) : enquadrarInicio()))
+  }, [aplicar, medida, rf, enquadrarInicio])
+
+  // Primeira vez com os cartões medidos: arruma desenho antigo que se sobrepõe e enquadra.
+  const jaEnquadrou = useRef(false)
+  useEffect(() => {
+    if (!nosMedidos || jaEnquadrou.current) return
+    jaEnquadrou.current = true
+    const { layout, nodes: nos } = versaoRef.current.graph
+    // Falta a posição de algum cartão (desenho novo, receita, desenho antigo) ou eles se encostam: organiza.
+    const faltaPosicao = !layout[ID_DA_ENTRADA] || Object.keys(nos).some((id) => !layout[id])
+    if (faltaPosicao || haSobreposicao(layout, medida)) arrumar(false)
+    else requestAnimationFrame(enquadrarInicio)
+  }, [nosMedidos, medida, arrumar, enquadrarInicio, rf])
+
+  const irAoPasso = useCallback((id: string) => {
+    const n = rf.getNode(id)
+    if (!n) return
+    const { w, h } = medida(id)
+    rf.setCenter(n.position.x + w / 2, n.position.y + h / 2, { zoom: Math.max(rf.getZoom(), 0.85), duration: 300 })
+  }, [rf, medida])
+
   // ── mudanças no desenho ──────────────────────────────────────────────────
   const mudarNos = (nodes: Record<string, NoDoGrafo>, extra: Partial<VersaoDaJornada['graph']> = {}, registrar = true) =>
     aplicar({ ...versaoRef.current, graph: { ...versaoRef.current.graph, nodes, ...extra } }, registrar)
+
+  const selecionar = (id: string | null) => {
+    setSelecionado(id)
+    if (id) setPainelAberto(true)
+  }
 
   const adicionar = (type: string, posicao?: { x: number; y: number }) => {
     if (somenteLeitura) return
@@ -175,8 +242,11 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
     // Clique na paleta: põe abaixo do passo escolhido e liga na primeira saída livre.
     const ancora = selecionado && selecionado !== ID_DA_ENTRADA ? selecionado : null
     if (!pos) {
-      const base = ancora ? v.graph.layout[ancora] : selecionado === ID_DA_ENTRADA ? v.graph.layout[ID_DA_ENTRADA] : null
-      pos = base ? { x: base.x, y: base.y + 170 } : { x: 360, y: 170 + Object.keys(v.graph.nodes).length * 40 }
+      const baseId = ancora ?? (selecionado === ID_DA_ENTRADA || !start ? ID_DA_ENTRADA : null)
+      const base = baseId ? rf.getNode(baseId) : null
+      pos = base
+        ? { x: base.position.x + (medida(base.id).w - TAMANHO_ESTIMADO.w) / 2, y: base.position.y + medida(base.id).h + 72 }
+        : { x: 0, y: 240 + Object.keys(v.graph.nodes).length * 40 }
       if (ancora) {
         const livre = saidasDoNo(v.graph.nodes[ancora], catalogo).find((s) => !v.graph.nodes[ancora].outputs[s.key])
         if (livre) nodes[ancora] = { ...v.graph.nodes[ancora], outputs: { ...v.graph.nodes[ancora].outputs, [livre.key]: id } }
@@ -185,11 +255,11 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
       }
     }
     aplicar({ ...v, graph: { ...v.graph, nodes, start, layout: { ...v.graph.layout, [id]: pos } } })
-    setSelecionado(id)
+    selecionar(id)
     // Clique na paleta: leva a vista até o passo novo (pode ter nascido fora da tela).
     if (!posicao) {
       const alvo = pos
-      requestAnimationFrame(() => rf.setCenter(alvo.x + 124, alvo.y + 40, { zoom: Math.min(rf.getZoom(), 1), duration: 250 }))
+      requestAnimationFrame(() => rf.setCenter(alvo.x + TAMANHO_ESTIMADO.w / 2, alvo.y + TAMANHO_ESTIMADO.h / 2, { zoom: Math.max(Math.min(rf.getZoom(), 1), 0.8), duration: 250 }))
     }
   }
 
@@ -213,15 +283,9 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
     if (!original) return
     const novoId = `n_${Math.random().toString(36).slice(2, 8)}`
     const copia: NoDoGrafo = { ...JSON.parse(JSON.stringify(original)), outputs: Object.fromEntries(Object.keys(original.outputs).map((k) => [k, null])) }
-    const p = v.graph.layout[id] ?? { x: 0, y: 0 }
-    aplicar({ ...v, graph: { ...v.graph, nodes: { ...v.graph.nodes, [novoId]: copia }, layout: { ...v.graph.layout, [novoId]: { x: p.x + 40, y: p.y + 60 } } } })
-    setSelecionado(novoId)
-  }
-
-  const arrumar = () => {
-    const v = versaoRef.current
-    aplicar({ ...v, graph: { ...v.graph, layout: organizar(v.graph) } })
-    requestAnimationFrame(() => rf.fitView({ padding: 0.15, maxZoom: 1, duration: 300 }))
+    const p = v.graph.layout[id] ?? rf.getNode(id)?.position ?? { x: 0, y: 0 }
+    aplicar({ ...v, graph: { ...v.graph, nodes: { ...v.graph.nodes, [novoId]: copia }, layout: { ...v.graph.layout, [novoId]: { x: p.x + 48, y: p.y + 48 } } } })
+    selecionar(novoId)
   }
 
   // ── nós e ligações do React Flow (derivados) ─────────────────────────────
@@ -234,8 +298,9 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
     const entrada: NoDaEntradaRF = {
       id: ID_DA_ENTRADA,
       type: 'entrada',
-      position: versao.graph.layout[ID_DA_ENTRADA] ?? { x: 334, y: Y_DA_ENTRADA },
+      position: versao.graph.layout[ID_DA_ENTRADA] ?? { x: -150, y: 0 },
       selected: selecionado === ID_DA_ENTRADA,
+      measured: medidas[ID_DA_ENTRADA],
       deletable: false,
       draggable: !somenteLeitura,
       data: {
@@ -254,6 +319,7 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
         type: 'passo',
         position: versao.graph.layout[id] ?? { x: 0, y: 0 },
         selected: selecionado === id,
+        measured: medidas[id],
         draggable: !somenteLeitura,
         data: {
           titulo: no.label || passo?.label || no.type,
@@ -271,26 +337,28 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
       }
     })
     return [entrada, ...passos]
-  }, [versao, selecionado, problemas, catalogo, apoio, contadores, caminho, teste, somenteLeitura, jornada.publishedVersion])
+  }, [versao, selecionado, medidas, problemas, catalogo, apoio, contadores, caminho, teste, somenteLeitura, jornada.publishedVersion])
 
   const edges = useMemo<Edge[]>(() => {
     const lista: Edge[] = []
     const cor = 'var(--color-surface-500)'
     const destaque = 'var(--color-accent-violet)'
-    if (versao.graph.start) {
-      const id = idDaLigacao(ID_DA_ENTRADA, 'next')
-      lista.push({ id, source: ID_DA_ENTRADA, sourceHandle: 'next', target: versao.graph.start, type: 'smoothstep', selected: ligacaoEscolhida === id, style: { stroke: teste && caminho.has(versao.graph.start) ? destaque : cor, strokeWidth: 1.5 } })
+    const seta = (c: string) => ({ type: MarkerType.ArrowClosed, color: c, width: 16, height: 16 })
+    const ligar = (id: string, source: string, sourceHandle: string, target: string, noTeste: boolean) => {
+      const c = noTeste ? destaque : ligacaoEscolhida === id ? 'var(--color-brand-500, #2DD4BF)' : cor
+      lista.push({
+        id, source, sourceHandle, target, type: 'smoothstep', selected: ligacaoEscolhida === id,
+        pathOptions: { borderRadius: 14, offset: 22 },
+        animated: noTeste && teste?.noAtual === target && !teste.terminou,
+        markerEnd: seta(c),
+        style: { stroke: c, strokeWidth: noTeste || ligacaoEscolhida === id ? 2 : 1.5 },
+      } as Edge)
     }
+    if (versao.graph.start) ligar(idDaLigacao(ID_DA_ENTRADA, 'next'), ID_DA_ENTRADA, 'next', versao.graph.start, !!teste && caminho.has(versao.graph.start))
     for (const [origem, no] of Object.entries(versao.graph.nodes)) {
       for (const [saida, destino] of Object.entries(no.outputs)) {
         if (!destino || !versao.graph.nodes[destino]) continue
-        const id = idDaLigacao(origem, saida)
-        const noTeste = caminho.has(origem) && caminho.has(destino)
-        lista.push({
-          id, source: origem, sourceHandle: saida, target: destino, type: 'smoothstep', selected: ligacaoEscolhida === id,
-          animated: noTeste && teste?.noAtual === destino && !teste.terminou,
-          style: { stroke: noTeste ? destaque : cor, strokeWidth: noTeste ? 2 : 1.5 },
-        })
+        ligar(idDaLigacao(origem, saida), origem, saida, destino, caminho.has(origem) && caminho.has(destino))
       }
     }
     return lista
@@ -298,16 +366,24 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     let layout: VersaoDaJornada['graph']['layout'] | null = null
+    let novasMedidas: Record<string, { width: number; height: number }> | null = null
     for (const ch of changes) {
-      if (ch.type === 'position' && ch.position) {
+      if (ch.type === 'dimensions' && ch.dimensions) {
+        novasMedidas = novasMedidas ?? {}
+        novasMedidas[ch.id] = ch.dimensions
+      } else if (ch.type === 'position' && ch.position) {
         layout = layout ?? { ...versaoRef.current.graph.layout }
         layout[ch.id] = ch.position
       } else if (ch.type === 'select') {
-        if (ch.selected) { setSelecionado(ch.id); setLigacaoEscolhida(null) }
+        if (ch.selected) { setSelecionado(ch.id); setPainelAberto(true); setLigacaoEscolhida(null) }
         else setSelecionado((s) => (s === ch.id ? null : s))
       } else if (ch.type === 'remove') {
         apagar(ch.id)
       }
+    }
+    if (novasMedidas) {
+      const n = novasMedidas
+      setMedidas((m) => ({ ...m, ...n }))
     }
     if (layout && !somenteLeitura) {
       const nova = { ...versaoRef.current, graph: { ...versaoRef.current.graph, layout } }
@@ -346,13 +422,8 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
     const type = e.dataTransfer.getData(TIPO_ARRASTADO)
     if (!type) return
     const p = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY })
-    adicionar(type, { x: p.x - 124, y: p.y - 30 })
+    adicionar(type, { x: p.x - TAMANHO_ESTIMADO.w / 2, y: p.y - 30 })
   }
-
-  // ── barra do topo ────────────────────────────────────────────────────────
-  const metaTexto = versao.goals.goals[0]?.label ?? (Object.values(versao.graph.nodes).find((n) => n.type === 'goal')?.params.label as string | undefined) ?? 'sem meta'
-  const creditosPorInscricao = Object.values(versao.graph.nodes).reduce((s, n) => s + (passoDoCatalogo(catalogo, n.type)?.cost.credits ?? 0), 0)
-  const versoes = jornada.enrolledByVersion.filter((v) => v.count > 0)
 
   const pausar = async () => {
     try {
@@ -365,39 +436,31 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
     }
   }
 
+  const vazio = Object.keys(versao.graph.nodes).length === 0
+
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-surface-700 bg-surface-900 px-4 py-2">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-surface-400 min-w-0">
-          <SeloDoStatus status={jornada.status} />
-          {jornada.publishedVersion ? <span>v{jornada.publishedVersion} publicada{versoes.length > 1 ? ` · ${versoes.map((v) => `${v.count} na v${v.version}`).join(' · ')}` : ''}</span> : <span>Nunca publicada</span>}
-          <span aria-live="polite" className={cn(salvamento === 'erro' && 'text-[var(--color-danger)]')}>
-            {somenteLeitura ? 'Só leitura' : salvamento === 'salvo' ? 'Rascunho salvo' : salvamento === 'erro' ? 'Não salvou: tente de novo' : 'Salvando…'}
-          </span>
-          <span className="hidden lg:inline">Meta: <strong className="font-semibold text-surface-200">{metaTexto}</strong></span>
-          <span className="hidden xl:inline" title="Mensagens da Meta são cobradas à parte, pela tarifa dela.">
-            IA por inscrição: <strong className="font-semibold text-surface-200">{creditosPorInscricao ? `${creditosPorInscricao.toLocaleString('pt-BR')} crédito(s)` : 'zero'}</strong>
-          </span>
-        </div>
-        <div className="ml-auto flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setSelecionado(null)}
-            className={cn('inline-flex items-center gap-1 h-7 px-2 rounded-[7px] text-xs font-semibold', erros.length ? 'text-[var(--color-danger)] bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--color-surface-800))]' : 'text-surface-300 bg-surface-800')}
-            title="Ver a conferência do desenho"
-          >
-            {erros.length ? <CircleAlert className="w-3.5 h-3.5" aria-hidden /> : <TriangleAlert className="w-3.5 h-3.5" aria-hidden />}
-            {erros.length ? `${erros.length} problema(s)` : avisos.length ? `${avisos.length} aviso(s)` : 'Tudo certo'}
-          </button>
-          {!somenteLeitura && (
-            <>
-              <Button variant="ghost" size="sm" iconOnly aria-label="Desfazer (Ctrl+Z)" title="Desfazer (Ctrl+Z)" disabled={!passado.length} onClick={desfazer}><Undo2 className="w-4 h-4" /></Button>
-              <Button variant="ghost" size="sm" iconOnly aria-label="Refazer (Ctrl+Shift+Z)" title="Refazer" disabled={!futuro.length} onClick={refazer}><Redo2 className="w-4 h-4" /></Button>
-              <Button variant="ghost" size="sm" leftIcon={<LayoutGrid className="w-4 h-4" />} onClick={arrumar}>Organizar</Button>
-            </>
+      {/* Barra de ações: uma linha só, sem quebrar. */}
+      <div className="shrink-0 flex items-center gap-3 h-12 border-b border-surface-700 bg-surface-900 px-4">
+        <EstadoDoSalvamento estado={somenteLeitura ? 'leitura' : salvamento} />
+        <span className="h-4 w-px bg-surface-700" aria-hidden />
+        <button
+          type="button"
+          onClick={() => { setSelecionado(null); setPainelAberto(true) }}
+          className={cn(
+            'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[7px] text-[12px] font-semibold transition-colors cursor-pointer',
+            erros.length
+              ? 'text-[var(--color-danger)] bg-[color-mix(in_srgb,var(--color-danger)_12%,var(--color-surface-800))] hover:bg-[color-mix(in_srgb,var(--color-danger)_18%,var(--color-surface-800))]'
+              : avisos.length ? 'text-surface-200 bg-surface-800 hover:bg-[var(--rowhover)]' : 'text-surface-300 hover:bg-[var(--rowhover)]',
           )}
-          <Button variant="secondary" size="sm" leftIcon={<FlaskConical className="w-4 h-4" />} onClick={() => setTestando(true)}>Testar</Button>
-          <Button variant="secondary" size="sm" leftIcon={<Gauge className="w-4 h-4" />} onClick={() => setSimulando(true)}>Simular</Button>
+          title="Ver a conferência do desenho"
+        >
+          {erros.length ? <CircleAlert className="w-3.5 h-3.5" aria-hidden /> : avisos.length ? <TriangleAlert className="w-3.5 h-3.5 text-status-pending" aria-hidden /> : <CircleCheck className="w-3.5 h-3.5 text-status-active" aria-hidden />}
+          {erros.length ? `${erros.length} ${erros.length === 1 ? 'problema' : 'problemas'} para publicar` : avisos.length ? `${avisos.length} ${avisos.length === 1 ? 'aviso' : 'avisos'}` : 'Pronta para publicar'}
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="ghost" size="sm" leftIcon={<FlaskConical className="w-4 h-4" />} onClick={() => setTestando(true)}>Testar</Button>
+          <Button variant="ghost" size="sm" leftIcon={<Gauge className="w-4 h-4" />} onClick={() => setSimulando(true)}>Simular</Button>
           {!somenteLeitura && (jornada.status === 'active' || jornada.status === 'shadow') && (
             <Button variant="secondary" size="sm" leftIcon={<Pause className="w-4 h-4" />} onClick={() => setPausando(true)}>Pausar</Button>
           )}
@@ -409,12 +472,20 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
               {jornada.publishedVersion ? 'Publicar mudanças' : 'Publicar'}
             </Button>
           )}
+          {!somenteLeitura && (
+            <>
+              <span className="h-4 w-px bg-surface-700" aria-hidden />
+              <Button variant="ghost" size="sm" iconOnly aria-label={painelAberto ? 'Esconder o painel' : 'Mostrar o painel'} title={painelAberto ? 'Esconder o painel' : 'Mostrar o painel'} onClick={() => setPainelAberto((a) => !a)}>
+                {painelAberto ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="relative flex flex-1 min-h-0">
+      <div className="relative flex flex-1 min-h-0 overflow-hidden">
         {!somenteLeitura && <Paleta catalogo={catalogo} onAdicionar={(t) => adicionar(t)} />}
-        <div className="relative flex-1 min-w-0" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }} onDrop={onDrop}>
+        <div ref={areaRef} className="relative flex-1 min-w-0" onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }} onDrop={onDrop}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -428,48 +499,64 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
             nodesConnectable={!somenteLeitura}
             deleteKeyCode={somenteLeitura ? null : ['Backspace', 'Delete']}
             colorMode={resolvedTheme}
-            fitView
-            fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
-            minZoom={0.2}
-            maxZoom={1.6}
+            minZoom={0.25}
+            maxZoom={1.5}
             proOptions={{ hideAttribution: true }}
             style={{ background: 'var(--color-surface-950)' }}
           >
-            <Background gap={22} size={1} color="var(--color-surface-700)" />
-            <Controls showInteractive={false} position="bottom-left" />
-            {!somenteLeitura && <MiniMap
-              pannable
-              zoomable
-              position="bottom-right"
-              nodeBorderRadius={6}
-              style={{ width: 168, height: 112 }}
-              bgColor={resolvedTheme === 'light' ? '#FFFFFF' : '#0E1414'}
-              nodeColor={resolvedTheme === 'light' ? '#C9CFDA' : '#3A5050'}
-              maskColor={resolvedTheme === 'light' ? 'rgba(244,246,249,0.65)' : 'rgba(6,9,9,0.6)'}
-            />}
+            <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color="var(--color-surface-700)" />
+            {mapa && (
+              <MiniMap
+                pannable
+                zoomable
+                position="bottom-right"
+                nodeBorderRadius={8}
+                className="!m-4 !rounded-[10px] !border !border-surface-700 overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.28)]"
+                bgColor={resolvedTheme === 'light' ? '#FFFFFF' : '#0E1414'}
+                nodeColor={resolvedTheme === 'light' ? '#C9CFDA' : '#3A5050'}
+                maskColor={resolvedTheme === 'light' ? 'rgba(244,246,249,0.7)' : 'rgba(6,9,9,0.6)'}
+              />
+            )}
           </ReactFlow>
-          {Object.keys(versao.graph.nodes).length === 0 && (
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm text-surface-400">
-              Arraste um passo da paleta para começar, ou clique nele.
+          <ControlesDoCanvas
+            somenteLeitura={somenteLeitura}
+            podeDesfazer={passado.length > 0}
+            podeRefazer={futuro.length > 0}
+            onDesfazer={desfazer}
+            onRefazer={refazer}
+            onOrganizar={() => arrumar(true)}
+            mapa={mapa}
+            onMapa={() => setMapa((m) => !m)}
+          />
+          {vazio && !somenteLeitura && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-20 flex justify-center">
+              <div className="flex items-center gap-2 rounded-[10px] border border-dashed border-surface-600 bg-surface-900 px-4 py-2.5 text-[13px] text-surface-300">
+                <MousePointerClick className="w-4 h-4 text-surface-400" aria-hidden />
+                Arraste um passo da paleta até o canvas, ou clique nele para ligar à Entrada.
+              </div>
             </div>
           )}
         </div>
-        {(!somenteLeitura || selecionado) && <PainelDoPasso
-          className={somenteLeitura ? 'absolute right-0 top-0 bottom-0 z-10 w-full max-w-[360px] shadow-lg' : undefined}
-          versao={versao}
-          selecionado={selecionado}
-          catalogo={catalogo}
-          apoio={apoio}
-          problemas={problemas}
-          nome={nome}
-          descricao={descricao}
-          onMudarVersao={(v) => aplicar(v)}
-          onMudarNome={(n, d) => { setNome(n); setDescricao(d); setSalvamento('pendente') }}
-          onApagar={apagar}
-          onDuplicar={duplicar}
-          onFechar={() => setSelecionado(null)}
-          somenteLeitura={somenteLeitura}
-        />}
+        {((!somenteLeitura && painelAberto) || (somenteLeitura && selecionado)) && (
+          <PainelDoPasso
+            className={somenteLeitura ? 'absolute right-0 top-0 bottom-0 z-10 w-full max-w-[360px] shadow-lg' : undefined}
+            jornada={jornada}
+            versao={versao}
+            selecionado={selecionado}
+            catalogo={catalogo}
+            apoio={apoio}
+            problemas={problemas}
+            nome={nome}
+            descricao={descricao}
+            onMudarVersao={(v) => aplicar(v)}
+            onMudarNome={(n, d) => { setNome(n); setDescricao(d); setSalvamento('pendente') }}
+            onApagar={apagar}
+            onDuplicar={duplicar}
+            onIrAoPasso={(id) => { selecionar(id); irAoPasso(id) }}
+            onFechar={() => setSelecionado(null)}
+            somenteLeitura={somenteLeitura}
+          />
+        )}
       </div>
 
       <TestarJornada
@@ -479,7 +566,7 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
         catalogo={catalogo}
         apoio={apoio}
         onEstado={setTeste}
-        onIrAoPasso={(id) => { setSelecionado(id); const p = versao.graph.layout[id]; if (p) rf.setCenter(p.x + 124, p.y + 60, { zoom: 1, duration: 300 }) }}
+        onIrAoPasso={irAoPasso}
       />
       <SimularJornada open={simulando} onClose={() => setSimulando(false)} jornadaId={jornada.id} versao={versao} apoio={apoio} />
       <PublicarJornada
@@ -503,3 +590,9 @@ function Editor({ jornada, catalogo, apoio, resultados, somenteLeitura, onJornad
   )
 }
 
+function EstadoDoSalvamento({ estado }: { estado: 'salvo' | 'pendente' | 'salvando' | 'erro' | 'leitura' }) {
+  if (estado === 'leitura') return <span className="text-[12px] text-surface-400">Só leitura no celular</span>
+  if (estado === 'erro') return <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--color-danger)]" aria-live="polite"><CloudAlert className="w-4 h-4" aria-hidden />Não foi possível salvar</span>
+  if (estado === 'salvo') return <span className="inline-flex items-center gap-1.5 text-[12px] text-surface-400" aria-live="polite"><CloudCheck className="w-4 h-4" aria-hidden />Rascunho salvo</span>
+  return <span className="inline-flex items-center gap-1.5 text-[12px] text-surface-400" aria-live="polite"><LoaderCircle className="w-4 h-4 animate-spin" aria-hidden />Salvando…</span>
+}

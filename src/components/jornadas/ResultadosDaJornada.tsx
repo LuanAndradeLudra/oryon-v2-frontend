@@ -22,9 +22,9 @@ export function ResultadosDaJornada({ jornada, catalogo, resultados }: { jornada
     return vistos
   }, [jornada.draft.graph])
 
-  if (!resultados) return <div className="px-4 md:px-6 py-4 space-y-2">{[0, 1].map((i) => <SkeletonCard key={i} lines={3} />)}</div>
+  if (!resultados) return <div className="w-full max-w-[1280px] mx-auto px-4 md:px-8 py-6 space-y-2">{[0, 1].map((i) => <SkeletonCard key={i} lines={3} />)}</div>
   if (!resultados.entered) {
-    return <div className="px-4 md:px-6 py-8"><EmptyState icon={ChartColumn} title="Sem resultados ainda" hint="Os números aparecem quando a jornada estiver publicada e alguém entrar." /></div>
+    return <div className="w-full max-w-[1280px] mx-auto px-4 md:px-8 py-10"><EmptyState icon={ChartColumn} title="Sem resultados ainda" hint="Os números aparecem quando a jornada estiver publicada e alguém entrar." /></div>
   }
   const taxa = Math.round((resultados.completedGoal / resultados.entered) * 100)
   const porNo = new Map(resultados.byNode.map((b) => [b.nodeId, b]))
@@ -41,8 +41,8 @@ export function ResultadosDaJornada({ jornada, catalogo, resultados }: { jornada
   const totalRamos = resultados.byBranch.reduce((s, b) => s + b.count, 0) || 1
 
   return (
-    <div className="px-4 md:px-6 py-4 space-y-6 max-w-[1100px]">
-      <p className="text-xs text-surface-400">Últimos 30 dias. Uma inscrição por assunto (por consulta).</p>
+    <div className="w-full max-w-[1280px] mx-auto px-4 md:px-8 py-6 space-y-7">
+      <p className="text-[12.5px] text-surface-400">Últimos 30 dias · uma inscrição por assunto (por consulta).</p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           ['Entraram', numero(resultados.entered), null],
@@ -50,25 +50,25 @@ export function ResultadosDaJornada({ jornada, catalogo, resultados }: { jornada
           ['Saíram', numero(resultados.exited), 'sem meta, com motivo'],
           ['Falharam', numero(resultados.failed), 'erro num passo'],
         ].map(([r, v, s]) => (
-          <div key={r} className="rounded-[10px] bg-surface-800 border border-surface-700 px-4 py-3">
-            <p className="text-[11px] text-surface-500">{r}</p>
-            <p className="text-2xl font-semibold text-surface-50 tabular-nums">{v}</p>
+          <div key={r} className="rounded-[12px] bg-surface-800 border border-surface-700 px-5 py-4">
+            <p className="text-[12px] text-surface-400">{r}</p>
+            <p className="mt-1 text-[26px] leading-8 font-semibold text-surface-50 tabular-nums">{v}</p>
             {s && <p className="text-[11px] text-surface-400">{s}</p>}
           </div>
         ))}
       </div>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-surface-50">Onde as pessoas passam e param</h2>
+      <section className="rounded-[12px] border border-surface-700 bg-surface-800 px-5 py-4 space-y-3">
+        <h2 className="text-[15px] font-semibold text-surface-50">Onde as pessoas passam e param</h2>
         <ul className="space-y-1.5">
           {ordem.map((id) => {
             const b = porNo.get(id)
             const pct = b ? Math.round((b.reached / resultados.entered) * 100) : 0
             return (
-              <li key={id} className="grid grid-cols-[minmax(0,220px)_minmax(0,1fr)_auto] items-center gap-3 text-xs">
+              <li key={id} className="grid grid-cols-[minmax(0,240px)_minmax(0,1fr)_170px] items-center gap-4 text-[12.5px]">
                 <span className="truncate text-surface-200" title={nome(id)}>{nome(id)}</span>
                 <span className="h-2 rounded-full bg-surface-700 overflow-hidden" aria-hidden><span className="block h-full rounded-full bg-[var(--color-accent-blue)]" style={{ width: `${pct}%` }} /></span>
-                <span className="tabular-nums text-surface-300 w-[150px] text-right">{numero(b?.reached ?? 0)} ({pct}%){b?.now ? ` · ${numero(b.now)} agora` : ''}</span>
+                <span className="tabular-nums text-surface-300 text-right">{numero(b?.reached ?? 0)} ({pct}%){b?.now ? ` · ${numero(b.now)} agora` : ''}</span>
               </li>
             )
           })}
@@ -77,8 +77,8 @@ export function ResultadosDaJornada({ jornada, catalogo, resultados }: { jornada
 
       <div className="grid gap-6 md:grid-cols-2">
         {resultados.byBranch.length > 0 && (
-          <section className="space-y-2">
-            <h2 className="text-sm font-semibold text-surface-50">Respostas</h2>
+          <section className="rounded-[12px] border border-surface-700 bg-surface-800 px-5 py-4 space-y-3">
+            <h2 className="text-[15px] font-semibold text-surface-50">Respostas</h2>
             <ul className="space-y-1.5">
               {resultados.byBranch.map((b) => (
                 <li key={`${b.nodeId}:${b.output}`} className="flex items-center justify-between gap-3 rounded-[8px] bg-surface-800 px-3 py-2 text-xs">
@@ -89,8 +89,8 @@ export function ResultadosDaJornada({ jornada, catalogo, resultados }: { jornada
             </ul>
           </section>
         )}
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-surface-50">Motivos de saída</h2>
+        <section className="rounded-[12px] border border-surface-700 bg-surface-800 px-5 py-4 space-y-3">
+          <h2 className="text-[15px] font-semibold text-surface-50">Motivos de saída</h2>
           <ul className="space-y-1.5">
             {resultados.exitReasons.map((x) => (
               <li key={x.reason} className="space-y-1">
@@ -103,8 +103,8 @@ export function ResultadosDaJornada({ jornada, catalogo, resultados }: { jornada
       </div>
 
       {resultados.byVersion.length > 1 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-surface-50">Comparação entre versões</h2>
+        <section className="rounded-[12px] border border-surface-700 bg-surface-800 px-5 py-4 space-y-3">
+          <h2 className="text-[15px] font-semibold text-surface-50">Comparação entre versões</h2>
           <div className="flex flex-wrap gap-3">
             {resultados.byVersion.map((v) => (
               <div key={v.version} className="rounded-[10px] bg-surface-800 border border-surface-700 px-4 py-3 min-w-[160px]">

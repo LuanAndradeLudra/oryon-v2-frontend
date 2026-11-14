@@ -142,7 +142,7 @@ export function PublicarJornada({ open, acao, onClose, jornada, erros, salvarAnt
         )}
 
         {falha && <p className="text-sm text-[var(--color-danger)]">{falha}</p>}
-        <p className="text-[11px] text-surface-500">Duas etapas, como na API v1: a prévia mostra o efeito; só a confirmação publica. No produto, só o admin publica e retoma.</p>
+        <p className="text-[11.5px] text-surface-500">Nada muda antes da confirmação. Só administradores publicam e retomam jornadas.</p>
       </div>
     </Modal>
   )

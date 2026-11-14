@@ -9,9 +9,8 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
-import { jornadasApi, USANDO_DADOS_DE_EXEMPLO } from '@/services/jornadas/jornadasApi'
+import { jornadasApi } from '@/services/jornadas/jornadasApi'
 import { passoDoCatalogo } from '@/services/jornadas/catalogo'
-import { NOMES_PARA_BUSCAR } from '@/services/jornadas/dados-exemplo'
 import type { Catalogo, Inscricao, Jornada, VerificacaoDeEntrada } from '@/services/jornadas/tipos'
 import { Selo, SeloDaInscricao } from './comum'
 import { dataHora, quandoFoi, useCarregar } from './apoio'
@@ -37,12 +36,15 @@ export function PessoasDaJornada({ jornada, catalogo }: { jornada: Jornada; cata
   }
 
   return (
-    <div className="px-4 md:px-6 py-4 space-y-6 max-w-[1200px]">
+    <div className="w-full max-w-[1280px] mx-auto px-4 md:px-8 py-6 space-y-6">
       <PorQueNaoEntrou jornada={jornada} />
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-surface-50">Pessoas na jornada</h2>
+          <div>
+            <h2 className="text-[15px] font-semibold text-surface-50">Pessoas na jornada</h2>
+            <p className="mt-0.5 text-[12.5px] text-surface-400">Clique numa pessoa para ver, passo a passo, o que aconteceu e por quê.</p>
+          </div>
           <SegmentedControl label="Quais inscrições" value={filtro} onChange={setFiltro} options={[
             { value: 'dentro', label: 'Dentro agora' },
             { value: 'encerradas', label: 'Encerradas' },
@@ -52,32 +54,32 @@ export function PessoasDaJornada({ jornada, catalogo }: { jornada: Jornada; cata
         {!inscricoes && <div className="space-y-2">{[0, 1, 2].map((i) => <SkeletonCard key={i} lines={1} />)}</div>}
         {inscricoes && visiveis.length === 0 && <EmptyState icon={Users} title="Ninguém aqui" hint={jornada.status === 'draft' ? 'A jornada ainda não foi publicada.' : 'Nenhuma inscrição neste filtro.'} />}
         {inscricoes && visiveis.length > 0 && (
-          <div className="overflow-x-auto rounded-[10px] border border-surface-700">
+          <div className="overflow-x-auto rounded-[12px] border border-surface-700">
             <table className="w-full min-w-[760px] text-sm">
               <thead>
-                <tr className="text-left text-[11px] text-surface-500 bg-surface-900">
-                  <th className="font-medium px-3 py-2">Pessoa</th>
-                  <th className="font-medium px-3 py-2">Assunto</th>
-                  <th className="font-medium px-3 py-2">Onde está</th>
-                  <th className="font-medium px-3 py-2">Situação</th>
-                  <th className="font-medium px-3 py-2">Entrou</th>
-                  <th className="font-medium px-3 py-2">Próximo passo</th>
+                <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-surface-500 bg-surface-900">
+                  <th className="font-semibold px-4 h-10">Pessoa</th>
+                  <th className="font-semibold px-4 h-10">Assunto</th>
+                  <th className="font-semibold px-4 h-10">Onde está</th>
+                  <th className="font-semibold px-4 h-10">Situação</th>
+                  <th className="font-semibold px-4 h-10">Entrou</th>
+                  <th className="font-semibold px-4 h-10">Próximo passo</th>
                 </tr>
               </thead>
               <tbody>
                 {visiveis.map((i) => (
                   <tr key={i.id} onClick={() => setAberta(i)} className="border-t border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] cursor-pointer">
-                    <td className="px-3 py-2.5">
+                    <td className="px-4 py-3">
                       <button type="button" className="text-left focus-visible:outline-none focus-visible:underline" onClick={(e) => { e.stopPropagation(); setAberta(i) }}>
                         <span className="block font-medium text-surface-50">{i.contact.name}</span>
                         <span className="block text-[11px] text-surface-500">{i.contact.phoneMasked}</span>
                       </button>
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-surface-300">{i.subjectLabel}</td>
-                    <td className="px-3 py-2.5 text-xs text-surface-200">{i.currentNodeId ? nomeDoPasso(i.currentNodeId) : <span className="text-surface-500">saiu</span>}<span className="ml-1.5 text-[10.5px] text-surface-500">v{i.version}</span></td>
-                    <td className="px-3 py-2.5"><SeloDaInscricao status={i.status} shadow={i.shadow} /></td>
-                    <td className="px-3 py-2.5 text-xs text-surface-400 tabular-nums">{quandoFoi(i.enteredAt)}</td>
-                    <td className="px-3 py-2.5 text-xs text-surface-400 tabular-nums">{i.nextWakeAt ? quandoFoi(i.nextWakeAt) : '—'}</td>
+                    <td className="px-4 py-3 text-xs text-surface-300">{i.subjectLabel}</td>
+                    <td className="px-4 py-3 text-xs text-surface-200">{i.currentNodeId ? nomeDoPasso(i.currentNodeId) : <span className="text-surface-500">saiu</span>}<span className="ml-1.5 text-[10.5px] text-surface-500">v{i.version}</span></td>
+                    <td className="px-4 py-3"><SeloDaInscricao status={i.status} shadow={i.shadow} /></td>
+                    <td className="px-4 py-3 text-xs text-surface-400 tabular-nums">{quandoFoi(i.enteredAt)}</td>
+                    <td className="px-4 py-3 text-xs text-surface-400 tabular-nums">{i.nextWakeAt ? quandoFoi(i.nextWakeAt) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -169,10 +171,10 @@ function PorQueNaoEntrou({ jornada }: { jornada: Jornada }) {
   }
 
   return (
-    <section className="rounded-[10px] border border-surface-700 bg-surface-800 px-4 py-3 space-y-3">
+    <section className="rounded-[12px] border border-surface-700 bg-surface-800 px-5 py-4 space-y-3">
       <div>
-        <h2 className="text-sm font-semibold text-surface-50">Por que não entrou?</h2>
-        <p className="text-xs text-surface-400">Busque um contato e veja, em cada porta, o que aconteceu nos últimos 14 dias.</p>
+        <h2 className="text-[15px] font-semibold text-surface-50">Por que não entrou?</h2>
+        <p className="mt-0.5 text-[12.5px] text-surface-400">Busque um contato e veja, em cada porta, o que aconteceu nos últimos 14 dias.</p>
       </div>
       <form onSubmit={procurar} className="flex gap-2 max-w-[520px]">
         <div className="relative flex-1">
@@ -181,10 +183,7 @@ function PorQueNaoEntrou({ jornada }: { jornada: Jornada }) {
         </div>
         <Button size="sm" type="submit" loading={buscando}>Ver</Button>
       </form>
-      {USANDO_DADOS_DE_EXEMPLO && resultado === undefined && (
-        <p className="text-[11px] text-surface-500">No exemplo, tente: {NOMES_PARA_BUSCAR.join(', ')}.</p>
-      )}
-      {resultado === null && <p className="text-xs text-surface-400">Nenhuma passagem desse contato pelas portas desta jornada nos últimos 14 dias.</p>}
+      {resultado === null && <p className="text-[12.5px] text-surface-400">Nenhuma passagem desse contato pelas portas desta jornada nos últimos 14 dias.</p>}
       {resultado && (
         <div className="space-y-2">
           <p className="text-xs text-surface-300"><strong className="text-surface-100">{resultado.contact.name}</strong> · {resultado.contact.phoneMasked}</p>

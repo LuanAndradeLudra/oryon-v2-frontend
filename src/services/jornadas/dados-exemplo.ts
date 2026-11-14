@@ -469,7 +469,6 @@ export function porQueNaoEntrouDeExemplo(journey: Jornada, busca: string): { con
   }
 }
 
-export const NOMES_PARA_BUSCAR = Object.values(NAO_ENTROU).map((x) => x.nome)
 
 export function resultadosDeExemplo(journey: Jornada): ResultadosDaJornada {
   const ids = Object.keys(journey.draft.graph.nodes)

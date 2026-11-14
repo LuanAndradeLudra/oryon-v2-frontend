@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Route, TriangleAlert as AlertTriangleIcon } from 'lucide-react'
+import { ChevronRight, CircleCheck, Plus, Route, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Tabs } from '@/components/ui/Tabs'
@@ -10,19 +10,23 @@ import { SkeletonCard } from '@/components/ui/Skeleton'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { cn } from '@/lib/utils'
 import { jornadasApi } from '@/services/jornadas/jornadasApi'
 import type { ResumoDaJornada, StatusDaJornada } from '@/services/jornadas/tipos'
-import { AvisoDeExemplo, SeloDoStatus } from '@/components/jornadas/comum'
+import { SeloDoStatus } from '@/components/jornadas/comum'
 import { numero, quandoFoi, useCarregar } from '@/components/jornadas/apoio'
 import { GaleriaDeReceitas } from '@/components/jornadas/GaleriaDeReceitas'
 
 /**
- * ORY-60 — Jornadas (no lugar do módulo de Automações). Lista e galeria de
- * receitas. Dados de exemplo até a ORY-62 ligar a API (`jornadasApi`).
+ * ORY-60 — Jornadas (no lugar do módulo de Automações): a lista, em tabela com
+ * colunas alinhadas e um cabeçalho só, e a galeria de receitas.
  */
 
 type Filtro = 'todas' | 'active' | 'shadow' | 'draft' | 'paused'
 type Aba = 'minhas' | 'receitas'
+
+/** As colunas da tabela (cabeçalho e linhas usam a mesma grade). */
+const GRADE = 'md:grid md:grid-cols-[minmax(0,1fr)_104px_104px_120px_128px_112px_20px] md:items-center md:gap-x-5'
 
 export function JornadasPage() {
   const isMobile = useIsMobile()
@@ -42,17 +46,16 @@ export function JornadasPage() {
   return (
     <div className="flex flex-col h-full w-full bg-surface-950 overflow-y-auto">
       {isMobile && <MobilePageHeader title="Jornadas" />}
-      <main className="flex-1 px-4 md:px-6 pt-4 md:pt-6 pb-8 space-y-4 w-full min-w-0">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <p className="text-sm text-surface-400 max-w-[720px]">
-            Caminhos no tempo: mandar, esperar a resposta, decidir, avisar alguém e parar quando o objetivo for atingido. Cada jornada mostra quem está em cada passo e por quê.
+      <main className="flex-1 w-full max-w-[1280px] mx-auto px-4 md:px-8 pt-5 md:pt-7 pb-10 space-y-5 min-w-0">
+        {/* O título "Jornadas" já está na barra do topo do app, como nas outras telas. */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="min-w-0 max-w-[680px] text-[13.5px] leading-relaxed text-surface-400">
+            Automações em etapas: mandar, esperar a resposta, decidir, avisar alguém e parar quando o objetivo for atingido.
           </p>
           <Button leftIcon={<Plus className="w-4 h-4" aria-hidden />} onClick={() => (isMobile ? setGateAberto(true) : setAba('receitas'))}>
             Nova jornada
           </Button>
         </div>
-
-        <AvisoDeExemplo onRestaurado={recarregar} />
 
         <Tabs
           label="Jornadas"
@@ -60,7 +63,7 @@ export function JornadasPage() {
           onChange={setAba}
           tabs={[
             { id: 'minhas', label: 'Minhas jornadas', count: jornadas?.length },
-            { id: 'receitas', label: 'Galeria de receitas' },
+            { id: 'receitas', label: 'Começar por uma receita' },
           ]}
         />
 
@@ -71,7 +74,7 @@ export function JornadasPage() {
             <GaleriaDeReceitas />
           )
         ) : (
-          <>
+          <div className="space-y-4">
             <SegmentedControl
               label="Filtrar jornadas"
               value={filtro}
@@ -94,16 +97,25 @@ export function JornadasPage() {
               <EmptyState
                 icon={Route}
                 title={filtro === 'todas' ? 'Nenhuma jornada ainda' : 'Nenhuma jornada neste filtro'}
-                hint="Comece por uma receita da galeria: a confirmação de consulta já vem pronta."
-                action={{ label: 'Ver a galeria', onClick: () => setAba('receitas') }}
+                hint="Comece por uma receita: a confirmação de consulta já vem pronta para ajustar."
+                action={{ label: 'Ver as receitas', onClick: () => setAba('receitas') }}
               />
             )}
             {jornadas && visiveis.length > 0 && (
-              <ul className="space-y-2">
+              <div className="rounded-[12px] border border-surface-700 overflow-hidden" role="table" aria-label="Jornadas">
+                <div role="row" className={cn('hidden px-5 h-10 bg-surface-900 text-[11px] font-semibold uppercase tracking-[0.06em] text-surface-500', GRADE)}>
+                  <span role="columnheader">Jornada</span>
+                  <span role="columnheader" className="text-right" title="Pessoas andando ou esperando num passo">Dentro agora</span>
+                  <span role="columnheader" className="text-right" title="Das inscrições encerradas nos últimos 30 dias">Bateu a meta</span>
+                  <span role="columnheader" className="text-right">Mensagens/mês</span>
+                  <span role="columnheader">Saúde (24 h)</span>
+                  <span role="columnheader">Atividade</span>
+                  <span aria-hidden />
+                </div>
                 {visiveis.map((j) => <LinhaDaJornada key={j.id} j={j} onAbrir={() => navigate(`/jornadas/${j.id}`)} />)}
-              </ul>
+              </div>
             )}
-          </>
+          </div>
         )}
       </main>
       <MobileFeatureGate
@@ -116,15 +128,6 @@ export function JornadasPage() {
   )
 }
 
-function Metrica({ rotulo, valor, dica }: { rotulo: string; valor: React.ReactNode; dica?: string }) {
-  return (
-    <div className="min-w-0" title={dica}>
-      <p className="text-[11px] text-surface-500">{rotulo}</p>
-      <p className="text-sm font-semibold text-surface-100 tabular-nums">{valor}</p>
-    </div>
-  )
-}
-
 const FRASE_DO_STATUS: Partial<Record<StatusDaJornada, string>> = {
   shadow: 'Rodando em sombra: nada é enviado.',
   paused: 'Pausada: ninguém novo entra.',
@@ -133,34 +136,48 @@ const FRASE_DO_STATUS: Partial<Record<StatusDaJornada, string>> = {
 
 function LinhaDaJornada({ j, onAbrir }: { j: ResumoDaJornada; onAbrir: () => void }) {
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onAbrir}
-        className="w-full text-left rounded-[10px] border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] hover:border-[var(--bd2)] px-4 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-8"
-      >
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm font-semibold text-surface-50">{j.name}</span>
-            <SeloDoStatus status={j.status} />
-            {j.publishedVersion && <span className="text-[11px] text-surface-500">v{j.publishedVersion}</span>}
-            {j.hasDraftChanges && j.publishedVersion && <span className="text-[11px] text-surface-400">· rascunho com mudanças</span>}
-          </div>
-          <p className="mt-0.5 text-xs text-surface-400 truncate">{j.description || FRASE_DO_STATUS[j.status] || '—'}</p>
+    <button
+      type="button"
+      role="row"
+      onClick={onAbrir}
+      className={cn(
+        'group w-full text-left border-t border-surface-700 first:border-t-0 bg-surface-800 hover:bg-[var(--rowhover)] px-5 py-3.5 transition-colors cursor-pointer',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500',
+        GRADE,
+      )}
+    >
+      <div role="cell" className="min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="truncate text-[14px] font-semibold text-surface-50">{j.name}</span>
+          <SeloDoStatus status={j.status} />
+          {j.publishedVersion && <span className="shrink-0 text-[11.5px] text-surface-500">v{j.publishedVersion}</span>}
         </div>
-        <div className="mt-3 md:mt-0 grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-2 md:w-[560px]">
-          <Metrica rotulo="Dentro agora" valor={numero(j.enrolledNow)} dica="Pessoas andando ou esperando num passo." />
-          <Metrica rotulo="Bateu a meta" valor={j.goalRate30d === null ? '—' : `${j.goalRate30d}%`} dica="Das inscrições encerradas nos últimos 30 dias." />
-          <Metrica rotulo="Mensagens no mês" valor={numero(j.messagesThisMonth)} />
-          <Metrica
-            rotulo="Saúde (24 h)"
-            valor={j.errors24h > 0
-              ? <span className="inline-flex items-center gap-1 text-status-pending"><AlertTriangleIcon className="w-3.5 h-3.5" aria-hidden />{j.errors24h} erro{j.errors24h > 1 ? 's' : ''}</span>
-              : <span className="text-surface-300">Sem erros</span>}
-          />
-          <Metrica rotulo="Última atividade" valor={<span className="font-normal text-surface-300">{quandoFoi(j.lastActivityAt)}</span>} />
-        </div>
-      </button>
-    </li>
+        <p className="mt-0.5 truncate text-[12.5px] text-surface-400">
+          {j.hasDraftChanges && j.publishedVersion ? 'Rascunho com mudanças ainda não publicadas · ' : ''}{j.description || FRASE_DO_STATUS[j.status] || '—'}
+        </p>
+      </div>
+      {/* No celular, as métricas viram uma linha de rótulo + valor. */}
+      <div className="mt-3 grid grid-cols-3 gap-3 md:contents">
+        <Celula rotulo="Dentro agora" alinhamento="direita">{numero(j.enrolledNow)}</Celula>
+        <Celula rotulo="Bateu a meta" alinhamento="direita">{j.goalRate30d === null ? <span className="text-surface-500">—</span> : `${j.goalRate30d}%`}</Celula>
+        <Celula rotulo="Mensagens/mês" alinhamento="direita">{numero(j.messagesThisMonth)}</Celula>
+        <Celula rotulo="Saúde (24 h)">
+          {j.errors24h > 0
+            ? <span className="inline-flex items-center gap-1.5 text-status-pending"><TriangleAlert className="w-3.5 h-3.5" aria-hidden />{j.errors24h} {j.errors24h > 1 ? 'erros' : 'erro'}</span>
+            : <span className="inline-flex items-center gap-1.5 text-surface-300"><CircleCheck className="w-3.5 h-3.5 text-status-active" aria-hidden />Sem erros</span>}
+        </Celula>
+        <Celula rotulo="Atividade"><span className="font-normal text-surface-300">{quandoFoi(j.lastActivityAt)}</span></Celula>
+      </div>
+      <ChevronRight className="hidden md:block w-4 h-4 text-surface-500 group-hover:text-surface-200 transition-colors" aria-hidden />
+    </button>
+  )
+}
+
+function Celula({ rotulo, alinhamento, children }: { rotulo: string; alinhamento?: 'direita'; children: React.ReactNode }) {
+  return (
+    <div role="cell" className={cn('min-w-0', alinhamento === 'direita' && 'md:text-right')}>
+      <p className="md:hidden text-[11px] text-surface-500">{rotulo}</p>
+      <p className="text-[13.5px] font-semibold text-surface-100 tabular-nums whitespace-nowrap">{children}</p>
+    </div>
   )
 }

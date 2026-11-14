@@ -32,7 +32,7 @@ Este README diz o que é de exemplo, o que trocar e onde cada tela busca os dado
 ## Como ligar o backend (ORY-62)
 
 1. Crie `jornadasApiReal` em `jornadasApi.ts`, com as **mesmas assinaturas** de `JornadasApi`, chamando as rotas da tabela abaixo pelo cliente HTTP do app.
-2. Troque a linha `export const jornadasApi: JornadasApi = jornadasApiDeExemplo` por `jornadasApiReal`. O aviso "Protótipo com dados de exemplo" some sozinho.
+2. Troque a linha `export const jornadasApi: JornadasApi = jornadasApiDeExemplo` por `jornadasApiReal`. As telas já estão no visual final: nenhuma delas indica que os dados são de exemplo.
 3. Troque `CATALOGO_EXEMPLO` (que o `validar.ts` e o editor usam) pelo catálogo lido da API.
 4. Apague `dados-exemplo.ts` e a função `restaurarExemplos`.
 
@@ -83,7 +83,7 @@ Há dois jeitos:
   - Arquivos: `jornadas-previa.html` e `src/demo/jornadas/`. Eles não entram no build, porque o `vite.config.ts` só empacota `index.html` e `demo.html`.
 - **No app de verdade:** entre com um supervisor ou admin e abra **Jornadas** no menu (ou `/jornadas`).
   - O que você muda fica guardado no navegador (`localStorage`, chave `oryon.jornadas.exemplo.v1`).
-  - O botão "Restaurar exemplos", no aviso do topo, volta tudo ao início.
+  - Para voltar aos exemplos, apague essa chave no navegador (não há botão na tela).
 
 Roteiro rápido para ver tudo:
 1. **Reduzir faltas — confirmação de consulta:**
