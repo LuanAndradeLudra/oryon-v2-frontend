@@ -7,6 +7,7 @@ import {
   Send,
   Megaphone,
   Workflow,
+  Route,
   MessagesSquare,
   Bot,
   ShieldCheck,
@@ -256,6 +257,8 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     // SCRUM-1107: casca visual da tela de Agendamentos (rota+flag já
     // existiam, só faltava o item de menu).
     { icon: <Megaphone className="w-[16.5px] h-[16.5px]" />, label: 'Marketing',   href: '/marketing' },
+    // ORY-60: Jornadas, no lugar das Automações (ocultas pela flag de rota desde 02/09).
+    { icon: <Route className="w-[16.5px] h-[16.5px]" />,      label: 'Jornadas',    href: '/jornadas' },
     { icon: <Workflow className="w-[16.5px] h-[16.5px]" />,   label: 'Automações',  href: '/automations' },
     { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
     { icon: <CopilotMark className="w-[16.5px] h-[16.5px]" />,   label: 'Copilot AI', href: '/copilot',

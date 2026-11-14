@@ -54,6 +54,7 @@ const SECTIONS: Section[] = [
       { href: '/dashboard', label: 'Dashboard', description: 'KPIs e relatorios', Icon: BarChart3 },
       { href: '/campaigns', label: 'Disparos', description: 'Campanhas em massa', Icon: Send },
       { href: '/marketing', label: 'Marketing', description: 'Meta Ads e funil', Icon: Megaphone },
+      { href: '/jornadas', label: 'Jornadas', description: 'Acompanhar as automacoes por jornada', Icon: Workflow },
       { href: '/automations', label: 'Automacoes', description: 'Fluxos automaticos', Icon: Workflow },
       { href: '/agents', label: 'Agentes IA', description: 'Assistentes autonomos', Icon: Bot },
       { href: '/copilot', label: 'Copilot AI', description: 'Analise com IA', Icon: Sparkles },

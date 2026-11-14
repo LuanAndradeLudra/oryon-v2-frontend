@@ -1,4 +1,4 @@
-import { isAdminTier } from '@/lib/roleHelpers'
+import { isAdminTier, isSupervisorOrAbove } from '@/lib/roleHelpers'
 
 /**
  * Rotas que dependem do PAPEL ou de flag da EMPRESA, além da flag global de
@@ -20,5 +20,7 @@ export function rotaPermitida(href: string, ctx: { role?: string | null; multiPi
   // Retomadas (06/11): os planos de ação têm o nome dos pacientes — só os admins da unidade (D2).
   if (caminho === '/planos' || caminho.startsWith('/planos/')) return isAdminTier(ctx.role)
   if (caminho === '/pipelines' || caminho.startsWith('/pipelines/')) return ctx.multiPipeline
+  // ORY-60: Jornadas — o supervisor monta e pausa, só o admin publica (decisão 12). A trava fina por ação vem com a API (ORY-62).
+  if (caminho === '/jornadas' || caminho.startsWith('/jornadas/')) return isSupervisorOrAbove(ctx.role)
   return true
 }

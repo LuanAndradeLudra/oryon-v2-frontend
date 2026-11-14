@@ -84,6 +84,9 @@ const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m
 const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
 const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
 const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
+// ORY-60: Jornadas (protótipo com dados de exemplo até a ORY-62 ligar a API).
+const JornadasPage      = lazyRoute(() => import('@/pages/JornadasPage').then(m => ({ default: m.JornadasPage })))
+const JornadaPage       = lazyRoute(() => import('@/pages/JornadaPage').then(m => ({ default: m.JornadaPage })))
 const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
@@ -454,6 +457,12 @@ function AnimatedRoutes() {
           } />
           <Route path="/automations" element={
             <ProtectedRoute><RotaPorPapel><AutomationsPage /></RotaPorPapel></ProtectedRoute>
+          } />
+          <Route path="/jornadas" element={
+            <ProtectedRoute><RotaPorPapel><JornadasPage /></RotaPorPapel></ProtectedRoute>
+          } />
+          <Route path="/jornadas/:id" element={
+            <ProtectedRoute><RotaPorPapel><JornadaPage /></RotaPorPapel></ProtectedRoute>
           } />
           <Route path="/team" element={
             <ProtectedRoute><RotaPorPapel><TeamChatPage /></RotaPorPapel></ProtectedRoute>
