@@ -1,0 +1,231 @@
+/*
+ * ORY-60 — movimento das telas de Jornadas.
+ * Curto (150–320 ms), com saída suave, só transform e opacity (não pesa no canvas).
+ * Quem pede "reduzir movimento" no sistema não vê animação nenhuma.
+ */
+
+@keyframes jornadas-aparecer {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes jornadas-surgir {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes jornadas-barra {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes jornadas-desvanecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes jornadas-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent-violet) 45%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-accent-violet) 0%, transparent); }
+}
+
+/*
+ * Paleta das Jornadas: pares SÓLIDOS (fundo + texto) por tom e por tema.
+ * Suaves e puxados para o cinza da superfície, sem translucidez e sem borda
+ * colorida; texto na mesma família, com contraste de 4,5:1 ou mais.
+ * Categorias: mensagem = verde, conversa = azul, controle = âmbar, CRM = rosa,
+ * sistema = ardósia, IA = violeta, entrada = teal.
+ */
+:root {
+  /* Superfícies do editor (16/11). No escuro, cada uma é a cor que já era; no claro, o desenho fica num
+     palco cinza e a moldura da tela (cabeçalho, painel, lista, menus) fica branca. */
+  --jt-canvas: var(--color-surface-950);     /* o fundo do desenho */
+  --jt-moldura: var(--color-surface-900);    /* cabeçalho, painel, lista, menus e faixas do canvas */
+  --jt-poco: var(--color-surface-800);       /* caixas de leitura dentro do painel (resumos, prévias, avisos) */
+  --jt-opcao: var(--color-surface-800);      /* opção não escolhida (pílulas, cartões de escolha, filtros) */
+  --jt-borda-opcao: transparent;             /* o contorno dela */
+  --jt-borda-campo: var(--color-surface-700);/* campos de busca feitos à mão (os do ui/ usam --bd2) */
+  --jt-trilho: var(--color-surface-800);     /* trilhos de progresso e do seletor de duas opções */
+  --jt-verde-fundo: #1C3326;
+  --jt-verde-sobre: #9DD9B4;
+  --jt-azul-fundo: #1C2A3F;
+  --jt-azul-sobre: #A8C4F0;
+  --jt-ambar-fundo: #3A3022;
+  --jt-ambar-sobre: #E2C38E;
+  --jt-rosa-fundo: #3A2029;
+  --jt-rosa-sobre: #EFA9BC;
+  --jt-ardosia-fundo: #243037;
+  --jt-ardosia-sobre: #B3C2CC;
+  --jt-violeta-fundo: #2A2340;
+  --jt-violeta-sobre: #C6B4F4;
+  --jt-teal-fundo: #163330;
+  --jt-teal-sobre: #8ED9CC;
+  --jt-cinza-fundo: #252D2D;
+  --jt-cinza-sobre: #C2CACA;
+  --jt-vermelho-fundo: #3A2222;
+  --jt-vermelho-sobre: #F2A7A7;
+  /* O "nó" dos ícones (o ponto da órbita) e o traço dos ícones originais: a cor viva da categoria. */
+  --jt-verde-no: #3CCB86;
+  --jt-azul-no: #6AA2F7;
+  --jt-ambar-no: #F1B54E;
+  --jt-rosa-no: #F06C92;
+  --jt-ardosia-no: #93AFC0;
+  --jt-violeta-no: #A386F7;
+  --jt-teal-no: #2DD4BF;
+  --jt-cinza-no: #8FA5A5;
+}
+
+[data-theme='light'] {
+  /* Superfícies do editor no claro (16/11): canvas #EDF0F4 e moldura branca (1,14:1 entre eles, mais a borda
+     e a sombra). As caixas de leitura usam o palco das outras telas (#F4F6F9); a opção não escolhida fica
+     branca com contorno neutro, para não se confundir com a escolhida (tom sólido da categoria). Campos
+     com borda #858D9C: 3,3:1 no branco e 3,1:1 no poço (mínimo de 3:1 para identificar um controle). */
+  --jt-canvas: #EDF0F4;
+  --jt-moldura: #FFFFFF;
+  --jt-poco: #F4F6F9;
+  --jt-opcao: #FFFFFF;
+  --jt-borda-opcao: #C9CFDA;
+  --jt-borda-campo: #858D9C;
+  --jt-trilho: #E3E7EE;
+  /* Borda dos cartões dos passos no canvas: cinza neutro mais escuro que o divisor do claro (#C9CFDA), pedido do João 16/11. */
+  --jt-borda-passo: #A9ADB5;
+  --jt-verde-no: #16A35F;
+  --jt-azul-no: #2F6FE0;
+  --jt-ambar-no: #C9820E;
+  --jt-rosa-no: #D93D6A;
+  --jt-ardosia-no: #557386;
+  --jt-violeta-no: #6E4BDB;
+  --jt-teal-no: #0D9488;
+  --jt-cinza-no: #6B7385;
+  --jt-verde-fundo: #E1F0E6;
+  --jt-verde-sobre: #1D5A39;
+  --jt-azul-fundo: #E2EBF7;
+  --jt-azul-sobre: #1E4A86;
+  --jt-ambar-fundo: #F3EAD9;
+  --jt-ambar-sobre: #6E4E1C;
+  --jt-rosa-fundo: #F6E2E7;
+  --jt-rosa-sobre: #8A2B45;
+  --jt-ardosia-fundo: #E5EAEE;
+  --jt-ardosia-sobre: #33444E;
+  --jt-violeta-fundo: #EBE6F7;
+  --jt-violeta-sobre: #4A3590;
+  --jt-teal-fundo: #DCF0EC;
+  --jt-teal-sobre: #155D53;
+  --jt-cinza-fundo: #ECEFF2;
+  --jt-cinza-sobre: #3B4650;
+  --jt-vermelho-fundo: #F8E3E3;
+  --jt-vermelho-sobre: #8E2626;
+}
+
+.jt-verde { background-color: var(--jt-verde-fundo); color: var(--jt-verde-sobre); }
+.jt-texto-verde { color: var(--jt-verde-sobre); }
+.jt-azul { background-color: var(--jt-azul-fundo); color: var(--jt-azul-sobre); }
+.jt-texto-azul { color: var(--jt-azul-sobre); }
+.jt-ambar { background-color: var(--jt-ambar-fundo); color: var(--jt-ambar-sobre); }
+.jt-texto-ambar { color: var(--jt-ambar-sobre); }
+.jt-rosa { background-color: var(--jt-rosa-fundo); color: var(--jt-rosa-sobre); }
+.jt-texto-rosa { color: var(--jt-rosa-sobre); }
+.jt-ardosia { background-color: var(--jt-ardosia-fundo); color: var(--jt-ardosia-sobre); }
+.jt-texto-ardosia { color: var(--jt-ardosia-sobre); }
+.jt-violeta { background-color: var(--jt-violeta-fundo); color: var(--jt-violeta-sobre); }
+.jt-texto-violeta { color: var(--jt-violeta-sobre); }
+.jt-teal { background-color: var(--jt-teal-fundo); color: var(--jt-teal-sobre); }
+.jt-texto-teal { color: var(--jt-teal-sobre); }
+.jt-cinza { background-color: var(--jt-cinza-fundo); color: var(--jt-cinza-sobre); }
+.jt-texto-cinza { color: var(--jt-cinza-sobre); }
+.jt-vermelho { background-color: var(--jt-vermelho-fundo); color: var(--jt-vermelho-sobre); }
+.jt-texto-vermelho { color: var(--jt-vermelho-sobre); }
+
+/* No cartão escolhido (fundo do tom), as iniciais ganham a superfície para não sumir. */
+.jt-escolhido .jt-iniciais { background-color: var(--color-surface-900); }
+
+/* Entrada de listas, cartões e itens (use com animation-delay para escalonar). */
+.jornadas-aparecer { animation: jornadas-aparecer 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.jornadas-surgir { animation: jornadas-surgir 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.jornadas-barra { transform-origin: left center; animation: jornadas-barra 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.jornadas-pulso { animation: jornadas-pulso 1.6s ease-in-out infinite; }
+/* O "+" onde o passo novo vai entrar, com a lista de passos aberta (painéis encaixados, prévia 16/11). */
+@keyframes jornadas-pulso-marca {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand-500) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-brand-500) 0%, transparent); }
+}
+.jornadas-pulso-marca { animation: jornadas-pulso-marca 1.6s ease-in-out infinite; }
+
+/* Canvas: ligações mudam de cor com suavidade; o "+" das ligações cresce no hover. */
+.jornadas-canvas .react-flow__edge-path { transition: stroke 0.2s ease, stroke-width 0.2s ease; }
+.jornadas-canvas .react-flow__edge.selected .react-flow__edge-path { stroke-width: 2; }
+.jornadas-canvas .react-flow__handle { transition: transform 0.15s ease, background-color 0.15s ease; }
+.jornadas-canvas .react-flow__handle:hover { transform: translate(-50%, 50%) scale(1.35); }
+.jornadas-canvas .react-flow__handle.react-flow__handle-top:hover { transform: translate(-50%, -50%) scale(1.35); }
+.jornadas-canvas .react-flow__pane { cursor: default; }
+
+/*
+ * Entrada no canvas: o desenho só aparece depois de enquadrado (sem "pulo"),
+ * os cartões surgem de cima para baixo (o editor põe --jornadas-atraso em cada
+ * nó) e as ligações aparecem logo depois deles.
+ */
+.jornadas-canvas .react-flow__node .jornadas-surgir { animation-delay: var(--jornadas-atraso, 0ms); }
+.jornadas-canvas .react-flow__edges { animation: jornadas-desvanecer 0.45s ease-out 0.18s both; }
+.jornadas-canvas--preparando .react-flow__viewport { opacity: 0; }
+.jornadas-canvas--preparando .react-flow__node .jornadas-surgir,
+.jornadas-canvas--preparando .react-flow__edges { animation-play-state: paused; }
+
+/* O fundo pontilhado do canvas, para o "Abrindo a jornada…" já ter a cara do editor. */
+.jornadas-fundo-do-canvas {
+  background-color: var(--jt-canvas);
+  background-image: radial-gradient(var(--color-surface-700) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+.jornadas-canvas .react-flow__pane.dragging { cursor: grabbing; }
+
+/* Seleção por arrasto (16/11). Com a seta, o fundo tem o cursor comum (como a área de trabalho) e vira mão
+   só com o Espaço apertado. A caixa de arrastar fica na cor da marca; o retângulo que o React Flow põe em
+   volta do grupo some: os cartões escolhidos já têm o anel, e clicar entre eles volta a ser clicar no fundo. */
+.jornadas-canvas--seta .react-flow__pane,
+.jornadas-canvas--seta .react-flow__pane.selection { cursor: default; }
+.jornadas-canvas--seta .react-flow__pane.draggable { cursor: grab; }
+.jornadas-canvas--seta .react-flow__pane.dragging { cursor: grabbing; }
+.jornadas-canvas .react-flow {
+  --xy-selection-background-color: color-mix(in srgb, var(--color-brand-500) 10%, transparent);
+  --xy-selection-border: 1px solid color-mix(in srgb, var(--color-brand-500) 70%, transparent);
+}
+.jornadas-canvas .react-flow__nodesselection-rect { display: none; }
+
+/* Claro: o painel encaixado ganha uma sombra curta para o lado do desenho (lê-se como uma camada por cima),
+   e os campos dos painéis (ui/Input, Select, Textarea usam --bd2) passam a 3:1. */
+[data-theme='light'] .jt-vaga-do-painel { box-shadow: -10px 0 24px -14px rgba(15, 23, 42, 0.22); }
+[data-theme='light'] .jt-painel { --bd2: #858D9C; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jornadas-aparecer, .jornadas-surgir, .jornadas-barra, .jornadas-pulso, .jornadas-pulso-marca, .jornadas-canvas .react-flow__edges { animation: none !important; }
+  .jornadas-canvas .react-flow__edge-path, .jornadas-canvas .react-flow__handle { transition: none !important; }
+}
+
+/*
+ * Ícones dos passos (IconeDoPasso.tsx): estilo "Sem fundo". O desenho novo tem
+ * traço neutro e o nó na cor da categoria; o original (Lucide) vai todo na cor
+ * da categoria. O selo da marca fica no canto de cima, com um anel na cor do
+ * fundo onde está (--jt-fundo-selo), para separar sem virar uma linha clara.
+ */
+.jt-ip { position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center; }
+.jt-ip-m { width: 32px; height: 32px; }
+.jt-ip-g { width: 40px; height: 40px; }
+.jt-ip-p { width: 16px; height: 16px; }
+.jt-ip-svg { flex: none; width: 20px; height: 20px; }
+.jt-ip-g .jt-ip-svg { width: 24px; height: 24px; }
+.jt-ip-p .jt-ip-svg { width: 16px; height: 16px; }
+.jt-ip-novo { fill: none; stroke: var(--color-surface-200); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.jt-ip-novo .jt-no { fill: var(--jt-no-cor); stroke: none; }
+.jt-ip-novo .jt-cheio { fill: var(--color-surface-200); stroke: none; }
+.jt-ip-original { color: var(--jt-no-cor); stroke-width: 1.9; }
+
+.jt-selo { position: absolute; top: -3px; right: -3px; display: inline-flex; width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 0 2px var(--jt-fundo-selo, var(--color-surface-800)); }
+.jt-ip-g .jt-selo { width: 18px; height: 18px; top: -2px; right: -2px; }
+.jt-selo-quadrado { border-radius: 26%; }
+.jt-selo-img { width: 100%; height: 100%; object-fit: cover; border-radius: 26%; }
+.jt-selo-oryon { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; background: #EAF7F4; }
+.jt-selo-oryon svg { width: 62%; height: 62%; }
+.jt-oryon-mono { display: none; }
+[data-theme='light'] .jt-selo-oryon { background: var(--color-surface-950); color: var(--color-surface-50); }
+[data-theme='light'] .jt-oryon-cor { display: none; }
+[data-theme='light'] .jt-oryon-mono { display: block; }

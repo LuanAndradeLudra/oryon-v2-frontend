@@ -3,6 +3,8 @@ import {
   BellRing, Bot, CalendarCheck2, CalendarClock, CheckCheck, ClipboardList, Cpu, DoorOpen, Hand, HandHeart, Hourglass,
   LogOut, MailQuestionMark, MessageSquare, MessageSquareText, Milestone, PlugZap, RotateCcw, ShieldCheck, Sparkles, Split, SquareKanban,
   Star, StickyNote, Tag, Target, Trophy, UserPlus, UserRound, Webhook, Workflow, type LucideIcon,
+  Building2, KeyRound, ReceiptText, ShoppingBag, FolderOpen, Landmark, FileText, Scale,
+  NotebookPen, PencilLine, Route, ScanText, Shuffle,
 } from 'lucide-react'
 import type { StatusDaJornada } from '@/services/jornadas/tipos'
 
@@ -14,6 +16,8 @@ const ICONES: Record<string, LucideIcon> = {
   MessageSquareText, MessageSquare, BellRing, StickyNote, Hand, Bot, UserRound, CheckCheck, Tag, Milestone, UserPlus, SquareKanban,
   PlugZap, Webhook, Hourglass, MailQuestionMark, Split, Trophy, LogOut, Sparkles, Target, Cpu, ShieldCheck, CalendarCheck2,
   CalendarClock, ClipboardList, Star, HandHeart, RotateCcw, DoorOpen,
+  Building2, KeyRound, ReceiptText, ShoppingBag, FolderOpen, Landmark, FileText, Scale,
+  NotebookPen, PencilLine, Route, ScanText, Shuffle,
 }
 
 /** O catálogo manda o nome do ícone; nome desconhecido vira o ícone genérico. */
@@ -75,3 +79,13 @@ export function dataHora(iso: string | null): string {
 }
 
 export const numero = (n: number) => n.toLocaleString('pt-BR')
+
+/** Baixa um CSV (com BOM, para o Excel abrir com acento). */
+export function baixarCsv(nome: string, conteudo: string) {
+  const url = URL.createObjectURL(new Blob(['\ufeff' + conteudo], { type: 'text/csv;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nome
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}

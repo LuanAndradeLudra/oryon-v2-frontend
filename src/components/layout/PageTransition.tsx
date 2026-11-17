@@ -10,7 +10,11 @@ import { cn } from '@/lib/utils'
  *  crossfade suave ao "Expandir" para a página — e vice-versa no voltar. */
 export function sectionKeyOf(pathname: string): string {
   const segments = pathname.split('/')
-  return segments[1] === 'contacts' && segments[2] ? '/contacts/:id' : '/' + segments[1]
+  if (segments[1] === 'contacts' && segments[2]) return '/contacts/:id'
+  // ORY-60: o editor de uma jornada (modo foco) é outra seção: a lista sai antes
+  // e o editor entra com transição, e o contrário ao voltar.
+  if (segments[1] === 'jornadas' && segments[2]) return '/jornadas/:id'
+  return '/' + segments[1]
 }
 
 /**

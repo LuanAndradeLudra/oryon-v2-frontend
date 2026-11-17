@@ -14,8 +14,8 @@ import type { Grafo } from './tipos'
  */
 
 export const ID_DA_ENTRADA = '__entrada'
-const VAO_X = 56
-const VAO_Y = 72
+const VAO_X = 48
+const VAO_Y = 88
 
 export type Medida = (id: string) => { w: number; h: number }
 

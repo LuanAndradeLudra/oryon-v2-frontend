@@ -1156,7 +1156,10 @@ function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: 
 // lazyRoute: um arquivo antigo depois de uma atualização recarrega a página em vez de quebrar.
 const ChamadoSemConversa = lazyRoute(() => import('@/components/support/ChamadoSemConversa'))
 
-function UserMenu() {
+/** Exportado em 16/11 (ORY-60): o editor de jornadas, em modo foco (sem esta
+ *  barra), põe o MESMO menu no próprio cabeçalho, para tema, perfil e
+ *  configurações não exigirem sair do desenho. */
+export function UserMenu() {
   const { user, logout, featureFlags } = useAuth()
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()

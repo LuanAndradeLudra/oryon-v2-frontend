@@ -14,23 +14,14 @@ export function IconeDoCatalogo({ nome, className }: { nome: string | undefined;
 
 type Tom = 'verde' | 'azul' | 'ambar' | 'cinza' | 'vermelho' | 'violeta'
 
-const COR_DO_TOM: Record<Tom, string> = {
-  verde: 'var(--color-status-active)',
-  azul: 'var(--color-status-open)',
-  ambar: 'var(--color-status-pending)',
-  cinza: 'var(--color-status-muted)',
-  vermelho: 'var(--color-danger)',
-  violeta: 'var(--color-accent-violet)',
-}
-
+/** Os selos usam a paleta sólida das Jornadas (jornadas.css): um par fundo/texto por tema. */
 export function Selo({ tom, children, className, title }: { tom: Tom; children: React.ReactNode; className?: string; title?: string }) {
-  const style = {
-    ['--selo' as string]: COR_DO_TOM[tom],
-    backgroundColor: 'color-mix(in srgb, var(--selo) 16%, var(--color-surface-800))',
-    color: 'color-mix(in srgb, var(--selo) 78%, var(--color-surface-50))',
-  } as CSSProperties
+  const style: CSSProperties = {
+    backgroundColor: `var(--jt-${tom}-fundo)`,
+    color: `var(--jt-${tom}-sobre)`,
+  }
   return (
-    <span title={title} style={style} className={cn('inline-flex items-center gap-1 h-5 px-2 rounded-[6px] text-[11px] font-semibold whitespace-nowrap', className)}>
+    <span title={title} style={style} className={cn('inline-flex items-center gap-1 h-5 px-2 rounded-[6px] text-[12px] font-semibold whitespace-nowrap', className)}>
       {children}
     </span>
   )

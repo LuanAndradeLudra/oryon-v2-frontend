@@ -28,6 +28,9 @@ export interface EstadoDoTeste {
   terminou: { como: 'meta' | 'saida' | 'erro'; texto: string } | null
 }
 
+/** O nome do modelo como aparece na tela ("lembrete_confirmacao" vira "Lembrete confirmacao"). */
+const nomeDoModelo = (nome: string) => { const t = nome.replace(/_/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1) }
+
 /** O contato de teste e as variáveis inventadas que ele traz. */
 export const CONTEXTO_DE_TESTE: Record<string, string> = {
   'contato.nome': 'Contato de teste',
@@ -35,13 +38,18 @@ export const CONTEXTO_DE_TESTE: Record<string, string> = {
   'conector.agenda.id': '99001',
   'conector.agenda.data': '15/11',
   'conector.agenda.hora': '14:00',
-  'conector.agenda.medico': 'Dra. Helena',
-  'conector.agenda.especialidade': 'Cardiologia',
+  'conector.agenda.profissional': 'Dra. Helena',
+  'conector.agenda.servico': 'Cardiologia',
   'conector.agenda.unidade': 'Alto da Serra',
   'conector.agenda.preparo': 'jejum de 8 horas',
-  'evento.data_consulta': '12/11',
-  'evento.medico': 'Dra. Helena',
-  'evento.especialidade': 'Cardiologia',
+  'evento.data': '12/11',
+  'evento.profissional': 'Dra. Helena',
+  'evento.servico': 'Cardiologia',
+  'evento.imovel': 'Apartamento de 2 quartos no Centro',
+  'evento.valor': 'R$ 1.250,00',
+  'evento.vencimento': '20/11',
+  'evento.etiqueta': 'Documentos pendentes',
+  'evento.etapa': 'Orçamento enviado',
 }
 
 /** Troca `{{variavel|"padrão"}}` (com ou sem filtro) pelo valor do teste. */
@@ -71,11 +79,14 @@ interface Contexto {
   versao: Pick<VersaoDaJornada, 'graph' | 'entry' | 'goals'>
   catalogo: Catalogo
   apoio: ApoioDoEditor
+  /** Os dados do teste (contato de verdade ou editados na tela). Sem valor: o contato de teste. */
+  valores?: Record<string, string>
 }
 
 export function iniciarTeste(c: Contexto): EstadoDoTeste {
   const estado: EstadoDoTeste = { relogio: Date.now(), noAtual: c.versao.graph.start, caminho: [], itens: [], pausa: null, terminou: null }
-  estado.itens.push(item(estado, null, 'entry', 'Entrou na jornada', 'O contato de teste entrou pela porta da jornada. Nada é enviado de verdade: cada passo mostra o que teria feito.', 'ok'))
+  const quem = c.valores?.['contato.nome'] && c.valores['contato.nome'] !== CONTEXTO_DE_TESTE['contato.nome'] ? c.valores['contato.nome'] : 'O contato de teste'
+  estado.itens.push(item(estado, null, 'entry', 'Entrou na jornada', `${quem} entrou pela porta da jornada. Cada passo mostra o que teria feito.`, 'ok'))
   return rodar(estado, c)
 }
 
@@ -87,16 +98,16 @@ export function avancarTeste(anterior: EstadoDoTeste, c: Contexto, escolha?: str
   const no = c.versao.graph.nodes[p.nodeId]
   if (p.tipo === 'relogio') {
     estado.relogio = p.ate
-    estado.itens.push(item(estado, p.nodeId, no?.type ?? 'wait', 'Relógio adiantado', `Agora é ${new Date(p.ate).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`, 'ok'))
+    estado.itens.push({ ...item(estado, p.nodeId, no?.type ?? 'wait', 'Relógio adiantado', `Agora é ${new Date(p.ate).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`, 'ok'), clockTo: new Date(p.ate).toISOString() })
     estado.noAtual = no?.outputs.next ?? null
   } else {
     const opcao = p.opcoes.find((o) => o.key === escolha)
     if (!opcao || !no) return anterior
-    if (escolha === 'sem_resposta' && no.type === 'wait_event') {
+    if (escolha === 'sem_resposta' && (no.type === 'wait_event' || no.type === 'send_and_wait' || no.type === 'ask_question')) {
       estado.relogio += duracaoMs(no.params.timeout)
-      estado.itens.push(item(estado, p.nodeId, no.type, 'O prazo acabou', `Relógio adiantado ${rotuloDaDuracao(no.params.timeout)}. Sem resposta.`, 'ok'))
+      estado.itens.push({ ...item(estado, p.nodeId, no.type, 'O prazo acabou', `Relógio adiantado ${rotuloDaDuracao(no.params.timeout)}. Sem resposta.`, 'ok'), choice: { key: opcao.key, label: opcao.label } })
     } else {
-      estado.itens.push(item(estado, p.nodeId, no.type, 'Resposta do teste', `Seguiu por: "${opcao.label}".`, 'ok'))
+      estado.itens.push({ ...item(estado, p.nodeId, no.type, 'Resposta do teste', `Seguiu por: "${opcao.label}".`, 'ok'), choice: { key: opcao.key, label: opcao.label } })
     }
     estado.noAtual = no.outputs[escolha!] ?? null
     if (!estado.noAtual) {
@@ -141,26 +152,40 @@ function rodar(estado: EstadoDoTeste, c: Contexto): EstadoDoTeste {
         estado.noAtual = id
         return estado
       }
+      case 'send_and_wait':
+      case 'ask_question':
+      case 'branch_message_status':
       case 'wait_event':
       case 'branch':
       case 'ai_classify':
+      case 'ai_extract':
       case 'ai_mission': {
+        if (no.type === 'send_and_wait' || no.type === 'ask_question') estado.itens.push(item(estado, id, no.type, titulo, descreverEfeito(no, c), 'shadow'))
         const opcoes = saidasDoNo(no, c.catalogo).map((s) => ({
           key: s.key,
           label: s.key === 'sem_resposta' ? `Deixar o prazo acabar (+${rotuloDaDuracao(no.params.timeout)})` : s.label,
         }))
         const pergunta =
-          no.type === 'wait_event' ? 'O que o contato de teste responde?'
+          no.type === 'wait_event' || no.type === 'send_and_wait' ? 'O que o contato de teste responde?'
+          : no.type === 'ask_question' ? 'Como o contato de teste responde à pergunta?'
+          : no.type === 'branch_message_status' ? 'O que aconteceu com a mensagem? (no teste você escolhe)'
           : no.type === 'branch' ? 'Por qual ramo o contato de teste segue?'
           : no.type === 'ai_classify' ? 'O que a IA responderia? (no teste você escolhe; não gasta crédito)'
+          : no.type === 'ai_extract' ? 'A IA acharia os dados? (no teste você escolhe; não gasta crédito)'
           : 'Como a missão do agente termina? (no teste você escolhe; não gasta crédito)'
-        estado.itens.push(item(estado, id, no.type, titulo, no.type === 'wait_event' ? `Esperando resposta por até ${rotuloDaDuracao(no.params.timeout)}.` : 'Esperando a sua escolha.', 'waiting'))
+        estado.itens.push(item(estado, id, no.type, titulo, no.type === 'wait_event' || no.type === 'send_and_wait' || no.type === 'ask_question' ? `Esperando resposta por até ${rotuloDaDuracao(no.params.timeout)}.` : no.type === 'branch_message_status' ? `Olhando o status da mensagem por até ${rotuloDaDuracao(no.params.timeout)}.` : 'Esperando a sua escolha.', 'waiting'))
         estado.pausa = { tipo: 'escolha', nodeId: id, pergunta, opcoes }
         estado.noAtual = id
         return estado
       }
       default: {
         estado.itens.push(item(estado, id, no.type, titulo, descreverEfeito(no, c), 'shadow'))
+        // Com o ramo de falha desenhado, o teste pergunta se o passo deu certo.
+        if (no.onError?.then === 'branch' && passo?.onError) {
+          estado.pausa = { tipo: 'escolha', nodeId: id, pergunta: 'O passo deu certo? (no teste você escolhe)', opcoes: saidasDoNo(no, c.catalogo).map((x) => ({ key: x.key, label: x.label })) }
+          estado.noAtual = id
+          return estado
+        }
         estado.noAtual = no.outputs.next ?? null
       }
     }
@@ -194,25 +219,38 @@ function descreverEfeito(no: NoDoGrafo, c: Contexto): string {
       const t = c.apoio.templates.find((x) => x.id === p.templateId)
       if (!t) return 'Teria enviado um modelo (nenhum escolhido).'
       const vars = (Array.isArray(p.variables) ? p.variables : []) as string[]
-      const corpo = t.body.replace(/\{\{(\d+)\}\}/g, (_m, n: string) => resolverTexto(vars[Number(n) - 1] ?? `{{${n}}}`))
-      return `Teria enviado o modelo "${t.name}": “${corpo}”${t.buttons.length ? ` [${t.buttons.join('] [')}]` : ''}`
+      const corpo = t.body.replace(/\{\{(\d+)\}\}/g, (_m, n: string) => resolverTexto(vars[Number(n) - 1] ?? `{{${n}}}`, c.valores))
+      return `Teria enviado o modelo "${nomeDoModelo(t.name)}": “${corpo}”${t.buttons.length ? ` [${t.buttons.join('] [')}]` : ''}`
     }
-    case 'send_text': return `Teria enviado: “${resolverTexto(String(p.text ?? ''))}”`
-    case 'notify_team': return `Teria avisado ${c.apoio.departments.find((d) => d.id === p.departmentId)?.name ?? 'a equipe'}: “${resolverTexto(String(p.message ?? ''))}”${p.groupDaily ? ' (na lista do dia)' : ''}`
-    case 'internal_note': return `Teria deixado a nota: “${resolverTexto(String(p.text ?? ''))}”`
+    case 'send_and_wait': {
+      const t = c.apoio.templates.find((x) => x.id === p.templateId)
+      if (!t) return 'Teria enviado um modelo (nenhum escolhido) e esperado a resposta.'
+      const vars = (Array.isArray(p.variables) ? p.variables : []) as string[]
+      const corpo = t.body.replace(/\{\{(\d+)\}\}/g, (_m, n: string) => resolverTexto(vars[Number(n) - 1] ?? `{{${n}}}`, c.valores))
+      return `Teria enviado o modelo "${nomeDoModelo(t.name)}": “${corpo}”${t.buttons.length ? ` [${t.buttons.join('] [')}]` : ''}${p.holdConversation ? ' e segurado a conversa' : ''}.`
+    }
+    case 'ask_question': {
+      const opcoes = Array.isArray(p.options) ? (p.options as unknown[]).filter((x) => typeof x === 'string') as string[] : []
+      return `Teria perguntado: “${resolverTexto(String(p.question ?? ''), c.valores)}”${p.answerType === 'option' && opcoes.length ? ` [${opcoes.join('] [')}]` : ''}. A resposta iria para "${c.apoio.customFields.find((x) => x.id === p.saveTo)?.name ?? 'o campo escolhido'}".`
+    }
+    case 'send_text': return `Teria enviado: “${resolverTexto(String(p.text ?? ''), c.valores)}”`
+    case 'notify_team': return `Teria avisado ${c.apoio.departments.find((d) => d.id === p.departmentId)?.name ?? 'a equipe'}: “${resolverTexto(String(p.message ?? ''), c.valores)}”${p.groupDaily ? ' (na lista do dia)' : ''}`
+    case 'internal_note': return `Teria deixado a nota: “${resolverTexto(String(p.text ?? ''), c.valores)}”`
     case 'hold_conversation': return `Teria segurado a conversa por ${rotuloDaDuracao(p.duration)}. O agente não responderia nesse tempo.`
-    case 'handoff_agent': return `Teria entregado a conversa ao agente com a nota: “${resolverTexto(String(p.note ?? ''))}”`
+    case 'handoff_agent': return `Teria entregado a conversa ao agente com a nota: “${resolverTexto(String(p.note ?? ''), c.valores)}”`
     case 'handoff_human': return `Teria transferido para ${c.apoio.departments.find((d) => d.id === p.departmentId)?.name ?? 'um humano'}: ${String(p.reason ?? '')}.`
     case 'resolve_conversation': return 'Teria resolvido a conversa.'
     case 'tag': return `Teria ${p.action === 'remove' ? 'tirado' : 'posto'} a etiqueta "${c.apoio.tags.find((t) => t.id === p.tagId)?.name ?? '?'}".`
     case 'set_stage': return `Teria mudado a etapa para "${c.apoio.stages.find((s) => s.id === p.stageId)?.name ?? '?'}".`
     case 'assign': return 'Teria atribuído a conversa.'
-    case 'deal_action': return `Teria feito no funil: ${String(p.action ?? '')} ${p.stageName ? `(${String(p.stageName)})` : ''}.`
+    case 'deal_action': return `Teria feito no funil: ${String(p.action ?? '')} ${p.stageName ? `(${String(p.stageName)})` : p.stageId ? `(${String(p.stageId)})` : ''}.`
     case 'connector_call': {
       const op = c.catalogo.connectorOperations.find((o) => o.key === p.operation)
       return `Teria chamado "${op?.label ?? p.operation}" em modo ensaio${op?.writes ? ' (grava no sistema do cliente: no teste, não grava)' : ''}.`
     }
     case 'webhook_out': return `Teria avisado ${String(p.url ?? 'o outro sistema')}.`
+    case 'set_field': return `Teria gravado "${resolverTexto(String(p.value ?? ''), c.valores)}" no campo "${c.apoio.customFields.find((f) => f.id === p.fieldId)?.name ?? '?'}".`
+    case 'ai_summarize': return `Teria resumido a conversa ${p.saveAs === 'context' ? 'para os próximos passos' : 'numa nota para a equipe'} (no teste, não gasta crédito).`
     default: return 'Teria feito este passo.'
   }
 }
