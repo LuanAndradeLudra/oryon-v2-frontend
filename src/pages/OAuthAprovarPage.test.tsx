@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
+import { ESPERA_ANTES_DE_LIBERAR_MS } from '@/components/oauth/useGestoNaPagina'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import type { DetalheDaAprovacao } from '@/services/oauthApi'
 
@@ -41,10 +42,19 @@ function abrir() {
   )
 }
 
+/** Revisão ORY-94 (2ª rodada): um gesto nesta página e a espera curta liberam o "Aprovar". */
+async function liberarAprovar() {
+  await act(async () => {
+    window.dispatchEvent(new Event('pointermove'))
+    await new Promise((r) => setTimeout(r, ESPERA_ANTES_DE_LIBERAR_MS + 50))
+  })
+}
+
 describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () => {
   beforeEach(() => {
     api.detalhar.mockReset()
     api.decidir.mockReset()
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true)
   })
 
   it('mostra quem pede, a ação e os detalhes', async () => {
@@ -71,7 +81,9 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockResolvedValue({ status: 'aprovada' })
     abrir()
-    fireEvent.click(await screen.findByRole('button', { name: 'Aprovar' }))
+    await screen.findByRole('button', { name: 'Aprovar' })
+    await liberarAprovar()
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }))
     expect(await screen.findByRole('heading', { name: 'Ação aprovada' })).toBeInTheDocument()
     expect(screen.getByText(/Volte ao Claude e diga que aprovou/)).toBeInTheDocument()
     expect(api.decidir).toHaveBeenCalledWith(ID, { csrf: 'csrf-a', aprovar: true })
@@ -106,8 +118,30 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockRejectedValue(erroHttp(409, 'ja_decidido'))
     abrir()
-    fireEvent.click(await screen.findByRole('button', { name: 'Aprovar' }))
+    await screen.findByRole('button', { name: 'Aprovar' })
+    await liberarAprovar()
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }))
     expect(await screen.findByText(/já foi decidido/)).toBeInTheDocument()
+  })
+
+  it('revisão: "Aprovar" nasce desabilitado e só libera depois de um gesto na página e da espera', async () => {
+    api.detalhar.mockResolvedValue(pedido())
+    abrir()
+    const aprovar = await screen.findByRole('button', { name: 'Aprovar' })
+    expect(aprovar).toBeDisabled()
+    // Só o tempo, sem gesto nesta página: continua desabilitado.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, ESPERA_ANTES_DE_LIBERAR_MS + 50))
+    })
+    expect(screen.getByRole('button', { name: 'Aprovar' })).toBeDisabled()
+    await liberarAprovar()
+    expect(screen.getByRole('button', { name: 'Aprovar' })).not.toBeDisabled()
+    // Página sem foco (outra janela por cima): volta a pedir um gesto.
+    vi.spyOn(document, 'hasFocus').mockReturnValue(false)
+    await act(async () => {
+      window.dispatchEvent(new Event('blur'))
+    })
+    expect(screen.getByRole('button', { name: 'Aprovar' })).toBeDisabled()
   })
 
   it('dentro de um iframe: não carrega nem mostra os botões', async () => {

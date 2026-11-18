@@ -10,6 +10,7 @@ import { FormField } from '@/components/ui/FormField'
 import { Spinner } from '@/components/ui/Spinner'
 import { PasswordInput } from '@/components/auth/PasswordInput'
 import { cn } from '@/lib/utils'
+import { ContaDaSessao } from '@/components/oauth/ContaDaSessao'
 import {
   decidirPedidoOAuth,
   detalharPedidoOAuth,
@@ -27,7 +28,7 @@ import {
  * - O nome, o logo e o domínio vêm da LISTA da Oryon (nunca do pedido do aplicativo).
  * - Dois níveis: "Só consultar" (marcado) ou "Consultar e fazer alterações" (só se a
  *   política do workspace deixar).
- * - Login recente: sem confirmação nos últimos minutos, pede a senha.
+ * - A senha é pedida em toda aprovação (o pedido é de uso único e preso a quem o abriu).
  * - Depois da decisão, volta ao aplicativo pela navegação de topo (o backend monta o
  *   endereço com `code`/`error`, `state` e `iss`).
  * - Não abre dentro de iframe (o cabeçalho da Vercel nega; aqui é a segunda trava).
@@ -40,9 +41,14 @@ type Estado =
   | { tipo: 'voltando'; para: string }
 
 const ERROS_DE_CARGA: Record<string, { titulo: string; dica: string }> = {
+  // 2ª rodada: o mesmo 404 vale para vencido, já concluído ou aberto por outra conta.
   pedido_expirado: {
-    titulo: 'Este pedido de conexão expirou',
-    dica: 'Volte ao aplicativo e tente conectar à Oryon de novo.',
+    titulo: 'Este pedido de conexão não está mais disponível',
+    dica: 'Ele pode ter sido concluído, vencido ou ser de outra conta. Volte ao aplicativo e tente conectar à Oryon de novo.',
+  },
+  indisponivel: {
+    titulo: 'Não foi possível conferir agora',
+    dica: 'Tente de novo em instantes pelo aplicativo.',
   },
   cliente_nao_aprovado: {
     titulo: 'Aplicativo não aprovado',
@@ -56,7 +62,7 @@ const ERROS_DE_CARGA: Record<string, { titulo: string; dica: string }> = {
 
 const NIVEIS: Array<{ id: NivelOAuth; titulo: string; descricao: string }> = [
   { id: 'leitura', titulo: 'Só consultar', descricao: 'O aplicativo pode ver as informações, sem mudar nada.' },
-  { id: 'escrita', titulo: 'Consultar e fazer alterações', descricao: 'O aplicativo também pode criar e alterar o que o seu papel permite.' },
+  { id: 'escrita', titulo: 'Consultar e fazer alterações', descricao: 'O aplicativo também pode criar e alterar o que o seu papel permite e, se o seu papel tiver acesso, ver contatos sem máscara.' },
 ]
 
 export function OAuthAutorizarPage() {
@@ -126,7 +132,8 @@ export function OAuthAutorizarPage() {
         setPedirSenha(true)
         setSenha('')
         setErro('Senha incorreta.')
-      } else if (codigo && ERROS_DE_CARGA[codigo]) {
+      } else if (codigo && codigo !== 'indisponivel' && ERROS_DE_CARGA[codigo]) {
+        // Falha passageira na decisão fica na tela (dá para tentar de novo); o resto encerra.
         setEstado({ tipo: 'erro', ...ERROS_DE_CARGA[codigo] })
       } else {
         setErro(mensagem ?? 'Não foi possível concluir agora. Tente de novo.')
@@ -158,6 +165,7 @@ export function OAuthAutorizarPage() {
     return (
       <MolduraOAuth titulo="Conectar à Oryon">
         <ErrorState title={estado.titulo} hint={estado.dica} />
+        <ContaDaSessao className="mt-3 text-center text-xs text-surface-400" />
       </MolduraOAuth>
     )
   }
@@ -197,6 +205,7 @@ export function OAuthAutorizarPage() {
               <BadgeCheck className="w-3.5 h-3.5 text-success flex-shrink-0" aria-hidden />
               <span className="break-words">{pedido.cliente.dominio} · aplicativo aprovado pela Oryon</span>
             </p>
+            <ContaDaSessao className="mt-1 text-xs text-surface-400" />
           </div>
         </div>
 
@@ -285,7 +294,6 @@ export function OAuthAutorizarPage() {
               <FormField label="Confirme a sua senha">
                 <PasswordInput
                   autoComplete="current-password"
-                  autoFocus
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   placeholder="••••••••"

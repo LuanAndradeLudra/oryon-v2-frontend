@@ -23,7 +23,7 @@ export interface DetalheDoPedidoOAuth {
   politica: { liberado: boolean; motivo: string | null; nivelMaximo: NivelOAuth }
   niveis: Record<NivelOAuth, { disponivel: boolean; grupos: GrupoDeConsentimento[] }>
   /** Revisão ORY-94: a senha é pedida em toda aprovação (o pedido é de uso único). */
-  precisaSenha: boolean
+  precisaSenha: true
 }
 
 export interface DecisaoOAuth {
@@ -163,14 +163,21 @@ export async function salvarPoliticaOAuth(
   return data
 }
 
-export async function minhasConexoesOAuth(): Promise<ConexaoOAuth[]> {
-  const { data } = await api.get<{ conexoes: ConexaoOAuth[] }>('/oauth/conexoes')
-  return data.conexoes
+/** 2ª rodada: a lista vem com o total; `cortada` = há mais do que as mostradas (até 200). */
+export interface ListaDeConexoesOAuth {
+  conexoes: ConexaoOAuth[]
+  total: number
+  cortada: boolean
 }
 
-export async function conexoesDoWorkspaceOAuth(): Promise<ConexaoOAuth[]> {
-  const { data } = await api.get<{ conexoes: ConexaoOAuth[] }>('/oauth/conexoes/workspace')
-  return data.conexoes
+export async function minhasConexoesOAuth(): Promise<ListaDeConexoesOAuth> {
+  const { data } = await api.get<ListaDeConexoesOAuth>('/oauth/conexoes')
+  return data
+}
+
+export async function conexoesDoWorkspaceOAuth(): Promise<ListaDeConexoesOAuth> {
+  const { data } = await api.get<ListaDeConexoesOAuth>('/oauth/conexoes/workspace')
+  return data
 }
 
 export async function desconectarOAuth(id: string): Promise<void> {

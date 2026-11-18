@@ -7,10 +7,12 @@ import { OryonLogo } from '@/components/brand/OryonLogo'
  */
 export function MolduraOAuth({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
-    <div className="min-h-[100dvh] w-full bg-surface-950 flex flex-col items-center px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+    // Revisão ORY-94 (2ª rodada): o app trava a rolagem no html/body/#root; fora do AppShell,
+    // a tela precisa rolar sozinha (senão "Aprovar" e "Recusar" ficam fora do alcance no celular).
+    <div className="h-[100dvh] overflow-y-auto overscroll-contain w-full bg-surface-950 flex flex-col items-center px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
       <h1 className="sr-only">{titulo}</h1>
-      <OryonLogo className="h-7 text-surface-50 select-none mb-6" />
-      <main className="w-full max-w-md bg-surface-800 rounded-[12px] p-5 sm:p-6">{children}</main>
+      <OryonLogo className="h-7 shrink-0 text-surface-50 select-none mb-6" />
+      <main className="w-full max-w-md shrink-0 bg-surface-800 rounded-[12px] p-5 sm:p-6">{children}</main>
     </div>
   )
 }

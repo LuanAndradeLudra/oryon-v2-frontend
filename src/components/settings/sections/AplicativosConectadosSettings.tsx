@@ -35,6 +35,8 @@ export function AplicativosConectadosSettings() {
   const admin = isAdminTier(user?.role)
   const [vista, setVista] = useState<Vista>('minhas')
   const [conexoes, setConexoes] = useState<ConexaoOAuth[]>([])
+  const [total, setTotal] = useState(0)
+  const [mensagemDeErro, setMensagemDeErro] = useState<string | undefined>(undefined)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(false)
   const [desconectando, setDesconectando] = useState<ConexaoOAuth | null>(null)
@@ -47,12 +49,17 @@ export function AplicativosConectadosSettings() {
     const meu = ++ultimoPedido.current
     setCarregando(true)
     ;(vista === 'workspace' ? conexoesDoWorkspaceOAuth() : minhasConexoesOAuth())
-      .then((c) => {
+      .then((r) => {
         if (meu !== ultimoPedido.current) return
-        setConexoes(c)
+        setConexoes(r.conexoes)
+        setTotal(r.total)
         setErro(false)
       })
-      .catch(() => meu === ultimoPedido.current && setErro(true))
+      .catch((e: unknown) => {
+        if (meu !== ultimoPedido.current) return
+        setMensagemDeErro(mensagemDoOAuth(e, 'Tente de novo em instantes.'))
+        setErro(true)
+      })
       .finally(() => meu === ultimoPedido.current && setCarregando(false))
   }, [vista])
 
@@ -105,7 +112,7 @@ export function AplicativosConectadosSettings() {
       {carregando ? (
         <SkeletonCard />
       ) : erro ? (
-        <ErrorState title="Não foi possível carregar as conexões" onRetry={carregar} />
+        <ErrorState title="Não foi possível carregar as conexões" hint={mensagemDeErro} onRetry={carregar} />
       ) : conexoes.length === 0 ? (
         <EmptyState
           icon={Unplug}
@@ -113,6 +120,12 @@ export function AplicativosConectadosSettings() {
           hint="Para conectar, adicione a Oryon como conector no seu assistente de IA. O administrador do workspace precisa ter liberado o aplicativo."
         />
       ) : (
+        <>
+        {total > conexoes.length && (
+          <p className="text-xs text-surface-400">
+            Mostrando as {conexoes.length} conexões mais recentes de {total}.
+          </p>
+        )}
         <ul className="flex flex-col gap-2" aria-label="Aplicativos conectados">
           {conexoes.map((c) => (
             <li key={c.id} className="flex items-start gap-3 rounded-[10px] bg-surface-800 px-4 py-3.5">
@@ -146,6 +159,7 @@ export function AplicativosConectadosSettings() {
             </li>
           ))}
         </ul>
+        </>
       )}
 
       <ConfirmModal

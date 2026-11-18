@@ -115,7 +115,7 @@ describe('Aplicativos de IA externos (política do workspace)', () => {
 describe('Aplicativos conectados', () => {
   it('lista as minhas; desconectar pede confirmação e tira da lista', async () => {
     auth.role = 'agent'
-    api.minhas.mockResolvedValue([conexao()])
+    api.minhas.mockResolvedValue({ conexoes: [conexao()], total: 1, cortada: false })
     api.desconectar.mockResolvedValue(undefined)
     render(<AplicativosConectadosSettings />)
     const lista = await screen.findByRole('list', { name: 'Aplicativos conectados' })
@@ -133,8 +133,8 @@ describe('Aplicativos conectados', () => {
   })
 
   it('admin troca para "Do workspace" e vê quem conectou', async () => {
-    api.minhas.mockResolvedValue([])
-    api.workspace.mockResolvedValue([conexao({ id: 's2', pessoa: { id: 'u9', nome: 'Bia Souza' }, nivel: 'escrita' })])
+    api.minhas.mockResolvedValue({ conexoes: [], total: 0, cortada: false })
+    api.workspace.mockResolvedValue({ conexoes: [conexao({ id: 's2', pessoa: { id: 'u9', nome: 'Bia Souza' }, nivel: 'escrita' })], total: 1, cortada: false })
     render(<AplicativosConectadosSettings />)
     expect(await screen.findByText('Nenhum aplicativo conectado')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Do workspace'))
@@ -142,21 +142,35 @@ describe('Aplicativos conectados', () => {
     expect(screen.getByText('Consulta e altera')).toBeInTheDocument()
   })
 
+  it('revisão 2: lista cortada avisa quantas existem; 403 ao desconectar mostra a mensagem do backend', async () => {
+    api.minhas.mockResolvedValue({ conexoes: [conexao()], total: 250, cortada: true })
+    api.desconectar.mockRejectedValue(
+      Object.assign(new Error('x'), { response: { status: 403, data: { error: { code: 'sem_permissao', message: 'Só o administrador do workspace desconecta a conexão de outra pessoa.' } } } }),
+    )
+    render(<AplicativosConectadosSettings />)
+    expect(await screen.findByText('Mostrando as 1 conexões mais recentes de 250.')).toBeInTheDocument()
+    const lista = screen.getByRole('list', { name: 'Aplicativos conectados' })
+    fireEvent.click(within(lista).getByRole('button', { name: 'Desconectar' }))
+    const botoes = await screen.findAllByRole('button', { name: 'Desconectar' })
+    fireEvent.click(botoes[botoes.length - 1])
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('Só o administrador do workspace desconecta a conexão de outra pessoa.', 'error'))
+  })
+
   it('revisão: o nível limitado pelo administrador aparece na lista', async () => {
-    api.minhas.mockResolvedValue([conexao({ limitado: true })])
+    api.minhas.mockResolvedValue({ conexoes: [conexao({ limitado: true })], total: 1, cortada: false })
     render(<AplicativosConectadosSettings />)
     expect(await screen.findByText('limitado pelo administrador')).toBeInTheDocument()
   })
 
   it('revisão: trocar rápido de vista não mostra a lista da outra (resposta fora de ordem)', async () => {
-    let soltarMinhas: (v: ConexaoOAuth[]) => void = () => undefined
-    api.minhas.mockReturnValue(new Promise<ConexaoOAuth[]>((r) => (soltarMinhas = r)))
-    api.workspace.mockResolvedValue([conexao({ id: 's2', pessoa: { id: 'u9', nome: 'Bia Souza' } })])
+    let soltarMinhas: (v: { conexoes: ConexaoOAuth[]; total: number; cortada: boolean }) => void = () => undefined
+    api.minhas.mockReturnValue(new Promise((r) => (soltarMinhas = r)))
+    api.workspace.mockResolvedValue({ conexoes: [conexao({ id: 's2', pessoa: { id: 'u9', nome: 'Bia Souza' } })], total: 1, cortada: false })
     render(<AplicativosConectadosSettings />)
     fireEvent.click(screen.getByText('Do workspace'))
     expect(await screen.findByText(/claude\.ai · Bia Souza/)).toBeInTheDocument()
     // A resposta das "minhas" chega depois: não pode trocar a lista que está na tela.
-    soltarMinhas([conexao({ id: 's-velha', cliente: { clientId: 'x', nome: 'Velha', dominio: 'velha.example', logoUri: null } })])
+    soltarMinhas({ conexoes: [conexao({ id: 's-velha', cliente: { clientId: 'x', nome: 'Velha', dominio: 'velha.example', logoUri: null } })], total: 1, cortada: false })
     await new Promise((r) => setTimeout(r, 0))
     expect(screen.queryByText('Velha')).toBeNull()
     expect(screen.getByText(/claude\.ai · Bia Souza/)).toBeInTheDocument()
@@ -164,7 +178,9 @@ describe('Aplicativos conectados', () => {
 
   it('revisão: desconectar o que já tinha sido encerrado (404) tira da lista e recarrega', async () => {
     auth.role = 'agent'
-    api.minhas.mockResolvedValueOnce([conexao()]).mockResolvedValueOnce([])
+    api.minhas
+      .mockResolvedValueOnce({ conexoes: [conexao()], total: 1, cortada: false })
+      .mockResolvedValueOnce({ conexoes: [], total: 0, cortada: false })
     api.desconectar.mockRejectedValue(Object.assign(new Error('x'), { response: { status: 404, data: { error: { code: 'nao_encontrado', message: 'Conexão não encontrada.' } } } }))
     render(<AplicativosConectadosSettings />)
     const lista = await screen.findByRole('list', { name: 'Aplicativos conectados' })
