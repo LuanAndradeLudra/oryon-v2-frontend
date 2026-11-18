@@ -95,3 +95,56 @@ export async function decidirAprovacaoOAuth(id: string, decisao: { csrf: string;
   const { data } = await api.post<{ status: SituacaoDaAprovacao }>(`/oauth/aprovacoes/${encodeURIComponent(id)}/decisao`, decisao)
   return data
 }
+
+// ─── Política do workspace e aplicativos conectados (ORY-98) ──────────────────
+
+export interface ClienteOAuthDisponivel {
+  clientId: string
+  nome: string
+  dominio: string
+  logoUri: string | null
+}
+
+export interface PoliticaOAuth {
+  ativo: boolean
+  clientesPermitidos: string[]
+  nivelMaximo: NivelOAuth
+  /** `null` = todos os papéis. */
+  papeisPermitidos: string[] | null
+}
+
+export interface ConexaoOAuth {
+  id: string
+  cliente: ClienteOAuthDisponivel
+  /** Só na lista do workspace (admin). */
+  pessoa?: { id: string; nome: string }
+  nivel: NivelOAuth | null
+  grupos: GrupoDeConsentimento[]
+  conectadoEm: string
+  ultimaAtividade: string | null
+  venceEm: string
+}
+
+export async function lerPoliticaOAuth(): Promise<{ politica: PoliticaOAuth; clientesDisponiveis: ClienteOAuthDisponivel[]; papeis: string[] }> {
+  const { data } = await api.get('/oauth/politica')
+  return data
+}
+
+export async function salvarPoliticaOAuth(politica: PoliticaOAuth): Promise<{ politica: PoliticaOAuth; conexoesEncerradas: number }> {
+  const { data } = await api.put('/oauth/politica', politica)
+  return data
+}
+
+export async function minhasConexoesOAuth(): Promise<ConexaoOAuth[]> {
+  const { data } = await api.get<{ conexoes: ConexaoOAuth[] }>('/oauth/conexoes')
+  return data.conexoes
+}
+
+export async function conexoesDoWorkspaceOAuth(): Promise<ConexaoOAuth[]> {
+  const { data } = await api.get<{ conexoes: ConexaoOAuth[] }>('/oauth/conexoes/workspace')
+  return data.conexoes
+}
+
+export async function desconectarOAuth(id: string): Promise<void> {
+  await api.delete(`/oauth/conexoes/${encodeURIComponent(id)}`)
+}
