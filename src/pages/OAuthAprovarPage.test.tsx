@@ -14,6 +14,7 @@ vi.mock('@/services/oauthApi', async (original) => ({
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { email: 'ana@empresa.test' }, logout: vi.fn() }) }))
 
 import { OAuthAprovarPage } from './OAuthAprovarPage'
+import { resumoSemCitacao } from '@/components/oauth/resumoSemCitacao'
 
 const ID = 'a'.repeat(43)
 function pedido(extra: Partial<DetalheDaAprovacao> = {}): DetalheDaAprovacao {
@@ -62,7 +63,10 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     abrir()
     expect(await screen.findByRole('heading', { name: 'Claude quer fazer uma ação em seu nome' })).toBeInTheDocument()
     expect(screen.getByText(/enviar o texto "Olá" a Ana P\./)).toBeInTheDocument()
-    expect(screen.getByText(/contact: \{"name":"Ana P\."\}/)).toBeInTheDocument()
+    // Os detalhes técnicos ficam recolhidos; abrem no botão.
+    expect(screen.queryByText(/contact: \{"name":"Ana P\."\}/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Ver todos os detalhes' }))
+    expect(await screen.findByText(/contact: \{"name":"Ana P\."\}/)).toBeInTheDocument()
     expect(api.detalhar).toHaveBeenCalledWith(ID)
     // Revisão ORY-94: mostra com qual conta a pessoa está decidindo.
     expect(screen.getByText('ana@empresa.test')).toBeInTheDocument()
@@ -85,7 +89,8 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     await liberarAprovar()
     fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }))
     expect(await screen.findByRole('heading', { name: 'Ação aprovada' })).toBeInTheDocument()
-    expect(screen.getByText(/Volte ao Claude e diga que aprovou/)).toBeInTheDocument()
+    // ORY-117: o Claude percebe sozinho (espera ativa); avisar só se ele já parou.
+    expect(screen.getByText(/Volte ao Claude: ele segue sozinho/)).toBeInTheDocument()
     expect(api.decidir).toHaveBeenCalledWith(ID, { csrf: 'csrf-a', aprovar: true })
   })
 
@@ -155,5 +160,45 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     } finally {
       if (topo) Object.defineProperty(window, 'top', topo)
     }
+  })
+})
+
+/** Revisão de 18/11 (pedido do João): a ação escrita para gente, a mensagem inteira e os botões à vista. */
+describe('OAuthAprovarPage — leitura da ação', () => {
+  beforeEach(() => {
+    api.detalhar.mockReset()
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+  })
+
+  it('mostra o nome da ação, a mensagem inteira e o resumo sem repetir o texto; os detalhes ficam recolhidos', async () => {
+    const texto = 'Olá, Ana!\nSegue a confirmação da sua consulta de amanhã às 9h.'
+    api.detalhar.mockResolvedValue(
+      pedido({
+        acao: 'enviar o texto "Olá, Ana! Segue a confirmação…" (+20 caracteres) a Ana P. (conversa 1a2b3c4d) #abc123',
+        titulo: 'Enviar mensagem de texto',
+        conteudo: { rotulo: 'Mensagem', texto },
+      }),
+    )
+    abrir()
+    expect(await screen.findByText('Enviar mensagem de texto')).toBeInTheDocument()
+    expect(screen.getByText('enviar o texto a Ana P. (conversa 1a2b3c4d) #abc123')).toBeInTheDocument()
+    expect(screen.getByText('Mensagem')).toBeInTheDocument()
+    expect(screen.getByText((_, el) => el?.textContent === texto && el.tagName === 'DIV')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver todos os detalhes' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'Recusar' })).toBeInTheDocument()
+  })
+
+  it('pedido antigo, sem título nem conteúdo: o resumo inteiro, como antes', async () => {
+    api.detalhar.mockResolvedValue(pedido())
+    abrir()
+    expect(await screen.findByText('A ação')).toBeInTheDocument()
+    expect(screen.getByText(/enviar o texto "Olá" a Ana P\./)).toBeInTheDocument()
+  })
+
+  it('resumoSemCitacao: tira só o trecho citado, e só quando o texto inteiro aparece', () => {
+    expect(resumoSemCitacao('enviar o texto "Oi…" (+12 caracteres) a Ana P. #abc123', true)).toBe('enviar o texto a Ana P. #abc123')
+    expect(resumoSemCitacao('enviar o texto "Oi" a Ana P. #abc123', true)).toBe('enviar o texto a Ana P. #abc123')
+    expect(resumoSemCitacao('enviar o texto "Oi" a Ana P. #abc123', false)).toBe('enviar o texto "Oi" a Ana P. #abc123')
+    expect(resumoSemCitacao('pausar o agente Recepção #abc123', true)).toBe('pausar o agente Recepção #abc123')
   })
 })

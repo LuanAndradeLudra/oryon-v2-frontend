@@ -159,6 +159,37 @@ export function AplicativosExternosSettings() {
             ))}
           </fieldset>
 
+          {/* ORY-112 (decisão do João, 18/11): "no chat, exceto acesso" é o padrão. */}
+          {politica.nivelMaximo === 'escrita' && (
+            <fieldset className="flex flex-col gap-2" disabled={salvando}>
+              <legend className="text-xs font-semibold text-surface-200 mb-1.5">Onde aprovar ações críticas</legend>
+              {(
+                [
+                  [
+                    'no_chat_exceto_acesso',
+                    'No chat do aplicativo, exceto acesso',
+                    'Enviar mensagens, publicar prompt, campanhas e afins: um clique no cartão do Claude ou do ChatGPT. Convidar pessoas e criar ferramentas de agente: só no app, com senha.',
+                  ],
+                  ['sempre_no_app', 'Sempre no app da Oryon, com senha', 'Toda ação crítica pede que a pessoa abra o app e confirme com a senha.'],
+                ] as const
+              ).map(([valor, titulo, dica]) => (
+                <label key={valor} className="flex items-start gap-3 rounded-[8px] bg-surface-800 px-3.5 py-2.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="aprovacaoNoChat"
+                    checked={(politica.aprovacaoNoChat ?? 'no_chat_exceto_acesso') === valor}
+                    onChange={() => setPolitica({ ...politica, aprovacaoNoChat: valor })}
+                    className="mt-0.5 accent-brand-500"
+                  />
+                  <span className="flex flex-col">
+                    <span className="text-sm text-surface-100">{titulo}</span>
+                    <span className="text-xs text-surface-400">{dica}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+
           <fieldset className="flex flex-col gap-2" disabled={salvando}>
             <legend className="text-xs font-semibold text-surface-200 mb-1.5">Quem pode conectar</legend>
             <label className="flex items-center gap-3 rounded-[8px] bg-surface-800 px-3.5 py-2.5 cursor-pointer">
