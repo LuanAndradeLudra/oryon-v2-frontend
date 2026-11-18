@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, ShieldAlert, XCircle } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { Spinner } from '@/components/ui/Spinner'
 import { MolduraOAuth } from '@/components/oauth/MolduraOAuth'
 import { dentroDeIframe } from '@/components/oauth/dentroDeIframe'
+import { useAuth } from '@/contexts/AuthContext'
 import { decidirAprovacaoOAuth, detalharAprovacaoOAuth, erroDoOAuth, type DetalheDaAprovacao, type SituacaoDaAprovacao } from '@/services/oauthApi'
 
 /**
@@ -24,6 +25,13 @@ type Estado =
 
 const TITULO = 'Aprovar ação na Oryon'
 
+// Revisão ORY-94: o mesmo 404 vale para vencido, já concluído, recusado ou de outra conta —
+// o texto não manda refazer a ação (ela pode já ter sido feita).
+const INDISPONIVEL = {
+  titulo: 'Este pedido não está mais disponível',
+  dica: 'Ele pode ter sido concluído, recusado, vencido ou ser de outra conta. Confira no aplicativo antes de pedir de novo.',
+}
+
 function hora(iso: string): string {
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -35,6 +43,21 @@ export function OAuthAprovarPage() {
   const [enviando, setEnviando] = useState<'aprovar' | 'recusar' | null>(null)
   const [erro, setErro] = useState('')
   const emIframe = useMemo(dentroDeIframe, [])
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const outraConta = async () => {
+    await logout()
+    navigate('/login', { replace: true, state: { from: location } })
+  }
+  const conta = user ? (
+    <p className="text-xs text-surface-400">
+      Conectado como <span className="text-surface-200">{user.email}</span>.{' '}
+      <button type="button" className="underline underline-offset-2 hover:text-surface-200" onClick={() => void outraConta()}>
+        Usar outra conta
+      </button>
+    </p>
+  ) : null
 
   useEffect(() => {
     if (emIframe) return
@@ -49,7 +72,7 @@ export function OAuthAprovarPage() {
         const { codigo } = erroDoOAuth(err)
         setEstado(
           codigo === 'aprovacao_expirada'
-            ? { tipo: 'erro', titulo: 'Este pedido de aprovação expirou', dica: 'Peça ao aplicativo para preparar a ação de novo.' }
+            ? { tipo: 'erro', ...INDISPONIVEL }
             : { tipo: 'erro', titulo: 'Não foi possível carregar o pedido', dica: 'Verifique sua conexão e abra o link de novo.' },
         )
       })
@@ -67,7 +90,7 @@ export function OAuthAprovarPage() {
     } catch (err: unknown) {
       const { codigo, mensagem } = erroDoOAuth(err)
       if (codigo === 'aprovacao_expirada') {
-        setEstado({ tipo: 'erro', titulo: 'Este pedido de aprovação expirou', dica: 'Peça ao aplicativo para preparar a ação de novo.' })
+        setEstado({ tipo: 'erro', ...INDISPONIVEL })
       } else if (codigo === 'ja_decidido') {
         setErro('Este pedido já foi decidido. Recarregue a página para ver como ficou.')
       } else {
@@ -100,6 +123,7 @@ export function OAuthAprovarPage() {
     return (
       <MolduraOAuth titulo={TITULO}>
         <ErrorState title={estado.titulo} hint={estado.dica} />
+        <div className="mt-3 text-center">{conta}</div>
       </MolduraOAuth>
     )
   }
@@ -137,6 +161,7 @@ export function OAuthAprovarPage() {
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-surface-50 leading-snug">{pedido.cliente} quer fazer uma ação em seu nome</h2>
             <p className="mt-1 text-xs text-surface-400">Só acontece se você aprovar aqui. Vale até {hora(pedido.expiraEm)}.</p>
+            <div className="mt-1">{conta}</div>
           </div>
         </div>
 
@@ -154,9 +179,15 @@ export function OAuthAprovarPage() {
           </div>
         )}
 
-        <Banner variant="neutral">
-          Confira se foi você quem pediu isso ao {pedido.cliente}. Se não reconhece, recuse.
-        </Banner>
+        {pedido.previaCortada ? (
+          <Banner variant="warning">
+            Esta ação é grande demais para conferir inteira aqui. Recuse e faça a mudança direto no app da Oryon.
+          </Banner>
+        ) : (
+          <Banner variant="neutral">
+            Confira se foi você quem pediu isso ao {pedido.cliente}. Se não reconhece, recuse.
+          </Banner>
+        )}
 
         {erro && <Banner variant="danger">{erro}</Banner>}
 
@@ -164,7 +195,7 @@ export function OAuthAprovarPage() {
           <Button type="button" variant="secondary" loading={enviando === 'recusar'} disabled={enviando !== null} onClick={() => void decidir(pedido, false)}>
             Recusar
           </Button>
-          <Button type="button" loading={enviando === 'aprovar'} disabled={enviando !== null} onClick={() => void decidir(pedido, true)}>
+          <Button type="button" loading={enviando === 'aprovar'} disabled={enviando !== null || pedido.previaCortada} onClick={() => void decidir(pedido, true)}>
             Aprovar
           </Button>
         </div>

@@ -322,20 +322,13 @@ export function OAuthAutorizarPage() {
   )
 }
 
-/** Logo do aplicativo (da lista da Oryon) ou a inicial do nome. */
-function LogoDoCliente({ nome, logoUri }: { nome: string; logoUri: string | null }) {
-  const [falhou, setFalhou] = useState(false)
-  if (logoUri && !falhou) {
-    return (
-      <img
-        src={logoUri}
-        alt=""
-        referrerPolicy="no-referrer"
-        onError={() => setFalhou(true)}
-        className="w-11 h-11 rounded-[10px] bg-surface-900 object-contain flex-shrink-0"
-      />
-    )
-  }
+/**
+ * A inicial do nome do aplicativo. Revisão ORY-94 (18/11): o logo de terceiro NÃO é carregado
+ * nesta tela — buscá-lo entregaria o IP e o momento do consentimento da pessoa a outro site, e
+ * a página tem `img-src 'self' data:`. O nome e o domínio, conferidos pela Oryon, identificam
+ * o aplicativo.
+ */
+function LogoDoCliente({ nome }: { nome: string; logoUri?: string | null }) {
   return (
     <div aria-hidden className="w-11 h-11 rounded-[10px] bg-surface-700 text-surface-100 flex items-center justify-center text-lg font-semibold flex-shrink-0">
       {nome.trim().charAt(0).toUpperCase() || '?'}
