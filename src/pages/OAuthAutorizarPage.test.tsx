@@ -165,6 +165,24 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     expect(api.detalhar).toHaveBeenCalledTimes(2)
   })
 
+  it('ORY-116: aplicativo local (Claude Code) diz que roda no computador e volta ao loopback', async () => {
+    api.detalhar.mockResolvedValue(
+      pedido({
+        cliente: { nome: 'Claude Code', dominio: 'claude.ai', logoUri: null, local: true },
+        retornoPara: '127.0.0.1:61234',
+      }),
+    )
+    api.decidir.mockResolvedValue({ redirecionarPara: 'http://127.0.0.1:61234/callback?code=c&state=s&iss=i' })
+    abrir()
+    expect(await screen.findByRole('heading', { name: 'Claude Code quer acessar a sua conta Oryon' })).toBeInTheDocument()
+    expect(screen.getByText(/claude\.ai · no seu computador · aplicativo aprovado pela Oryon/)).toBeInTheDocument()
+    expect(screen.getByText('Claude Code, neste computador')).toBeInTheDocument()
+    digitarSenha()
+    fireEvent.click(screen.getByRole('button', { name: 'Permitir' }))
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('http://127.0.0.1:61234/callback?code=c&state=s&iss=i'))
+    expect(await screen.findByText('Voltando para Claude Code…')).toBeInTheDocument()
+  })
+
   it('retorno que não é https: não navega (segunda trava contra javascript: e afins)', async () => {
     api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockResolvedValue({ redirecionarPara: 'javascript:alert(1)' })
