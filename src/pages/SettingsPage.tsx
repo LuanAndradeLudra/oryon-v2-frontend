@@ -43,6 +43,8 @@ import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFi
 import { ConnectorsSettings } from '@/components/settings/sections/ConnectorsSettings'
 import { ApiKeysSettings } from '@/components/settings/sections/ApiKeysSettings'
 import { InactivitySettings } from '@/components/settings/sections/InactivitySettings'
+import { AplicativosExternosSettings } from '@/components/settings/sections/AplicativosExternosSettings'
+import { AplicativosConectadosSettings } from '@/components/settings/sections/AplicativosConectadosSettings'
 import { NavegarSePresente } from '@/components/navegacao/NavegarSePresente'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
@@ -65,6 +67,9 @@ const VALID_SECTIONS = [
   'api-keys',
   // Auditoria do Dashboard (12/11): encerramento por inatividade (admin).
   'inactivity',
+  // ORY-98: aplicativos de IA externos (política do workspace, admin) e as conexões (todos).
+  'external-apps',
+  'connected-apps',
 ]
 
 const OWNER_ONLY_SECTIONS = new Set<string>(['billing', 'connectors'])
@@ -128,6 +133,8 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   copilot:          CopilotInstrucoes,
   'api-keys':       ApiKeysSettings,
   inactivity:       InactivitySettings,
+  'external-apps':  AplicativosExternosSettings,
+  'connected-apps': AplicativosConectadosSettings,
 }
 
 export function SettingsPage() {
