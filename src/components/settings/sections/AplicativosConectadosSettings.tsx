@@ -1,7 +1,7 @@
 // Aplicativos conectados (ORY-98, épico ORY-94) — os assistentes de IA de fora (Claude,
 // ChatGPT…) conectados à Oryon. Todo mundo vê e desconecta os seus; o admin também vê e
 // desconecta os do workspace. Desconectar vale na hora (o aplicativo perde o acesso).
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Unplug } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { Button } from '@/components/ui/Button'
@@ -13,8 +13,14 @@ import { SkeletonCard } from '@/components/ui/Skeleton'
 import { showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { getApiErrorMessage } from '@/lib/utils'
-import { conexoesDoWorkspaceOAuth, desconectarOAuth, minhasConexoesOAuth, type ConexaoOAuth } from '@/services/oauthApi'
+import {
+  conexoesDoWorkspaceOAuth,
+  desconectarOAuth,
+  erroDoOAuth,
+  mensagemDoOAuth,
+  minhasConexoesOAuth,
+  type ConexaoOAuth,
+} from '@/services/oauthApi'
 
 type Vista = 'minhas' | 'workspace'
 
@@ -33,16 +39,21 @@ export function AplicativosConectadosSettings() {
   const [erro, setErro] = useState(false)
   const [desconectando, setDesconectando] = useState<ConexaoOAuth | null>(null)
   const [enviando, setEnviando] = useState(false)
+  // Revisão ORY-94: só a resposta do pedido MAIS RECENTE vale (trocar rápido de vista não
+  // mostra a lista da outra).
+  const ultimoPedido = useRef(0)
 
   const carregar = useCallback(() => {
+    const meu = ++ultimoPedido.current
     setCarregando(true)
     ;(vista === 'workspace' ? conexoesDoWorkspaceOAuth() : minhasConexoesOAuth())
       .then((c) => {
+        if (meu !== ultimoPedido.current) return
         setConexoes(c)
         setErro(false)
       })
-      .catch(() => setErro(true))
-      .finally(() => setCarregando(false))
+      .catch(() => meu === ultimoPedido.current && setErro(true))
+      .finally(() => meu === ultimoPedido.current && setCarregando(false))
   }, [vista])
 
   useEffect(() => {
@@ -58,7 +69,15 @@ export function AplicativosConectadosSettings() {
       showToast(`${desconectando.cliente.nome} foi desconectado.`)
       setDesconectando(null)
     } catch (e) {
-      showToast(getApiErrorMessage(e, 'Não foi possível desconectar.'), 'error')
+      if (erroDoOAuth(e).status === 404) {
+        // Já não existia (desconectada em outra aba, vencida): some da lista e a lista recarrega.
+        setConexoes((cs) => cs.filter((c) => c.id !== desconectando.id))
+        setDesconectando(null)
+        showToast('Esta conexão já tinha sido encerrada.')
+        carregar()
+      } else {
+        showToast(mensagemDoOAuth(e, 'Não foi possível desconectar.'), 'error')
+      }
     } finally {
       setEnviando(false)
     }
@@ -106,6 +125,11 @@ export function AplicativosConectadosSettings() {
                   <span className="ml-2 inline-block rounded-[6px] bg-surface-700 px-1.5 py-0.5 text-[11px] font-normal text-surface-200 align-middle">
                     {c.nivel === 'escrita' ? 'Consulta e altera' : 'Só consulta'}
                   </span>
+                  {c.limitado && (
+                    <span className="ml-1.5 inline-block rounded-[6px] bg-surface-700 px-1.5 py-0.5 text-[11px] font-normal text-surface-300 align-middle">
+                      limitado pelo administrador
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-surface-400 truncate">
                   {c.cliente.dominio}

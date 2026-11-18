@@ -13,15 +13,15 @@ import { Switch } from '@/components/ui/Switch'
 import { showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { publicApiEnabled } from '@/config/featureFlags'
-import { getApiErrorMessage } from '@/lib/utils'
-import { lerPoliticaOAuth, salvarPoliticaOAuth, type ClienteOAuthDisponivel, type PoliticaOAuth } from '@/services/oauthApi'
-
-const NOMES_DOS_PAPEIS: Record<string, string> = {
-  business_admin: 'Dono',
-  admin: 'Administrador',
-  supervisor: 'Supervisor',
-  agent: 'Atendente',
-}
+import { roleLabel } from '@/lib/roleHelpers'
+import {
+  erroDoOAuth,
+  lerPoliticaOAuth,
+  mensagemDoOAuth,
+  salvarPoliticaOAuth,
+  type ClienteOAuthDisponivel,
+  type PoliticaOAuth,
+} from '@/services/oauthApi'
 
 export function AplicativosExternosSettings() {
   const { featureFlags } = useAuth()
@@ -30,6 +30,8 @@ export function AplicativosExternosSettings() {
   const [politica, setPolitica] = useState<PoliticaOAuth | null>(null)
   const [clientes, setClientes] = useState<ClienteOAuthDisponivel[]>([])
   const [papeis, setPapeis] = useState<string[]>([])
+  // Revisão ORY-94: a versão lida vai de volta no salvar (a aba velha não desfaz o corte de outro admin).
+  const [versao, setVersao] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [tentativa, setTentativa] = useState(0)
 
@@ -41,6 +43,7 @@ export function AplicativosExternosSettings() {
         setPolitica(r.politica)
         setClientes(r.clientesDisponiveis)
         setPapeis(r.papeis)
+        setVersao(r.versao)
         setErro(false)
       })
       .catch(() => vivo && setErro(true))
@@ -54,11 +57,23 @@ export function AplicativosExternosSettings() {
     if (!politica) return
     setSalvando(true)
     try {
-      const r = await salvarPoliticaOAuth(politica)
+      // Só os aplicativos que a Oryon aprova hoje (um que ela bloqueou depois nunca trava o salvar).
+      const disponiveis = new Set(clientes.map((c) => c.clientId))
+      const r = await salvarPoliticaOAuth({
+        ...politica,
+        clientesPermitidos: politica.clientesPermitidos.filter((c) => disponiveis.has(c)),
+        versao,
+      })
       setPolitica(r.politica)
+      setVersao(r.versao)
       showToast(r.conexoesEncerradas > 0 ? `Política salva. ${r.conexoesEncerradas} conexão(ões) que deixaram de ser permitidas foram encerradas.` : 'Política salva.')
     } catch (e) {
-      showToast(getApiErrorMessage(e, 'Não foi possível salvar a política.'), 'error')
+      showToast(mensagemDoOAuth(e, 'Não foi possível salvar a política.'), 'error')
+      // Outra pessoa salvou antes: recarrega a versão atual (nada desta aba foi gravado).
+      if (erroDoOAuth(e).codigo === 'politica_mudou') {
+        setCarregando(true)
+        setTentativa((n) => n + 1)
+      }
     } finally {
       setSalvando(false)
     }
@@ -102,12 +117,12 @@ export function AplicativosExternosSettings() {
           <p className="text-sm font-medium text-surface-100" id="oauth-ativo">Permitir aplicativos de IA externos</p>
           <p className="text-xs text-surface-400 mt-0.5">Desligado, ninguém conecta e as conexões que existem são encerradas.</p>
         </div>
-        <Switch checked={politica.ativo} onChange={(v) => setPolitica({ ...politica, ativo: v })} aria-labelledby="oauth-ativo" />
+        <Switch checked={politica.ativo} onChange={(v) => setPolitica({ ...politica, ativo: v })} disabled={salvando} aria-labelledby="oauth-ativo" />
       </div>
 
       {politica.ativo && (
         <>
-          <fieldset className="flex flex-col gap-2">
+          <fieldset className="flex flex-col gap-2" disabled={salvando}>
             <legend className="text-xs font-semibold text-surface-200 mb-1.5">Aplicativos permitidos</legend>
             {clientes.length === 0 ? (
               <p className="text-sm text-surface-400">A Oryon ainda não aprovou nenhum aplicativo.</p>
@@ -124,7 +139,7 @@ export function AplicativosExternosSettings() {
             )}
           </fieldset>
 
-          <fieldset className="flex flex-col gap-2">
+          <fieldset className="flex flex-col gap-2" disabled={salvando}>
             <legend className="text-xs font-semibold text-surface-200 mb-1.5">O máximo que um aplicativo pode fazer</legend>
             {(['leitura', 'escrita'] as const).map((n) => (
               <label key={n} className="flex items-start gap-3 rounded-[8px] bg-surface-800 px-3.5 py-2.5 cursor-pointer">
@@ -139,7 +154,7 @@ export function AplicativosExternosSettings() {
             ))}
           </fieldset>
 
-          <fieldset className="flex flex-col gap-2">
+          <fieldset className="flex flex-col gap-2" disabled={salvando}>
             <legend className="text-xs font-semibold text-surface-200 mb-1.5">Quem pode conectar</legend>
             <label className="flex items-center gap-3 rounded-[8px] bg-surface-800 px-3.5 py-2.5 cursor-pointer">
               <input type="radio" name="papeis" checked={politica.papeisPermitidos === null} onChange={() => setPolitica({ ...politica, papeisPermitidos: null })} className="accent-brand-500" />
@@ -154,7 +169,7 @@ export function AplicativosExternosSettings() {
                 {papeis.map((p) => (
                   <label key={p} className="flex items-center gap-2 text-sm text-surface-200 cursor-pointer">
                     <Checkbox checked={politica.papeisPermitidos?.includes(p) ?? false} onChange={(e) => alternarPapel(p, e.target.checked)} />
-                    {NOMES_DOS_PAPEIS[p] ?? p}
+                    {roleLabel(p)}
                   </label>
                 ))}
               </div>

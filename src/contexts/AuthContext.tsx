@@ -14,6 +14,7 @@ import { limparSessao } from '@/lib/limpezaDaSessao'
 import { resetAccountState } from '@/hooks/useAccountState'
 import { definirCobrancaOculta } from '@/lib/billingLinks'
 import { cobrancaOcultaPara } from '@/config/featureFlags'
+import { guardarDestinoOAuth } from '@/lib/destinoOAuth'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -310,6 +311,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(null)
           const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/activate']
           if (!publicPaths.includes(window.location.pathname)) {
+            // Revisão ORY-94: a tela do OAuth volta depois do login.
+            guardarDestinoOAuth()
             window.location.href = '/login'
           }
         }

@@ -141,6 +141,8 @@ function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
   if (requiresPasswordChange && location.pathname !== '/set-password') {
+    // Revisão ORY-94: a tela do OAuth volta depois da troca de senha obrigatória.
+    guardarDestinoOAuth(`${location.pathname}${location.search}`)
     return <Navigate to="/set-password" replace />
   }
   return <>{children}</>
@@ -552,6 +554,7 @@ function AnimatedRoutes() {
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { RotaPorPapel } from '@/components/navegacao/RotaPorPapel'
+import { guardarDestinoOAuth } from '@/lib/destinoOAuth'
 
 function GlobalToastContainer() {
   const { toasts, dismiss } = useToast()

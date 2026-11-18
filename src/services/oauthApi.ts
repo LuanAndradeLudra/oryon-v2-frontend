@@ -22,6 +22,7 @@ export interface DetalheDoPedidoOAuth {
   apiLiberada: boolean
   politica: { liberado: boolean; motivo: string | null; nivelMaximo: NivelOAuth }
   niveis: Record<NivelOAuth, { disponivel: boolean; grupos: GrupoDeConsentimento[] }>
+  /** Revisão ORY-94: a senha é pedida em toda aprovação (o pedido é de uso único). */
   precisaSenha: boolean
 }
 
@@ -54,6 +55,17 @@ export function erroDoOAuth(err: unknown): { status: number | null; codigo: stri
 }
 
 /**
+ * Revisão ORY-94: a mensagem do backend (`error.message`, em português) ou um texto nosso —
+ * nunca o "Request failed with status code 422" do axios.
+ */
+export function mensagemDoOAuth(err: unknown, padrao: string): string {
+  const { mensagem, status } = erroDoOAuth(err)
+  if (mensagem) return mensagem
+  if (status === null) return 'Sem conexão com a Oryon. Confira a internet e tente de novo.'
+  return padrao
+}
+
+/**
  * O retorno ao aplicativo só sai para https (ou http em localhost, no desenvolvimento).
  * O backend já confere o endereço; isto é a segunda trava (nunca `javascript:` etc.).
  */
@@ -79,8 +91,10 @@ export interface DetalheDaAprovacao {
   cliente: string
   /** O resumo da ação, o mesmo que o aplicativo mostrou. */
   acao: string
-  /** A prévia em linhas `campo: valor` (dados de contato mascarados). */
+  /** A ação inteira, em linhas `campo: valor` (dados de contato mascarados). */
   previa: string
+  /** A prévia passou do tamanho que cabe aqui: dá para recusar, mas não para aprovar. */
+  previaCortada: boolean
   status: SituacaoDaAprovacao
   criadoEm: string
   expiraEm: string
@@ -118,19 +132,33 @@ export interface ConexaoOAuth {
   cliente: ClienteOAuthDisponivel
   /** Só na lista do workspace (admin). */
   pessoa?: { id: string; nome: string }
-  nivel: NivelOAuth | null
+  /** O nível que vale AGORA (o concedido, limitado pelo papel e pela política). */
+  nivel: NivelOAuth
+  /** O administrador (ou o papel) limitou o que a pessoa tinha concedido. */
+  limitado: boolean
   grupos: GrupoDeConsentimento[]
   conectadoEm: string
   ultimaAtividade: string | null
   venceEm: string
 }
 
-export async function lerPoliticaOAuth(): Promise<{ politica: PoliticaOAuth; clientesDisponiveis: ClienteOAuthDisponivel[]; papeis: string[] }> {
+export interface PoliticaLida {
+  politica: PoliticaOAuth
+  /** Quando a política foi salva por último (`null` = nunca). Vai de volta no salvar. */
+  versao: string | null
+  clientesDisponiveis: ClienteOAuthDisponivel[]
+  papeis: string[]
+}
+
+export async function lerPoliticaOAuth(): Promise<PoliticaLida> {
   const { data } = await api.get('/oauth/politica')
   return data
 }
 
-export async function salvarPoliticaOAuth(politica: PoliticaOAuth): Promise<{ politica: PoliticaOAuth; conexoesEncerradas: number }> {
+/** 409 `politica_mudou`: outra pessoa salvou depois da leitura (recarregar antes de salvar). */
+export async function salvarPoliticaOAuth(
+  politica: PoliticaOAuth & { versao: string | null },
+): Promise<{ politica: PoliticaOAuth; versao: string | null; conexoesEncerradas: number }> {
   const { data } = await api.put('/oauth/politica', politica)
   return data
 }

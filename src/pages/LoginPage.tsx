@@ -9,6 +9,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { AuthHeading } from '@/components/auth/AuthHeading'
 import { PasswordInput } from '@/components/auth/PasswordInput'
 import { SsoSlot } from '@/components/auth/SsoSlot'
+import { tomarDestinoOAuth } from '@/lib/destinoOAuth'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -29,7 +30,9 @@ export function LoginPage() {
     setLoading(true)
     try {
       await login(e.trim(), p)
-      navigate(from, { replace: true })
+      // Revisão ORY-94: sem o destino do router (redirecionamento "duro" com a sessão
+      // vencida), volta para a tela do OAuth guardada na aba, se houver.
+      navigate(origem?.pathname ? from : (tomarDestinoOAuth() ?? from), { replace: true })
     } catch (err: unknown) {
       const resposta = (err as { response?: { status?: number; data?: { message?: string } } })?.response
       // Sem resposta do servidor (rede, bloqueio do navegador, backend fora do

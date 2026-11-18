@@ -60,6 +60,7 @@ import { apiBaseUrl, isNativePlatform } from '@/config/env'
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth-storage'
 import { compartilharEmVoo } from '@/lib/preBusca'
 import { capturarErrosDaPagina, falhaQueImporta, registrarFalhaDeRede } from '@/lib/atividadeRecente'
+import { guardarDestinoOAuth } from '@/lib/destinoOAuth'
 
 const api = axios.create({
   baseURL: apiBaseUrl(),
@@ -920,6 +921,8 @@ export function clearSessionAndRedirect() {
   localStorage.removeItem(SESSION_KEY)
   clearTokens()
   if (!PUBLIC_PATHS.includes(window.location.pathname)) {
+    // Revisão ORY-94: a tela do OAuth volta depois do login (o pedido vence em 10 min).
+    guardarDestinoOAuth()
     window.location.href = '/login'
   }
 }

@@ -10,6 +10,8 @@ vi.mock('@/services/oauthApi', async (original) => ({
   decidirAprovacaoOAuth: api.decidir,
 }))
 
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { email: 'ana@empresa.test' }, logout: vi.fn() }) }))
+
 import { OAuthAprovarPage } from './OAuthAprovarPage'
 
 const ID = 'a'.repeat(43)
@@ -20,6 +22,7 @@ function pedido(extra: Partial<DetalheDaAprovacao> = {}): DetalheDaAprovacao {
     cliente: 'Claude',
     acao: 'enviar o texto "Olá" a Ana P. (conversa 1a2b3c4d) #abc123',
     previa: 'conversation:\n  contact: {"name":"Ana P."}\ntext: Olá',
+    previaCortada: false,
     status: 'pendente',
     criadoEm: new Date().toISOString(),
     expiraEm: new Date(Date.now() + 300_000).toISOString(),
@@ -51,6 +54,17 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     expect(screen.getByText(/enviar o texto "Olá" a Ana P\./)).toBeInTheDocument()
     expect(screen.getByText(/contact: \{"name":"Ana P\."\}/)).toBeInTheDocument()
     expect(api.detalhar).toHaveBeenCalledWith(ID)
+    // Revisão ORY-94: mostra com qual conta a pessoa está decidindo.
+    expect(screen.getByText('ana@empresa.test')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Usar outra conta' })).toBeInTheDocument()
+  })
+
+  it('revisão: prévia grande demais — dá para recusar, não para aprovar', async () => {
+    api.detalhar.mockResolvedValue(pedido({ previaCortada: true }))
+    abrir()
+    expect(await screen.findByText(/grande demais para conferir inteira/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Aprovar' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Recusar' })).not.toBeDisabled()
   })
 
   it('aprovar manda o CSRF e mostra que é para voltar ao aplicativo', async () => {
@@ -80,10 +94,12 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull()
   })
 
-  it('expirado (ou de outra pessoa): tela de erro clara', async () => {
+  it('indisponível (vencido, concluído ou de outra conta): texto neutro, sem mandar refazer', async () => {
     api.detalhar.mockRejectedValue(erroHttp(404, 'aprovacao_expirada'))
     abrir()
-    expect(await screen.findByText('Este pedido de aprovação expirou')).toBeInTheDocument()
+    expect(await screen.findByText('Este pedido não está mais disponível')).toBeInTheDocument()
+    expect(screen.queryByText(/preparar a ação de novo/)).toBeNull()
+    expect(screen.getByText('ana@empresa.test')).toBeInTheDocument()
   })
 
   it('decidido em outra aba enquanto esta estava aberta: avisa sem quebrar', async () => {
