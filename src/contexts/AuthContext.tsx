@@ -14,7 +14,7 @@ import { limparSessao } from '@/lib/limpezaDaSessao'
 import { resetAccountState } from '@/hooks/useAccountState'
 import { definirCobrancaOculta } from '@/lib/billingLinks'
 import { cobrancaOcultaPara } from '@/config/featureFlags'
-import { guardarDestinoOAuth } from '@/lib/destinoOAuth'
+import { descartarDestinoOAuth, guardarDestinoOAuth } from '@/lib/destinoOAuth'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -208,6 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [hydrateFeatureFlags])
 
   const logout = useCallback(async () => {
+    // Revisão ORY-94: sair apaga o destino do OAuth guardado na aba.
+    descartarDestinoOAuth()
     disconnectSocket()
     const prev = session
     const refreshToken = isNativePlatform() ? getRefreshToken() : undefined
@@ -306,13 +308,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch((err) => {
         const status = err?.response?.status
         if (status === 401 || status === 403) {
+          // Revisão ORY-94: o destino do OAuth é guardado antes de a sessão sumir (tem dono).
+          const publicas = ['/login', '/register', '/forgot-password', '/reset-password', '/activate']
+          if (!publicas.includes(window.location.pathname)) guardarDestinoOAuth()
           clearSession()
           clearTokens()
           setSession(null)
           const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/activate']
           if (!publicPaths.includes(window.location.pathname)) {
-            // Revisão ORY-94: a tela do OAuth volta depois do login.
-            guardarDestinoOAuth()
             window.location.href = '/login'
           }
         }

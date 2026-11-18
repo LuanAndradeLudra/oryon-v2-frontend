@@ -9,9 +9,11 @@ vi.mock('@/services/oauthApi', async (original) => ({
   detalharPedidoOAuth: api.detalhar,
   decidirPedidoOAuth: api.decidir,
 }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { email: 'ana@empresa.test' }, logout: vi.fn() }) }))
 
 import { OAuthAutorizarPage } from './OAuthAutorizarPage'
 
+// Revisão ORY-94 (2ª rodada): o backend pede a senha em TODA aprovação (precisaSenha: true).
 function pedido(extra: Partial<DetalheDoPedidoOAuth> = {}): DetalheDoPedidoOAuth {
   return {
     pedido: 'p1',
@@ -26,7 +28,7 @@ function pedido(extra: Partial<DetalheDoPedidoOAuth> = {}): DetalheDoPedidoOAuth
       leitura: { disponivel: true, grupos: [{ grupo: 'Contatos', ver: true, alterar: false }] },
       escrita: { disponivel: true, grupos: [{ grupo: 'Contatos', ver: true, alterar: true }, { grupo: 'Agentes de IA', ver: true, alterar: true }] },
     },
-    precisaSenha: false,
+    precisaSenha: true,
     ...extra,
   }
 }
@@ -44,6 +46,7 @@ function abrir(url = '/oauth/authorize?pedido=p1') {
 }
 
 const assign = vi.fn()
+const digitarSenha = (valor = 'certa') => fireEvent.change(screen.getByLabelText('Confirme a sua senha'), { target: { value: valor } })
 
 describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
   beforeEach(() => {
@@ -54,36 +57,54 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
   })
   afterEach(() => vi.restoreAllMocks())
 
-  it('mostra o aplicativo verificado, o workspace, para onde volta e "Só consultar" marcado', async () => {
+  it('mostra o aplicativo verificado, o workspace, a conta logada e "Só consultar" marcado', async () => {
     api.detalhar.mockResolvedValue(pedido())
     abrir()
     expect(await screen.findByRole('heading', { name: 'Claude quer acessar a sua conta Oryon' })).toBeInTheDocument()
     expect(screen.getByText(/claude\.ai · aplicativo aprovado pela Oryon/)).toBeInTheDocument()
     expect(screen.getByText('Empresa Teste')).toBeInTheDocument()
+    expect(screen.getByText('ana@empresa.test')).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /Só consultar/ })).toBeChecked()
     expect(screen.getByRole('list', { name: /poderá acessar/ })).toHaveTextContent('Contatos · ver')
     expect(api.detalhar).toHaveBeenCalledWith('p1')
   })
 
-  it('trocar para "Consultar e fazer alterações" mostra o que poderá alterar; permitir manda o nível e volta ao aplicativo', async () => {
+  it('escrita com a senha: manda o nível e a senha e volta ao aplicativo', async () => {
     api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockResolvedValue({ redirecionarPara: 'https://claude.ai/api/mcp/auth_callback?code=c&state=s&iss=i' })
     abrir()
     fireEvent.click(await screen.findByRole('radio', { name: /Consultar e fazer alterações/ }))
     expect(screen.getByRole('list', { name: /poderá acessar/ })).toHaveTextContent('Agentes de IA · ver e alterar')
+    digitarSenha()
     fireEvent.click(screen.getByRole('button', { name: 'Permitir' }))
     await waitFor(() => expect(assign).toHaveBeenCalledWith('https://claude.ai/api/mcp/auth_callback?code=c&state=s&iss=i'))
-    expect(api.decidir).toHaveBeenCalledWith('p1', { csrf: 'csrf-1', aprovar: true, nivel: 'escrita' })
+    expect(api.decidir).toHaveBeenCalledWith('p1', { csrf: 'csrf-1', aprovar: true, nivel: 'escrita', senha: 'certa' })
     expect(await screen.findByText('Voltando para claude.ai…')).toBeInTheDocument()
   })
 
-  it('recusar volta ao aplicativo sem nível nem senha', async () => {
+  it('sem a senha, "Permitir" fica desabilitado; recusar não pede senha', async () => {
     api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockResolvedValue({ redirecionarPara: 'https://claude.ai/cb?error=access_denied' })
     abrir()
-    fireEvent.click(await screen.findByRole('button', { name: 'Recusar' }))
+    expect(await screen.findByRole('button', { name: 'Permitir' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Recusar' }))
     await waitFor(() => expect(assign).toHaveBeenCalled())
     expect(api.decidir).toHaveBeenCalledWith('p1', { csrf: 'csrf-1', aprovar: false })
+  })
+
+  it('envio duplo: dois cliques em "Permitir" mandam uma decisão só', async () => {
+    api.detalhar.mockResolvedValue(pedido())
+    let soltar: (v: { redirecionarPara: string }) => void = () => undefined
+    api.decidir.mockReturnValue(new Promise((r) => (soltar = r)))
+    abrir()
+    await screen.findByRole('button', { name: 'Permitir' })
+    digitarSenha()
+    const permitir = screen.getByRole('button', { name: 'Permitir' })
+    fireEvent.click(permitir)
+    fireEvent.click(permitir)
+    soltar({ redirecionarPara: 'https://claude.ai/cb?code=c' })
+    await waitFor(() => expect(assign).toHaveBeenCalled())
+    expect(api.decidir).toHaveBeenCalledTimes(1)
   })
 
   it('política só de consulta: a opção de alterar fica desabilitada e explica o porquê', async () => {
@@ -93,26 +114,29 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     expect(screen.getByText('O administrador deste workspace só liberou consultas.')).toBeInTheDocument()
   })
 
-  it('pede a senha quando precisa; sem senha, "Permitir" fica desabilitado; senha errada avisa e limpa', async () => {
-    api.detalhar.mockResolvedValue(pedido({ precisaSenha: true }))
+  it('senha errada avisa e limpa o campo', async () => {
+    api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockRejectedValueOnce(erroHttp(403, 'senha_incorreta'))
     abrir()
-    const permitir = await screen.findByRole('button', { name: 'Permitir' })
-    expect(permitir).toBeDisabled()
-    const campo = screen.getByLabelText('Confirme a sua senha')
-    fireEvent.change(campo, { target: { value: 'errada' } })
-    fireEvent.click(permitir)
+    await screen.findByRole('button', { name: 'Permitir' })
+    digitarSenha('errada')
+    fireEvent.click(screen.getByRole('button', { name: 'Permitir' }))
     expect(await screen.findByText('Senha incorreta.')).toBeInTheDocument()
-    expect(campo).toHaveValue('')
+    expect(screen.getByLabelText('Confirme a sua senha')).toHaveValue('')
     expect(api.decidir).toHaveBeenCalledWith('p1', { csrf: 'csrf-1', aprovar: true, nivel: 'leitura', senha: 'errada' })
   })
 
-  it('o backend pede a senha mesmo sem o aviso prévio (confirmação venceu): o campo aparece', async () => {
+  it.each([
+    ['muitas_tentativas', 'Muitas tentativas de senha. Espere alguns minutos e tente de novo.'],
+    ['indisponivel', 'Não foi possível conferir a senha agora. Tente de novo em instantes.'],
+  ])('trava ou falha passageira (%s): mostra a mensagem do backend', async (code, mensagem) => {
     api.detalhar.mockResolvedValue(pedido())
-    api.decidir.mockRejectedValueOnce(erroHttp(403, 'senha_necessaria'))
+    api.decidir.mockRejectedValueOnce(erroHttp(code === 'indisponivel' ? 503 : 403, code, mensagem))
     abrir()
-    fireEvent.click(await screen.findByRole('button', { name: 'Permitir' }))
-    expect(await screen.findByLabelText('Confirme a sua senha')).toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Permitir' })
+    digitarSenha()
+    fireEvent.click(screen.getByRole('button', { name: 'Permitir' }))
+    expect(await screen.findByText(mensagem)).toBeInTheDocument()
   })
 
   it('workspace sem o aplicativo liberado: mostra o motivo e só deixa recusar', async () => {
@@ -123,22 +147,31 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     expect(screen.getByRole('button', { name: 'Recusar' })).toBeEnabled()
   })
 
-  it('pedido expirado, sem pedido na URL e aplicativo não aprovado: telas de erro claras', async () => {
+  it('pedido indisponível (texto neutro, com a conta), aplicativo não aprovado e sem pedido na URL', async () => {
     api.detalhar.mockRejectedValueOnce(erroHttp(404, 'pedido_expirado'))
     const um = abrir()
-    expect(await screen.findByText('Este pedido de conexão expirou')).toBeInTheDocument()
+    expect(await screen.findByText('Este pedido de conexão não está mais disponível')).toBeInTheDocument()
+    expect(screen.getByText(/pode ter sido concluído, vencido ou ser de outra conta/)).toBeInTheDocument()
+    expect(screen.getByText('ana@empresa.test')).toBeInTheDocument()
     um.unmount()
+
+    api.detalhar.mockRejectedValueOnce(erroHttp(403, 'cliente_nao_aprovado'))
+    const dois = abrir()
+    expect(await screen.findByText('Aplicativo não aprovado')).toBeInTheDocument()
+    dois.unmount()
 
     abrir('/oauth/authorize')
     expect(await screen.findByText('Pedido de conexão inválido')).toBeInTheDocument()
-    expect(api.detalhar).toHaveBeenCalledTimes(1)
+    expect(api.detalhar).toHaveBeenCalledTimes(2)
   })
 
   it('retorno que não é https: não navega (segunda trava contra javascript: e afins)', async () => {
     api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockResolvedValue({ redirecionarPara: 'javascript:alert(1)' })
     abrir()
-    fireEvent.click(await screen.findByRole('button', { name: 'Permitir' }))
+    await screen.findByRole('button', { name: 'Permitir' })
+    digitarSenha()
+    fireEvent.click(screen.getByRole('button', { name: 'Permitir' }))
     expect(await screen.findByText(/não é seguro/)).toBeInTheDocument()
     expect(assign).not.toHaveBeenCalled()
   })

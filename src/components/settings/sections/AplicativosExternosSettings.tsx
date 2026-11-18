@@ -33,6 +33,7 @@ export function AplicativosExternosSettings() {
   // Revisão ORY-94: a versão lida vai de volta no salvar (a aba velha não desfaz o corte de outro admin).
   const [versao, setVersao] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+  const [mensagemDeErro, setMensagemDeErro] = useState<string | undefined>(undefined)
   const [tentativa, setTentativa] = useState(0)
 
   useEffect(() => {
@@ -46,7 +47,11 @@ export function AplicativosExternosSettings() {
         setVersao(r.versao)
         setErro(false)
       })
-      .catch(() => vivo && setErro(true))
+      .catch((e: unknown) => {
+        if (!vivo) return
+        setMensagemDeErro(mensagemDoOAuth(e, 'Tente de novo em instantes.'))
+        setErro(true)
+      })
       .finally(() => vivo && setCarregando(false))
     return () => {
       vivo = false
@@ -91,7 +96,7 @@ export function AplicativosExternosSettings() {
     return (
       <div>
         {cabecalho}
-        <ErrorState title="Não foi possível carregar a política" onRetry={() => { setCarregando(true); setTentativa((n) => n + 1) }} />
+        <ErrorState title="Não foi possível carregar a política" hint={mensagemDeErro} onRetry={() => { setCarregando(true); setTentativa((n) => n + 1) }} />
       </div>
     )
   }

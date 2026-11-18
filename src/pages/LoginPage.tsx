@@ -32,7 +32,9 @@ export function LoginPage() {
       await login(e.trim(), p)
       // Revisão ORY-94: sem o destino do router (redirecionamento "duro" com a sessão
       // vencida), volta para a tela do OAuth guardada na aba, se houver.
-      navigate(origem?.pathname ? from : (tomarDestinoOAuth() ?? from), { replace: true })
+      // Todo login concluído consome o destino guardado (com o state, ele é descartado).
+      const guardado = tomarDestinoOAuth()
+      navigate(origem?.pathname ? from : (guardado ?? from), { replace: true })
     } catch (err: unknown) {
       const resposta = (err as { response?: { status?: number; data?: { message?: string } } })?.response
       // Sem resposta do servidor (rede, bloqueio do navegador, backend fora do

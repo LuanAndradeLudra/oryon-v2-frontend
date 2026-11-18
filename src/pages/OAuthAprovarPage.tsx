@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { CheckCircle2, ShieldAlert, XCircle } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
@@ -7,7 +7,8 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { Spinner } from '@/components/ui/Spinner'
 import { MolduraOAuth } from '@/components/oauth/MolduraOAuth'
 import { dentroDeIframe } from '@/components/oauth/dentroDeIframe'
-import { useAuth } from '@/contexts/AuthContext'
+import { ContaDaSessao } from '@/components/oauth/ContaDaSessao'
+import { useGestoNaPagina } from '@/components/oauth/useGestoNaPagina'
 import { decidirAprovacaoOAuth, detalharAprovacaoOAuth, erroDoOAuth, type DetalheDaAprovacao, type SituacaoDaAprovacao } from '@/services/oauthApi'
 
 /**
@@ -43,21 +44,9 @@ export function OAuthAprovarPage() {
   const [enviando, setEnviando] = useState<'aprovar' | 'recusar' | null>(null)
   const [erro, setErro] = useState('')
   const emIframe = useMemo(dentroDeIframe, [])
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const outraConta = async () => {
-    await logout()
-    navigate('/login', { replace: true, state: { from: location } })
-  }
-  const conta = user ? (
-    <p className="text-xs text-surface-400">
-      Conectado como <span className="text-surface-200">{user.email}</span>.{' '}
-      <button type="button" className="underline underline-offset-2 hover:text-surface-200" onClick={() => void outraConta()}>
-        Usar outra conta
-      </button>
-    </p>
-  ) : null
+  const conta = <ContaDaSessao />
+  // 2ª rodada: "Aprovar" só depois de um gesto nesta página (contra o double-clickjacking).
+  const liberado = useGestoNaPagina(estado.tipo === 'pronto')
 
   useEffect(() => {
     if (emIframe) return
@@ -195,7 +184,13 @@ export function OAuthAprovarPage() {
           <Button type="button" variant="secondary" loading={enviando === 'recusar'} disabled={enviando !== null} onClick={() => void decidir(pedido, false)}>
             Recusar
           </Button>
-          <Button type="button" loading={enviando === 'aprovar'} disabled={enviando !== null || pedido.previaCortada} onClick={() => void decidir(pedido, true)}>
+          <Button
+            type="button"
+            loading={enviando === 'aprovar'}
+            disabled={enviando !== null || pedido.previaCortada || !liberado}
+            title={!liberado && !pedido.previaCortada ? 'Leia o pedido acima antes de aprovar' : undefined}
+            onClick={() => void decidir(pedido, true)}
+          >
             Aprovar
           </Button>
         </div>
