@@ -110,7 +110,8 @@ export function OAuthAutorizarPage() {
       setErro('O endereço de retorno do aplicativo não é seguro. Nada foi enviado.')
       return
     }
-    setEstado({ tipo: 'voltando', para: pedido.retornoPara })
+    // ORY-116: o aplicativo local volta para este computador; o nome diz mais que "127.0.0.1:61234".
+    setEstado({ tipo: 'voltando', para: pedido.cliente.local ? pedido.cliente.nome : pedido.retornoPara })
     window.location.assign(url)
   }
 
@@ -204,7 +205,10 @@ export function OAuthAutorizarPage() {
             </h2>
             <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-400">
               <BadgeCheck className="w-3.5 h-3.5 text-success flex-shrink-0" aria-hidden />
-              <span className="break-words">{pedido.cliente.dominio} · aplicativo aprovado pela Oryon</span>
+              <span className="break-words">
+                {pedido.cliente.dominio}
+                {pedido.cliente.local ? ' · no seu computador' : ''} · aplicativo aprovado pela Oryon
+              </span>
             </p>
             <ContaDaSessao className="mt-1 text-xs text-surface-400" />
           </div>
@@ -216,7 +220,10 @@ export function OAuthAutorizarPage() {
           <dt className="text-surface-400">Você</dt>
           <dd className="text-surface-100 truncate">{pedido.pessoa.nome || '—'}</dd>
           <dt className="text-surface-400">Volta para</dt>
-          <dd className="text-surface-100 truncate">{pedido.retornoPara}</dd>
+          <dd className="text-surface-100 truncate">
+            {/* ORY-116: o retorno do aplicativo local é este computador (127.0.0.1 com uma porta da hora). */}
+            {pedido.cliente.local ? `${pedido.cliente.nome}, neste computador` : pedido.retornoPara}
+          </dd>
         </dl>
 
         {!pedido.apiLiberada && (

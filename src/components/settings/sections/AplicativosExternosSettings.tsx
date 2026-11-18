@@ -137,7 +137,10 @@ export function AplicativosExternosSettings() {
                   <Checkbox checked={politica.clientesPermitidos.includes(c.clientId)} onChange={(e) => alternarCliente(c.clientId, e.target.checked)} />
                   <span className="flex flex-col">
                     <span className="text-sm text-surface-100">{c.nome}</span>
-                    <span className="text-xs text-surface-400">{c.dominio}</span>
+                    <span className="text-xs text-surface-400">
+                      {c.dominio}
+                      {c.local ? ' · no computador de cada pessoa' : ''}
+                    </span>
                   </span>
                 </label>
               ))

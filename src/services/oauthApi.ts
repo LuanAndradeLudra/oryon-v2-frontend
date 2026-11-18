@@ -14,7 +14,8 @@ export interface GrupoDeConsentimento {
 export interface DetalheDoPedidoOAuth {
   pedido: string
   csrf: string
-  cliente: { nome: string; dominio: string; logoUri: string | null }
+  /** ORY-116: `local` = aplicativo no computador da pessoa (ex.: Claude Code). */
+  cliente: { nome: string; dominio: string; logoUri: string | null; local?: boolean }
   /** Host para onde a pessoa volta depois de decidir (ex.: claude.ai). */
   retornoPara: string
   workspace: { nome: string }
@@ -66,14 +67,18 @@ export function mensagemDoOAuth(err: unknown, padrao: string): string {
 }
 
 /**
- * O retorno ao aplicativo só sai para https (ou http em localhost, no desenvolvimento).
+ * O retorno ao aplicativo só sai para https ou para http em loopback (o aplicativo no
+ * computador da pessoa, como o Claude Code — ORY-116; e o desenvolvimento).
  * O backend já confere o endereço; isto é a segunda trava (nunca `javascript:` etc.).
  */
 export function retornoSeguro(url: string): boolean {
   try {
     const u = new URL(url)
     if (u.protocol === 'https:') return true
-    return u.protocol === 'http:' && (u.hostname === 'localhost' || u.hostname === '127.0.0.1')
+    return (
+      u.protocol === 'http:' &&
+      (u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '[::1]')
+    )
   } catch {
     return false
   }
@@ -123,6 +128,8 @@ export interface ClienteOAuthDisponivel {
   nome: string
   dominio: string
   logoUri: string | null
+  /** ORY-116: roda no computador da pessoa (ex.: Claude Code). */
+  local?: boolean
 }
 
 export interface PoliticaOAuth {

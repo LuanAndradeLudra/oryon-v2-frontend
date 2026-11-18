@@ -146,6 +146,7 @@ export function AplicativosConectadosSettings() {
                 </p>
                 <p className="text-xs text-surface-400 truncate">
                   {c.cliente.dominio}
+                  {c.cliente.local ? ' · no computador da pessoa' : ''}
                   {c.pessoa ? ` · ${c.pessoa.nome || 'Pessoa'}` : ''}
                 </p>
                 <p className="text-xs text-surface-500 mt-1">
