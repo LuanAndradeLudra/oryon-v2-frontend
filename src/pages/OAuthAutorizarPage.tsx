@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { BadgeCheck, Eye, Pencil, ShieldCheck } from 'lucide-react'
-import { OryonLogo } from '@/components/brand/OryonLogo'
+import { MolduraOAuth } from '@/components/oauth/MolduraOAuth'
+import { dentroDeIframe } from '@/components/oauth/dentroDeIframe'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -57,14 +58,6 @@ const NIVEIS: Array<{ id: NivelOAuth; titulo: string; descricao: string }> = [
   { id: 'leitura', titulo: 'Só consultar', descricao: 'O aplicativo pode ver as informações, sem mudar nada.' },
   { id: 'escrita', titulo: 'Consultar e fazer alterações', descricao: 'O aplicativo também pode criar e alterar o que o seu papel permite.' },
 ]
-
-function dentroDeIframe(): boolean {
-  try {
-    return window.self !== window.top
-  } catch {
-    return true
-  }
-}
 
 export function OAuthAutorizarPage() {
   const [params] = useSearchParams()
@@ -145,38 +138,38 @@ export function OAuthAutorizarPage() {
 
   if (emIframe) {
     return (
-      <Moldura>
+      <MolduraOAuth titulo="Conectar à Oryon">
         <Banner variant="danger">Por segurança, esta tela não abre dentro de outra página.</Banner>
-      </Moldura>
+      </MolduraOAuth>
     )
   }
 
   if (estado.tipo === 'carregando') {
     return (
-      <Moldura>
+      <MolduraOAuth titulo="Conectar à Oryon">
         <div className="flex justify-center py-10">
           <Spinner label="Carregando o pedido de conexão" />
         </div>
-      </Moldura>
+      </MolduraOAuth>
     )
   }
 
   if (estado.tipo === 'erro') {
     return (
-      <Moldura>
+      <MolduraOAuth titulo="Conectar à Oryon">
         <ErrorState title={estado.titulo} hint={estado.dica} />
-      </Moldura>
+      </MolduraOAuth>
     )
   }
 
   if (estado.tipo === 'voltando') {
     return (
-      <Moldura>
+      <MolduraOAuth titulo="Conectar à Oryon">
         <div className="flex flex-col items-center gap-3 py-8 text-center">
           <Spinner />
           <p className="text-sm text-surface-300">Voltando para {estado.para}…</p>
         </div>
-      </Moldura>
+      </MolduraOAuth>
     )
   }
 
@@ -191,7 +184,7 @@ export function OAuthAutorizarPage() {
   }
 
   return (
-    <Moldura>
+    <MolduraOAuth titulo="Conectar à Oryon">
       <form onSubmit={onSubmit} className="flex flex-col gap-5" aria-labelledby="titulo-consentimento">
         {/* Quem pede */}
         <div className="flex items-start gap-3">
@@ -325,18 +318,7 @@ export function OAuthAutorizarPage() {
           Você pode desconectar este aplicativo quando quiser em Configurações.
         </p>
       </form>
-    </Moldura>
-  )
-}
-
-/** Página só da tela: logo da Oryon e um cartão centralizado (claro e escuro pelos tokens). */
-function Moldura({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-[100dvh] w-full bg-surface-950 flex flex-col items-center px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
-      <h1 className="sr-only">Conectar à Oryon</h1>
-      <OryonLogo className="h-7 text-surface-50 select-none mb-6" />
-      <main className="w-full max-w-md bg-surface-800 rounded-[12px] p-5 sm:p-6">{children}</main>
-    </div>
+    </MolduraOAuth>
   )
 }
 

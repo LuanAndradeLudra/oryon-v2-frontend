@@ -62,6 +62,7 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const SupportPage = lazyRoute(() => import('@/pages/SupportPage').then(m => ({ default: m.SupportPage })))
 const OAuthAutorizarPage = lazyRoute(() => import('@/pages/OAuthAutorizarPage').then(m => ({ default: m.OAuthAutorizarPage })))
+const OAuthAprovarPage = lazyRoute(() => import('@/pages/OAuthAprovarPage').then(m => ({ default: m.OAuthAprovarPage })))
 const SupportQualidadePage = lazyRoute(() => import('@/pages/SupportQualidadePage').then(m => ({ default: m.SupportQualidadePage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
@@ -377,6 +378,10 @@ function AnimatedRoutes() {
               cobrança e primeiro acesso: quem decide se pode é o backend e a política). */}
           <Route path="/oauth/authorize" element={
             <RequireAuth><OAuthAutorizarPage /></RequireAuth>
+          } />
+          {/* ORY-97: aprovação, no app, de uma ação crítica pedida por um aplicativo externo. */}
+          <Route path="/oauth/aprovar/:id" element={
+            <RequireAuth><OAuthAprovarPage /></RequireAuth>
           } />
           <Route path="/first-access" element={
             <RequireAuth><FirstAccessPage /></RequireAuth>
