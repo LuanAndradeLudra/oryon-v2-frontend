@@ -66,3 +66,32 @@ export function retornoSeguro(url: string): boolean {
     return false
   }
 }
+
+// ─── Aprovação de ações críticas (ORY-97) ──────────────────────────────────────
+// Numa conexão de aplicativo externo, a ação crítica (enviar mensagem, convidar pessoa,
+// mudar regras de agente…) só executa depois que a pessoa aprova aqui, no app.
+
+export type SituacaoDaAprovacao = 'pendente' | 'aprovada' | 'recusada'
+
+export interface DetalheDaAprovacao {
+  id: string
+  csrf: string
+  cliente: string
+  /** O resumo da ação, o mesmo que o aplicativo mostrou. */
+  acao: string
+  /** A prévia em linhas `campo: valor` (dados de contato mascarados). */
+  previa: string
+  status: SituacaoDaAprovacao
+  criadoEm: string
+  expiraEm: string
+}
+
+export async function detalharAprovacaoOAuth(id: string): Promise<DetalheDaAprovacao> {
+  const { data } = await api.get<DetalheDaAprovacao>(`/oauth/aprovacoes/${encodeURIComponent(id)}`)
+  return data
+}
+
+export async function decidirAprovacaoOAuth(id: string, decisao: { csrf: string; aprovar: boolean }): Promise<{ status: SituacaoDaAprovacao }> {
+  const { data } = await api.post<{ status: SituacaoDaAprovacao }>(`/oauth/aprovacoes/${encodeURIComponent(id)}/decisao`, decisao)
+  return data
+}
