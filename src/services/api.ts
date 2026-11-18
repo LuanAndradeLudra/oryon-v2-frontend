@@ -127,6 +127,8 @@ const SENSITIVE_FIELDS = new Set([
   'password', 'currentPassword', 'newPassword', 'confirmPassword',
   'token', 'refreshToken', 'accessToken', 'secret', 'apiKey',
   'passwordHash', 'creditCard', 'cvv',
+  // ORY-96: a decisão do consentimento OAuth leva a senha (`senha`) e o token CSRF do pedido.
+  'senha', 'csrf',
 ])
 
 function sanitizeForLogging(obj: Record<string, unknown>): Record<string, unknown> {

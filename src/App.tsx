@@ -61,6 +61,7 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const SupportPage = lazyRoute(() => import('@/pages/SupportPage').then(m => ({ default: m.SupportPage })))
+const OAuthAutorizarPage = lazyRoute(() => import('@/pages/OAuthAutorizarPage').then(m => ({ default: m.OAuthAutorizarPage })))
 const SupportQualidadePage = lazyRoute(() => import('@/pages/SupportQualidadePage').then(m => ({ default: m.SupportQualidadePage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
@@ -333,6 +334,8 @@ const SHELL_LESS_SECTIONS = new Set([
   '/first-access',
   // Páginas públicas da landing (30/09: home de venda + páginas de produto).
   '/plataforma', '/solucoes', '/perguntas', '/demonstracao',
+  // ORY-96: "Conectar à Oryon" (consentimento OAuth), sem o app em volta.
+  '/oauth',
 ])
 
 function AnimatedRoutes() {
@@ -370,6 +373,11 @@ function AnimatedRoutes() {
 
           {/* Primeiro acesso do cliente (SCRUM-1212): termos + dados da
               empresa → ativa o contrato. Tela cheia, fora do AppShell. */}
+          {/* ORY-96: consentimento OAuth — só exige estar logado (sem o app, sem os portões de
+              cobrança e primeiro acesso: quem decide se pode é o backend e a política). */}
+          <Route path="/oauth/authorize" element={
+            <RequireAuth><OAuthAutorizarPage /></RequireAuth>
+          } />
           <Route path="/first-access" element={
             <RequireAuth><FirstAccessPage /></RequireAuth>
           } />
