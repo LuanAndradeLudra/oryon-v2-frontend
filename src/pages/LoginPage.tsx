@@ -14,7 +14,9 @@ export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/conversations'
+  // ORY-96: a volta guarda também a query (ex.: /oauth/authorize?pedido=…), não só o caminho.
+  const origem = (location.state as { from?: { pathname: string; search?: string } })?.from
+  const from = origem?.pathname ? `${origem.pathname}${origem.search ?? ''}` : '/conversations'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

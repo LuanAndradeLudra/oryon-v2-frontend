@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 
 const login = vi.fn()
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ login }) }))
@@ -104,6 +104,26 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
     await waitFor(() => expect(login).toHaveBeenCalledWith('a@b.co', 'senha-certa'))
     expect(await screen.findByText('conversas')).toBeInTheDocument()
+  })
+
+  it('ORY-96: volta para onde a pessoa ia, com a query (ex.: o pedido de conexão OAuth)', async () => {
+    login.mockResolvedValue(undefined)
+    const Onde = () => {
+      const l = useLocation()
+      return <div>{`${l.pathname}${l.search}`}</div>
+    }
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { from: { pathname: '/oauth/authorize', search: '?pedido=abc' } } }]}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/oauth/authorize" element={<Onde />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    digitar(emailInput(), 'a@b.co')
+    digitar(senhaInput(), 'senha-certa')
+    fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
+    expect(await screen.findByText('/oauth/authorize?pedido=abc')).toBeInTheDocument()
   })
 
   it('botão Entrar desabilitado até preencher e-mail e senha', () => {
