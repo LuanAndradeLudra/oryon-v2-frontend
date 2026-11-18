@@ -61,6 +61,25 @@ describe('Aplicativos de IA externos (política do workspace)', () => {
     expect(toast).toHaveBeenCalledWith('Política salva.')
   })
 
+  it('ORY-112: "onde aprovar ações críticas" só aparece com alterações liberadas; padrão no chat; salvar manda a escolha', async () => {
+    api.ler.mockResolvedValue({
+      politica: { ...politica, ativo: true, clientesPermitidos: [CLAUDE], nivelMaximo: 'escrita', aprovacaoNoChat: 'no_chat_exceto_acesso' },
+      versao: 'v1',
+      clientesDisponiveis: disponiveis,
+      papeis: ['admin'],
+    })
+    api.salvar.mockImplementation(async (p) => ({ politica: p, versao: 'v2', conexoesEncerradas: 0 }))
+    render(<AplicativosExternosSettings />)
+    expect(await screen.findByText('Onde aprovar ações críticas')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /No chat do aplicativo, exceto acesso/ })).toBeChecked()
+    fireEvent.click(screen.getByRole('radio', { name: /Sempre no app da Oryon, com senha/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(api.salvar).toHaveBeenCalledWith(expect.objectContaining({ aprovacaoNoChat: 'sempre_no_app' })))
+    // Só consultar: a escolha some (não há ação crítica para aprovar).
+    fireEvent.click(screen.getByRole('radio', { name: /Só consultar/ }))
+    expect(screen.queryByText('Onde aprovar ações críticas')).toBeNull()
+  })
+
   it('revisão: aplicativo que a Oryon bloqueou depois não vai no salvar (nunca trava)', async () => {
     api.ler.mockResolvedValue({
       politica: { ...politica, ativo: true, clientesPermitidos: [CLAUDE, 'https://bloqueado.example/c.json'] },

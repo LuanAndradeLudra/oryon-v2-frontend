@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { BadgeCheck, Eye, Pencil, ShieldCheck } from 'lucide-react'
 import { MolduraOAuth } from '@/components/oauth/MolduraOAuth'
+import { LogoDoAplicativo } from '@/components/oauth/LogoDoAplicativo'
 import { dentroDeIframe } from '@/components/oauth/dentroDeIframe'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
@@ -196,7 +197,7 @@ export function OAuthAutorizarPage() {
       <form onSubmit={onSubmit} className="flex flex-col gap-5" aria-labelledby="titulo-consentimento">
         {/* Quem pede */}
         <div className="flex items-start gap-3">
-          <LogoDoCliente nome={pedido.cliente.nome} logoUri={pedido.cliente.logoUri} />
+          <LogoDoAplicativo nome={pedido.cliente.nome} endereco={pedido.cliente.dominio} />
           <div className="min-w-0">
             <h2 id="titulo-consentimento" className="text-lg font-semibold text-surface-50 leading-snug">
               {pedido.cliente.nome} quer acessar a sua conta Oryon
@@ -327,19 +328,5 @@ export function OAuthAutorizarPage() {
         </p>
       </form>
     </MolduraOAuth>
-  )
-}
-
-/**
- * A inicial do nome do aplicativo. Revisão ORY-94 (18/11): o logo de terceiro NÃO é carregado
- * nesta tela — buscá-lo entregaria o IP e o momento do consentimento da pessoa a outro site, e
- * a página tem `img-src 'self' data:`. O nome e o domínio, conferidos pela Oryon, identificam
- * o aplicativo.
- */
-function LogoDoCliente({ nome }: { nome: string; logoUri?: string | null }) {
-  return (
-    <div aria-hidden className="w-11 h-11 rounded-[10px] bg-surface-700 text-surface-100 flex items-center justify-center text-lg font-semibold flex-shrink-0">
-      {nome.trim().charAt(0).toUpperCase() || '?'}
-    </div>
   )
 }

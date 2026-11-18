@@ -89,12 +89,18 @@ export interface DetalheDaAprovacao {
   id: string
   csrf: string
   cliente: string
+  /** O endereço do aplicativo (conferido pela Oryon): a tela mostra a marca dele. */
+  clienteId?: string
   /** O resumo da ação, o mesmo que o aplicativo mostrou. */
   acao: string
   /** A ação inteira, em linhas `campo: valor` (dados de contato mascarados). */
   previa: string
   /** A prévia passou do tamanho que cabe aqui: dá para recusar, mas não para aprovar. */
   previaCortada: boolean
+  /** O nome da ação em português ("Enviar mensagem de texto"). Ausente em pedido antigo. */
+  titulo?: string
+  /** O texto principal inteiro (a mensagem, o prompt novo…), quando a ação tem um. */
+  conteudo?: { rotulo: string; texto: string } | null
   status: SituacaoDaAprovacao
   criadoEm: string
   expiraEm: string
@@ -125,6 +131,11 @@ export interface PoliticaOAuth {
   nivelMaximo: NivelOAuth
   /** `null` = todos os papéis. */
   papeisPermitidos: string[] | null
+  /**
+   * ORY-112: onde a pessoa aprova as ações críticas pedidas por um aplicativo. Padrão: no cartão
+   * do chat, menos as de acesso (equipe, ferramenta HTTP), que ficam no app com senha.
+   */
+  aprovacaoNoChat?: 'no_chat_exceto_acesso' | 'sempre_no_app'
 }
 
 export interface ConexaoOAuth {
