@@ -44,6 +44,23 @@ describe('visibleSettingsNav · gate de múltiplos funis', () => {
   })
 })
 
+// Revisão do épico ORY-94 (18/11, 3ª rodada): "Aplicativos conectados" (de todos os papéis) não
+// pode virar a seção de entrada do atendente.
+describe('Aplicativos conectados (ORY-98)', () => {
+  it('o atendente continua entrando em "Minha conta"; o supervisor, no perfil da empresa', () => {
+    expect(firstVisibleSection('agent')).toBe('account')
+    expect(firstVisibleSection('supervisor')).toBe('company')
+  })
+
+  it('fica em Conta, logo depois de Minha conta e Notificações, para todos os papéis', () => {
+    for (const papel of ['agent', 'supervisor', 'admin']) {
+      const conta = visibleSettingsNav(papel).find((d) => d.domain === 'Conta')
+      const secoes = conta?.clusters.flatMap((c) => c.items.map((i) => i.section)) ?? []
+      expect(secoes.slice(0, 3)).toEqual(['account', 'notifications', 'connected-apps'])
+    }
+  })
+})
+
 // F13-903 — a situação do contato ganhou seção própria em Configurações → CRM.
 // Não é do módulo de funis: vale com ou sem FF_MULTI_PIPELINE.
 describe('visibleSettingsNav · situação do contato (F13-903)', () => {

@@ -73,6 +73,8 @@ export function AplicativosConectadosSettings() {
     try {
       await desconectarOAuth(desconectando.id)
       setConexoes((cs) => cs.filter((c) => c.id !== desconectando.id))
+      // Revisão do épico (18/11, 3ª rodada): o total desce junto (senão aparecia "as 2 de 3").
+      setTotal((t) => Math.max(0, t - 1))
       showToast(`${desconectando.cliente.nome} foi desconectado.`)
       setDesconectando(null)
     } catch (e) {

@@ -61,6 +61,21 @@ const ERROS_DE_CARGA: Record<string, { titulo: string; dica: string }> = {
   },
 }
 
+/**
+ * Revisão do épico (18/11, 3ª rodada): onde as ações críticas se aprovam de fato. O padrão é no
+ * cartão do chat (menos as de acesso); "sempre no app" e o aplicativo sem cartão (local, como o
+ * Claude Code) aprovam tudo aqui, com senha. Sem a política na resposta, um texto que vale para os dois.
+ */
+function avisoDasAcoes(pedido: DetalheDoPedidoOAuth): string {
+  if (pedido.cliente.local || pedido.politica.aprovacaoNoChat === 'sempre_no_app') {
+    return 'Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) sempre pedem a sua aprovação aqui na Oryon, com a sua senha.'
+  }
+  if (pedido.politica.aprovacaoNoChat === 'no_chat_exceto_acesso') {
+    return 'Ações importantes pedem a sua aprovação: enviar mensagens e mudar regras de agentes, no cartão da Oryon dentro do chat; convidar ou mudar o papel de alguém e criar ferramentas de agente, aqui na Oryon, com a sua senha.'
+  }
+  return 'Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) só acontecem com a sua aprovação: no cartão da Oryon dentro do chat ou aqui na Oryon, com a sua senha, conforme a regra do workspace.'
+}
+
 const NIVEIS: Array<{ id: NivelOAuth; titulo: string; descricao: string }> = [
   { id: 'leitura', titulo: 'Só consultar', descricao: 'O aplicativo pode ver as informações, sem mudar nada.' },
   { id: 'escrita', titulo: 'Consultar e fazer alterações', descricao: 'O aplicativo também pode criar e alterar o que o seu papel permite e, se o seu papel tiver acesso, ver contatos sem máscara.' },
@@ -167,7 +182,7 @@ export function OAuthAutorizarPage() {
     return (
       <MolduraOAuth titulo="Conectar à Oryon">
         <ErrorState title={estado.titulo} hint={estado.dica} />
-        <ContaDaSessao className="mt-3 text-center text-xs text-surface-400" />
+        <ContaDaSessao className="mt-3 text-center text-xs text-surface-400" recomecarNoAplicativo />
       </MolduraOAuth>
     )
   }
@@ -210,7 +225,7 @@ export function OAuthAutorizarPage() {
                 {pedido.cliente.local ? ' · no seu computador' : ''} · aplicativo aprovado pela Oryon
               </span>
             </p>
-            <ContaDaSessao className="mt-1 text-xs text-surface-400" />
+            <ContaDaSessao className="mt-1 text-xs text-surface-400" recomecarNoAplicativo />
           </div>
         </div>
 
@@ -295,7 +310,7 @@ export function OAuthAutorizarPage() {
             </div>
 
             <Banner variant="neutral" icon={<ShieldCheck className="w-4 h-4" aria-hidden />}>
-              Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) sempre pedem a sua aprovação aqui na Oryon.
+              {avisoDasAcoes(pedido)}
             </Banner>
 
             {pedirSenha && (

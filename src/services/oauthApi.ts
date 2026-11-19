@@ -21,7 +21,16 @@ export interface DetalheDoPedidoOAuth {
   workspace: { nome: string }
   pessoa: { nome: string }
   apiLiberada: boolean
-  politica: { liberado: boolean; motivo: string | null; nivelMaximo: NivelOAuth }
+  politica: {
+    liberado: boolean
+    motivo: string | null
+    nivelMaximo: NivelOAuth
+    /**
+     * Revisão do épico (18/11, 3ª rodada): onde as ações críticas se aprovam neste workspace
+     * (o consentimento diz isso). Ausente em backend antigo: a tela usa um texto que vale para os dois.
+     */
+    aprovacaoNoChat?: 'no_chat_exceto_acesso' | 'sempre_no_app'
+  }
   niveis: Record<NivelOAuth, { disponivel: boolean; grupos: GrupoDeConsentimento[] }>
   /** Revisão ORY-94: a senha é pedida em toda aprovação (o pedido é de uso único). */
   precisaSenha: true
@@ -93,6 +102,11 @@ export type SituacaoDaAprovacao = 'pendente' | 'aprovada' | 'recusada'
 export interface DetalheDaAprovacao {
   id: string
   csrf: string
+  /**
+   * Revisão do épico (3ª rodada): ação que não se aprova no chat (acesso, "sempre no app",
+   * aplicativo sem cartão) pede a senha aqui.
+   */
+  precisaSenha?: boolean
   cliente: string
   /** O endereço do aplicativo (conferido pela Oryon): a tela mostra a marca dele. */
   clienteId?: string
@@ -116,7 +130,10 @@ export async function detalharAprovacaoOAuth(id: string): Promise<DetalheDaAprov
   return data
 }
 
-export async function decidirAprovacaoOAuth(id: string, decisao: { csrf: string; aprovar: boolean }): Promise<{ status: SituacaoDaAprovacao }> {
+export async function decidirAprovacaoOAuth(
+  id: string,
+  decisao: { csrf: string; aprovar: boolean; senha?: string },
+): Promise<{ status: SituacaoDaAprovacao }> {
   const { data } = await api.post<{ status: SituacaoDaAprovacao }>(`/oauth/aprovacoes/${encodeURIComponent(id)}/decisao`, decisao)
   return data
 }

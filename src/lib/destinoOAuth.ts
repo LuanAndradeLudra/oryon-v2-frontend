@@ -4,7 +4,8 @@
 // só na aba (sessionStorage), e o login (ou a troca de senha obrigatória) volta para ele.
 //
 // 2ª rodada: o destino tem DONO e PRAZO — vale só para a mesma pessoa da sessão que venceu e
-// por 10 min (o pedido do OAuth também vence em 10 min). Sai no logout e em todo login.
+// por 10 min (o pedido do OAuth vence em 5 min se ninguém o abriu, e em 10 min depois de aberto;
+// passado o prazo, a tela diz que o pedido expirou). Sai no logout e em todo login.
 const CHAVE = 'oryon:destino-oauth'
 const CHAVE_DA_SESSAO = 'oryon:session'
 export const PRAZO_DO_DESTINO_MS = 10 * 60_000
