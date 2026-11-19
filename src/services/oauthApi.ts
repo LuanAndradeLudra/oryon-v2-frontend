@@ -120,6 +120,14 @@ export interface DetalheDaAprovacao {
   titulo?: string
   /** O texto principal inteiro (a mensagem, o prompt novo…), quando a ação tem um. */
   conteudo?: { rotulo: string; texto: string } | null
+  previaLegivel?: {
+    titulo: string
+    oQueAcontece: string
+    campos: Array<{ rotulo: string; valor: string }>
+    conteudo?: { tipo: 'balao' | 'texto'; texto: string; variaveis?: string[]; rodape?: string; botoes?: Array<{ texto: string }> }
+    mudancas?: Array<{ rotulo: string; antes: string; depois: string }>
+    selos?: Array<{ texto: string; tom: 'ok' | 'aviso' | 'neutro' }>
+  }
   status: SituacaoDaAprovacao
   criadoEm: string
   expiraEm: string
