@@ -208,49 +208,94 @@ export function OAuthAutorizarPage() {
     if (podeAprovar) void decidir(true, pedido)
   }
 
+  const descricaoDoNivel = NIVEIS.find((n) => n.id === nivel)?.descricao ?? ''
+
   return (
-    <MolduraOAuth titulo="Conectar à Oryon" largura="larga" rodapeFixo={false}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-5" aria-labelledby="titulo-consentimento">
-        {/* Quem pede */}
-        <div className="flex items-start gap-3">
-          <LogoDoAplicativo nome={pedido.cliente.nome} endereco={pedido.cliente.dominio} />
-          <div className="min-w-0">
-            <h2 id="titulo-consentimento" className="text-lg font-semibold text-surface-50 leading-snug">
-              {pedido.cliente.nome} quer acessar a sua conta Oryon
-            </h2>
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-400">
-              <BadgeCheck className="w-3.5 h-3.5 text-success flex-shrink-0" aria-hidden />
-              <span className="break-words">
-                {pedido.cliente.dominio}
-                {pedido.cliente.local ? ' · no seu computador' : ''} · aplicativo aprovado pela Oryon
-              </span>
-            </p>
-            <ContaDaSessao className="mt-1 text-xs text-surface-400" recomecarNoAplicativo />
+    <MolduraOAuth titulo="Conectar à Oryon" largura="ampla">
+      {/* 19/11 (pedido do João): o bloco segue a altura da tela do aparelho. O que só informa rola
+          DENTRO do bloco; o nível (escolha obrigatória), a senha e os botões ficam no rodapé,
+          sempre à vista. Em tela grande, o corpo e o rodapé têm duas colunas. */}
+      <form onSubmit={onSubmit} className="flex flex-col min-h-0" aria-labelledby="titulo-consentimento">
+        <div className="min-h-0 overflow-y-auto overscroll-contain -mx-1 px-1 pb-4 flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
+          <div className="flex flex-col gap-4 min-w-0">
+            {/* Quem pede */}
+            <div className="flex items-start gap-3">
+              <LogoDoAplicativo nome={pedido.cliente.nome} endereco={pedido.cliente.dominio} />
+              <div className="min-w-0">
+                <h2 id="titulo-consentimento" className="text-lg font-semibold text-surface-50 leading-snug">
+                  {pedido.cliente.nome} quer acessar a sua conta Oryon
+                </h2>
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-400">
+                  <BadgeCheck className="w-3.5 h-3.5 text-success flex-shrink-0" aria-hidden />
+                  <span className="break-words">
+                    {pedido.cliente.dominio}
+                    {pedido.cliente.local ? ' · no seu computador' : ''} · aplicativo aprovado pela Oryon
+                  </span>
+                </p>
+                <ContaDaSessao className="mt-1 text-xs text-surface-400" recomecarNoAplicativo />
+              </div>
+            </div>
+
+            <dl className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_1fr] lg:grid-cols-[auto_1fr] gap-x-3 sm:gap-x-4 gap-y-1.5 text-sm rounded-[8px] bg-surface-900 px-4 py-3">
+              <dt className="text-surface-400">Workspace</dt>
+              <dd className="text-surface-100 truncate">{pedido.workspace.nome || '—'}</dd>
+              <dt className="text-surface-400">Você</dt>
+              <dd className="text-surface-100 truncate">{pedido.pessoa.nome || '—'}</dd>
+              <dt className="text-surface-400">Volta para</dt>
+              <dd className="text-surface-100 truncate">
+                {/* ORY-116: o retorno do aplicativo local é este computador (127.0.0.1 com uma porta da hora). */}
+                {pedido.cliente.local ? `${pedido.cliente.nome}, neste computador` : pedido.retornoPara}
+              </dd>
+            </dl>
+
+            {!pedido.apiLiberada && (
+              <Banner variant="danger">A API não está liberada para este workspace. Fale com a Oryon.</Banner>
+            )}
+            {pedido.apiLiberada && !pedido.politica.liberado && (
+              <Banner variant="danger">{pedido.politica.motivo ?? 'O administrador deste workspace não liberou este aplicativo.'}</Banner>
+            )}
           </div>
+
+          {!bloqueado && (
+            <div className="flex flex-col gap-4 min-w-0">
+              <div>
+                <p className="text-xs font-medium text-surface-300 uppercase tracking-wide mb-2">
+                  {nivel === 'leitura' ? 'Poderá ver' : 'Poderá ver e alterar'}
+                </p>
+                {/* No celular, a escolha do nível (no rodapé) mostra só o nome: o que ele significa vem aqui. */}
+                <p className="sm:hidden text-xs text-surface-400 mb-2">{descricaoDoNivel}</p>
+                {grupos.length === 0 ? (
+                  <p className="text-sm text-surface-400">O aplicativo não pediu nada que o seu papel possa conceder.</p>
+                ) : (
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5" aria-label="O que o aplicativo poderá acessar">
+                    {grupos.map((g) => (
+                      <li key={g.grupo} className="flex items-center gap-2 text-sm text-surface-200">
+                        {g.alterar ? (
+                          <Pencil className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-hidden />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-hidden />
+                        )}
+                        <span>
+                          {g.grupo}
+                          <span className="text-surface-500"> · {g.alterar ? 'ver e alterar' : 'ver'}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <Banner variant="neutral" icon={<ShieldCheck className="w-4 h-4" aria-hidden />}>
+                {avisoDasAcoes(pedido)}
+              </Banner>
+            </div>
+          )}
         </div>
 
-        <dl className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_1fr] gap-x-3 sm:gap-x-4 gap-y-1.5 text-sm rounded-[8px] bg-surface-900 px-4 py-3">
-          <dt className="text-surface-400">Workspace</dt>
-          <dd className="text-surface-100 truncate">{pedido.workspace.nome || '—'}</dd>
-          <dt className="text-surface-400">Você</dt>
-          <dd className="text-surface-100 truncate">{pedido.pessoa.nome || '—'}</dd>
-          <dt className="text-surface-400">Volta para</dt>
-          <dd className="text-surface-100 truncate">
-            {/* ORY-116: o retorno do aplicativo local é este computador (127.0.0.1 com uma porta da hora). */}
-            {pedido.cliente.local ? `${pedido.cliente.nome}, neste computador` : pedido.retornoPara}
-          </dd>
-        </dl>
-
-        {!pedido.apiLiberada && (
-          <Banner variant="danger">A API não está liberada para este workspace. Fale com a Oryon.</Banner>
-        )}
-        {pedido.apiLiberada && !pedido.politica.liberado && (
-          <Banner variant="danger">{pedido.politica.motivo ?? 'O administrador deste workspace não liberou este aplicativo.'}</Banner>
-        )}
-
-        {!bloqueado && (
-          <>
-            <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {/* Rodapé: sempre à vista (a escolha do nível, a senha e os botões). */}
+        <div className="shrink-0 border-t border-surface-700 pt-3 sm:pt-4 flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-end">
+          {!bloqueado ? (
+            <fieldset className="grid grid-cols-2 gap-2 min-w-0">
               <legend className="text-xs font-medium text-surface-300 uppercase tracking-wide mb-2">O que o aplicativo poderá fazer</legend>
               {NIVEIS.map((n) => {
                 const disponivel = pedido.niveis[n.id].disponivel
@@ -259,7 +304,7 @@ export function OAuthAutorizarPage() {
                   <label
                     key={n.id}
                     className={cn(
-                      'flex items-start gap-3 rounded-[8px] px-3.5 py-3 transition-colors select-none',
+                      'flex items-start gap-2.5 rounded-[8px] px-3 py-2.5 transition-colors select-none',
                       disponivel ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
                       marcado ? 'bg-surface-700' : 'bg-surface-900 hover:bg-surface-800',
                     )}
@@ -273,9 +318,9 @@ export function OAuthAutorizarPage() {
                       onChange={() => setNivel(n.id)}
                       className="mt-0.5 accent-brand-500"
                     />
-                    <span className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium text-surface-100">{n.titulo}</span>
-                      <span className="text-xs text-surface-400">
+                    <span className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-sm font-medium text-surface-100 leading-snug">{n.titulo}</span>
+                      <span className="hidden sm:block text-xs text-surface-400">
                         {disponivel ? n.descricao : 'O administrador deste workspace só liberou consultas.'}
                       </span>
                     </span>
@@ -283,37 +328,12 @@ export function OAuthAutorizarPage() {
                 )
               })}
             </fieldset>
+          ) : (
+            <div className="hidden lg:block" />
+          )}
 
-            <div>
-              <p className="text-xs font-medium text-surface-300 uppercase tracking-wide mb-2">
-                {nivel === 'leitura' ? 'Poderá ver' : 'Poderá ver e alterar'}
-              </p>
-              {grupos.length === 0 ? (
-                <p className="text-sm text-surface-400">O aplicativo não pediu nada que o seu papel possa conceder.</p>
-              ) : (
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5" aria-label="O que o aplicativo poderá acessar">
-                  {grupos.map((g) => (
-                    <li key={g.grupo} className="flex items-center gap-2 text-sm text-surface-200">
-                      {g.alterar ? (
-                        <Pencil className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-hidden />
-                      ) : (
-                        <Eye className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-hidden />
-                      )}
-                      <span>
-                        {g.grupo}
-                        <span className="text-surface-500"> · {g.alterar ? 'ver e alterar' : 'ver'}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <Banner variant="neutral" icon={<ShieldCheck className="w-4 h-4" aria-hidden />}>
-              {avisoDasAcoes(pedido)}
-            </Banner>
-
-            {pedirSenha && (
+          <div className="flex flex-col gap-2.5 min-w-0">
+            {!bloqueado && pedirSenha && (
               <FormField label="Confirme a sua senha">
                 <PasswordInput
                   autoComplete="current-password"
@@ -323,31 +343,32 @@ export function OAuthAutorizarPage() {
                 />
               </FormField>
             )}
-          </>
-        )}
 
-        {erro && <Banner variant="danger">{erro}</Banner>}
+            {erro && <Banner variant="danger">{erro}</Banner>}
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
-          <Button
-            type="button"
-            variant="secondary"
-            loading={enviando === 'recusar'}
-            disabled={enviando !== null}
-            onClick={() => void decidir(false, pedido)}
-          >
-            Recusar
-          </Button>
-          {!bloqueado && (
-            <Button type="submit" loading={enviando === 'aprovar'} disabled={!podeAprovar}>
-              Permitir
-            </Button>
-          )}
+            <div className="flex gap-2 justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1 sm:flex-none"
+                loading={enviando === 'recusar'}
+                disabled={enviando !== null}
+                onClick={() => void decidir(false, pedido)}
+              >
+                Recusar
+              </Button>
+              {!bloqueado && (
+                <Button type="submit" className="flex-1 sm:flex-none" loading={enviando === 'aprovar'} disabled={!podeAprovar}>
+                  Permitir
+                </Button>
+              )}
+            </div>
+
+            <p className="text-xs text-surface-500 leading-relaxed">
+              Você pode desconectar este aplicativo quando quiser em Configurações.
+            </p>
+          </div>
         </div>
-
-        <p className="text-xs text-surface-500 leading-relaxed">
-          Você pode desconectar este aplicativo quando quiser em Configurações.
-        </p>
       </form>
     </MolduraOAuth>
   )
