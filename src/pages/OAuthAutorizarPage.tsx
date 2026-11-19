@@ -170,7 +170,7 @@ export function OAuthAutorizarPage() {
 
   if (estado.tipo === 'carregando') {
     return (
-      <MolduraOAuth titulo="Conectar à Oryon">
+      <MolduraOAuth titulo="Conectar à Oryon" largura="larga" rodapeFixo={false}>
         <div className="flex justify-center py-10">
           <Spinner label="Carregando o pedido de conexão" />
         </div>
@@ -180,7 +180,7 @@ export function OAuthAutorizarPage() {
 
   if (estado.tipo === 'erro') {
     return (
-      <MolduraOAuth titulo="Conectar à Oryon">
+      <MolduraOAuth titulo="Conectar à Oryon" largura="larga" rodapeFixo={false}>
         <ErrorState title={estado.titulo} hint={estado.dica} />
         <ContaDaSessao className="mt-3 text-center text-xs text-surface-400" recomecarNoAplicativo />
       </MolduraOAuth>
@@ -189,7 +189,7 @@ export function OAuthAutorizarPage() {
 
   if (estado.tipo === 'voltando') {
     return (
-      <MolduraOAuth titulo="Conectar à Oryon">
+      <MolduraOAuth titulo="Conectar à Oryon" largura="larga" rodapeFixo={false}>
         <div className="flex flex-col items-center gap-3 py-8 text-center">
           <Spinner />
           <p className="text-sm text-surface-300">Voltando para {estado.para}…</p>
@@ -209,7 +209,7 @@ export function OAuthAutorizarPage() {
   }
 
   return (
-    <MolduraOAuth titulo="Conectar à Oryon">
+    <MolduraOAuth titulo="Conectar à Oryon" largura="larga" rodapeFixo={false}>
       <form onSubmit={onSubmit} className="flex flex-col gap-5" aria-labelledby="titulo-consentimento">
         {/* Quem pede */}
         <div className="flex items-start gap-3">
@@ -229,7 +229,7 @@ export function OAuthAutorizarPage() {
           </div>
         </div>
 
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm rounded-[8px] bg-surface-900 px-4 py-3">
+        <dl className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_1fr] gap-x-3 sm:gap-x-4 gap-y-1.5 text-sm rounded-[8px] bg-surface-900 px-4 py-3">
           <dt className="text-surface-400">Workspace</dt>
           <dd className="text-surface-100 truncate">{pedido.workspace.nome || '—'}</dd>
           <dt className="text-surface-400">Você</dt>
@@ -250,7 +250,7 @@ export function OAuthAutorizarPage() {
 
         {!bloqueado && (
           <>
-            <fieldset className="flex flex-col gap-2">
+            <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <legend className="text-xs font-medium text-surface-300 uppercase tracking-wide mb-2">O que o aplicativo poderá fazer</legend>
               {NIVEIS.map((n) => {
                 const disponivel = pedido.niveis[n.id].disponivel
@@ -291,7 +291,7 @@ export function OAuthAutorizarPage() {
               {grupos.length === 0 ? (
                 <p className="text-sm text-surface-400">O aplicativo não pediu nada que o seu papel possa conceder.</p>
               ) : (
-                <ul className="flex flex-col gap-1.5" aria-label="O que o aplicativo poderá acessar">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5" aria-label="O que o aplicativo poderá acessar">
                   {grupos.map((g) => (
                     <li key={g.grupo} className="flex items-center gap-2 text-sm text-surface-200">
                       {g.alterar ? (

@@ -17,12 +17,21 @@ export function MolduraOAuth({
   titulo,
   children,
   largura = 'padrao',
+  rodapeFixo = largura === 'larga',
   chave,
 }: {
   titulo: string
   children: ReactNode
-  /** Tela de aprovação (18/11): `larga` para ler a ação inteira (a mensagem, o prompt novo…). */
+  /**
+   * Tela de aprovação (18/11): `larga` para ler a ação inteira (a mensagem, o prompt novo…).
+   * 19/11 (pedido do João): o consentimento ("Conectar à Oryon") também é largo.
+   */
   largura?: 'padrao' | 'larga'
+  /**
+   * Os botões ficam presos no pé do cartão (a tela de aprovação): sem o espaço de baixo, para eles
+   * não colarem na borda da tela. Padrão: só na largura larga, como antes.
+   */
+  rodapeFixo?: boolean
   /** Muda quando o conteúdo muda de etapa: o conteúdo antigo sai e o novo entra suavemente. */
   chave?: string
 }) {
@@ -34,7 +43,7 @@ export function MolduraOAuth({
           (o `sticky` respeita o espaçamento interno da área que rola). */}
       <div
         className={`h-[100dvh] overflow-y-auto overscroll-contain w-full bg-surface-950 flex flex-col items-center px-4 pt-[calc(2.5rem+env(safe-area-inset-top))] ${
-          largura === 'larga' ? 'pb-[env(safe-area-inset-bottom)]' : 'pb-[calc(2.5rem+env(safe-area-inset-bottom))]'
+          rodapeFixo ? 'pb-[env(safe-area-inset-bottom)]' : 'pb-[calc(2.5rem+env(safe-area-inset-bottom))]'
         }`}
       >
         <h1 className="sr-only">{titulo}</h1>
