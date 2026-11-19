@@ -201,7 +201,8 @@ export function OAuthAprovarPage() {
   }
 
   const { pedido } = estado
-  const Icone = iconeDaAcao(pedido.titulo)
+  const tituloLegivel = pedido.previaLegivel?.titulo ?? pedido.titulo
+  const Icone = iconeDaAcao(tituloLegivel)
   return (
     <MolduraOAuth titulo={TITULO} largura="larga" chave="pedido">
       <div className="flex flex-col gap-5">
@@ -235,12 +236,23 @@ export function OAuthAprovarPage() {
             </div>
             <div className="min-w-0">
               <p id="titulo-da-acao" className="text-sm font-semibold text-surface-50">
-                {pedido.titulo ?? 'A ação'}
+                {tituloLegivel ?? 'A ação'}
               </p>
-              <p className="mt-0.5 text-sm text-surface-300 leading-relaxed break-words">{resumoSemCitacao(pedido.acao, pedido.conteudo?.texto)}</p>
+              <p className="mt-0.5 text-sm text-surface-300 leading-relaxed break-words">{pedido.previaLegivel?.oQueAcontece ?? resumoSemCitacao(pedido.acao, pedido.conteudo?.texto)}</p>
             </div>
           </div>
-          {pedido.conteudo && (
+          {pedido.previaLegivel?.campos?.length ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {pedido.previaLegivel.campos.map((campo) => <div key={`${campo.rotulo}-${campo.valor}`} className="rounded-[8px] bg-surface-800 px-3 py-2"><p className="text-xs text-surface-400">{campo.rotulo}</p><p className="text-sm text-surface-100 break-words">{campo.valor}</p></div>)}
+            </div>
+          ) : null}
+          {pedido.previaLegivel?.conteudo ? (
+            <div><p className="text-xs font-medium text-surface-400 mb-1.5">Conteúdo</p><div className="rounded-[8px] bg-surface-800 px-3 py-3 text-sm text-surface-50 leading-relaxed max-h-80 overflow-y-auto">{pedido.previaLegivel.conteudo.tipo === 'balao' ? <div className="rounded-[10px] bg-surface-700 px-3 py-2 whitespace-pre-wrap break-words max-w-[85%]">{pedido.previaLegivel.conteudo.texto.replace(/\{\{(\d+)\}\}/g, (_m, n: string) => `{{${pedido.previaLegivel?.conteudo?.variaveis?.[Number(n) - 1] ?? n}}}`)}{pedido.previaLegivel.conteudo.rodape ? <p className="text-xs text-surface-300 mt-2">{pedido.previaLegivel.conteudo.rodape}</p> : null}{pedido.previaLegivel.conteudo.botoes?.map((botao, i) => <p key={i} className="text-xs text-surface-200 mt-1">{botao.texto}</p>)}</div> : <div className="whitespace-pre-wrap break-words">{pedido.previaLegivel.conteudo.texto}</div>}</div></div>
+          ) : null}
+          {/* Textos longos (prompt, instruções) rolam dentro do bloco; o inteiro fica nos detalhes técnicos. */}
+          {pedido.previaLegivel?.mudancas?.map((m) => <div key={m.rotulo} className="rounded-[8px] bg-surface-800 px-4 py-3 text-sm"><p className="font-medium">{m.rotulo}</p><p className="text-surface-400 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">Antes: {m.antes}</p><p className="mt-1 text-surface-100 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">Depois: {m.depois}</p></div>)}
+          {pedido.previaLegivel?.selos?.length ? <div className="flex flex-wrap gap-2">{pedido.previaLegivel.selos.map((s, i) => <span key={i} className="rounded-[6px] bg-surface-700 px-2 py-1 text-xs text-surface-200">{s.texto}</span>)}</div> : null}
+          {pedido.conteudo && !pedido.previaLegivel?.conteudo && !pedido.previaLegivel?.mudancas?.length && (
             <div>
               <p className="text-xs font-medium text-surface-400 mb-1.5">{pedido.conteudo.rotulo}</p>
               <div className="rounded-[8px] bg-surface-800 px-4 py-3 text-sm text-surface-50 leading-relaxed whitespace-pre-wrap break-words max-h-80 overflow-y-auto">
