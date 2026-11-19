@@ -119,8 +119,67 @@ describe('Aplicativos de IA externos (política do workspace)', () => {
     // Revisão ORY-94: os mesmos nomes de papel do resto do app (`roleLabel`).
     fireEvent.click(screen.getByRole('checkbox', { name: 'Agente' }))
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    // 3ª rodada: restringir os papéis encerra conexões — confirma antes.
+    fireEvent.click(await screen.findByRole('button', { name: 'Salvar e encerrar' }))
     await waitFor(() => expect(api.salvar).toHaveBeenCalledWith(expect.objectContaining({ papeisPermitidos: ['agent'] })))
     expect(toast).toHaveBeenCalledWith(expect.stringContaining('2 conexão(ões)'))
+  })
+
+  it('revisão (3ª rodada): desligar ou desmarcar um aplicativo pede confirmação; cancelar não salva', async () => {
+    api.ler.mockResolvedValue({ politica: { ...politica, ativo: true, clientesPermitidos: [CLAUDE] }, versao: 'v1', clientesDisponiveis: disponiveis, papeis: ['admin'] })
+    api.salvar.mockImplementation(async (p) => ({ politica: p, versao: 'v2', conexoesEncerradas: 1 }))
+    render(<AplicativosExternosSettings />)
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Claude/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByText('Salvar e encerrar conexões?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => expect(screen.queryByText('Salvar e encerrar conexões?')).toBeNull())
+    expect(api.salvar).not.toHaveBeenCalled()
+    // Desligar: o aviso diz que todas as conexões caem.
+    fireEvent.click(screen.getByRole('switch'))
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByText(/todas as conexões do workspace são encerradas na hora/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar e encerrar' }))
+    await waitFor(() => expect(api.salvar).toHaveBeenCalledWith(expect.objectContaining({ ativo: false })))
+  })
+
+  it('revisão (3ª rodada): ampliar a política salva direto, sem confirmação', async () => {
+    api.ler.mockResolvedValue({ politica: { ...politica, ativo: true, clientesPermitidos: [], papeisPermitidos: ['admin'] }, versao: 'v1', clientesDisponiveis: disponiveis, papeis: ['admin', 'agent'] })
+    api.salvar.mockImplementation(async (p) => ({ politica: p, versao: 'v2', conexoesEncerradas: 0 }))
+    render(<AplicativosExternosSettings />)
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Claude/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Agente' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(api.salvar).toHaveBeenCalledWith(expect.objectContaining({ clientesPermitidos: [CLAUDE], papeisPermitidos: ['admin', 'agent'] })))
+    expect(screen.queryByText('Salvar e encerrar conexões?')).toBeNull()
+  })
+
+  it('revisão (3ª rodada): papel gravado que saiu da lista não vai no salvar (não trava em 422)', async () => {
+    api.ler.mockResolvedValue({
+      politica: { ...politica, ativo: false, papeisPermitidos: ['super_admin', 'admin'] },
+      versao: 'v1',
+      clientesDisponiveis: disponiveis,
+      papeis: ['admin', 'agent'],
+    })
+    api.salvar.mockImplementation(async (p) => ({ politica: p, versao: 'v2', conexoesEncerradas: 0 }))
+    render(<AplicativosExternosSettings />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(api.salvar).toHaveBeenCalledWith(expect.objectContaining({ papeisPermitidos: ['admin'] })))
+  })
+
+  it.each([
+    ['no_chat_exceto_acesso', /no cartão da Oryon dentro do chat ou, quando dão acesso/],
+    ['sempre_no_app', /sempre pedem a aprovação da pessoa aqui na Oryon, com a senha dela/],
+  ])('revisão (3ª rodada): o aviso diz onde se aprova de fato (%s)', async (aprovacaoNoChat, texto) => {
+    api.ler.mockResolvedValue({
+      politica: { ...politica, ativo: true, clientesPermitidos: [CLAUDE], nivelMaximo: 'escrita', aprovacaoNoChat },
+      versao: 'v1',
+      clientesDisponiveis: disponiveis,
+      papeis: ['admin'],
+    })
+    render(<AplicativosExternosSettings />)
+    expect(await screen.findByText(texto)).toBeInTheDocument()
+    expect(screen.getByText(/Convidar ou mudar o papel de alguém/)).toBeInTheDocument()
   })
 
   it('sem a API liberada: avisa que precisa falar com a Oryon', async () => {
@@ -149,6 +208,19 @@ describe('Aplicativos conectados', () => {
     await waitFor(() => expect(api.desconectar).toHaveBeenCalledWith('s1'))
     await waitFor(() => expect(screen.queryByRole('list', { name: 'Aplicativos conectados' })).toBeNull())
     expect(toast).toHaveBeenCalledWith('Claude foi desconectado.')
+  })
+
+  it('revisão (3ª rodada): desconectar baixa o total (não aparece "as 2 de 3")', async () => {
+    auth.role = 'agent'
+    api.minhas.mockResolvedValue({ conexoes: [conexao(), conexao({ id: 's2' }), conexao({ id: 's3' })], total: 3, cortada: false })
+    api.desconectar.mockResolvedValue(undefined)
+    render(<AplicativosConectadosSettings />)
+    const lista = await screen.findByRole('list', { name: 'Aplicativos conectados' })
+    fireEvent.click(within(lista).getAllByRole('button', { name: 'Desconectar' })[0])
+    const botoes = await screen.findAllByRole('button', { name: 'Desconectar' })
+    fireEvent.click(botoes[botoes.length - 1])
+    await waitFor(() => expect(within(screen.getByRole('list', { name: 'Aplicativos conectados' })).getAllByRole('listitem')).toHaveLength(2))
+    expect(screen.queryByText(/conexões mais recentes de/)).toBeNull()
   })
 
   it('admin troca para "Do workspace" e vê quem conectou', async () => {

@@ -8,6 +8,7 @@ import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { Switch } from '@/components/ui/Switch'
 import { showToast } from '@/hooks/useToast'
@@ -23,11 +24,29 @@ import {
   type PoliticaOAuth,
 } from '@/services/oauthApi'
 
+/**
+ * Revisão do épico (18/11, 3ª rodada): a mudança tira de alguém o que a política gravada deixava
+ * (desligar, desmarcar um aplicativo, restringir os papéis)? O backend encerra essas conexões na
+ * hora, então a tela confirma antes. Mesma regra de `recusaDaPolitica` no backend.
+ */
+function restringe(antes: PoliticaOAuth, depois: PoliticaOAuth, disponiveis: Set<string>): boolean {
+  if (!antes.ativo) return false // desligada: não há conexão para encerrar
+  if (!depois.ativo) return true
+  if (antes.clientesPermitidos.some((c) => disponiveis.has(c) && !depois.clientesPermitidos.includes(c))) return true
+  if (depois.papeisPermitidos === null) return false
+  if (antes.papeisPermitidos === null) return true
+  const agora = depois.papeisPermitidos
+  return antes.papeisPermitidos.some((p) => !agora.includes(p))
+}
+
 export function AplicativosExternosSettings() {
   const { featureFlags } = useAuth()
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(false)
   const [politica, setPolitica] = useState<PoliticaOAuth | null>(null)
+  // 3ª rodada: a política como está gravada (para saber se salvar vai encerrar conexões).
+  const [gravada, setGravada] = useState<PoliticaOAuth | null>(null)
+  const [confirmarCorte, setConfirmarCorte] = useState(false)
   const [clientes, setClientes] = useState<ClienteOAuthDisponivel[]>([])
   const [papeis, setPapeis] = useState<string[]>([])
   // Revisão ORY-94: a versão lida vai de volta no salvar (a aba velha não desfaz o corte de outro admin).
@@ -42,6 +61,7 @@ export function AplicativosExternosSettings() {
       .then((r) => {
         if (!vivo) return
         setPolitica(r.politica)
+        setGravada(r.politica)
         setClientes(r.clientesDisponiveis)
         setPapeis(r.papeis)
         setVersao(r.versao)
@@ -58,18 +78,22 @@ export function AplicativosExternosSettings() {
     }
   }, [tentativa])
 
+  // Só os aplicativos que a Oryon aprova hoje (um que ela bloqueou depois nunca trava o salvar).
+  const disponiveis = new Set(clientes.map((c) => c.clientId))
+  const paraSalvar = (p: PoliticaOAuth): PoliticaOAuth => ({
+    ...p,
+    clientesPermitidos: p.clientesPermitidos.filter((c) => disponiveis.has(c)),
+    // 3ª rodada: idem para os papéis (um papel gravado que saiu da lista travava o salvar com 422).
+    papeisPermitidos: p.papeisPermitidos?.filter((x) => papeis.includes(x)) ?? null,
+  })
+
   const salvar = async () => {
     if (!politica) return
     setSalvando(true)
     try {
-      // Só os aplicativos que a Oryon aprova hoje (um que ela bloqueou depois nunca trava o salvar).
-      const disponiveis = new Set(clientes.map((c) => c.clientId))
-      const r = await salvarPoliticaOAuth({
-        ...politica,
-        clientesPermitidos: politica.clientesPermitidos.filter((c) => disponiveis.has(c)),
-        versao,
-      })
+      const r = await salvarPoliticaOAuth({ ...paraSalvar(politica), versao })
       setPolitica(r.politica)
+      setGravada(r.politica)
       setVersao(r.versao)
       showToast(r.conexoesEncerradas > 0 ? `Política salva. ${r.conexoesEncerradas} conexão(ões) que deixaram de ser permitidas foram encerradas.` : 'Política salva.')
     } catch (e) {
@@ -81,6 +105,7 @@ export function AplicativosExternosSettings() {
       }
     } finally {
       setSalvando(false)
+      setConfirmarCorte(false)
     }
   }
 
@@ -107,7 +132,18 @@ export function AplicativosExternosSettings() {
     const atuais = politica.papeisPermitidos ?? []
     setPolitica({ ...politica, papeisPermitidos: marcado ? [...atuais, p] : atuais.filter((x) => x !== p) })
   }
-  const papeisInvalidos = politica.ativo && politica.papeisPermitidos !== null && politica.papeisPermitidos.length === 0
+  const papeisInvalidos = politica.ativo && politica.papeisPermitidos !== null && !politica.papeisPermitidos.some((p) => papeis.includes(p))
+  const pedirSalvar = () => {
+    if (gravada && restringe(gravada, paraSalvar(politica), disponiveis)) setConfirmarCorte(true)
+    else void salvar()
+  }
+  // 3ª rodada: o aviso diz onde as ações críticas se aprovam de fato (o padrão é no cartão do chat).
+  const avisoDasAcoes =
+    politica.nivelMaximo === 'leitura'
+      ? 'Com "Só consultar", os aplicativos não alteram nada.'
+      : politica.aprovacaoNoChat === 'sempre_no_app'
+        ? 'Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) sempre pedem a aprovação da pessoa aqui na Oryon, com a senha dela.'
+        : 'Ações importantes pedem a aprovação da própria pessoa: no cartão da Oryon dentro do chat ou, quando dão acesso (convidar ou mudar o papel de alguém, criar ferramenta de agente), aqui na Oryon, com a senha.'
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl">
@@ -171,7 +207,8 @@ export function AplicativosExternosSettings() {
                   [
                     'no_chat_exceto_acesso',
                     'No chat do aplicativo, exceto acesso',
-                    'Enviar mensagens, publicar prompt, campanhas e afins: um clique no cartão do Claude ou do ChatGPT. Convidar pessoas e criar ferramentas de agente: só no app, com senha.',
+                    // 3ª rodada: inclui mudar o papel (preparar_edicao_de_usuario também fica no app) e o aplicativo sem cartão.
+                    'Enviar mensagens, publicar prompt, campanhas e afins: um clique no cartão do Claude ou do ChatGPT. Convidar ou mudar o papel de alguém e criar ferramentas de agente: só no app, com senha. Aplicativos sem cartão (como o Claude Code) aprovam tudo no app.',
                   ],
                   ['sempre_no_app', 'Sempre no app da Oryon, com senha', 'Toda ação crítica pede que a pessoa abra o app e confirme com a senha.'],
                 ] as const
@@ -217,17 +254,31 @@ export function AplicativosExternosSettings() {
           </fieldset>
 
           <Banner variant="neutral" icon={<ShieldCheck className="w-4 h-4" aria-hidden />}>
-            Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) sempre pedem a aprovação da pessoa aqui na Oryon. Os
-            dados que o aplicativo consultar passam a ser processados por ele, sob a responsabilidade da empresa.
+            {avisoDasAcoes} Os dados que o aplicativo consultar passam a ser processados por ele, sob a responsabilidade da empresa.
           </Banner>
         </>
       )}
 
       <div className="flex justify-end">
-        <Button onClick={() => void salvar()} loading={salvando} disabled={papeisInvalidos}>
+        <Button onClick={pedirSalvar} loading={salvando} disabled={papeisInvalidos}>
           Salvar
         </Button>
       </div>
+
+      <ConfirmModal
+        open={confirmarCorte}
+        onClose={() => setConfirmarCorte(false)}
+        onConfirm={() => void salvar()}
+        title="Salvar e encerrar conexões?"
+        description={
+          politica.ativo
+            ? 'As conexões que deixarem de ser permitidas, de qualquer pessoa do workspace, são encerradas na hora. Para voltar a usar, a pessoa precisa conectar de novo.'
+            : 'Desligado, ninguém conecta e todas as conexões do workspace são encerradas na hora.'
+        }
+        confirmLabel="Salvar e encerrar"
+        danger
+        loading={salvando}
+      />
     </div>
   )
 }

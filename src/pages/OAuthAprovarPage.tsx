@@ -20,6 +20,8 @@ import {
 import { OryonLogo } from '@/components/brand/OryonLogo'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
+import { PasswordInput } from '@/components/auth/PasswordInput'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { CURVA_SUAVE, MolduraOAuth } from '@/components/oauth/MolduraOAuth'
 import { LogoDoAplicativo } from '@/components/oauth/LogoDoAplicativo'
@@ -81,10 +83,12 @@ export function OAuthAprovarPage() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'carregando' })
   const [enviando, setEnviando] = useState<'aprovar' | 'recusar' | null>(null)
   const [erro, setErro] = useState('')
+  const [senha, setSenha] = useState('')
   const emIframe = useMemo(dentroDeIframe, [])
   const conta = <ContaDaSessao />
   // 2ª rodada: "Aprovar" só depois de um gesto nesta página (contra o double-clickjacking).
-  const liberado = useGestoNaPagina(estado.tipo === 'pronto')
+  // 3ª rodada: e o clique só vale se o gesto veio antes dele (o próprio toque não libera).
+  const { liberado, cliqueValido } = useGestoNaPagina(estado.tipo === 'pronto')
 
   useEffect(() => {
     if (emIframe) return
@@ -112,11 +116,26 @@ export function OAuthAprovarPage() {
     setErro('')
     setEnviando(aprovar ? 'aprovar' : 'recusar')
     try {
-      const r = await decidirAprovacaoOAuth(pedido.id, { csrf: pedido.csrf, aprovar })
+      const r = await decidirAprovacaoOAuth(pedido.id, {
+        csrf: pedido.csrf,
+        aprovar,
+        ...(aprovar && pedido.precisaSenha ? { senha } : {}),
+      })
+      setSenha('')
       if (r.status !== 'pendente') setEstado({ tipo: 'decidido', cliente: pedido.cliente, status: r.status })
     } catch (err: unknown) {
       const { codigo, mensagem } = erroDoOAuth(err)
-      if (codigo === 'aprovacao_expirada') {
+      if (codigo === 'senha_necessaria') {
+        // O detalhe não tinha pedido a senha (resposta antiga): mostra o campo em vez de travar.
+        setEstado({ tipo: 'pronto', pedido: { ...pedido, precisaSenha: true } })
+        setErro('Confirme a sua senha para aprovar.')
+      } else if (codigo === 'senha_incorreta') {
+        setSenha('')
+        setErro('Senha incorreta.')
+      } else if (codigo === 'muitas_tentativas') {
+        setSenha('')
+        setErro(mensagem ?? 'Muitas tentativas de senha. Espere alguns minutos e tente de novo.')
+      } else if (codigo === 'aprovacao_expirada') {
         setEstado({ tipo: 'erro', ...INDISPONIVEL })
       } else if (codigo === 'ja_decidido') {
         setErro('Este pedido já foi decidido. Recarregue a página para ver como ficou.')
@@ -218,7 +237,7 @@ export function OAuthAprovarPage() {
               <p id="titulo-da-acao" className="text-sm font-semibold text-surface-50">
                 {pedido.titulo ?? 'A ação'}
               </p>
-              <p className="mt-0.5 text-sm text-surface-300 leading-relaxed break-words">{resumoSemCitacao(pedido.acao, !!pedido.conteudo)}</p>
+              <p className="mt-0.5 text-sm text-surface-300 leading-relaxed break-words">{resumoSemCitacao(pedido.acao, pedido.conteudo?.texto)}</p>
             </div>
           </div>
           {pedido.conteudo && (
@@ -243,6 +262,18 @@ export function OAuthAprovarPage() {
           </Banner>
         )}
 
+        {/* Revisão do épico (3ª rodada): acesso, "sempre no app" e aplicativo sem cartão pedem a senha. */}
+        {pedido.precisaSenha && !pedido.previaCortada && (
+          <FormField label="Confirme a sua senha para aprovar">
+            <PasswordInput
+              autoComplete="current-password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              placeholder="••••••••"
+            />
+          </FormField>
+        )}
+
         {erro && <Banner variant="danger">{erro}</Banner>}
 
         {/* Os botões ficam fixos no rodapé: à vista mesmo com a mensagem longa. */}
@@ -263,9 +294,11 @@ export function OAuthAprovarPage() {
               type="button"
               className="w-full sm:w-auto"
               loading={enviando === 'aprovar'}
-              disabled={enviando !== null || pedido.previaCortada || !liberado}
+              disabled={enviando !== null || pedido.previaCortada || !liberado || (pedido.precisaSenha === true && !senha)}
               title={!liberado && !pedido.previaCortada ? 'Leia o pedido acima antes de aprovar' : undefined}
-              onClick={() => void decidir(pedido, true)}
+              onClick={() => {
+                if (cliqueValido()) void decidir(pedido, true)
+              }}
             >
               Aprovar
             </Button>

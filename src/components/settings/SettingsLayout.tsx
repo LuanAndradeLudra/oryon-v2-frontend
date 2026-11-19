@@ -167,10 +167,8 @@ export const SETTINGS_NAV: NavDomain[] = [
           // do backend). Fica no menu mesmo sem FF_PUBLIC_API: a tela explica
           // como pedir a liberação.
           { section: 'api-keys',      label: 'Chaves de API',       adminOnly: true },
-          // ORY-98: assistentes de IA de fora (Claude, ChatGPT) — a política é do admin;
-          // as conexões, de todo mundo (cada um vê as suas).
+          // ORY-98: assistentes de IA de fora (Claude, ChatGPT) — a política é do admin.
           { section: 'external-apps', label: 'Aplicativos de IA externos', adminOnly: true },
-          { section: 'connected-apps', label: 'Aplicativos conectados' },
         ],
       },
     ],
@@ -182,6 +180,9 @@ export const SETTINGS_NAV: NavDomain[] = [
         items: [
           { section: 'account',       label: 'Minha conta' },
           { section: 'notifications', label: 'Notificações' },
+          // ORY-98: as conexões são de cada pessoa ("as minhas"). Revisão do épico (18/11, 3ª rodada):
+          // fica em Conta, depois de "Minha conta" e "Notificações" — em Automação ela virava a 1ª seção do atendente.
+          { section: 'connected-apps', label: 'Aplicativos conectados' },
           { section: 'billing',       label: 'Plano & faturamento', ownerOnly: true },
           { section: 'security',      label: 'Segurança e acesso',  adminOnly: true },
           { section: 'audit',         label: 'Auditoria',           adminOnly: true },

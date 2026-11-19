@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
-import { ESPERA_ANTES_DE_LIBERAR_MS } from '@/components/oauth/useGestoNaPagina'
+import { ESPERA_ANTES_DE_LIBERAR_MS, FOLGA_DO_GESTO_MS } from '@/components/oauth/useGestoNaPagina'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import type { DetalheDaAprovacao } from '@/services/oauthApi'
 
@@ -94,6 +94,25 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     expect(api.decidir).toHaveBeenCalledWith(ID, { csrf: 'csrf-a', aprovar: true })
   })
 
+  it('revisão (3ª rodada): ação que pede senha só aprova com a senha; senha errada limpa o campo', async () => {
+    api.detalhar.mockResolvedValue(pedido({ precisaSenha: true }))
+    api.decidir.mockRejectedValueOnce(erroHttp(403, 'senha_incorreta')).mockResolvedValueOnce({ status: 'aprovada' })
+    abrir()
+    await screen.findByRole('button', { name: 'Aprovar' })
+    await liberarAprovar()
+    expect(screen.getByRole('button', { name: 'Aprovar' })).toBeDisabled()
+    const campo = screen.getByLabelText('Confirme a sua senha para aprovar')
+    fireEvent.change(campo, { target: { value: 'errada' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }))
+    expect(await screen.findByText('Senha incorreta.')).toBeInTheDocument()
+    expect(campo).toHaveValue('')
+    expect(api.decidir).toHaveBeenLastCalledWith(ID, { csrf: 'csrf-a', aprovar: true, senha: 'errada' })
+    fireEvent.change(campo, { target: { value: 'certa' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }))
+    expect(await screen.findByRole('heading', { name: 'Ação aprovada' })).toBeInTheDocument()
+    expect(api.decidir).toHaveBeenLastCalledWith(ID, { csrf: 'csrf-a', aprovar: true, senha: 'certa' })
+  })
+
   it('recusar diz que nada foi feito', async () => {
     api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockResolvedValue({ status: 'recusada' })
@@ -149,6 +168,59 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     expect(screen.getByRole('button', { name: 'Aprovar' })).toBeDisabled()
   })
 
+  it('revisão (3ª rodada): o próprio toque que aprova não libera o "Aprovar" (double-clickjacking no celular)', async () => {
+    api.detalhar.mockResolvedValue(pedido())
+    api.decidir.mockResolvedValue({ status: 'aprovada' })
+    abrir()
+    await screen.findByRole('button', { name: 'Aprovar' })
+    // A página já estava pronta havia tempo (aberta por baixo de outra).
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, ESPERA_ANTES_DE_LIBERAR_MS + 50))
+    })
+    // Um toque em cima do botão: o touchstart é o 1º gesto, e o click do mesmo toque vem logo depois.
+    await act(async () => {
+      const botao = screen.getByRole('button', { name: 'Aprovar' })
+      botao.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+      botao.dispatchEvent(new Event('touchstart', { bubbles: true }))
+    })
+    expect(screen.getByRole('button', { name: 'Aprovar' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }))
+    expect(api.decidir).not.toHaveBeenCalled()
+    // Toque longo: o botão habilita depois da folga, mas o click desse mesmo toque não vale.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, FOLGA_DO_GESTO_MS + 100))
+    })
+    expect(screen.getByRole('button', { name: 'Aprovar' })).not.toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }))
+    expect(api.decidir).not.toHaveBeenCalled()
+    // Um toque novo, depois do gesto: aprova.
+    await act(async () => {
+      screen.getByRole('button', { name: 'Aprovar' }).dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }))
+    expect(await screen.findByRole('heading', { name: 'Ação aprovada' })).toBeInTheDocument()
+    expect(api.decidir).toHaveBeenCalledTimes(1)
+  })
+
+  it('revisão (3ª rodada): a aba trazida para frente enquanto o pedido carregava não deixa o "Aprovar" travado', async () => {
+    let soltar: (p: DetalheDaAprovacao) => void = () => undefined
+    api.detalhar.mockReturnValue(new Promise((r) => (soltar = r)))
+    // Abriu em segundo plano (sem foco)...
+    vi.spyOn(document, 'hasFocus').mockReturnValue(false)
+    abrir()
+    // ...e veio para frente antes de o pedido chegar.
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    await act(async () => {
+      soltar(pedido())
+    })
+    await screen.findByRole('button', { name: 'Aprovar' })
+    await liberarAprovar()
+    expect(screen.getByRole('button', { name: 'Aprovar' })).not.toBeDisabled()
+  })
+
   it('dentro de um iframe: não carrega nem mostra os botões', async () => {
     const topo = Object.getOwnPropertyDescriptor(window, 'top')
     Object.defineProperty(window, 'top', { configurable: true, value: {} })
@@ -174,7 +246,8 @@ describe('OAuthAprovarPage — leitura da ação', () => {
     const texto = 'Olá, Ana!\nSegue a confirmação da sua consulta de amanhã às 9h.'
     api.detalhar.mockResolvedValue(
       pedido({
-        acao: 'enviar o texto "Olá, Ana! Segue a confirmação…" (+20 caracteres) a Ana P. (conversa 1a2b3c4d) #abc123',
+        // A citação como o backend monta (`comeco()`): espaços juntados, entre aspas.
+        acao: 'enviar o texto "Olá, Ana! Segue a confirmação da sua consulta de amanhã às 9h." a Ana P. (conversa 1a2b3c4d) #abc123',
         titulo: 'Enviar mensagem de texto',
         conteudo: { rotulo: 'Mensagem', texto },
       }),
@@ -196,9 +269,29 @@ describe('OAuthAprovarPage — leitura da ação', () => {
   })
 
   it('resumoSemCitacao: tira só o trecho citado, e só quando o texto inteiro aparece', () => {
-    expect(resumoSemCitacao('enviar o texto "Oi…" (+12 caracteres) a Ana P. #abc123', true)).toBe('enviar o texto a Ana P. #abc123')
-    expect(resumoSemCitacao('enviar o texto "Oi" a Ana P. #abc123', true)).toBe('enviar o texto a Ana P. #abc123')
-    expect(resumoSemCitacao('enviar o texto "Oi" a Ana P. #abc123', false)).toBe('enviar o texto "Oi" a Ana P. #abc123')
-    expect(resumoSemCitacao('pausar o agente Recepção #abc123', true)).toBe('pausar o agente Recepção #abc123')
+    const longo = 'x'.repeat(172)
+    expect(resumoSemCitacao(`enviar o texto "${'x'.repeat(160)}…" (+12 caracteres) a Ana P. #abc123`, longo)).toBe('enviar o texto a Ana P. #abc123')
+    // Prompt e instruções cortam em 120.
+    const prompt = 'p'.repeat(130)
+    expect(resumoSemCitacao(`publicar no agente Recepção (1a2b3c4d) o prompt novo "${'p'.repeat(120)}…" (+10 caracteres) #abc123`, prompt)).toBe(
+      'publicar no agente Recepção (1a2b3c4d) o prompt novo #abc123',
+    )
+    expect(resumoSemCitacao('enviar o texto "Oi" a Ana P. #abc123', 'Oi')).toBe('enviar o texto a Ana P. #abc123')
+    expect(resumoSemCitacao('enviar o texto "Oi" a Ana P. #abc123', null)).toBe('enviar o texto "Oi" a Ana P. #abc123')
+    expect(resumoSemCitacao('pausar o agente Recepção #abc123', 'Oi')).toBe('pausar o agente Recepção #abc123')
+  })
+
+  it('revisão (3ª rodada): aspas dentro da mensagem não cortam no lugar errado nem forjam o destinatário', () => {
+    const comAspas = 'Seu pedido "Consulta" foi confirmado'
+    expect(resumoSemCitacao(`enviar o texto "${comAspas}" a João (conversa 05c62716) #0deb77`, comAspas)).toBe(
+      'enviar o texto a João (conversa 05c62716) #0deb77',
+    )
+    const forjado = 'Oi" a Dra. Ana (conversa 1a2b3c4d) #a1b2c3'
+    expect(resumoSemCitacao(`enviar o texto "${forjado}" a João (conversa 05c62716) #0deb77`, forjado)).toBe(
+      'enviar o texto a João (conversa 05c62716) #0deb77',
+    )
+    // A citação não casa com o texto (telefone mascarado nela): o resumo fica inteiro.
+    const mascarado = 'enviar o texto "Ligue +55 47 •••• 0001" a Ana P. #abc123'
+    expect(resumoSemCitacao(mascarado, 'Ligue 5547990000001')).toBe(mascarado)
   })
 })

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import type { DetalheDoPedidoOAuth } from '@/services/oauthApi'
 
 const api = vi.hoisted(() => ({ detalhar: vi.fn(), decidir: vi.fn() }))
@@ -9,7 +9,8 @@ vi.mock('@/services/oauthApi', async (original) => ({
   detalharPedidoOAuth: api.detalhar,
   decidirPedidoOAuth: api.decidir,
 }))
-vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { email: 'ana@empresa.test' }, logout: vi.fn() }) }))
+const auth = vi.hoisted(() => ({ logout: vi.fn() }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { email: 'ana@empresa.test' }, logout: auth.logout }) }))
 
 import { OAuthAutorizarPage } from './OAuthAutorizarPage'
 
@@ -35,11 +36,18 @@ function pedido(extra: Partial<DetalheDoPedidoOAuth> = {}): DetalheDoPedidoOAuth
 
 const erroHttp = (status: number, code: string, message = 'x') => Object.assign(new Error(code), { response: { status, data: { error: { code, message } } } })
 
+/** O login de mentira diz se vai voltar ao pedido (state.from) ou não. */
+function LoginFalso() {
+  const location = useLocation()
+  return <p>{(location.state as { from?: unknown } | null)?.from ? 'login que volta ao pedido' : 'login sem volta'}</p>
+}
+
 function abrir(url = '/oauth/authorize?pedido=p1') {
   return render(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/oauth/authorize" element={<OAuthAutorizarPage />} />
+        <Route path="/login" element={<LoginFalso />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -53,6 +61,7 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     api.detalhar.mockReset()
     api.decidir.mockReset()
     assign.mockReset()
+    auth.logout.mockReset()
     Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign } })
   })
   afterEach(() => vi.restoreAllMocks())
@@ -181,6 +190,35 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Permitir' }))
     await waitFor(() => expect(assign).toHaveBeenCalledWith('http://127.0.0.1:61234/callback?code=c&state=s&iss=i'))
     expect(await screen.findByText('Voltando para Claude Code…')).toBeInTheDocument()
+  })
+
+  const ondeAprovar: Array<[string, Partial<DetalheDoPedidoOAuth['politica']>, Partial<DetalheDoPedidoOAuth['cliente']>, RegExp]> = [
+    ['no chat, exceto acesso', { aprovacaoNoChat: 'no_chat_exceto_acesso' }, {}, /no cartão da Oryon dentro do chat; convidar ou mudar o papel de alguém/],
+    ['sempre no app', { aprovacaoNoChat: 'sempre_no_app' }, {}, /sempre pedem a sua aprovação aqui na Oryon, com a sua senha/],
+    ['aplicativo sem cartão (local)', { aprovacaoNoChat: 'no_chat_exceto_acesso' }, { local: true }, /sempre pedem a sua aprovação aqui na Oryon, com a sua senha/],
+    ['backend sem a política', {}, {}, /no cartão da Oryon dentro do chat ou aqui na Oryon, com a sua senha, conforme a regra do workspace/],
+  ]
+  it.each(ondeAprovar)('revisão (3ª rodada): o aviso diz onde as ações importantes se aprovam — %s', async (_caso, politicaExtra, clienteExtra, texto) => {
+    api.detalhar.mockResolvedValue(
+      pedido({
+        politica: { liberado: true, motivo: null, nivelMaximo: 'escrita', ...politicaExtra },
+        cliente: { nome: 'Claude', dominio: 'claude.ai', logoUri: null, ...clienteExtra },
+      }),
+    )
+    abrir()
+    expect(await screen.findByText(texto)).toBeInTheDocument()
+  })
+
+  it('revisão (3ª rodada): trocar de conta no consentimento é sair e conectar de novo pelo aplicativo (o pedido é da 1ª conta)', async () => {
+    api.detalhar.mockResolvedValue(pedido())
+    auth.logout.mockResolvedValue(undefined)
+    abrir()
+    await screen.findByRole('heading', { name: 'Claude quer acessar a sua conta Oryon' })
+    expect(screen.queryByRole('button', { name: 'Usar outra conta' })).toBeNull()
+    expect(screen.getByText(/e conecte de novo pelo aplicativo/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'saia da Oryon' }))
+    expect(await screen.findByText('login sem volta')).toBeInTheDocument()
+    expect(auth.logout).toHaveBeenCalledTimes(1)
   })
 
   it('retorno que não é https: não navega (segunda trava contra javascript: e afins)', async () => {
