@@ -238,7 +238,9 @@ export function OAuthAprovarPage() {
               <p id="titulo-da-acao" className="text-sm font-semibold text-surface-50">
                 {tituloLegivel ?? 'A ação'}
               </p>
-              <p className="mt-0.5 text-sm text-surface-300 leading-relaxed break-words">{pedido.previaLegivel?.oQueAcontece ?? resumoSemCitacao(pedido.acao, pedido.conteudo?.texto)}</p>
+              {/* Revisão de 22/11 (crítico): o resumo do servidor sempre; o "o que acontece" é complemento. */}
+              <p className="mt-0.5 text-sm text-surface-300 leading-relaxed break-words">{resumoSemCitacao(pedido.acao, pedido.conteudo?.texto)}</p>
+              {pedido.previaLegivel?.oQueAcontece ? <p className="mt-1 text-sm text-surface-400 leading-relaxed break-words">{pedido.previaLegivel.oQueAcontece}</p> : null}
             </div>
           </div>
           {pedido.previaLegivel?.campos?.length ? (
@@ -250,7 +252,7 @@ export function OAuthAprovarPage() {
             <div><p className="text-xs font-medium text-surface-400 mb-1.5">Conteúdo</p><div className="rounded-[8px] bg-surface-800 px-3 py-3 text-sm text-surface-50 leading-relaxed max-h-80 overflow-y-auto">{pedido.previaLegivel.conteudo.tipo === 'balao' ? <div className="rounded-[10px] bg-surface-700 px-3 py-2 whitespace-pre-wrap break-words max-w-[85%]">{pedido.previaLegivel.conteudo.texto.replace(/\{\{(\d+)\}\}/g, (_m, n: string) => `{{${pedido.previaLegivel?.conteudo?.variaveis?.[Number(n) - 1] ?? n}}}`)}{pedido.previaLegivel.conteudo.rodape ? <p className="text-xs text-surface-300 mt-2">{pedido.previaLegivel.conteudo.rodape}</p> : null}{pedido.previaLegivel.conteudo.botoes?.map((botao, i) => <p key={i} className="text-xs text-surface-200 mt-1">{botao.texto}</p>)}</div> : <div className="whitespace-pre-wrap break-words">{pedido.previaLegivel.conteudo.texto}</div>}</div></div>
           ) : null}
           {/* Textos longos (prompt, instruções) rolam dentro do bloco; o inteiro fica nos detalhes técnicos. */}
-          {pedido.previaLegivel?.mudancas?.map((m) => <div key={m.rotulo} className="rounded-[8px] bg-surface-800 px-4 py-3 text-sm"><p className="font-medium">{m.rotulo}</p><p className="text-surface-400 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">Antes: {m.antes}</p><p className="mt-1 text-surface-100 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">Depois: {m.depois}</p></div>)}
+          {pedido.previaLegivel?.mudancas?.map((m) => <div key={m.rotulo} className="rounded-[8px] bg-surface-800 px-4 py-3 text-sm"><p className="font-medium">{m.rotulo}</p>{m.cortado ? <p className="mt-1 text-xs text-warning">A mudança é grande e não coube inteira aqui: confira o texto todo em "Ver todos os detalhes".</p> : null}<p className="text-surface-400 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">Antes: {m.antes}</p><p className="mt-1 text-surface-100 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">Depois: {m.depois}</p></div>)}
           {pedido.previaLegivel?.selos?.length ? <div className="flex flex-wrap gap-2">{pedido.previaLegivel.selos.map((s, i) => <span key={i} className="rounded-[6px] bg-surface-700 px-2 py-1 text-xs text-surface-200">{s.texto}</span>)}</div> : null}
           {pedido.conteudo && !pedido.previaLegivel?.conteudo && !pedido.previaLegivel?.mudancas?.length && (
             <div>
@@ -323,7 +325,8 @@ export function OAuthAprovarPage() {
 
 /** Os detalhes técnicos, recolhidos; abrem e fecham com a altura animada. */
 function DetalhesTecnicos({ previa }: { previa: string }) {
-  const [aberto, setAberto] = useState(false)
+  // Revisão de 22/11 (crítico): a prévia completa começa aberta — ninguém aprova sem ver a ação inteira.
+  const [aberto, setAberto] = useState(true)
   const id = useId()
   return (
     <div className="rounded-[10px] bg-surface-900">

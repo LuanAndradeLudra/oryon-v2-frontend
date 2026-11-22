@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { ESPERA_ANTES_DE_LIBERAR_MS, FOLGA_DO_GESTO_MS } from '@/components/oauth/useGestoNaPagina'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import type { DetalheDaAprovacao } from '@/services/oauthApi'
@@ -63,10 +63,11 @@ describe('OAuthAprovarPage — aprovar a ação de um aplicativo externo', () =>
     abrir()
     expect(await screen.findByRole('heading', { name: 'Claude quer fazer uma ação em seu nome' })).toBeInTheDocument()
     expect(screen.getByText(/enviar o texto "Olá" a Ana P\./)).toBeInTheDocument()
-    // Os detalhes técnicos ficam recolhidos; abrem no botão.
-    expect(screen.queryByText(/contact: \{"name":"Ana P\."\}/)).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Ver todos os detalhes' }))
+    // Revisão de 22/11 (crítico): a prévia completa começa ABERTA (ninguém aprova sem ver a ação
+    // inteira); o botão só a recolhe.
     expect(await screen.findByText(/contact: \{"name":"Ana P\."\}/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ver todos os detalhes' }))
+    await waitFor(() => expect(screen.queryByText(/contact: \{"name":"Ana P\."\}/)).toBeNull())
     expect(api.detalhar).toHaveBeenCalledWith(ID)
     // Revisão ORY-94: mostra com qual conta a pessoa está decidindo.
     expect(screen.getByText('ana@empresa.test')).toBeInTheDocument()
@@ -257,7 +258,7 @@ describe('OAuthAprovarPage — leitura da ação', () => {
     expect(screen.getByText('enviar o texto a Ana P. (conversa 1a2b3c4d) #abc123')).toBeInTheDocument()
     expect(screen.getByText('Mensagem')).toBeInTheDocument()
     expect(screen.getByText((_, el) => el?.textContent === texto && el.tagName === 'DIV')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ver todos os detalhes' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'Ver todos os detalhes' })).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: 'Recusar' })).toBeInTheDocument()
   })
 

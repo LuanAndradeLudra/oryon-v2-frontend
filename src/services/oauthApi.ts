@@ -125,7 +125,7 @@ export interface DetalheDaAprovacao {
     oQueAcontece: string
     campos: Array<{ rotulo: string; valor: string }>
     conteudo?: { tipo: 'balao' | 'texto'; texto: string; variaveis?: string[]; rodape?: string; botoes?: Array<{ texto: string }> }
-    mudancas?: Array<{ rotulo: string; antes: string; depois: string }>
+    mudancas?: Array<{ rotulo: string; antes: string; depois: string; cortado?: boolean }>
     selos?: Array<{ texto: string; tom: 'ok' | 'aviso' | 'neutro' }>
   }
   status: SituacaoDaAprovacao
