@@ -123,6 +123,16 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     expect(screen.getByText('O administrador deste workspace só liberou consultas.')).toBeInTheDocument()
   })
 
+  it('revisão de 22/11: o que o nível MARCADO concede fica no rodapé, junto da escolha (celular)', async () => {
+    api.detalhar.mockResolvedValue(pedido())
+    abrir()
+    const escrita = await screen.findByRole('radio', { name: /Consultar e fazer alterações/ })
+    const descricao = () => escrita.closest('fieldset')?.querySelector('p[aria-live]')?.textContent ?? ''
+    expect(descricao()).toContain('sem mudar nada')
+    fireEvent.click(escrita)
+    expect(descricao()).toContain('ver contatos sem máscara')
+  })
+
   it('senha errada avisa e limpa o campo', async () => {
     api.detalhar.mockResolvedValue(pedido())
     api.decidir.mockRejectedValueOnce(erroHttp(403, 'senha_incorreta'))

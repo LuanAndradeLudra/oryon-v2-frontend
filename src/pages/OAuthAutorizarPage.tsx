@@ -209,6 +209,7 @@ export function OAuthAutorizarPage() {
   }
 
   const descricaoDoNivel = NIVEIS.find((n) => n.id === nivel)?.descricao ?? ''
+  const algumIndisponivel = NIVEIS.some((n) => !pedido.niveis[n.id].disponivel)
 
   return (
     <MolduraOAuth titulo="Conectar à Oryon" largura="ampla">
@@ -262,8 +263,6 @@ export function OAuthAutorizarPage() {
                 <p className="text-xs font-medium text-surface-300 uppercase tracking-wide mb-2">
                   {nivel === 'leitura' ? 'Poderá ver' : 'Poderá ver e alterar'}
                 </p>
-                {/* No celular, a escolha do nível (no rodapé) mostra só o nome: o que ele significa vem aqui. */}
-                <p className="sm:hidden text-xs text-surface-400 mb-2">{descricaoDoNivel}</p>
                 {grupos.length === 0 ? (
                   <p className="text-sm text-surface-400">O aplicativo não pediu nada que o seu papel possa conceder.</p>
                 ) : (
@@ -327,6 +326,12 @@ export function OAuthAutorizarPage() {
                   </label>
                 )
               })}
+              {/* Revisão de 22/11: no celular, o que o nível MARCADO concede fica junto da escolha
+                  (no rodapé, à vista do "Permitir"), e o motivo do nível indisponível também. */}
+              <p className="sm:hidden col-span-2 text-xs text-surface-400" aria-live="polite">
+                {descricaoDoNivel}
+                {algumIndisponivel ? ' O administrador deste workspace só liberou consultas.' : ''}
+              </p>
             </fieldset>
           ) : (
             <div className="hidden lg:block" />
