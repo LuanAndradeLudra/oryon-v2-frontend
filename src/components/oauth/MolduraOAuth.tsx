@@ -40,6 +40,9 @@ export function MolduraOAuth({
   // aparelho e a página não rola; o que não couber rola DENTRO do bloco (quem usa a moldura
   // separa o corpo que rola do rodapé fixo).
   const naAlturaDaTela = largura === 'ampla'
+  // Revisão de 22/11: o bloco preso à altura da tela só a partir de 560 px de altura. Abaixo
+  // (celular deitado, zoom de 200%), o rodapé (nível, senha e botões) não cabe junto de um corpo
+  // que rola: a moldura volta a rolar inteira e nada fica cortado.
   return (
     <MotionConfig reducedMotion="user">
       {/* Revisão ORY-94 (2ª rodada): o app trava a rolagem no html/body/#root; fora do AppShell,
@@ -49,7 +52,7 @@ export function MolduraOAuth({
       <div
         className={`h-[100dvh] w-full bg-surface-950 flex flex-col items-center px-3 sm:px-4 ${
           naAlturaDaTela
-            ? 'overflow-hidden pt-[calc(1rem+env(safe-area-inset-top))] sm:pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]'
+            ? 'overflow-y-auto overscroll-contain [@media(min-height:560px)]:overflow-hidden pt-[calc(1rem+env(safe-area-inset-top))] sm:pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]'
             : `overflow-y-auto overscroll-contain pt-[calc(2.5rem+env(safe-area-inset-top))] ${
                 rodapeFixo ? 'pb-[env(safe-area-inset-bottom)]' : 'pb-[calc(2.5rem+env(safe-area-inset-bottom))]'
               }`
@@ -63,7 +66,7 @@ export function MolduraOAuth({
           transition={{ duration: 0.32, ease: CURVA_SUAVE }}
           className={`w-full ${
             naAlturaDaTela
-              ? 'max-w-2xl lg:max-w-5xl min-h-0 shrink flex flex-col overflow-hidden'
+              ? 'max-w-2xl lg:max-w-5xl shrink-0 flex flex-col [@media(min-height:560px)]:min-h-0 [@media(min-height:560px)]:shrink [@media(min-height:560px)]:overflow-hidden'
               : largura === 'larga'
                 ? 'max-w-2xl shrink-0'
                 : 'max-w-md shrink-0'
