@@ -116,6 +116,13 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     expect(api.decidir).toHaveBeenCalledTimes(1)
   })
 
+  it('revisão de 23/11: o aplicativo hospedado não mostra o aviso do aplicativo local', async () => {
+    api.detalhar.mockResolvedValue(pedido())
+    abrir()
+    await screen.findByRole('button', { name: 'Permitir' })
+    expect(screen.queryByText(/Continue só se você acabou de iniciar esta conexão/)).not.toBeInTheDocument()
+  })
+
   it('política só de consulta: a opção de alterar fica desabilitada e explica o porquê', async () => {
     api.detalhar.mockResolvedValue(pedido({ politica: { liberado: true, motivo: null, nivelMaximo: 'leitura' }, niveis: { ...pedido().niveis, escrita: { disponivel: false, grupos: [] } } }))
     abrir()
@@ -196,6 +203,9 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     expect(await screen.findByRole('heading', { name: 'Claude Code quer acessar a sua conta Oryon' })).toBeInTheDocument()
     expect(screen.getByText(/claude\.ai · no seu computador · aplicativo aprovado pela Oryon/)).toBeInTheDocument()
     expect(screen.getByText('Claude Code, neste computador')).toBeInTheDocument()
+    // Revisão de 23/11: o aviso contra colar o endereço de retorno num site (o código vai nele).
+    expect(screen.getByText(/Continue só se você acabou de iniciar esta conexão no Claude Code/)).toBeInTheDocument()
+    expect(screen.getByText(/nunca copie nem envie a ninguém o endereço/)).toBeInTheDocument()
     digitarSenha()
     fireEvent.click(screen.getByRole('button', { name: 'Permitir' }))
     await waitFor(() => expect(assign).toHaveBeenCalledWith('http://127.0.0.1:61234/callback?code=c&state=s&iss=i'))
