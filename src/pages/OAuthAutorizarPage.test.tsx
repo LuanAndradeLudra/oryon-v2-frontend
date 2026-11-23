@@ -54,6 +54,7 @@ function abrir(url = '/oauth/authorize?pedido=p1') {
 }
 
 const assign = vi.fn()
+const replace = vi.fn()
 const digitarSenha = (valor = 'certa') => fireEvent.change(screen.getByLabelText('Confirme a sua senha'), { target: { value: valor } })
 
 describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
@@ -61,8 +62,9 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     api.detalhar.mockReset()
     api.decidir.mockReset()
     assign.mockReset()
+    replace.mockReset()
     auth.logout.mockReset()
-    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign } })
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign, replace } })
   })
   afterEach(() => vi.restoreAllMocks())
 
@@ -237,7 +239,9 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     expect(screen.queryByRole('button', { name: 'Usar outra conta' })).toBeNull()
     expect(screen.getByText(/e conecte de novo pelo aplicativo/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'saia da Oryon' }))
-    expect(await screen.findByText('login sem volta')).toBeInTheDocument()
+    // Revisão de 23/11 (baixos): o login abre com a página recarregada (a CSP do /oauth/* não
+    // segue valendo no app inteiro).
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/login'))
     expect(auth.logout).toHaveBeenCalledTimes(1)
   })
 

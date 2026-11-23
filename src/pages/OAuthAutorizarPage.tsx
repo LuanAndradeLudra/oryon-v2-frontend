@@ -71,7 +71,7 @@ function avisoDasAcoes(pedido: DetalheDoPedidoOAuth): string {
     return 'Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) sempre pedem a sua aprovação aqui na Oryon, com a sua senha.'
   }
   if (pedido.politica.aprovacaoNoChat === 'no_chat_exceto_acesso') {
-    return 'Ações importantes pedem a sua aprovação: enviar mensagens e mudar regras de agentes, no cartão da Oryon dentro do chat; convidar ou mudar o papel de alguém e criar ferramentas de agente, aqui na Oryon, com a sua senha.'
+    return 'Ações importantes pedem a sua aprovação: enviar mensagens e mudar regras de agentes, no cartão da Oryon dentro do chat; convidar ou mudar o papel de alguém, dar a um setor acesso a uma linha ou a um funil e criar ferramentas de agente, aqui na Oryon, com a sua senha.'
   }
   return 'Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) só acontecem com a sua aprovação: no cartão da Oryon dentro do chat ou aqui na Oryon, com a sua senha, conforme a regra do workspace.'
 }
@@ -142,6 +142,9 @@ export function OAuthAutorizarPage() {
       voltar(r.redirecionarPara, pedido)
     } catch (err: unknown) {
       const { codigo, mensagem } = erroDoOAuth(err)
+      // Revisão de 23/11 (baixos): qualquer recusa limpa a senha do campo (na trava de tentativas,
+      // numa tela compartilhada, quem chegasse depois lia a senha em "Mostrar senha").
+      setSenha('')
       if (codigo === 'senha_necessaria') {
         setPedirSenha(true)
         setErro('Confirme a sua senha para autorizar o aplicativo.')

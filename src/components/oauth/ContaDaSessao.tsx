@@ -16,7 +16,14 @@ export function ContaDaSessao({ className, recomecarNoAplicativo = false }: { cl
   if (!user) return null
   const outraConta = async () => {
     await logout()
-    navigate('/login', { replace: true, ...(recomecarNoAplicativo ? {} : { state: { from: location } }) })
+    // Revisão de 23/11 (baixos): recomeçando pelo aplicativo, o login segue para o app — com a
+    // página recarregada, para a CSP restrita do /oauth/* não valer no app inteiro (imagens de
+    // outra origem, como a mídia das mensagens, deixavam de carregar).
+    if (recomecarNoAplicativo) {
+      window.location.replace('/login')
+      return
+    }
+    navigate('/login', { replace: true, state: { from: location } })
   }
   const botao = (texto: string) => (
     <button type="button" className="underline underline-offset-2 hover:text-surface-200" onClick={() => void outraConta()}>
