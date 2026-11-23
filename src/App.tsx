@@ -319,14 +319,6 @@ function RotaDaFilaDeSuporte() {
   )
 }
 
-function RequireGuest({ children }: { children: ReactNode }) {
-  const { isAuthenticated, requiresPasswordChange } = useAuth()
-  if (isAuthenticated) {
-    return <Navigate to={requiresPasswordChange ? '/set-password' : '/home'} replace />
-  }
-  return <>{children}</>
-}
-
 // ── Animated routes ───────────────────────────────────────────────────────────
 
 /** Rotas fora do AppShell (login, cadastro, onboarding, páginas públicas). */
@@ -555,6 +547,7 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { RotaPorPapel } from '@/components/navegacao/RotaPorPapel'
 import { guardarDestinoOAuth } from '@/lib/destinoOAuth'
+import { RequireGuest } from '@/components/auth/RequireGuest'
 
 function GlobalToastContainer() {
   const { toasts, dismiss } = useToast()
