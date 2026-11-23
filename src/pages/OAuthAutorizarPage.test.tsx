@@ -215,7 +215,8 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
   })
 
   const ondeAprovar: Array<[string, Partial<DetalheDoPedidoOAuth['politica']>, Partial<DetalheDoPedidoOAuth['cliente']>, RegExp]> = [
-    ['no chat, exceto acesso', { aprovacaoNoChat: 'no_chat_exceto_acesso' }, {}, /no cartão da Oryon dentro do chat; convidar ou mudar o papel de alguém/],
+    // Decisão de 23/11: pelo app, a aprovação pede sempre a senha (o texto diz).
+    ['no chat, exceto acesso', { aprovacaoNoChat: 'no_chat_exceto_acesso' }, {}, /no cartão da Oryon dentro do chat \(ou aqui na Oryon, com a sua senha\); convidar ou mudar o papel de alguém/],
     ['sempre no app', { aprovacaoNoChat: 'sempre_no_app' }, {}, /sempre pedem a sua aprovação aqui na Oryon, com a sua senha/],
     ['aplicativo sem cartão (local)', { aprovacaoNoChat: 'no_chat_exceto_acesso' }, { local: true }, /sempre pedem a sua aprovação aqui na Oryon, com a sua senha/],
     ['backend sem a política', {}, {}, /no cartão da Oryon dentro do chat ou aqui na Oryon, com a sua senha, conforme a regra do workspace/],

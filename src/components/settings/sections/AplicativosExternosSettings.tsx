@@ -208,7 +208,7 @@ export function AplicativosExternosSettings() {
                     'no_chat_exceto_acesso',
                     'No chat do aplicativo, exceto acesso',
                     // 3ª rodada: inclui mudar o papel (preparar_edicao_de_usuario também fica no app) e o aplicativo sem cartão.
-                    'Enviar mensagens, publicar prompt, campanhas e afins: um clique no cartão do Claude ou do ChatGPT. Convidar ou mudar o papel de alguém, dar a um setor acesso a uma linha ou a um funil e criar ferramentas de agente: só no app, com senha. Aplicativos sem cartão (como o Claude Code) aprovam tudo no app.',
+                    'Enviar mensagens, publicar prompt, campanhas e afins: um clique no cartão do Claude ou do ChatGPT (pelo app, sempre com senha). Convidar ou mudar o papel de alguém, dar a um setor acesso a uma linha ou a um funil e criar ferramentas de agente: só no app, com senha. Aplicativos sem cartão (como o Claude Code) aprovam tudo no app.',
                   ],
                   ['sempre_no_app', 'Sempre no app da Oryon, com senha', 'Toda ação crítica pede que a pessoa abra o app e confirme com a senha.'],
                 ] as const
