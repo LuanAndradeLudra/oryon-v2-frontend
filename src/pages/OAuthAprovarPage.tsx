@@ -291,7 +291,8 @@ export function OAuthAprovarPage() {
         {erro && <Banner variant="danger">{erro}</Banner>}
 
         {/* Os botões ficam fixos no rodapé: à vista mesmo com a mensagem longa. */}
-        <div className="sticky bottom-0 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 px-5 sm:px-6 py-4 bg-surface-800 border-t border-surface-700 rounded-b-[12px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        {/* Revisão de 23/11 (baixos): o rodapé compensa o p-4 do cartão no celular (era p-5). */}
+        <div className="sticky bottom-0 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 px-4 sm:px-6 py-4 bg-surface-800 border-t border-surface-700 rounded-b-[12px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-xs text-surface-400 text-center sm:text-left">Nada é feito até você aprovar.</p>
           <div className="flex flex-col-reverse sm:flex-row gap-2">
             <Button

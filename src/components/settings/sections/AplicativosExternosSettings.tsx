@@ -143,7 +143,7 @@ export function AplicativosExternosSettings() {
       ? 'Com "Só consultar", os aplicativos não alteram nada.'
       : politica.aprovacaoNoChat === 'sempre_no_app'
         ? 'Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) sempre pedem a aprovação da pessoa aqui na Oryon, com a senha dela.'
-        : 'Ações importantes pedem a aprovação da própria pessoa: no cartão da Oryon dentro do chat ou, quando dão acesso (convidar ou mudar o papel de alguém, criar ferramenta de agente), aqui na Oryon, com a senha.'
+        : 'Ações importantes pedem a aprovação da própria pessoa: no cartão da Oryon dentro do chat ou, quando dão acesso (convidar ou mudar o papel de alguém, dar a um setor acesso a uma linha ou a um funil, criar ferramenta de agente), aqui na Oryon, com a senha.'
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl">
@@ -208,7 +208,7 @@ export function AplicativosExternosSettings() {
                     'no_chat_exceto_acesso',
                     'No chat do aplicativo, exceto acesso',
                     // 3ª rodada: inclui mudar o papel (preparar_edicao_de_usuario também fica no app) e o aplicativo sem cartão.
-                    'Enviar mensagens, publicar prompt, campanhas e afins: um clique no cartão do Claude ou do ChatGPT. Convidar ou mudar o papel de alguém e criar ferramentas de agente: só no app, com senha. Aplicativos sem cartão (como o Claude Code) aprovam tudo no app.',
+                    'Enviar mensagens, publicar prompt, campanhas e afins: um clique no cartão do Claude ou do ChatGPT. Convidar ou mudar o papel de alguém, dar a um setor acesso a uma linha ou a um funil e criar ferramentas de agente: só no app, com senha. Aplicativos sem cartão (como o Claude Code) aprovam tudo no app.',
                   ],
                   ['sempre_no_app', 'Sempre no app da Oryon, com senha', 'Toda ação crítica pede que a pessoa abra o app e confirme com a senha.'],
                 ] as const
