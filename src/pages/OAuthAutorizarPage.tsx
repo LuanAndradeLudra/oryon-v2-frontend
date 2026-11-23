@@ -71,7 +71,7 @@ function avisoDasAcoes(pedido: DetalheDoPedidoOAuth): string {
     return 'Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) sempre pedem a sua aprovação aqui na Oryon, com a sua senha.'
   }
   if (pedido.politica.aprovacaoNoChat === 'no_chat_exceto_acesso') {
-    return 'Ações importantes pedem a sua aprovação: enviar mensagens e mudar regras de agentes, no cartão da Oryon dentro do chat; convidar ou mudar o papel de alguém, dar a um setor acesso a uma linha ou a um funil e criar ferramentas de agente, aqui na Oryon, com a sua senha.'
+    return 'Ações importantes pedem a sua aprovação: enviar mensagens e mudar regras de agentes, no cartão da Oryon dentro do chat (ou aqui na Oryon, com a sua senha); convidar ou mudar o papel de alguém, dar a um setor acesso a uma linha ou a um funil e criar ferramentas de agente, só aqui na Oryon, com a sua senha.'
   }
   return 'Ações importantes (enviar mensagens, convidar pessoas, mudar regras de agentes) só acontecem com a sua aprovação: no cartão da Oryon dentro do chat ou aqui na Oryon, com a sua senha, conforme a regra do workspace.'
 }
