@@ -78,3 +78,37 @@ export function tomarDestinoOAuth(): string | null {
     return null
   }
 }
+
+/**
+ * O destino guardado, SEM consumir (o login ainda vai usá-lo). Mesmas regras do `tomarDestinoOAuth`:
+ * no prazo e da mesma pessoa, quando se sabe quem era.
+ */
+export function verDestinoOAuth(): string | null {
+  try {
+    const bruto = sessionStorage.getItem(CHAVE)
+    if (!bruto) return null
+    const g = JSON.parse(bruto) as Partial<DestinoGuardado>
+    if (!destinoOAuthSeguro(g.caminho)) return null
+    if (typeof g.em !== 'number' || Date.now() - g.em > PRAZO_DO_DESTINO_MS) return null
+    const agora = pessoaDaSessao()
+    if (g.dono && agora && g.dono !== agora) return null
+    return g.caminho
+  } catch {
+    return null
+  }
+}
+
+/** O que trouxe a pessoa ao login: conectar um aplicativo (com o id do pedido) ou aprovar uma ação. */
+export type MotivoDoLoginOAuth = { tipo: 'conectar'; pedido: string | null } | { tipo: 'aprovar' }
+
+/** Lê o destino do OAuth (`/oauth/authorize?pedido=…` ou `/oauth/aprovar/…`); outro destino, null. */
+export function motivoDoLoginOAuth(destino: string | null | undefined): MotivoDoLoginOAuth | null {
+  if (!destinoOAuthSeguro(destino)) return null
+  const url = new URL(destino, 'https://app.invalid')
+  if (url.pathname === '/oauth/authorize') {
+    const pedido = url.searchParams.get('pedido')
+    return { tipo: 'conectar', pedido: pedido && /^[A-Za-z0-9_-]{43}$/.test(pedido) ? pedido : null }
+  }
+  if (url.pathname.startsWith('/oauth/aprovar')) return { tipo: 'aprovar' }
+  return null
+}

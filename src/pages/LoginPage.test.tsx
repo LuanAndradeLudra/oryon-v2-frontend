@@ -126,6 +126,51 @@ describe('LoginPage', () => {
     expect(await screen.findByText('/oauth/authorize?pedido=abc')).toBeInTheDocument()
   })
 
+  // ORY-94 (decisão do João, 23/11): o login que vem de uma conexão explica o motivo e manda o
+  // pedido (a senha digitada aqui vale no consentimento dele).
+  it('ORY-94: vindo de um pedido de conexão, explica o motivo e manda o id do pedido no login', async () => {
+    login.mockResolvedValue(undefined)
+    const PEDIDO = 'a'.repeat(43)
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { from: { pathname: '/oauth/authorize', search: `?pedido=${PEDIDO}` } } }]}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/oauth/authorize" element={<div>consentimento</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Para conectar um aplicativo de IA à sua conta Oryon')).toBeInTheDocument()
+    expect(screen.getByText(/Nada é liberado sem você clicar em Permitir/)).toBeInTheDocument()
+    digitar(emailInput(), 'a@b.co')
+    digitar(senhaInput(), 'senha-certa')
+    fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
+    await waitFor(() => expect(login).toHaveBeenCalledWith('a@b.co', 'senha-certa', { oauthPedido: PEDIDO }))
+    expect(await screen.findByText('consentimento')).toBeInTheDocument()
+  })
+
+  it('ORY-94: vindo de uma aprovação, explica o motivo e não manda pedido de conexão', async () => {
+    login.mockResolvedValue(undefined)
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { from: { pathname: '/oauth/aprovar/abc' } } }]}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/oauth/aprovar/:id" element={<div>aprovação</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Para ver e aprovar uma ação pedida por um aplicativo de IA')).toBeInTheDocument()
+    digitar(emailInput(), 'a@b.co')
+    digitar(senhaInput(), 'senha-certa')
+    fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
+    await waitFor(() => expect(login).toHaveBeenCalledWith('a@b.co', 'senha-certa'))
+  })
+
+  it('login comum: sem aviso de aplicativo de IA', () => {
+    renderLogin()
+    expect(screen.getByText('Acesse sua conta')).toBeInTheDocument()
+    expect(screen.queryByText(/aplicativo de IA/)).toBeNull()
+  })
+
   it('botão Entrar desabilitado até preencher e-mail e senha', () => {
     renderLogin()
     expect(screen.getByRole('button', { name: /entrar/i })).toBeDisabled()

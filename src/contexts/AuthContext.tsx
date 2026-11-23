@@ -66,7 +66,8 @@ interface AuthContextValue {
    *  quando o backend não manda o campo. Ler via `useMultiPipeline()` etc. */
   featureFlags: string[]
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
+  /** ORY-94 (23/11): `oauthPedido` = o login veio de um pedido de conexão (a senha vale no consentimento dele). */
+  login: (email: string, password: string, opcoes?: { oauthPedido?: string | null }) => Promise<void>
   register: (payload: RegisterPayload) => Promise<WaitlistResponse>
   /** Invited agent: POST /auth/activate, then same session + cookies as register. */
   activateAccount: (token: string, password: string) => Promise<void>
@@ -127,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => { /* sessão continua válida; flags ficam desligadas */ })
   }, [applyFeatureFlags])
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, opcoes?: { oauthPedido?: string | null }) => {
     disconnectSocket()
     // Sprint 5.3 — em mobile usa /auth/mobile-login que retorna tokens em
     // body; armazenamos via auth-storage e o api.ts injeta Bearer header.
@@ -136,7 +137,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await axios.post<{
       user: User; requiresPasswordChange: boolean; organizationConfigured?: boolean;
       accessToken?: string; refreshToken?: string;
-    }>(`${API}${endpoint}`, { email, password }, { withCredentials: true })
+    }>(
+      `${API}${endpoint}`,
+      { email, password, ...(opcoes?.oauthPedido ? { oauthPedido: opcoes.oauthPedido } : {}) },
+      { withCredentials: true },
+    )
     if (isNativePlatform() && res.data.accessToken && res.data.refreshToken) {
       setTokens(res.data.accessToken, res.data.refreshToken)
     }

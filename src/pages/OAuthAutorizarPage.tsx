@@ -349,6 +349,12 @@ export function OAuthAutorizarPage() {
           )}
 
           <div className="flex flex-col gap-2.5 min-w-0">
+            {!bloqueado && !pedirSenha && (
+              // Decisão do João (23/11): a pessoa acabou de entrar com a senha para esta conexão.
+              <p className="text-xs text-surface-400">
+                Você acabou de entrar com a sua senha, então não precisa digitar de novo.
+              </p>
+            )}
             {!bloqueado && pedirSenha && (
               <FormField label="Confirme a sua senha">
                 <PasswordInput

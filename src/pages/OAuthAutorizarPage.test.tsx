@@ -103,6 +103,29 @@ describe('OAuthAutorizarPage — "Conectar à Oryon"', () => {
     expect(api.decidir).toHaveBeenCalledWith('p1', { csrf: 'csrf-1', aprovar: false })
   })
 
+  it('decisão de 23/11: quem acabou de entrar com a senha não digita de novo', async () => {
+    api.detalhar.mockResolvedValue(pedido({ precisaSenha: false }))
+    api.decidir.mockResolvedValue({ redirecionarPara: 'https://claude.ai/api/mcp/auth_callback?code=c&state=s&iss=i' })
+    abrir()
+    expect(await screen.findByText(/acabou de entrar com a sua senha/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Confirme a sua senha')).toBeNull()
+    const permitir = screen.getByRole('button', { name: 'Permitir' })
+    expect(permitir).toBeEnabled()
+    fireEvent.click(permitir)
+    await waitFor(() => expect(assign).toHaveBeenCalled())
+    expect(api.decidir).toHaveBeenCalledWith('p1', { csrf: 'csrf-1', aprovar: true, nivel: 'leitura' })
+  })
+
+  it('decisão de 23/11: se a dispensa venceu no caminho, a tela passa a pedir a senha', async () => {
+    api.detalhar.mockResolvedValue(pedido({ precisaSenha: false }))
+    api.decidir.mockRejectedValueOnce(erroHttp(403, 'senha_necessaria'))
+    abrir()
+    fireEvent.click(await screen.findByRole('button', { name: 'Permitir' }))
+    expect(await screen.findByLabelText('Confirme a sua senha')).toBeInTheDocument()
+    expect(screen.getByText('Confirme a sua senha para autorizar o aplicativo.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Permitir' })).toBeDisabled()
+  })
+
   it('envio duplo: dois cliques em "Permitir" mandam uma decisão só', async () => {
     api.detalhar.mockResolvedValue(pedido())
     let soltar: (v: { redirecionarPara: string }) => void = () => undefined

@@ -9,7 +9,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout'
 import { AuthHeading } from '@/components/auth/AuthHeading'
 import { PasswordInput } from '@/components/auth/PasswordInput'
 import { SsoSlot } from '@/components/auth/SsoSlot'
-import { tomarDestinoOAuth } from '@/lib/destinoOAuth'
+import { motivoDoLoginOAuth, tomarDestinoOAuth, verDestinoOAuth } from '@/lib/destinoOAuth'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -18,6 +18,9 @@ export function LoginPage() {
   // ORY-96: a volta guarda também a query (ex.: /oauth/authorize?pedido=…), não só o caminho.
   const origem = (location.state as { from?: { pathname: string; search?: string } })?.from
   const from = origem?.pathname ? `${origem.pathname}${origem.search ?? ''}` : '/conversations'
+  // ORY-94 (decisão do João, 23/11): o login que vem de uma conexão de aplicativo de IA diz isso na
+  // tela e manda o id do pedido — a senha digitada aqui vale no consentimento desse pedido.
+  const [motivoOAuth] = useState(() => motivoDoLoginOAuth(origem?.pathname ? from : verDestinoOAuth()))
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,7 +32,9 @@ export function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await login(e.trim(), p)
+      if (motivoOAuth?.tipo === 'conectar' && motivoOAuth.pedido)
+        await login(e.trim(), p, { oauthPedido: motivoOAuth.pedido })
+      else await login(e.trim(), p)
       // Revisão ORY-94: sem o destino do router (redirecionamento "duro" com a sessão
       // vencida), volta para a tela do OAuth guardada na aba, se houver.
       // Todo login concluído consome o destino guardado (com o state, ele é descartado).
@@ -53,7 +58,25 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <AuthHeading title="Entrar" description="Acesse sua conta" />
+      <AuthHeading
+        title="Entrar"
+        description={
+          motivoOAuth?.tipo === 'conectar'
+            ? 'Para conectar um aplicativo de IA à sua conta Oryon'
+            : motivoOAuth?.tipo === 'aprovar'
+              ? 'Para ver e aprovar uma ação pedida por um aplicativo de IA'
+              : 'Acesse sua conta'
+        }
+      />
+      {motivoOAuth && (
+        <div className="mb-5">
+          <Banner variant="info">
+            {motivoOAuth.tipo === 'conectar'
+              ? 'Depois de entrar, você vê qual aplicativo está pedindo acesso e escolhe o que ele pode fazer. Nada é liberado sem você clicar em Permitir.'
+              : 'Depois de entrar, você vê a ação inteira e decide se aprova, com a sua senha.'}
+          </Banner>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <FormField label="E-mail">

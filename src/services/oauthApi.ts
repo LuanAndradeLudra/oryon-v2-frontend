@@ -32,8 +32,11 @@ export interface DetalheDoPedidoOAuth {
     aprovacaoNoChat?: 'no_chat_exceto_acesso' | 'sempre_no_app'
   }
   niveis: Record<NivelOAuth, { disponivel: boolean; grupos: GrupoDeConsentimento[] }>
-  /** Revisão ORY-94: a senha é pedida em toda aprovação (o pedido é de uso único). */
-  precisaSenha: true
+  /**
+   * Revisão ORY-94: a senha é pedida em toda aprovação (o pedido é de uso único). Decisão do João
+   * (23/11): `false` quando a pessoa acabou de entrar com a senha para ESTE pedido.
+   */
+  precisaSenha: boolean
 }
 
 export interface DecisaoOAuth {
