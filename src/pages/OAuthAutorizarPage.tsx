@@ -249,6 +249,14 @@ export function OAuthAutorizarPage() {
               </dd>
             </dl>
 
+            {/* Revisão de 23/11: o aplicativo local recebe o código num endereço deste computador. Um
+                site que peça para copiar esse endereço quer a conexão da pessoa. */}
+            {pedido.cliente.local && !bloqueado && (
+              <Banner variant="warning">
+                Continue só se você acabou de iniciar esta conexão no {pedido.cliente.nome}, neste computador. Depois de
+                permitir, nunca copie nem envie a ninguém o endereço que aparecer no navegador.
+              </Banner>
+            )}
             {!pedido.apiLiberada && (
               <Banner variant="danger">A API não está liberada para este workspace. Fale com a Oryon.</Banner>
             )}
