@@ -61,6 +61,8 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const SupportPage = lazyRoute(() => import('@/pages/SupportPage').then(m => ({ default: m.SupportPage })))
+const OAuthAutorizarPage = lazyRoute(() => import('@/pages/OAuthAutorizarPage').then(m => ({ default: m.OAuthAutorizarPage })))
+const OAuthAprovarPage = lazyRoute(() => import('@/pages/OAuthAprovarPage').then(m => ({ default: m.OAuthAprovarPage })))
 const SupportQualidadePage = lazyRoute(() => import('@/pages/SupportQualidadePage').then(m => ({ default: m.SupportQualidadePage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
@@ -139,6 +141,8 @@ function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
   if (requiresPasswordChange && location.pathname !== '/set-password') {
+    // Revisão ORY-94: a tela do OAuth volta depois da troca de senha obrigatória.
+    guardarDestinoOAuth(`${location.pathname}${location.search}`)
     return <Navigate to="/set-password" replace />
   }
   return <>{children}</>
@@ -315,14 +319,6 @@ function RotaDaFilaDeSuporte() {
   )
 }
 
-function RequireGuest({ children }: { children: ReactNode }) {
-  const { isAuthenticated, requiresPasswordChange } = useAuth()
-  if (isAuthenticated) {
-    return <Navigate to={requiresPasswordChange ? '/set-password' : '/home'} replace />
-  }
-  return <>{children}</>
-}
-
 // ── Animated routes ───────────────────────────────────────────────────────────
 
 /** Rotas fora do AppShell (login, cadastro, onboarding, páginas públicas). */
@@ -333,6 +329,8 @@ const SHELL_LESS_SECTIONS = new Set([
   '/first-access',
   // Páginas públicas da landing (30/09: home de venda + páginas de produto).
   '/plataforma', '/solucoes', '/perguntas', '/demonstracao',
+  // ORY-96: "Conectar à Oryon" (consentimento OAuth), sem o app em volta.
+  '/oauth',
 ])
 
 function AnimatedRoutes() {
@@ -370,6 +368,15 @@ function AnimatedRoutes() {
 
           {/* Primeiro acesso do cliente (SCRUM-1212): termos + dados da
               empresa → ativa o contrato. Tela cheia, fora do AppShell. */}
+          {/* ORY-96: consentimento OAuth — só exige estar logado (sem o app, sem os portões de
+              cobrança e primeiro acesso: quem decide se pode é o backend e a política). */}
+          <Route path="/oauth/authorize" element={
+            <RequireAuth><OAuthAutorizarPage /></RequireAuth>
+          } />
+          {/* ORY-97: aprovação, no app, de uma ação crítica pedida por um aplicativo externo. */}
+          <Route path="/oauth/aprovar/:id" element={
+            <RequireAuth><OAuthAprovarPage /></RequireAuth>
+          } />
           <Route path="/first-access" element={
             <RequireAuth><FirstAccessPage /></RequireAuth>
           } />
@@ -539,6 +546,8 @@ function AnimatedRoutes() {
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { RotaPorPapel } from '@/components/navegacao/RotaPorPapel'
+import { guardarDestinoOAuth } from '@/lib/destinoOAuth'
+import { RequireGuest } from '@/components/auth/RequireGuest'
 
 function GlobalToastContainer() {
   const { toasts, dismiss } = useToast()

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { Input } from '@/components/ui/Input'
 import { OryonLogo } from '@/components/brand/OryonLogo'
+import { tomarDestinoOAuth } from '@/lib/destinoOAuth'
 
 interface Requirement {
   label: string
@@ -52,7 +53,8 @@ export function SetPasswordPage() {
     setLoading(true)
     try {
       await completePasswordChange(password, currentPw)
-      navigate('/conversations', { replace: true })
+      // Revisão ORY-94: quem chegou aqui vindo da tela do OAuth volta para ela.
+      navigate(tomarDestinoOAuth() ?? '/conversations', { replace: true })
     } catch {
       setError('Não foi possível salvar a senha. Tente novamente.')
     } finally {

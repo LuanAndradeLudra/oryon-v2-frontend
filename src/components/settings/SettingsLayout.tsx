@@ -60,6 +60,8 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
   billing:             ['plano', 'fatura', 'cobrança', 'pagamento', 'assinatura'],
   connectors:          ['integrações', 'integração', 'conectores', 'erp', 'api', 'feegow', 'doctoralia', 'webhook', 'skills', 'mcp'],
   'api-keys':          ['api', 'chave', 'chaves', 'token', 'integração', 'n8n', 'zapier', 'make', 'webhook', 'desenvolvedor'],
+  'external-apps':     ['claude', 'chatgpt', 'ia', 'assistente', 'aplicativo', 'oauth', 'mcp', 'conectar'],
+  'connected-apps':    ['claude', 'chatgpt', 'conectado', 'conexões', 'aplicativo', 'desconectar', 'oauth'],
   security:            ['segurança', 'sessões', 'logs de acesso', '2fa'],
   audit:               ['auditoria', 'logs', 'histórico', 'atividade'],
 }
@@ -165,6 +167,8 @@ export const SETTINGS_NAV: NavDomain[] = [
           // do backend). Fica no menu mesmo sem FF_PUBLIC_API: a tela explica
           // como pedir a liberação.
           { section: 'api-keys',      label: 'Chaves de API',       adminOnly: true },
+          // ORY-98: assistentes de IA de fora (Claude, ChatGPT) — a política é do admin.
+          { section: 'external-apps', label: 'Aplicativos de IA externos', adminOnly: true },
         ],
       },
     ],
@@ -176,6 +180,9 @@ export const SETTINGS_NAV: NavDomain[] = [
         items: [
           { section: 'account',       label: 'Minha conta' },
           { section: 'notifications', label: 'Notificações' },
+          // ORY-98: as conexões são de cada pessoa ("as minhas"). Revisão do épico (18/11, 3ª rodada):
+          // fica em Conta, depois de "Minha conta" e "Notificações" — em Automação ela virava a 1ª seção do atendente.
+          { section: 'connected-apps', label: 'Aplicativos conectados' },
           { section: 'billing',       label: 'Plano & faturamento', ownerOnly: true },
           { section: 'security',      label: 'Segurança e acesso',  adminOnly: true },
           { section: 'audit',         label: 'Auditoria',           adminOnly: true },

@@ -60,6 +60,7 @@ import { apiBaseUrl, isNativePlatform } from '@/config/env'
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth-storage'
 import { compartilharEmVoo } from '@/lib/preBusca'
 import { capturarErrosDaPagina, falhaQueImporta, registrarFalhaDeRede } from '@/lib/atividadeRecente'
+import { guardarDestinoOAuth } from '@/lib/destinoOAuth'
 
 const api = axios.create({
   baseURL: apiBaseUrl(),
@@ -127,6 +128,8 @@ const SENSITIVE_FIELDS = new Set([
   'password', 'currentPassword', 'newPassword', 'confirmPassword',
   'token', 'refreshToken', 'accessToken', 'secret', 'apiKey',
   'passwordHash', 'creditCard', 'cvv',
+  // ORY-96: a decisão do consentimento OAuth leva a senha (`senha`) e o token CSRF do pedido.
+  'senha', 'csrf',
 ])
 
 function sanitizeForLogging(obj: Record<string, unknown>): Record<string, unknown> {
@@ -915,11 +918,13 @@ export async function attemptRefresh(): Promise<boolean> {
 /** Exported so useSocket can force a re-login when the websocket's
  *  auth:expired can't be recovered by a session refresh (R39). */
 export function clearSessionAndRedirect() {
+  // Revisão ORY-94: a tela do OAuth volta depois do login (o pedido vence em 10 min). Guardado
+  // ANTES de apagar a sessão, para saber de quem era.
+  const sair = !PUBLIC_PATHS.includes(window.location.pathname)
+  if (sair) guardarDestinoOAuth()
   localStorage.removeItem(SESSION_KEY)
   clearTokens()
-  if (!PUBLIC_PATHS.includes(window.location.pathname)) {
-    window.location.href = '/login'
-  }
+  if (sair) window.location.href = '/login'
 }
 
 /** AxiosRequestConfig augmented with our retry-once marker. Stored on the
