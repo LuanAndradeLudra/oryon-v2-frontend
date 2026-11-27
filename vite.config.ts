@@ -56,29 +56,27 @@ function appleEmojiPlugin(): Plugin {
 }
 
 // ─── Prévia de link (Open Graph) ─────────────────────────────────────────────
-// og:image precisa de URL ABSOLUTA. Com VITE_SITE_URL definido (no deploy),
-// injeta a imagem do kit da marca (public/brand/oryon-og-1200x630.png) com
-// dimensões, alt e o cartão grande do X. Sem a variável, não injeta nada (o
-// Vite deixaria %VITE_SITE_URL% literal no HTML). O documento da demonstração
-// (demo.html, aberto num iframe) não recebe.
+// O WhatsApp lê o HTML inicial. Use o domínio público da Oryon por padrão
+// para que a captura do palco tenha uma URL absoluta também sem VITE_SITE_URL.
 function previaDeLinkPlugin(): Plugin {
   let site = ''
   return {
     name: 'previa-de-link',
     configResolved(config) {
-      site = String(config.env.VITE_SITE_URL ?? '').replace(/\/+$/, '')
+      site = (config.env.VITE_SITE_URL?.trim() || 'https://app.oryonsolutions.com').replace(/\/+$/, '')
     },
     transformIndexHtml(html, ctx) {
-      if (!site || ctx.filename.endsWith('demo.html') || ctx.path.endsWith('demo.html')) return html
-      const imagem = `${site}/brand/oryon-og-1200x630.png`
+      if (ctx.filename.endsWith('demo.html') || ctx.path.endsWith('demo.html')) return html
+      const imagem = `${site}/brand/oryon-palco-whatsapp.jpg`
       const meta = (attrs: Record<string, string>) => ({ tag: 'meta', attrs, injectTo: 'head' as const })
       return {
         html,
         tags: [
           meta({ property: 'og:image', content: imagem }),
+          meta({ property: 'og:image:type', content: 'image/jpeg' }),
           meta({ property: 'og:image:width', content: '1200' }),
           meta({ property: 'og:image:height', content: '630' }),
-          meta({ property: 'og:image:alt', content: 'Oryon' }),
+          meta({ property: 'og:image:alt', content: 'Página da Oryon com uma conversa no WhatsApp ao lado do painel de atendimento com IA.' }),
           meta({ name: 'twitter:card', content: 'summary_large_image' }),
           meta({ name: 'twitter:image', content: imagem }),
         ],
