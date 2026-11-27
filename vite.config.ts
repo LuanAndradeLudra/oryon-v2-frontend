@@ -72,6 +72,7 @@ function previaDeLinkPlugin(): Plugin {
       return {
         html,
         tags: [
+          meta({ property: 'og:url', content: `${site}/` }),
           meta({ property: 'og:image', content: imagem }),
           meta({ property: 'og:image:type', content: 'image/jpeg' }),
           meta({ property: 'og:image:width', content: '1200' }),
